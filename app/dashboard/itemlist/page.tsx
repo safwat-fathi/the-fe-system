@@ -2,6 +2,7 @@
 "use client";
 import React, { useState } from 'react';
 import { AsyncPaginate, LoadOptions } from 'react-select-async-paginate';
+import { API_BASE_URL } from '@/utilities/api';
 
 type OptionType = {
   value: number;
@@ -12,7 +13,9 @@ export default function ItemSelect() {
   const [value, setValue] = useState<OptionType | null>(null);
 
   const loadOptions = async (search: string, loadedOptions: OptionType[], { page }: any) => {
-    const res = await fetch(`http://149.102.143.102:8000/api/SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`);
+    const res = await fetch(
+      `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`
+    );
     const json = await res.json();
 
     return {

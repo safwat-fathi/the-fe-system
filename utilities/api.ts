@@ -1,4 +1,6 @@
-export const API_BASE_URL = "http://149.102.143.102:8000/api/";
+export const API_BASE_URL: string =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "http://149.102.143.102:8000/api/";
 
 export async function fetchGoldPrice(): Promise<number | null> {
   try {
