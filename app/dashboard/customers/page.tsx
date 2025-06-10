@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from 'next/navigation';
 import ReactSelect from "react-select";
+import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
+import { fetchData } from "@/utilities/api";
+import { API_BASE_URL } from "@/utilities/api";
 
 import {
   Table,
@@ -24,9 +27,7 @@ import {
   SelectItem,
   Tooltip,
 } from "@heroui/react";
-import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
-import { fetchData } from "@/utilities/api";
-import { API_BASE_URL } from "@/utilities/api";
+
 
 interface Customer {
   id: number;
@@ -46,7 +47,7 @@ interface Customer {
   street: string;
   build_no: string;
   post_code: string;
-  cust_status: boolean;
+  cust_status: number;
   acc?: number;
   acc_name?: string;
   cust_type?: number;
@@ -55,7 +56,7 @@ interface Customer {
   handling_e?: string;
   perc?: number;
   expt?: boolean;
-  cancel?: boolean;
+  hide?: boolean;
 }
 
 const API_URL = `${API_BASE_URL}customers_list`;
@@ -63,8 +64,12 @@ const CREATE_URL = `${API_BASE_URL}api_create_customer`;
 const UPDATE_URL = (id: number) => `${API_BASE_URL}api_update_customer/${id}`;
 const DELETE_URL = (id: number) => `${API_BASE_URL}api_delete_customer/${id}`;
 const cust_type_URL = `${API_BASE_URL}cust_type_list`;
-const ACCOUNTS_URL = `${API_BASE_URL}accounts_list`;
+const ACCOUNTS_URL = `${API_BASE_URL}getAccounts`;
 const BOX_TYPE_URL = `${API_BASE_URL}getBoxTypeList`;
+const Max_CustID_URL = `${API_BASE_URL}api_max_Cust_id`;
+const Cust_Status_URL = `${API_BASE_URL}getCustomerStatus`;
+const codec_Desc_URL =  (type_id: number, id: number) => `${API_BASE_URL}getCodecDesc/${type_id},${id}`;
+
 
 const columns = [
   { name: "كود العميل", uid: "cust_code" },
@@ -83,8 +88,10 @@ export function handleLanguageChange(e: React.FocusEvent<HTMLInputElement>) {
 export default function CustomersTable() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerTypes, setCustomerTypes] = useState<any[]>([]);
+  const [customerStatus, setCustomerStatus] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [boxTypes, setBoxTypes] = useState<any[]>([]);
+  const [maxCustId, setMaxCustId] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -104,14 +111,23 @@ export default function CustomersTable() {
     }
   }, []);
 
+ 
   const loadMetaData = useCallback(async () => {
     const types = await fetchData(cust_type_URL);
+
+    const custsResponse = await fetchData(Cust_Status_URL);
+    const custs = Array.isArray(custsResponse?.results) ? custsResponse.results : [];
+
     const accs = await fetchData(ACCOUNTS_URL);
     const boxesResponse = await fetchData(BOX_TYPE_URL);
     const boxes = Array.isArray(boxesResponse?.results) ? boxesResponse.results : [];
+    const CustId = await fetchData(Max_CustID_URL);
     setCustomerTypes(types);
+    setCustomerStatus(custs);
     setAccounts(accs);
     setBoxTypes(boxes);
+    setMaxCustId(CustId);
+    
   }, []);
 
   useEffect(() => {
@@ -119,45 +135,70 @@ export default function CustomersTable() {
     loadMetaData();
   }, [loadCustomers, loadMetaData]);
 
-  const handleSave = async () => {
-    try {
-      const url = modalMode === "edit" && currentCustomer.id ? UPDATE_URL(currentCustomer.id) : CREATE_URL;
-      const method = modalMode === "edit" ? "PUT" : "POST";
-      const { acc_name, ...rest } = currentCustomer;
+ const handleSave = async () => {
+  try {
+    const url = modalMode === "edit" && currentCustomer.id ? UPDATE_URL(currentCustomer.id) : CREATE_URL;
+    const method = modalMode === "edit" ? "PUT" : "POST";
 
-      const cleanedCustomer = {
-        ...rest,
-        acc: Number(currentCustomer.acc) || null,
-        vat_no: Number(currentCustomer.vat_no) || null,
-        cr_no: Number(currentCustomer.cr_no) || null,
-        perc: Number(currentCustomer.perc) || null,
-        cust_type: Number(currentCustomer.cust_type) || null,
-        expt: !!currentCustomer.expt,
-        cancel: !!currentCustomer.cancel,
-        post_code: currentCustomer.post_code || ""
-      };
-      
-      console.log("🚀 البيانات المرسلة:", cleanedCustomer);
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cleanedCustomer),
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        console.error("❌ خطأ في الإرسال:", err);
-        throw new Error("فشل في العملية");
-      }
-
-      alert(modalMode === "edit" ? "✅ تم تعديل العميل بنجاح" : "✅ تم إضافة العميل بنجاح");
-      setIsModalOpen(false);
-      loadCustomers();
-    } catch (error) {
-      alert("❌ حدث خطأ أثناء الحفظ");
+    // ✅ استخدم نسخة محلية بدلاً من setState
+    let updatedCustomer = { ...currentCustomer };
+  
+    if (!updatedCustomer.id) {
+      updatedCustomer.cust_code = String( maxCustId.id__max);
     }
-  };
+ 
+    if (!updatedCustomer.cust_code) {
+      updatedCustomer.cust_code = updatedCustomer.id ? String(updatedCustomer.id) : "";
+    }
+    
+    const { acc_name, ...rest } = updatedCustomer;
+    const cleanedCustomer = {
+      ...rest,
+      acc: Number(updatedCustomer.acc) || null,
+      vat_no: Number(updatedCustomer.vat_no) || null,
+      cr_no: Number(updatedCustomer.cr_no) || null,
+      perc: Number(updatedCustomer.perc) || null,
+      cust_type: Number(updatedCustomer.cust_type) || null,
+      expt: !!updatedCustomer.expt,
+      hide: !!updatedCustomer.hide,
+      post_code: updatedCustomer.post_code || ""
+    };
+
+
+const custTypeElement = document.getElementById("cust_type") as HTMLElement | null;
+
+if (!cleanedCustomer.cust_type) {
+  alert("⚠️ يرجى إدخال نوع العميل");
+  if (custTypeElement) {
+    custTypeElement.focus();
+  }
+  return;
+}
+
+
+
+    console.log("🚀 البيانات المرسلة:", cleanedCustomer);
+
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cleanedCustomer),
+    });
+  
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("❌ خطأ في الإرسال:", err);
+      throw new Error("فشل في العملية");
+    }
+
+    alert(modalMode === "edit" ? "✅ تم تعديل العميل بنجاح" : "✅ تم إضافة العميل بنجاح");
+    setIsModalOpen(false);
+    loadCustomers();
+  } catch (error) {
+    alert("❌ حدث خطأ أثناء الحفظ");
+  }
+};
+
 
   const renderActions = (cust: Customer) => (
     <div className="flex gap-5">
@@ -241,7 +282,7 @@ export default function CustomersTable() {
   <Button onPress={() => openModal("add")}> <FaPlus /> إضافة عميل </Button>
   <div className="flex gap-2 items-center">
     
-      <Select
+    <Select
         placeholder="فرز حسب نوع العميل"
         selectedKeys={custTypeFilter !== null ? [String(custTypeFilter)] : ["all"]}
         onSelectionChange={(keys) => {
@@ -251,14 +292,14 @@ export default function CustomersTable() {
         className="w-60"
       >
         <SelectItem key="all" textValue="الكل">الكل</SelectItem>
-        {customerTypes.map((type) => (
+          {customerTypes.map((type) => (
           <SelectItem
             key={String(type.id)}
             textValue={type.type_name}
-          >
+            >
             {type.type_name}
           </SelectItem>
-        ))}
+          ))}
     </Select>
 
 
@@ -284,13 +325,16 @@ export default function CustomersTable() {
         </TableHeader>
         <TableBody>
           {paginatedCustomers.map((cust) => (
+            
             <TableRow key={cust.id}>
               <TableCell>{cust.cust_code}</TableCell>
               <TableCell>{cust.cust_name}</TableCell>
               <TableCell>{cust.cust_name_e}</TableCell>
               <TableCell>{cust.mobile}</TableCell>
               <TableCell>{cust.email}</TableCell>
-              <TableCell><Checkbox isSelected={cust.cust_status} isReadOnly /></TableCell>
+              <TableCell>
+                {customerStatus.find((t) => t.code_id === cust.cust_status)?.code_desc || "-"}
+              </TableCell>
               <TableCell>{renderActions(cust)}</TableCell>
             </TableRow>
           ))}
@@ -348,10 +392,20 @@ export default function CustomersTable() {
     placeholder="رقم الحساب / اسم الحساب"
     value={
       currentCustomer.acc
-        ? {
-            value: currentCustomer.acc,
-            label: `${currentCustomer.acc} - ${currentCustomer.acc_name || ""}`,
-          }
+        ? (() => {
+            const selectedAcc = accounts.find(
+              (acc) => acc.id === currentCustomer.acc
+            );
+            return selectedAcc
+              ? {
+                  value: selectedAcc.id,
+                  label: `${selectedAcc.id} - ${selectedAcc.acc_name}`,
+                }
+              : {
+                  value: currentCustomer.acc,
+                  label: `${currentCustomer.acc} - ${currentCustomer.acc_name || ""}`,
+                };
+          })()
         : null
     }
     onChange={(selectedOption) => {
@@ -454,9 +508,44 @@ export default function CustomersTable() {
       <Input isDisabled={isViewMode} label="مناولة (بالإنجليزي)" value={currentCustomer.handling_e || ""} onChange={(e) => setCurrentCustomer({ ...currentCustomer, handling_e: e.target.value })} />
       <Input isDisabled={isViewMode} label="نسبة الخصم" type="number" value={currentCustomer.perc?.toString() || ""} onChange={(e) => setCurrentCustomer({ ...currentCustomer, perc: parseFloat(e.target.value) })} />
 
+{/* حالة العميل */}
+<div className="col-span-1">
+  <ReactSelect
+    className="w-full text-sm"
+    classNamePrefix="heroui"
+    isDisabled={isViewMode}
+    options={customerStatus.map((cust1) => ({
+      value: cust1.code_id,
+      label: cust1.code_desc,
+    }))}
+    placeholder="حالة العميل "
+    value={
+      currentCustomer.cust_status
+        ? {
+            value: currentCustomer.cust_status,
+            label: customerStatus.find((b) => b.code_id === currentCustomer.cust_status)?.code_desc || "",
+          }
+        : null
+    }
+    onChange={(selectedOption) => {
+      setCurrentCustomer({ ...currentCustomer, cust_status: selectedOption?.value || "" });
+    }}
+    isSearchable
+    menuPlacement="auto"
+    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+    menuPosition="fixed"
+    styles={{
+      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+    }}
+    components={{
+      IndicatorSeparator: () => null,
+    }}
+  />
+</div>
+
       <div className="flex gap-6 items-center col-span-3">
         <Checkbox isDisabled={isViewMode} isSelected={currentCustomer.expt || false} onValueChange={(val) => setCurrentCustomer({ ...currentCustomer, expt: val })}>مستثنى من كشف الأرصدة</Checkbox>
-        <Checkbox isDisabled={isViewMode} isSelected={currentCustomer.cancel || false} onValueChange={(val) => setCurrentCustomer({ ...currentCustomer, cancel: val })}>ملغي</Checkbox>
+        <Checkbox isDisabled={isViewMode} isSelected={currentCustomer.hide || false} onValueChange={(val) => setCurrentCustomer({ ...currentCustomer, hide: val })}>مخفي   </Checkbox>      
       </div>
     </ModalBody>
 

@@ -41,7 +41,7 @@ interface Item {
   model: string;
   k: string;
   purity: string;
-  item_status: boolean;
+  item_status: number;
   cancel: boolean;
   cr_date: string;
   cr_user: string;
@@ -64,8 +64,8 @@ export default function CategoriesItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
-  const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
-  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
+  const [selectedCatId, setSelectedCatId] = useState<number>(0);
+  const [selectedTypeId, setSelectedTypeId] = useState<number>(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const catPerPage = 4;
@@ -100,26 +100,29 @@ export default function CategoriesItemsPage() {
     model: "",
     k: "",
     purity: "",
-    item_status: true,
+    item_status: 1,
     cancel: false,
     cr_date: "",
     cr_user: "",
     upd_date: "",
     upd_user: "",
-    cat: 0,
-    item_type: 0,
-    unit: 0
+    cat: null,
+    item_type: null,
+    unit: null
   });
   
   useEffect(() => {
     fetchCategories();
-    fetchItems();
+    // alert('cat:'+ selectedCatId + ' ---- ' + 'tyep:'+ selectedTypeId)
+    fetchItems(selectedCatId,selectedTypeId); 
+          
     fetchItemTypes();
+
     fetchUnits();
     fetchBoxes();
     fetchCatTypes();   
     fetchCatStatuses(); 
-  }, []);
+  }, [selectedCatId , selectedTypeId]); // تعيد التنفيذ عند تغيير أي قيمة []);
 
 const fetchCatTypes = async () => {
   try {
@@ -164,9 +167,11 @@ const fetchCatStatuses = async () => {
     }
   };
   
-  const fetchItems = async (url: string = API_ENDPOINTS.ITEMS_LIST) => {
+
+const fetchItems = async (xcat: number ,xtype:number ) => {
+//const fetchItems = async (url: string = `${API_ENDPOINTS.ITEMS_LIST}/${selectedCatId}/${selectedTypeId}/`) => {
     try {
-      const res = await fetch(url);
+      const res = await fetch('http://149.102.143.102:8000/api/items_list_p/' + xcat + '/' + xtype + '/');
       const data = await res.json();
 
       const itemsArray = Array.isArray(data.results) ? data.results : [];
@@ -187,7 +192,7 @@ const fetchCatStatuses = async () => {
       const res = await fetch(API_ENDPOINTS.ITEM_TYPES_LIST);
       const data = await res.json();
       setItemTypes(data);
-    } catch (err) {
+      } catch (err) {
       console.error("خطأ في تحميل أنواع الأصناف:", err);
     }
   };
@@ -201,16 +206,40 @@ const fetchCatStatuses = async () => {
       console.error("خطأ في تحميل الوحدات:", err);
     }
   };
+ 
   
 
-const filteredItems = items.filter((item) => {
-  const byCategory = selectedCatId ? item.cat === selectedCatId : true;
-  const byType = selectedTypeId ? item.item_type === selectedTypeId : true;
-  return byCategory && byType;
-});
+ 
+
+const filteredItems = items;
+// const filteredItems = items.filter((item) => {
+//   const byCategory = selectedCatId !== null && selectedCatId !== undefined ? Number(item.cat) === Number(selectedCatId)  : false;
+
+//   const byType = selectedTypeId !== null && selectedTypeId !== undefined   ? Number(item.item_type) === Number(selectedTypeId): false;
+
+//   console.log(`Item ${item.id} => byCategory: ${byCategory}, selectedCatId: ${Number(selectedCatId)}, selectedTypeId: ${Number(selectedTypeId)}, byType: ${byType}`);
+//   return byCategory && byType;
+// });
+   
 
 
   const handleAddItem = async () => {
+    
+    // if (!newItem.id) {
+    //   updatedCustomer.cust_code = String( maxItem.id__max);
+    // }
+ 
+    // if (!updatedCustomer.cust_code) {
+    //   updatedCustomer.cust_code = updatedCustomer.id ? String(updatedCustomer.id) : "";
+    // }
+  
+
+    // if (!newItem.item_code  ){
+    // alert("كود الصنف فارغ  :" + newItem.item_code)
+  
+    //  // newItem.item_code="22222";
+     
+    // }
     try {
       const formData = new FormData();
       formData.append("item_name", newItem.item_name);
@@ -225,13 +254,13 @@ const filteredItems = items.filter((item) => {
       formData.append("model", newItem.model);
       formData.append("k", newItem.k);
       formData.append("purity", newItem.purity);
-      formData.append("item_status", String(true));
+      formData.append("item_status", String(1));
       formData.append("cancel", String(false));
       formData.append("cr_date", new Date().toISOString()); // ✅ التاريخ بصيغة صحيحة
       formData.append("cat", String(newItem.cat));
       formData.append("item_type", String(newItem.item_type));
       formData.append("unit", String(newItem.unit));
-      formData.append("item_img", newItem.item_img); // صورة حقيقية من input type="file"
+     // formData.append("item_img", newItem.item_img); // صورة حقيقية من input type="file"
   
       const response = await fetch(API_ENDPOINTS.CREATE_ITEM, {
         method: "POST",
@@ -362,7 +391,7 @@ const filteredItems = items.filter((item) => {
       model: "",
       k: "",
       purity: "",
-      item_status: true,
+      item_status: 1,
       cancel: false,
       cr_date: "",
       cr_user: "",
@@ -468,6 +497,7 @@ const filteredItems = items.filter((item) => {
     {filteredItems.map((item) => {
       const itemType = itemTypes.find((type) => type.id === item.item_type);
       const unitName = units.find((unit) => unit.id === item.unit);
+    
       
       return (
         <tr key={item.id} className="text-center hover:bg-gray-50">
@@ -504,6 +534,7 @@ const filteredItems = items.filter((item) => {
     })}
   </tbody>
 </table>
+  setItemsCount(0);
 <div className="flex justify-center mt-4 gap-2">
   <Button isDisabled={!itemsPrevUrl} onPress={() => fetchItems(itemsPrevUrl!)}>السابق</Button>
   <span className="px-4 py-2 text-sm">عدد النتائج: {itemsCount}</span>
@@ -579,12 +610,10 @@ const filteredItems = items.filter((item) => {
       <Input isDisabled label="تاريخ الإضافة" value={newItem.cr_date ?? ""} />
       <Input isDisabled label="أضيف بواسطة" value={newItem.cr_user ?? ""} />
       <Input isDisabled label="تاريخ التعديل" value={newItem.upd_date ?? ""} />
-      <Input isDisabled label="عدل بواسطة" value={newItem.upd_user ?? ""} /> */}
+      <Input isDisabled label="عدل بواسطة" value={newItem.upd_user ?? ""} /> */} 
 
-      <div className="flex gap-6 items-center col-span-4">
-        <Checkbox isDisabled={isViewMode} isSelected={newItem.item_status} onValueChange={(val) => setNewItem({ ...newItem, item_status: val })}>نشط</Checkbox>
-        <Checkbox isDisabled={isViewMode} isSelected={newItem.cancel} onValueChange={(val) => setNewItem({ ...newItem, cancel: val })}>ملغي</Checkbox>
-      </div>
+      {/* <div className="flex gap-6 items-center col-span-4">
+      </div> */}  update by moseed, i can update list for item_status
     </ModalBody>
 
     {modalMode !== "view" && (

@@ -85,5 +85,8 @@ export const API_ENDPOINTS = {
   BoxTypeList: `${API_BASE_URL}getBoxTypeList`,
   VoucherTypeList: `${API_BASE_URL}getVoucherTypeList`,
   PayTypeList: `${API_BASE_URL}getPayTypeList`,
+  ItemStatusList: `${API_BASE_URL}getItemStatus`,     // add by Moseed 31-5-2025
+
+  
   
 };

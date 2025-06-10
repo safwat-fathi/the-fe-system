@@ -294,12 +294,14 @@ const saveInvoice = async () => {
         inv_status: 1,
         cr_date: invoiceDate,
         inv_notes: row.note || null,
+        // item:,
+        // inv:
       };
 
       console.log(`📦 تفاصيل السطر ${index + 1}:`);
       console.table(dtl);
 
-      const dtlRes = await fetch(`${API_BASE_URL}api_create_invoices_dtl`, {
+      const dtlRes = await fetch(`${API_BASE_URL}api_create_invoice_dtl`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dtl),
