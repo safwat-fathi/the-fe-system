@@ -6,7 +6,7 @@
   "dev": "next dev -p 3000 --turbopack",
   "build": "next build",
   "start": "next start",
-  "lint": "eslint . --ext .ts,.tsx -c .eslintrc.json --fix"
+  "lint": "eslint . --fix"
  },
  "dependencies": {
   "@heroicons/react": "^2.2.0",
@@ -43,6 +43,7 @@
   "sonner": "^2.0.3"
  },
  "devDependencies": {
+  "@eslint/eslintrc": "^3.3.1",
   "@next/eslint-plugin-next": "15.0.4",
   "@react-types/shared": "3.25.0",
   "@types/node": "20.5.7",
