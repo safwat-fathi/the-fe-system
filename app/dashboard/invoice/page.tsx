@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@heroui/react";
-import { FaPlus, FaTrash } from "react-icons/fa";
-import { API_BASE_URL, fetchData ,fetchGoldPrice} from "@/utilities/api";
-import QRCode from "react-qr-code";
+import { API_BASE_URL, fetchData, fetchGoldPrice } from "@/utilities/api";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import toast from "react-hot-toast";
 import ReactSelect from "react-select";
@@ -23,11 +21,13 @@ interface Item {
 interface Customer {
   id: number;
   cust_name: string;
+  cust_code?: string;
   vat_no?: string;
   address?: string;
   mobile?: string;
   acc?: number;
   handling?: string;
+  cust_type?: number;
   cr_no?: string;
   gov?: string;
   city?: string;
@@ -39,7 +39,9 @@ interface Customer {
 }
 
 interface InvoiceItem {
+  id: number;
   item_id: number | null;
+  item_code?: string;
   item_name?: string;
   quantity: number;
   weight: number;
@@ -54,20 +56,22 @@ export default function InvoicePage() {
   const [items, setItems] = useState<Item[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<number | null>(null);
-  const [qrValue, setQrValue] = useState<string>("");
   const [invoiceNumber, setInvoiceNumber] = useState<number>(1);
   const [invoiceDate, setInvoiceDate] = useState<string>("");
-  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([{
-    item_id: null,
-    quantity: 1,
-    weight: 0,
-    karat: "",
-    price_per_gram: 0,
-    discount: 0,
-    note: "",
-  }]);
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([
+    {
+      id: Date.now(),
+      item_id: null,
+      item_code: "",
+      quantity: 1,
+      weight: 0,
+      karat: "",
+      price_per_gram: 0,
+      discount: 0,
+      note: "",
+    },
+  ]);
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
-  const [deliveryType, setDeliveryType] = useState<string>("");
   const [employee, setEmployee] = useState<string>("");
   const [note, setNote] = useState<string>("");
   const [handlingMethod, setHandlingMethod] = useState<string>("");
@@ -78,18 +82,20 @@ export default function InvoicePage() {
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
   const selectedCust = customers.find(c => c.id === selectedCustomer);
 
-
   useEffect(() => {
     fetchItems();
     fetchCustomers();
-    const now = new Date();
-    // setInvoiceDate(now.toISOString());
     if (typeof window !== "undefined") {
       const now = new Date();
       setInvoiceDate(now.toISOString());
     }
     getGoldPrice();
+    getNextInvoiceNumber().then(setInvoiceNumber);
   }, []);
+
+  useEffect(() => {
+    setSelectedCustomer(null);
+  }, [paymentMethod]);
 
   const getGoldPrice = async () => {
   const price = await fetchGoldPrice();
@@ -120,24 +126,6 @@ export default function InvoicePage() {
   }
 
 
-const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
-  const updated = [...invoiceItems] as InvoiceItem[];
-
-  if (field === "item_id") {
-    updated[index][field] = parseInt(value) as never;
-  } else if (
-    field === "weight" ||
-    field === "quantity" ||
-    field === "price_per_gram" ||
-    field === "discount"
-  ) {
-    updated[index][field] = parseFloat(value) as never;
-  } else {
-    updated[index][field] = value as never;
-  }
-
-  setInvoiceItems(updated);
-};
 
 function handleFieldChange(index: number, field: keyof InvoiceItem, value: any) {
   const updated = [...invoiceItems];
@@ -159,7 +147,9 @@ function handleFieldChange(index: number, field: keyof InvoiceItem, value: any) 
     setInvoiceItems([
       ...updated,
       {
+        id: Date.now(),
         item_id: null,
+        item_code: "",
         quantity: 1,
         weight: 0,
         karat: "",
@@ -171,24 +161,9 @@ function handleFieldChange(index: number, field: keyof InvoiceItem, value: any) 
   }
 }
 
-  const addRow = () => {
-    setInvoiceItems([
-  ...invoiceItems,
-  {
-    item_id: null,
-    quantity: 1,
-    weight: 0,
-    karat: "",
-    price_per_gram: 0,
-    discount: 0,
-    note: "",
-  },
-]);
 
-  };
-
-  const removeRow = (index: number) => {
-    const updated = invoiceItems.filter((_, i) => i !== index);
+  const removeRow = (id: number) => {
+    const updated = invoiceItems.filter((row) => row.id !== id);
     setInvoiceItems(updated);
   };
 
@@ -215,7 +190,13 @@ const getNextInvoiceNumber = async (): Promise<number> => {
 const saveInvoice = async () => {
   if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
 
+  const validItems = invoiceItems.filter((itm) => itm.item_id);
+  if (validItems.length === 0) {
+    return toast.error("يرجى إدخال تفاصيل الفاتورة");
+  }
+
   const generatedInvId = await getNextInvoiceNumber();
+  setInvoiceNumber(generatedInvId);
 
   const employeeMap: Record<string, number> = {
     hashem: 1,
@@ -224,8 +205,10 @@ const saveInvoice = async () => {
 
   const invData = {
   inv_id: generatedInvId,
-  inv_date: invoiceDate,         
-  cust_id: selectedCustomer,
+  inv_date: invoiceDate,
+  cust: selectedCustomer,
+  cust_name: selectedCust?.cust_name || null,
+  cust_code: selectedCust?.cust_code || null,
   inv_amt: Math.round(netAmount),
   inv_net: Math.round(totalAmount), 
   tax: taxAmount.toFixed(2),
@@ -279,14 +262,14 @@ const saveInvoice = async () => {
     }
 
     const result = await res.json();
-    const invId = result.id;
 
-    for (const [index, row] of invoiceItems.entries()) {
+    for (const [index, row] of validItems.entries()) {
       if (!row.item_id) continue;
 
       const dtl = {
-        inv_id: invId,
+        inv: generatedInvId,
         item_id: row.item_id,
+        item: row.item_code ?? "",
         item_qty: row.quantity,
         item_price: row.price_per_gram,
         inv_tax: 15,
@@ -294,8 +277,6 @@ const saveInvoice = async () => {
         inv_status: 1,
         cr_date: invoiceDate,
         inv_notes: row.note || null,
-        // item:,
-        // inv:
       };
 
       console.log(`📦 تفاصيل السطر ${index + 1}:`);
@@ -438,17 +419,23 @@ const saveInvoice = async () => {
       className="w-full text-sm"
       classNamePrefix="react-select"
       isSearchable
-      options={customers.map((cust) => ({
-        value: cust.id,
-        label: cust.cust_name,
-      }))}
+      options={customers
+        .filter((cust) =>
+          paymentMethod === "cash" ? cust.cust_type === 99 : cust.cust_type !== 99
+        )
+        .map((cust) => ({
+          value: cust.id,
+          label: `${cust.cust_code ?? cust.id} - ${cust.cust_name}`,
+        }))}
       value={
         selectedCustomer
           ? {
               value: selectedCustomer,
-              label:
-                customers.find((c) => c.id === selectedCustomer)?.cust_name ||
-                `عميل رقم ${selectedCustomer}`,
+              label: `${
+                customers.find((c) => c.id === selectedCustomer)?.cust_code ?? selectedCustomer
+              } - ${
+                customers.find((c) => c.id === selectedCustomer)?.cust_name || `عميل رقم ${selectedCustomer}`
+              }`,
             }
           : null
       }
@@ -640,7 +627,7 @@ const saveInvoice = async () => {
         const total = totalBeforeTax - item.discount + tax;
 
         return (
-          <tr key={index}>
+          <tr key={item.id}>
             <td>
               <CreatableSelect
                 instanceId={`item-select-${index}`}
@@ -667,6 +654,7 @@ const saveInvoice = async () => {
                   updated[index] = {
                     ...updated[index],
                     item_id: newItem.id,
+                    item_code: newItem.item_code,
                     item_name: newItem.item_name,
                     karat: newItem.karat,
                     price_per_gram: newItem.item_price,
@@ -677,6 +665,7 @@ const saveInvoice = async () => {
                   const selected = items.find((itm) => itm.id === selectedOption?.value);
                   const updated = [...invoiceItems];
                   updated[index].item_id = selected?.id ?? null;
+                  updated[index].item_code = selected?.item_code ?? "";
                   updated[index].item_name = selected?.item_name ?? "";
                   updated[index].karat = selected?.karat ?? "";
                   updated[index].price_per_gram = selected?.item_price ?? 0;
@@ -686,7 +675,7 @@ const saveInvoice = async () => {
                   item.item_id
                     ? {
                         value: item.item_id,
-                        label: `${item.item_id} - ${item.item_name}`,
+                        label: `${item.item_code ?? item.item_id} - ${item.item_name}`,
                       }
                     : null
                 }
@@ -756,7 +745,7 @@ const saveInvoice = async () => {
             <td>
               <button
                 className="text-red-600 font-bold"
-                onClick={() => removeRow(index)}
+                onClick={() => removeRow(item.id)}
               >
                 ×
               </button>
