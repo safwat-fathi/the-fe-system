@@ -23,11 +23,26 @@ export async function fetchGoldPrice(): Promise<number | null> {
 }
 
 
+export function appendBranchParams(url: string): string {
+  if (typeof window !== "undefined") {
+    const com = localStorage.getItem("selectedBranch");
+    const year = localStorage.getItem("selectedYear");
+    if (com) {
+      const u = new URL(url, url.startsWith("http") ? undefined : API_BASE_URL);
+      u.searchParams.set("com", com);
+      if (year) u.searchParams.set("year", year);
+      return u.toString();
+    }
+  }
+  return url;
+}
+
 export async function fetchData<T>(
   url: string,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
 ): Promise<T | null> {
   try {
+    url = appendBranchParams(url);
     console.log(`Fetching data from: ${url}`);
     const response = await fetch(url, { method });
 
@@ -97,6 +112,15 @@ export const API_ENDPOINTS = {
   DELETE_INVOICE_BOX: (id: number) =>
     `${API_BASE_URL}api_delete_invoice_box/${id}`,
 
-  
-  
+  // companies
+  COMPANIES_LIST: `${API_BASE_URL}companies_list`,
+
 };
+
+export function fetchCompanies() {
+  return fetchData<any[]>(API_ENDPOINTS.COMPANIES_LIST);
+}
+
+export function apiFetch(input: string, init?: RequestInit) {
+  return fetch(appendBranchParams(input), init);
+}

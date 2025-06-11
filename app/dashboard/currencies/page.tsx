@@ -20,8 +20,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
-import { fetchData } from "@/utilities/api";
-import { API_BASE_URL } from "@/utilities/api";
+import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
 
 const API_URL = `${API_BASE_URL}currencies_list/`;
 const CREATE_URL = `${API_BASE_URL}api_create_currency`;
@@ -79,7 +78,7 @@ export default function CurrenciesTable() {
       const url = modalMode === "edit" && currentCurrency.id ? UPDATE_URL(currentCurrency.id) : CREATE_URL;
       const method = modalMode === "edit" ? "PUT" : "POST";
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(currentCurrency),
@@ -104,7 +103,7 @@ export default function CurrenciesTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذه العملة؟")) return;
     try {
-      const response = await fetch(DELETE_URL(id), {
+      const response = await apiFetch(DELETE_URL(id), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });

@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import { Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
-import { API_BASE_URL } from "@/utilities/api";
-import { API_ENDPOINTS } from "@/utilities/api";
+import { API_BASE_URL, API_ENDPOINTS, apiFetch } from "@/utilities/api";
 import { Checkbox } from "@heroui/react";
 import { useMemo } from "react";
 
@@ -126,7 +125,7 @@ export default function CategoriesItemsPage() {
 
 const fetchCatTypes = async () => {
   try {
-    const res = await fetch(API_ENDPOINTS.CatTypeList);
+    const res = await apiFetch(API_ENDPOINTS.CatTypeList);
     const data = await res.json();
     setCatTypes(Array.isArray(data.results) ? data.results : []);
   } catch (err) {
@@ -137,7 +136,7 @@ const fetchCatTypes = async () => {
 
 const fetchCatStatuses = async () => {
   try {
-    const res = await fetch(API_ENDPOINTS.CatStatusList);
+    const res = await apiFetch(API_ENDPOINTS.CatStatusList);
     const data = await res.json();
     setCatStatuses(Array.isArray(data.results) ? data.results : []);
   } catch (err) {
@@ -148,7 +147,7 @@ const fetchCatStatuses = async () => {
 
   const fetchBoxes = async () => {
   try {
-    const res = await fetch(API_ENDPOINTS.BOXES_LIST);
+    const res = await apiFetch(API_ENDPOINTS.BOXES_LIST);
     const data = await res.json();
     setBoxes(Array.isArray(data) ? data : []);
   } catch (err) {
@@ -159,7 +158,7 @@ const fetchCatStatuses = async () => {
   
   const fetchCategories = async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.CATEGORIES_LIST);
+      const res = await apiFetch(API_ENDPOINTS.CATEGORIES_LIST);
       const data = await res.json();
       setCategories(data.results || []);
     } catch (err) {
@@ -171,7 +170,7 @@ const fetchCatStatuses = async () => {
 const fetchItems = async (xcat: number ,xtype:number ) => {
 //const fetchItems = async (url: string = `${API_ENDPOINTS.ITEMS_LIST}/${selectedCatId}/${selectedTypeId}/`) => {
     try {
-      const res = await fetch('http://149.102.143.102:8000/api/items_list_p/' + xcat + '/' + xtype + '/');
+      const res = await apiFetch('http://149.102.143.102:8000/api/items_list_p/' + xcat + '/' + xtype + '/');
       const data = await res.json();
 
       const itemsArray = Array.isArray(data.results) ? data.results : [];
@@ -189,7 +188,7 @@ const fetchItems = async (xcat: number ,xtype:number ) => {
   
   const fetchItemTypes = async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.ITEM_TYPES_LIST);
+      const res = await apiFetch(API_ENDPOINTS.ITEM_TYPES_LIST);
       const data = await res.json();
       setItemTypes(data);
       } catch (err) {
@@ -199,7 +198,7 @@ const fetchItems = async (xcat: number ,xtype:number ) => {
   
   const fetchUnits = async () => {
     try {
-      const res = await fetch(API_ENDPOINTS.UNITS_LIST);
+      const res = await apiFetch(API_ENDPOINTS.UNITS_LIST);
       const data = await res.json();
       setUnits(data);
     } catch (err) {
@@ -262,7 +261,7 @@ const filteredItems = items;
       formData.append("unit", String(newItem.unit));
      // formData.append("item_img", newItem.item_img); // صورة حقيقية من input type="file"
   
-      const response = await fetch(API_ENDPOINTS.CREATE_ITEM, {
+      const response = await apiFetch(API_ENDPOINTS.CREATE_ITEM, {
         method: "POST",
         body: formData,
       });
@@ -318,7 +317,7 @@ const filteredItems = items;
         formData.append("item_img", newItem.item_img);
       }
   
-      const response = await fetch(`${API_BASE_URL}api_update_item/${newItem.id}`, {
+      const response = await apiFetch(`${API_BASE_URL}api_update_item/${newItem.id}`, {
         method: "PUT",
         body: formData,
       });
@@ -341,14 +340,14 @@ const filteredItems = items;
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}api_delete_item/`, {
+      const response = await apiFetch(`${API_BASE_URL}api_delete_item/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
       if (response.ok) {
         alert("تم حذف الصنف بنجاح ✅");
-        const updatedItems = await (await fetch(`${API_BASE_URL}cat_items_list/`)).json();
+        const updatedItems = await (await apiFetch(`${API_BASE_URL}cat_items_list/`)).json();
         setItems(updatedItems);
       } else {
         alert("فشل في حذف الصنف ❌");

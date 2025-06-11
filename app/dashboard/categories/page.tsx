@@ -19,7 +19,7 @@ import {
   ModalFooter,
 } from "@heroui/react";
 import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
-import { API_BASE_URL } from "@/utilities/api";
+import { API_BASE_URL, apiFetch } from "@/utilities/api";
 
 const API_URL = `${API_BASE_URL}categories_list/`;
 const CREATE_URL = `${API_BASE_URL}api_create_category`;
@@ -93,7 +93,7 @@ export default function CategoriesTable() {
 
   const loadData = useCallback(async () => {
     try {
-      const res = await fetch(API_URL);
+      const res = await apiFetch(API_URL);
       const data = await res.json();
       let categoriesList: any[] = Array.isArray(data) ? data : data.results || data.data || [];
       const sanitized = categoriesList.map(sanitizeCategory);
@@ -120,7 +120,7 @@ export default function CategoriesTable() {
 
   const handleAddCategory = async () => {
     try {
-      const response = await fetch(CREATE_URL, {
+      const response = await apiFetch(CREATE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newCategory),
@@ -160,7 +160,7 @@ export default function CategoriesTable() {
         purity: newCategory.purity ?? ""
       };
 
-      const response = await fetch(UPDATE_URL(newCategory.id), {
+      const response = await apiFetch(UPDATE_URL(newCategory.id), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedCategory),
@@ -182,7 +182,7 @@ export default function CategoriesTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف هذه الفئة؟")) return;
     try {
-      const response = await fetch(DELETE_URL(id), {
+      const response = await apiFetch(DELETE_URL(id), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
