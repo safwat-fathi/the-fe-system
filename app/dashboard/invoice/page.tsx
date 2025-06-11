@@ -262,14 +262,15 @@ const saveInvoice = async () => {
     }
 
     const result = await res.json();
+    const invPk = result.id;
 
     for (const [index, row] of validItems.entries()) {
       if (!row.item_id) continue;
 
       const dtl = {
-        inv: generatedInvId,
-        item_id: row.item_id,
-        item: row.item_code ?? "",
+        inv_id: invPk,
+        item: row.item_id,
+        item_desc: row.item_name,
         item_qty: row.quantity,
         item_price: row.price_per_gram,
         inv_tax: 15,
