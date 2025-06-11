@@ -86,6 +86,12 @@ export const API_ENDPOINTS = {
   VoucherTypeList: `${API_BASE_URL}getVoucherTypeList`,
   PayTypeList: `${API_BASE_URL}getPayTypeList`,
   ItemStatusList: `${API_BASE_URL}getItemStatus`,     // add by Moseed 31-5-2025
+  INVOICE_BOX_LIST: `${API_BASE_URL}invoices_box_list`,
+  CREATE_INVOICE_BOX: `${API_BASE_URL}api_create_invoice_box`,
+  UPDATE_INVOICE_BOX: (id: number) =>
+    `${API_BASE_URL}api_update_invoice_box/${id}`,
+  DELETE_INVOICE_BOX: (id: number) =>
+    `${API_BASE_URL}api_delete_invoice_box/${id}`,
 
   
   
