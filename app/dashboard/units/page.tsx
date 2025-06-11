@@ -20,7 +20,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
-import { API_BASE_URL } from "@/utilities/api";
+import { API_BASE_URL, apiFetch } from "@/utilities/api";
 
 const API_URL = `${API_BASE_URL}units_list/`;
 const CREATE_URL = `${API_BASE_URL}api_create_unit`;
@@ -58,7 +58,7 @@ export default function UnitsTable() {
 
   const loadUnits = useCallback(async () => {
     try {
-      const res = await fetch(API_URL);
+      const res = await apiFetch(API_URL);
       const data = await res.json();
       if (Array.isArray(data)) setUnits(data);
       else if (Array.isArray(data.results)) setUnits(data.results);
@@ -77,7 +77,7 @@ export default function UnitsTable() {
       const url = modalMode === "edit" && currentUnit.id ? UPDATE_URL(currentUnit.id) : CREATE_URL;
       const method = modalMode === "edit" ? "PUT" : "POST";
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(currentUnit),
@@ -101,7 +101,7 @@ export default function UnitsTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف هذه الوحدة؟")) return;
     try {
-      const response = await fetch(DELETE_URL(id), {
+      const response = await apiFetch(DELETE_URL(id), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });

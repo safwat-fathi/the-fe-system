@@ -13,7 +13,7 @@ import {
   SelectItem
 } from "@heroui/react";
 import { FaPlus } from "react-icons/fa";
-import { API_BASE_URL } from "@/utilities/api";
+import { API_BASE_URL, apiFetch } from "@/utilities/api";
 
 interface Account {
   id: number;
@@ -41,13 +41,13 @@ export default function AccountsTree() {
   const [currencies, setCurrencies] = useState<{ id: number; cur_name: string }[]>([]);
 
   const fetchAccounts = async () => {
-    const res = await fetch(`${API_BASE_URL}accounts_list`);
+    const res = await apiFetch(`${API_BASE_URL}accounts_list`);
     const data = await res.json();
     setAccounts(data);
   };
 
   const fetchCurrencies = async () => {
-    const res = await fetch(`${API_BASE_URL}currencies_list/`);
+    const res = await apiFetch(`${API_BASE_URL}currencies_list/`);
     const data = await res.json();
     setCurrencies(data);
   };
@@ -89,7 +89,7 @@ export default function AccountsTree() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}api_create_account`, {
+      const response = await apiFetch(`${API_BASE_URL}api_create_account`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

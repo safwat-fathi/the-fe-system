@@ -20,8 +20,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
-import { fetchData } from "@/utilities/api";
-import { API_BASE_URL } from "@/utilities/api";
+import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
 
 const API_URL = `${API_BASE_URL}cust_type_list`;
 const CREATE_URL = `${API_BASE_URL}api_create_cust_type`;
@@ -71,7 +70,7 @@ export default function CustomerTypesTable() {
       const url = modalMode === "edit" && currentType.id ? UPDATE_URL(currentType.id) : CREATE_URL;
       const method = modalMode === "edit" ? "PUT" : "POST";
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(currentType),
@@ -94,7 +93,7 @@ export default function CustomerTypesTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد من حذف نوع العميل؟")) return;
     try {
-      const response = await fetch(DELETE_URL(id), {
+      const response = await apiFetch(DELETE_URL(id), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });

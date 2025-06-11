@@ -4,8 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from 'next/navigation';
 import ReactSelect from "react-select";
 import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
-import { fetchData } from "@/utilities/api";
-import { API_BASE_URL } from "@/utilities/api";
+import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
 
 import {
   Table,
@@ -179,7 +178,7 @@ if (!cleanedCustomer.cust_type) {
 
     console.log("🚀 البيانات المرسلة:", cleanedCustomer);
 
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cleanedCustomer),
@@ -242,7 +241,7 @@ if (!cleanedCustomer.cust_type) {
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذا العميل؟")) return;
     try {
-      const response = await fetch(DELETE_URL(id), {
+      const response = await apiFetch(DELETE_URL(id), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
