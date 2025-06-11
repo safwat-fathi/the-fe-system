@@ -23,7 +23,7 @@ import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
 import { API_ENDPOINTS } from "@/utilities/api";
 
 const {
-  INVOICE_BOXES_LIST,
+  INVOICE_BOX_LIST,
   CREATE_INVOICE_BOX,
   UPDATE_INVOICE_BOX,
   DELETE_INVOICE_BOX,
@@ -56,7 +56,7 @@ export default function InvoiceBoxPage() {
 
   const loadBoxes = useCallback(async () => {
     try {
-      const res = await fetch(INVOICE_BOXES_LIST);
+      const res = await fetch(INVOICE_BOX_LIST);
       const data = await res.json();
       if (Array.isArray(data)) setBoxes(data);
       else if (Array.isArray(data.results)) setBoxes(data.results);
