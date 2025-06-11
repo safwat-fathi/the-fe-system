@@ -28,6 +28,7 @@ const dataLinks = [
   { name: "الأصناف", href: "/dashboard/items", icon: <FaBoxOpen /> },
   { name: "الفئات", href: "/dashboard/categories", icon: <FaTags /> },
   { name: "الوحدات", href: "/dashboard/units", icon: <FaTags /> },
+  { name: "صناديق الفواتير", href: "/dashboard/invoice_box", icon: <FaTags /> },
 
 ];
 
