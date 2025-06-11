@@ -6,7 +6,7 @@
   "dev": "next dev -p 3000 --turbopack",
   "build": "next build",
   "start": "next start",
-  "lint": "eslint . --fix"
+  "lint": "eslint \"**/*.{js,jsx,ts,tsx}\" --fix"
  },
  "dependencies": {
   "@heroicons/react": "^2.2.0",
