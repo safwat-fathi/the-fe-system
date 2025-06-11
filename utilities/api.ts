@@ -67,6 +67,10 @@ export const API_ENDPOINTS = {
   CAT_ITEMS_LIST: `${API_BASE_URL}cat_items_list/`,
   GET_ITEMS_LIST: `${API_BASE_URL}GetItemsList/`,
   BOXES_LIST: `${API_BASE_URL}boxes_list`,
+  CREATE_INVOICE_BOX: `${API_BASE_URL}api_create_box`,
+  UPDATE_INVOICE_BOX: (id: number) => `${API_BASE_URL}api_update_box/${id}`,
+  DELETE_INVOICE_BOX: (id: number) => `${API_BASE_URL}api_delete_box/${id}`,
+  INVOICE_BOXES_LIST: `${API_BASE_URL}boxes_list`,
 
   //codec api's
   Companies_List: `${API_BASE_URL}getCompaniesList`,
