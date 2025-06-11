@@ -268,7 +268,7 @@ const saveInvoice = async () => {
       if (!row.item_id) continue;
 
       const dtl = {
-        inv_id: invPk,
+        inv: invPk,
         item: row.item_id,
         item_desc: row.item_name,
         item_qty: row.quantity,
