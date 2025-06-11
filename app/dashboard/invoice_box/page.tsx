@@ -29,12 +29,7 @@ const {
   DELETE_INVOICE_BOX,
 } = API_ENDPOINTS;
 
-interface InvoiceBox {
-  id: number;
-  box_name: string;
-  box_name_e: string;
-  box_status: boolean;
-}
+import type { InvoiceBox } from "@/types/invoice-box";
 
 const columns = [
   { name: "رقم الصندوق", uid: "id" },
