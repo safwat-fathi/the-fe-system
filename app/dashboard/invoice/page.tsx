@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@heroui/react";
 import { API_BASE_URL, fetchData, fetchGoldPrice } from "@/utilities/api";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import toast from "react-hot-toast";
-import ReactSelect from "react-select";
-import CreatableSelect from "react-select/creatable";
+import InvoiceSelectors from "@/components/InvoiceSelectors";
+import InvoiceItemTable from "@/components/InvoiceItemTable";
+import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
 
 
 interface Item {
@@ -127,45 +127,6 @@ export default function InvoicePage() {
 
 
 
-function handleFieldChange(index: number, field: keyof InvoiceItem, value: any) {
-  const updated = [...invoiceItems];
-
-  if (["weight", "price_per_gram", "quantity", "discount"].includes(field)) {
-    updated[index][field] = parseFloat(value) || 0;
-  } else {
-    updated[index][field] = value;
-  }
-
-  setInvoiceItems(updated);
-
-  // ✅ إضافة سطر تلقائي إذا المستخدم وصل لنهاية الجدول وبدأ يعبّي
-  const isLastRow = index === invoiceItems.length - 1;
-  const isRowFilled =
-    updated[index].item_id || updated[index].item_name || updated[index].weight > 0;
-
-  if (isLastRow && isRowFilled) {
-    setInvoiceItems([
-      ...updated,
-      {
-        id: Date.now(),
-        item_id: null,
-        item_code: "",
-        quantity: 1,
-        weight: 0,
-        karat: "",
-        price_per_gram: 0,
-        discount: 0,
-        note: "",
-      },
-    ]);
-  }
-}
-
-
-  const removeRow = (id: number) => {
-    const updated = invoiceItems.filter((row) => row.id !== id);
-    setInvoiceItems(updated);
-  };
 
   const totalAmount = invoiceItems.reduce((sum, item) => sum + (item.quantity * item.price_per_gram), 0);
   const taxAmount = totalAmount * 0.15;
@@ -383,398 +344,43 @@ const saveInvoice = async () => {
 
 
   return (
-    <div className="p-6 max-w-[1500px] mx-auto bg-white rounded shadow">
-<div className="flex justify-between items-center border-b pb-3 mb-6">
-  <div className="flex items-center gap-4">
-    <span className="text-lg font-bold text-black-400">فاتورة</span>
-    <span className="text-lg font-bold">#{invoiceNumber}</span>
-    <span className="text-sm text-gray-400">{formattedDateTime}</span>
-  </div>
-<div className="flex items-center gap-2">
-  <Button
-    onClick={saveInvoice}
-    className="bg-green-600 text-white hover:bg-green-700 px-2 py-1 text-sm rounded"
-  >
-    <i className="bi bi-save me-2"></i> حفظ الفاتورة
-  </Button>
-  <Button
-    onClick={() => window.location.reload()}
-    className="bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 text-sm rounded"
-  >
-    <i className="bi bi-file-earmark-plus me-2"></i> فاتورة جديدة
-  </Button>
-  <Button
-    onClick={previewInvoice}
-    className="bg-gray-600 text-white hover:bg-gray-700 px-2 py-1 text-sm rounded"
-  >
-    <i className="bi bi-eye me-2"></i> معاينة الفاتورة
-  </Button>
-</div>
-
-</div>
-<div className="grid grid-cols-12 gap-2 text-sm mb-4">
-  <div className="col-span-4">
-    <label className="block mb-1">العميل:</label>
-    <ReactSelect
-      instanceId="customer-select"
-      className="w-full text-sm"
-      classNamePrefix="react-select"
-      isSearchable
-      options={customers
-        .filter((cust) =>
-          paymentMethod === "cash" ? cust.cust_type === 99 : cust.cust_type !== 99
-        )
-        .map((cust) => ({
-          value: cust.id,
-          label: `${cust.cust_code ?? cust.id} - ${cust.cust_name}`,
-        }))}
-      value={
-        selectedCustomer
-          ? {
-              value: selectedCustomer,
-              label: `${
-                customers.find((c) => c.id === selectedCustomer)?.cust_code ?? selectedCustomer
-              } - ${
-                customers.find((c) => c.id === selectedCustomer)?.cust_name || `عميل رقم ${selectedCustomer}`
-              }`,
-            }
-          : null
-      }
-      onChange={(selectedOption) => {
-        setSelectedCustomer(selectedOption?.value ?? null);
-
-        const selectedCust = customers.find((c) => c.id === selectedOption?.value);
-
-        if (selectedCust) {
-          if (selectedCust.mobile) setMobileMethod(selectedCust.mobile);
-          if (selectedCust.acc) setHandlingMethod(selectedCust.handling.toString());
-          if (selectedCust.vat_no) setVatNumber(selectedCust.vat_no);
-        }
-      }}
-      placeholder="اختر العميل..."
-      styles={{
-        control: (base) => ({ ...base, height: 38, minHeight: 38 }),
-        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-      }}
-      menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-      menuPosition="fixed"
-      components={{ IndicatorSeparator: () => null }}
-    />
-  </div>
-
-
-  <div className="col-span-4">
-    <label className="block mb-1">طريقة الدفع:</label>
-    <div className="w-full h-[38px] border rounded flex items-center justify-around px-2">
-      <label className="flex items-center gap-1">
-        <input
-          type="radio"
-          name="payment"
-          value="cash"
-          checked={paymentMethod === "cash"}
-          onChange={(e) => setPaymentMethod(e.target.value)}
-        />
-        نقداً
-      </label>
-      <label className="flex items-center gap-1">
-        <input
-          type="radio"
-          name="payment"
-          value="credit"
-          checked={paymentMethod === "credit"}
-          onChange={(e) => setPaymentMethod(e.target.value)}
-        />
-        أجل
-      </label>
-    </div>
-  </div>
-
-  <div className="col-span-4">
-  <label className="block mb-1">على:</label>
-  <select
-    className="w-full h-[38px] border px-2 rounded"
-    value={payType}
-    onChange={(e) => setPayType(parseInt(e.target.value))}
-  >
-    <option value={1}>القيمة</option>
-    <option value={2}>الأجور</option>
-    <option value={3}>قيمة وأجور</option>
-  </select>
-</div>
-
-  <div className="col-span-4">
-    <label className="block mb-1">رقم المرجع:</label>
-    <input
-      type="text"
-      className="w-full h-[38px] border px-2 rounded"
-      value={referenceNumber}
-      onChange={(e) => setReferenceNumber(e.target.value)}
-      placeholder=" المرجع "
-    />
-  </div>
-
-  <div className="col-span-4">
-    <label className="block mb-1">الرقم الضريبي:</label>
-    <input
-      type="text"
-      className="w-full h-[38px] border px-2 rounded"
-      value={vatNumber}
-      readOnly
-      placeholder="الرقم الضريبي"
-    />
-  </div>
-    
-  <div className="col-span-4">
-    <label className="block mb-1">مناولة:</label>
-    <input
-      type="text"
-      className="w-full h-[38px] border px-2 rounded"
-      value={handlingMethod}
-      onChange={(e) => setHandlingMethod(e.target.value)}
-      placeholder="مناولة"
-    />
-  </div>
-
-  <div className="col-span-4">
-    <label className="block mb-1">جوال:</label>
-    <input
-      type="text"
-      className="w-full h-[38px] border px-2 rounded"
-      value={mobileMethod}
-      onChange={(e) => setMobileMethod(e.target.value)}
-      placeholder=" الجوال"
-    />
-  </div>
-
-  <div className="col-span-4">
-    <label className="block mb-1">البائع:</label>
-    <select
-      className="w-full h-[38px] border px-2 rounded"
-      value={employee}
-      onChange={(e) => setEmployee(e.target.value)}
+    <InvoiceTotalsActions
+      invoiceNumber={invoiceNumber}
+      formattedDateTime={formattedDateTime}
+      saveInvoice={saveInvoice}
+      previewInvoice={previewInvoice}
+      totalAmount={totalAmount}
+      taxAmount={taxAmount}
+      netAmount={netAmount}
     >
-      <option value="">-- اختر --</option>
-      <option value="hashem">هاشم</option>
-      <option value="othman">عثمان</option>
-    </select>
-  </div>
-
-<div className="col-span-4">
-  <label className="block mb-1">سعر الذهب بالريال:</label>
-  <input
-    type="text"
-    className="w-full h-[38px] border px-2 rounded bg-gray-100"
-    value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
-    readOnly
-  />
-</div>
-
-  <div className="col-span-12">
-    <label className="block mb-1">البيان:</label>
-    <input
-      type="text"
-      className="w-full h-[38px] border px-2 rounded"
-      value={note}
-      onChange={(e) => setNote(e.target.value)}
-      placeholder="البيان"
-    />
-  </div>
-
-  <div className="col-span-12 text-sm text-gray-700">
-  {(() => {
-    const cust = customers.find((c) => c.id === selectedCustomer);
-    if (!cust) return null;
-
-    return (
-      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
-        {cust.cr_no && <span>السجل: {cust.cr_no}</span>}
-        {cust.gov && <span>العنوان: {cust.gov}</span>}
-        {cust.city && <span>المدينة: {cust.city}</span>}
-        {cust.area && <span>المنطقة: {cust.area}</span>}
-        {cust.street && <span>الشارع: {cust.street}</span>}
-        {cust.build_no && <span>مبنى: {cust.build_no}</span>}
-        {cust.post_no && <span>ص.ب: {cust.post_no}</span>}
-        {cust.post_code && <span>الرمز: {cust.post_code}</span>}
-      </div>
-    );
-  })()}
-</div>
-
-</div>
-
-
-      {/* جدول الأصناف */}
-<div className="w-full overflow-x-auto mb-6 max-w-full">
-  <table className="min-w-[1000px] border text-sm text-center table-fixed">
-    <thead className="bg-gray-100 text-xs font-semibold">
-      <tr>
-        <th className="w-[400px]">اسم الصنف</th>
-        <th className="w-[100px]">الوزن القائم</th>
-        <th className="w-[100px]">وزن معايير</th>
-        <th className="w-[80px]">العيار</th>
-        <th className="w-[100px]">سعر الجرام</th>
-        <th className="w-[80px]">نسبة الضريبة</th>
-        <th className="w-[100px]">الضريبة</th>
-        <th className="w-[100px]">المبلغ</th>
-        <th className="w-[130px]">الإجمالي شامل الضريبة</th>
-        <th className="w-[200px]">البيان</th>
-        <th className="w-[40px]"></th>
-      </tr>
-    </thead>
-    <tbody>
-      {invoiceItems.map((item, index) => {
-        const totalBeforeTax = item.weight * item.price_per_gram;
-        const tax = (totalBeforeTax - item.discount) * 0.15;
-        const total = totalBeforeTax - item.discount + tax;
-
-        return (
-          <tr key={item.id}>
-            <td>
-              <CreatableSelect
-                instanceId={`item-select-${index}`}
-                className="text-xs"
-                classNamePrefix="select"
-                isSearchable
-                isClearable
-                isCreatable
-                options={items.map((item) => ({
-                  value: item.id,
-                  label: `${item.item_code} - ${item.item_name}`,
-                }))}
-                formatCreateLabel={(inputValue) => `إضافة صنف جديد: "${inputValue}"`}
-                onCreateOption={(inputValue) => {
-                  const newItem = {
-                    id: Math.floor(Math.random() * 1000000),
-                    item_code: "000000", // أو خليه فارغ حسب الحاجة
-                    item_name: inputValue,
-                    karat: "",
-                    item_price: 0,
-                  };
-                  setItems((prev) => [...prev, newItem]);
-                  const updated = [...invoiceItems];
-                  updated[index] = {
-                    ...updated[index],
-                    item_id: newItem.id,
-                    item_code: newItem.item_code,
-                    item_name: newItem.item_name,
-                    karat: newItem.karat,
-                    price_per_gram: newItem.item_price,
-                  };
-                  setInvoiceItems(updated);
-                }}
-                onChange={(selectedOption) => {
-                  const selected = items.find((itm) => itm.id === selectedOption?.value);
-                  const updated = [...invoiceItems];
-                  updated[index].item_id = selected?.id ?? null;
-                  updated[index].item_code = selected?.item_code ?? "";
-                  updated[index].item_name = selected?.item_name ?? "";
-                  updated[index].karat = selected?.karat ?? "";
-                  updated[index].price_per_gram = selected?.item_price ?? 0;
-                  setInvoiceItems(updated);
-                }}
-                value={
-                  item.item_id
-                    ? {
-                        value: item.item_id,
-                        label: `${item.item_code ?? item.item_id} - ${item.item_name}`,
-                      }
-                    : null
-                }
-                placeholder="اختر الصنف..."
-                styles={{
-                  control: (base) => ({ ...base, minHeight: 30, height: 30 }),
-                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                }}
-                menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                menuPosition="fixed"
-                components={{ IndicatorSeparator: () => null }}
-              />
-
-            </td>
-            <td>
-              <input
-                type="number"
-                className="border w-full p-1 text-xs text-center"
-
-                style={{ minWidth: 0, maxWidth: "100%" }}
-                value={item.weight}
-                onChange={(e) => handleFieldChange(index, "weight", e.target.value)}
-              />
-            </td>
-            <td>
-              <input
-                type="number"
-                className="border w-full p-1 text-xs text-center"
-
-                style={{ minWidth: 0, maxWidth: "100%" }}
-                value={item.quantity}
-                onChange={(e) => handleFieldChange(index, "quantity", e.target.value)}
-              />
-            </td>
-            <td>
-              <input
-                className="border w-full p-1 text-xs text-center"
-
-                style={{ minWidth: 0, maxWidth: "100%" }}
-                value={item.karat}
-                onChange={(e) => handleFieldChange(index, "karat", e.target.value)}
-              />
-            </td>
-            <td>
-              <input
-                type="number"
-                className="border w-full p-1 text-xs text-center"
-
-                style={{ minWidth: 0, maxWidth: "100%" }}
-                value={item.price_per_gram}
-                onChange={(e) => handleFieldChange(index, "price_per_gram", e.target.value)}
-              />
-            </td>
-            <td>15%</td>
-            <td>{tax.toFixed(2)}</td>
-            <td>{(totalBeforeTax - item.discount).toFixed(2)}</td>
-            <td>{total.toFixed(2)}</td>
-            <td>
-              <input
-                className="border w-full p-1 text-xs text-center"
-
-                style={{ minWidth: 0, maxWidth: "100%" }}
-                value={item.note}
-                onChange={(e) => handleFieldChange(index, "note", e.target.value)}
-              />
-            </td>
-            <td>
-              <button
-                className="text-red-600 font-bold"
-                onClick={() => removeRow(item.id)}
-              >
-                ×
-              </button>
-            </td>
-          </tr>
-        );
-      })}
-    </tbody>
-  </table>
-</div>
-
-<div className="flex justify-between items-center mt-4">
-
-  <div className="flex items-center gap-6 text-sm font-semibold">
-    <div className="text-gray-600">
-      <span>الإجمالي: </span>
-      <span>{totalAmount.toFixed(2)} ﷼</span>
-    </div>
-    <div className="text-green-500">
-      <span>الضريبة: </span>
-      <span>{taxAmount.toFixed(2)} ﷼</span>
-    </div>
-    <div className="text-gray-600 text-base font-bold">
-      <span>الصافي: </span>
-      <span>{netAmount.toFixed(2)} ﷼</span>
-    </div>
-  </div>
-</div>
-    </div>
+      <InvoiceSelectors
+        customers={customers}
+        selectedCustomer={selectedCustomer}
+        setSelectedCustomer={setSelectedCustomer}
+        paymentMethod={paymentMethod}
+        setPaymentMethod={setPaymentMethod}
+        payType={payType}
+        setPayType={setPayType}
+        referenceNumber={referenceNumber}
+        setReferenceNumber={setReferenceNumber}
+        vatNumber={vatNumber}
+        setVatNumber={setVatNumber}
+        handlingMethod={handlingMethod}
+        setHandlingMethod={setHandlingMethod}
+        mobileMethod={mobileMethod}
+        setMobileMethod={setMobileMethod}
+        employee={employee}
+        setEmployee={setEmployee}
+        goldPrice={goldPrice}
+        note={note}
+        setNote={setNote}
+      />
+      <InvoiceItemTable
+        items={items}
+        setItems={setItems}
+        invoiceItems={invoiceItems}
+        setInvoiceItems={setInvoiceItems}
+      />
+    </InvoiceTotalsActions>
   );
 }
