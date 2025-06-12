@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { API_BASE_URL, fetchData, fetchGoldPrice } from "@/utilities/api";
+import {
+  API_BASE_URL,
+  API_ENDPOINTS,
+  fetchData,
+  fetchGoldPrice,
+} from "@/utilities/api";
+
+const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
 import "bootstrap-icons/font/bootstrap-icons.css";
 import toast from "react-hot-toast";
 import InvoiceSelectors from "@/components/InvoiceSelectors";
@@ -255,7 +262,7 @@ const saveInvoice = async () => {
       console.log(`📦 تفاصيل السطر ${index + 1}:`);
       console.table(dtl);
 
-      const dtlRes = await fetch(`${API_BASE_URL}api_create_invoice_dtl`, {
+      const dtlRes = await fetch(CREATE_INVOICE_DTL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dtl),
