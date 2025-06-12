@@ -134,8 +134,16 @@ export default function InvoicePage() {
 
 
   const totalAmount = invoiceItems.reduce((sum, item) => {
-    const qty = payType === 2 ? item.quantity : item.weight;
-    return sum + qty * item.price_per_gram - item.discount;
+    let rowTotal = 0;
+    if (payType === 1) {
+      rowTotal = item.weight * item.price_per_gram;
+    } else if (payType === 2) {
+      rowTotal = item.quantity * (item.price_w ?? 0);
+    } else {
+      rowTotal = item.weight * item.price_per_gram +
+        item.quantity * (item.price_w ?? 0);
+    }
+    return sum + rowTotal - item.discount;
   }, 0);
   const taxAmount = totalAmount * 0.15;
   const netAmount = totalAmount + taxAmount;
@@ -283,10 +291,17 @@ const saveInvoice = async () => {
   const customer = customers.find((c) => c.id === selectedCustomer);
   const rowsHtml = invoiceItems
     .map((item, index) => {
-      const baseQty = payType === 2 ? item.quantity : item.weight;
-      const totalBeforeTax = baseQty * item.price_per_gram;
-      const tax = (totalBeforeTax - item.discount) * 0.15;
-      const total = totalBeforeTax - item.discount + tax;
+      let rowTotal = 0;
+      if (payType === 1) {
+        rowTotal = item.weight * item.price_per_gram;
+      } else if (payType === 2) {
+        rowTotal = item.quantity * (item.price_w ?? 0);
+      } else {
+        rowTotal = item.weight * item.price_per_gram +
+          item.quantity * (item.price_w ?? 0);
+      }
+      const tax = (rowTotal - item.discount) * 0.15;
+      const total = rowTotal - item.discount + tax;
       return `
       <tr>
         <td>${index + 1}</td>
@@ -297,7 +312,7 @@ const saveInvoice = async () => {
         <td>${item.price_per_gram.toFixed(2)}</td>
         <td>15%</td>
         <td>${tax.toFixed(2)}</td>
-        <td>${(totalBeforeTax - item.discount).toFixed(2)}</td>
+        <td>${(rowTotal - item.discount).toFixed(2)}</td>
         <td>${total.toFixed(2)}</td>
       </tr>`;
     })
