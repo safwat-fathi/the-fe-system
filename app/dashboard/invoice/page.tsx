@@ -133,7 +133,10 @@ export default function InvoicePage() {
 
 
 
-  const totalAmount = invoiceItems.reduce((sum, item) => sum + (item.quantity * item.price_per_gram), 0);
+  const totalAmount = invoiceItems.reduce((sum, item) => {
+    const qty = payType === 2 ? item.quantity : item.weight;
+    return sum + qty * item.price_per_gram - item.discount;
+  }, 0);
   const taxAmount = totalAmount * 0.15;
   const netAmount = totalAmount + taxAmount;
 
@@ -278,25 +281,27 @@ const saveInvoice = async () => {
   if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
   const customer = customers.find((c) => c.id === selectedCustomer);
-  const rowsHtml = invoiceItems.map((item, index) => {
-    const totalBeforeTax = item.weight * item.price_per_gram;
-    const tax = (totalBeforeTax - item.discount) * 0.15;
-    const total = totalBeforeTax - item.discount + tax;
-    return `
+  const rowsHtml = invoiceItems
+    .map((item, index) => {
+      const baseQty = payType === 2 ? item.quantity : item.weight;
+      const totalBeforeTax = baseQty * item.price_per_gram;
+      const tax = (totalBeforeTax - item.discount) * 0.15;
+      const total = totalBeforeTax - item.discount + tax;
+      return `
       <tr>
         <td>${index + 1}</td>
         <td>${item.item_name || ""}</td>
-        <td>${item.quantity}</td>
-        <td>${item.weight.toFixed(2)}</td>
+        ${payType !== 1 ? `<td>${item.quantity}</td>` : ""}
+        ${payType !== 2 ? `<td>${item.weight.toFixed(2)}</td>` : ""}
         <td>${item.karat}</td>
         <td>${item.price_per_gram.toFixed(2)}</td>
         <td>15%</td>
         <td>${tax.toFixed(2)}</td>
         <td>${(totalBeforeTax - item.discount).toFixed(2)}</td>
         <td>${total.toFixed(2)}</td>
-      </tr>
-    `;
-  }).join("");
+      </tr>`;
+    })
+    .join("");
 
   const htmlContent = `
     <html dir="rtl">
@@ -322,8 +327,8 @@ const saveInvoice = async () => {
           <tr>
             <th>#</th>
             <th>اسم الصنف</th>
-            <th>العدد</th>
-            <th>الوزن</th>
+            ${payType !== 1 ? '<th>العدد</th>' : ''}
+            ${payType !== 2 ? '<th>الوزن</th>' : ''}
             <th>العيار</th>
             <th>سعر الجرام</th>
             <th>الضريبة</th>
@@ -386,6 +391,7 @@ const saveInvoice = async () => {
         invoiceItems={invoiceItems}
         setInvoiceItems={setInvoiceItems}
         goldPrice={goldPrice}
+        payType={payType}
       />
     </InvoiceTotalsActions>
   );
