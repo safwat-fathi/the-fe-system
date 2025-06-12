@@ -83,6 +83,17 @@ export default function InvoicePage() {
   const selectedCust = customers.find(c => c.id === selectedCustomer);
 
   useEffect(() => {
+    if (goldPrice !== null) {
+      setInvoiceItems(items =>
+        items.map(itm => ({
+          ...itm,
+          price_per_gram: itm.price_per_gram || goldPrice,
+        }))
+      );
+    }
+  }, [goldPrice]);
+
+  useEffect(() => {
     fetchItems();
     fetchCustomers();
     if (typeof window !== "undefined") {
@@ -380,6 +391,7 @@ const saveInvoice = async () => {
         setItems={setItems}
         invoiceItems={invoiceItems}
         setInvoiceItems={setInvoiceItems}
+        goldPrice={goldPrice}
       />
     </InvoiceTotalsActions>
   );
