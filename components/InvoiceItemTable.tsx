@@ -1,7 +1,8 @@
 "use client";
 
-import CreatableSelect from "react-select/creatable";
 import type { InvoiceItem } from "@/types/invoice-item";
+
+import CreatableSelect from "react-select/creatable";
 
 interface Item {
   id: number;
@@ -28,10 +29,23 @@ export default function InvoiceItemTable({
   goldPrice,
   payType,
 }: Props) {
-  const handleFieldChange = (index: number, field: keyof InvoiceItem, value: any) => {
+  const handleFieldChange = (
+    index: number,
+    field: keyof InvoiceItem,
+    value: any,
+  ) => {
     const updated = [...invoiceItems];
 
-    if (["weight", "price_per_gram", "price_w", "quantity", "discount"].includes(field)) {
+    if (
+      [
+        "weight",
+        "price_per_gram",
+        "price_w",
+        "quantity",
+        "qty",
+        "discount",
+      ].includes(field)
+    ) {
       updated[index][field] = parseFloat(value) || 0;
     } else {
       // @ts-ignore
@@ -41,7 +55,10 @@ export default function InvoiceItemTable({
     setInvoiceItems(updated);
 
     const isLastRow = index === invoiceItems.length - 1;
-    const isRowFilled = updated[index].item_id || updated[index].item_name || updated[index].weight > 0;
+    const isRowFilled =
+      updated[index].item_id ||
+      updated[index].item_name ||
+      updated[index].weight > 0;
 
     if (isLastRow && isRowFilled) {
       setInvoiceItems([
@@ -50,6 +67,7 @@ export default function InvoiceItemTable({
           id: Date.now(),
           item_id: null,
           item_code: "",
+          qty: 0,
           quantity: 0,
           weight: 0,
           karat: "",
@@ -64,6 +82,7 @@ export default function InvoiceItemTable({
 
   const removeRow = (id: number) => {
     const updated = invoiceItems.filter((row) => row.id !== id);
+
     setInvoiceItems(updated);
   };
 
@@ -73,6 +92,7 @@ export default function InvoiceItemTable({
         <thead className="bg-gray-100 text-xs font-semibold">
           <tr>
             <th className="w-[400px]">اسم الصنف</th>
+            <th className="w-[60px]">العدد</th>
             {(payType === 1 || payType === 3) && (
               <th className="w-[100px]">الوزن القائم</th>
             )}
@@ -92,7 +112,7 @@ export default function InvoiceItemTable({
             <th className="w-[100px]">المبلغ</th>
             <th className="w-[130px]">الإجمالي شامل الضريبة</th>
             <th className="w-[200px]">البيان</th>
-            <th className="w-[40px]"></th>
+            <th className="w-[40px]" />
           </tr>
         </thead>
         <tbody>
@@ -106,17 +126,57 @@ export default function InvoiceItemTable({
               <tr key={item.id}>
                 <td>
                   <CreatableSelect
-                    instanceId={`item-select-${index}`}
-                    className="text-xs"
-                    classNamePrefix="select"
-                    isSearchable
                     isClearable
                     isCreatable
+                    isSearchable
+                    className="text-xs"
+                    classNamePrefix="select"
+                    components={{ IndicatorSeparator: () => null }}
+                    formatCreateLabel={(inputValue) =>
+                      `إضافة صنف جديد: "${inputValue}"`
+                    }
+                    instanceId={`item-select-${index}`}
+                    menuPortalTarget={
+                      typeof window !== "undefined" ? document.body : null
+                    }
+                    menuPosition="fixed"
                     options={items.map((it) => ({
                       value: it.id,
                       label: `${it.item_code} - ${it.item_name}`,
                     }))}
-                    formatCreateLabel={(inputValue) => `إضافة صنف جديد: "${inputValue}"`}
+                    placeholder="اختر الصنف..."
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        minHeight: 30,
+                        height: 30,
+                      }),
+                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                    }}
+                    value={
+                      item.item_id
+                        ? {
+                            value: item.item_id,
+                            label: `${item.item_code ?? item.item_id} - ${item.item_name}`,
+                          }
+                        : null
+                    }
+                    onChange={(selectedOption) => {
+                      const selected = items.find(
+                        (itm) => itm.id === selectedOption?.value,
+                      );
+                      const updated = [...invoiceItems];
+
+                      updated[index].item_id = selected?.id ?? null;
+                      updated[index].item_code = selected?.item_code ?? "";
+                      updated[index].item_name = selected?.item_name ?? "";
+                      updated[index].karat = selected?.karat ?? "";
+                      updated[index].price_per_gram =
+                        goldPrice ?? selected?.item_price ?? 0;
+                      updated[index].price_w =
+                        goldPrice ?? selected?.item_price ?? 0;
+                      setInvoiceItems(updated);
+                    }}
                     onCreateOption={(inputValue) => {
                       const newItem = {
                         id: Math.floor(Math.random() * 1000000),
@@ -125,8 +185,10 @@ export default function InvoiceItemTable({
                         karat: "",
                         item_price: 0,
                       };
+
                       setItems([...items, newItem]);
                       const updated = [...invoiceItems];
+
                       updated[index] = {
                         ...updated[index],
                         item_id: newItem.id,
@@ -138,54 +200,42 @@ export default function InvoiceItemTable({
                       };
                       setInvoiceItems(updated);
                     }}
-                    onChange={(selectedOption) => {
-                      const selected = items.find((itm) => itm.id === selectedOption?.value);
-                      const updated = [...invoiceItems];
-                      updated[index].item_id = selected?.id ?? null;
-                      updated[index].item_code = selected?.item_code ?? "";
-                      updated[index].item_name = selected?.item_name ?? "";
-                      updated[index].karat = selected?.karat ?? "";
-                      updated[index].price_per_gram = goldPrice ?? selected?.item_price ?? 0;
-                      updated[index].price_w = goldPrice ?? selected?.item_price ?? 0;
-                      setInvoiceItems(updated);
-                    }}
-                    value={
-                      item.item_id
-                        ? {
-                            value: item.item_id,
-                            label: `${item.item_code ?? item.item_id} - ${item.item_name}`,
-                          }
-                        : null
+                  />
+                </td>
+                <td>
+                  <input
+                    className="border w-full p-1 text-xs text-center"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
+                    type="number"
+                    value={item.qty}
+                    onChange={(e) =>
+                      handleFieldChange(index, "qty", e.target.value)
                     }
-                    placeholder="اختر الصنف..."
-                    styles={{
-                      control: (base) => ({ ...base, minHeight: 30, height: 30 }),
-                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                    }}
-                    menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-                    menuPosition="fixed"
-                    components={{ IndicatorSeparator: () => null }}
                   />
                 </td>
                 {(payType === 1 || payType === 3) && (
                   <td>
                     <input
-                      type="number"
                       className="border w-full p-1 text-xs text-center"
                       style={{ minWidth: 0, maxWidth: "100%" }}
+                      type="number"
                       value={item.weight}
-                      onChange={(e) => handleFieldChange(index, "weight", e.target.value)}
+                      onChange={(e) =>
+                        handleFieldChange(index, "weight", e.target.value)
+                      }
                     />
                   </td>
                 )}
                 {(payType === 2 || payType === 3) && (
                   <td>
                     <input
-                      type="number"
                       className="border w-full p-1 text-xs text-center"
                       style={{ minWidth: 0, maxWidth: "100%" }}
+                      type="number"
                       value={item.quantity}
-                      onChange={(e) => handleFieldChange(index, "quantity", e.target.value)}
+                      onChange={(e) =>
+                        handleFieldChange(index, "quantity", e.target.value)
+                      }
                     />
                   </td>
                 )}
@@ -194,38 +244,50 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.karat}
-                    onChange={(e) => handleFieldChange(index, "karat", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange(index, "karat", e.target.value)
+                    }
                   />
                 </td>
                 {(payType === 1 || payType === 3) && (
                   <td>
                     <input
-                      type="number"
                       className="border w-full p-1 text-xs text-center"
                       style={{ minWidth: 0, maxWidth: "100%" }}
+                      type="number"
                       value={item.price_per_gram}
-                      onChange={(e) => handleFieldChange(index, "price_per_gram", e.target.value)}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          index,
+                          "price_per_gram",
+                          e.target.value,
+                        )
+                      }
                     />
                   </td>
                 )}
                 {(payType === 2 || payType === 3) && (
                   <td>
                     <input
-                      type="number"
                       className="border w-full p-1 text-xs text-center"
                       style={{ minWidth: 0, maxWidth: "100%" }}
+                      type="number"
                       value={item.price_w}
-                      onChange={(e) => handleFieldChange(index, "price_w", e.target.value)}
+                      onChange={(e) =>
+                        handleFieldChange(index, "price_w", e.target.value)
+                      }
                     />
                   </td>
                 )}
                 <td>
                   <input
-                    type="number"
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
+                    type="number"
                     value={item.discount}
-                    onChange={(e) => handleFieldChange(index, "discount", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange(index, "discount", e.target.value)
+                    }
                   />
                 </td>
                 <td>15%</td>
@@ -237,11 +299,16 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.note}
-                    onChange={(e) => handleFieldChange(index, "note", e.target.value)}
+                    onChange={(e) =>
+                      handleFieldChange(index, "note", e.target.value)
+                    }
                   />
                 </td>
                 <td>
-                  <button className="text-red-600 font-bold" onClick={() => removeRow(item.id)}>
+                  <button
+                    className="text-red-600 font-bold"
+                    onClick={() => removeRow(item.id)}
+                  >
                     ×
                   </button>
                 </td>
@@ -253,4 +320,3 @@ export default function InvoiceItemTable({
     </div>
   );
 }
-

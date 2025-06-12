@@ -54,6 +54,7 @@ After modifying the `.npmrc` file, you need to run `pnpm install` again to ensur
 
 - `item_desc` – line description
 - `item_qty` – quantity of the item
+- `qty` – number of pieces
 - `item_price` – unit price used for totals
 - `inv_tax` – tax percentage
 - `tax_amt` – tax amount for the line

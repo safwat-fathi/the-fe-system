@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import {
   API_BASE_URL,
   API_ENDPOINTS,
@@ -9,13 +10,15 @@ import {
 } from "@/utilities/api";
 
 const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
+
 import "bootstrap-icons/font/bootstrap-icons.css";
 import toast from "react-hot-toast";
+
 import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
-import type { InvoiceItem } from "@/types/invoice-item";
 
+import type { InvoiceItem } from "@/types/invoice-item";
 
 interface Item {
   id: number;
@@ -23,7 +26,6 @@ interface Item {
   item_name: string;
   item_price: number;
   karat: string;
-  
 }
 
 interface Customer {
@@ -58,6 +60,7 @@ export default function InvoicePage() {
       item_id: null,
       item_code: "",
       quantity: 0,
+      qty: 0,
       weight: 0,
       karat: "",
       price_per_gram: 0,
@@ -75,16 +78,16 @@ export default function InvoicePage() {
   const [vatNumber, setVatNumber] = useState<string>("");
   const [payType, setPayType] = useState<number>(1);
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
-  const selectedCust = customers.find(c => c.id === selectedCustomer);
+  const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
   useEffect(() => {
     if (goldPrice !== null) {
-      setInvoiceItems(items =>
-        items.map(itm => ({
+      setInvoiceItems((items) =>
+        items.map((itm) => ({
           ...itm,
           price_per_gram: itm.price_per_gram || goldPrice,
           price_w: itm.price_w || goldPrice,
-        }))
+        })),
       );
     }
   }, [goldPrice]);
@@ -94,6 +97,7 @@ export default function InvoicePage() {
     fetchCustomers();
     if (typeof window !== "undefined") {
       const now = new Date();
+
       setInvoiceDate(now.toISOString());
     }
     getGoldPrice();
@@ -105,12 +109,15 @@ export default function InvoicePage() {
   }, [paymentMethod]);
 
   const getGoldPrice = async () => {
-  const price = await fetchGoldPrice();
-  setGoldPrice(price);
+    const price = await fetchGoldPrice();
+
+    setGoldPrice(price);
   };
 
   async function fetchItems() {
-    const response = await fetchData<{ results: Item[] }>(`${API_BASE_URL}GetItemsList/`);
+    const response = await fetchData<{ results: Item[] }>(
+      `${API_BASE_URL}GetItemsList/`,
+    );
 
     if (response && Array.isArray(response.results)) {
       setItems(response.results);
@@ -119,9 +126,10 @@ export default function InvoicePage() {
     }
   }
 
-
   async function fetchCustomers() {
-    const response = await fetchData<Customer[]>(`${API_BASE_URL}customers_list`);
+    const response = await fetchData<Customer[]>(
+      `${API_BASE_URL}customers_list`,
+    );
 
     if (response) {
       setCustomers(response);
@@ -129,22 +137,20 @@ export default function InvoicePage() {
       setCustomers([]);
     }
     console.log("العملاء:", response);
-
   }
-
-
-
 
   const totalAmount = invoiceItems.reduce((sum, item) => {
     let rowTotal = 0;
+
     if (payType === 1) {
       rowTotal = item.weight * item.price_per_gram;
     } else if (payType === 2) {
       rowTotal = item.quantity * (item.price_w ?? 0);
     } else {
-      rowTotal = item.weight * item.price_per_gram +
-        item.quantity * (item.price_w ?? 0);
+      rowTotal =
+        item.weight * item.price_per_gram + item.quantity * (item.price_w ?? 0);
     }
+
     return sum + rowTotal - item.discount;
   }, 0);
   const taxAmount = totalAmount * 0.15;
@@ -155,160 +161,174 @@ export default function InvoicePage() {
     timeStyle: "short",
   });
 
-const getNextInvoiceNumber = async (): Promise<number> => {
-  const invoices = await fetchData<any[]>(`${API_BASE_URL}invoices_list`);
-  if (!Array.isArray(invoices) || invoices.length === 0) return 1000;
+  const getNextInvoiceNumber = async (): Promise<number> => {
+    const invoices = await fetchData<any[]>(`${API_BASE_URL}invoices_list`);
 
-  const maxInvId = invoices.reduce((max, curr) => {
-    return curr.inv_id > max ? curr.inv_id : max;
-  }, 1000);
+    if (!Array.isArray(invoices) || invoices.length === 0) return 1000;
 
-  return maxInvId + 1;
-};
+    const maxInvId = invoices.reduce((max, curr) => {
+      return curr.inv_id > max ? curr.inv_id : max;
+    }, 1000);
 
-const saveInvoice = async () => {
-  if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
-
-  const validItems = invoiceItems.filter((itm) => itm.item_id);
-  if (validItems.length === 0) {
-    return toast.error("يرجى إدخال تفاصيل الفاتورة");
-  }
-
-  const generatedInvId = await getNextInvoiceNumber();
-  setInvoiceNumber(generatedInvId);
-
-  const employeeMap: Record<string, number> = {
-    hashem: 1,
-    othman: 2,
+    return maxInvId + 1;
   };
 
-  const invData = {
-  inv_id: generatedInvId,
-  inv_date: invoiceDate,
-  cust: selectedCustomer,
-  cust_name: selectedCust?.cust_name || null,
-  cust_code: selectedCust?.cust_code || null,
-  inv_amt: Math.round(netAmount),
-  inv_net: Math.round(totalAmount), 
-  tax: taxAmount.toFixed(2),
-  inv_status: 1,
-  trans_type: 2,
-  cr_date: invoiceDate,
-  inv_type: paymentMethod === "cash" ? 1 : 2,
-  emp_id: employeeMap[employee] || null,
-  inv_notes: note || null,
-  handling: handlingMethod || null,
-  mobile: mobileMethod || null,
-  ref_no: referenceNumber || null,
-  print: true,
-  commit: true,
-  is_done: false,
-  is_ok: false,
-  suspend: false,
-  post: false,
-  tx: false,
-  dist: false,
-  gauge_diff: false,
-  pay_chick: false,
-  vat_no: vatNumber,
-  pay_type: payType,
-  gold_price: goldPrice ?? 0,
-  cr_no: selectedCust?.cr_no || null,
-  gov: selectedCust?.gov || null,
-  city: selectedCust?.city || null,
-  area: selectedCust?.area || null,
-  street: selectedCust?.street || null,
-  build_no: selectedCust?.build_no || null,
-  post_no: selectedCust?.post_no || null,
-  post_code: selectedCust?.post_code || null,
+  const saveInvoice = async () => {
+    if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
 
-};
+    const validItems = invoiceItems.filter((itm) => itm.item_id);
 
-  console.log("🚀 بيانات الفاتورة:");
-  console.table(invData);
-
-  try {
-    const res = await fetch(`${API_BASE_URL}api_create_invoice`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(invData),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("❌ فشل إنشاء الفاتورة:", errorText);
-      return toast.error("فشل في حفظ الفاتورة");
+    if (validItems.length === 0) {
+      return toast.error("يرجى إدخال تفاصيل الفاتورة");
     }
 
-    const result = await res.json();
-    const invPk = result.id;
+    const generatedInvId = await getNextInvoiceNumber();
 
-    for (const [index, row] of validItems.entries()) {
-      if (!row.item_id) continue;
+    setInvoiceNumber(generatedInvId);
 
-      const dtl = {
-        inv: invPk,
-        item: row.item_id,
-        item_desc: row.item_name,
-        item_qty: row.quantity,
-        item_price: row.price_per_gram,
-        inv_tax: 15,
-        tax_amt: parseFloat((row.quantity * row.price_per_gram * 0.15).toFixed(2)),
-        inv_status: 1,
-        cr_date: invoiceDate,
-        inv_notes: row.note || null,
-      };
+    const employeeMap: Record<string, number> = {
+      hashem: 1,
+      othman: 2,
+    };
 
-      console.log(`📦 تفاصيل السطر ${index + 1}:`);
-      console.table(dtl);
+    const invData = {
+      inv_id: generatedInvId,
+      inv_date: invoiceDate,
+      cust: selectedCustomer,
+      cust_name: selectedCust?.cust_name || null,
+      cust_code: selectedCust?.cust_code || null,
+      inv_amt: Math.round(netAmount),
+      inv_net: Math.round(totalAmount),
+      tax: taxAmount.toFixed(2),
+      inv_status: 1,
+      trans_type: 2,
+      cr_date: invoiceDate,
+      inv_type: paymentMethod === "cash" ? 1 : 2,
+      emp_id: employeeMap[employee] || null,
+      inv_notes: note || null,
+      handling: handlingMethod || null,
+      mobile: mobileMethod || null,
+      ref_no: referenceNumber || null,
+      print: true,
+      commit: true,
+      is_done: false,
+      is_ok: false,
+      suspend: false,
+      post: false,
+      tx: false,
+      dist: false,
+      gauge_diff: false,
+      pay_chick: false,
+      vat_no: vatNumber,
+      pay_type: payType,
+      gold_price: goldPrice ?? 0,
+      cr_no: selectedCust?.cr_no || null,
+      gov: selectedCust?.gov || null,
+      city: selectedCust?.city || null,
+      area: selectedCust?.area || null,
+      street: selectedCust?.street || null,
+      build_no: selectedCust?.build_no || null,
+      post_no: selectedCust?.post_no || null,
+      post_code: selectedCust?.post_code || null,
+    };
 
-      const dtlRes = await fetch(CREATE_INVOICE_DTL, {
+    console.log("🚀 بيانات الفاتورة:");
+    console.table(invData);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}api_create_invoice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dtl),
+        body: JSON.stringify(invData),
       });
 
-      if (!dtlRes.ok) {
-        const dtlError = await dtlRes.text();
-        console.error(`❌ خطأ في تفاصيل السطر ${index + 1}:`, dtlError);
-        toast.error(`فشل في حفظ تفاصيل السطر ${index + 1}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+
+        console.error("❌ فشل إنشاء الفاتورة:", errorText);
+
+        return toast.error("فشل في حفظ الفاتورة");
       }
+
+      const result = await res.json();
+      const invPk = result.id;
+
+      for (const [index, row] of validItems.entries()) {
+        if (!row.item_id) continue;
+
+        const dtl = {
+          inv: invPk,
+          item: row.item_id,
+          item_desc: row.item_name,
+          qty: row.qty,
+          item_qty: row.quantity,
+          item_price: row.price_per_gram,
+          inv_tax: 15,
+          tax_amt: parseFloat(
+            (row.quantity * row.price_per_gram * 0.15).toFixed(2),
+          ),
+          inv_status: 1,
+          cr_date: invoiceDate,
+          inv_notes: row.note || null,
+        };
+
+        console.log(`📦 تفاصيل السطر ${index + 1}:`);
+        console.table(dtl);
+
+        const dtlRes = await fetch(CREATE_INVOICE_DTL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dtl),
+        });
+
+        if (!dtlRes.ok) {
+          const dtlError = await dtlRes.text();
+
+          console.error(`❌ خطأ في تفاصيل السطر ${index + 1}:`, dtlError);
+          toast.error(`فشل في حفظ تفاصيل السطر ${index + 1}`);
+        }
+      }
+
+      toast.success("تم حفظ الفاتورة بنجاح ✅");
+    } catch (err) {
+      console.error("❌ خطأ أثناء الحفظ:", err);
+      toast.error("حدث خطأ أثناء حفظ الفاتورة");
     }
-
-    toast.success("تم حفظ الفاتورة بنجاح ✅");
-  } catch (err) {
-    console.error("❌ خطأ أثناء الحفظ:", err);
-    toast.error("حدث خطأ أثناء حفظ الفاتورة");
-  }
-};
-
+  };
 
   const previewInvoice = () => {
-  if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
+    if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
 
-  const previewWindow = window.open("", "InvoicePreview", "width=850,height=1000");
+    const previewWindow = window.open(
+      "",
+      "InvoicePreview",
+      "width=850,height=1000",
+    );
 
-  if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
+    if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
-  const customer = customers.find((c) => c.id === selectedCustomer);
-  const rowsHtml = invoiceItems
-    .map((item, index) => {
-      let rowTotal = 0;
-      if (payType === 1) {
-        rowTotal = item.weight * item.price_per_gram;
-      } else if (payType === 2) {
-        rowTotal = item.quantity * (item.price_w ?? 0);
-      } else {
-        rowTotal = item.weight * item.price_per_gram +
-          item.quantity * (item.price_w ?? 0);
-      }
-      const tax = (rowTotal - item.discount) * 0.15;
-      const total = rowTotal - item.discount + tax;
-      return `
+    const customer = customers.find((c) => c.id === selectedCustomer);
+    const rowsHtml = invoiceItems
+      .map((item, index) => {
+        let rowTotal = 0;
+
+        if (payType === 1) {
+          rowTotal = item.weight * item.price_per_gram;
+        } else if (payType === 2) {
+          rowTotal = item.quantity * (item.price_w ?? 0);
+        } else {
+          rowTotal =
+            item.weight * item.price_per_gram +
+            item.quantity * (item.price_w ?? 0);
+        }
+        const tax = (rowTotal - item.discount) * 0.15;
+        const total = rowTotal - item.discount + tax;
+
+        return `
       <tr>
         <td>${index + 1}</td>
         <td>${item.item_name || ""}</td>
-        ${payType !== 1 ? `<td>${item.quantity}</td>` : ""}
+        ${payType !== 1 ? `<td>${item.qty}</td>` : ""}
         ${payType !== 2 ? `<td>${item.weight.toFixed(2)}</td>` : ""}
         <td>${item.karat}</td>
         <td>${item.price_per_gram.toFixed(2)}</td>
@@ -317,10 +337,10 @@ const saveInvoice = async () => {
         <td>${(rowTotal - item.discount).toFixed(2)}</td>
         <td>${total.toFixed(2)}</td>
       </tr>`;
-    })
-    .join("");
+      })
+      .join("");
 
-  const htmlContent = `
+    const htmlContent = `
     <html dir="rtl">
     <head>
       <title>معاينة الفاتورة</title>
@@ -344,8 +364,8 @@ const saveInvoice = async () => {
           <tr>
             <th>#</th>
             <th>اسم الصنف</th>
-            ${payType !== 1 ? '<th>العدد</th>' : ''}
-            ${payType !== 2 ? '<th>الوزن</th>' : ''}
+            ${payType !== 1 ? "<th>العدد</th>" : ""}
+            ${payType !== 2 ? "<th>الوزن</th>" : ""}
             <th>العيار</th>
             <th>سعر الجرام</th>
             <th>الضريبة</th>
@@ -365,50 +385,49 @@ const saveInvoice = async () => {
     </html>
   `;
 
-  previewWindow.document.write(htmlContent);
-  previewWindow.document.close();
-};
-
+    previewWindow.document.write(htmlContent);
+    previewWindow.document.close();
+  };
 
   return (
     <InvoiceTotalsActions
-      invoiceNumber={invoiceNumber}
       formattedDateTime={formattedDateTime}
-      saveInvoice={saveInvoice}
-      previewInvoice={previewInvoice}
-      totalAmount={totalAmount}
-      taxAmount={taxAmount}
+      invoiceNumber={invoiceNumber}
       netAmount={netAmount}
+      previewInvoice={previewInvoice}
+      saveInvoice={saveInvoice}
+      taxAmount={taxAmount}
+      totalAmount={totalAmount}
     >
       <InvoiceSelectors
         customers={customers}
-        selectedCustomer={selectedCustomer}
-        setSelectedCustomer={setSelectedCustomer}
-        paymentMethod={paymentMethod}
-        setPaymentMethod={setPaymentMethod}
-        payType={payType}
-        setPayType={setPayType}
-        referenceNumber={referenceNumber}
-        setReferenceNumber={setReferenceNumber}
-        vatNumber={vatNumber}
-        setVatNumber={setVatNumber}
-        handlingMethod={handlingMethod}
-        setHandlingMethod={setHandlingMethod}
-        mobileMethod={mobileMethod}
-        setMobileMethod={setMobileMethod}
         employee={employee}
-        setEmployee={setEmployee}
         goldPrice={goldPrice}
+        handlingMethod={handlingMethod}
+        mobileMethod={mobileMethod}
         note={note}
+        payType={payType}
+        paymentMethod={paymentMethod}
+        referenceNumber={referenceNumber}
+        selectedCustomer={selectedCustomer}
+        setEmployee={setEmployee}
+        setHandlingMethod={setHandlingMethod}
+        setMobileMethod={setMobileMethod}
         setNote={setNote}
+        setPayType={setPayType}
+        setPaymentMethod={setPaymentMethod}
+        setReferenceNumber={setReferenceNumber}
+        setSelectedCustomer={setSelectedCustomer}
+        setVatNumber={setVatNumber}
+        vatNumber={vatNumber}
       />
       <InvoiceItemTable
-        items={items}
-        setItems={setItems}
-        invoiceItems={invoiceItems}
-        setInvoiceItems={setInvoiceItems}
         goldPrice={goldPrice}
+        invoiceItems={invoiceItems}
+        items={items}
         payType={payType}
+        setInvoiceItems={setInvoiceItems}
+        setItems={setItems}
       />
     </InvoiceTotalsActions>
   );

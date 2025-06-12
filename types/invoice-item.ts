@@ -11,7 +11,7 @@ export interface InvoiceItem {
   note: string;
   trans_type?: number;
   G875?: string;
-  qty?: number;
+  qty: number;
   price?: number;
   price_w: number;
   g_weight?: number;
