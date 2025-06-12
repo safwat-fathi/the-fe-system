@@ -74,6 +74,7 @@ export default function InvoiceItemTable({
             <th className="w-[100px]">وزن معايير</th>
             <th className="w-[80px]">العيار</th>
             <th className="w-[100px]">سعر الجرام</th>
+            <th className="w-[80px]">الخصم</th>
             <th className="w-[80px]">نسبة الضريبة</th>
             <th className="w-[100px]">الضريبة</th>
             <th className="w-[100px]">المبلغ</th>
@@ -184,6 +185,15 @@ export default function InvoiceItemTable({
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.price_per_gram}
                     onChange={(e) => handleFieldChange(index, "price_per_gram", e.target.value)}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    className="border w-full p-1 text-xs text-center"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
+                    value={item.discount}
+                    onChange={(e) => handleFieldChange(index, "discount", e.target.value)}
                   />
                 </td>
                 <td>15%</td>
