@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
+import type { InvoiceItem } from "@/types/invoice-item";
 
 
 interface Item {
@@ -37,20 +38,6 @@ interface Customer {
   post_no?: string;
   post_code?: string;
 }
-
-interface InvoiceItem {
-  id: number;
-  item_id: number | null;
-  item_code?: string;
-  item_name?: string;
-  quantity: number;
-  weight: number;
-  karat: string;
-  price_per_gram: number;
-  discount: number;
-  note: string;
-}
-
 
 export default function InvoicePage() {
   const [items, setItems] = useState<Item[]>([]);

@@ -1,6 +1,7 @@
 "use client";
 
 import CreatableSelect from "react-select/creatable";
+import type { InvoiceItem } from "@/types/invoice-item";
 
 interface Item {
   id: number;
@@ -8,19 +9,6 @@ interface Item {
   item_name: string;
   item_price: number;
   karat: string;
-}
-
-interface InvoiceItem {
-  id: number;
-  item_id: number | null;
-  item_code?: string;
-  item_name?: string;
-  quantity: number;
-  weight: number;
-  karat: string;
-  price_per_gram: number;
-  discount: number;
-  note: string;
 }
 
 interface Props {
