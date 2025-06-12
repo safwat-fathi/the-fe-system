@@ -28,6 +28,7 @@ interface Props {
   setItems: (items: Item[]) => void;
   invoiceItems: InvoiceItem[];
   setInvoiceItems: (items: InvoiceItem[]) => void;
+  goldPrice: number | null;
 }
 
 export default function InvoiceItemTable({
@@ -35,6 +36,7 @@ export default function InvoiceItemTable({
   setItems,
   invoiceItems,
   setInvoiceItems,
+  goldPrice,
 }: Props) {
   const handleFieldChange = (index: number, field: keyof InvoiceItem, value: any) => {
     const updated = [...invoiceItems];
@@ -61,7 +63,7 @@ export default function InvoiceItemTable({
           quantity: 1,
           weight: 0,
           karat: "",
-          price_per_gram: 0,
+          price_per_gram: goldPrice ?? 0,
           discount: 0,
           note: "",
         },
@@ -129,7 +131,7 @@ export default function InvoiceItemTable({
                         item_code: newItem.item_code,
                         item_name: newItem.item_name,
                         karat: newItem.karat,
-                        price_per_gram: newItem.item_price,
+                        price_per_gram: goldPrice ?? newItem.item_price,
                       };
                       setInvoiceItems(updated);
                     }}
@@ -140,7 +142,7 @@ export default function InvoiceItemTable({
                       updated[index].item_code = selected?.item_code ?? "";
                       updated[index].item_name = selected?.item_name ?? "";
                       updated[index].karat = selected?.karat ?? "";
-                      updated[index].price_per_gram = selected?.item_price ?? 0;
+                      updated[index].price_per_gram = goldPrice ?? selected?.item_price ?? 0;
                       setInvoiceItems(updated);
                     }}
                     value={
