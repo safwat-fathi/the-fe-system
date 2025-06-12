@@ -17,9 +17,9 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Tooltip,
 } from "@heroui/react";
-import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
+import ActionButtons from "@/components/ActionButtons";
 import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
 
 const API_URL = `${API_BASE_URL}cust_type_list`;
@@ -106,17 +106,11 @@ export default function CustomerTypesTable() {
   };
 
   const renderActions = (type: CustomerType) => (
-    <div className="flex gap-5">
-      <Tooltip content="تعديل">
-        <Button isIconOnly size="sm" variant="flat" onPress={() => openModal("edit", type)}><FaEdit /></Button>
-      </Tooltip>
-      <Tooltip content="عرض">
-        <Button isIconOnly size="sm" variant="flat" onPress={() => openModal("view", type)}><FaEye /></Button>
-      </Tooltip>
-      <Tooltip content="حذف">
-        <Button isIconOnly size="sm" variant="flat" onPress={() => handleDelete(type.id)}><FaTrash /></Button>
-      </Tooltip>
-    </div>
+    <ActionButtons
+      onView={() => openModal("view", type)}
+      onEdit={() => openModal("edit", type)}
+      onDelete={() => handleDelete(type.id)}
+    />
   );
 
   const filtered = useMemo(() => types.filter(t => t.type_name?.toLowerCase().includes(search.toLowerCase())), [types, search]);

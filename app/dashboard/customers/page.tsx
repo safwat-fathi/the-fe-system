@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from 'next/navigation';
 import ReactSelect from "react-select";
-import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
+import ActionButtons from "@/components/ActionButtons";
 import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
 
 import {
@@ -24,7 +25,6 @@ import {
   ModalFooter,
   Select,
   SelectItem,
-  Tooltip,
 } from "@heroui/react";
 
 
@@ -200,41 +200,11 @@ if (!cleanedCustomer.cust_type) {
 
 
   const renderActions = (cust: Customer) => (
-    <div className="flex gap-5">
-      <Tooltip content="تعديل">
-        <Button
-          className="rounded-full border border-gray-300"
-          isIconOnly
-          size="sm"
-          variant="flat"
-          onPress={() => openModal("edit", cust)}
-        >
-          <FaEdit className="text-base" />
-        </Button>
-      </Tooltip>
-      <Tooltip content="عرض">
-        <Button
-          className="rounded-full border border-gray-300"
-          isIconOnly
-          size="sm"
-          variant="flat"
-          onPress={() => openModal("view", cust)}
-        >
-          <FaEye className="text-base" />
-        </Button>
-      </Tooltip>
-      <Tooltip content="حذف">
-        <Button
-          className="rounded-full border border-gray-300"
-          isIconOnly
-          size="sm"
-          variant="flat"
-          onPress={() => handleDelete(cust.id)}
-        >
-          <FaTrash className="text-base" />
-        </Button>
-      </Tooltip>
-    </div>
+    <ActionButtons
+      onView={() => openModal("view", cust)}
+      onEdit={() => openModal("edit", cust)}
+      onDelete={() => handleDelete(cust.id)}
+    />
   );
   
 

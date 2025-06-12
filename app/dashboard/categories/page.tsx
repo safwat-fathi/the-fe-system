@@ -18,7 +18,8 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
+import ActionButtons from "@/components/ActionButtons";
 import { API_BASE_URL, apiFetch } from "@/utilities/api";
 
 const API_URL = `${API_BASE_URL}categories_list/`;
@@ -264,11 +265,11 @@ export default function CategoriesTable() {
               <TableCell>{cat.cat_type}</TableCell>
               <TableCell><Checkbox isSelected={cat.cat_status} isReadOnly /></TableCell>
               <TableCell>
-                <div className="flex gap-2">
-                  <Button isIconOnly onClick={() => openEditModal(cat)}><FaEdit className="text-yellow-500" /></Button>
-                  <Button isIconOnly onClick={() => openViewModal(cat)}><FaEye className="text-blue-500" /></Button>
-                  <Button isIconOnly onClick={() => handleDelete(cat.id)}><FaTrash className="text-red-500" /></Button>
-                </div>
+                <ActionButtons
+                  onView={() => openViewModal(cat)}
+                  onEdit={() => openEditModal(cat)}
+                  onDelete={() => handleDelete(cat.id)}
+                />
               </TableCell>
             </TableRow>
           ))}
