@@ -17,6 +17,7 @@ interface Props {
   invoiceItems: InvoiceItem[];
   setInvoiceItems: (items: InvoiceItem[]) => void;
   goldPrice: number | null;
+  payType: number;
 }
 
 export default function InvoiceItemTable({
@@ -25,6 +26,7 @@ export default function InvoiceItemTable({
   invoiceItems,
   setInvoiceItems,
   goldPrice,
+  payType,
 }: Props) {
   const handleFieldChange = (index: number, field: keyof InvoiceItem, value: any) => {
     const updated = [...invoiceItems];
@@ -70,8 +72,12 @@ export default function InvoiceItemTable({
         <thead className="bg-gray-100 text-xs font-semibold">
           <tr>
             <th className="w-[400px]">اسم الصنف</th>
-            <th className="w-[100px]">الوزن القائم</th>
-            <th className="w-[100px]">وزن معايير</th>
+            {(payType === 1 || payType === 3) && (
+              <th className="w-[100px]">الوزن القائم</th>
+            )}
+            {(payType === 2 || payType === 3) && (
+              <th className="w-[100px]">وزن معايير</th>
+            )}
             <th className="w-[80px]">العيار</th>
             <th className="w-[100px]">سعر الجرام</th>
             <th className="w-[80px]">الخصم</th>
@@ -85,7 +91,8 @@ export default function InvoiceItemTable({
         </thead>
         <tbody>
           {invoiceItems.map((item, index) => {
-            const totalBeforeTax = item.weight * item.price_per_gram;
+            const baseQty = payType === 2 ? item.quantity : item.weight;
+            const totalBeforeTax = baseQty * item.price_per_gram;
             const tax = (totalBeforeTax - item.discount) * 0.15;
             const total = totalBeforeTax - item.discount + tax;
 
@@ -152,24 +159,28 @@ export default function InvoiceItemTable({
                     components={{ IndicatorSeparator: () => null }}
                   />
                 </td>
-                <td>
-                  <input
-                    type="number"
-                    className="border w-full p-1 text-xs text-center"
-                    style={{ minWidth: 0, maxWidth: "100%" }}
-                    value={item.weight}
-                    onChange={(e) => handleFieldChange(index, "weight", e.target.value)}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    className="border w-full p-1 text-xs text-center"
-                    style={{ minWidth: 0, maxWidth: "100%" }}
-                    value={item.quantity}
-                    onChange={(e) => handleFieldChange(index, "quantity", e.target.value)}
-                  />
-                </td>
+                {(payType === 1 || payType === 3) && (
+                  <td>
+                    <input
+                      type="number"
+                      className="border w-full p-1 text-xs text-center"
+                      style={{ minWidth: 0, maxWidth: "100%" }}
+                      value={item.weight}
+                      onChange={(e) => handleFieldChange(index, "weight", e.target.value)}
+                    />
+                  </td>
+                )}
+                {(payType === 2 || payType === 3) && (
+                  <td>
+                    <input
+                      type="number"
+                      className="border w-full p-1 text-xs text-center"
+                      style={{ minWidth: 0, maxWidth: "100%" }}
+                      value={item.quantity}
+                      onChange={(e) => handleFieldChange(index, "quantity", e.target.value)}
+                    />
+                  </td>
+                )}
                 <td>
                   <input
                     className="border w-full p-1 text-xs text-center"
