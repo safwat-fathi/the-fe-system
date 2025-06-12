@@ -57,7 +57,7 @@ export default function InvoicePage() {
       id: Date.now(),
       item_id: null,
       item_code: "",
-      quantity: 1,
+      quantity: 0,
       weight: 0,
       karat: "",
       price_per_gram: 0,
