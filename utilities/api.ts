@@ -111,6 +111,14 @@ export const API_ENDPOINTS = {
   DELETE_INVOICE_BOX: (id: number) =>
     `${API_BASE_URL}api_delete_invoice_box/${id}`,
 
+  // تفاصيل الفواتير
+  INVOICES_DTL_LIST: `${API_BASE_URL}invoices_dtl_list`,
+  CREATE_INVOICE_DTL: `${API_BASE_URL}api_create_invoice_dtl`,
+  UPDATE_INVOICE_DTL: (id: number) =>
+    `${API_BASE_URL}api_update_invoice_dtl/${id}`,
+  DELETE_INVOICE_DTL: (id: number) =>
+    `${API_BASE_URL}api_delete_invoice_dtl/${id}`,
+
   // companies
   COMPANIES_LIST: `${API_BASE_URL}companies_list`,
 
