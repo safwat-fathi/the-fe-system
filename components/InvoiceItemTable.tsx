@@ -31,7 +31,7 @@ export default function InvoiceItemTable({
   const handleFieldChange = (index: number, field: keyof InvoiceItem, value: any) => {
     const updated = [...invoiceItems];
 
-    if (["weight", "price_per_gram", "quantity", "discount"].includes(field)) {
+    if (["weight", "price_per_gram", "price_w", "quantity", "discount"].includes(field)) {
       updated[index][field] = parseFloat(value) || 0;
     } else {
       // @ts-ignore
@@ -54,6 +54,7 @@ export default function InvoiceItemTable({
           weight: 0,
           karat: "",
           price_per_gram: goldPrice ?? 0,
+          price_w: goldPrice ?? 0,
           discount: 0,
           note: "",
         },
@@ -79,7 +80,12 @@ export default function InvoiceItemTable({
               <th className="w-[100px]">وزن معايير</th>
             )}
             <th className="w-[80px]">العيار</th>
-            <th className="w-[100px]">سعر الجرام</th>
+            {(payType === 1 || payType === 3) && (
+              <th className="w-[100px]">سعر الجرام</th>
+            )}
+            {(payType === 2 || payType === 3) && (
+              <th className="w-[100px]">أجرة الجرام</th>
+            )}
             <th className="w-[80px]">الخصم</th>
             <th className="w-[80px]">نسبة الضريبة</th>
             <th className="w-[100px]">الضريبة</th>
@@ -128,6 +134,7 @@ export default function InvoiceItemTable({
                         item_name: newItem.item_name,
                         karat: newItem.karat,
                         price_per_gram: goldPrice ?? newItem.item_price,
+                        price_w: goldPrice ?? newItem.item_price,
                       };
                       setInvoiceItems(updated);
                     }}
@@ -139,6 +146,7 @@ export default function InvoiceItemTable({
                       updated[index].item_name = selected?.item_name ?? "";
                       updated[index].karat = selected?.karat ?? "";
                       updated[index].price_per_gram = goldPrice ?? selected?.item_price ?? 0;
+                      updated[index].price_w = goldPrice ?? selected?.item_price ?? 0;
                       setInvoiceItems(updated);
                     }}
                     value={
@@ -189,15 +197,28 @@ export default function InvoiceItemTable({
                     onChange={(e) => handleFieldChange(index, "karat", e.target.value)}
                   />
                 </td>
-                <td>
-                  <input
-                    type="number"
-                    className="border w-full p-1 text-xs text-center"
-                    style={{ minWidth: 0, maxWidth: "100%" }}
-                    value={item.price_per_gram}
-                    onChange={(e) => handleFieldChange(index, "price_per_gram", e.target.value)}
-                  />
-                </td>
+                {(payType === 1 || payType === 3) && (
+                  <td>
+                    <input
+                      type="number"
+                      className="border w-full p-1 text-xs text-center"
+                      style={{ minWidth: 0, maxWidth: "100%" }}
+                      value={item.price_per_gram}
+                      onChange={(e) => handleFieldChange(index, "price_per_gram", e.target.value)}
+                    />
+                  </td>
+                )}
+                {(payType === 2 || payType === 3) && (
+                  <td>
+                    <input
+                      type="number"
+                      className="border w-full p-1 text-xs text-center"
+                      style={{ minWidth: 0, maxWidth: "100%" }}
+                      value={item.price_w}
+                      onChange={(e) => handleFieldChange(index, "price_w", e.target.value)}
+                    />
+                  </td>
+                )}
                 <td>
                   <input
                     type="number"
