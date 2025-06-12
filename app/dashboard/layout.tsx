@@ -34,6 +34,11 @@ const dataLinks = [
 
 const formLinks = [
   { name: "فاتورة البيع", href: "/dashboard/invoice", icon: <FaFileAlt /> },
+  {
+    name: "طريقة الدفع",
+    href: "/dashboard/invoice_payment",
+    icon: <FaMoneyBill />,
+  },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
