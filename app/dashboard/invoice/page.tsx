@@ -61,6 +61,7 @@ export default function InvoicePage() {
       weight: 0,
       karat: "",
       price_per_gram: 0,
+      price_w: 0,
       discount: 0,
       note: "",
     },
@@ -82,6 +83,7 @@ export default function InvoicePage() {
         items.map(itm => ({
           ...itm,
           price_per_gram: itm.price_per_gram || goldPrice,
+          price_w: itm.price_w || goldPrice,
         }))
       );
     }

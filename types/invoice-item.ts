@@ -13,7 +13,7 @@ export interface InvoiceItem {
   G875?: string;
   qty?: number;
   price?: number;
-  price_w?: number;
+  price_w: number;
   g_weight?: number;
   total?: number;
   total_w?: number;
