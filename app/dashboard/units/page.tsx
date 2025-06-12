@@ -17,9 +17,9 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Tooltip,
 } from "@heroui/react";
-import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
+import ActionButtons from "@/components/ActionButtons";
 import { API_BASE_URL, apiFetch } from "@/utilities/api";
 
 const API_URL = `${API_BASE_URL}units_list/`;
@@ -150,17 +150,11 @@ export default function UnitsTable() {
               <TableCell><Checkbox isSelected={!!unit.unit_status} isReadOnly /></TableCell>
               <TableCell><Checkbox isSelected={!!unit.unit_default} isReadOnly /></TableCell>
               <TableCell>
-              <div className="flex gap-5">
-                <Tooltip content="تعديل">
-                  <Button isIconOnly size="sm" variant="flat" onPress={() => openModal("edit", unit)}><FaEdit /></Button>
-                </Tooltip>
-                <Tooltip content="عرض">
-                  <Button isIconOnly size="sm" variant="flat" onPress={() => openModal("view", unit)}><FaEye /></Button>
-                </Tooltip>
-                <Tooltip content="حذف">
-                  <Button isIconOnly size="sm" variant="flat" onPress={() => handleDelete(unit.id)}><FaTrash /></Button>
-                </Tooltip>
-              </div>
+                <ActionButtons
+                  onView={() => openModal("view", unit)}
+                  onEdit={() => openModal("edit", unit)}
+                  onDelete={() => handleDelete(unit.id)}
+                />
               </TableCell>
             </TableRow>
           ))}

@@ -17,9 +17,9 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Tooltip,
 } from "@heroui/react";
-import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
+import ActionButtons from "@/components/ActionButtons";
 import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
 
 const API_URL = `${API_BASE_URL}currencies_list/`;
@@ -116,17 +116,11 @@ export default function CurrenciesTable() {
   };
 
   const renderActions = (cur: Currency) => (
-    <div className="flex gap-5">
-      <Tooltip content="تعديل">
-        <Button isIconOnly size="sm" variant="flat" onPress={() => openModal("edit", cur)}><FaEdit /></Button>
-      </Tooltip>
-      <Tooltip content="عرض">
-        <Button isIconOnly size="sm" variant="flat" onPress={() => openModal("view", cur)}><FaEye /></Button>
-      </Tooltip>
-      <Tooltip content="حذف">
-        <Button isIconOnly size="sm" variant="flat" onPress={() => handleDelete(cur.id)}><FaTrash /></Button>
-      </Tooltip>
-    </div>
+    <ActionButtons
+      onView={() => openModal("view", cur)}
+      onEdit={() => openModal("edit", cur)}
+      onDelete={() => handleDelete(cur.id)}
+    />
   );
 
   const filtered = useMemo(() => currencies.filter(c => c.cur_name?.toLowerCase().includes(search.toLowerCase())), [currencies, search]);

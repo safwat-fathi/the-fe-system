@@ -17,9 +17,9 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Tooltip,
 } from "@heroui/react";
-import { FaEdit, FaTrash, FaPlus, FaEye } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
+import ActionButtons from "@/components/ActionButtons";
 import { API_ENDPOINTS } from "@/utilities/api";
 
 const {
@@ -167,38 +167,11 @@ export default function InvoiceBoxPage() {
                 <Checkbox isSelected={!!box.box_status} isReadOnly />
               </TableCell>
               <TableCell>
-                <div className="flex gap-5">
-                  <Tooltip content="تعديل">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="flat"
-                      onPress={() => openModal("edit", box)}
-                    >
-                      <FaEdit />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content="عرض">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="flat"
-                      onPress={() => openModal("view", box)}
-                    >
-                      <FaEye />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip content="حذف">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="flat"
-                      onPress={() => handleDelete(box.id)}
-                    >
-                      <FaTrash />
-                    </Button>
-                  </Tooltip>
-                </div>
+                <ActionButtons
+                  onView={() => openModal("view", box)}
+                  onEdit={() => openModal("edit", box)}
+                  onDelete={() => handleDelete(box.id)}
+                />
               </TableCell>
             </TableRow>
           ))}
