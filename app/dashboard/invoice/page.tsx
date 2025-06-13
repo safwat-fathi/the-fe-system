@@ -105,10 +105,13 @@ export default function InvoicePage() {
   const [mobileMethod, setMobileMethod] = useState<string>("");
   const [referenceNumber, setReferenceNumber] = useState<string>("");
   const [vatNumber, setVatNumber] = useState<string>("");
+  // payType: 1=gold value, 2=wage only, 3=both
   const [payType, setPayType] = useState<number>(1);
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
+  // update all rows when gold price changes
+  // initial fetch for items, customers and gold price
   useEffect(() => {
     if (goldPrice !== null) {
       setInvoiceItems((items) =>
@@ -116,15 +119,17 @@ export default function InvoicePage() {
           const updated = {
             ...itm,
             price: itm.price || goldPrice,
-            price_per_gram: itm.price_per_gram || goldPrice,
             price_w: itm.price_w || 0,
             g_weight: itm.g_weight || itm.weight,
           };
 
           return {
             ...updated,
+            // total_a = weight * price
             total_a: updated.g_weight * updated.price,
+            // total_w = weight * wagePrice
             total_w: updated.g_weight * updated.price_w,
+            // total = total_a + total_w - discount
             total:
               updated.g_weight * updated.price +
               updated.g_weight * updated.price_w -
@@ -147,6 +152,7 @@ export default function InvoicePage() {
     getNextInvoiceNumber().then(setInvoiceNumber);
   }, []);
 
+  // changing payment method clears the selected customer
   useEffect(() => {
     setSelectedCustomer(null);
   }, [paymentMethod]);
@@ -182,11 +188,13 @@ export default function InvoicePage() {
     console.log("العملاء:", response);
   }
 
+  // sum rows according to payType
   const totalAmount = invoiceItems.reduce((sum, item) => {
-    const totalA = item.g_weight * item.price;
-    const totalW = item.g_weight * (item.price_w ?? 0);
+    const totalA = item.g_weight * item.price; // قيمة الذهب
+    const totalW = item.g_weight * (item.price_w ?? 0); // اجور العمل
     let rowTotal = 0;
 
+    // 1=gold only, 2=wage only, 3=both
     if (payType === 1) {
       rowTotal = totalA;
     } else if (payType === 2) {
@@ -323,6 +331,7 @@ export default function InvoicePage() {
           price_w: row.price_w,
           weight: row.weight,
           g_weight: row.g_weight ?? 0,
+          // totals stored with the row
           total:
             row.total ??
             row.g_weight * row.price +
@@ -397,6 +406,7 @@ export default function InvoicePage() {
       .map((item, index) => {
         let rowTotal = 0;
 
+        // pick price part based on payType
         if (payType === 1) {
           rowTotal = item.g_weight * item.price;
         } else if (payType === 2) {

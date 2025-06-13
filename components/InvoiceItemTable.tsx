@@ -24,7 +24,7 @@ interface Props {
   invoiceItems: InvoiceItem[];
   setInvoiceItems: (items: InvoiceItem[]) => void;
   goldPrice: number | null;
-  payType: number;
+  payType: number; // 1=gold, 2=wage, 3=both
 }
 
 export default function InvoiceItemTable({
@@ -37,6 +37,7 @@ export default function InvoiceItemTable({
 }: Props) {
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
 
+  // prepare refs array when rows change
   useEffect(() => {
     invoiceItems.forEach((_, i) => {
       if (!inputRefs.current[i]) {
@@ -68,8 +69,11 @@ export default function InvoiceItemTable({
       updated[index][field] = value;
     }
 
+    // total_a = g_weight * price
     updated[index].total_a = updated[index].g_weight * updated[index].price;
+    // total_w = g_weight * wagePrice
     updated[index].total_w = updated[index].g_weight * updated[index].price_w;
+    // total = total_a + total_w - discount
     updated[index].total =
       updated[index].total_a +
       updated[index].total_w -
@@ -192,8 +196,9 @@ export default function InvoiceItemTable({
         </thead>
         <tbody>
           {invoiceItems.map((item, index) => {
+            // totals for display
             const totalA = item.g_weight * item.price;
-            const totalW = item.g_weight * item.price_w;
+            const totalW = item.g_weight * item.price_w; // wagePrice
             const total = totalA + totalW - (item.item_disc_amt ?? 0);
             let col = -1;
 
@@ -267,10 +272,13 @@ export default function InvoiceItemTable({
                           selected.item_g_weight,
                         );
                       }
+                      // total_a = g_weight * price
                       updated[index].total_a =
                         updated[index].g_weight * updated[index].price;
+                      // total_w = g_weight * wagePrice
                       updated[index].total_w =
                         updated[index].g_weight * updated[index].price_w;
+                      // total = total_a + total_w - discount
                       updated[index].total =
                         updated[index].total_a +
                         updated[index].total_w -
@@ -312,12 +320,15 @@ export default function InvoiceItemTable({
                             : Number(newItem.item_weight ?? 0),
                         stones: newItem.stones ?? "",
                         G875: newItem.purity ?? "",
+                        // total_a = g_weight * price
                         total_a:
                           (newItem.item_g_weight ?? 0) *
                           (goldPrice ?? newItem.item_price),
+                        // total_w = g_weight * wagePrice
                         total_w:
                           (newItem.item_g_weight ?? 0) *
                           (newItem.work_price ?? 0),
+                        // total = total_a + total_w - discount
                         total:
                           (newItem.item_g_weight ?? 0) *
                             (goldPrice ?? newItem.item_price) +

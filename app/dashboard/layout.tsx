@@ -28,17 +28,17 @@ const dataLinks = [
   { name: "الأصناف", href: "/dashboard/items", icon: <FaBoxOpen /> },
   { name: "الفئات", href: "/dashboard/categories", icon: <FaTags /> },
   { name: "الوحدات", href: "/dashboard/units", icon: <FaTags /> },
-  { name: "صناديق الفواتير", href: "/dashboard/invoice_box", icon: <FaTags /> },
+  // { name: "صناديق الفواتير", href: "/dashboard/invoice_box", icon: <FaTags /> },
 
 ];
 
 const formLinks = [
   { name: "فاتورة البيع", href: "/dashboard/invoice", icon: <FaFileAlt /> },
-  {
-    name: "طريقة الدفع",
-    href: "/dashboard/invoice_payment",
-    icon: <FaMoneyBill />,
-  },
+  // {
+  //   name: "طريقة الدفع",
+  //   href: "/dashboard/invoice_payment",
+  //   icon: <FaMoneyBill />,
+  // },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
