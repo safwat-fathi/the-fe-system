@@ -93,7 +93,6 @@ export default function InvoiceItemTable({
           karat: "",
           price: goldPrice ?? 0,
           price_w: goldPrice ?? 0,
-          item_disc_amt: 0,
           note: "",
           trans_type: 2,
           G875: "",
