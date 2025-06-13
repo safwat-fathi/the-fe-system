@@ -3,14 +3,16 @@ export interface InvoiceItem {
   item_id: number | null;
   item_code?: string;
   item_name?: string;
-  g_weight: number;
+  qty: number;
   weight: number;
+  g_weight: number;
   karat: string;
-  price: number;
-  discount: number;
+  item_disc_amt: number;
   note: string;
   trans_type?: number;
-  G875?: string;
+  price: number;
+  discount: number;
+  note: string;  
   qty: number;
   price_w: number;
   total?: number;
@@ -20,7 +22,6 @@ export interface InvoiceItem {
   tax_prc?: number;
   stones?: string;
   item_disc_prc?: number;
-  item_disc_amt?: number;
   sn?: string;
   item_desc?: string;
   cr_date?: string;

@@ -59,7 +59,7 @@ export default function InvoiceItemTable({
         "price_w",
         "g_weight",
         "qty",
-        "discount",
+        "item_disc_amt",
       ].includes(field)
     ) {
       updated[index][field] = parseFloat(value) || 0;
@@ -68,8 +68,6 @@ export default function InvoiceItemTable({
       updated[index][field] = value;
     }
 
-    updated[index].total_a =
-      updated[index].weight * updated[index].price;
     updated[index].total_w = updated[index].g_weight * updated[index].price_w;
     updated[index].total = updated[index].total_a + updated[index].total_w;
 
@@ -94,7 +92,6 @@ export default function InvoiceItemTable({
           karat: "",
           price: goldPrice ?? 0,
           price_w: goldPrice ?? 0,
-          discount: 0,
           note: "",
           trans_type: 2,
           G875: "",
@@ -183,7 +180,6 @@ export default function InvoiceItemTable({
           {invoiceItems.map((item, index) => {
             const totalA = item.weight * item.price;
             const totalW = item.g_weight * item.price_w;
-            const total = totalA + totalW - item.discount;
             let col = -1;
 
             return (
@@ -191,7 +187,6 @@ export default function InvoiceItemTable({
                 <td>
                   <CreatableSelect
                     isClearable
-                    isCreatable
                     isSearchable
                     className="text-xs"
                     classNamePrefix="select"
@@ -302,7 +297,7 @@ export default function InvoiceItemTable({
                           newItem.item_g_weight !== null &&
                           newItem.item_g_weight !== ""
                             ? Number(newItem.item_g_weight)
-                            : 0,
+                            : Number(newItem.item_weight ?? 0),
                         stones: newItem.stones ?? "",
                         G875: newItem.purity ?? "",
                         total_a:
@@ -423,11 +418,6 @@ export default function InvoiceItemTable({
                       type="number"
                       value={item.price}
                       onChange={(e) =>
-                        handleFieldChange(
-                          index,
-                          "price",
-                          e.target.value,
-                        )
                       }
                       onKeyDown={(e) => handleEnter(e, index, col)}
                     />
@@ -450,8 +440,8 @@ export default function InvoiceItemTable({
                     />
                   </td>
                 )}
-                <td>{item.total_a.toFixed(2)}</td>
-                <td>{item.total_w.toFixed(2)}</td>
+                <td>{(item.total_a ?? 0).toFixed(2)}</td>
+                <td>{(item.total_w ?? 0).toFixed(2)}</td>
                 <td>{total.toFixed(2)}</td>
                 <td>
                   <input
@@ -461,9 +451,9 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={item.discount}
+                    value={item.item_disc_amt}
                     onChange={(e) =>
-                      handleFieldChange(index, "discount", e.target.value)
+                      handleFieldChange(index, "item_disc_amt", e.target.value)
                     }
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />

@@ -68,13 +68,12 @@ export default function InvoicePage() {
       id: Date.now(),
       item_id: null,
       item_code: "",
-      g_weight: 0,
       qty: 0,
       weight: 0,
+      g_weight: 0,
       karat: "",
       price: 0,
       price_w: 0,
-      discount: 0,
       note: "",
       trans_type: 2,
       G875: "",
@@ -109,27 +108,29 @@ export default function InvoicePage() {
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
-  useEffect(() => {
-    if (goldPrice !== null) {
-      setInvoiceItems((items) =>
-        items.map((itm) => {
-          const updated = {
-            ...itm,
-            price: itm.price || goldPrice,
-            price_w: itm.price_w || goldPrice,
-          };
-          return {
-            ...updated,
-            total_a: updated.weight * updated.price,
-            total_w: updated.g_weight * updated.price_w,
-            total:
-              updated.weight * updated.price +
-              updated.g_weight * updated.price_w,
-          };
-        }),
-      );
-    }
-  }, [goldPrice]);
+useEffect(() => {
+  if (goldPrice !== null) {
+    setInvoiceItems((items) =>
+      items.map((itm) => {
+        const updated = {
+          ...itm,
+          price: itm.price || goldPrice,
+          price_per_gram: itm.price_per_gram || goldPrice,
+          price_w: itm.price_w || goldPrice,
+          g_weight: itm.g_weight || itm.weight,
+        };
+
+        return {
+          ...updated,
+          total_a: updated.g_weight * updated.price,
+          total_w: updated.qty * updated.price_w,
+          total: updated.g_weight * updated.price + updated.qty * updated.price_w,
+        };
+      })
+    );
+  }
+}, [goldPrice]);
+
 
   useEffect(() => {
     fetchItems();
@@ -191,7 +192,7 @@ export default function InvoicePage() {
       rowTotal = totalA + totalW;
     }
 
-    return sum + rowTotal - item.discount;
+    return sum + rowTotal - (item.item_disc_amt ?? 0);
   }, 0);
   const taxAmount = totalAmount * 0.15;
   const netAmount = totalAmount + taxAmount;
@@ -396,11 +397,9 @@ export default function InvoicePage() {
           rowTotal = item.g_weight * (item.price_w ?? 0);
         } else {
           rowTotal =
-            item.weight * item.price +
-            item.g_weight * (item.price_w ?? 0);
         }
-        const tax = (rowTotal - item.discount) * 0.15;
-        const total = rowTotal - item.discount + tax;
+        const tax = (rowTotal - (item.item_disc_amt ?? 0)) * 0.15;
+        const total = rowTotal - (item.item_disc_amt ?? 0) + tax;
 
         return `
       <tr>
@@ -412,7 +411,7 @@ export default function InvoicePage() {
         <td>${item.price.toFixed(2)}</td>
         <td>15%</td>
         <td>${tax.toFixed(2)}</td>
-        <td>${(rowTotal - item.discount).toFixed(2)}</td>
+        <td>${(rowTotal - (item.item_disc_amt ?? 0)).toFixed(2)}</td>
         <td>${total.toFixed(2)}</td>
       </tr>`;
       })
