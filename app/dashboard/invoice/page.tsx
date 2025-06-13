@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import QRCode from "react-qr-code";
 
 import {
   API_BASE_URL,
@@ -376,6 +378,16 @@ export default function InvoicePage() {
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     const customer = customers.find((c) => c.id === selectedCustomer);
+    const invQR = generateZatcaQR({
+      sellerName: "شركة ثمار الصفاء المتميزة التجارية",
+      vatNumber: "311452959900003",
+      timestamp: invoiceDate,
+      totalWithVat: netAmount.toFixed(2),
+      vatTotal: taxAmount.toFixed(2),
+    });
+    const qrMarkup = renderToStaticMarkup(
+      <QRCode value={invQR} size={120} />,
+    );
     const rowsHtml = invoiceItems
       .map((item, index) => {
         let rowTotal = 0;
@@ -419,10 +431,12 @@ export default function InvoicePage() {
         .header { text-align: center; font-size: 18px; font-weight: bold; }
         .section { margin-top: 20px; }
         .totals { margin-top: 20px; font-size: 14px; }
+        .qr { text-align: center; margin-top: 10px; }
       </style>
     </head>
     <body>
       <div class="header">فاتورة ضريبية</div>
+      <div class="qr">${qrMarkup}</div>
       <div class="section">
         <p>العميل: ${customer?.cust_name || ""}</p>
         <p>التاريخ: ${new Date(invoiceDate).toLocaleDateString("ar-EG")}</p>
