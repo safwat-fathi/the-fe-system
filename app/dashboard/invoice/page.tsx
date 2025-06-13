@@ -7,6 +7,7 @@ import {
   API_ENDPOINTS,
   fetchData,
   fetchGoldPrice,
+  apiFetch,
 } from "@/utilities/api";
 
 const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
@@ -329,9 +330,12 @@ export default function InvoicePage() {
           item_desc: row.item_name,
           cr_date: invoiceDate,
           cr_user: row.cr_user ?? "",
-          upd_date: row.upd_date ?? "",
+          upd_date: row.upd_date || new Date().toISOString(),
           upd_user: row.upd_user ?? "",
-          com: row.com ?? 0,
+          com:
+            typeof window !== "undefined"
+              ? Number(localStorage.getItem("selectedBranch")) || undefined
+              : undefined,
           inv: invPk,
           item: row.item_id,
         };
@@ -339,7 +343,7 @@ export default function InvoicePage() {
         console.log(`📦 تفاصيل السطر ${index + 1}:`);
         console.table(dtl);
 
-        const dtlRes = await fetch(CREATE_INVOICE_DTL, {
+        const dtlRes = await apiFetch(CREATE_INVOICE_DTL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(dtl),
