@@ -151,6 +151,16 @@ export default function InvoiceItemTable({
     }
   };
 
+  const setRef = (
+  row: number,
+  col: number,
+  el: HTMLInputElement | null
+) => {
+  if (!inputRefs.current[row]) inputRefs.current[row] = [];
+  inputRefs.current[row][col] = el;
+};
+
+
   return (
     <div className="w-full overflow-x-auto mb-6 max-w-full">
       <table className="min-w-[1000px] border text-sm text-center table-fixed">
@@ -335,9 +345,7 @@ export default function InvoiceItemTable({
                 </td>
                 <td>
                   <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
+                    ref={(el) => setRef(index, ++col, el)}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
