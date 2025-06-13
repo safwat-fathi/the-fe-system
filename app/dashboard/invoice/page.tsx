@@ -19,6 +19,7 @@ import InvoiceItemTable from "@/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
 
 import type { InvoiceItem } from "@/types/invoice-item";
+import { generateZatcaQR } from "@/utilities/zatca";
 
 interface Item {
   id: number;
@@ -229,6 +230,14 @@ export default function InvoicePage() {
       othman: 2,
     };
 
+    const invQR = generateZatcaQR({
+      sellerName: "شركة ثمار الصفاء المتميزة التجارية",
+      vatNumber: "311452959900003",
+      timestamp: invoiceDate,
+      totalWithVat: netAmount.toFixed(2),
+      vatTotal: taxAmount.toFixed(2),
+    });
+
     const invData = {
       inv_id: generatedInvId,
       inv_date: invoiceDate,
@@ -268,6 +277,7 @@ export default function InvoicePage() {
       build_no: selectedCust?.build_no || null,
       post_no: selectedCust?.post_no || null,
       post_code: selectedCust?.post_code || null,
+      inv_QR: invQR,
     };
 
     console.log("🚀 بيانات الفاتورة:");

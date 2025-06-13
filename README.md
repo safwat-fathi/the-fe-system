@@ -106,6 +106,13 @@ The `payType` dropdown controls the visibility of four financial columns when ed
 3. Enter payment amount, method and reference.
 4. Click **Save** to record the payment.
 
+### ZATCA QR Generation
+
+When an invoice is saved, a Phase 1 ZATCA QR string is generated using the
+company name **"شركة ثمار الصفاء المتميزة التجارية"** and VAT number
+**311452959900003**. The timestamp, VAT amount and total come from the invoice
+data. The resulting value is stored in the `inv_QR` field of the invoice.
+
 #### API Endpoints
 
 - `getPayTypeList`
