@@ -303,7 +303,7 @@ export default function InvoicePage() {
           price: row.price_per_gram,
           price_w: row.price_w,
           weight: row.weight,
-          g_weight: row.g_weight ?? row.quantity ?? 0,
+          g_weight: row.g_weight ?? 0,
           total: row.total ?? row.weight * row.price_per_gram,
           total_w: row.total_w ?? row.quantity * row.price_w,
           total_a:
