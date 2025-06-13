@@ -116,7 +116,6 @@ export default function InvoicePage() {
           const updated = {
             ...itm,
             price: itm.price || goldPrice,
-            price_per_gram: itm.price_per_gram || goldPrice,
             price_w: itm.price_w || 0,
             g_weight: itm.g_weight || itm.weight,
           };
