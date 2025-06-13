@@ -26,6 +26,11 @@ interface Item {
   item_name: string;
   item_price: number;
   karat: string;
+  item_weight?: number;
+  item_g_weight?: number;
+  stones?: string;
+  purity?: string;
+  work_price?: number;
 }
 
 interface Customer {
@@ -105,11 +110,21 @@ export default function InvoicePage() {
   useEffect(() => {
     if (goldPrice !== null) {
       setInvoiceItems((items) =>
-        items.map((itm) => ({
-          ...itm,
-          price_per_gram: itm.price_per_gram || goldPrice,
-          price_w: itm.price_w || goldPrice,
-        })),
+        items.map((itm) => {
+          const updated = {
+            ...itm,
+            price_per_gram: itm.price_per_gram || goldPrice,
+            price_w: itm.price_w || goldPrice,
+          };
+          return {
+            ...updated,
+            total_a: updated.weight * updated.price_per_gram,
+            total_w: updated.quantity * updated.price_w,
+            total:
+              updated.weight * updated.price_per_gram +
+              updated.quantity * updated.price_w,
+          };
+        }),
       );
     }
   }, [goldPrice]);
@@ -162,15 +177,16 @@ export default function InvoicePage() {
   }
 
   const totalAmount = invoiceItems.reduce((sum, item) => {
+    const totalA = item.weight * item.price_per_gram;
+    const totalW = item.quantity * (item.price_w ?? 0);
     let rowTotal = 0;
 
     if (payType === 1) {
-      rowTotal = item.weight * item.price_per_gram;
+      rowTotal = totalA;
     } else if (payType === 2) {
-      rowTotal = item.quantity * (item.price_w ?? 0);
+      rowTotal = totalW;
     } else {
-      rowTotal =
-        item.weight * item.price_per_gram + item.quantity * (item.price_w ?? 0);
+      rowTotal = totalA + totalW;
     }
 
     return sum + rowTotal - item.discount;

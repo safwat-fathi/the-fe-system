@@ -54,7 +54,6 @@ After modifying the `.npmrc` file, you need to run `pnpm install` again to ensur
 
 The application works with all columns available in the invoice detail table. The following table lists each field and its purpose:
 
-The application works with all columns available in the invoice detail table. The following table lists each field and its purpose:
 
 | Field | Description | DB Field |
 |-------|-------------|----------|

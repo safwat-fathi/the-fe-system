@@ -10,6 +10,11 @@ interface Item {
   item_name: string;
   item_price: number;
   karat: string;
+  item_weight?: number;
+  item_g_weight?: number;
+  stones?: string;
+  purity?: string;
+  work_price?: number;
 }
 
 interface Props {
@@ -51,6 +56,12 @@ export default function InvoiceItemTable({
       // @ts-ignore
       updated[index][field] = value;
     }
+
+    updated[index].total_a =
+      updated[index].weight * updated[index].price_per_gram;
+    updated[index].total_w =
+      updated[index].quantity * updated[index].price_w;
+    updated[index].total = updated[index].total_a + updated[index].total_w;
 
     setInvoiceItems(updated);
 
@@ -122,27 +133,27 @@ export default function InvoiceItemTable({
               <th className="w-[100px]">وزن معايير</th>
             )}
             <th className="w-[80px]">العيار</th>
+            <th className="w-[80px]">المعايرة</th>
+            <th className="w-[80px]">الاحجار</th>
             {(payType === 1 || payType === 3) && (
               <th className="w-[100px]">سعر الجرام</th>
             )}
             {(payType === 2 || payType === 3) && (
               <th className="w-[100px]">أجرة الجرام</th>
             )}
+            <th className="w-[100px]">اجمالي القيمة</th>
+            <th className="w-[100px]">اجمالي الاجور</th>
+            <th className="w-[100px]">الاجمالي</th>
             <th className="w-[80px]">الخصم</th>
-            <th className="w-[80px]">نسبة الضريبة</th>
-            <th className="w-[100px]">الضريبة</th>
-            <th className="w-[100px]">المبلغ</th>
-            <th className="w-[130px]">الإجمالي شامل الضريبة</th>
             <th className="w-[200px]">البيان</th>
             <th className="w-[40px]" />
           </tr>
         </thead>
         <tbody>
           {invoiceItems.map((item, index) => {
-            const baseQty = payType === 2 ? item.quantity : item.weight;
-            const totalBeforeTax = baseQty * item.price_per_gram;
-            const tax = (totalBeforeTax - item.discount) * 0.15;
-            const total = totalBeforeTax - item.discount + tax;
+            const totalA = item.weight * item.price_per_gram;
+            const totalW = item.quantity * item.price_w;
+            const total = totalA + totalW - item.discount;
 
             return (
               <tr key={item.id}>
@@ -196,7 +207,22 @@ export default function InvoiceItemTable({
                       updated[index].price_per_gram =
                         goldPrice ?? selected?.item_price ?? 0;
                       updated[index].price_w =
-                        goldPrice ?? selected?.item_price ?? 0;
+                        selected?.work_price ?? goldPrice ?? selected?.item_price ?? 0;
+                      updated[index].G875 = selected?.purity ?? "";
+                      updated[index].stones = selected?.stones ?? "";
+                      updated[index].weight = selected?.item_weight
+                        ? Number(selected.item_weight)
+                        : updated[index].weight;
+                      updated[index].quantity = selected?.item_g_weight
+                        ? Number(selected.item_g_weight)
+                        : updated[index].quantity;
+                      updated[index].total_a =
+                        updated[index].weight * updated[index].price_per_gram;
+                      updated[index].total_w =
+                        updated[index].quantity * updated[index].price_w;
+                      updated[index].total =
+                        updated[index].total_a + updated[index].total_w;
+
                       setInvoiceItems(updated);
                     }}
                     onCreateOption={(inputValue) => {
@@ -206,6 +232,11 @@ export default function InvoiceItemTable({
                         item_name: inputValue,
                         karat: "",
                         item_price: 0,
+                        item_weight: 0,
+                        item_g_weight: 0,
+                        stones: "",
+                        purity: "",
+                        work_price: 0,
                       };
 
                       setItems([...items, newItem]);
@@ -218,7 +249,14 @@ export default function InvoiceItemTable({
                         item_name: newItem.item_name,
                         karat: newItem.karat,
                         price_per_gram: goldPrice ?? newItem.item_price,
-                        price_w: goldPrice ?? newItem.item_price,
+                        price_w: newItem.work_price ?? goldPrice ?? newItem.item_price,
+                        weight: newItem.item_weight ?? 0,
+                        quantity: newItem.item_g_weight ?? 0,
+                        stones: newItem.stones ?? "",
+                        G875: newItem.purity ?? "",
+                        total_a: (newItem.item_weight ?? 0) * (goldPrice ?? newItem.item_price),
+                        total_w: (newItem.item_g_weight ?? 0) * (newItem.work_price ?? goldPrice ?? newItem.item_price),
+                        total: ((newItem.item_weight ?? 0) * (goldPrice ?? newItem.item_price)) + ((newItem.item_g_weight ?? 0) * (newItem.work_price ?? goldPrice ?? newItem.item_price)),
                       };
                       setInvoiceItems(updated);
                     }}
@@ -271,6 +309,26 @@ export default function InvoiceItemTable({
                     }
                   />
                 </td>
+                <td>
+                  <input
+                    className="border w-full p-1 text-xs text-center"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
+                    value={item.G875}
+                    onChange={(e) =>
+                      handleFieldChange(index, "G875", e.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    className="border w-full p-1 text-xs text-center"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
+                    value={item.stones}
+                    onChange={(e) =>
+                      handleFieldChange(index, "stones", e.target.value)
+                    }
+                  />
+                </td>
                 {(payType === 1 || payType === 3) && (
                   <td>
                     <input
@@ -301,6 +359,9 @@ export default function InvoiceItemTable({
                     />
                   </td>
                 )}
+                <td>{item.total_a.toFixed(2)}</td>
+                <td>{item.total_w.toFixed(2)}</td>
+                <td>{total.toFixed(2)}</td>
                 <td>
                   <input
                     className="border w-full p-1 text-xs text-center"
@@ -312,17 +373,13 @@ export default function InvoiceItemTable({
                     }
                   />
                 </td>
-                <td>15%</td>
-                <td>{tax.toFixed(2)}</td>
-                <td>{(totalBeforeTax - item.discount).toFixed(2)}</td>
-                <td>{total.toFixed(2)}</td>
                 <td>
                   <input
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
-                    value={item.note}
+                    value={item.item_desc}
                     onChange={(e) =>
-                      handleFieldChange(index, "note", e.target.value)
+                      handleFieldChange(index, "item_desc", e.target.value)
                     }
                   />
                 </td>
