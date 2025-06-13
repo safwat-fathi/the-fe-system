@@ -137,8 +137,12 @@ export default function InvoiceItemTable({
             {(payType === 2 || payType === 3) && (
               <th className="w-[100px]">أجرة الجرام</th>
             )}
-            <th className="w-[100px]">اجمالي القيمة</th>
+            {(payType === 1 || payType === 3) && (
+              <th className="w-[100px]">اجمالي القيمة</th>
+            )}
+            {(payType === 2 || payType === 3) && (
             <th className="w-[100px]">اجمالي الاجور</th>
+            )}
             <th className="w-[100px]">الاجمالي</th>
             <th className="w-[80px]">الخصم</th>
             <th className="w-[200px]">البيان</th>

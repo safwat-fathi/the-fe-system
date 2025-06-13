@@ -22,7 +22,7 @@ export default function Login() {
     if (branch) localStorage.setItem("selectedBranch", branch);
     if (year) localStorage.setItem("selectedYear", year);
     console.log("Login successful");
-    router.push("/dashboard"); // توجيه المستخدم للصفحة الرئيسية بعد تسجيل الدخول
+    router.push("/dashboard"); 
   };
 
   return (
