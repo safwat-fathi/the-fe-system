@@ -68,7 +68,6 @@ export default function InvoiceItemTable({
       updated[index][field] = value;
     }
 
-    updated[index].total_a = updated[index].weight * updated[index].price;
     updated[index].total_w = updated[index].g_weight * updated[index].price_w;
     updated[index].total = updated[index].total_a + updated[index].total_w;
 
@@ -181,7 +180,6 @@ export default function InvoiceItemTable({
           {invoiceItems.map((item, index) => {
             const totalA = item.weight * item.price;
             const totalW = item.g_weight * item.price_w;
-            const total = totalA + totalW - (item.item_disc_amt ?? 0);
             let col = -1;
 
             return (
@@ -420,7 +418,6 @@ export default function InvoiceItemTable({
                       type="number"
                       value={item.price}
                       onChange={(e) =>
-                        handleFieldChange(index, "price", e.target.value)
                       }
                       onKeyDown={(e) => handleEnter(e, index, col)}
                     />

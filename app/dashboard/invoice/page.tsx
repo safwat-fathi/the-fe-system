@@ -108,25 +108,29 @@ export default function InvoicePage() {
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
-  useEffect(() => {
-    if (goldPrice !== null) {
-      setInvoiceItems((items) =>
-        items.map((itm) => {
-          const updated = {
-            ...itm,
-            price: itm.price || goldPrice,
-            price_w: itm.price_w || goldPrice,
-          };
-          return {
-            ...updated,
-            total_a: updated.weight * updated.price,
-            total_w: updated.g_weight * updated.price_w,
-            total: updated.weight * updated.price + updated.g_weight * updated.price_w,
-          };
-        }),
-      );
-    }
-  }, [goldPrice]);
+useEffect(() => {
+  if (goldPrice !== null) {
+    setInvoiceItems((items) =>
+      items.map((itm) => {
+        const updated = {
+          ...itm,
+          price: itm.price || goldPrice,
+          price_per_gram: itm.price_per_gram || goldPrice,
+          price_w: itm.price_w || goldPrice,
+          g_weight: itm.g_weight || itm.weight,
+        };
+
+        return {
+          ...updated,
+          total_a: updated.g_weight * updated.price,
+          total_w: updated.qty * updated.price_w,
+          total: updated.g_weight * updated.price + updated.qty * updated.price_w,
+        };
+      })
+    );
+  }
+}, [goldPrice]);
+
 
   useEffect(() => {
     fetchItems();
@@ -393,7 +397,6 @@ export default function InvoicePage() {
           rowTotal = item.g_weight * (item.price_w ?? 0);
         } else {
           rowTotal =
-            item.weight * item.price + item.g_weight * (item.price_w ?? 0);
         }
         const tax = (rowTotal - (item.item_disc_amt ?? 0)) * 0.15;
         const total = rowTotal - (item.item_disc_amt ?? 0) + tax;
