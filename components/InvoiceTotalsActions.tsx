@@ -11,6 +11,7 @@ interface Props {
   totalAmount: number;
   taxAmount: number;
   netAmount: number;
+  totalDiscount: number;
   children: ReactNode;
 }
 
@@ -22,6 +23,7 @@ export default function InvoiceTotalsActions({
   totalAmount,
   taxAmount,
   netAmount,
+  totalDiscount,
   children,
 }: Props) {
   return (
@@ -34,22 +36,22 @@ export default function InvoiceTotalsActions({
         </div>
         <div className="flex items-center gap-2">
           <Button
-            onClick={saveInvoice}
             className="bg-green-600 text-white hover:bg-green-700 px-2 py-1 text-sm rounded"
+            onClick={saveInvoice}
           >
-            <i className="bi bi-save me-2"></i> حفظ الفاتورة
+            <i className="bi bi-save me-2" /> حفظ الفاتورة
           </Button>
           <Button
-            onClick={() => window.location.reload()}
             className="bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 text-sm rounded"
+            onClick={() => window.location.reload()}
           >
-            <i className="bi bi-file-earmark-plus me-2"></i> فاتورة جديدة
+            <i className="bi bi-file-earmark-plus me-2" /> فاتورة جديدة
           </Button>
           <Button
-            onClick={previewInvoice}
             className="bg-gray-600 text-white hover:bg-gray-700 px-2 py-1 text-sm rounded"
+            onClick={previewInvoice}
           >
-            <i className="bi bi-eye me-2"></i> معاينة الفاتورة
+            <i className="bi bi-eye me-2" /> معاينة الفاتورة
           </Button>
         </div>
       </div>
@@ -59,6 +61,10 @@ export default function InvoiceTotalsActions({
           <div className="text-gray-600">
             <span>الإجمالي: </span>
             <span>{totalAmount.toFixed(2)} ﷼</span>
+          </div>
+          <div className="text-gray-600">
+            <span>إجمالي الخصم: </span>
+            <span>{totalDiscount.toFixed(2)} ﷼</span>
           </div>
           <div className="text-green-500">
             <span>الضريبة: </span>
@@ -73,4 +79,3 @@ export default function InvoiceTotalsActions({
     </div>
   );
 }
-
