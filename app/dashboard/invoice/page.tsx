@@ -36,6 +36,7 @@ interface Item {
   stones?: string;
   purity?: string;
   work_price?: number;
+  cat?: number;
 }
 
 interface Customer {
@@ -58,8 +59,16 @@ interface Customer {
   post_code?: string;
 }
 
+interface Category {
+  id: number;
+  gauge?: string;
+  k?: string;
+  purity?: string;
+}
+
 export default function InvoicePage() {
   const [items, setItems] = useState<Item[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<number | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState<number>(1);
@@ -143,6 +152,7 @@ export default function InvoicePage() {
   useEffect(() => {
     fetchItems();
     fetchCustomers();
+    fetchCategories();
     if (typeof window !== "undefined") {
       const now = new Date();
 
@@ -186,6 +196,25 @@ export default function InvoicePage() {
       setCustomers([]);
     }
     console.log("العملاء:", response);
+  }
+
+  async function fetchCategories() {
+    const response = await fetchData<{ results: Category[] }>(
+      API_ENDPOINTS.CATEGORIES_LIST,
+    );
+
+    if (response && Array.isArray(response.results)) {
+      setCategories(response.results);
+    } else if (response && Array.isArray((response as any).data)) {
+      // some apis may return {data:[]}
+      // @ts-ignore
+      setCategories((response as any).data);
+    } else if (Array.isArray(response)) {
+      // if array directly
+      setCategories(response as unknown as Category[]);
+    } else {
+      setCategories([]);
+    }
   }
 
   // sum rows according to payType
@@ -522,6 +551,7 @@ export default function InvoicePage() {
         goldPrice={goldPrice}
         invoiceItems={invoiceItems}
         items={items}
+        categories={categories}
         payType={payType}
         setInvoiceItems={setInvoiceItems}
         setItems={setItems}

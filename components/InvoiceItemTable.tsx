@@ -16,6 +16,14 @@ interface Item {
   stones?: string;
   purity?: string;
   work_price?: number;
+  cat?: number;
+}
+
+interface Category {
+  id: number;
+  gauge?: string;
+  purity?: string;
+  k?: string;
 }
 
 interface Props {
@@ -25,6 +33,7 @@ interface Props {
   setInvoiceItems: (items: InvoiceItem[]) => void;
   goldPrice: number | null;
   payType: number; // 1=gold, 2=wage, 3=both
+  categories: Category[];
 }
 
 export default function InvoiceItemTable({
@@ -34,6 +43,7 @@ export default function InvoiceItemTable({
   setInvoiceItems,
   goldPrice,
   payType,
+  categories,
 }: Props) {
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
 
@@ -271,6 +281,15 @@ export default function InvoiceItemTable({
                         updated[index].g_weight = Number(
                           selected.item_g_weight,
                         );
+                      }
+                      if ((updated[index].karat === "" || updated[index].G875 === "") && selected?.cat) {
+                        const cat = categories.find((c) => c.id === selected.cat);
+                        if (cat) {
+                          if (!updated[index].karat)
+                            updated[index].karat = (cat.gauge ?? cat.k ?? "") as string;
+                          if (!updated[index].G875)
+                            updated[index].G875 = cat.purity ?? "";
+                        }
                       }
                       // total_a = g_weight * price
                       updated[index].total_a =
