@@ -22,6 +22,7 @@ import InvoiceItemTable from "@/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
 
 import type { InvoiceItem } from "@/types/invoice-item";
+
 import { generateZatcaQR } from "@/utilities/zatca";
 
 interface Item {
@@ -108,29 +109,31 @@ export default function InvoicePage() {
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
-useEffect(() => {
-  if (goldPrice !== null) {
-    setInvoiceItems((items) =>
-      items.map((itm) => {
-        const updated = {
-          ...itm,
-          price: itm.price || goldPrice,
-          price_per_gram: itm.price_per_gram || goldPrice,
-          price_w: itm.price_w || goldPrice,
-          g_weight: itm.g_weight || itm.weight,
-        };
+  useEffect(() => {
+    if (goldPrice !== null) {
+      setInvoiceItems((items) =>
+        items.map((itm) => {
+          const updated = {
+            ...itm,
+            price: itm.price || goldPrice,
+            price_per_gram: itm.price_per_gram || goldPrice,
+            price_w: itm.price_w || 0,
+            g_weight: itm.g_weight || itm.weight,
+          };
 
-        return {
-          ...updated,
-          total_a: updated.g_weight * updated.price,
-          total_w: updated.qty * updated.price_w,
-          total: updated.g_weight * updated.price + updated.qty * updated.price_w,
-        };
-      })
-    );
-  }
-}, [goldPrice]);
-
+          return {
+            ...updated,
+            total_a: updated.g_weight * updated.price,
+            total_w: updated.g_weight * updated.price_w,
+            total:
+              updated.g_weight * updated.price +
+              updated.g_weight * updated.price_w -
+              (updated.item_disc_amt ?? 0),
+          };
+        }),
+      );
+    }
+  }, [goldPrice]);
 
   useEffect(() => {
     fetchItems();
@@ -180,7 +183,7 @@ useEffect(() => {
   }
 
   const totalAmount = invoiceItems.reduce((sum, item) => {
-    const totalA = item.weight * item.price;
+    const totalA = item.g_weight * item.price;
     const totalW = item.g_weight * (item.price_w ?? 0);
     let rowTotal = 0;
 
@@ -196,6 +199,10 @@ useEffect(() => {
   }, 0);
   const taxAmount = totalAmount * 0.15;
   const netAmount = totalAmount + taxAmount;
+  const totalDiscount = invoiceItems.reduce(
+    (sum, item) => sum + (item.item_disc_amt ?? 0),
+    0,
+  );
 
   const formattedDateTime = new Date(invoiceDate).toLocaleString("ar-EG", {
     dateStyle: "short",
@@ -316,12 +323,13 @@ useEffect(() => {
           price_w: row.price_w,
           weight: row.weight,
           g_weight: row.g_weight ?? 0,
-          total: row.total ?? row.weight * row.price,
+          total:
+            row.total ??
+            row.g_weight * row.price +
+              row.g_weight * row.price_w -
+              (row.item_disc_amt ?? 0),
           total_w: row.total_w ?? row.g_weight * row.price_w,
-          total_a:
-            row.total_a ??
-            row.weight * row.price +
-              row.g_weight * row.price_w,
+          total_a: row.total_a ?? row.g_weight * row.price,
           inv_note: row.note || "",
           tax: row.tax ?? 0,
           tax_prc: row.tax_prc ?? 15,
@@ -384,19 +392,18 @@ useEffect(() => {
       totalWithVat: netAmount.toFixed(2),
       vatTotal: taxAmount.toFixed(2),
     });
-    const qrMarkup = renderToStaticMarkup(
-      <QRCode value={invQR} size={120} />,
-    );
+    const qrMarkup = renderToStaticMarkup(<QRCode size={120} value={invQR} />);
     const rowsHtml = invoiceItems
       .map((item, index) => {
         let rowTotal = 0;
 
         if (payType === 1) {
-          rowTotal = item.weight * item.price;
+          rowTotal = item.g_weight * item.price;
         } else if (payType === 2) {
           rowTotal = item.g_weight * (item.price_w ?? 0);
         } else {
           rowTotal =
+            item.g_weight * item.price + item.g_weight * (item.price_w ?? 0);
         }
         const tax = (rowTotal - (item.item_disc_amt ?? 0)) * 0.15;
         const total = rowTotal - (item.item_disc_amt ?? 0) + tax;
@@ -477,6 +484,7 @@ useEffect(() => {
       saveInvoice={saveInvoice}
       taxAmount={taxAmount}
       totalAmount={totalAmount}
+      totalDiscount={totalDiscount}
     >
       <InvoiceSelectors
         customers={customers}

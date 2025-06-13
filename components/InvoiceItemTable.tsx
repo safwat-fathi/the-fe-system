@@ -68,8 +68,12 @@ export default function InvoiceItemTable({
       updated[index][field] = value;
     }
 
+    updated[index].total_a = updated[index].g_weight * updated[index].price;
     updated[index].total_w = updated[index].g_weight * updated[index].price_w;
-    updated[index].total = updated[index].total_a + updated[index].total_w;
+    updated[index].total =
+      updated[index].total_a +
+      updated[index].total_w -
+      (updated[index].item_disc_amt ?? 0);
 
     setInvoiceItems(updated);
 
@@ -178,8 +182,9 @@ export default function InvoiceItemTable({
         </thead>
         <tbody>
           {invoiceItems.map((item, index) => {
-            const totalA = item.weight * item.price;
+            const totalA = item.g_weight * item.price;
             const totalW = item.g_weight * item.price_w;
+            const total = totalA + totalW - (item.item_disc_amt ?? 0);
             let col = -1;
 
             return (
@@ -232,11 +237,7 @@ export default function InvoiceItemTable({
                       updated[index].karat = selected?.karat ?? "";
                       updated[index].price =
                         goldPrice ?? selected?.item_price ?? 0;
-                      updated[index].price_w =
-                        selected?.work_price ??
-                        goldPrice ??
-                        selected?.item_price ??
-                        0;
+                      updated[index].price_w = selected?.work_price ?? 0;
                       updated[index].G875 = selected?.purity ?? "";
                       updated[index].stones = selected?.stones ?? "";
                       if (
@@ -257,11 +258,13 @@ export default function InvoiceItemTable({
                         );
                       }
                       updated[index].total_a =
-                        updated[index].weight * updated[index].price;
+                        updated[index].g_weight * updated[index].price;
                       updated[index].total_w =
                         updated[index].g_weight * updated[index].price_w;
                       updated[index].total =
-                        updated[index].total_a + updated[index].total_w;
+                        updated[index].total_a +
+                        updated[index].total_w -
+                        (updated[index].item_disc_amt ?? 0);
 
                       setInvoiceItems(updated);
                     }}
@@ -289,8 +292,7 @@ export default function InvoiceItemTable({
                         item_name: newItem.item_name,
                         karat: newItem.karat,
                         price: goldPrice ?? newItem.item_price,
-                        price_w:
-                          newItem.work_price ?? goldPrice ?? newItem.item_price,
+                        price_w: newItem.work_price ?? 0,
                         weight: newItem.item_weight ?? 0,
                         g_weight:
                           newItem.item_g_weight !== undefined &&
@@ -301,20 +303,17 @@ export default function InvoiceItemTable({
                         stones: newItem.stones ?? "",
                         G875: newItem.purity ?? "",
                         total_a:
-                          (newItem.item_weight ?? 0) *
+                          (newItem.item_g_weight ?? 0) *
                           (goldPrice ?? newItem.item_price),
                         total_w:
                           (newItem.item_g_weight ?? 0) *
-                          (newItem.work_price ??
-                            goldPrice ??
-                            newItem.item_price),
+                          (newItem.work_price ?? 0),
                         total:
-                          (newItem.item_weight ?? 0) *
+                          (newItem.item_g_weight ?? 0) *
                             (goldPrice ?? newItem.item_price) +
                           (newItem.item_g_weight ?? 0) *
-                            (newItem.work_price ??
-                              goldPrice ??
-                              newItem.item_price),
+                            (newItem.work_price ?? 0) -
+                          (newItem.item_disc_amt ?? 0),
                       };
                       setInvoiceItems(updated);
                     }}
@@ -418,6 +417,7 @@ export default function InvoiceItemTable({
                       type="number"
                       value={item.price}
                       onChange={(e) =>
+                        handleFieldChange(index, "price", e.target.value)
                       }
                       onKeyDown={(e) => handleEnter(e, index, col)}
                     />
