@@ -86,7 +86,14 @@ The application works with all columns available in the invoice detail table. Th
 
 ### payType
 
-The `payType` dropdown controls which financial columns are shown when editing an invoice:
+The `payType` dropdown controls the visibility of four financial columns when editing an invoice:
+
+- **price_per_gram** – price per gram
+- **price_w** – wage per gram
+- **total** – total value
+- **total_w** – total wages
+
+`total_a` and the weight columns remain visible regardless of the selected pay type. The numeric options are:
 
 1 – value only
 2 – wages only

@@ -126,12 +126,8 @@ export default function InvoiceItemTable({
           <tr>
             <th className="w-[400px]">اسم الصنف</th>
             <th className="w-[60px]">العدد</th>
-            {(payType === 1 || payType === 3) && (
-              <th className="w-[100px]">الوزن القائم</th>
-            )}
-            {(payType === 2 || payType === 3) && (
-              <th className="w-[100px]">وزن معايير</th>
-            )}
+            <th className="w-[100px]">الوزن القائم</th>
+            <th className="w-[100px]">وزن معايير</th>
             <th className="w-[80px]">العيار</th>
             <th className="w-[80px]">المعايرة</th>
             <th className="w-[80px]">الاحجار</th>
@@ -273,32 +269,28 @@ export default function InvoiceItemTable({
                     }
                   />
                 </td>
-                {(payType === 1 || payType === 3) && (
-                  <td>
-                    <input
-                      className="border w-full p-1 text-xs text-center"
-                      style={{ minWidth: 0, maxWidth: "100%" }}
-                      type="number"
-                      value={item.weight}
-                      onChange={(e) =>
-                        handleFieldChange(index, "weight", e.target.value)
-                      }
-                    />
-                  </td>
-                )}
-                {(payType === 2 || payType === 3) && (
-                  <td>
-                    <input
-                      className="border w-full p-1 text-xs text-center"
-                      style={{ minWidth: 0, maxWidth: "100%" }}
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        handleFieldChange(index, "quantity", e.target.value)
-                      }
-                    />
-                  </td>
-                )}
+                <td>
+                  <input
+                    className="border w-full p-1 text-xs text-center"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
+                    type="number"
+                    value={item.weight}
+                    onChange={(e) =>
+                      handleFieldChange(index, "weight", e.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    className="border w-full p-1 text-xs text-center"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) =>
+                      handleFieldChange(index, "quantity", e.target.value)
+                    }
+                  />
+                </td>
                 <td>
                   <input
                     className="border w-full p-1 text-xs text-center"
