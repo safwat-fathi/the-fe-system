@@ -1,12 +1,18 @@
 export interface InvoiceItem {
   id: number;
+  item_id: number | null;
+  item_code?: string;
+  item_name?: string;
+  g_weight: number;
+  weight: number;
+  karat: string;
+  price: number;
+  discount: number;
+  note: string;
   trans_type?: number;
   G875?: string;
   qty: number;
-  price?: number;
   price_w: number;
-  weight: number;
-  g_weight?: number;
   total?: number;
   total_w?: number;
   total_a?: number;
