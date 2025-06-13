@@ -59,8 +59,7 @@ export default function InvoiceItemTable({
 
     updated[index].total_a =
       updated[index].weight * updated[index].price_per_gram;
-    updated[index].total_w =
-      updated[index].quantity * updated[index].price_w;
+    updated[index].total_w = updated[index].quantity * updated[index].price_w;
     updated[index].total = updated[index].total_a + updated[index].total_w;
 
     setInvoiceItems(updated);
@@ -141,7 +140,7 @@ export default function InvoiceItemTable({
               <th className="w-[100px]">اجمالي القيمة</th>
             )}
             {(payType === 2 || payType === 3) && (
-            <th className="w-[100px]">اجمالي الاجور</th>
+              <th className="w-[100px]">اجمالي الاجور</th>
             )}
             <th className="w-[100px]">الاجمالي</th>
             <th className="w-[80px]">الخصم</th>
@@ -207,15 +206,29 @@ export default function InvoiceItemTable({
                       updated[index].price_per_gram =
                         goldPrice ?? selected?.item_price ?? 0;
                       updated[index].price_w =
-                        selected?.work_price ?? goldPrice ?? selected?.item_price ?? 0;
+                        selected?.work_price ??
+                        goldPrice ??
+                        selected?.item_price ??
+                        0;
                       updated[index].G875 = selected?.purity ?? "";
                       updated[index].stones = selected?.stones ?? "";
-                      updated[index].weight = selected?.item_weight
-                        ? Number(selected.item_weight)
-                        : updated[index].weight;
-                      updated[index].quantity = selected?.item_g_weight
-                        ? Number(selected.item_g_weight)
-                        : updated[index].quantity;
+                      if (
+                        selected?.item_weight !== undefined &&
+                        selected?.item_weight !== null &&
+                        selected.item_weight !== ""
+                      ) {
+                        updated[index].weight = Number(selected.item_weight);
+                        updated[index].g_weight = Number(selected.item_weight);
+                      }
+                      if (
+                        selected?.item_g_weight !== undefined &&
+                        selected?.item_g_weight !== null &&
+                        selected.item_g_weight !== ""
+                      ) {
+                        updated[index].quantity = Number(
+                          selected.item_g_weight,
+                        );
+                      }
                       updated[index].total_a =
                         updated[index].weight * updated[index].price_per_gram;
                       updated[index].total_w =
@@ -249,14 +262,38 @@ export default function InvoiceItemTable({
                         item_name: newItem.item_name,
                         karat: newItem.karat,
                         price_per_gram: goldPrice ?? newItem.item_price,
-                        price_w: newItem.work_price ?? goldPrice ?? newItem.item_price,
+                        price_w:
+                          newItem.work_price ?? goldPrice ?? newItem.item_price,
                         weight: newItem.item_weight ?? 0,
-                        quantity: newItem.item_g_weight ?? 0,
+                        g_weight:
+                          newItem.item_weight !== undefined &&
+                          newItem.item_weight !== null &&
+                          newItem.item_weight !== ""
+                            ? Number(newItem.item_weight)
+                            : 0,
+                        quantity:
+                          newItem.item_g_weight !== undefined &&
+                          newItem.item_g_weight !== null &&
+                          newItem.item_g_weight !== ""
+                            ? Number(newItem.item_g_weight)
+                            : 0,
                         stones: newItem.stones ?? "",
                         G875: newItem.purity ?? "",
-                        total_a: (newItem.item_weight ?? 0) * (goldPrice ?? newItem.item_price),
-                        total_w: (newItem.item_g_weight ?? 0) * (newItem.work_price ?? goldPrice ?? newItem.item_price),
-                        total: ((newItem.item_weight ?? 0) * (goldPrice ?? newItem.item_price)) + ((newItem.item_g_weight ?? 0) * (newItem.work_price ?? goldPrice ?? newItem.item_price)),
+                        total_a:
+                          (newItem.item_weight ?? 0) *
+                          (goldPrice ?? newItem.item_price),
+                        total_w:
+                          (newItem.item_g_weight ?? 0) *
+                          (newItem.work_price ??
+                            goldPrice ??
+                            newItem.item_price),
+                        total:
+                          (newItem.item_weight ?? 0) *
+                            (goldPrice ?? newItem.item_price) +
+                          (newItem.item_g_weight ?? 0) *
+                            (newItem.work_price ??
+                              goldPrice ??
+                              newItem.item_price),
                       };
                       setInvoiceItems(updated);
                     }}
