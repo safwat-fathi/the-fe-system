@@ -1,24 +1,15 @@
 export interface InvoiceItem {
   id: number;
-  item_id: number | null;
-  item_code?: string;
-  item_name?: string;
-  quantity: number;
-  weight: number;
-  karat: string;
-  price_per_gram: number;
-  discount: number;
-  note: string;
   trans_type?: number;
   G875?: string;
   qty: number;
   price?: number;
   price_w: number;
+  weight: number;
   g_weight?: number;
   total?: number;
   total_w?: number;
   total_a?: number;
-  inv_note?: string;
   tax?: number;
   tax_prc?: number;
   stones?: string;
