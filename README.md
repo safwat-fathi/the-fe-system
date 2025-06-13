@@ -52,15 +52,36 @@ After modifying the `.npmrc` file, you need to run `pnpm install` again to ensur
 
 ### Supported Invoice Detail Fields
 
-- `item_desc` – line description
-- `item_qty` – quantity of the item
-- `qty` – number of pieces
-- `item_price` – unit price used for totals
-- `inv_tax` – tax percentage
-- `tax_amt` – tax amount for the line
-- `inv_status` – status code
-- `cr_date` – creation date
-- `inv_notes` – additional notes
+The application works with all columns available in the invoice detail table. The following table lists each field and its purpose:
+
+| Field | Description | DB Field |
+|-------|-------------|----------|
+| `id` | Auto increment key | `id` |
+| `trans_type` | Invoice type (`2` means sales invoice) | `trans_type` |
+| `G875` | Purity/calibration value | `G875` |
+| `qty` | Number of pieces | `qty` |
+| `weight` | Gross weight | `weight` |
+| `g_weight` | Net/gauged weight | `g_weight` |
+| `price` | Price per gram | `price` |
+| `price_w` | Wage per gram | `price_w` |
+| `total` | Total value | `total` |
+| `total_w` | Total wages | `total_w` |
+| `total_a` | Value + wages | `total_a` |
+| `inv_note` | Line notes | `inv_note` |
+| `tax` | Added tax amount | `tax` |
+| `tax_prc` | Tax percentage (15% by default) | `tax_prc` |
+| `stones` | Stones information | `stones` |
+| `item_disc_prc` | Item discount percentage | `item_disc_prc` |
+| `item_disc_amt` | Item discount amount | `item_disc_amt` |
+| `sn` | Serial number of the item line | `sn` |
+| `item_desc` | Item description text | `item_desc` |
+| `cr_date` | Creation timestamp | `cr_date` |
+| `cr_user` | Username who created the line | `cr_user` |
+| `upd_date` | Last update timestamp | `upd_date` |
+| `upd_user` | Username who updated the line | `upd_user` |
+| `com` | Branch identifier | `com` |
+| `inv` | Invoice number (foreign key) | `inv` |
+| `item` | Item ID (foreign key) | `item` |
 
 ### payType
 
@@ -85,6 +106,9 @@ The `payType` dropdown controls which financial columns are shown when editing a
 - `invoices_list`
 - `api_create_invoice`
 - `api_create_invoice_dtl`
+- `invoices_dtl_list`
+- `api_update_invoice_dtl`
+- `api_delete_invoice_dtl`
 
 ## License
 
