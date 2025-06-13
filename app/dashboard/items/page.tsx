@@ -77,6 +77,7 @@ export default function CategoriesItemsPage() {
   const [itemsNextUrl, setItemsNextUrl] = useState<string | null>(null);
   const [itemsPrevUrl, setItemsPrevUrl] = useState<string | null>(null);
   const [itemsCount, setItemsCount] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [boxes, setBoxes] = useState<{ id: number; box_name: string }[]>([]);
   const [catTypes, setCatTypes] = useState<{ code_id: number; code_desc: string }[]>([]);
@@ -210,15 +211,15 @@ const fetchItems = async (xcat: number ,xtype:number ) => {
 
  
 
-const filteredItems = items;
-// const filteredItems = items.filter((item) => {
-//   const byCategory = selectedCatId !== null && selectedCatId !== undefined ? Number(item.cat) === Number(selectedCatId)  : false;
-
-//   const byType = selectedTypeId !== null && selectedTypeId !== undefined   ? Number(item.item_type) === Number(selectedTypeId): false;
-
-//   console.log(`Item ${item.id} => byCategory: ${byCategory}, selectedCatId: ${Number(selectedCatId)}, selectedTypeId: ${Number(selectedTypeId)}, byType: ${byType}`);
-//   return byCategory && byType;
-// });
+const filteredItems = useMemo(() => {
+  if (!searchQuery) return items;
+  const query = searchQuery.toLowerCase();
+  return items.filter((item) =>
+    Object.values(item).some((val) =>
+      val?.toString().toLowerCase().includes(query)
+    )
+  );
+}, [items, searchQuery]);
    
 
 
@@ -368,9 +369,16 @@ const filteredItems = items;
     <div className="p-4 space-y-6 font-cairo">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">قائمة الأصناف</h1>
-        <Button
-  color="success"
-  onPress={() => {
+        <div className="flex gap-2">
+          <Input
+            placeholder="بحث بالاسم..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-60"
+          />
+          <Button
+            color="success"
+            onPress={() => {
     setModalMode("add");
     setNewItem({
       ...newItem,
@@ -402,8 +410,7 @@ const filteredItems = items;
 >
   إضافة صنف جديد
 </Button>
-
-
+        </div>
       </div>
 
       {/* جدول الفئات */}

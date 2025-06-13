@@ -201,7 +201,7 @@ export default function InvoiceItemTable({
             <th className="w-[100px]">الاجمالي</th>
             <th className="w-[80px]">الخصم</th>
             <th className="w-[200px]">البيان</th>
-            <th className="w-[40px]" />
+            {/* <th className="w-[40px]" /> */}
           </tr>
         </thead>
         <tbody>
