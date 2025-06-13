@@ -2,6 +2,7 @@
 
 import type { InvoiceItem } from "@/types/invoice-item";
 
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import CreatableSelect from "react-select/creatable";
 
 interface Item {
@@ -34,6 +35,16 @@ export default function InvoiceItemTable({
   goldPrice,
   payType,
 }: Props) {
+  const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
+
+  useEffect(() => {
+    invoiceItems.forEach((_, i) => {
+      if (!inputRefs.current[i]) {
+        inputRefs.current[i] = [];
+      }
+    });
+  }, [invoiceItems.length]);
+
   const handleFieldChange = (
     index: number,
     field: keyof InvoiceItem,
@@ -118,6 +129,28 @@ export default function InvoiceItemTable({
     setInvoiceItems(updated);
   };
 
+  const handleEnter = (
+    e: KeyboardEvent<HTMLInputElement>,
+    rowIndex: number,
+    colIndex: number,
+  ) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+
+      const nextCol = colIndex + 1;
+      const rowRefs = inputRefs.current[rowIndex];
+      let nextRef: HTMLInputElement | null | undefined = rowRefs?.[nextCol];
+
+      if (!nextRef) {
+        const nextRowRefs = inputRefs.current[rowIndex + 1];
+
+        nextRef = nextRowRefs?.[0];
+      }
+
+      nextRef?.focus();
+    }
+  };
+
   return (
     <div className="w-full overflow-x-auto mb-6 max-w-full">
       <table className="min-w-[1000px] border text-sm text-center table-fixed">
@@ -153,6 +186,7 @@ export default function InvoiceItemTable({
             const totalA = item.weight * item.price_per_gram;
             const totalW = item.quantity * item.price_w;
             const total = totalA + totalW - item.discount;
+            let col = -1;
 
             return (
               <tr key={item.id}>
@@ -301,6 +335,9 @@ export default function InvoiceItemTable({
                 </td>
                 <td>
                   <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
@@ -308,10 +345,14 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "qty", e.target.value)
                     }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
                   <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
@@ -319,10 +360,14 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
                     }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
                   <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
@@ -330,41 +375,57 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "quantity", e.target.value)
                     }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
                   <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.karat}
                     onChange={(e) =>
                       handleFieldChange(index, "karat", e.target.value)
                     }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
                   <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.G875}
                     onChange={(e) =>
                       handleFieldChange(index, "G875", e.target.value)
                     }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
                   <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.stones}
                     onChange={(e) =>
                       handleFieldChange(index, "stones", e.target.value)
                     }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 {(payType === 1 || payType === 3) && (
                   <td>
                     <input
+                      ref={(el) => {
+                        inputRefs.current[index][++col] = el;
+                      }}
                       className="border w-full p-1 text-xs text-center"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
@@ -376,12 +437,16 @@ export default function InvoiceItemTable({
                           e.target.value,
                         )
                       }
+                      onKeyDown={(e) => handleEnter(e, index, col)}
                     />
                   </td>
                 )}
                 {(payType === 2 || payType === 3) && (
                   <td>
                     <input
+                      ref={(el) => {
+                        inputRefs.current[index][++col] = el;
+                      }}
                       className="border w-full p-1 text-xs text-center"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
@@ -389,6 +454,7 @@ export default function InvoiceItemTable({
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
                       }
+                      onKeyDown={(e) => handleEnter(e, index, col)}
                     />
                   </td>
                 )}
@@ -397,6 +463,9 @@ export default function InvoiceItemTable({
                 <td>{total.toFixed(2)}</td>
                 <td>
                   <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
@@ -404,21 +473,27 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "discount", e.target.value)
                     }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
                   <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.item_desc}
                     onChange={(e) =>
                       handleFieldChange(index, "item_desc", e.target.value)
                     }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
                   <button
                     className="text-red-600 font-bold"
+                    tabIndex={-1}
                     onClick={() => removeRow(item.id)}
                   >
                     ×
