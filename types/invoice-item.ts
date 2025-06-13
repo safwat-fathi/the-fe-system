@@ -3,18 +3,21 @@ export interface InvoiceItem {
   item_id: number | null;
   item_code?: string;
   item_name?: string;
-  quantity: number;
+  /** Number of pieces */
+  qty: number;
+  /** Gross weight */
   weight: number;
+  /** Net/gauged weight */
+  g_weight: number;
   karat: string;
-  price_per_gram: number;
-  discount: number;
+  /** Price per gram */
+  price: number;
+  /** Discount amount */
+  item_disc_amt: number;
   note: string;
   trans_type?: number;
   G875?: string;
-  qty: number;
-  price?: number;
   price_w: number;
-  g_weight?: number;
   total?: number;
   total_w?: number;
   total_a?: number;
@@ -23,7 +26,6 @@ export interface InvoiceItem {
   tax_prc?: number;
   stones?: string;
   item_disc_prc?: number;
-  item_disc_amt?: number;
   sn?: string;
   item_desc?: string;
   cr_date?: string;

@@ -68,18 +68,15 @@ export default function InvoicePage() {
       id: Date.now(),
       item_id: null,
       item_code: "",
-      quantity: 0,
       qty: 0,
       weight: 0,
+      g_weight: 0,
       karat: "",
-      price_per_gram: 0,
+      price: 0,
       price_w: 0,
-      discount: 0,
       note: "",
       trans_type: 2,
       G875: "",
-      price: 0,
-      g_weight: 0,
       total: 0,
       total_w: 0,
       total_a: 0,
@@ -117,16 +114,14 @@ export default function InvoicePage() {
         items.map((itm) => {
           const updated = {
             ...itm,
-            price_per_gram: itm.price_per_gram || goldPrice,
+            price: itm.price || goldPrice,
             price_w: itm.price_w || goldPrice,
           };
           return {
             ...updated,
-            total_a: updated.weight * updated.price_per_gram,
-            total_w: updated.quantity * updated.price_w,
-            total:
-              updated.weight * updated.price_per_gram +
-              updated.quantity * updated.price_w,
+            total_a: updated.weight * updated.price,
+            total_w: updated.g_weight * updated.price_w,
+            total: updated.weight * updated.price + updated.g_weight * updated.price_w,
           };
         }),
       );
@@ -181,8 +176,8 @@ export default function InvoicePage() {
   }
 
   const totalAmount = invoiceItems.reduce((sum, item) => {
-    const totalA = item.weight * item.price_per_gram;
-    const totalW = item.quantity * (item.price_w ?? 0);
+    const totalA = item.weight * item.price;
+    const totalW = item.g_weight * (item.price_w ?? 0);
     let rowTotal = 0;
 
     if (payType === 1) {
@@ -193,7 +188,7 @@ export default function InvoicePage() {
       rowTotal = totalA + totalW;
     }
 
-    return sum + rowTotal - item.discount;
+    return sum + rowTotal - (item.item_disc_amt ?? 0);
   }, 0);
   const taxAmount = totalAmount * 0.15;
   const netAmount = totalAmount + taxAmount;
@@ -313,16 +308,16 @@ export default function InvoicePage() {
           G875: row.G875 ?? "",
           qty: row.qty,
           stones: row.stones ?? "",
-          price: row.price_per_gram,
+          price: row.price,
           price_w: row.price_w,
           weight: row.weight,
           g_weight: row.g_weight ?? 0,
-          total: row.total ?? row.weight * row.price_per_gram,
-          total_w: row.total_w ?? row.quantity * row.price_w,
+          total: row.total ?? row.weight * row.price,
+          total_w: row.total_w ?? row.g_weight * row.price_w,
           total_a:
             row.total_a ??
-            row.weight * row.price_per_gram +
-              row.quantity * row.price_w,
+            row.weight * row.price +
+              row.g_weight * row.price_w,
           inv_note: row.note || "",
           tax: row.tax ?? 0,
           tax_prc: row.tax_prc ?? 15,
@@ -393,16 +388,15 @@ export default function InvoicePage() {
         let rowTotal = 0;
 
         if (payType === 1) {
-          rowTotal = item.weight * item.price_per_gram;
+          rowTotal = item.weight * item.price;
         } else if (payType === 2) {
-          rowTotal = item.quantity * (item.price_w ?? 0);
+          rowTotal = item.g_weight * (item.price_w ?? 0);
         } else {
           rowTotal =
-            item.weight * item.price_per_gram +
-            item.quantity * (item.price_w ?? 0);
+            item.weight * item.price + item.g_weight * (item.price_w ?? 0);
         }
-        const tax = (rowTotal - item.discount) * 0.15;
-        const total = rowTotal - item.discount + tax;
+        const tax = (rowTotal - (item.item_disc_amt ?? 0)) * 0.15;
+        const total = rowTotal - (item.item_disc_amt ?? 0) + tax;
 
         return `
       <tr>
@@ -411,10 +405,10 @@ export default function InvoicePage() {
         ${payType !== 1 ? `<td>${item.qty}</td>` : ""}
         ${payType !== 2 ? `<td>${item.weight.toFixed(2)}</td>` : ""}
         <td>${item.karat}</td>
-        <td>${item.price_per_gram.toFixed(2)}</td>
+        <td>${item.price.toFixed(2)}</td>
         <td>15%</td>
         <td>${tax.toFixed(2)}</td>
-        <td>${(rowTotal - item.discount).toFixed(2)}</td>
+        <td>${(rowTotal - (item.item_disc_amt ?? 0)).toFixed(2)}</td>
         <td>${total.toFixed(2)}</td>
       </tr>`;
       })

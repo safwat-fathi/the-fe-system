@@ -55,11 +55,11 @@ export default function InvoiceItemTable({
     if (
       [
         "weight",
-        "price_per_gram",
+        "price",
         "price_w",
-        "quantity",
+        "g_weight",
         "qty",
-        "discount",
+        "item_disc_amt",
       ].includes(field)
     ) {
       updated[index][field] = parseFloat(value) || 0;
@@ -68,9 +68,8 @@ export default function InvoiceItemTable({
       updated[index][field] = value;
     }
 
-    updated[index].total_a =
-      updated[index].weight * updated[index].price_per_gram;
-    updated[index].total_w = updated[index].quantity * updated[index].price_w;
+    updated[index].total_a = updated[index].weight * updated[index].price;
+    updated[index].total_w = updated[index].g_weight * updated[index].price_w;
     updated[index].total = updated[index].total_a + updated[index].total_w;
 
     setInvoiceItems(updated);
@@ -89,17 +88,15 @@ export default function InvoiceItemTable({
           item_id: null,
           item_code: "",
           qty: 0,
-          quantity: 0,
+          g_weight: 0,
           weight: 0,
           karat: "",
-          price_per_gram: goldPrice ?? 0,
+          price: goldPrice ?? 0,
           price_w: goldPrice ?? 0,
-          discount: 0,
+          item_disc_amt: 0,
           note: "",
           trans_type: 2,
           G875: "",
-          price: 0,
-          g_weight: 0,
           total: 0,
           total_w: 0,
           total_a: 0,
@@ -183,9 +180,9 @@ export default function InvoiceItemTable({
         </thead>
         <tbody>
           {invoiceItems.map((item, index) => {
-            const totalA = item.weight * item.price_per_gram;
-            const totalW = item.quantity * item.price_w;
-            const total = totalA + totalW - item.discount;
+            const totalA = item.weight * item.price;
+            const totalW = item.g_weight * item.price_w;
+            const total = totalA + totalW - (item.item_disc_amt ?? 0);
             let col = -1;
 
             return (
@@ -237,7 +234,7 @@ export default function InvoiceItemTable({
                       updated[index].item_code = selected?.item_code ?? "";
                       updated[index].item_name = selected?.item_name ?? "";
                       updated[index].karat = selected?.karat ?? "";
-                      updated[index].price_per_gram =
+                      updated[index].price =
                         goldPrice ?? selected?.item_price ?? 0;
                       updated[index].price_w =
                         selected?.work_price ??
@@ -259,14 +256,12 @@ export default function InvoiceItemTable({
                         selected?.item_g_weight !== null &&
                         selected.item_g_weight !== ""
                       ) {
-                        updated[index].quantity = Number(
-                          selected.item_g_weight,
-                        );
+                        updated[index].g_weight = Number(selected.item_g_weight);
                       }
                       updated[index].total_a =
-                        updated[index].weight * updated[index].price_per_gram;
+                        updated[index].weight * updated[index].price;
                       updated[index].total_w =
-                        updated[index].quantity * updated[index].price_w;
+                        updated[index].g_weight * updated[index].price_w;
                       updated[index].total =
                         updated[index].total_a + updated[index].total_w;
 
@@ -295,22 +290,16 @@ export default function InvoiceItemTable({
                         item_code: newItem.item_code,
                         item_name: newItem.item_name,
                         karat: newItem.karat,
-                        price_per_gram: goldPrice ?? newItem.item_price,
+                        price: goldPrice ?? newItem.item_price,
                         price_w:
                           newItem.work_price ?? goldPrice ?? newItem.item_price,
                         weight: newItem.item_weight ?? 0,
                         g_weight:
-                          newItem.item_weight !== undefined &&
-                          newItem.item_weight !== null &&
-                          newItem.item_weight !== ""
-                            ? Number(newItem.item_weight)
-                            : 0,
-                        quantity:
                           newItem.item_g_weight !== undefined &&
                           newItem.item_g_weight !== null &&
                           newItem.item_g_weight !== ""
                             ? Number(newItem.item_g_weight)
-                            : 0,
+                            : Number(newItem.item_weight ?? 0),
                         stones: newItem.stones ?? "",
                         G875: newItem.purity ?? "",
                         total_a:
@@ -371,9 +360,9 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={item.quantity}
+                    value={item.g_weight}
                     onChange={(e) =>
-                      handleFieldChange(index, "quantity", e.target.value)
+                      handleFieldChange(index, "g_weight", e.target.value)
                     }
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
@@ -429,13 +418,9 @@ export default function InvoiceItemTable({
                       className="border w-full p-1 text-xs text-center"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={item.price_per_gram}
+                      value={item.price}
                       onChange={(e) =>
-                        handleFieldChange(
-                          index,
-                          "price_per_gram",
-                          e.target.value,
-                        )
+                        handleFieldChange(index, "price", e.target.value)
                       }
                       onKeyDown={(e) => handleEnter(e, index, col)}
                     />
@@ -469,9 +454,9 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={item.discount}
+                    value={item.item_disc_amt}
                     onChange={(e) =>
-                      handleFieldChange(index, "discount", e.target.value)
+                      handleFieldChange(index, "item_disc_amt", e.target.value)
                     }
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
