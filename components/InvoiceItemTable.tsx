@@ -189,7 +189,6 @@ export default function InvoiceItemTable({
                 <td>
                   <CreatableSelect
                     isClearable
-                    isCreatable
                     isSearchable
                     className="text-xs"
                     classNamePrefix="select"
@@ -255,7 +254,9 @@ export default function InvoiceItemTable({
                         selected?.item_g_weight !== null &&
                         selected.item_g_weight !== ""
                       ) {
-                        updated[index].g_weight = Number(selected.item_g_weight);
+                        updated[index].g_weight = Number(
+                          selected.item_g_weight,
+                        );
                       }
                       updated[index].total_a =
                         updated[index].weight * updated[index].price;
@@ -442,8 +443,8 @@ export default function InvoiceItemTable({
                     />
                   </td>
                 )}
-                <td>{item.total_a.toFixed(2)}</td>
-                <td>{item.total_w.toFixed(2)}</td>
+                <td>{(item.total_a ?? 0).toFixed(2)}</td>
+                <td>{(item.total_w ?? 0).toFixed(2)}</td>
                 <td>{total.toFixed(2)}</td>
                 <td>
                   <input
