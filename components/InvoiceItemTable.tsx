@@ -192,10 +192,10 @@ export default function InvoiceItemTable({
               <th className="w-[100px]">اجمالي الاجور</th>
             )}
             <th className="w-[100px]">الاجمالي</th>
+            <th className="w-[100px]">الخصم</th>
             <th className="w-[100px]">الضريبة</th>
-            <th className="w-[80px]">الخصم</th>
             <th className="w-[200px]">البيان</th>
-            <th className="w-[40px]" />
+            <th className="w-[60px]">حذف</th>
           </tr>
         </thead>
         <tbody>
@@ -203,7 +203,16 @@ export default function InvoiceItemTable({
             // totals for display
             const totalA = item.weight * item.price;
             const totalW = item.weight * item.price_w; // wagePrice
-            const total = totalA + totalW - (item.item_disc_amt ?? 0);
+            let rowTotal = 0;
+
+            if (payType === 1) {
+              rowTotal = totalA;
+            } else if (payType === 2) {
+              rowTotal = totalW;
+            } else {
+              rowTotal = totalA + totalW;
+            }
+            const total = rowTotal - (item.item_disc_amt ?? 0);
             const tax = (total * (item.tax_prc ?? 15)) / 100;
             let col = -1;
 
@@ -499,7 +508,6 @@ export default function InvoiceItemTable({
                 <td>{(item.total_a ?? 0).toFixed(2)}</td>
                 <td>{(item.total_w ?? 0).toFixed(2)}</td>
                 <td>{total.toFixed(2)}</td>
-                <td>{(item.tax ?? tax).toFixed(2)}</td>
                 <td>
                   <input
                     ref={(el) => {
@@ -515,6 +523,7 @@ export default function InvoiceItemTable({
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
+                <td>{(item.tax ?? tax).toFixed(2)}</td>
                 <td>
                   <input
                     ref={(el) => {
