@@ -132,17 +132,20 @@ export default function InvoicePage() {
             g_weight: itm.g_weight || itm.weight,
           };
 
+          const baseTotal =
+            updated.weight * updated.price +
+            updated.weight * updated.price_w -
+            (updated.item_disc_amt ?? 0);
+
           return {
             ...updated,
             // total_a = weight * price
-            total_a: updated.g_weight * updated.price,
+            total_a: updated.weight * updated.price,
             // total_w = weight * wagePrice
-            total_w: updated.g_weight * updated.price_w,
+            total_w: updated.weight * updated.price_w,
             // total = total_a + total_w - discount
-            total:
-              updated.g_weight * updated.price +
-              updated.g_weight * updated.price_w -
-              (updated.item_disc_amt ?? 0),
+            total: baseTotal,
+            tax: baseTotal * ((updated.tax_prc ?? 15) / 100),
           };
         }),
       );
@@ -219,8 +222,8 @@ export default function InvoicePage() {
 
   // sum rows according to payType
   const totalAmount = invoiceItems.reduce((sum, item) => {
-    const totalA = item.g_weight * item.price; // قيمة الذهب
-    const totalW = item.g_weight * (item.price_w ?? 0); // اجور العمل
+    const totalA = item.weight * item.price; // قيمة الذهب
+    const totalW = item.weight * (item.price_w ?? 0); // اجور العمل
     let rowTotal = 0;
 
     // 1=gold only, 2=wage only, 3=both
@@ -234,7 +237,22 @@ export default function InvoicePage() {
 
     return sum + rowTotal - (item.item_disc_amt ?? 0);
   }, 0);
-  const taxAmount = totalAmount * 0.15;
+  const taxAmount = invoiceItems.reduce((sum, item) => {
+    const totalA = item.weight * item.price;
+    const totalW = item.weight * (item.price_w ?? 0);
+    let rowTotal = 0;
+
+    if (payType === 1) {
+      rowTotal = totalA;
+    } else if (payType === 2) {
+      rowTotal = totalW;
+    } else {
+      rowTotal = totalA + totalW;
+    }
+    const base = rowTotal - (item.item_disc_amt ?? 0);
+
+    return sum + base * 0.15;
+  }, 0);
   const netAmount = totalAmount + taxAmount;
   const totalDiscount = invoiceItems.reduce(
     (sum, item) => sum + (item.item_disc_amt ?? 0),
@@ -363,13 +381,18 @@ export default function InvoicePage() {
           // totals stored with the row
           total:
             row.total ??
-            row.g_weight * row.price +
-              row.g_weight * row.price_w -
+            row.weight * row.price +
+              row.weight * row.price_w -
               (row.item_disc_amt ?? 0),
-          total_w: row.total_w ?? row.g_weight * row.price_w,
-          total_a: row.total_a ?? row.g_weight * row.price,
+          total_w: row.total_w ?? row.weight * row.price_w,
+          total_a: row.total_a ?? row.weight * row.price,
+          tax:
+            row.tax ??
+            (row.weight * row.price +
+              row.weight * row.price_w -
+              (row.item_disc_amt ?? 0)) *
+              ((row.tax_prc ?? 15) / 100),
           inv_note: row.note || "",
-          tax: row.tax ?? 0,
           tax_prc: row.tax_prc ?? 15,
           item_disc_prc: row.item_disc_prc ?? 0,
           item_disc_amt: row.item_disc_amt ?? 0,
@@ -437,12 +460,12 @@ export default function InvoicePage() {
 
         // pick price part based on payType
         if (payType === 1) {
-          rowTotal = item.g_weight * item.price;
+          rowTotal = item.weight * item.price;
         } else if (payType === 2) {
-          rowTotal = item.g_weight * (item.price_w ?? 0);
+          rowTotal = item.weight * (item.price_w ?? 0);
         } else {
           rowTotal =
-            item.g_weight * item.price + item.g_weight * (item.price_w ?? 0);
+            item.weight * item.price + item.weight * (item.price_w ?? 0);
         }
         const tax = (rowTotal - (item.item_disc_amt ?? 0)) * 0.15;
         const total = rowTotal - (item.item_disc_amt ?? 0) + tax;
@@ -548,10 +571,10 @@ export default function InvoicePage() {
         vatNumber={vatNumber}
       />
       <InvoiceItemTable
+        categories={categories}
         goldPrice={goldPrice}
         invoiceItems={invoiceItems}
         items={items}
-        categories={categories}
         payType={payType}
         setInvoiceItems={setInvoiceItems}
         setItems={setItems}

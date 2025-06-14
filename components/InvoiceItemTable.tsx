@@ -79,15 +79,18 @@ export default function InvoiceItemTable({
       updated[index][field] = value;
     }
 
-    // total_a = g_weight * price
-    updated[index].total_a = updated[index].g_weight * updated[index].price;
-    // total_w = g_weight * wagePrice
-    updated[index].total_w = updated[index].g_weight * updated[index].price_w;
+    // total_a = weight * price
+    updated[index].total_a = updated[index].weight * updated[index].price;
+    // total_w = weight * wagePrice
+    updated[index].total_w = updated[index].weight * updated[index].price_w;
     // total = total_a + total_w - discount
     updated[index].total =
       updated[index].total_a +
       updated[index].total_w -
       (updated[index].item_disc_amt ?? 0);
+    // tax amount based on total after discount
+    updated[index].tax =
+      (updated[index].total * (updated[index].tax_prc ?? 15)) / 100;
 
     setInvoiceItems(updated);
 
@@ -199,6 +202,7 @@ export default function InvoiceItemTable({
               <th className="w-[100px]">اجمالي الاجور</th>
             )}
             <th className="w-[100px]">الاجمالي</th>
+            <th className="w-[100px]">الضريبة</th>
             <th className="w-[80px]">الخصم</th>
             <th className="w-[200px]">البيان</th>
             {/* <th className="w-[40px]" /> */}
@@ -207,9 +211,10 @@ export default function InvoiceItemTable({
         <tbody>
           {invoiceItems.map((item, index) => {
             // totals for display
-            const totalA = item.g_weight * item.price;
-            const totalW = item.g_weight * item.price_w; // wagePrice
+            const totalA = item.weight * item.price;
+            const totalW = item.weight * item.price_w; // wagePrice
             const total = totalA + totalW - (item.item_disc_amt ?? 0);
+            const tax = (total * (item.tax_prc ?? 15)) / 100;
             let col = -1;
 
             return (
@@ -282,26 +287,40 @@ export default function InvoiceItemTable({
                           selected.item_g_weight,
                         );
                       }
-                      if ((updated[index].karat === "" || updated[index].G875 === "") && selected?.cat) {
-                        const cat = categories.find((c) => c.id === selected.cat);
+                      if (
+                        (updated[index].karat === "" ||
+                          updated[index].G875 === "") &&
+                        selected?.cat
+                      ) {
+                        const cat = categories.find(
+                          (c) => c.id === selected.cat,
+                        );
+
                         if (cat) {
                           if (!updated[index].karat)
-                            updated[index].karat = (cat.gauge ?? cat.k ?? "") as string;
+                            updated[index].karat = (cat.gauge ??
+                              cat.k ??
+                              "") as string;
                           if (!updated[index].G875)
                             updated[index].G875 = cat.purity ?? "";
                         }
                       }
-                      // total_a = g_weight * price
+                      // total_a = weight * price
                       updated[index].total_a =
-                        updated[index].g_weight * updated[index].price;
-                      // total_w = g_weight * wagePrice
+                        updated[index].weight * updated[index].price;
+                      // total_w = weight * wagePrice
                       updated[index].total_w =
-                        updated[index].g_weight * updated[index].price_w;
+                        updated[index].weight * updated[index].price_w;
                       // total = total_a + total_w - discount
                       updated[index].total =
                         updated[index].total_a +
                         updated[index].total_w -
                         (updated[index].item_disc_amt ?? 0);
+                      // tax amount based on total after discount
+                      updated[index].tax =
+                        (updated[index].total *
+                          (updated[index].tax_prc ?? 15)) /
+                        100;
 
                       setInvoiceItems(updated);
                     }}
@@ -339,21 +358,28 @@ export default function InvoiceItemTable({
                             : Number(newItem.item_weight ?? 0),
                         stones: newItem.stones ?? "",
                         G875: newItem.purity ?? "",
-                        // total_a = g_weight * price
+                        // total_a = weight * price
                         total_a:
-                          (newItem.item_g_weight ?? 0) *
+                          (newItem.item_weight ?? 0) *
                           (goldPrice ?? newItem.item_price),
-                        // total_w = g_weight * wagePrice
+                        // total_w = weight * wagePrice
                         total_w:
-                          (newItem.item_g_weight ?? 0) *
+                          (newItem.item_weight ?? 0) *
                           (newItem.work_price ?? 0),
                         // total = total_a + total_w - discount
                         total:
-                          (newItem.item_g_weight ?? 0) *
+                          (newItem.item_weight ?? 0) *
                             (goldPrice ?? newItem.item_price) +
-                          (newItem.item_g_weight ?? 0) *
+                          (newItem.item_weight ?? 0) *
                             (newItem.work_price ?? 0) -
                           (newItem.item_disc_amt ?? 0),
+                        tax:
+                          ((newItem.item_weight ?? 0) *
+                            (goldPrice ?? newItem.item_price) +
+                            (newItem.item_weight ?? 0) *
+                              (newItem.work_price ?? 0) -
+                            (newItem.item_disc_amt ?? 0)) *
+                          ((newItem.tax_prc ?? 15) / 100),
                       };
                       setInvoiceItems(updated);
                     }}
@@ -481,6 +507,7 @@ export default function InvoiceItemTable({
                 <td>{(item.total_a ?? 0).toFixed(2)}</td>
                 <td>{(item.total_w ?? 0).toFixed(2)}</td>
                 <td>{total.toFixed(2)}</td>
+                <td>{(item.tax ?? tax).toFixed(2)}</td>
                 <td>
                   <input
                     ref={(el) => {
