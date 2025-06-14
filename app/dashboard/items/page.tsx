@@ -77,6 +77,7 @@ export default function CategoriesItemsPage() {
   const [itemsNextUrl, setItemsNextUrl] = useState<string | null>(null);
   const [itemsPrevUrl, setItemsPrevUrl] = useState<string | null>(null);
   const [itemsCount, setItemsCount] = useState<number>(0);
+  const [search, setSearch] = useState("");
 
   const [boxes, setBoxes] = useState<{ id: number; box_name: string }[]>([]);
   const [catTypes, setCatTypes] = useState<{ code_id: number; code_desc: string }[]>([]);
@@ -112,16 +113,20 @@ export default function CategoriesItemsPage() {
   
   useEffect(() => {
     fetchCategories();
-    // alert('cat:'+ selectedCatId + ' ---- ' + 'tyep:'+ selectedTypeId)
-    fetchItems(selectedCatId,selectedTypeId); 
-          
     fetchItemTypes();
-
     fetchUnits();
     fetchBoxes();
-    fetchCatTypes();   
-    fetchCatStatuses(); 
-  }, [selectedCatId , selectedTypeId]); // تعيد التنفيذ عند تغيير أي قيمة []);
+    fetchCatTypes();
+    fetchCatStatuses();
+  }, []);
+
+  useEffect(() => {
+    if (search.trim()) {
+      searchItems(search);
+    } else {
+      fetchItems(selectedCatId, selectedTypeId);
+    }
+  }, [selectedCatId, selectedTypeId, search]);
 
 const fetchCatTypes = async () => {
   try {
@@ -167,10 +172,11 @@ const fetchCatStatuses = async () => {
   };
   
 
-const fetchItems = async (xcat: number ,xtype:number ) => {
-//const fetchItems = async (url: string = `${API_ENDPOINTS.ITEMS_LIST}/${selectedCatId}/${selectedTypeId}/`) => {
+const fetchItems = async (xcat: number, xtype: number, url?: string) => {
     try {
-      const res = await apiFetch('http://149.102.143.102:8000/api/items_list_p/' + xcat + '/' + xtype + '/');
+      const fetchUrl = url ??
+        `http://149.102.143.102:8000/api/items_list_p/${xcat}/${xtype}/`;
+      const res = await apiFetch(fetchUrl);
       const data = await res.json();
 
       const itemsArray = Array.isArray(data.results) ? data.results : [];
@@ -181,6 +187,23 @@ const fetchItems = async (xcat: number ,xtype:number ) => {
       setItemsCount(data.count);
     } catch (err) {
       console.error("خطأ في تحميل الأصناف:", err);
+      setItems([]);
+    }
+  };
+
+  const searchItems = async (query: string, url?: string) => {
+    try {
+      const fetchUrl = url ??
+        `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(query)}`;
+      const res = await apiFetch(fetchUrl);
+      const data = await res.json();
+      const itemsArray = Array.isArray(data.results) ? data.results : [];
+      setItems(itemsArray);
+      setItemsNextUrl(data.next);
+      setItemsPrevUrl(data.previous);
+      setItemsCount(data.count);
+    } catch (err) {
+      console.error("خطأ في البحث عن الأصناف:", err);
       setItems([]);
     }
   };
@@ -472,6 +495,12 @@ const filteredItems = items;
               <option key={type.id} value={type.id}>{type.type_name}</option>
             ))}
           </select>
+          <Input
+            placeholder="بحث..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-60"
+          />
         </div>
       </div>
 
@@ -533,11 +562,28 @@ const filteredItems = items;
     })}
   </tbody>
 </table>
-  setItemsCount(0);
 <div className="flex justify-center mt-4 gap-2">
-  <Button isDisabled={!itemsPrevUrl} onPress={() => fetchItems(itemsPrevUrl!)}>السابق</Button>
+  <Button
+    isDisabled={!itemsPrevUrl}
+    onPress={() =>
+      search.trim()
+        ? searchItems(search, itemsPrevUrl!)
+        : fetchItems(selectedCatId, selectedTypeId, itemsPrevUrl!)
+    }
+  >
+    السابق
+  </Button>
   <span className="px-4 py-2 text-sm">عدد النتائج: {itemsCount}</span>
-  <Button isDisabled={!itemsNextUrl} onPress={() => fetchItems(itemsNextUrl!)}>التالي</Button>
+  <Button
+    isDisabled={!itemsNextUrl}
+    onPress={() =>
+      search.trim()
+        ? searchItems(search, itemsNextUrl!)
+        : fetchItems(selectedCatId, selectedTypeId, itemsNextUrl!)
+    }
+  >
+    التالي
+  </Button>
 </div>
 
 
