@@ -8,7 +8,9 @@ interface Item {
   item_code: string;
   item_name: string;
   item_price: number;
-  karat: string;
+  /** @deprecated Use `k` */
+  karat?: string;
+  k?: string;
 }
 
 interface Customer {

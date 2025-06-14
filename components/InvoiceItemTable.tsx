@@ -10,7 +10,10 @@ interface Item {
   item_code: string;
   item_name: string;
   item_price: number;
-  karat: string;
+  /** @deprecated Use `k` */
+  karat?: string;
+  /** New field name for karat */
+  k?: string;
   item_weight?: number;
   item_g_weight?: number;
   stones?: string;
@@ -273,11 +276,13 @@ export default function InvoiceItemTable({
                       updated[index].item_id = selected?.id ?? null;
                       updated[index].item_code = selected?.item_code ?? "";
                       updated[index].item_name = selected?.item_name ?? "";
-                      updated[index].karat = selected?.karat ?? "";
+                      const selKarat = selected?.karat ?? selected?.k ?? "";
+                      const selPurity = selected?.purity ?? "";
+                      updated[index].karat = selKarat;
                       updated[index].price =
                         goldPrice ?? selected?.item_price ?? 0;
                       updated[index].price_w = selected?.work_price ?? 0;
-                      updated[index].G875 = selected?.purity ?? "";
+                      updated[index].G875 = selPurity;
                       updated[index].stones = selected?.stones ?? "";
                       if (
                         selected?.item_weight !== undefined &&
@@ -297,8 +302,8 @@ export default function InvoiceItemTable({
                         );
                       }
                       if (
-                        (updated[index].karat === "" ||
-                          updated[index].G875 === "") &&
+                        ((selKarat === "" || selKarat === "0") ||
+                          (selPurity === "" || selPurity === "0")) &&
                         selected?.cat
                       ) {
                         const cat = categories.find(
@@ -306,11 +311,9 @@ export default function InvoiceItemTable({
                         );
 
                         if (cat) {
-                          if (!updated[index].karat)
-                            updated[index].karat = (cat.gauge ??
-                              cat.k ??
-                              "") as string;
-                          if (!updated[index].G875)
+                          if (!selKarat || selKarat === "0")
+                            updated[index].karat = (cat.gauge ?? cat.k ?? "") as string;
+                          if (!selPurity || selPurity === "0")
                             updated[index].G875 = cat.purity ?? "";
                         }
                       }
@@ -339,6 +342,7 @@ export default function InvoiceItemTable({
                         item_code: "000000",
                         item_name: inputValue,
                         karat: "",
+                        k: "",
                         item_price: 0,
                         item_weight: 0,
                         item_g_weight: 0,
@@ -355,7 +359,7 @@ export default function InvoiceItemTable({
                         item_id: newItem.id,
                         item_code: newItem.item_code,
                         item_name: newItem.item_name,
-                        karat: newItem.karat,
+                        karat: newItem.k || newItem.karat || "",
                         price: goldPrice ?? newItem.item_price,
                         price_w: newItem.work_price ?? 0,
                         weight: newItem.item_weight ?? 0,
