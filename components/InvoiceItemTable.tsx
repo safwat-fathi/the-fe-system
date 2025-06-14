@@ -182,7 +182,7 @@ export default function InvoiceItemTable({
       <table className="min-w-[1000px] border text-sm text-center table-fixed">
         <thead className="bg-gray-100 text-xs font-semibold">
           <tr>
-            <th className="w-[400px]">اسم الصنف</th>
+            <th className="w-[400px]">الصنف</th>
             <th className="w-[60px]">العدد</th>
             <th className="w-[100px]">الوزن القائم</th>
             <th className="w-[100px]">وزن معايير</th>
