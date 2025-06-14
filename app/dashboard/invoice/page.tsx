@@ -30,7 +30,10 @@ interface Item {
   item_code: string;
   item_name: string;
   item_price: number;
-  karat: string;
+  /** @deprecated Use `k` */
+  karat?: string;
+  /** New field name for karat */
+  k?: string;
   item_weight?: number;
   item_g_weight?: number;
   stones?: string;
