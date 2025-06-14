@@ -276,9 +276,9 @@ export default function InvoiceItemTable({
                       updated[index].item_id = selected?.id ?? null;
                       updated[index].item_code = selected?.item_code ?? "";
                       updated[index].item_name = selected?.item_name ?? "";
-                      const selKarat = selected?.karat ?? selected?.k ?? "";
+                      const selk = selected?.karat ?? selected?.k ?? "";
                       const selPurity = selected?.purity ?? "";
-                      updated[index].karat = selKarat;
+                      updated[index].karat = selk;
                       updated[index].price =
                         goldPrice ?? selected?.item_price ?? 0;
                       updated[index].price_w = selected?.work_price ?? 0;
@@ -302,7 +302,7 @@ export default function InvoiceItemTable({
                         );
                       }
                       if (
-                        ((selKarat === "" || selKarat === "0") ||
+                        ((selk === "" || selk === "0") ||
                           (selPurity === "" || selPurity === "0")) &&
                         selected?.cat
                       ) {
@@ -311,7 +311,7 @@ export default function InvoiceItemTable({
                         );
 
                         if (cat) {
-                          if (!selKarat || selKarat === "0")
+                          if (!selk || selk === "0")
                             updated[index].karat = (cat.gauge ?? cat.k ?? "") as string;
                           if (!selPurity || selPurity === "0")
                             updated[index].G875 = cat.purity ?? "";
