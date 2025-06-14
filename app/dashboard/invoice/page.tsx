@@ -267,11 +267,11 @@ export default function InvoicePage() {
   const getNextInvoiceNumber = async (): Promise<number> => {
     const invoices = await fetchData<any[]>(`${API_BASE_URL}invoices_list`);
 
-    if (!Array.isArray(invoices) || invoices.length === 0) return 1000;
+    if (!Array.isArray(invoices) || invoices.length === 0) return 1;
 
     const maxInvId = invoices.reduce((max, curr) => {
       return curr.inv_id > max ? curr.inv_id : max;
-    }, 1000);
+    }, 0);
 
     return maxInvId + 1;
   };

@@ -513,8 +513,12 @@ export default function InvoiceItemTable({
                     />
                   </td>
                 )}
-                <td>{(item.total_a ?? 0).toFixed(2)}</td>
-                <td>{(item.total_w ?? 0).toFixed(2)}</td>
+                {(payType === 1 || payType === 3) && (
+                  <td>{(item.total_a ?? 0).toFixed(2)}</td>
+                )}
+                {(payType === 2 || payType === 3) && (
+                  <td>{(item.total_w ?? 0).toFixed(2)}</td>
+                )}
                 <td>{total.toFixed(2)}</td>
                 <td>
                   <input
