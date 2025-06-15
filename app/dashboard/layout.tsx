@@ -22,19 +22,18 @@ const mainLinks = [
 ];
 
 const dataLinks = [
-  { name: "الحسابات", href: "/dashboard/accounts", icon: <FaMoneyBill /> },
-  { name: "العملات", href: "/dashboard/currencies", icon: <FaMoneyBill /> },
-  { name: "العملاء", href: "/dashboard/customers", icon: <FaUsers /> },
-  { name: "الأصناف", href: "/dashboard/items", icon: <FaBoxOpen /> },
-  { name: "الفئات", href: "/dashboard/categories", icon: <FaTags /> },
-  { name: "الوحدات", href: "/dashboard/units", icon: <FaTags /> },
+  { name: "الحسابات", href: "/dashboard/basic/accounts", icon: <FaMoneyBill /> },
+  { name: "العملات", href: "/dashboard/basic/currencies", icon: <FaMoneyBill /> },
+  { name: "العملاء", href: "/dashboard/basic/customers", icon: <FaUsers /> },
+  { name: "الأصناف", href: "/dashboard/basic/items", icon: <FaBoxOpen /> },
+  { name: "الفئات", href: "/dashboard/basic/categories", icon: <FaTags /> },
+  { name: "الوحدات", href: "/dashboard/basic/units", icon: <FaTags /> },
   // { name: "صناديق الفواتير", href: "/dashboard/invoice_box", icon: <FaTags /> },
 
 ];
 
 const formLinks = [
-  { name: "فاتورة البيع", href: "/dashboard/invoice", icon: <FaFileAlt /> },
-  { name: "قائمة الفواتير", href: "/dashboard/invoices", icon: <FaFileAlt /> },
+  { name: "فاتورة البيع", href: "/dashboard/forms/invoice", icon: <FaFileAlt /> },
   // {
   //   name: "طريقة الدفع",
   //   href: "/dashboard/invoice_payment",
@@ -42,10 +41,15 @@ const formLinks = [
   // },
 ];
 
+const reportLinks = [
+  { name: "قائمة الفواتير", href: "/dashboard/reports/invoices", icon: <FaFileAlt /> },
+];
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showDataLinks, setShowDataLinks] = useState(true);
   const [showFormLinks, setShowFormLinks] = useState(true);
+  const [showReportLinks, setShowReportLinks] = useState(true);
   const pathname = usePathname();
 
   const animationVariants = {
@@ -131,6 +135,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="flex flex-col overflow-hidden"
               >
                 {formLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+                  >
+                    {link.icon}
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* التقارير */}
+          <div
+            className="mt-4 px-2 text-sm text-gray-400 cursor-pointer flex justify-between items-center"
+            onClick={() => setShowReportLinks(!showReportLinks)}
+          >
+            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>التقارير</span>
+            {isSidebarOpen && (showReportLinks ? <FaChevronUp /> : <FaChevronDown />)}
+          </div>
+
+          <AnimatePresence initial={false}>
+            {showReportLinks && (
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+                variants={animationVariants}
+                transition={transition}
+                className="flex flex-col overflow-hidden"
+              >
+                {reportLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
