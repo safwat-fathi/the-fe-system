@@ -57,7 +57,7 @@ export default function InvoicePaymentPage() {
       });
       if (!res.ok) throw new Error();
       toast.success("تم الحفظ بنجاح");
-      router.push("/dashboard/invoice");
+      router.push("/dashboard/forms/invoice");
     } catch {
       toast.error("فشل الحفظ");
     }
@@ -73,7 +73,7 @@ export default function InvoicePaymentPage() {
       });
       if (!res.ok) throw new Error();
       toast.success("تم التحديث بنجاح");
-      router.push("/dashboard/invoice");
+      router.push("/dashboard/forms/invoice");
     } catch {
       toast.error("فشل التحديث");
     }
@@ -88,7 +88,7 @@ export default function InvoicePaymentPage() {
       });
       if (!res.ok) throw new Error();
       toast.success("تم الحذف بنجاح");
-      router.push("/dashboard/invoice");
+      router.push("/dashboard/forms/invoice");
     } catch {
       toast.error("فشل الحذف");
     }

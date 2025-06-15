@@ -62,7 +62,7 @@ export default function InvoicesPage() {
   };
 
   const handleEdit = (id: number) => {
-    router.push(`/dashboard/invoice?inv_id=${id}`);
+    router.push(`/dashboard/forms/invoice?inv_id=${id}`);
   };
 
   const filteredInvoices = useMemo(
