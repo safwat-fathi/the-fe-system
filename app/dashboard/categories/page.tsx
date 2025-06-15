@@ -17,8 +17,11 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import { FaPlus } from "react-icons/fa";
+
 import ActionButtons from "@/components/ActionButtons";
 import { API_BASE_URL, apiFetch } from "@/utilities/api";
 
@@ -31,7 +34,7 @@ const columns = [
   { name: "رقم الفئة", uid: "id" },
   { name: "اسم الفئة", uid: "cat_name" },
   { name: "الاسم بالإنجليزي", uid: "cat_name_e" },
-  { name: "العيار", uid: "K" },
+  { name: "العيار", uid: "k" },
   { name: "المعيارية", uid: "purity" },
   { name: "الصندوق", uid: "box" },
   { name: "الضريبة", uid: "tax_type" },
@@ -45,9 +48,9 @@ interface Category {
   id: number;
   cat_name: string;
   cat_name_e: string;
-  K: string;
+  k: string;
   purity: string;
-  box: string;
+  box: number | null;
   tax_type: boolean;
   tax: number;
   cat_type: string;
@@ -62,17 +65,21 @@ export default function CategoriesTable() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [rowsPerPage] = useState(5);
-  const [sortDescriptor, setSortDescriptor] = useState({ column: "id", direction: "ascending" });
+  const [sortDescriptor, setSortDescriptor] = useState({
+    column: "id",
+    direction: "ascending",
+  });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("add");
+  const [boxes, setBoxes] = useState<{ id: number; box_name: string }[]>([]);
 
   const [newCategory, setNewCategory] = useState<Category>({
     id: 0,
     cat_name: "",
     cat_name_e: "",
-    K: "",
+    k: "",
     purity: "",
-    box: "",
+    box: null,
     tax_type: false,
     tax: 0,
     cat_type: "",
@@ -83,9 +90,9 @@ export default function CategoriesTable() {
     id: cat.id ?? 0,
     cat_name: cat.cat_name ?? "-",
     cat_name_e: cat.cat_name_e ?? "-",
-    K: cat.K ?? "-",
+    k: cat.k ?? cat.K ?? "-",
     purity: cat.purity ?? "-",
-    box: cat.cat_box ?? "-",
+    box: cat.box ?? cat.cat_box ?? null,
     tax_type: cat.tax_type ?? false,
     tax: cat.tax ?? 0,
     cat_type: cat.cat_type ?? "-",
@@ -96,8 +103,11 @@ export default function CategoriesTable() {
     try {
       const res = await apiFetch(API_URL);
       const data = await res.json();
-      let categoriesList: any[] = Array.isArray(data) ? data : data.results || data.data || [];
+      let categoriesList: any[] = Array.isArray(data)
+        ? data
+        : data.results || data.data || [];
       const sanitized = categoriesList.map(sanitizeCategory);
+
       setCategories(sanitized);
       setFilteredCategories(sanitized);
     } catch (error) {
@@ -112,10 +122,23 @@ export default function CategoriesTable() {
   }, [loadData]);
 
   useEffect(() => {
+    apiFetch(`${API_BASE_URL}boxes_list`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setBoxes(data);
+        else if (Array.isArray(data.results)) setBoxes(data.results);
+      })
+      .catch((err) => console.error("فشل تحميل الصناديق:", err));
+  }, []);
+
+  useEffect(() => {
     if (!searchQuery) return setFilteredCategories(categories);
     const filtered = categories.filter((cat) =>
-      Object.values(cat).some((val) => val?.toString().toLowerCase().includes(searchQuery.toLowerCase()))
+      Object.values(cat).some((val) =>
+        val?.toString().toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
     );
+
     setFilteredCategories(filtered);
   }, [searchQuery, categories]);
 
@@ -134,9 +157,9 @@ export default function CategoriesTable() {
           id: 0,
           cat_name: "",
           cat_name_e: "",
-          K: "",
+          k: "",
           purity: "",
-          box: "",
+          box: null,
           tax_type: false,
           tax: 0,
           cat_type: "",
@@ -145,6 +168,7 @@ export default function CategoriesTable() {
         loadData();
       } else {
         const errorData = await response.json();
+
         alert("فشل في إضافة الفئة ❌\n" + JSON.stringify(errorData));
       }
     } catch (error) {
@@ -157,8 +181,8 @@ export default function CategoriesTable() {
       const updatedCategory = {
         ...newCategory,
         tax: isNaN(Number(newCategory.tax)) ? 0 : Number(newCategory.tax),
-        K: newCategory.K ?? "",
-        purity: newCategory.purity ?? ""
+        k: newCategory.k ?? "",
+        purity: newCategory.purity ?? "",
       };
 
       const response = await apiFetch(UPDATE_URL(newCategory.id), {
@@ -173,6 +197,7 @@ export default function CategoriesTable() {
         loadData();
       } else {
         const errorData = await response.json();
+
         alert("فشل في تعديل الفئة ❌\n" + JSON.stringify(errorData));
       }
     } catch (error) {
@@ -193,6 +218,7 @@ export default function CategoriesTable() {
         loadData();
       } else {
         const errorData = await response.json();
+
         alert("فشل في الحذف ❌\n" + JSON.stringify(errorData));
       }
     } catch (error) {
@@ -206,9 +232,9 @@ export default function CategoriesTable() {
       id: 0,
       cat_name: "",
       cat_name_e: "",
-      K: "",
+      k: "",
       purity: "",
-      box: "",
+      box: null,
       tax_type: false,
       tax: 0,
       cat_type: "",
@@ -234,41 +260,63 @@ export default function CategoriesTable() {
       const first = a[sortDescriptor.column as keyof Category];
       const second = b[sortDescriptor.column as keyof Category];
       const cmp = first < second ? -1 : first > second ? 1 : 0;
+
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
     });
   }, [filteredCategories, sortDescriptor]);
 
   const pages = Math.ceil(sortedCategories.length / rowsPerPage);
-  const paginated = sortedCategories.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const paginated = sortedCategories.slice(
+    (page - 1) * rowsPerPage,
+    page * rowsPerPage,
+  );
 
   return (
     <div className="p-4 font-cairo">
-        <h1 className="text-2xl font-bold mb-6">الفئات</h1>
+      <h1 className="text-2xl font-bold mb-6">الفئات</h1>
       <div className="flex justify-between mb-4">
-        <Button onPress={openAddModal}> <FaPlus /> إضافة فئة </Button>
-        <Input placeholder="بحث بالاسم..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-60" />
+        <Button onPress={openAddModal}>
+          {" "}
+          <FaPlus /> إضافة فئة{" "}
+        </Button>
+        <Input
+          className="w-60"
+          placeholder="بحث بالاسم..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       <Table aria-label="جدول الفئات">
-        <TableHeader>{columns.map(col => <TableColumn key={col.uid}>{col.name}</TableColumn>)}</TableHeader>
+        <TableHeader>
+          {columns.map((col) => (
+            <TableColumn key={col.uid}>{col.name}</TableColumn>
+          ))}
+        </TableHeader>
         <TableBody>
           {paginated.map((cat) => (
             <TableRow key={cat.id}>
               <TableCell>{cat.id}</TableCell>
               <TableCell>{cat.cat_name}</TableCell>
               <TableCell>{cat.cat_name_e}</TableCell>
-              <TableCell>{cat.K}</TableCell>
+              <TableCell>{cat.k}</TableCell>
               <TableCell>{cat.purity}</TableCell>
-              <TableCell>{cat.box}</TableCell>
-              <TableCell><Checkbox isSelected={cat.tax_type} isReadOnly /></TableCell>
+              <TableCell>
+                {boxes.find((b) => b.id === cat.box)?.box_name || cat.box}
+              </TableCell>
+              <TableCell>
+                <Checkbox isReadOnly isSelected={cat.tax_type} />
+              </TableCell>
               <TableCell>{cat.tax}</TableCell>
               <TableCell>{cat.cat_type}</TableCell>
-              <TableCell><Checkbox isSelected={cat.cat_status} isReadOnly /></TableCell>
+              <TableCell>
+                <Checkbox isReadOnly isSelected={cat.cat_status} />
+              </TableCell>
               <TableCell>
                 <ActionButtons
-                  onView={() => openViewModal(cat)}
-                  onEdit={() => openEditModal(cat)}
                   onDelete={() => handleDelete(cat.id)}
+                  onEdit={() => openEditModal(cat)}
+                  onView={() => openViewModal(cat)}
                 />
               </TableCell>
             </TableRow>
@@ -277,8 +325,15 @@ export default function CategoriesTable() {
       </Table>
 
       <div className="py-4 flex justify-between items-center">
-        <span className="text-sm text-gray-500">عدد الفئات: {filteredCategories.length}</span>
-        <Pagination color="primary" page={page} total={pages} onChange={setPage} />
+        <span className="text-sm text-gray-500">
+          عدد الفئات: {filteredCategories.length}
+        </span>
+        <Pagination
+          color="primary"
+          page={page}
+          total={pages}
+          onChange={setPage}
+        />
       </div>
 
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)}>
@@ -289,23 +344,112 @@ export default function CategoriesTable() {
             {modalMode === "view" && "عرض الفئة"}
           </ModalHeader>
           <ModalBody className="grid grid-cols-2 gap-4">
-            <Input isDisabled={modalMode === "view"} label="اسم الفئة" value={newCategory.cat_name} onChange={(e) => setNewCategory({ ...newCategory, cat_name: e.target.value })} />
-            <Input isDisabled={modalMode === "view"} label="الاسم بالإنجليزي" value={newCategory.cat_name_e} onChange={(e) => setNewCategory({ ...newCategory, cat_name_e: e.target.value })} />
-            <Input isDisabled={modalMode === "view"} label="العيار" value={newCategory.K} onChange={(e) => setNewCategory({ ...newCategory, K: e.target.value })} />
-            <Input isDisabled={modalMode === "view"} label="المعيارية" value={newCategory.purity} onChange={(e) => setNewCategory({ ...newCategory, purity: e.target.value })} />
-            <Input isDisabled={modalMode === "view"} label="الصندوق" value={newCategory.box} onChange={(e) => setNewCategory({ ...newCategory, box: e.target.value })} />
-            <Input isDisabled={modalMode === "view"} label="نسبة الضريبة" type="number" value={newCategory.tax} onChange={(e) => setNewCategory({ ...newCategory, tax: parseFloat(e.target.value) })} />
-            <Input isDisabled={modalMode === "view"} label="النوع" value={newCategory.cat_type} onChange={(e) => setNewCategory({ ...newCategory, cat_type: e.target.value })} />
+            <Input
+              isDisabled={modalMode === "view"}
+              label="اسم الفئة"
+              value={newCategory.cat_name}
+              onChange={(e) =>
+                setNewCategory({ ...newCategory, cat_name: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={modalMode === "view"}
+              label="الاسم بالإنجليزي"
+              value={newCategory.cat_name_e}
+              onChange={(e) =>
+                setNewCategory({ ...newCategory, cat_name_e: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={modalMode === "view"}
+              label="العيار"
+              value={newCategory.k}
+              onChange={(e) =>
+                setNewCategory({ ...newCategory, k: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={modalMode === "view"}
+              label="المعيارية"
+              value={newCategory.purity}
+              onChange={(e) =>
+                setNewCategory({ ...newCategory, purity: e.target.value })
+              }
+            />
+            <Select
+              isDisabled={modalMode === "view"}
+              label="الصندوق"
+              selectedKeys={
+                newCategory.box !== null ? [String(newCategory.box)] : []
+              }
+              onSelectionChange={(keys) => {
+                const id = Number(Array.from(keys)[0]);
+
+                setNewCategory({ ...newCategory, box: id });
+              }}
+            >
+              {boxes.map((b) => (
+                <SelectItem key={b.id} textValue={b.box_name} value={b.id}>
+                  {b.box_name}
+                </SelectItem>
+              ))}
+            </Select>
+            <Input
+              isDisabled={modalMode === "view"}
+              label="نسبة الضريبة"
+              type="number"
+              value={newCategory.tax}
+              onChange={(e) =>
+                setNewCategory({
+                  ...newCategory,
+                  tax: parseFloat(e.target.value),
+                })
+              }
+            />
+            <Input
+              isDisabled={modalMode === "view"}
+              label="النوع"
+              value={newCategory.cat_type}
+              onChange={(e) =>
+                setNewCategory({ ...newCategory, cat_type: e.target.value })
+              }
+            />
             <div className="col-span-2 flex gap-4">
-              <Checkbox isDisabled={modalMode === "view"} isSelected={newCategory.tax_type} onValueChange={(val) => setNewCategory({ ...newCategory, tax_type: val })}>خاضعة للضريبة</Checkbox>
-              <Checkbox isDisabled={modalMode === "view"} isSelected={newCategory.cat_status} onValueChange={(val) => setNewCategory({ ...newCategory, cat_status: val })}>مفعّلة</Checkbox>
+              <Checkbox
+                isDisabled={modalMode === "view"}
+                isSelected={newCategory.tax_type}
+                onValueChange={(val) =>
+                  setNewCategory({ ...newCategory, tax_type: val })
+                }
+              >
+                خاضعة للضريبة
+              </Checkbox>
+              <Checkbox
+                isDisabled={modalMode === "view"}
+                isSelected={newCategory.cat_status}
+                onValueChange={(val) =>
+                  setNewCategory({ ...newCategory, cat_status: val })
+                }
+              >
+                مفعّلة
+              </Checkbox>
             </div>
           </ModalBody>
           {modalMode !== "view" && (
             <ModalFooter>
-              <Button color="danger" onPress={() => setIsAddModalOpen(false)}>إلغاء</Button>
-              {modalMode === "add" && <Button color="success" onPress={handleAddCategory}>حفظ</Button>}
-              {modalMode === "edit" && <Button color="primary" onPress={handleUpdateCategory}>تحديث</Button>}
+              <Button color="danger" onPress={() => setIsAddModalOpen(false)}>
+                إلغاء
+              </Button>
+              {modalMode === "add" && (
+                <Button color="success" onPress={handleAddCategory}>
+                  حفظ
+                </Button>
+              )}
+              {modalMode === "edit" && (
+                <Button color="primary" onPress={handleUpdateCategory}>
+                  تحديث
+                </Button>
+              )}
             </ModalFooter>
           )}
         </ModalContent>
