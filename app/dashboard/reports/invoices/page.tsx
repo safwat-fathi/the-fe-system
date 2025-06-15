@@ -24,7 +24,9 @@ const columns = [
   { name: "رقم الفاتورة", uid: "inv_id" },
   { name: "التاريخ", uid: "inv_date" },
   { name: "العميل", uid: "cust_name" },
-  { name: "الصافي", uid: "inv_net" },
+  { name: "الإجمالي", uid: "inv_net" },
+  { name: "الضريبة", uid: "tax" },
+  { name: "الإجمالي شامل الضريبة", uid: "inv_amt" },
   { name: "", uid: "actions" },
 ];
 
@@ -104,7 +106,9 @@ export default function InvoicesPage() {
               <TableCell>{inv.inv_id}</TableCell>
               <TableCell>{inv.inv_date}</TableCell>
               <TableCell>{inv.cust_name}</TableCell>
-              <TableCell>{inv.inv_net}</TableCell>
+              <TableCell>{inv.inv_net?.toFixed(2)}</TableCell>
+              <TableCell>{inv.tax?.toFixed(2)}</TableCell>
+              <TableCell>{inv.inv_amt?.toFixed(2)}</TableCell>
               <TableCell>
                 <ActionButtons
                   onDelete={() => handleDelete(inv.inv_id)}
