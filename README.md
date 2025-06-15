@@ -63,6 +63,7 @@ The application works with all columns available in the invoice detail table. Th
 | `qty` | Number of pieces | `qty` |
 | `weight` | Gross weight | `weight` |
 | `g_weight` | Net/gauged weight | `g_weight` |
+| `k` | Gold carat (gauge) | `k` |
 | `price` | Price per gram | `price` |
 | `price_w` | Wage per gram | `price_w` |
 | `total` | Total value | `total` |

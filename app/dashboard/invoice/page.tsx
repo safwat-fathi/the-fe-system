@@ -372,6 +372,7 @@ export default function InvoicePage() {
           id: row.id,
           trans_type: row.trans_type ?? 2,
           purity: row.purity ?? "",
+          k: row.k ?? "",
           qty: row.qty,
           stones: row.stones ?? "",
           price: row.price,
