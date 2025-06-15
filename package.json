@@ -23,6 +23,7 @@
   "@heroui/system": "2.4.10",
   "@heroui/theme": "2.4.9",
   "@iconify/react": "^5.2.0",
+  "@nextui-org/react": "^2.6.11",
   "@react-aria/ssr": "3.9.7",
   "@react-aria/visually-hidden": "3.8.19",
   "bootstrap-icons": "^1.13.1",
@@ -40,6 +41,7 @@
   "react-icons": "^5.5.0",
   "react-qr-code": "^2.0.15",
   "react-select-async-paginate": "^0.7.10",
+  "react-tooltip": "^5.29.1",
   "sonner": "^2.0.3"
  },
  "devDependencies": {
@@ -50,6 +52,7 @@
   "@types/react": "18.3.3",
   "@types/react-dom": "18.3.0",
   "@types/react-select": "^5.0.0",
+  "@types/react-tooltip": "^3.11.0",
   "@typescript-eslint/eslint-plugin": "8.11.0",
   "@typescript-eslint/parser": "8.11.0",
   "autoprefixer": "10.4.19",
