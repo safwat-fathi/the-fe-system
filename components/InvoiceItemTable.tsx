@@ -2,7 +2,7 @@
 
 import type { InvoiceItem } from "@/types/invoice-item";
 
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import CreatableSelect from "react-select/creatable";
 
 interface Item {
@@ -46,6 +46,7 @@ export default function InvoiceItemTable({
   categories,
 }: Props) {
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
+  const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
 
   // prepare refs array when rows change
   useEffect(() => {
@@ -574,10 +575,24 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={item.total ?? total + tax}
-                    onChange={(e) =>
-                      handleTotalChange(index, e.target.value)
+                    value={
+                      tempTotals[item.id] !== undefined
+                        ? tempTotals[item.id]
+                        : item.total ?? total + tax
                     }
+                    onChange={(e) =>
+                      setTempTotals((prev) => ({
+                        ...prev,
+                        [item.id]: e.target.value,
+                      }))
+                    }
+                    onBlur={(e) => {
+                      setTempTotals((prev) => {
+                        const { [item.id]: removed, ...rest } = prev;
+                        return rest;
+                      });
+                      handleTotalChange(index, e.target.value);
+                    }}
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
