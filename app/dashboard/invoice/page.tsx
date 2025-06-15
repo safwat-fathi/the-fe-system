@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Input, Button } from "@heroui/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import QRCode from "react-qr-code";
 
@@ -39,7 +40,6 @@ interface Item {
   cat?: number;
   [key: string]: any; // هذا يخليك تتجنب المشاكل إذا في حقول زيادة غير معرفة
 }
-
 
 interface Customer {
   id: number;
@@ -119,6 +119,7 @@ export default function InvoicePage() {
   // payType: 1=gold value, 2=wage only, 3=both
   const [payType, setPayType] = useState<number>(1);
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
+  const [searchNumber, setSearchNumber] = useState<string>("");
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
   // update all rows when gold price changes
@@ -180,27 +181,25 @@ export default function InvoicePage() {
     setGoldPrice(price);
   };
 
-async function fetchItems() {
-  try {
-    const response = await fetchData<{ results: Item[] }>(
-      `${API_BASE_URL}GetItemsList/`,
-    );
+  async function fetchItems() {
+    try {
+      const response = await fetchData<{ results: Item[] }>(
+        `${API_BASE_URL}GetItemsList/`,
+      );
 
-    if (response && Array.isArray(response.results)) {
-      console.log("Fetched items sample:", response.results[0]); // ✅ تأكد من الحقول
-      setItems(response.results); // لا تعدل البيانات، خزنها كما هي
-      console.log("First item sample from API:", response.results[0]);
-
-    } else {
-      console.warn("No items found or invalid response.");
+      if (response && Array.isArray(response.results)) {
+        console.log("Fetched items sample:", response.results[0]); // ✅ تأكد من الحقول
+        setItems(response.results); // لا تعدل البيانات، خزنها كما هي
+        console.log("First item sample from API:", response.results[0]);
+      } else {
+        console.warn("No items found or invalid response.");
+        setItems([]);
+      }
+    } catch (error) {
+      console.error("Error fetching items:", error);
       setItems([]);
     }
-  } catch (error) {
-    console.error("Error fetching items:", error);
-    setItems([]);
   }
-}
-
 
   async function fetchCustomers() {
     const response = await fetchData<Customer[]>(
@@ -269,7 +268,7 @@ async function fetchItems() {
   }, 0);
   const netAmount = totalAmount + taxAmount;
   const totalDiscount = invoiceItems.reduce(
-    (sum, item) => sum + (item.item_disc_amt ?? 0),
+    (sum, item) => sum + (parseFloat(String(item.item_disc_amt)) || 0),
     0,
   );
 
@@ -552,48 +551,148 @@ async function fetchItems() {
     previewWindow.document.close();
   };
 
+  const handleInvoiceSearch = async () => {
+    const num = parseInt(searchNumber);
+
+    if (!num) return toast.error("أدخل رقم الفاتورة");
+
+    try {
+      const invList = await fetchData<any[]>(
+        `${API_BASE_URL}invoices_list?inv_id=${num}`,
+      );
+
+      if (!invList || invList.length === 0) {
+        toast.error("الفاتورة غير موجودة");
+
+        return;
+      }
+
+      const inv = invList[0];
+
+      setInvoiceNumber(inv.inv_id);
+      if (inv.inv_date) setInvoiceDate(inv.inv_date);
+      if (inv.cust) setSelectedCustomer(inv.cust);
+      if (inv.inv_type)
+        setPaymentMethod(inv.inv_type === 1 ? "cash" : "credit");
+      if (inv.ref_no) setReferenceNumber(inv.ref_no);
+      if (inv.vat_no) setVatNumber(inv.vat_no);
+      if (inv.handling) setHandlingMethod(inv.handling);
+      if (inv.mobile) setMobileMethod(inv.mobile);
+      if (inv.pay_type) setPayType(inv.pay_type);
+      if (inv.emp_id)
+        setEmployee(
+          inv.emp_id === 1 ? "hashem" : inv.emp_id === 2 ? "othman" : "",
+        );
+      if (inv.inv_notes) setNote(inv.inv_notes);
+      if (inv.gold_price) setGoldPrice(inv.gold_price);
+
+      const details = await fetchData<any[]>(
+        `${API_BASE_URL}invoices_dtl_list?inv=${num}`,
+      );
+
+      if (details && Array.isArray(details)) {
+        setInvoiceItems(
+          details.map((row) => ({
+            id: row.id,
+            item_id: row.item,
+            item_code: row.item_code || "",
+            item_name: row.item_desc || "",
+            qty: parseFloat(row.qty) || 0,
+            weight: parseFloat(row.weight) || 0,
+            g_weight: parseFloat(row.g_weight) || 0,
+            k: row.k || "",
+            price: parseFloat(row.price) || 0,
+            price_w: parseFloat(row.price_w) || 0,
+            note: row.inv_note || "",
+            trans_type: row.trans_type,
+            purity: row.purity || "",
+            total: parseFloat(row.total) || 0,
+            total_w: parseFloat(row.total_w) || 0,
+            total_a: parseFloat(row.total_a) || 0,
+            inv_note: row.inv_note,
+            tax: parseFloat(row.tax) || 0,
+            tax_prc: parseFloat(row.tax_prc) || 0,
+            stones: row.stones,
+            item_disc_prc: parseFloat(row.item_disc_prc) || 0,
+            item_disc_amt: parseFloat(row.item_disc_amt) || 0,
+            sn: row.sn,
+            item_desc: row.item_desc,
+            cr_date: row.cr_date,
+            cr_user: row.cr_user,
+            upd_date: row.upd_date,
+            upd_user: row.upd_user,
+            com: row.com,
+            inv: row.inv,
+            item: row.item,
+          })),
+        );
+      } else {
+        setInvoiceItems([]);
+      }
+
+      toast.success("تم جلب الفاتورة");
+    } catch (err) {
+      console.error("❌ خطأ في جلب الفاتورة:", err);
+      toast.error("فشل في جلب الفاتورة");
+    }
+  };
+
   return (
-    <InvoiceTotalsActions
-      formattedDateTime={formattedDateTime}
-      invoiceNumber={invoiceNumber}
-      netAmount={netAmount}
-      previewInvoice={previewInvoice}
-      saveInvoice={saveInvoice}
-      taxAmount={taxAmount}
-      totalAmount={totalAmount}
-      totalDiscount={totalDiscount}
-    >
-      <InvoiceSelectors
-        customers={customers}
-        employee={employee}
-        goldPrice={goldPrice}
-        handlingMethod={handlingMethod}
-        mobileMethod={mobileMethod}
-        note={note}
-        payType={payType}
-        paymentMethod={paymentMethod}
-        referenceNumber={referenceNumber}
-        selectedCustomer={selectedCustomer}
-        setEmployee={setEmployee}
-        setHandlingMethod={setHandlingMethod}
-        setMobileMethod={setMobileMethod}
-        setNote={setNote}
-        setPayType={setPayType}
-        setPaymentMethod={setPaymentMethod}
-        setReferenceNumber={setReferenceNumber}
-        setSelectedCustomer={setSelectedCustomer}
-        setVatNumber={setVatNumber}
-        vatNumber={vatNumber}
-      />
-      <InvoiceItemTable
-        categories={categories}
-        goldPrice={goldPrice}
-        invoiceItems={invoiceItems}
-        items={items}
-        payType={payType}
-        setInvoiceItems={setInvoiceItems}
-        setItems={setItems}
-      />
-    </InvoiceTotalsActions>
+    <>
+      <div className="mb-4 flex gap-2">
+        <Input
+          className="w-60"
+          placeholder="بحث برقم الفاتورة..."
+          type="number"
+          value={searchNumber}
+          onChange={(e) => setSearchNumber(e.target.value)}
+        />
+        <Button color="primary" onPress={handleInvoiceSearch}>
+          بحث
+        </Button>
+      </div>
+      <InvoiceTotalsActions
+        formattedDateTime={formattedDateTime}
+        invoiceNumber={invoiceNumber}
+        netAmount={netAmount}
+        previewInvoice={previewInvoice}
+        saveInvoice={saveInvoice}
+        taxAmount={taxAmount}
+        totalAmount={totalAmount}
+        totalDiscount={totalDiscount}
+      >
+        <InvoiceSelectors
+          customers={customers}
+          employee={employee}
+          goldPrice={goldPrice}
+          handlingMethod={handlingMethod}
+          mobileMethod={mobileMethod}
+          note={note}
+          payType={payType}
+          paymentMethod={paymentMethod}
+          referenceNumber={referenceNumber}
+          selectedCustomer={selectedCustomer}
+          setEmployee={setEmployee}
+          setHandlingMethod={setHandlingMethod}
+          setMobileMethod={setMobileMethod}
+          setNote={setNote}
+          setPayType={setPayType}
+          setPaymentMethod={setPaymentMethod}
+          setReferenceNumber={setReferenceNumber}
+          setSelectedCustomer={setSelectedCustomer}
+          setVatNumber={setVatNumber}
+          vatNumber={vatNumber}
+        />
+        <InvoiceItemTable
+          categories={categories}
+          goldPrice={goldPrice}
+          invoiceItems={invoiceItems}
+          items={items}
+          payType={payType}
+          setInvoiceItems={setInvoiceItems}
+          setItems={setItems}
+        />
+      </InvoiceTotalsActions>
+    </>
   );
 }
