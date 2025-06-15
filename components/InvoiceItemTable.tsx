@@ -173,7 +173,8 @@ export default function InvoiceItemTable({
     const updated = [...invoiceItems];
     const taxRate = (updated[index].tax_prc ?? 15) / 100;
     const totalWithTax = parseFloat(value) || 0;
-    const baseTotal = totalWithTax / (1 + taxRate);
+    const baseWithoutDisc = totalWithTax / (1 + taxRate);
+    const baseTotal = baseWithoutDisc + (updated[index].item_disc_amt ?? 0);
 
     if (updated[index].weight > 0) {
       if (payType === 1) {
@@ -188,7 +189,7 @@ export default function InvoiceItemTable({
     } else {
       // when weight is zero simply store the entered total
       updated[index].total = totalWithTax;
-      updated[index].tax = totalWithTax - baseTotal;
+      updated[index].tax = totalWithTax - baseWithoutDisc;
       setInvoiceItems(updated);
       return;
     }
