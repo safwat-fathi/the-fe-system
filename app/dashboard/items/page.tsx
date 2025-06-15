@@ -238,34 +238,9 @@ const fetchItems = async (xcat: number, xtype: number, url?: string) => {
  
 
 const filteredItems = items;
-// const filteredItems = items.filter((item) => {
-//   const byCategory = selectedCatId !== null && selectedCatId !== undefined ? Number(item.cat) === Number(selectedCatId)  : false;
 
-//   const byType = selectedTypeId !== null && selectedTypeId !== undefined   ? Number(item.item_type) === Number(selectedTypeId): false;
-
-//   console.log(`Item ${item.id} => byCategory: ${byCategory}, selectedCatId: ${Number(selectedCatId)}, selectedTypeId: ${Number(selectedTypeId)}, byType: ${byType}`);
-//   return byCategory && byType;
-// });
-   
-
-
-  const handleAddItem = async () => {
+const handleAddItem = async () => {
     
-    // if (!newItem.id) {
-    //   updatedCustomer.cust_code = String( maxItem.id__max);
-    // }
- 
-    // if (!updatedCustomer.cust_code) {
-    //   updatedCustomer.cust_code = updatedCustomer.id ? String(updatedCustomer.id) : "";
-    // }
-  
-
-    // if (!newItem.item_code  ){
-    // alert("كود الصنف فارغ  :" + newItem.item_code)
-  
-    //  // newItem.item_code="22222";
-     
-    // }
     try {
       const formData = new FormData();
       formData.append("item_name", newItem.item_name);
@@ -282,7 +257,7 @@ const filteredItems = items;
       formData.append("purity", newItem.purity);
       formData.append("item_status", String(1));
       formData.append("cancel", String(false));
-      formData.append("cr_date", new Date().toISOString()); // ✅ التاريخ بصيغة صحيحة
+      formData.append("cr_date", new Date().toISOString()); 
       formData.append("cat", String(newItem.cat));
       formData.append("item_type", String(newItem.item_type));
       formData.append("unit", String(newItem.unit));
@@ -512,7 +487,7 @@ const filteredItems = items;
 <table className="w-full border text-sm">
   <thead>
     <tr className="bg-gray-100 text-center">
-      <th className="p-2 border">#</th>
+      <th className="p-2 border">الكود</th>
       <th className="p-2 border">الاسم</th>
       <th className="p-2 border">السعر</th>
       <th className="p-2 border">الكود</th>

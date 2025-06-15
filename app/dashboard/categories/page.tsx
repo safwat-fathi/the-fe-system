@@ -31,7 +31,7 @@ const columns = [
   { name: "رقم الفئة", uid: "id" },
   { name: "اسم الفئة", uid: "cat_name" },
   { name: "الاسم بالإنجليزي", uid: "cat_name_e" },
-  { name: "العيار", uid: "gauge" },
+  { name: "العيار", uid: "K" },
   { name: "المعيارية", uid: "purity" },
   { name: "الصندوق", uid: "box" },
   { name: "الضريبة", uid: "tax_type" },
@@ -45,7 +45,7 @@ interface Category {
   id: number;
   cat_name: string;
   cat_name_e: string;
-  gauge: string;
+  K: string;
   purity: string;
   box: string;
   tax_type: boolean;
@@ -70,7 +70,7 @@ export default function CategoriesTable() {
     id: 0,
     cat_name: "",
     cat_name_e: "",
-    gauge: "",
+    K: "",
     purity: "",
     box: "",
     tax_type: false,
@@ -83,7 +83,7 @@ export default function CategoriesTable() {
     id: cat.id ?? 0,
     cat_name: cat.cat_name ?? "-",
     cat_name_e: cat.cat_name_e ?? "-",
-    gauge: cat.gauge ?? "-",
+    K: cat.K ?? "-",
     purity: cat.purity ?? "-",
     box: cat.cat_box ?? "-",
     tax_type: cat.tax_type ?? false,
@@ -134,7 +134,7 @@ export default function CategoriesTable() {
           id: 0,
           cat_name: "",
           cat_name_e: "",
-          gauge: "",
+          K: "",
           purity: "",
           box: "",
           tax_type: false,
@@ -157,7 +157,7 @@ export default function CategoriesTable() {
       const updatedCategory = {
         ...newCategory,
         tax: isNaN(Number(newCategory.tax)) ? 0 : Number(newCategory.tax),
-        gauge: newCategory.gauge ?? "",
+        K: newCategory.K ?? "",
         purity: newCategory.purity ?? ""
       };
 
@@ -206,7 +206,7 @@ export default function CategoriesTable() {
       id: 0,
       cat_name: "",
       cat_name_e: "",
-      gauge: "",
+      K: "",
       purity: "",
       box: "",
       tax_type: false,
@@ -257,7 +257,7 @@ export default function CategoriesTable() {
               <TableCell>{cat.id}</TableCell>
               <TableCell>{cat.cat_name}</TableCell>
               <TableCell>{cat.cat_name_e}</TableCell>
-              <TableCell>{cat.gauge}</TableCell>
+              <TableCell>{cat.K}</TableCell>
               <TableCell>{cat.purity}</TableCell>
               <TableCell>{cat.box}</TableCell>
               <TableCell><Checkbox isSelected={cat.tax_type} isReadOnly /></TableCell>
@@ -291,7 +291,7 @@ export default function CategoriesTable() {
           <ModalBody className="grid grid-cols-2 gap-4">
             <Input isDisabled={modalMode === "view"} label="اسم الفئة" value={newCategory.cat_name} onChange={(e) => setNewCategory({ ...newCategory, cat_name: e.target.value })} />
             <Input isDisabled={modalMode === "view"} label="الاسم بالإنجليزي" value={newCategory.cat_name_e} onChange={(e) => setNewCategory({ ...newCategory, cat_name_e: e.target.value })} />
-            <Input isDisabled={modalMode === "view"} label="العيار" value={newCategory.gauge} onChange={(e) => setNewCategory({ ...newCategory, gauge: e.target.value })} />
+            <Input isDisabled={modalMode === "view"} label="العيار" value={newCategory.K} onChange={(e) => setNewCategory({ ...newCategory, K: e.target.value })} />
             <Input isDisabled={modalMode === "view"} label="المعيارية" value={newCategory.purity} onChange={(e) => setNewCategory({ ...newCategory, purity: e.target.value })} />
             <Input isDisabled={modalMode === "view"} label="الصندوق" value={newCategory.box} onChange={(e) => setNewCategory({ ...newCategory, box: e.target.value })} />
             <Input isDisabled={modalMode === "view"} label="نسبة الضريبة" type="number" value={newCategory.tax} onChange={(e) => setNewCategory({ ...newCategory, tax: parseFloat(e.target.value) })} />
