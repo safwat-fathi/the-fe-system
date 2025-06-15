@@ -139,15 +139,17 @@ export default function InvoicePage() {
             updated.weight * updated.price_w -
             (updated.item_disc_amt ?? 0);
 
+          const tax = baseTotal * ((updated.tax_prc ?? 15) / 100);
+
           return {
             ...updated,
             // total_a = weight * price
             total_a: updated.weight * updated.price,
             // total_w = weight * wagePrice
             total_w: updated.weight * updated.price_w,
-            // total = total_a + total_w - discount
-            total: baseTotal,
-            tax: baseTotal * ((updated.tax_prc ?? 15) / 100),
+            // total includes tax
+            total: baseTotal + tax,
+            tax,
           };
         }),
       );
@@ -391,7 +393,7 @@ async function fetchItems() {
           price_w: row.price_w,
           weight: row.weight,
           g_weight: row.g_weight ?? 0,
-          // totals stored with the row
+          // totals stored with the row (total includes tax)
           total:
             row.total ??
             row.weight * row.price +
