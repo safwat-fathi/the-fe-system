@@ -710,7 +710,7 @@ export default function InvoicePage() {
   };
 
   const handleInvoiceSearch = async (searchVal?: string) => {
-    const num = parseInt(searchVal ?? searchNumber);
+    const num = parseInt(searchVal ?? searchNumber, 10);
 
     if (!num) return toast.error("أدخل رقم الفاتورة");
 
@@ -725,7 +725,13 @@ export default function InvoicePage() {
         return;
       }
 
-      const inv = invList[0];
+      const inv = invList.find((i) => Number(i.inv_id) === num);
+
+      if (!inv) {
+        toast.error("الفاتورة غير موجودة");
+
+        return;
+      }
 
       setInvoiceNumber(inv.inv_id);
       if (inv.inv_date) setInvoiceDate(inv.inv_date);
@@ -767,8 +773,12 @@ export default function InvoicePage() {
       );
 
       if (details && Array.isArray(details)) {
+        const filteredDetails = details.filter(
+          (row) => Number(row.inv) === num,
+        );
+
         setInvoiceItems(
-          details.map((row) => ({
+          filteredDetails.map((row) => ({
             id: row.id,
             item_id: row.item ?? null,
             item_code: row.item_code ?? "",
