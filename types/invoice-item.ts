@@ -6,13 +6,13 @@ export interface InvoiceItem {
   qty: number;
   weight: number;
   g_weight: number;
-  karat: string;
+  k: string;
   price: number;
   price_w: number;
   item_disc_amt: number;
   note: string;
   trans_type?: number;
-  G875?: string;
+  purity?: string;
   total?: number;
   total_w?: number;
   total_a?: number;

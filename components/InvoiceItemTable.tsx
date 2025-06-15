@@ -10,9 +10,6 @@ interface Item {
   item_code: string;
   item_name: string;
   item_price: number;
-  /** @deprecated Use `k` */
-  karat?: string;
-  /** New field name for karat */
   k?: string;
   item_weight?: number;
   item_g_weight?: number;
@@ -113,12 +110,12 @@ export default function InvoiceItemTable({
           qty: 0,
           g_weight: 0,
           weight: 0,
-          karat: "",
+          k: "",
           price: goldPrice ?? 0,
           price_w: goldPrice ?? 0,
           note: "",
           trans_type: 2,
-          G875: "",
+          purity: "",
           total: 0,
           total_w: 0,
           total_a: 0,
@@ -276,13 +273,13 @@ export default function InvoiceItemTable({
                       updated[index].item_id = selected?.id ?? null;
                       updated[index].item_code = selected?.item_code ?? "";
                       updated[index].item_name = selected?.item_name ?? "";
-                      const selKarat = selected?.karat ?? selected?.k ?? "";
+                      const selk = selected?.k ?? "";
                       const selPurity = selected?.purity ?? "";
-                      updated[index].karat = selKarat;
+                      updated[index].k = selk;
                       updated[index].price =
                         goldPrice ?? selected?.item_price ?? 0;
                       updated[index].price_w = selected?.work_price ?? 0;
-                      updated[index].G875 = selPurity;
+                      updated[index].purity = selPurity;
                       updated[index].stones = selected?.stones ?? "";
                       if (
                         selected?.item_weight !== undefined &&
@@ -302,7 +299,7 @@ export default function InvoiceItemTable({
                         );
                       }
                       if (
-                        ((selKarat === "" || selKarat === "0") ||
+                        ((selk === "" || selk === "0") ||
                           (selPurity === "" || selPurity === "0")) &&
                         selected?.cat
                       ) {
@@ -311,10 +308,10 @@ export default function InvoiceItemTable({
                         );
 
                         if (cat) {
-                          if (!selKarat || selKarat === "0")
-                            updated[index].karat = (cat.gauge ?? cat.k ?? "") as string;
+                          if (!selk || selk === "0")
+                            updated[index].k = (cat.gauge ?? cat.k ?? "") as string;
                           if (!selPurity || selPurity === "0")
-                            updated[index].G875 = cat.purity ?? "";
+                            updated[index].purity = cat.purity ?? "";
                         }
                       }
                       // total_a = weight * price
@@ -341,7 +338,6 @@ export default function InvoiceItemTable({
                         id: Math.floor(Math.random() * 1000000),
                         item_code: "000000",
                         item_name: inputValue,
-                        karat: "",
                         k: "",
                         item_price: 0,
                         item_weight: 0,
@@ -359,7 +355,7 @@ export default function InvoiceItemTable({
                         item_id: newItem.id,
                         item_code: newItem.item_code,
                         item_name: newItem.item_name,
-                        karat: newItem.k || newItem.karat || "",
+                        k: newItem.k || "",
                         price: goldPrice ?? newItem.item_price,
                         price_w: newItem.work_price ?? 0,
                         weight: newItem.item_weight ?? 0,
@@ -370,7 +366,7 @@ export default function InvoiceItemTable({
                             ? Number(newItem.item_g_weight)
                             : Number(newItem.item_weight ?? 0),
                         stones: newItem.stones ?? "",
-                        G875: newItem.purity ?? "",
+                        purity: newItem.purity ?? "",
                         // total_a = weight * price
                         total_a:
                           (newItem.item_weight ?? 0) *
@@ -448,9 +444,9 @@ export default function InvoiceItemTable({
                     }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
-                    value={item.karat}
+                    value={item.k}
                     onChange={(e) =>
-                      handleFieldChange(index, "karat", e.target.value)
+                      handleFieldChange(index, "k", e.target.value)
                     }
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
@@ -462,9 +458,9 @@ export default function InvoiceItemTable({
                     }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
-                    value={item.G875}
+                    value={item.purity}
                     onChange={(e) =>
-                      handleFieldChange(index, "G875", e.target.value)
+                      handleFieldChange(index, "purity", e.target.value)
                     }
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />

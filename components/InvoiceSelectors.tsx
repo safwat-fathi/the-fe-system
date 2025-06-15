@@ -8,8 +8,6 @@ interface Item {
   item_code: string;
   item_name: string;
   item_price: number;
-  /** @deprecated Use `k` */
-  karat?: string;
   k?: string;
 }
 
