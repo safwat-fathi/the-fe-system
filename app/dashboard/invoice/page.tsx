@@ -170,10 +170,6 @@ export default function InvoicePage() {
     getNextInvoiceNumber().then(setInvoiceNumber);
   }, []);
 
-  // changing payment method clears the selected customer
-  useEffect(() => {
-    setSelectedCustomer(null);
-  }, [paymentMethod]);
 
   const getGoldPrice = async () => {
     const price = await fetchGoldPrice();
