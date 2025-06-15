@@ -95,7 +95,6 @@ export default function InvoicePage() {
       inv_note: "",
       tax: 0,
       tax_prc: 15,
-      total_t: 0,
       stones: "",
       item_disc_prc: 0,
       item_disc_amt: 0,
@@ -148,10 +147,9 @@ export default function InvoicePage() {
             total_a: updated.weight * updated.price,
             // total_w = weight * wagePrice
             total_w: updated.weight * updated.price_w,
-            // total = total_a + total_w - discount
-            total: baseTotal,
+            // total includes tax
+            total: baseTotal + tax,
             tax,
-            total_t: baseTotal + tax,
           };
         }),
       );
@@ -395,7 +393,7 @@ async function fetchItems() {
           price_w: row.price_w,
           weight: row.weight,
           g_weight: row.g_weight ?? 0,
-          // totals stored with the row
+          // totals stored with the row (total includes tax)
           total:
             row.total ??
             row.weight * row.price +
