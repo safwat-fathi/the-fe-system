@@ -170,10 +170,6 @@ export default function InvoicePage() {
     getNextInvoiceNumber().then(setInvoiceNumber);
   }, []);
 
-  // changing payment method clears the selected customer
-  useEffect(() => {
-    setSelectedCustomer(null);
-  }, [paymentMethod]);
 
   const getGoldPrice = async () => {
     const price = await fetchGoldPrice();
@@ -572,12 +568,26 @@ export default function InvoicePage() {
       setInvoiceNumber(inv.inv_id);
       if (inv.inv_date) setInvoiceDate(inv.inv_date);
       if (inv.cust) setSelectedCustomer(inv.cust);
+      const cust = customers.find((c) => c.id === inv.cust);
+
       if (inv.inv_type)
         setPaymentMethod(inv.inv_type === 1 ? "cash" : "credit");
       if (inv.ref_no) setReferenceNumber(inv.ref_no);
-      if (inv.vat_no) setVatNumber(inv.vat_no);
-      if (inv.handling) setHandlingMethod(inv.handling);
-      if (inv.mobile) setMobileMethod(inv.mobile);
+      if (inv.vat_no) {
+        setVatNumber(inv.vat_no);
+      } else if (cust?.vat_no) {
+        setVatNumber(String(cust.vat_no));
+      }
+      if (inv.handling) {
+        setHandlingMethod(inv.handling);
+      } else if (cust?.handling) {
+        setHandlingMethod(cust.handling.toString());
+      }
+      if (inv.mobile) {
+        setMobileMethod(inv.mobile);
+      } else if (cust?.mobile) {
+        setMobileMethod(String(cust.mobile));
+      }
       if (inv.pay_type) setPayType(inv.pay_type);
       if (inv.emp_id)
         setEmployee(
@@ -594,37 +604,37 @@ export default function InvoicePage() {
         setInvoiceItems(
           details.map((row) => ({
             id: row.id,
-            item_id: row.item,
-            item_code: row.item_code || "",
-            item_name: row.item_desc || "",
+            item_id: row.item ?? null,
+            item_code: row.item_code ?? "",
+            item_name: row.item_desc ?? "",
 
             qty: parseFloat(row.qty) || 0,
             weight: parseFloat(row.weight) || 0,
             g_weight: parseFloat(row.g_weight) || 0,
-            k: row.k || "",
+            k: row.k ?? "",
             price: parseFloat(row.price) || 0,
             price_w: parseFloat(row.price_w) || 0,
-            note: row.inv_note || "",
-            trans_type: row.trans_type,
-            purity: row.purity || "",
+            note: row.inv_note ?? "",
+            trans_type: row.trans_type ?? 2,
+            purity: row.purity ?? "",
             total: parseFloat(row.total) || 0,
             total_w: parseFloat(row.total_w) || 0,
             total_a: parseFloat(row.total_a) || 0,
-            inv_note: row.inv_note,
+            inv_note: row.inv_note ?? "",
             tax: parseFloat(row.tax) || 0,
             tax_prc: parseFloat(row.tax_prc) || 0,
-            stones: row.stones,
+            stones: row.stones ?? "",
             item_disc_prc: parseFloat(row.item_disc_prc) || 0,
             item_disc_amt: parseFloat(row.item_disc_amt) || 0,
-            sn: row.sn,
-            item_desc: row.item_desc,
-            cr_date: row.cr_date,
-            cr_user: row.cr_user,
-            upd_date: row.upd_date,
-            upd_user: row.upd_user,
-            com: row.com,
-            inv: row.inv,
-            item: row.item,
+            sn: row.sn ?? "",
+            item_desc: row.item_desc ?? "",
+            cr_date: row.cr_date ?? "",
+            cr_user: row.cr_user ?? "",
+            upd_date: row.upd_date ?? "",
+            upd_user: row.upd_user ?? "",
+            com: row.com ?? 0,
+            inv: row.inv ?? 0,
+            item: row.item ?? 0,
           })),
         );
       } else {

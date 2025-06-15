@@ -135,7 +135,10 @@ export default function InvoiceSelectors({
               name="payment"
               value="cash"
               checked={paymentMethod === "cash"}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => {
+                setPaymentMethod(e.target.value);
+                setSelectedCustomer(null);
+              }}
             />
             نقداً
           </label>
@@ -145,7 +148,10 @@ export default function InvoiceSelectors({
               name="payment"
               value="credit"
               checked={paymentMethod === "credit"}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => {
+                setPaymentMethod(e.target.value);
+                setSelectedCustomer(null);
+              }}
             />
             أجل
           </label>
