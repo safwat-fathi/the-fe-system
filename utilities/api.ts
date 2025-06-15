@@ -1,10 +1,10 @@
 export const API_BASE_URL: string =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "http://149.102.143.102:8000/api/";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://149.102.143.102:8000/api/";
 
 export async function fetchGoldPrice(): Promise<number | null> {
   try {
     const response = await fetch("https://data-asg.goldprice.org/dbXRates/SAR");
+
     if (!response.ok) throw new Error("Network response was not ok");
 
     const data = await response.json();
@@ -14,32 +14,37 @@ export async function fetchGoldPrice(): Promise<number | null> {
     if (!pricePerOunce) return null;
 
     const pricePerGram = pricePerOunce / 31.1035;
+
     // const pricePerGram = pricePerOunce / 3.75;
     return parseFloat(pricePerGram.toFixed(2));
   } catch (error) {
     console.error("❌ فشل جلب سعر الذهب:", error);
+
     return null;
   }
 }
-
 
 export function appendBranchParams(url: string): string {
   if (typeof window !== "undefined") {
     const com = localStorage.getItem("selectedBranch");
     const year = localStorage.getItem("selectedYear");
+
     if (com) {
       const u = new URL(url, url.startsWith("http") ? undefined : API_BASE_URL);
+
       u.searchParams.set("com", com);
       if (year) u.searchParams.set("year", year);
+
       return u.toString();
     }
   }
+
   return url;
 }
 
 export async function fetchData<T>(
   url: string,
-  method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
 ): Promise<T | null> {
   try {
     url = appendBranchParams(url);
@@ -48,17 +53,20 @@ export async function fetchData<T>(
 
     if (!response.ok) {
       const errorMessage = await response.text();
+
       throw new Error(`HTTP ${response.status} - ${errorMessage}`);
     }
 
     return await response.json();
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+
     console.error("Fetch error:", errorMessage);
+
     return null;
   }
 }
-
 
 export const API_ENDPOINTS = {
   // روابط العملاء
@@ -67,8 +75,8 @@ export const API_ENDPOINTS = {
   UPDATE_CUSTOMER: (id: number) => `${API_BASE_URL}api_update_customer/${id}`,
   DELETE_CUSTOMER: (id: number) => `${API_BASE_URL}api_delete_customer/${id}`,
   CUSTOMER_TYPES: `${API_BASE_URL}cust_type_list`,
-  
-  // الحسابات 
+
+  // الحسابات
   ACCOUNTS_LIST: `${API_BASE_URL}accounts_list`,
 
   // روابط الفئات والأصناف
@@ -103,13 +111,17 @@ export const API_ENDPOINTS = {
   BoxTypeList: `${API_BASE_URL}getBoxTypeList`,
   VoucherTypeList: `${API_BASE_URL}getVoucherTypeList`,
   PayTypeList: `${API_BASE_URL}getPayTypeList`,
-  ItemStatusList: `${API_BASE_URL}getItemStatus`,     // add by Moseed 31-5-2025
+  ItemStatusList: `${API_BASE_URL}getItemStatus`, // add by Moseed 31-5-2025
   INVOICE_BOX_LIST: `${API_BASE_URL}invoices_box_list`,
   CREATE_INVOICE_BOX: `${API_BASE_URL}api_create_invoice_box`,
   UPDATE_INVOICE_BOX: (id: number) =>
     `${API_BASE_URL}api_update_invoice_box/${id}`,
   DELETE_INVOICE_BOX: (id: number) =>
     `${API_BASE_URL}api_delete_invoice_box/${id}`,
+
+  // قوائم الفواتير
+  INVOICES_LIST: `${API_BASE_URL}invoices_list`,
+  DELETE_INVOICE: (id: number) => `${API_BASE_URL}api_delete_invoice/${id}`,
 
   // تفاصيل الفواتير
   INVOICES_DTL_LIST: `${API_BASE_URL}invoices_dtl_list`,
@@ -121,7 +133,6 @@ export const API_ENDPOINTS = {
 
   // companies
   COMPANIES_LIST: `${API_BASE_URL}companies_list`,
-
 };
 
 export function fetchCompanies() {
