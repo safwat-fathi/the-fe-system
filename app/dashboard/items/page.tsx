@@ -198,7 +198,11 @@ const fetchItems = async (xcat: number, xtype: number, url?: string) => {
       const res = await apiFetch(fetchUrl);
       const data = await res.json();
       const itemsArray = Array.isArray(data.results) ? data.results : [];
-      setItems(itemsArray);
+      const mapped = itemsArray.map((item: any) => ({
+        ...item,
+        item_name: item.item_name ?? item.text ?? "",
+      }));
+      setItems(mapped);
       setItemsNextUrl(data.next);
       setItemsPrevUrl(data.previous);
       setItemsCount(data.count);
