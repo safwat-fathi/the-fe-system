@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@heroui/react";
+import { Button, Checkbox } from "@heroui/react";
 import { ReactNode } from "react";
 
 interface Props {
@@ -12,6 +12,12 @@ interface Props {
   taxAmount: number;
   netAmount: number;
   totalDiscount: number;
+  commit: boolean;
+  setCommit: (val: boolean) => void;
+  print: boolean;
+  setPrint: (val: boolean) => void;
+  isEditing: boolean;
+  onEdit: () => void;
   children: ReactNode;
 }
 
@@ -24,6 +30,12 @@ export default function InvoiceTotalsActions({
   taxAmount,
   netAmount,
   totalDiscount,
+  commit,
+  setCommit,
+  print,
+  setPrint,
+  isEditing,
+  onEdit,
   children,
 }: Props) {
   return (
@@ -35,6 +47,28 @@ export default function InvoiceTotalsActions({
           <span className="text-sm text-gray-400">{formattedDateTime}</span>
         </div>
         <div className="flex items-center gap-2">
+          {!isEditing && (
+            <Button
+              className="bg-yellow-600 text-white hover:bg-yellow-700 px-2 py-1 text-sm rounded"
+              onClick={onEdit}
+            >
+              <i className="bi bi-pencil me-2" /> تعديل
+            </Button>
+          )}
+          <Checkbox
+            isDisabled={!isEditing}
+            isSelected={commit}
+            onValueChange={setCommit}
+          >
+            حفظ
+          </Checkbox>
+          <Checkbox
+            isDisabled={!isEditing}
+            isSelected={print}
+            onValueChange={setPrint}
+          >
+            طباعة
+          </Checkbox>
           <Button
             className="bg-green-600 text-white hover:bg-green-700 px-2 py-1 text-sm rounded"
             onClick={saveInvoice}
