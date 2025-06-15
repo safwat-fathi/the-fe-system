@@ -106,9 +106,9 @@ export default function InvoicesPage() {
               <TableCell>{inv.inv_id}</TableCell>
               <TableCell>{inv.inv_date}</TableCell>
               <TableCell>{inv.cust_name}</TableCell>
-              <TableCell>{inv.inv_net?.toFixed(2)}</TableCell>
-              <TableCell>{inv.tax?.toFixed(2)}</TableCell>
-              <TableCell>{inv.inv_amt?.toFixed(2)}</TableCell>
+              <TableCell>{Number(inv.inv_net ?? 0).toFixed(2)}</TableCell>
+              <TableCell>{Number(inv.tax ?? 0).toFixed(2)}</TableCell>
+              <TableCell>{Number(inv.inv_amt ?? 0).toFixed(2)}</TableCell>
               <TableCell>
                 <ActionButtons
                   onDelete={() => handleDelete(inv.inv_id)}
