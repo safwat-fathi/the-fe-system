@@ -59,7 +59,7 @@ The application works with all columns available in the invoice detail table. Th
 |-------|-------------|----------|
 | `id` | Auto increment key | `id` |
 | `trans_type` | Invoice type (`2` means sales invoice) | `trans_type` |
-| `G875` | Purity/calibration value | `G875` |
+| `purity` | Purity/calibration value | `purity` |
 | `qty` | Number of pieces | `qty` |
 | `weight` | Gross weight | `weight` |
 | `g_weight` | Net/gauged weight | `g_weight` |

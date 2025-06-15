@@ -30,9 +30,6 @@ interface Item {
   item_code: string;
   item_name: string;
   item_price: number;
-  /** @deprecated Use `k` */
-  karat?: string;
-  /** New field name for karat */
   k?: string;
   item_weight?: number;
   item_g_weight?: number;
@@ -84,12 +81,12 @@ export default function InvoicePage() {
       qty: 0,
       weight: 0,
       g_weight: 0,
-      karat: "",
+      k: "",
       price: 0,
       price_w: 0,
       note: "",
       trans_type: 2,
-      G875: "",
+      purity: "",
       total: 0,
       total_w: 0,
       total_a: 0,
@@ -374,7 +371,7 @@ export default function InvoicePage() {
         const dtl = {
           id: row.id,
           trans_type: row.trans_type ?? 2,
-          G875: row.G875 ?? "",
+          purity: row.purity ?? "",
           qty: row.qty,
           stones: row.stones ?? "",
           price: row.price,
@@ -479,7 +476,7 @@ export default function InvoicePage() {
         <td>${item.item_name || ""}</td>
         ${payType !== 1 ? `<td>${item.qty}</td>` : ""}
         ${payType !== 2 ? `<td>${item.weight.toFixed(2)}</td>` : ""}
-        <td>${item.karat}</td>
+        <td>${item.k}</td>
         <td>${item.price.toFixed(2)}</td>
         <td>15%</td>
         <td>${tax.toFixed(2)}</td>
