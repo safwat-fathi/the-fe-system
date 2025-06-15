@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Input, Button } from "@heroui/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import QRCode from "react-qr-code";
@@ -120,6 +121,23 @@ export default function InvoicePage() {
   const [payType, setPayType] = useState<number>(1);
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
   const [searchNumber, setSearchNumber] = useState<string>("");
+  const searchParams = useSearchParams();
+
+  // إذا تم فتح الصفحة بمعرف فاتورة، نجلب البيانات تلقائياً
+  useEffect(() => {
+    const invId = searchParams.get("inv_id");
+
+    if (invId) {
+      setSearchNumber(invId);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (searchNumber) {
+      handleInvoiceSearch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchNumber]);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
   // update all rows when gold price changes
@@ -169,7 +187,6 @@ export default function InvoicePage() {
     getGoldPrice();
     getNextInvoiceNumber().then(setInvoiceNumber);
   }, []);
-
 
   const getGoldPrice = async () => {
     const price = await fetchGoldPrice();
