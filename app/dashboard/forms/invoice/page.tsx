@@ -121,6 +121,10 @@ export default function InvoicePage() {
   const [payType, setPayType] = useState<number>(1);
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
   const [searchNumber, setSearchNumber] = useState<string>("");
+  const [commitVal, setCommitVal] = useState<boolean>(true);
+  const [printVal, setPrintVal] = useState<boolean>(true);
+  const [isEditing, setIsEditing] = useState<boolean>(true);
+  const [isExistingInvoice, setIsExistingInvoice] = useState<boolean>(false);
   const searchParams = useSearchParams();
 
   // إذا تم فتح الصفحة بمعرف فاتورة، نجلب البيانات تلقائياً
@@ -303,6 +307,7 @@ export default function InvoicePage() {
   };
 
   const saveInvoice = async () => {
+    if (isExistingInvoice) return updateInvoice();
     if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
 
     const validItems = invoiceItems.filter((itm) => itm.item_id);
@@ -346,8 +351,8 @@ export default function InvoicePage() {
       handling: handlingMethod || null,
       mobile: mobileMethod || null,
       ref_no: referenceNumber || null,
-      print: true,
-      commit: true,
+      print: printVal,
+      commit: commitVal,
       is_done: false,
       is_ok: false,
       suspend: false,
@@ -455,9 +460,151 @@ export default function InvoicePage() {
       }
 
       toast.success("تم حفظ الفاتورة بنجاح ✅");
+      setIsExistingInvoice(true);
+      setIsEditing(false);
     } catch (err) {
       console.error("❌ خطأ أثناء الحفظ:", err);
       toast.error("حدث خطأ أثناء حفظ الفاتورة");
+    }
+  };
+
+  const updateInvoice = async () => {
+    if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
+
+    const validItems = invoiceItems.filter((itm) => itm.item_id);
+
+    if (validItems.length === 0) {
+      return toast.error("يرجى إدخال تفاصيل الفاتورة");
+    }
+
+    const employeeMap: Record<string, number> = {
+      hashem: 1,
+      othman: 2,
+    };
+
+    const invData = {
+      inv_date: invoiceDate,
+      cust: selectedCustomer,
+      cust_name: selectedCust?.cust_name || null,
+      cust_code: selectedCust?.cust_code || null,
+      inv_amt: Math.round(netAmount),
+      inv_net: Math.round(totalAmount),
+      tax: taxAmount.toFixed(2),
+      inv_status: 1,
+      trans_type: 2,
+      cr_date: invoiceDate,
+      inv_type: paymentMethod === "cash" ? 1 : 2,
+      emp_id: employeeMap[employee] || null,
+      inv_notes: note || null,
+      handling: handlingMethod || null,
+      mobile: mobileMethod || null,
+      ref_no: referenceNumber || null,
+      print: printVal,
+      commit: commitVal,
+      is_done: false,
+      is_ok: false,
+      suspend: false,
+      post: false,
+      tx: false,
+      dist: false,
+      gauge_diff: false,
+      pay_chick: false,
+      vat_no: vatNumber,
+      pay_type: payType,
+      gold_price: goldPrice ?? 0,
+      cr_no: selectedCust?.cr_no || null,
+      gov: selectedCust?.gov || null,
+      city: selectedCust?.city || null,
+      area: selectedCust?.area || null,
+      street: selectedCust?.street || null,
+      build_no: selectedCust?.build_no || null,
+      post_no: selectedCust?.post_no || null,
+      post_code: selectedCust?.post_code || null,
+    };
+
+    try {
+      const res = await apiFetch(
+        `${API_BASE_URL}api_update_invoice/${invoiceNumber}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(invData),
+        },
+      );
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("❌ فشل تعديل الفاتورة:", errorText);
+        return toast.error("فشل في تعديل الفاتورة");
+      }
+
+      for (const [index, row] of validItems.entries()) {
+        if (!row.item_id) continue;
+
+        const dtl = {
+          id: row.id,
+          trans_type: row.trans_type ?? 2,
+          purity: row.purity ?? "",
+          k: row.k ?? "",
+          qty: row.qty,
+          stones: row.stones ?? "",
+          price: row.price,
+          price_w: row.price_w,
+          weight: row.weight,
+          g_weight: row.g_weight ?? 0,
+          total:
+            row.total ??
+            row.weight * row.price +
+              row.weight * row.price_w -
+              (row.item_disc_amt ?? 0),
+          total_w: row.total_w ?? row.weight * row.price_w,
+          total_a: row.total_a ?? row.weight * row.price,
+          tax:
+            row.tax ??
+            (row.weight * row.price +
+              row.weight * row.price_w -
+              (row.item_disc_amt ?? 0)) *
+              ((row.tax_prc ?? 15) / 100),
+          inv_note: row.note || "",
+          tax_prc: row.tax_prc ?? 15,
+          item_disc_prc: row.item_disc_prc ?? 0,
+          item_disc_amt: row.item_disc_amt ?? 0,
+          sn: row.sn ?? "",
+          item_desc: row.item_name,
+          cr_date: row.cr_date || invoiceDate,
+          upd_date: new Date().toISOString(),
+          com:
+            typeof window !== "undefined"
+              ? Number(localStorage.getItem("selectedBranch")) || undefined
+              : undefined,
+          inv: invoiceNumber,
+          item: row.item_id,
+        };
+
+        const url = row.inv ?
+          `${API_BASE_URL}api_update_invoice_dtl/${row.id}` :
+          `${API_BASE_URL}api_create_invoice_dtl`;
+
+        const method = row.inv ? "PATCH" : "POST";
+
+        const dtlRes = await apiFetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dtl),
+        });
+
+        if (!dtlRes.ok) {
+          const dtlError = await dtlRes.text();
+          console.error(`❌ خطأ في تفاصيل السطر ${index + 1}:`, dtlError);
+          toast.error(`فشل في حفظ تفاصيل السطر ${index + 1}`);
+        }
+      }
+
+      toast.success("تم تعديل الفاتورة بنجاح ✅");
+      setIsEditing(false);
+    } catch (err) {
+      console.error("❌ خطأ أثناء التعديل:", err);
+      toast.error("حدث خطأ أثناء تعديل الفاتورة");
     }
   };
 
@@ -606,6 +753,10 @@ export default function InvoicePage() {
         setMobileMethod(String(cust.mobile));
       }
       if (inv.pay_type) setPayType(inv.pay_type);
+      if (typeof inv.commit !== "undefined") setCommitVal(!!inv.commit);
+      if (typeof inv.print !== "undefined") setPrintVal(!!inv.print);
+      setIsExistingInvoice(true);
+      setIsEditing(false);
       if (inv.emp_id)
         setEmployee(
           inv.emp_id === 1 ? "hashem" : inv.emp_id === 2 ? "othman" : "",
@@ -688,38 +839,46 @@ export default function InvoicePage() {
         taxAmount={taxAmount}
         totalAmount={totalAmount}
         totalDiscount={totalDiscount}
+        commit={commitVal}
+        setCommit={setCommitVal}
+        print={printVal}
+        setPrint={setPrintVal}
+        isEditing={isEditing}
+        onEdit={() => setIsEditing(true)}
       >
-        <InvoiceSelectors
-          customers={customers}
-          employee={employee}
-          goldPrice={goldPrice}
-          handlingMethod={handlingMethod}
-          mobileMethod={mobileMethod}
-          note={note}
-          payType={payType}
-          paymentMethod={paymentMethod}
-          referenceNumber={referenceNumber}
-          selectedCustomer={selectedCustomer}
-          setEmployee={setEmployee}
-          setHandlingMethod={setHandlingMethod}
-          setMobileMethod={setMobileMethod}
-          setNote={setNote}
-          setPayType={setPayType}
-          setPaymentMethod={setPaymentMethod}
-          setReferenceNumber={setReferenceNumber}
-          setSelectedCustomer={setSelectedCustomer}
-          setVatNumber={setVatNumber}
-          vatNumber={vatNumber}
-        />
-        <InvoiceItemTable
-          categories={categories}
-          goldPrice={goldPrice}
-          invoiceItems={invoiceItems}
-          items={items}
-          payType={payType}
-          setInvoiceItems={setInvoiceItems}
-          setItems={setItems}
-        />
+        <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
+          <InvoiceSelectors
+            customers={customers}
+            employee={employee}
+            goldPrice={goldPrice}
+            handlingMethod={handlingMethod}
+            mobileMethod={mobileMethod}
+            note={note}
+            payType={payType}
+            paymentMethod={paymentMethod}
+            referenceNumber={referenceNumber}
+            selectedCustomer={selectedCustomer}
+            setEmployee={setEmployee}
+            setHandlingMethod={setHandlingMethod}
+            setMobileMethod={setMobileMethod}
+            setNote={setNote}
+            setPayType={setPayType}
+            setPaymentMethod={setPaymentMethod}
+            setReferenceNumber={setReferenceNumber}
+            setSelectedCustomer={setSelectedCustomer}
+            setVatNumber={setVatNumber}
+            vatNumber={vatNumber}
+          />
+          <InvoiceItemTable
+            categories={categories}
+            goldPrice={goldPrice}
+            invoiceItems={invoiceItems}
+            items={items}
+            payType={payType}
+            setInvoiceItems={setInvoiceItems}
+            setItems={setItems}
+          />
+        </div>
       </InvoiceTotalsActions>
     </>
   );
