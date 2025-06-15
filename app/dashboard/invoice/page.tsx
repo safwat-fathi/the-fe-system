@@ -95,6 +95,7 @@ export default function InvoicePage() {
       inv_note: "",
       tax: 0,
       tax_prc: 15,
+      total_t: 0,
       stones: "",
       item_disc_prc: 0,
       item_disc_amt: 0,
@@ -139,6 +140,8 @@ export default function InvoicePage() {
             updated.weight * updated.price_w -
             (updated.item_disc_amt ?? 0);
 
+          const tax = baseTotal * ((updated.tax_prc ?? 15) / 100);
+
           return {
             ...updated,
             // total_a = weight * price
@@ -147,7 +150,8 @@ export default function InvoicePage() {
             total_w: updated.weight * updated.price_w,
             // total = total_a + total_w - discount
             total: baseTotal,
-            tax: baseTotal * ((updated.tax_prc ?? 15) / 100),
+            tax,
+            total_t: baseTotal + tax,
           };
         }),
       );

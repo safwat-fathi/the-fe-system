@@ -91,6 +91,7 @@ export default function InvoiceItemTable({
     // tax amount based on total after discount
     updated[index].tax =
       (updated[index].total * (updated[index].tax_prc ?? 15)) / 100;
+    updated[index].total_t = updated[index].total + updated[index].tax;
 
     setInvoiceItems(updated);
 
@@ -123,6 +124,7 @@ export default function InvoiceItemTable({
           inv_note: "",
           tax: 0,
           tax_prc: 15,
+          total_t: 0,
           stones: "",
           item_disc_prc: 0,
           item_disc_amt: 0,
@@ -168,6 +170,42 @@ export default function InvoiceItemTable({
     }
   };
 
+  const handleTotalChange = (index: number, value: any) => {
+    const updated = [...invoiceItems];
+    const taxRate = (updated[index].tax_prc ?? 15) / 100;
+    const totalWithTax = parseFloat(value) || 0;
+    const baseTotal = totalWithTax / (1 + taxRate);
+
+    let pricePart = updated[index].price;
+    let wagePart = updated[index].price_w;
+
+    if (updated[index].weight > 0) {
+      if (payType === 1) {
+        pricePart = baseTotal / updated[index].weight;
+        updated[index].price = pricePart;
+      } else if (payType === 2) {
+        wagePart = baseTotal / updated[index].weight;
+        updated[index].price_w = wagePart;
+      } else {
+        pricePart =
+          (baseTotal - updated[index].weight * updated[index].price_w) /
+          updated[index].weight;
+        updated[index].price = pricePart;
+      }
+    }
+
+    updated[index].total_a = updated[index].weight * updated[index].price;
+    updated[index].total_w = updated[index].weight * updated[index].price_w;
+    updated[index].total =
+      updated[index].total_a +
+      updated[index].total_w -
+      (updated[index].item_disc_amt ?? 0);
+    updated[index].tax = updated[index].total * taxRate;
+    updated[index].total_t = updated[index].total + updated[index].tax;
+
+    setInvoiceItems(updated);
+  };
+
   const setRef = (
   row: number,
   col: number,
@@ -202,7 +240,7 @@ export default function InvoiceItemTable({
             {(payType === 2 || payType === 3) && (
               <th className="w-[100px]">اجمالي الاجور</th>
             )}
-            <th className="w-[100px]">الاجمالي</th>
+            <th className="w-[120px]">الاجمالي شامل الضريبة</th>
             <th className="w-[100px]">الخصم</th>
             <th className="w-[100px]">الضريبة</th>
             <th className="w-[200px]">البيان</th>
@@ -392,6 +430,18 @@ export default function InvoiceItemTable({
                               (newItem.work_price ?? 0) -
                             (newItem.item_disc_amt ?? 0)) *
                           ((newItem.tax_prc ?? 15) / 100),
+                        total_t:
+                          (newItem.item_weight ?? 0) *
+                            (goldPrice ?? newItem.item_price) +
+                          (newItem.item_weight ?? 0) *
+                            (newItem.work_price ?? 0) -
+                          (newItem.item_disc_amt ?? 0) +
+                          ((newItem.item_weight ?? 0) *
+                            (goldPrice ?? newItem.item_price) +
+                            (newItem.item_weight ?? 0) *
+                              (newItem.work_price ?? 0) -
+                            (newItem.item_disc_amt ?? 0)) *
+                            ((newItem.tax_prc ?? 15) / 100),
                       };
                       setInvoiceItems(updated);
                     }}
@@ -522,7 +572,21 @@ export default function InvoiceItemTable({
                 {(payType === 2 || payType === 3) && (
                   <td>{(item.total_w ?? 0).toFixed(2)}</td>
                 )}
-                <td>{total.toFixed(2)}</td>
+                <td>
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
+                    className="border w-full p-1 text-xs text-center"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
+                    type="number"
+                    value={item.total_t ?? total + tax}
+                    onChange={(e) =>
+                      handleTotalChange(index, e.target.value)
+                    }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
+                  />
+                </td>
                 <td>
                   <input
                     ref={(el) => {
