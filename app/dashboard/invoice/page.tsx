@@ -572,12 +572,26 @@ export default function InvoicePage() {
       setInvoiceNumber(inv.inv_id);
       if (inv.inv_date) setInvoiceDate(inv.inv_date);
       if (inv.cust) setSelectedCustomer(inv.cust);
+      const cust = customers.find((c) => c.id === inv.cust);
+
       if (inv.inv_type)
         setPaymentMethod(inv.inv_type === 1 ? "cash" : "credit");
       if (inv.ref_no) setReferenceNumber(inv.ref_no);
-      if (inv.vat_no) setVatNumber(inv.vat_no);
-      if (inv.handling) setHandlingMethod(inv.handling);
-      if (inv.mobile) setMobileMethod(inv.mobile);
+      if (inv.vat_no) {
+        setVatNumber(inv.vat_no);
+      } else if (cust?.vat_no) {
+        setVatNumber(String(cust.vat_no));
+      }
+      if (inv.handling) {
+        setHandlingMethod(inv.handling);
+      } else if (cust?.handling) {
+        setHandlingMethod(cust.handling.toString());
+      }
+      if (inv.mobile) {
+        setMobileMethod(inv.mobile);
+      } else if (cust?.mobile) {
+        setMobileMethod(String(cust.mobile));
+      }
       if (inv.pay_type) setPayType(inv.pay_type);
       if (inv.emp_id)
         setEmployee(
