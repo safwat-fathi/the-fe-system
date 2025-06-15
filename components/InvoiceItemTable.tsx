@@ -175,22 +175,22 @@ export default function InvoiceItemTable({
     const totalWithTax = parseFloat(value) || 0;
     const baseTotal = totalWithTax / (1 + taxRate);
 
-    let pricePart = updated[index].price;
-    let wagePart = updated[index].price_w;
-
     if (updated[index].weight > 0) {
       if (payType === 1) {
-        pricePart = baseTotal / updated[index].weight;
-        updated[index].price = pricePart;
+        updated[index].price = baseTotal / updated[index].weight;
       } else if (payType === 2) {
-        wagePart = baseTotal / updated[index].weight;
-        updated[index].price_w = wagePart;
+        updated[index].price_w = baseTotal / updated[index].weight;
       } else {
-        pricePart =
+        updated[index].price =
           (baseTotal - updated[index].weight * updated[index].price_w) /
           updated[index].weight;
-        updated[index].price = pricePart;
       }
+    } else {
+      // when weight is zero simply store the entered total
+      updated[index].total = totalWithTax;
+      updated[index].tax = totalWithTax - baseTotal;
+      setInvoiceItems(updated);
+      return;
     }
 
     updated[index].total_a = updated[index].weight * updated[index].price;
