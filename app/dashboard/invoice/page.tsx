@@ -29,15 +29,17 @@ interface Item {
   id: number;
   item_code: string;
   item_name: string;
-  item_price: number;
-  k?: string;
-  item_weight?: number;
-  item_g_weight?: number;
+  item_price?: string | number;
+  item_weight?: string | number;
+  item_g_weight?: string | number;
+  work_price?: string | number;
   stones?: string;
+  k?: string;
   purity?: string;
-  work_price?: number;
   cat?: number;
+  [key: string]: any; // هذا يخليك تتجنب المشاكل إذا في حقول زيادة غير معرفة
 }
+
 
 interface Customer {
   id: number;
@@ -176,17 +178,27 @@ export default function InvoicePage() {
     setGoldPrice(price);
   };
 
-  async function fetchItems() {
+async function fetchItems() {
+  try {
     const response = await fetchData<{ results: Item[] }>(
       `${API_BASE_URL}GetItemsList/`,
     );
 
     if (response && Array.isArray(response.results)) {
-      setItems(response.results);
+      console.log("Fetched items sample:", response.results[0]); // ✅ تأكد من الحقول
+      setItems(response.results); // لا تعدل البيانات، خزنها كما هي
+      console.log("First item sample from API:", response.results[0]);
+
     } else {
+      console.warn("No items found or invalid response.");
       setItems([]);
     }
+  } catch (error) {
+    console.error("Error fetching items:", error);
+    setItems([]);
   }
+}
+
 
   async function fetchCustomers() {
     const response = await fetchData<Customer[]>(

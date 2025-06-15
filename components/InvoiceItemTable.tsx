@@ -94,6 +94,7 @@ export default function InvoiceItemTable({
 
     setInvoiceItems(updated);
 
+
     const isLastRow = index === invoiceItems.length - 1;
     const isRowFilled =
       updated[index].item_id ||
@@ -268,6 +269,8 @@ export default function InvoiceItemTable({
                       const selected = items.find(
                         (itm) => itm.id === selectedOption?.value,
                       );
+                      console.log("selected item raw:", selected);
+
                       const updated = [...invoiceItems];
 
                       updated[index].item_id = selected?.id ?? null;
@@ -275,19 +278,19 @@ export default function InvoiceItemTable({
                       updated[index].item_name = selected?.item_name ?? "";
                       const selk = selected?.k ?? "";
                       const selPurity = selected?.purity ?? "";
-                      updated[index].k = selk;
-                      updated[index].price =
-                        goldPrice ?? selected?.item_price ?? 0;
-                      updated[index].price_w = selected?.work_price ?? 0;
-                      updated[index].purity = selPurity;
+                      updated[index].k = selected?.k ?? "";
+                      updated[index].price = goldPrice ?? Number(selected?.item_price ?? 0);
+                      updated[index].price_w = Number(selected?.work_price ?? 0);
+                      updated[index].purity = selected?.purity ?? "";
                       updated[index].stones = selected?.stones ?? "";
+                      
                       if (
                         selected?.item_weight !== undefined &&
                         selected?.item_weight !== null &&
                         selected.item_weight !== ""
                       ) {
-                        updated[index].weight = Number(selected.item_weight);
-                        updated[index].g_weight = Number(selected.item_weight);
+                        updated[index].weight = Number(selected?.item_weight ?? 0);
+                        updated[index].g_weight = Number(selected?.item_g_weight ?? selected?.item_weight ?? 0);
                       }
                       if (
                         selected?.item_g_weight !== undefined &&
