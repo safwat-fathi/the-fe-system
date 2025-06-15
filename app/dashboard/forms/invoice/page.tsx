@@ -133,15 +133,10 @@ export default function InvoicePage() {
 
     if (invId) {
       setSearchNumber(invId);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (searchNumber) {
-      handleInvoiceSearch();
+      handleInvoiceSearch(invId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchNumber]);
+  }, [searchParams]);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
   // update all rows when gold price changes
@@ -429,7 +424,7 @@ export default function InvoicePage() {
           item_disc_prc: row.item_disc_prc ?? 0,
           item_disc_amt: row.item_disc_amt ?? 0,
           sn: row.sn ?? "",
-          item_desc: row.item_name,
+          item_desc: row.item_desc,
           cr_date: invoiceDate,
           cr_user: row.cr_user ?? "",
           upd_date: row.upd_date || new Date().toISOString(),
@@ -534,7 +529,9 @@ export default function InvoicePage() {
 
       if (!res.ok) {
         const errorText = await res.text();
+
         console.error("❌ فشل تعديل الفاتورة:", errorText);
+
         return toast.error("فشل في تعديل الفاتورة");
       }
 
@@ -570,7 +567,7 @@ export default function InvoicePage() {
           item_disc_prc: row.item_disc_prc ?? 0,
           item_disc_amt: row.item_disc_amt ?? 0,
           sn: row.sn ?? "",
-          item_desc: row.item_name,
+          item_desc: row.item_desc,
           cr_date: row.cr_date || invoiceDate,
           upd_date: new Date().toISOString(),
           com:
@@ -581,9 +578,9 @@ export default function InvoicePage() {
           item: row.item_id,
         };
 
-        const url = row.inv ?
-          `${API_BASE_URL}api_update_invoice_dtl/${row.id}` :
-          `${API_BASE_URL}api_create_invoice_dtl`;
+        const url = row.inv
+          ? `${API_BASE_URL}api_update_invoice_dtl/${row.id}`
+          : `${API_BASE_URL}api_create_invoice_dtl`;
 
         const method = row.inv ? "PATCH" : "POST";
 
@@ -595,6 +592,7 @@ export default function InvoicePage() {
 
         if (!dtlRes.ok) {
           const dtlError = await dtlRes.text();
+
           console.error(`❌ خطأ في تفاصيل السطر ${index + 1}:`, dtlError);
           toast.error(`فشل في حفظ تفاصيل السطر ${index + 1}`);
         }
@@ -711,8 +709,8 @@ export default function InvoicePage() {
     previewWindow.document.close();
   };
 
-  const handleInvoiceSearch = async () => {
-    const num = parseInt(searchNumber);
+  const handleInvoiceSearch = async (searchVal?: string) => {
+    const num = parseInt(searchVal ?? searchNumber);
 
     if (!num) return toast.error("أدخل رقم الفاتورة");
 
@@ -765,7 +763,7 @@ export default function InvoicePage() {
       if (inv.gold_price) setGoldPrice(inv.gold_price);
 
       const details = await fetchData<any[]>(
-        `${API_BASE_URL}invoices_dtl_list?inv=${num}`,
+        `${API_BASE_URL}invoices_dtl_list?inv_id=${num}`,
       );
 
       if (details && Array.isArray(details)) {
@@ -774,7 +772,7 @@ export default function InvoicePage() {
             id: row.id,
             item_id: row.item ?? null,
             item_code: row.item_code ?? "",
-            item_name: row.item_desc ?? "",
+            item_name: row.item_name ?? "",
 
             qty: parseFloat(row.qty) || 0,
             weight: parseFloat(row.weight) || 0,
@@ -826,24 +824,24 @@ export default function InvoicePage() {
           value={searchNumber}
           onChange={(e) => setSearchNumber(e.target.value)}
         />
-        <Button color="primary" onPress={handleInvoiceSearch}>
+        <Button color="primary" onPress={() => handleInvoiceSearch()}>
           بحث
         </Button>
       </div>
       <InvoiceTotalsActions
+        commit={commitVal}
         formattedDateTime={formattedDateTime}
         invoiceNumber={invoiceNumber}
+        isEditing={isEditing}
         netAmount={netAmount}
         previewInvoice={previewInvoice}
+        print={printVal}
         saveInvoice={saveInvoice}
+        setCommit={setCommitVal}
+        setPrint={setPrintVal}
         taxAmount={taxAmount}
         totalAmount={totalAmount}
         totalDiscount={totalDiscount}
-        commit={commitVal}
-        setCommit={setCommitVal}
-        print={printVal}
-        setPrint={setPrintVal}
-        isEditing={isEditing}
         onEdit={() => setIsEditing(true)}
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
