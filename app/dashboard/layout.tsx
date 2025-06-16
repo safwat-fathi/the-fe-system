@@ -18,24 +18,36 @@ import {
 } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
 
-const mainLinks = [
-  { name: "الرئيسية", href: "/dashboard", icon: <FaHome /> },
+const mainLinks = [{ name: "الرئيسية", href: "/dashboard", icon: <FaHome /> }];
+
+const settingsLinks = [
   { name: "إعدادات النظام", href: "/dashboard/settings", icon: <FaCog /> },
 ];
 
 const dataLinks = [
-  { name: "الحسابات", href: "/dashboard/basic/accounts", icon: <FaMoneyBill /> },
-  { name: "العملات", href: "/dashboard/basic/currencies", icon: <FaMoneyBill /> },
+  {
+    name: "الحسابات",
+    href: "/dashboard/basic/accounts",
+    icon: <FaMoneyBill />,
+  },
+  {
+    name: "العملات",
+    href: "/dashboard/basic/currencies",
+    icon: <FaMoneyBill />,
+  },
   { name: "العملاء", href: "/dashboard/basic/customers", icon: <FaUsers /> },
   { name: "الأصناف", href: "/dashboard/basic/items", icon: <FaBoxOpen /> },
   { name: "الفئات", href: "/dashboard/basic/categories", icon: <FaTags /> },
   { name: "الوحدات", href: "/dashboard/basic/units", icon: <FaTags /> },
   // { name: "صناديق الفواتير", href: "/dashboard/invoice_box", icon: <FaTags /> },
-
 ];
 
 const formLinks = [
-  { name: "فاتورة البيع", href: "/dashboard/forms/invoice", icon: <FaFileAlt /> },
+  {
+    name: "فاتورة البيع",
+    href: "/dashboard/forms/invoice",
+    icon: <FaFileAlt />,
+  },
   // {
   //   name: "طريقة الدفع",
   //   href: "/dashboard/invoice_payment",
@@ -44,13 +56,22 @@ const formLinks = [
 ];
 
 const reportLinks = [
-  { name: "قائمة الفواتير", href: "/dashboard/reports/invoices", icon: <FaFileAlt /> },
+  {
+    name: "قائمة الفواتير",
+    href: "/dashboard/reports/invoices",
+    icon: <FaFileAlt />,
+  },
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showDataLinks, setShowDataLinks] = useState(true);
   const [showFormLinks, setShowFormLinks] = useState(true);
+  const [showSettingsLinks, setShowSettingsLinks] = useState(true);
   const [showReportLinks, setShowReportLinks] = useState(true);
   const pathname = usePathname();
 
@@ -63,10 +84,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="font-cairo flex min-h-screen bg-gray-100">
-      <aside className={`bg-gray-800 text-white p-4 transition-all ${isSidebarOpen ? "w-64" : "w-16"} min-h-screen`}>
+      <aside
+        className={`bg-gray-800 text-white p-4 transition-all ${isSidebarOpen ? "w-64" : "w-16"} min-h-screen`}
+      >
         <div className="flex justify-between items-center mb-6">
-          <h2 className={`text-lg font-semibold transition-all ${isSidebarOpen ? "block" : "hidden"}`}>لوحة التحكم</h2>
-          <Button variant="light" size="sm" onPress={() => setIsSidebarOpen(!isSidebarOpen)}>
+          <h2
+            className={`text-lg font-semibold transition-all ${isSidebarOpen ? "block" : "hidden"}`}
+          >
+            لوحة التحكم
+          </h2>
+          <Button
+            size="sm"
+            variant="light"
+            onPress={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
             <FaBars />
           </Button>
         </div>
@@ -76,11 +107,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {mainLinks.map((link) => (
             <Link
               key={link.href}
-              href={link.href}
               className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+              href={link.href}
             >
               {link.icon}
-              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                {link.name}
+              </span>
             </Link>
           ))}
 
@@ -89,28 +122,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="mt-4 px-2 text-sm text-gray-400 cursor-pointer flex justify-between items-center"
             onClick={() => setShowDataLinks(!showDataLinks)}
           >
-            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>البيانات الأساسية</span>
-            {isSidebarOpen && (showDataLinks ? <FaChevronUp /> : <FaChevronDown />)}
+            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+              البيانات الأساسية
+            </span>
+            {isSidebarOpen &&
+              (showDataLinks ? <FaChevronUp /> : <FaChevronDown />)}
           </div>
 
           <AnimatePresence initial={false}>
             {showDataLinks && (
               <motion.div
-                initial="hidden"
                 animate="visible"
-                exit="hidden"
-                variants={animationVariants}
-                transition={transition}
                 className="flex flex-col overflow-hidden"
+                exit="hidden"
+                initial="hidden"
+                transition={transition}
+                variants={animationVariants}
               >
                 {dataLinks.map((link) => (
                   <Link
                     key={link.href}
-                    href={link.href}
                     className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+                    href={link.href}
                   >
                     {link.icon}
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      {link.name}
+                    </span>
                   </Link>
                 ))}
               </motion.div>
@@ -122,28 +160,71 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="mt-4 px-2 text-sm text-gray-400 cursor-pointer flex justify-between items-center"
             onClick={() => setShowFormLinks(!showFormLinks)}
           >
-            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>النماذج</span>
-            {isSidebarOpen && (showFormLinks ? <FaChevronUp /> : <FaChevronDown />)}
+            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+              النماذج
+            </span>
+            {isSidebarOpen &&
+              (showFormLinks ? <FaChevronUp /> : <FaChevronDown />)}
           </div>
 
           <AnimatePresence initial={false}>
             {showFormLinks && (
               <motion.div
-                initial="hidden"
                 animate="visible"
-                exit="hidden"
-                variants={animationVariants}
-                transition={transition}
                 className="flex flex-col overflow-hidden"
+                exit="hidden"
+                initial="hidden"
+                transition={transition}
+                variants={animationVariants}
               >
                 {formLinks.map((link) => (
                   <Link
                     key={link.href}
-                    href={link.href}
                     className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+                    href={link.href}
                   >
                     {link.icon}
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      {link.name}
+                    </span>
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* الإعدادات */}
+          <div
+            className="mt-4 px-2 text-sm text-gray-400 cursor-pointer flex justify-between items-center"
+            onClick={() => setShowSettingsLinks(!showSettingsLinks)}
+          >
+            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+              الإعدادات
+            </span>
+            {isSidebarOpen &&
+              (showSettingsLinks ? <FaChevronUp /> : <FaChevronDown />)}
+          </div>
+
+          <AnimatePresence initial={false}>
+            {showSettingsLinks && (
+              <motion.div
+                animate="visible"
+                className="flex flex-col overflow-hidden"
+                exit="hidden"
+                initial="hidden"
+                transition={transition}
+                variants={animationVariants}
+              >
+                {settingsLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+                    href={link.href}
+                  >
+                    {link.icon}
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      {link.name}
+                    </span>
                   </Link>
                 ))}
               </motion.div>
@@ -155,28 +236,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="mt-4 px-2 text-sm text-gray-400 cursor-pointer flex justify-between items-center"
             onClick={() => setShowReportLinks(!showReportLinks)}
           >
-            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>التقارير</span>
-            {isSidebarOpen && (showReportLinks ? <FaChevronUp /> : <FaChevronDown />)}
+            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+              التقارير
+            </span>
+            {isSidebarOpen &&
+              (showReportLinks ? <FaChevronUp /> : <FaChevronDown />)}
           </div>
 
           <AnimatePresence initial={false}>
             {showReportLinks && (
               <motion.div
-                initial="hidden"
                 animate="visible"
-                exit="hidden"
-                variants={animationVariants}
-                transition={transition}
                 className="flex flex-col overflow-hidden"
+                exit="hidden"
+                initial="hidden"
+                transition={transition}
+                variants={animationVariants}
               >
                 {reportLinks.map((link) => (
                   <Link
                     key={link.href}
-                    href={link.href}
                     className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+                    href={link.href}
                   >
                     {link.icon}
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      {link.name}
+                    </span>
                   </Link>
                 ))}
               </motion.div>
@@ -185,9 +271,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
       </aside>
 
-      <main className="flex-1 w-full min-h-screen p-6">
-        {children}
-      </main>
+      <main className="flex-1 w-full min-h-screen p-6">{children}</main>
     </div>
   );
 }
