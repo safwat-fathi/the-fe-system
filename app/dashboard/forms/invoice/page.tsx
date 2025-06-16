@@ -127,7 +127,6 @@ export default function InvoicePage() {
   const [isExistingInvoice, setIsExistingInvoice] = useState<boolean>(false);
   const searchParams = useSearchParams();
 
-  // إذا تم فتح الصفحة بمعرف فاتورة، نجلب البيانات تلقائياً
   useEffect(() => {
     const invId = searchParams.get("inv_id");
 
@@ -135,12 +134,10 @@ export default function InvoicePage() {
       setSearchNumber(invId);
       handleInvoiceSearch(invId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [searchParams]);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
-  // update all rows when gold price changes
-  // initial fetch for items, customers and gold price
   useEffect(() => {
     if (goldPrice !== null) {
       setInvoiceItems((items) =>
@@ -161,11 +158,11 @@ export default function InvoicePage() {
 
           return {
             ...updated,
-            // total_a = weight * price
+            
             total_a: updated.weight * updated.price,
-            // total_w = weight * wagePrice
+            
             total_w: updated.weight * updated.price_w,
-            // total includes tax
+            
             total: baseTotal + tax,
             tax,
           };
@@ -200,8 +197,8 @@ export default function InvoicePage() {
       );
 
       if (response && Array.isArray(response.results)) {
-        console.log("Fetched items sample:", response.results[0]); // ✅ تأكد من الحقول
-        setItems(response.results); // لا تعدل البيانات، خزنها كما هي
+        console.log("Fetched items sample:", response.results[0]); 
+        setItems(response.results); 
         console.log("First item sample from API:", response.results[0]);
       } else {
         console.warn("No items found or invalid response.");
@@ -245,10 +242,10 @@ export default function InvoicePage() {
     }
   }
 
-  // sum rows according to payType
+  
   const totalAmount = invoiceItems.reduce((sum, item) => {
-    const totalA = item.weight * item.price; // قيمة الذهب
-    const totalW = item.weight * (item.price_w ?? 0); // اجور العمل
+    const totalA = item.weight * item.price; // اجمالي القيمة
+    const totalW = item.weight * (item.price_w ?? 0); // اجمالي الاجور
     let rowTotal = 0;
 
     // 1=gold only, 2=wage only, 3=both
