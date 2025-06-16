@@ -16,11 +16,6 @@ const TABS = [
 ];
 
 const GENERAL_FIELDS = [
-  { key: "fin_year", label: "السنه الماليه" },
-  { key: "close_month", label: "الشهر الاخير المغلق" },
-  { key: "close_year", label: "السنه الماضيه المغلقه" },
-  { key: "init_date", label: "تاريخ بدايه السنه الماليه", type: "date" },
-  { key: "finaly_date", label: "تاريخ نهايه السنه الماليه", type: "date" },
   { key: "comp_a_name", label: "اسم المؤسسة بالعربي" },
   { key: "comp_l_name", label: "اسم المؤسسة انجليزي" },
   { key: "ADDRESS", label: "العنوان عربي" },
@@ -39,6 +34,11 @@ const GENERAL_FIELDS = [
 ];
 
 const ACCOUNT_FIELDS = [
+  { key: "fin_year", label: "السنه الماليه" },
+  { key: "close_month", label: "الشهر الاخير المغلق" },
+  { key: "close_year", label: "السنه الماضيه المغلقه" },
+  { key: "init_date", label: "تاريخ بدايه السنه الماليه", type: "date" },
+  { key: "finaly_date", label: "تاريخ نهايه السنه الماليه", type: "date" },
   { key: "cl", label: "فتره مقفله" },
   { key: "store", label: "store" },
   { key: "local_cur", label: "local_cur" },
