@@ -121,8 +121,8 @@ export default function InvoicePage() {
   const [payType, setPayType] = useState<number>(1);
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
   const [searchNumber, setSearchNumber] = useState<string>("");
-  const [commitVal, setCommitVal] = useState<boolean>(true);
-  const [printVal, setPrintVal] = useState<boolean>(true);
+  const [commitVal, setCommitVal] = useState<boolean>(false);
+  const [printVal, setPrintVal] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(true);
   const [isExistingInvoice, setIsExistingInvoice] = useState<boolean>(false);
   const searchParams = useSearchParams();
@@ -328,6 +328,8 @@ export default function InvoicePage() {
       vatTotal: taxAmount.toFixed(2),
     });
 
+    setCommitVal(true);
+
     const invData = {
       inv_id: generatedInvId,
       inv_date: invoiceDate,
@@ -347,7 +349,7 @@ export default function InvoicePage() {
       mobile: mobileMethod || null,
       ref_no: referenceNumber || null,
       print: printVal,
-      commit: commitVal,
+      commit: true,
       is_done: false,
       is_ok: false,
       suspend: false,
@@ -477,6 +479,8 @@ export default function InvoicePage() {
       othman: 2,
     };
 
+    setCommitVal(true);
+
     const invData = {
       inv_date: invoiceDate,
       cust: selectedCustomer,
@@ -495,7 +499,7 @@ export default function InvoicePage() {
       mobile: mobileMethod || null,
       ref_no: referenceNumber || null,
       print: printVal,
-      commit: commitVal,
+      commit: true,
       is_done: false,
       is_ok: false,
       suspend: false,
