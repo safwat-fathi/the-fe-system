@@ -788,13 +788,13 @@ export default function InvoicePage() {
 
       if (detailRows.length > 0) {
         const filteredDetails = detailRows.filter(
-          (row) => Number(row.inv) === num,
+          (row) => Number(row.inv ?? row.inv_id) === num,
         );
 
         setInvoiceItems(
           filteredDetails.map((row) => ({
             id: row.id,
-            item_id: row.item ?? null,
+            item_id: row.item ?? row.item_id ?? null,
             item_code: row.item_code ?? "",
             item_name: row.item_name ?? "",
 
@@ -823,8 +823,8 @@ export default function InvoicePage() {
             upd_date: row.upd_date ?? "",
             upd_user: row.upd_user ?? "",
             com: row.com ?? 0,
-            inv: row.inv ?? 0,
-            item: row.item ?? 0,
+            inv: row.inv ?? row.inv_id ?? 0,
+            item: row.item ?? row.item_id ?? 0,
           })),
         );
       } else {
