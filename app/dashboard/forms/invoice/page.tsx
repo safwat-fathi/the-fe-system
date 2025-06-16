@@ -772,12 +772,22 @@ export default function InvoicePage() {
       if (inv.inv_notes) setNote(inv.inv_notes);
       if (inv.gold_price) setGoldPrice(inv.gold_price);
 
-      const details = await fetchData<any[]>(
+      const detailsRes = await fetchData<any>(
         `${API_BASE_URL}invoices_dtl_list?inv_id=${num}`,
       );
 
-      if (details && Array.isArray(details)) {
-        const filteredDetails = details.filter(
+      let detailRows: any[] = [];
+
+      if (detailsRes && Array.isArray(detailsRes)) {
+        detailRows = detailsRes;
+      } else if (detailsRes && Array.isArray(detailsRes.results)) {
+        detailRows = detailsRes.results;
+      } else if (detailsRes && Array.isArray(detailsRes.data)) {
+        detailRows = detailsRes.data;
+      }
+
+      if (detailRows.length > 0) {
+        const filteredDetails = detailRows.filter(
           (row) => Number(row.inv) === num,
         );
 
