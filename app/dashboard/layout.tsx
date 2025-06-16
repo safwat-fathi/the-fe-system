@@ -12,6 +12,7 @@ import {
   FaBoxOpen,
   FaTags,
   FaFileAlt,
+  FaCog,
   FaChevronDown,
   FaChevronUp,
 } from "react-icons/fa";
@@ -19,6 +20,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 const mainLinks = [
   { name: "الرئيسية", href: "/dashboard", icon: <FaHome /> },
+  { name: "إعدادات النظام", href: "/dashboard/settings", icon: <FaCog /> },
 ];
 
 const dataLinks = [

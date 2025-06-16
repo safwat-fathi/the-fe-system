@@ -119,6 +119,10 @@ export const API_ENDPOINTS = {
   DELETE_INVOICE_BOX: (id: number) =>
     `${API_BASE_URL}api_delete_invoice_box/${id}`,
 
+  // system settings
+  HOME_LIST: `${API_BASE_URL}home_list`,
+  UPDATE_HOME: (id: number) => `${API_BASE_URL}api_update_home/${id}`,
+
   // قوائم الفواتير
   INVOICES_LIST: `${API_BASE_URL}invoices_list`,
   DELETE_INVOICE: (id: number) => `${API_BASE_URL}api_delete_invoice/${id}`,
