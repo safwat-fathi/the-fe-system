@@ -1,99 +1,241 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@heroui/react";
 import {
-  Button,
-  Form,
-  Input,
-  Select,
-  SelectItem,
-  Spacer,
-} from "@heroui/react";
-import { useEffect, useState } from "react";
-import { fetchCompanies } from "@/utilities/api";
+  FaBars,
+  FaHome,
+  FaMoneyBill,
+  FaUsers,
+  FaBoxOpen,
+  FaTags,
+  FaFileAlt,
+  FaCog,
+  FaChevronDown,
+  FaChevronUp,
+} from "react-icons/fa";
+import { AnimatePresence, motion } from "framer-motion";
 
-export default function Login() {
-  const router = useRouter();
-  const [branches, setBranches] = useState<{ id: number; comp_name: string }[]>([]);
-  const [branch, setBranch] = useState<string>("");
-  const [year, setYear] = useState<string>("");
+const mainLinks = [{ name: "الرئيسية", href: "/dashboard", icon: <FaHome /> }];
 
-  useEffect(() => {
-    fetchCompanies().then((data) => {
-      if (Array.isArray(data)) setBranches(data as any);
-    });
-  }, []);
+const settingsLinks = [
+  { name: "إعدادات النظام", href: "/dashboard/settings", icon: <FaCog /> },
+];
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (branch) localStorage.setItem("selectedBranch", branch);
-    if (year) localStorage.setItem("selectedYear", year);
-    router.push("/dashboard");
+const dataLinks = [
+  {
+    name: "الحسابات",
+    href: "/dashboard/basic/accounts",
+    icon: <FaMoneyBill />,
+  },
+  {
+    name: "العملات",
+    href: "/dashboard/basic/currencies",
+    icon: <FaMoneyBill />,
+  },
+  { name: "العملاء", href: "/dashboard/basic/customers", icon: <FaUsers /> },
+  { name: "الأصناف", href: "/dashboard/basic/items", icon: <FaBoxOpen /> },
+  { name: "الفئات", href: "/dashboard/basic/categories", icon: <FaTags /> },
+  { name: "الوحدات", href: "/dashboard/basic/units", icon: <FaTags /> },
+  // { name: "صناديق الفواتير", href: "/dashboard/invoice_box", icon: <FaTags /> },
+];
+
+const formLinks = [
+  {
+    name: "فاتورة البيع",
+    href: "/dashboard/forms/invoice",
+    icon: <FaFileAlt />,
+  },
+  // {
+  //   name: "طريقة الدفع",
+  //   href: "/dashboard/invoice_payment",
+  //   icon: <FaMoneyBill />,
+  // },
+];
+
+const reportLinks = [
+  {
+    name: "قائمة الفواتير",
+    href: "/dashboard/reports/invoices",
+    icon: <FaFileAlt />,
+  },
+];
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showDataLinks, setShowDataLinks] = useState(true);
+  const [showFormLinks, setShowFormLinks] = useState(true);
+  const [showSettingsLinks, setShowSettingsLinks] = useState(true);
+  const [showReportLinks, setShowReportLinks] = useState(true);
+  const pathname = usePathname();
+
+  const animationVariants = {
+    hidden: { clipPath: "inset(0% 0% 100% 0%)", opacity: 0 },
+    visible: { clipPath: "inset(0% 0% 0% 0%)", opacity: 1 },
   };
 
+  const transition = { duration: 0.7, ease: "easeInOut", delay: 0.05 };
+
   return (
-    <div className="bg-[#f5f5f5] font-['Cairo'] min-h-screen flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8 border border-gray-200">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">
-            نظام <span className="text-[#2563eb]">بازار</span>
-          </h1>
-          <p className="text-sm text-gray-500 mt-2">تسجيل دخول لإدارة الذهب والمعاملات</p>
+    <div className="font-cairo flex min-h-screen bg-gray-100">
+      <aside
+        className={`bg-gray-800 text-white p-4 transition-all ${isSidebarOpen ? "w-64" : "w-16"} min-h-screen`}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2
+            className={`text-lg font-semibold transition-all ${isSidebarOpen ? "block" : "hidden"}`}
+          >
+            لوحة التحكم
+          </h2>
+          <Button
+            size="sm"
+            variant="light"
+            onPress={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <FaBars />
+          </Button>
         </div>
 
-        <Form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <Input
-            label="اسم المستخدم"
-            name="username"
-            type="text"
-            variant="bordered"
-            placeholder="مثال: admin"
-            required
-            className="text-right"
-          />
-
-          <Input
-            label="كلمة المرور"
-            name="password"
-            type="password"
-            variant="bordered"
-            placeholder="••••••••"
-            required
-            className="text-right"
-          />
-
-          {branches.length > 0 && (
-            <Select
-              label="اختيار الفرع"
-              selectedKeys={branch ? [branch] : []}
-              onSelectionChange={(keys) => setBranch(Array.from(keys)[0] as string)}
-              className="text-right"
+        <nav className="flex flex-col gap-2">
+          {/* روابط رئيسية */}
+          {mainLinks.map((link) => (
+            <Link
+              key={link.href}
+              className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+              href={link.href}
             >
-              {branches.map((b) => (
-                <SelectItem key={String(b.id)}>{b.comp_name}</SelectItem>
-              ))}
-            </Select>
-          )}
+              {link.icon}
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                {link.name}
+              </span>
+            </Link>
+          ))}
 
-          <Input
-            label="السنة المالية"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            variant="bordered"
-            placeholder="مثال: 2024"
-            className="text-right"
-          />
-
-          <Spacer y={2} />
-
-          <Button
-            type="submit"
-            className="w-full bg-[#2563eb] text-white font-semibold hover:bg-[#1d4ed8] transition rounded-lg"
+          {/* البيانات الأساسية */}
+          <div
+            className="mt-4 px-2 text-sm text-gray-400 cursor-pointer flex justify-between items-center"
+            onClick={() => setShowDataLinks(!showDataLinks)}
           >
-            دخول النظام
-          </Button>
-        </Form>
-      </div>
+            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+              البيانات الأساسية
+            </span>
+            {isSidebarOpen &&
+              (showDataLinks ? <FaChevronUp /> : <FaChevronDown />)}
+          </div>
+
+          <AnimatePresence initial={false}>
+            {showDataLinks && (
+              <motion.div
+                animate="visible"
+                className="flex flex-col overflow-hidden"
+                exit="hidden"
+                initial="hidden"
+                transition={transition}
+                variants={animationVariants}
+              >
+                {dataLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+                    href={link.href}
+                  >
+                    {link.icon}
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      {link.name}
+                    </span>
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* النماذج */}
+          <div
+            className="mt-4 px-2 text-sm text-gray-400 cursor-pointer flex justify-between items-center"
+            onClick={() => setShowFormLinks(!showFormLinks)}
+          >
+            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+              النماذج
+            </span>
+            {isSidebarOpen &&
+              (showFormLinks ? <FaChevronUp /> : <FaChevronDown />)}
+          </div>
+
+          <AnimatePresence initial={false}>
+            {showFormLinks && (
+              <motion.div
+                animate="visible"
+                className="flex flex-col overflow-hidden"
+                exit="hidden"
+                initial="hidden"
+                transition={transition}
+                variants={animationVariants}
+              >
+                {formLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+                    href={link.href}
+                  >
+                    {link.icon}
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      {link.name}
+                    </span>
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* التقارير */}
+          <div
+            className="mt-4 px-2 text-sm text-gray-400 cursor-pointer flex justify-between items-center"
+            onClick={() => setShowReportLinks(!showReportLinks)}
+          >
+            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+              التقارير
+            </span>
+            {isSidebarOpen &&
+              (showReportLinks ? <FaChevronUp /> : <FaChevronDown />)}
+          </div>
+
+          <AnimatePresence initial={false}>
+            {showReportLinks && (
+              <motion.div
+                animate="visible"
+                className="flex flex-col overflow-hidden"
+                exit="hidden"
+                initial="hidden"
+                transition={transition}
+                variants={animationVariants}
+              >
+                {reportLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+                    href={link.href}
+                  >
+                    {link.icon}
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      {link.name}
+                    </span>
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          
+        </nav>
+      </aside>
+
+      <main className="flex-1 w-full min-h-screen p-6">{children}</main>
     </div>
   );
 }

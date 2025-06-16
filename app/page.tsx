@@ -14,9 +14,7 @@ import { fetchCompanies } from "@/utilities/api";
 
 export default function Login() {
   const router = useRouter();
-  const [branches, setBranches] = useState<{ id: number; comp_name: string }[]>(
-    []
-  );
+  const [branches, setBranches] = useState<{ id: number; comp_name: string }[]>([]);
   const [branch, setBranch] = useState<string>("");
   const [year, setYear] = useState<string>("");
 
@@ -38,7 +36,7 @@ export default function Login() {
       <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8 border border-gray-200">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">
-            نظام <span className="text-[#d4af37]">بازار</span>
+            نظام <span className="text-[#1e293b]">بازار</span>
           </h1>
           <p className="text-sm text-gray-500 mt-2">تسجيل دخول لإدارة الذهب والمعاملات</p>
         </div>
@@ -90,7 +88,8 @@ export default function Login() {
 
           <Button
             type="submit"
-            className="w-full bg-[#d4af37] text-white font-semibold hover:bg-[#bfa32d] transition rounded-lg"
+            variant="flat"
+            className="w-full !bg-[#1e293b] text-white font-semibold hover:!bg-[#111827] transition rounded-lg"
           >
             دخول النظام
           </Button>
