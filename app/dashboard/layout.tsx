@@ -230,8 +230,44 @@ export default function DashboardLayout({
               </motion.div>
             )}
           </AnimatePresence>
-          
-          
+
+                    {/* الإعدادات */}
+          <div
+            className="mt-4 px-2 text-sm text-gray-400 cursor-pointer flex justify-between items-center"
+            onClick={() => setShowSettingsLinks(!showSettingsLinks)}
+          >
+            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+              الإعدادات
+            </span>
+            {isSidebarOpen &&
+              (showSettingsLinks ? <FaChevronUp /> : <FaChevronDown />)}
+          </div>
+
+          <AnimatePresence initial={false}>
+            {showSettingsLinks && (
+              <motion.div
+                animate="visible"
+                className="flex flex-col overflow-hidden"
+                exit="hidden"
+                initial="hidden"
+                transition={transition}
+                variants={animationVariants}
+              >
+                {settingsLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    className={`flex items-center gap-3 p-2 rounded-lg transition-all ${pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"}`}
+                    href={link.href}
+                  >
+                    {link.icon}
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      {link.name}
+                    </span>
+                  </Link>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </nav>
       </aside>
 
