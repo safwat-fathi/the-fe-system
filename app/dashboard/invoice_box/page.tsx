@@ -19,6 +19,8 @@ import {
   ModalFooter,
 } from "@heroui/react";
 import { FaPlus } from "react-icons/fa";
+import toast from "react-hot-toast";
+
 import ActionButtons from "@/components/ActionButtons";
 import { API_ENDPOINTS } from "@/utilities/api";
 
@@ -53,6 +55,7 @@ export default function InvoiceBoxPage() {
     try {
       const res = await fetch(INVOICE_BOX_LIST);
       const data = await res.json();
+
       if (Array.isArray(data)) setBoxes(data);
       else if (Array.isArray(data.results)) setBoxes(data.results);
       else setBoxes([]);
@@ -81,23 +84,25 @@ export default function InvoiceBoxPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert(
+
+        toast.error(
           "❌ فشل في العملية: " +
-            (errorData?.detail || JSON.stringify(errorData))
+            (errorData?.detail || JSON.stringify(errorData)),
         );
+
         return;
       }
 
-      alert(
+      toast.success(
         modalMode === "edit"
           ? "✅ تم تعديل الصندوق بنجاح"
-          : "✅ تم إضافة الصندوق بنجاح"
+          : "✅ تم إضافة الصندوق بنجاح",
       );
       setIsModalOpen(false);
       loadBoxes();
     } catch (error) {
       console.error("❌ خطأ أثناء الحفظ:", error);
-      alert("❌ حدث خطأ أثناء حفظ الصندوق");
+      toast.error("❌ حدث خطأ أثناء حفظ الصندوق");
     }
   };
 
@@ -108,28 +113,30 @@ export default function InvoiceBoxPage() {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
+
       if (!response.ok) throw new Error();
-      alert("✅ تم حذف الصندوق بنجاح");
+      toast.success("✅ تم حذف الصندوق بنجاح");
       loadBoxes();
     } catch {
-      alert("❌ حدث خطأ أثناء الحذف");
+      toast.error("❌ حدث خطأ أثناء الحذف");
     }
   };
 
   const filtered = useMemo(() => {
     return boxes.filter((b) =>
-      b.box_name?.toLowerCase().includes(search.toLowerCase())
+      b.box_name?.toLowerCase().includes(search.toLowerCase()),
     );
   }, [boxes, search]);
 
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
+
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
   const openModal = (
     mode: "add" | "edit" | "view",
-    box: Partial<InvoiceBox> = {}
+    box: Partial<InvoiceBox> = {},
   ) => {
     setModalMode(mode);
     setCurrentBox(box);
@@ -142,12 +149,15 @@ export default function InvoiceBoxPage() {
     <div className="p-4 font-cairo">
       <h1 className="text-2xl font-bold mb-6">صناديق الفواتير</h1>
       <div className="flex justify-between mb-4">
-        <Button onPress={() => openModal("add")}> <FaPlus /> إضافة صندوق </Button>
+        <Button onPress={() => openModal("add")}>
+          {" "}
+          <FaPlus /> إضافة صندوق{" "}
+        </Button>
         <Input
+          className="w-60"
           placeholder="بحث بالاسم..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-60"
         />
       </div>
 
@@ -164,13 +174,13 @@ export default function InvoiceBoxPage() {
               <TableCell>{box.box_name}</TableCell>
               <TableCell>{box.box_name_e}</TableCell>
               <TableCell>
-                <Checkbox isSelected={!!box.box_status} isReadOnly />
+                <Checkbox isReadOnly isSelected={!!box.box_status} />
               </TableCell>
               <TableCell>
                 <ActionButtons
-                  onView={() => openModal("view", box)}
-                  onEdit={() => openModal("edit", box)}
                   onDelete={() => handleDelete(box.id)}
+                  onEdit={() => openModal("edit", box)}
+                  onView={() => openModal("view", box)}
                 />
               </TableCell>
             </TableRow>
@@ -192,8 +202,8 @@ export default function InvoiceBoxPage() {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
         scrollBehavior="inside"
+        onClose={() => setIsModalOpen(false)}
       >
         <ModalContent className="font-cairo">
           <ModalHeader>
@@ -247,4 +257,3 @@ export default function InvoiceBoxPage() {
     </div>
   );
 }
-

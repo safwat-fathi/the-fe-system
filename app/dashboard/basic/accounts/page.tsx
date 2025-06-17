@@ -10,9 +10,11 @@ import {
   ModalFooter,
   ModalHeader,
   Select,
-  SelectItem
+  SelectItem,
 } from "@heroui/react";
 import { FaPlus } from "react-icons/fa";
+import toast from "react-hot-toast";
+
 import { API_BASE_URL, apiFetch } from "@/utilities/api";
 
 interface Account {
@@ -38,17 +40,21 @@ export default function AccountsTree() {
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Account>>({});
-  const [currencies, setCurrencies] = useState<{ id: number; cur_name: string }[]>([]);
+  const [currencies, setCurrencies] = useState<
+    { id: number; cur_name: string }[]
+  >([]);
 
   const fetchAccounts = async () => {
     const res = await apiFetch(`${API_BASE_URL}accounts_list`);
     const data = await res.json();
+
     setAccounts(data);
   };
 
   const fetchCurrencies = async () => {
     const res = await apiFetch(`${API_BASE_URL}currencies_list/`);
     const data = await res.json();
+
     setCurrencies(data);
   };
 
@@ -63,8 +69,8 @@ export default function AccountsTree() {
       .map((acc) => (
         <li key={acc.id} className="relative ml-4">
           <span
-            onClick={() => setSelectedParentId(acc.id)}
             className="inline-block cursor-pointer hover:bg-gray-200 px-2 rounded transition"
+            onClick={() => setSelectedParentId(acc.id)}
           >
             ▶ {acc.acc_name}
           </span>
@@ -94,22 +100,24 @@ export default function AccountsTree() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
+
       if (!response.ok) {
-        alert("حدث خطأ أثناء الإضافة");
+        toast.error("حدث خطأ أثناء الإضافة");
+
         return;
       }
       setIsModalOpen(false);
       fetchAccounts();
     } catch (error) {
       console.error("حدث خطأ:", error);
-      alert("فشل في الاتصال بالخادم");
+      toast.error("فشل في الاتصال بالخادم");
     }
   };
 
   return (
     <div className="p-4 font-cairo">
       <div className="flex items-center justify-between mb-4">
-        <Input placeholder="بحث عن حساب..." className="w-60" />
+        <Input className="w-60" placeholder="بحث عن حساب..." />
         <Button onPress={handleAddAccount}>
           <FaPlus className="ml-2" /> إضافة حساب جديد
         </Button>
@@ -121,8 +129,8 @@ export default function AccountsTree() {
           <ul className="list-none">
             <li>
               <span
-                onClick={() => setSelectedParentId(null)}
                 className="font-bold cursor-pointer text-blue-600"
+                onClick={() => setSelectedParentId(null)}
               >
                 دليل الحسابات
               </span>
@@ -149,13 +157,18 @@ export default function AccountsTree() {
                   <tr key={acc.id} className="border-t">
                     <td>{acc.acc_id}</td>
                     <td>{acc.acc_name}</td>
-                    <td>{acc.acc_rep === 1 ? "الأرباح والخسائر" : "الميزانية العمومية"}</td>
+                    <td>
+                      {acc.acc_rep === 1
+                        ? "الأرباح والخسائر"
+                        : "الميزانية العمومية"}
+                    </td>
                     <td>{acc.acc_type === 1 ? "رئيسي" : "فرعي"}</td>
                   </tr>
                 ))}
-              {accounts.filter((acc) => acc.parent === selectedParentId).length === 0 && (
+              {accounts.filter((acc) => acc.parent === selectedParentId)
+                .length === 0 && (
                 <tr>
-                  <td colSpan={4} className="text-center py-2">
+                  <td className="text-center py-2" colSpan={4}>
                     لا توجد حسابات فرعية
                   </td>
                 </tr>
@@ -169,22 +182,62 @@ export default function AccountsTree() {
         <ModalContent>
           <ModalHeader>إضافة حساب جديد</ModalHeader>
           <ModalBody className="grid grid-cols-2 gap-4">
-            <Input label="اسم الحساب" value={formData.acc_name || ""} onChange={(e) => handleChange("acc_name", e.target.value)} />
-            <Input label="اسم الحساب بالإنجليزي" value={formData.acc_name_e || ""} onChange={(e) => handleChange("acc_name_e", e.target.value)} />
-            <Input label="رقم الحساب" value={formData.acc_id || ""} onChange={(e) => handleChange("acc_id", e.target.value)} />
-            <Select label="العملة" selectedKeys={[String(formData.cur || "")]} onSelectionChange={(keys) => handleChange("cur", Number([...keys][0]))}>
+            <Input
+              label="اسم الحساب"
+              value={formData.acc_name || ""}
+              onChange={(e) => handleChange("acc_name", e.target.value)}
+            />
+            <Input
+              label="اسم الحساب بالإنجليزي"
+              value={formData.acc_name_e || ""}
+              onChange={(e) => handleChange("acc_name_e", e.target.value)}
+            />
+            <Input
+              label="رقم الحساب"
+              value={formData.acc_id || ""}
+              onChange={(e) => handleChange("acc_id", e.target.value)}
+            />
+            <Select
+              label="العملة"
+              selectedKeys={[String(formData.cur || "")]}
+              onSelectionChange={(keys) =>
+                handleChange("cur", Number([...keys][0]))
+              }
+            >
               {currencies.map((c) => (
                 <SelectItem key={c.id}>{c.cur_name}</SelectItem>
               ))}
             </Select>
-            <Input label="المستوى" value={formData.acc_level?.toString() || ""} onChange={(e) => handleChange("acc_level", Number(e.target.value))} />
-            <Input label="التقرير" value={formData.acc_rep?.toString() || "1"} onChange={(e) => handleChange("acc_rep", Number(e.target.value))} />
-            <Input label="النوع" value={formData.acc_type?.toString() || "1"} onChange={(e) => handleChange("acc_type", Number(e.target.value))} />
-            <Input label="الطبيعة" value={formData.acc_kind?.toString() || "1"} onChange={(e) => handleChange("acc_kind", Number(e.target.value))} />
+            <Input
+              label="المستوى"
+              value={formData.acc_level?.toString() || ""}
+              onChange={(e) =>
+                handleChange("acc_level", Number(e.target.value))
+              }
+            />
+            <Input
+              label="التقرير"
+              value={formData.acc_rep?.toString() || "1"}
+              onChange={(e) => handleChange("acc_rep", Number(e.target.value))}
+            />
+            <Input
+              label="النوع"
+              value={formData.acc_type?.toString() || "1"}
+              onChange={(e) => handleChange("acc_type", Number(e.target.value))}
+            />
+            <Input
+              label="الطبيعة"
+              value={formData.acc_kind?.toString() || "1"}
+              onChange={(e) => handleChange("acc_kind", Number(e.target.value))}
+            />
           </ModalBody>
           <ModalFooter>
-            <Button color="danger" onPress={() => setIsModalOpen(false)}>إلغاء</Button>
-            <Button color="success" onPress={handleSave}>حفظ</Button>
+            <Button color="danger" onPress={() => setIsModalOpen(false)}>
+              إلغاء
+            </Button>
+            <Button color="success" onPress={handleSave}>
+              حفظ
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

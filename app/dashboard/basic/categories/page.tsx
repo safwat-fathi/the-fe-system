@@ -21,6 +21,7 @@ import {
   SelectItem,
 } from "@heroui/react";
 import { FaPlus } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
 import { API_BASE_URL, apiFetch } from "@/utilities/api";
@@ -151,7 +152,7 @@ export default function CategoriesTable() {
       });
 
       if (response.ok) {
-        alert("تمت إضافة الفئة بنجاح ✅");
+        toast.success("تمت إضافة الفئة بنجاح ✅");
         setIsAddModalOpen(false);
         setNewCategory({
           id: 0,
@@ -169,10 +170,10 @@ export default function CategoriesTable() {
       } else {
         const errorData = await response.json();
 
-        alert("فشل في إضافة الفئة ❌\n" + JSON.stringify(errorData));
+        toast.error("فشل في إضافة الفئة ❌\n" + JSON.stringify(errorData));
       }
     } catch (error) {
-      alert("حدث خطأ أثناء الاتصال بالسيرفر");
+      toast.error("حدث خطأ أثناء الاتصال بالسيرفر");
     }
   };
 
@@ -192,16 +193,16 @@ export default function CategoriesTable() {
       });
 
       if (response.ok) {
-        alert("تم تعديل الفئة بنجاح ✅");
+        toast.success("تم تعديل الفئة بنجاح ✅");
         setIsAddModalOpen(false);
         loadData();
       } else {
         const errorData = await response.json();
 
-        alert("فشل في تعديل الفئة ❌\n" + JSON.stringify(errorData));
+        toast.error("فشل في تعديل الفئة ❌\n" + JSON.stringify(errorData));
       }
     } catch (error) {
-      alert("حدث خطأ أثناء الاتصال بالسيرفر");
+      toast.error("حدث خطأ أثناء الاتصال بالسيرفر");
     }
   };
 
@@ -214,15 +215,15 @@ export default function CategoriesTable() {
       });
 
       if (response.ok) {
-        alert("تم حذف الفئة بنجاح ✅");
+        toast.success("تم حذف الفئة بنجاح ✅");
         loadData();
       } else {
         const errorData = await response.json();
 
-        alert("فشل في الحذف ❌\n" + JSON.stringify(errorData));
+        toast.error("فشل في الحذف ❌\n" + JSON.stringify(errorData));
       }
     } catch (error) {
-      alert("خطأ أثناء الاتصال بالسيرفر");
+      toast.error("خطأ أثناء الاتصال بالسيرفر");
     }
   };
 
