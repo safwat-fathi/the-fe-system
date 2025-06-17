@@ -125,6 +125,7 @@ export default function InvoicePage() {
   const [printVal, setPrintVal] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(true);
   const [isExistingInvoice, setIsExistingInvoice] = useState<boolean>(false);
+  const [homePurity, setHomePurity] = useState<number>(1000);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -172,9 +173,22 @@ export default function InvoicePage() {
   }, [goldPrice]);
 
   useEffect(() => {
+    setInvoiceItems((items) =>
+      items.map((itm) => {
+        const purityVal = parseFloat(itm.purity || "0");
+        const weightVal = parseFloat(String(itm.weight)) || 0;
+        if (!homePurity || purityVal === 0) return itm;
+        const g = (weightVal * purityVal) / homePurity;
+        return { ...itm, g_weight: parseFloat(g.toFixed(3)) };
+      }),
+    );
+  }, [homePurity]);
+
+  useEffect(() => {
     fetchItems();
     fetchCustomers();
     fetchCategories();
+    fetchHomePurity();
     if (typeof window !== "undefined") {
       const now = new Date();
 
@@ -188,6 +202,18 @@ export default function InvoicePage() {
     const price = await fetchGoldPrice();
 
     setGoldPrice(price);
+  };
+
+  const fetchHomePurity = async () => {
+    try {
+      const res = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
+      if (Array.isArray(res) && res.length > 0) {
+        const p = parseFloat(res[0]?.purity);
+        if (!isNaN(p)) setHomePurity(p);
+      }
+    } catch (e) {
+      console.error('failed to load home purity', e);
+    }
   };
 
   async function fetchItems() {
@@ -691,7 +717,7 @@ export default function InvoicePage() {
             <th>سعر الجرام</th>
             <th>الضريبة</th>
             <th>قيمة الضريبة</th>
-            <th>الصافي</th>
+            <th>الإجمالي شامل الضريبة</th>
             <th>الإجمالي</th>
           </tr>
         </thead>
@@ -700,7 +726,7 @@ export default function InvoicePage() {
       <div class="totals">
         <p>الإجمالي غير شامل الضريبة: ${totalAmount.toFixed(2)}</p>
         <p>الضريبة (15%): ${taxAmount.toFixed(2)}</p>
-        <p><strong>الصافي: ${netAmount.toFixed(2)} ريال</strong></p>
+        <p><strong>الإجمالي شامل الضريبة: ${netAmount.toFixed(2)} ريال</strong></p>
       </div>
     </body>
     </html>
@@ -894,6 +920,7 @@ export default function InvoicePage() {
             invoiceItems={invoiceItems}
             items={items}
             payType={payType}
+            homePurity={homePurity}
             setInvoiceItems={setInvoiceItems}
             setItems={setItems}
           />

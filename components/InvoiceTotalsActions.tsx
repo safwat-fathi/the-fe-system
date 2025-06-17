@@ -105,7 +105,7 @@ export default function InvoiceTotalsActions({
             <span>{taxAmount.toFixed(2)} ﷼</span>
           </div>
           <div className="text-gray-600 text-base font-bold">
-            <span>الصافي: </span>
+            <span>الإجمالي شامل الضريبة: </span>
             <span>{netAmount.toFixed(2)} ﷼</span>
           </div>
         </div>
