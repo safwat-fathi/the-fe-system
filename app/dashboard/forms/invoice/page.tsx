@@ -701,6 +701,7 @@ export default function InvoicePage() {
     <html dir="rtl">
     <head>
       <title>معاينة الفاتورة</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet" />
       <style>
         body { font-family: 'Cairo', sans-serif; margin: 40px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -708,7 +709,9 @@ export default function InvoicePage() {
         .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .inv-header .left { direction: ltr; text-align: left; }
         .inv-header .right { text-align: right; }
-        .inv-header img { max-height: 100px; margin-inline: 20px; }
+
+        .inv-header .center { flex: 0 0 150px; text-align: center; }
+        .inv-header img { max-height: 100px; }
         .comp-name { font-weight: bold; }
         .comp-address { font-weight: normal; }
         .header-title { text-align: center; font-size: 18px; font-weight: bold; margin-top: 10px; }
@@ -738,6 +741,7 @@ export default function InvoicePage() {
         <p>التاريخ: ${formattedDate}</p>
         <p>الوقت: ${formattedTime}</p>
       </div>
+
           <div>${compAName}</div>
           <div>${address}</div>
         </div>
@@ -749,6 +753,7 @@ export default function InvoicePage() {
       </div>
       <div class="header-title">فاتورة ضريبية</div>
       <div class="qr">${qrMarkup}</div>
+
       <div class="section">
         <p>العميل: ${customer?.cust_name || ""}</p>
         ${customer?.mobile ? `<p>رقم الجوال: ${customer.mobile}</p>` : ""}
