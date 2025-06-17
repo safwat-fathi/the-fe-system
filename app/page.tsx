@@ -36,9 +36,10 @@ export default function Login() {
       <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8 border border-gray-200">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">
-            نظام <span className="text-[#1e293b]">بازار</span>
+             <span className="text-[#1e293b]">نفيس</span>
+             <span className="text-sm text-[#00A2E8]"> Web </span>
           </h1>
-          <p className="text-sm text-gray-500 mt-2">تسجيل دخول لإدارة الذهب والمعاملات</p>
+          <p className="text-sm text-gray-500 mt-2">حيث يلتقي بريق الذهب بدقة التقنية 💰 </p>
         </div>
 
         <Form className="flex flex-col gap-4" onSubmit={handleSubmit}>

@@ -41,7 +41,7 @@ interface Item {
   k?: string;
   purity?: string;
   cat?: number;
-  [key: string]: any; // هذا يخليك تتجنب المشاكل إذا في حقول زيادة غير معرفة
+  [key: string]: any; 
 }
 
 interface Customer {
