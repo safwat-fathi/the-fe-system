@@ -6,6 +6,7 @@ import { Input, Button } from "@heroui/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import QRCode from "react-qr-code";
 import useFractions from "@/utilities/useFractions";
+import { renderInvoicePreview } from "@/components/invoices/TaxInvoicePreview";
 
 import {
   API_BASE_URL,
@@ -638,158 +639,44 @@ export default function InvoicePage() {
   const previewInvoice = async () => {
     if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
 
-    const previewWindow = window.open(
-      "",
-      "InvoicePreview",
-      "width=850,height=1000",
-    );
-
+    const previewWindow = window.open("", "InvoicePreview", "width=850,height=1000");
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
-    const customer = customers.find((c) => c.id === selectedCustomer);
+    // جلب بيانات المنشأة من قاعدة البيانات
     const homeData = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
     const home = Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
-    const compAName = home.comp_a_name || "";
-    const compLName = home.comp_l_name || "";
-    const address = home.ADDRESS || "";
-    const addressE = home.ADDRESS_E || "";
-    const signImg = home.sign || "";
-    const footerText = home.footer || "";
-    const formattedDate = new Date(invoiceDate).toLocaleDateString("ar-EG");
-    const formattedTime = new Date(invoiceDate).toLocaleTimeString("ar-EG");
-    const invQR = generateZatcaQR({
-      sellerName: "شركة ثمار الصفاء المتميزة التجارية",
-      vatNumber: "311452959900003",
-      timestamp: invoiceDate,
-      totalWithVat: netAmount.toFixed(frac),
-      vatTotal: taxAmount.toFixed(frac),
+
+    // تجهيز بيانات التقرير
+    const html = renderInvoicePreview({
+      items: invoiceItems,
+      customer: selectedCust,
+      companyAName: home.comp_a_name || "",
+      companyLName: home.comp_l_name || "",
+      addressA: home.ADDRESS || "",
+      addressL: home.ADDRESS_E || "",
+      signImg: home.sign || "",
+      footerText: home.footer || "",
+      invoiceNumber,
+      invoiceDate,
+      invQR: generateZatcaQR({
+        sellerName: home.comp_a_name || "اسم المنشأة",
+        vatNumber: String(selectedCust?.vat_no || ""),
+        timestamp: invoiceDate,
+        totalWithVat: netAmount.toFixed(frac),
+        vatTotal: taxAmount.toFixed(frac),
+      }),
+      totalAmount,
+      taxAmount,
+      netAmount,
+      payType,
+      frac,
+      frac2,
     });
-    const qrMarkup = renderToStaticMarkup(<QRCode size={120} value={invQR} />);
-    const rowsHtml = invoiceItems
-      .map((item, index) => {
-        let rowTotal = 0;
 
-        // pick price part based on payType
-        if (payType === 1) {
-          rowTotal = item.weight * item.price;
-        } else if (payType === 2) {
-          rowTotal = item.weight * (item.price_w ?? 0);
-        } else {
-          rowTotal =
-            item.weight * item.price + item.weight * (item.price_w ?? 0);
-        }
-        const tax = (rowTotal - (item.item_disc_amt ?? 0)) * 0.15;
-        const total = rowTotal - (item.item_disc_amt ?? 0) + tax;
-
-        return `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${item.item_name || ""}</td>
-        ${payType !== 1 ? `<td>${item.qty}</td>` : ""}
-        ${payType !== 2 ? `<td>${item.weight.toFixed(frac2)}</td>` : ""}
-        <td>${item.k}</td>
-        <td>${item.price.toFixed(frac)}</td>
-        <td>15%</td>
-        <td>${tax.toFixed(frac)}</td>
-        <td>${(rowTotal - (item.item_disc_amt ?? 0)).toFixed(frac)}</td>
-        <td>${total.toFixed(frac)}</td>
-      </tr>`;
-      })
-      .join("");
-
-    const htmlContent = `
-    <html dir="rtl">
-    <head>
-      <title>معاينة الفاتورة</title>
-      <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet" />
-      <style>
-        body { font-family: 'Cairo', sans-serif; margin: 40px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #333; padding: 6px; font-size: 12px; text-align: center; }
-        .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .inv-header .left { direction: ltr; text-align: left; }
-        .inv-header .right { text-align: right; }
-
-        .inv-header .center { flex: 0 0 150px; text-align: center; }
-        .inv-header img { max-height: 100px; }
-        .comp-name { font-weight: bold; }
-        .comp-address { font-weight: normal; }
-        .header-title { text-align: center; font-size: 18px; font-weight: bold; margin-top: 10px; }
-        .separator { margin-top: 10px; border-top: 1px solid #333; }
-        .section { margin-top: 12px; }
-        .totals { margin-top: 20px; font-size: 14px; }
-        .qr { text-align: center; margin-top: 10px; }
-        .footer { margin-top: 20px; text-align: center; }
-      </style>
-    </head>
-    <body>
-      <div class="inv-header">
-        <div class="right">
-          <div class="comp-name">${compAName}</div>
-          <div class="comp-address">${address}</div>
-        </div>
-        <div class="center"><img src="${signImg}" alt="sign" /></div>
-        <div class="left">
-          <div class="comp-name">${compLName}</div>
-          <div class="comp-address">${addressE}</div>
-        </div>
-      </div>
-      <div class="separator"></div>
-      <div class="header-title">فاتورة ضريبية</div>
-      <div class="section">
-        <p>رقم الفاتورة: ${invoiceNumber}</p>
-        <p>التاريخ: ${formattedDate}</p>
-        <p>الوقت: ${formattedTime}</p>
-      </div>
-
-          <div>${compAName}</div>
-          <div>${address}</div>
-        </div>
-        <div class="center"><img src="${signImg}" alt="sign" /></div>
-        <div class="left">
-          <div>${compLName}</div>
-          <div>${addressE}</div>
-        </div>
-      </div>
-      <div class="header-title">فاتورة ضريبية</div>
-      <div class="qr">${qrMarkup}</div>
-
-      <div class="section">
-        <p>العميل: ${customer?.cust_name || ""}</p>
-        ${customer?.mobile ? `<p>رقم الجوال: ${customer.mobile}</p>` : ""}
-        ${customer?.address ? `<p>العنوان: ${customer.address}</p>` : ""}
-      </div>
-      <div class="qr">${qrMarkup}</div>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>اسم الصنف</th>
-            ${payType !== 1 ? "<th>العدد</th>" : ""}
-            ${payType !== 2 ? "<th>الوزن</th>" : ""}
-            <th>العيار</th>
-            <th>سعر الجرام</th>
-            <th>الضريبة</th>
-            <th>قيمة الضريبة</th>
-            <th>الإجمالي شامل الضريبة</th>
-            <th>الإجمالي</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-      <div class="totals">
-        <p>الإجمالي غير شامل الضريبة: ${totalAmount.toFixed(frac)}</p>
-        <p>الضريبة (15%): ${taxAmount.toFixed(frac)}</p>
-        <p><strong>الإجمالي شامل الضريبة: ${netAmount.toFixed(frac)} ريال</strong></p>
-      </div>
-      <div class="footer">${footerText}</div>
-    </body>
-    </html>
-  `;
-
-    previewWindow.document.write(htmlContent);
+    previewWindow.document.write(html);
     previewWindow.document.close();
   };
+
 
   const handleInvoiceSearch = async (searchVal?: string) => {
     const num = parseInt(searchVal ?? searchNumber, 10);
