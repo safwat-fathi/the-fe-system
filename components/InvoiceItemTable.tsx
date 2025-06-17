@@ -3,6 +3,7 @@
 import type { InvoiceItem } from "@/types/invoice-item";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import useFractions from "@/utilities/useFractions";
 import CreatableSelect from "react-select/creatable";
 
 interface Item {
@@ -47,6 +48,7 @@ export default function InvoiceItemTable({
   categories,
   homePurity,
 }: Props) {
+  const { frac, frac2 } = useFractions();
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
 
@@ -89,7 +91,7 @@ export default function InvoiceItemTable({
       if (homePurity) {
         const g = (weightVal * purityVal) / homePurity;
 
-        updated[index].g_weight = parseFloat(g.toFixed(3));
+        updated[index].g_weight = parseFloat(g.toFixed(frac2));
       }
     }
 
@@ -213,9 +215,9 @@ export default function InvoiceItemTable({
       updated[index].total_w = w * updated[index].price_w;
     } else {
       // when weight is zero simply store the entered total
-      updated[index].total = parseFloat(totalWithTax.toFixed(2));
+      updated[index].total = parseFloat(totalWithTax.toFixed(frac));
       updated[index].tax = parseFloat(
-        (totalWithTax - baseWithoutDisc).toFixed(2),
+        (totalWithTax - baseWithoutDisc).toFixed(frac),
       );
       setInvoiceItems(updated);
 
@@ -227,8 +229,8 @@ export default function InvoiceItemTable({
       updated[index].total_w -
       (updated[index].item_disc_amt ?? 0);
 
-    updated[index].tax = parseFloat((base * taxRate).toFixed(2));
-    updated[index].total = parseFloat((base + updated[index].tax).toFixed(2));
+    updated[index].tax = parseFloat((base * taxRate).toFixed(frac));
+    updated[index].total = parseFloat((base + updated[index].tax).toFixed(frac));
 
     setInvoiceItems(updated);
   };
@@ -581,10 +583,10 @@ export default function InvoiceItemTable({
                   </td>
                 )}
                 {(payType === 1 || payType === 3) && (
-                  <td>{(item.total_a ?? 0).toFixed(2)}</td>
+                  <td>{(item.total_a ?? 0).toFixed(frac)}</td>
                 )}
                 {(payType === 2 || payType === 3) && (
-                  <td>{(item.total_w ?? 0).toFixed(2)}</td>
+                  <td>{(item.total_w ?? 0).toFixed(frac)}</td>
                 )}
                 <td>
                   <input
@@ -601,7 +603,7 @@ export default function InvoiceItemTable({
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
-                <td>{(item.tax ?? tax).toFixed(2)}</td>
+                <td>{(item.tax ?? tax).toFixed(frac)}</td>
                 <td>
                   <input
                     ref={(el) => {

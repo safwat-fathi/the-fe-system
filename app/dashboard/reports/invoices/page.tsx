@@ -17,6 +17,7 @@ import {
 
 import ActionButtons from "@/components/ActionButtons";
 import { API_ENDPOINTS, fetchData } from "@/utilities/api";
+import useFractions from "@/utilities/useFractions";
 
 const { INVOICES_LIST, DELETE_INVOICE } = API_ENDPOINTS;
 
@@ -32,6 +33,7 @@ const columns = [
 
 export default function InvoicesPage() {
   const router = useRouter();
+  const { frac } = useFractions();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -106,9 +108,9 @@ export default function InvoicesPage() {
               <TableCell>{inv.inv_id}</TableCell>
               <TableCell>{inv.inv_date}</TableCell>
               <TableCell>{inv.cust_name}</TableCell>
-              <TableCell>{Number(inv.inv_net ?? 0).toFixed(2)}</TableCell>
-              <TableCell>{Number(inv.tax ?? 0).toFixed(2)}</TableCell>
-              <TableCell>{Number(inv.inv_amt ?? 0).toFixed(2)}</TableCell>
+              <TableCell>{Number(inv.inv_net ?? 0).toFixed(frac)}</TableCell>
+              <TableCell>{Number(inv.tax ?? 0).toFixed(frac)}</TableCell>
+              <TableCell>{Number(inv.inv_amt ?? 0).toFixed(frac)}</TableCell>
               <TableCell>
                 <ActionButtons
                   onDelete={() => handleDelete(inv.inv_id)}

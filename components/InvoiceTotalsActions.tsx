@@ -2,6 +2,7 @@
 
 import { Button, Checkbox } from "@heroui/react";
 import { ReactNode } from "react";
+import useFractions from "@/utilities/useFractions";
 
 interface Props {
   invoiceNumber: number;
@@ -38,6 +39,7 @@ export default function InvoiceTotalsActions({
   onEdit,
   children,
 }: Props) {
+  const { frac } = useFractions();
   return (
     <div className="p-6 max-w-[1500px] mx-auto bg-white rounded shadow">
       <div className="flex justify-between items-center border-b pb-3 mb-6">
@@ -94,19 +96,19 @@ export default function InvoiceTotalsActions({
         <div className="flex items-center gap-6 text-sm font-semibold">
           <div className="text-gray-600">
             <span>الإجمالي: </span>
-            <span>{totalAmount.toFixed(2)} ﷼</span>
+            <span>{totalAmount.toFixed(frac)} ﷼</span>
           </div>
           <div className="text-gray-600">
             <span>إجمالي الخصم: </span>
-            <span>{totalDiscount.toFixed(2)} ﷼</span>
+            <span>{totalDiscount.toFixed(frac)} ﷼</span>
           </div>
           <div className="text-green-500">
             <span>الضريبة: </span>
-            <span>{taxAmount.toFixed(2)} ﷼</span>
+            <span>{taxAmount.toFixed(frac)} ﷼</span>
           </div>
           <div className="text-gray-600 text-base font-bold">
             <span>الإجمالي شامل الضريبة: </span>
-            <span>{netAmount.toFixed(2)} ﷼</span>
+            <span>{netAmount.toFixed(frac)} ﷼</span>
           </div>
         </div>
       </div>
