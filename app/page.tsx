@@ -36,7 +36,7 @@ export default function Login() {
     event.preventDefault();
 
     if (!branch || !year) {
-      setFormError("يجب اختيار الفرع وكتابة السنة المالية.");
+      setFormError("* يجب اختيار الفرع وكتابة السنة المالية");
       return;
     }
 
