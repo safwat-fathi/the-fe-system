@@ -452,7 +452,7 @@ export default function InvoicePage() {
           item_disc_prc: row.item_disc_prc ?? 0,
           item_disc_amt: row.item_disc_amt ?? 0,
           sn: row.sn ?? "",
-          item_desc: row.item_desc,
+          item_desc: row.item_desc || row.item_name,
           cr_date: invoiceDate,
           cr_user: row.cr_user ?? "",
           upd_date: row.upd_date || new Date().toISOString(),
@@ -597,7 +597,7 @@ export default function InvoicePage() {
           item_disc_prc: row.item_disc_prc ?? 0,
           item_disc_amt: row.item_disc_amt ?? 0,
           sn: row.sn ?? "",
-          item_desc: row.item_desc,
+          item_desc: row.item_desc || row.item_name,
           cr_date: row.cr_date || invoiceDate,
           upd_date: new Date().toISOString(),
           com:
