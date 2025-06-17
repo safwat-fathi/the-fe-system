@@ -85,28 +85,35 @@ export default function InvoiceItemTable({
     if (field === "weight" || field === "purity") {
       const weightVal = parseFloat(String(updated[index].weight)) || 0;
       const purityVal = parseFloat(String(updated[index].purity)) || 0;
+
       if (homePurity) {
         const g = (weightVal * purityVal) / homePurity;
+
         updated[index].g_weight = parseFloat(g.toFixed(3));
       }
     }
 
-    // total_a = weight * price
-    updated[index].total_a = updated[index].weight * updated[index].price;
+    const wCalc =
+      updated[index].weight < 1 &&
+      updated[index].g_weight > updated[index].weight
+        ? updated[index].weight * 1000
+        : updated[index].weight;
+
+    // total_a = weight * price (using grams if needed)
+    updated[index].total_a = wCalc * updated[index].price;
     // total_w = weight * wagePrice
-    updated[index].total_w = updated[index].weight * updated[index].price_w;
+    updated[index].total_w = wCalc * updated[index].price_w;
     const baseTotal =
       updated[index].total_a +
       updated[index].total_w -
       (updated[index].item_disc_amt ?? 0);
+
     // tax amount based on total after discount
-    updated[index].tax =
-      (baseTotal * (updated[index].tax_prc ?? 15)) / 100;
+    updated[index].tax = (baseTotal * (updated[index].tax_prc ?? 15)) / 100;
     // total includes tax
     updated[index].total = baseTotal + updated[index].tax;
 
     setInvoiceItems(updated);
-
 
     const isLastRow = index === invoiceItems.length - 1;
     const isRowFilled =
@@ -189,44 +196,47 @@ export default function InvoiceItemTable({
     const baseTotal = baseWithoutDisc + (updated[index].item_disc_amt ?? 0);
 
     if (updated[index].weight > 0) {
+      const w =
+        updated[index].weight < 1 &&
+        updated[index].g_weight > updated[index].weight
+          ? updated[index].weight * 1000
+          : updated[index].weight;
+
       if (payType === 1) {
-        updated[index].price = baseTotal / updated[index].weight;
+        updated[index].price = baseTotal / w;
       } else if (payType === 2) {
-        updated[index].price_w = baseTotal / updated[index].weight;
+        updated[index].price_w = baseTotal / w;
       } else {
-        updated[index].price =
-          (baseTotal - updated[index].weight * updated[index].price_w) /
-          updated[index].weight;
+        updated[index].price = (baseTotal - w * updated[index].price_w) / w;
       }
+      updated[index].total_a = w * updated[index].price;
+      updated[index].total_w = w * updated[index].price_w;
     } else {
       // when weight is zero simply store the entered total
       updated[index].total = parseFloat(totalWithTax.toFixed(2));
-      updated[index].tax = parseFloat((totalWithTax - baseWithoutDisc).toFixed(2));
+      updated[index].tax = parseFloat(
+        (totalWithTax - baseWithoutDisc).toFixed(2),
+      );
       setInvoiceItems(updated);
+
       return;
     }
 
-    updated[index].total_a = updated[index].weight * updated[index].price;
-    updated[index].total_w = updated[index].weight * updated[index].price_w;
     const base =
       updated[index].total_a +
       updated[index].total_w -
       (updated[index].item_disc_amt ?? 0);
+
     updated[index].tax = parseFloat((base * taxRate).toFixed(2));
     updated[index].total = parseFloat((base + updated[index].tax).toFixed(2));
 
     setInvoiceItems(updated);
   };
 
-  const setRef = (
-  row: number,
-  col: number,
-  el: HTMLInputElement | null
-) => {
-  if (!inputRefs.current[row]) inputRefs.current[row] = [];
-  inputRefs.current[row][col] = el;
-};
-
+  const setRef = (row: number, col: number, el: HTMLInputElement | null) => {
+    if (!inputRefs.current[row]) inputRefs.current[row] = [];
+    inputRefs.current[row][col] = el;
+  };
 
   return (
     <div className="w-full overflow-x-auto mb-6 max-w-full">
@@ -251,9 +261,9 @@ export default function InvoiceItemTable({
             {(payType === 2 || payType === 3) && (
               <th className="w-[100px]">اجمالي الاجور</th>
             )}
-            <th className="w-[120px]">الاجمالي شامل الضريبة</th>
             <th className="w-[100px]">الخصم</th>
             <th className="w-[100px]">الضريبة</th>
+            <th className="w-[120px]">الاجمالي شامل الضريبة</th>
             <th className="w-[200px]">البيان</th>
             <th className="w-[60px]">حذف</th>
           </tr>
@@ -318,6 +328,7 @@ export default function InvoiceItemTable({
                       const selected = items.find(
                         (itm) => itm.id === selectedOption?.value,
                       );
+
                       console.log("selected item raw:", selected);
 
                       const updated = [...invoiceItems];
@@ -327,19 +338,27 @@ export default function InvoiceItemTable({
                       updated[index].item_name = selected?.item_name ?? "";
                       const selk = selected?.k ?? "";
                       const selPurity = selected?.purity ?? "";
+
                       updated[index].k = selected?.k ?? "";
-                      updated[index].price = goldPrice ?? Number(selected?.item_price ?? 0);
-                      updated[index].price_w = Number(selected?.work_price ?? 0);
+                      updated[index].price =
+                        goldPrice ?? Number(selected?.item_price ?? 0);
+                      updated[index].price_w = Number(
+                        selected?.work_price ?? 0,
+                      );
                       updated[index].purity = selected?.purity ?? "";
                       updated[index].stones = selected?.stones ?? "";
-                      
+
                       if (
                         selected?.item_weight !== undefined &&
                         selected?.item_weight !== null &&
                         selected.item_weight !== ""
                       ) {
-                        updated[index].weight = Number(selected?.item_weight ?? 0);
-                        updated[index].g_weight = Number(selected?.item_g_weight ?? selected?.item_weight ?? 0);
+                        updated[index].weight = Number(
+                          selected?.item_weight ?? 0,
+                        );
+                        updated[index].g_weight = Number(
+                          selected?.item_g_weight ?? selected?.item_weight ?? 0,
+                        );
                       }
                       if (
                         selected?.item_g_weight !== undefined &&
@@ -351,8 +370,10 @@ export default function InvoiceItemTable({
                         );
                       }
                       if (
-                        ((selk === "" || selk === "0") ||
-                          (selPurity === "" || selPurity === "0")) &&
+                        (selk === "" ||
+                          selk === "0" ||
+                          selPurity === "" ||
+                          selPurity === "0") &&
                         selected?.cat
                       ) {
                         const cat = categories.find(
@@ -361,7 +382,9 @@ export default function InvoiceItemTable({
 
                         if (cat) {
                           if (!selk || selk === "0")
-                            updated[index].k = (cat.gauge ?? cat.k ?? "") as string;
+                            updated[index].k = (cat.gauge ??
+                              cat.k ??
+                              "") as string;
                           if (!selPurity || selPurity === "0")
                             updated[index].purity = cat.purity ?? "";
                         }
@@ -571,35 +594,6 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={
-                      tempTotals[item.id] !== undefined
-                        ? tempTotals[item.id]
-                        : item.total ?? total + tax
-                    }
-                    onChange={(e) =>
-                      setTempTotals((prev) => ({
-                        ...prev,
-                        [item.id]: e.target.value,
-                      }))
-                    }
-                    onBlur={(e) => {
-                      setTempTotals((prev) => {
-                        const { [item.id]: removed, ...rest } = prev;
-                        return rest;
-                      });
-                      handleTotalChange(index, e.target.value);
-                    }}
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
-                </td>
-                <td>
-                  <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    className="border w-full p-1 text-xs text-center"
-                    style={{ minWidth: 0, maxWidth: "100%" }}
-                    type="number"
                     value={item.item_disc_amt}
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
@@ -608,6 +602,36 @@ export default function InvoiceItemTable({
                   />
                 </td>
                 <td>{(item.tax ?? tax).toFixed(2)}</td>
+                <td>
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
+                    className="border w-full p-1 text-xs text-center"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
+                    type="number"
+                    value={
+                      tempTotals[item.id] !== undefined
+                        ? tempTotals[item.id]
+                        : (item.total ?? total + tax)
+                    }
+                    onBlur={(e) => {
+                      setTempTotals((prev) => {
+                        const { [item.id]: removed, ...rest } = prev;
+
+                        return rest;
+                      });
+                      handleTotalChange(index, e.target.value);
+                    }}
+                    onChange={(e) =>
+                      setTempTotals((prev) => ({
+                        ...prev,
+                        [item.id]: e.target.value,
+                      }))
+                    }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
+                  />
+                </td>
                 <td>
                   <input
                     ref={(el) => {
