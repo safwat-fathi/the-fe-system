@@ -709,6 +709,7 @@ export default function InvoicePage() {
         .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .inv-header .left { direction: ltr; text-align: left; }
         .inv-header .right { text-align: right; }
+
         .inv-header .center { flex: 0 0 150px; text-align: center; }
         .inv-header img { max-height: 100px; }
         .comp-name { font-weight: bold; }
@@ -740,6 +741,19 @@ export default function InvoicePage() {
         <p>التاريخ: ${formattedDate}</p>
         <p>الوقت: ${formattedTime}</p>
       </div>
+
+          <div>${compAName}</div>
+          <div>${address}</div>
+        </div>
+        <div class="center"><img src="${signImg}" alt="sign" /></div>
+        <div class="left">
+          <div>${compLName}</div>
+          <div>${addressE}</div>
+        </div>
+      </div>
+      <div class="header-title">فاتورة ضريبية</div>
+      <div class="qr">${qrMarkup}</div>
+
       <div class="section">
         <p>العميل: ${customer?.cust_name || ""}</p>
         ${customer?.mobile ? `<p>رقم الجوال: ${customer.mobile}</p>` : ""}
