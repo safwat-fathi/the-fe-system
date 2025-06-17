@@ -15,8 +15,10 @@ export async function fetchGoldPrice(): Promise<number | null> {
 
     const pricePerGram = pricePerOunce / 31.1035;
 
+    const { frac } = await fetchFractions();
+
     // const pricePerGram = pricePerOunce / 3.75;
-    return parseFloat(pricePerGram.toFixed(2));
+    return parseFloat(pricePerGram.toFixed(frac));
   } catch (error) {
     console.error("❌ فشل جلب سعر الذهب:", error);
 
@@ -66,6 +68,32 @@ export async function fetchData<T>(
 
     return null;
   }
+}
+
+let fractionsCache: { frac: number; frac2: number } | null = null;
+
+export async function fetchFractions() {
+  if (fractionsCache) return fractionsCache;
+
+  try {
+    const res = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
+
+    if (Array.isArray(res) && res.length > 0) {
+      const frac = parseInt(res[0].frac);
+      const frac2 = parseInt(res[0].frac2);
+      fractionsCache = {
+        frac: isNaN(frac) ? 2 : frac,
+        frac2: isNaN(frac2) ? 3 : frac2,
+      };
+    } else {
+      fractionsCache = { frac: 2, frac2: 3 };
+    }
+  } catch (e) {
+    console.error('failed to fetch fractions', e);
+    fractionsCache = { frac: 2, frac2: 3 };
+  }
+
+  return fractionsCache;
 }
 
 export const API_ENDPOINTS = {

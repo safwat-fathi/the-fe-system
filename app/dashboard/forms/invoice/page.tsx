@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Input, Button } from "@heroui/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import QRCode from "react-qr-code";
+import useFractions from "@/utilities/useFractions";
 
 import {
   API_BASE_URL,
@@ -126,6 +127,7 @@ export default function InvoicePage() {
   const [isEditing, setIsEditing] = useState<boolean>(true);
   const [isExistingInvoice, setIsExistingInvoice] = useState<boolean>(false);
   const [homePurity, setHomePurity] = useState<number>(1000);
+  const { frac, frac2 } = useFractions();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -179,7 +181,7 @@ export default function InvoicePage() {
         const weightVal = parseFloat(String(itm.weight)) || 0;
         if (!homePurity || purityVal === 0) return itm;
         const g = (weightVal * purityVal) / homePurity;
-        return { ...itm, g_weight: parseFloat(g.toFixed(3)) };
+        return { ...itm, g_weight: parseFloat(g.toFixed(frac2)) };
       }),
     );
   }, [homePurity]);
@@ -347,8 +349,8 @@ export default function InvoicePage() {
       sellerName: "شركة ثمار الصفاء المتميزة التجارية",
       vatNumber: "311452959900003",
       timestamp: invoiceDate,
-      totalWithVat: netAmount.toFixed(2),
-      vatTotal: taxAmount.toFixed(2),
+      totalWithVat: netAmount.toFixed(frac),
+      vatTotal: taxAmount.toFixed(frac),
     });
 
     setCommitVal(true);
@@ -361,7 +363,7 @@ export default function InvoicePage() {
       cust_code: selectedCust?.cust_code || null,
       inv_amt: Math.round(netAmount),
       inv_net: Math.round(totalAmount),
-      tax: taxAmount.toFixed(2),
+      tax: taxAmount.toFixed(frac),
       inv_status: 1,
       trans_type: 2,
       cr_date: invoiceDate,
@@ -511,7 +513,7 @@ export default function InvoicePage() {
       cust_code: selectedCust?.cust_code || null,
       inv_amt: Math.round(netAmount),
       inv_net: Math.round(totalAmount),
-      tax: taxAmount.toFixed(2),
+      tax: taxAmount.toFixed(frac),
       inv_status: 1,
       trans_type: 2,
       cr_date: invoiceDate,
@@ -649,8 +651,8 @@ export default function InvoicePage() {
       sellerName: "شركة ثمار الصفاء المتميزة التجارية",
       vatNumber: "311452959900003",
       timestamp: invoiceDate,
-      totalWithVat: netAmount.toFixed(2),
-      vatTotal: taxAmount.toFixed(2),
+      totalWithVat: netAmount.toFixed(frac),
+      vatTotal: taxAmount.toFixed(frac),
     });
     const qrMarkup = renderToStaticMarkup(<QRCode size={120} value={invQR} />);
     const rowsHtml = invoiceItems
@@ -674,13 +676,13 @@ export default function InvoicePage() {
         <td>${index + 1}</td>
         <td>${item.item_name || ""}</td>
         ${payType !== 1 ? `<td>${item.qty}</td>` : ""}
-        ${payType !== 2 ? `<td>${item.weight.toFixed(2)}</td>` : ""}
+        ${payType !== 2 ? `<td>${item.weight.toFixed(frac2)}</td>` : ""}
         <td>${item.k}</td>
-        <td>${item.price.toFixed(2)}</td>
+        <td>${item.price.toFixed(frac)}</td>
         <td>15%</td>
-        <td>${tax.toFixed(2)}</td>
-        <td>${(rowTotal - (item.item_disc_amt ?? 0)).toFixed(2)}</td>
-        <td>${total.toFixed(2)}</td>
+        <td>${tax.toFixed(frac)}</td>
+        <td>${(rowTotal - (item.item_disc_amt ?? 0)).toFixed(frac)}</td>
+        <td>${total.toFixed(frac)}</td>
       </tr>`;
       })
       .join("");
@@ -724,9 +726,9 @@ export default function InvoicePage() {
         <tbody>${rowsHtml}</tbody>
       </table>
       <div class="totals">
-        <p>الإجمالي غير شامل الضريبة: ${totalAmount.toFixed(2)}</p>
-        <p>الضريبة (15%): ${taxAmount.toFixed(2)}</p>
-        <p><strong>الإجمالي شامل الضريبة: ${netAmount.toFixed(2)} ريال</strong></p>
+        <p>الإجمالي غير شامل الضريبة: ${totalAmount.toFixed(frac)}</p>
+        <p>الضريبة (15%): ${taxAmount.toFixed(frac)}</p>
+        <p><strong>الإجمالي شامل الضريبة: ${netAmount.toFixed(frac)} ريال</strong></p>
       </div>
     </body>
     </html>
