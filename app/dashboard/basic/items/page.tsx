@@ -384,7 +384,7 @@ export default function CategoriesItemsPage() {
   return (
     <div className="p-4 space-y-6 font-cairo text-sm">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">قائمة الأصناف</h1>
+        <h1 className="text-xl font-bold">قائمة الأصناف</h1>
         <Button
           color="success"
           onPress={() => {
@@ -423,7 +423,7 @@ export default function CategoriesItemsPage() {
 
       {/* جدول الفئات */}
       <div>
-        <h2 className="text-xl font-semibold mb-2">الفئات</h2>
+        <h2 className="text-lg font-semibold mb-2">الفئات</h2>
         <table className="w-full border text-sm">
           <thead>
             <tr className="bg-gray-100">
@@ -485,7 +485,7 @@ export default function CategoriesItemsPage() {
 
       {/* فلتر نوع الصنف */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold mb-2">الأصناف</h2>
+        <h2 className="text-lg font-semibold mb-2">الأصناف</h2>
         <div className="flex items-center gap-2">
           <label className="text-sm">نوع الصنف:</label>
           <select
@@ -616,7 +616,7 @@ export default function CategoriesItemsPage() {
           </ModalHeader>
 
           <ModalBody className="grid grid-cols-4 gap-4 max-h-[80vh] overflow-y-auto pr-2 text-sm">
-            <div className="col-span-4 text-lg font-bold border-b pb-2">
+            <div className="col-span-4 text-base font-bold border-b pb-2">
               البيانات الأساسية
             </div>
             <Input
@@ -739,7 +739,7 @@ export default function CategoriesItemsPage() {
                 )}
               </div>
             </div>
-            <div className="col-span-4 text-lg font-bold border-b pb-2">
+            <div className="col-span-4 text-base font-bold border-b pb-2">
               التصنيفات
             </div>
             <select
