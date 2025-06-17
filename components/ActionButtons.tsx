@@ -6,10 +6,16 @@ import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 interface ActionButtonsProps {
   onView: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;       
+  showDelete?: boolean;        
 }
 
-export default function ActionButtons({ onView, onEdit, onDelete }: ActionButtonsProps) {
+export default function ActionButtons({
+  onView,
+  onEdit,
+  onDelete,
+  showDelete = true,            
+}: ActionButtonsProps) {
   return (
     <div className="flex justify-center gap-2">
       <Button isIconOnly variant="light" size="sm" onPress={onView}>
@@ -18,10 +24,11 @@ export default function ActionButtons({ onView, onEdit, onDelete }: ActionButton
       <Button isIconOnly variant="light" size="sm" onPress={onEdit}>
         <FaEdit className="text-yellow-500" />
       </Button>
-      <Button isIconOnly variant="light" size="sm" onPress={onDelete}>
-        <FaTrash className="text-red-500" />
-      </Button>
+      {showDelete && onDelete && (
+        <Button isIconOnly variant="light" size="sm" onPress={onDelete}>
+          <FaTrash className="text-red-500" />
+        </Button>
+      )}
     </div>
   );
 }
-

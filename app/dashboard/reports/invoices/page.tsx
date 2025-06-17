@@ -18,13 +18,15 @@ import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
 import { API_ENDPOINTS, fetchData } from "@/utilities/api";
+import { formatDateTime } from "@/utilities/dateUtils";
+import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
 
-const { INVOICES_LIST, DELETE_INVOICE } = API_ENDPOINTS;
+const { INVOICES_LIST } = API_ENDPOINTS;
 
 const columns = [
   { name: "رقم الفاتورة", uid: "inv_id" },
-  { name: "التاريخ", uid: "inv_date" },
+  { name: "التاريخ والوقت", uid: "inv_date" },
   { name: "العميل", uid: "cust_name" },
   { name: "الإجمالي", uid: "inv_net" },
   { name: "الضريبة", uid: "tax" },
@@ -41,33 +43,17 @@ export default function InvoicesPage() {
 
   const rowsPerPage = 10;
 
-  // جلب الفواتير من الخادم
   const loadInvoices = useCallback(async () => {
     const data = await fetchData<Invoice[]>(INVOICES_LIST);
-
-    if (Array.isArray(data)) {
-      setInvoices(data);
-    } else {
-      setInvoices([]);
-    }
+    setInvoices(Array.isArray(data) ? data : []);
   }, []);
 
   useEffect(() => {
     loadInvoices();
   }, [loadInvoices]);
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("هل تريد حذف هذه الفاتورة؟")) return;
-    try {
-      await fetch(DELETE_INVOICE(id), { method: "DELETE" });
-      loadInvoices();
-    } catch {
-      toast.error("فشل حذف الفاتورة");
-    }
-  };
-
-  const handleEdit = (id: number) => {
-    router.push(`/dashboard/forms/invoice?inv_id=${id}`);
+  const handleEdit = (invId: number) => {
+    router.push(`/dashboard/forms/invoice?inv_id=${invId}`);
   };
 
   const filteredInvoices = useMemo(
@@ -75,14 +61,14 @@ export default function InvoicesPage() {
       invoices.filter(
         (inv) =>
           inv.cust_name?.toLowerCase().includes(search.toLowerCase()) ||
-          String(inv.inv_id).includes(search),
+          String(inv.inv_id).includes(search) ||
+          String(inv.id).includes(search)
       ),
-    [invoices, search],
+    [invoices, search]
   );
 
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
-
     return filteredInvoices.slice(start, start + rowsPerPage);
   }, [filteredInvoices, page]);
 
@@ -107,16 +93,16 @@ export default function InvoicesPage() {
           {paginated.map((inv) => (
             <TableRow key={inv.inv_id}>
               <TableCell>{inv.inv_id}</TableCell>
-              <TableCell>{inv.inv_date}</TableCell>
+              <TableCell>{formatDateTime(inv.inv_date)}</TableCell>
               <TableCell>{inv.cust_name}</TableCell>
-              <TableCell>{Number(inv.inv_net ?? 0).toFixed(frac)}</TableCell>
-              <TableCell>{Number(inv.tax ?? 0).toFixed(frac)}</TableCell>
-              <TableCell>{Number(inv.inv_amt ?? 0).toFixed(frac)}</TableCell>
+              <TableCell>{formatAmount(inv.inv_net, frac)}</TableCell>
+              <TableCell>{formatAmount(inv.tax, frac)}</TableCell>
+              <TableCell>{formatAmount(inv.inv_amt, frac)}</TableCell>
               <TableCell>
                 <ActionButtons
-                  onDelete={() => handleDelete(inv.inv_id)}
                   onEdit={() => handleEdit(inv.inv_id)}
                   onView={() => handleEdit(inv.inv_id)}
+                  showDelete={false}
                 />
               </TableCell>
             </TableRow>

@@ -426,7 +426,7 @@ export default function CategoriesItemsPage() {
         <h2 className="text-lg font-semibold mb-2">الفئات</h2>
         <table className="w-full border text-sm">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-gray-100 text-xs font-semibold">
               <th className="p-2 border">الفئة</th>
               <th className="p-2 border">العيار</th>
               <th className="p-2 border">المعايرة</th>
@@ -509,23 +509,22 @@ export default function CategoriesItemsPage() {
           />
         </div>
       </div>
-
-      <table className="w-full border text-sm">
-        <thead>
-          <tr className="bg-gray-100 text-center">
-            <th className="p-2 border">الكود</th>
-            <th className="p-2 border">الاسم</th>
-            <th className="p-2 border">السعر</th>
-            <th className="p-2 border">الكود</th>
-            <th className="p-2 border">الوزن</th>
-            <th className="p-2 border">العيار</th>
-            <th className="p-2 border">المعايرة</th>
-            <th className="p-2 border">التكلفة</th>
-            <th className="p-2 border">نوع الصنف</th>
-            <th className="p-2 border">الوحدة</th>
-            <th className="p-2 border">الإجراءات</th>
-          </tr>
-        </thead>
+        <table className="w-full border text-sm">
+          <thead>
+            <tr className="bg-gray-100 text-center text-xs font-semibold">
+              <th className="p-2 border">الكود</th>
+              <th className="p-2 border">الاسم</th>
+              <th className="p-2 border">السعر</th>
+              <th className="p-2 border">الكود</th>
+              <th className="p-2 border">الوزن</th>
+              <th className="p-2 border">العيار</th>
+              <th className="p-2 border">المعايرة</th>
+              <th className="p-2 border">التكلفة</th>
+              <th className="p-2 border">نوع الصنف</th>
+              <th className="p-2 border">الوحدة</th>
+              <th className="p-2 border">الإجراءات</th>
+            </tr>
+          </thead>
         <tbody>
           {filteredItems.map((item) => {
             const itemType = itemTypes.find(

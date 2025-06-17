@@ -679,129 +679,113 @@ export default function InvoicePage() {
 
 
   const handleInvoiceSearch = async (searchVal?: string) => {
-    const num = parseInt(searchVal ?? searchNumber, 10);
+  const num = parseInt(searchVal ?? searchNumber, 10);
 
-    if (!num) return toast.error("أدخل رقم الفاتورة");
+  if (!num) return toast.error("أدخل رقم الفاتورة");
 
-    try {
-      const invList = await fetchData<any[]>(
-        `${API_BASE_URL}invoices_list?inv_id=${num}`,
-      );
+  try {
+    const invList = await fetchData<any[]>(
+      `${API_BASE_URL}invoices_list?inv_id=${num}`,
+    );
 
-      if (!invList || invList.length === 0) {
-        toast.error("الفاتورة غير موجودة");
-
-        return;
-      }
-
-      const inv = invList.find((i) => Number(i.inv_id) === num);
-
-      if (!inv) {
-        toast.error("الفاتورة غير موجودة");
-
-        return;
-      }
-
-      setInvoiceNumber(inv.inv_id);
-      if (inv.inv_date) setInvoiceDate(inv.inv_date);
-      if (inv.cust) setSelectedCustomer(inv.cust);
-      const cust = customers.find((c) => c.id === inv.cust);
-
-      if (inv.inv_type)
-        setPaymentMethod(inv.inv_type === 1 ? "cash" : "credit");
-      if (inv.ref_no) setReferenceNumber(inv.ref_no);
-      if (inv.vat_no) {
-        setVatNumber(inv.vat_no);
-      } else if (cust?.vat_no) {
-        setVatNumber(String(cust.vat_no));
-      }
-      if (inv.handling) {
-        setHandlingMethod(inv.handling);
-      } else if (cust?.handling) {
-        setHandlingMethod(cust.handling.toString());
-      }
-      if (inv.mobile) {
-        setMobileMethod(inv.mobile);
-      } else if (cust?.mobile) {
-        setMobileMethod(String(cust.mobile));
-      }
-      if (inv.pay_type) setPayType(inv.pay_type);
-      if (typeof inv.commit !== "undefined") setCommitVal(!!inv.commit);
-      if (typeof inv.print !== "undefined") setPrintVal(!!inv.print);
-      setIsExistingInvoice(true);
-      setIsEditing(false);
-      if (inv.emp_id)
-        setEmployee(
-          inv.emp_id === 1 ? "hashem" : inv.emp_id === 2 ? "othman" : "",
-        );
-      if (inv.inv_notes) setNote(inv.inv_notes);
-      if (inv.gold_price) setGoldPrice(inv.gold_price);
-
-      const detailsRes = await fetchData<any>(
-        `${API_BASE_URL}invoices_dtl_list?inv_id=${num}`,
-      );
-
-      let detailRows: any[] = [];
-
-      if (detailsRes && Array.isArray(detailsRes)) {
-        detailRows = detailsRes;
-      } else if (detailsRes && Array.isArray(detailsRes.results)) {
-        detailRows = detailsRes.results;
-      } else if (detailsRes && Array.isArray(detailsRes.data)) {
-        detailRows = detailsRes.data;
-      }
-
-      if (detailRows.length > 0) {
-        const filteredDetails = detailRows.filter(
-          (row) => Number(row.inv ?? row.inv_id) === num,
-        );
-
-        setInvoiceItems(
-          filteredDetails.map((row) => ({
-            id: row.id,
-            item_id: row.item ?? row.item_id ?? null,
-            item_code: row.item_code ?? "",
-            item_name: row.item_name ?? "",
-
-            qty: parseFloat(row.qty) || 0,
-            weight: parseFloat(row.weight) || 0,
-            g_weight: parseFloat(row.g_weight) || 0,
-            k: row.k ?? "",
-            price: parseFloat(row.price) || 0,
-            price_w: parseFloat(row.price_w) || 0,
-            note: row.inv_note ?? "",
-            trans_type: row.trans_type ?? 2,
-            purity: row.purity ?? "",
-            total: parseFloat(row.total) || 0,
-            total_w: parseFloat(row.total_w) || 0,
-            total_a: parseFloat(row.total_a) || 0,
-            inv_note: row.inv_note ?? "",
-            tax: parseFloat(row.tax) || 0,
-            tax_prc: parseFloat(row.tax_prc) || 0,
-            stones: row.stones ?? "",
-            item_disc_prc: parseFloat(row.item_disc_prc) || 0,
-            item_disc_amt: parseFloat(row.item_disc_amt) || 0,
-            sn: row.sn ?? "",
-            item_desc: row.item_desc ?? "",
-            cr_date: row.cr_date ?? "",
-            cr_user: row.cr_user ?? "",
-            upd_date: row.upd_date ?? "",
-            upd_user: row.upd_user ?? "",
-            com: row.com ?? 0,
-            inv: row.inv ?? row.inv_id ?? 0,
-            item: row.item ?? row.item_id ?? 0,
-          })),
-        );
-      } else {
-        setInvoiceItems([]);
-      }
-
-      toast.success("تم جلب الفاتورة");
-    } catch (err) {
-      console.error("❌ خطأ في جلب الفاتورة:", err);
-      toast.error("فشل في جلب الفاتورة");
+    if (!invList || invList.length === 0) {
+      toast.error("الفاتورة غير موجودة");
+      return;
     }
-  };
+
+    const inv = invList.find((i) => Number(i.inv_id) === num);
+
+    if (!inv) {
+      toast.error("الفاتورة غير موجودة");
+      return;
+    }
+
+    const invoicePk = inv.id;
+
+    // تعبئة البيانات الأساسية
+    setInvoiceNumber(inv.inv_id);
+    if (inv.inv_date) setInvoiceDate(inv.inv_date);
+    if (inv.cust) setSelectedCustomer(inv.cust);
+    if (inv.inv_type)
+      setPaymentMethod(inv.inv_type === 1 ? "cash" : "credit");
+    if (inv.ref_no) setReferenceNumber(inv.ref_no);
+    if (inv.vat_no) setVatNumber(inv.vat_no);
+    if (inv.handling) setHandlingMethod(inv.handling);
+    if (inv.mobile) setMobileMethod(inv.mobile);
+    if (inv.pay_type) setPayType(inv.pay_type);
+    if (typeof inv.commit !== "undefined") setCommitVal(!!inv.commit);
+    if (typeof inv.print !== "undefined") setPrintVal(!!inv.print);
+    if (inv.emp_id)
+      setEmployee(inv.emp_id === 1 ? "hashem" : inv.emp_id === 2 ? "othman" : "");
+    if (inv.inv_notes) setNote(inv.inv_notes);
+    if (inv.gold_price) setGoldPrice(parseFloat(inv.gold_price));
+
+    setIsExistingInvoice(true);
+    setIsEditing(false);
+
+    // جلب التفاصيل وربطها بالـ id الأساسي
+    const detailsRes = await fetchData<any>(`${API_BASE_URL}invoices_dtl_list`);
+
+    let detailRows: any[] = [];
+    if (Array.isArray(detailsRes)) {
+      detailRows = detailsRes;
+    } else if (Array.isArray(detailsRes.results)) {
+      detailRows = detailsRes.results;
+    } else if (Array.isArray(detailsRes.data)) {
+      detailRows = detailsRes.data;
+    }
+
+    const filteredDetails = detailRows.filter(
+      (row) => Number(row.inv) === invoicePk,
+    );
+
+    if (filteredDetails.length > 0) {
+      setInvoiceItems(
+        filteredDetails.map((row) => ({
+          id: row.id,
+          item_id: row.item ?? row.item_id ?? null,
+          item_code: row.item_code ?? "",
+          item_name: row.item_desc ?? "", 
+          qty: parseFloat(row.qty) || 0,
+          weight: parseFloat(row.weight) || 0,
+          g_weight: parseFloat(row.g_weight) || 0,
+          k: row.k ?? "",
+          price: parseFloat(row.price) || 0,
+          price_w: parseFloat(row.price_w) || 0,
+          note: row.inv_notes ?? "",
+          trans_type: row.trans_type ?? 2,
+          purity: row.purity ?? "",
+          total: parseFloat(row.total) || 0,
+          total_w: parseFloat(row.total_w) || 0,
+          total_a: parseFloat(row.total_a) || 0,
+          inv_note: row.inv_notes ?? "",
+          tax: parseFloat(row.tax) || 0,
+          tax_prc: parseFloat(row.tax_prc) || 0,
+          stones: row.stones ?? "",
+          item_disc_prc: parseFloat(row.item_disc_prc) || 0,
+          item_disc_amt: parseFloat(row.item_disc_amt) || 0,
+          sn: row.sn ?? "",
+          item_desc: "",
+          cr_date: row.cr_date ?? "",
+          cr_user: row.cr_user ?? "",
+          upd_date: row.upd_date ?? "",
+          upd_user: row.upd_user ?? "",
+          com: row.com ?? 0,
+          inv: row.inv ?? 0,
+          item: row.item ?? 0,
+        })),
+      );
+
+    } else {
+      setInvoiceItems([]);
+    }
+
+    toast.success("تم جلب الفاتورة بنجاح ✅");
+  } catch (err) {
+    console.error("❌ خطأ في جلب الفاتورة:", err);
+    toast.error("فشل في جلب الفاتورة");
+  }
+};
 
   return (
     <>
