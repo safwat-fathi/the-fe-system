@@ -738,6 +738,17 @@ export default function InvoicePage() {
         <p>التاريخ: ${formattedDate}</p>
         <p>الوقت: ${formattedTime}</p>
       </div>
+          <div>${compAName}</div>
+          <div>${address}</div>
+        </div>
+        <div class="center"><img src="${signImg}" alt="sign" /></div>
+        <div class="left">
+          <div>${compLName}</div>
+          <div>${addressE}</div>
+        </div>
+      </div>
+      <div class="header-title">فاتورة ضريبية</div>
+      <div class="qr">${qrMarkup}</div>
       <div class="section">
         <p>العميل: ${customer?.cust_name || ""}</p>
         ${customer?.mobile ? `<p>رقم الجوال: ${customer.mobile}</p>` : ""}
