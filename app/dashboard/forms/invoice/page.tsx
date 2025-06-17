@@ -655,6 +655,8 @@ export default function InvoicePage() {
     const addressE = home.ADDRESS_E || "";
     const signImg = home.sign || "";
     const footerText = home.footer || "";
+    const formattedDate = new Date(invoiceDate).toLocaleDateString("ar-EG");
+    const formattedTime = new Date(invoiceDate).toLocaleTimeString("ar-EG");
     const invQR = generateZatcaQR({
       sellerName: "شركة ثمار الصفاء المتميزة التجارية",
       vatNumber: "311452959900003",
@@ -700,15 +702,18 @@ export default function InvoicePage() {
     <head>
       <title>معاينة الفاتورة</title>
       <style>
-        body { font-family: Arial; margin: 40px; }
+        body { font-family: 'Cairo', sans-serif; margin: 40px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #333; padding: 6px; font-size: 12px; text-align: center; }
         .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .inv-header .left { direction: ltr; text-align: left; }
         .inv-header .right { text-align: right; }
-        .inv-header img { max-height: 80px; }
+        .inv-header img { max-height: 100px; margin-inline: 20px; }
+        .comp-name { font-weight: bold; }
+        .comp-address { font-weight: normal; }
         .header-title { text-align: center; font-size: 18px; font-weight: bold; margin-top: 10px; }
-        .section { margin-top: 20px; }
+        .separator { margin-top: 10px; border-top: 1px solid #333; }
+        .section { margin-top: 12px; }
         .totals { margin-top: 20px; font-size: 14px; }
         .qr { text-align: center; margin-top: 10px; }
         .footer { margin-top: 20px; text-align: center; }
@@ -717,6 +722,22 @@ export default function InvoicePage() {
     <body>
       <div class="inv-header">
         <div class="right">
+          <div class="comp-name">${compAName}</div>
+          <div class="comp-address">${address}</div>
+        </div>
+        <div class="center"><img src="${signImg}" alt="sign" /></div>
+        <div class="left">
+          <div class="comp-name">${compLName}</div>
+          <div class="comp-address">${addressE}</div>
+        </div>
+      </div>
+      <div class="separator"></div>
+      <div class="header-title">فاتورة ضريبية</div>
+      <div class="section">
+        <p>رقم الفاتورة: ${invoiceNumber}</p>
+        <p>التاريخ: ${formattedDate}</p>
+        <p>الوقت: ${formattedTime}</p>
+      </div>
           <div>${compAName}</div>
           <div>${address}</div>
         </div>
@@ -730,8 +751,10 @@ export default function InvoicePage() {
       <div class="qr">${qrMarkup}</div>
       <div class="section">
         <p>العميل: ${customer?.cust_name || ""}</p>
-        <p>التاريخ: ${new Date(invoiceDate).toLocaleDateString("ar-EG")}</p>
+        ${customer?.mobile ? `<p>رقم الجوال: ${customer.mobile}</p>` : ""}
+        ${customer?.address ? `<p>العنوان: ${customer.address}</p>` : ""}
       </div>
+      <div class="qr">${qrMarkup}</div>
       <table>
         <thead>
           <tr>
