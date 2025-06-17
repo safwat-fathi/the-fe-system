@@ -34,6 +34,7 @@ interface Props {
   goldPrice: number | null;
   payType: number; // 1=gold, 2=wage, 3=both
   categories: Category[];
+  homePurity: number;
 }
 
 export default function InvoiceItemTable({
@@ -44,6 +45,7 @@ export default function InvoiceItemTable({
   goldPrice,
   payType,
   categories,
+  homePurity,
 }: Props) {
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
@@ -78,6 +80,15 @@ export default function InvoiceItemTable({
     } else {
       // @ts-ignore
       updated[index][field] = value;
+    }
+
+    if (field === "weight" || field === "purity") {
+      const weightVal = parseFloat(String(updated[index].weight)) || 0;
+      const purityVal = parseFloat(String(updated[index].purity)) || 0;
+      if (homePurity) {
+        const g = (weightVal * purityVal) / homePurity;
+        updated[index].g_weight = parseFloat(g.toFixed(3));
+      }
     }
 
     // total_a = weight * price
@@ -189,8 +200,8 @@ export default function InvoiceItemTable({
       }
     } else {
       // when weight is zero simply store the entered total
-      updated[index].total = totalWithTax;
-      updated[index].tax = totalWithTax - baseWithoutDisc;
+      updated[index].total = parseFloat(totalWithTax.toFixed(2));
+      updated[index].tax = parseFloat((totalWithTax - baseWithoutDisc).toFixed(2));
       setInvoiceItems(updated);
       return;
     }
@@ -201,8 +212,8 @@ export default function InvoiceItemTable({
       updated[index].total_a +
       updated[index].total_w -
       (updated[index].item_disc_amt ?? 0);
-    updated[index].tax = base * taxRate;
-    updated[index].total = base + updated[index].tax;
+    updated[index].tax = parseFloat((base * taxRate).toFixed(2));
+    updated[index].total = parseFloat((base + updated[index].tax).toFixed(2));
 
     setInvoiceItems(updated);
   };
@@ -225,9 +236,8 @@ export default function InvoiceItemTable({
             <th className="w-[400px]">الصنف</th>
             <th className="w-[60px]">العدد</th>
             <th className="w-[100px]">الوزن القائم</th>
-            <th className="w-[100px]">وزن معايير</th>
-            <th className="w-[80px]">العيار</th>
             <th className="w-[80px]">المعايرة</th>
+            <th className="w-[100px]">الوزن المعاير</th>
             <th className="w-[80px]">الاحجار</th>
             {(payType === 1 || payType === 3) && (
               <th className="w-[100px]">سعر الجرام</th>
@@ -477,38 +487,24 @@ export default function InvoiceItemTable({
                     }}
                     className="border w-full p-1 text-xs text-center"
                     style={{ minWidth: 0, maxWidth: "100%" }}
+                    value={item.purity}
+                    onChange={(e) =>
+                      handleFieldChange(index, "purity", e.target.value)
+                    }
+                    onKeyDown={(e) => handleEnter(e, index, col)}
+                  />
+                </td>
+                <td>
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
+                    className="border w-full p-1 text-xs text-center"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.g_weight}
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
-                </td>
-                <td>
-                  <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    className="border w-full p-1 text-xs text-center"
-                    style={{ minWidth: 0, maxWidth: "100%" }}
-                    value={item.k}
-                    onChange={(e) =>
-                      handleFieldChange(index, "k", e.target.value)
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
-                </td>
-                <td>
-                  <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    className="border w-full p-1 text-xs text-center"
-                    style={{ minWidth: 0, maxWidth: "100%" }}
-                    value={item.purity}
-                    onChange={(e) =>
-                      handleFieldChange(index, "purity", e.target.value)
                     }
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
