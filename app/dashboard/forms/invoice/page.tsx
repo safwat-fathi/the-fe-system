@@ -635,7 +635,7 @@ export default function InvoicePage() {
     }
   };
 
-  const previewInvoice = () => {
+  const previewInvoice = async () => {
     if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
 
     const previewWindow = window.open(
@@ -647,6 +647,14 @@ export default function InvoicePage() {
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     const customer = customers.find((c) => c.id === selectedCustomer);
+    const homeData = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
+    const home = Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
+    const compAName = home.comp_a_name || "";
+    const compLName = home.comp_l_name || "";
+    const address = home.ADDRESS || "";
+    const addressE = home.ADDRESS_E || "";
+    const signImg = home.sign || "";
+    const footerText = home.footer || "";
     const invQR = generateZatcaQR({
       sellerName: "شركة ثمار الصفاء المتميزة التجارية",
       vatNumber: "311452959900003",
@@ -695,14 +703,30 @@ export default function InvoicePage() {
         body { font-family: Arial; margin: 40px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #333; padding: 6px; font-size: 12px; text-align: center; }
-        .header { text-align: center; font-size: 18px; font-weight: bold; }
+        .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .inv-header .left { direction: ltr; text-align: left; }
+        .inv-header .right { text-align: right; }
+        .inv-header img { max-height: 80px; }
+        .header-title { text-align: center; font-size: 18px; font-weight: bold; margin-top: 10px; }
         .section { margin-top: 20px; }
         .totals { margin-top: 20px; font-size: 14px; }
         .qr { text-align: center; margin-top: 10px; }
+        .footer { margin-top: 20px; text-align: center; }
       </style>
     </head>
     <body>
-      <div class="header">فاتورة ضريبية</div>
+      <div class="inv-header">
+        <div class="right">
+          <div>${compAName}</div>
+          <div>${address}</div>
+        </div>
+        <div class="center"><img src="${signImg}" alt="sign" /></div>
+        <div class="left">
+          <div>${compLName}</div>
+          <div>${addressE}</div>
+        </div>
+      </div>
+      <div class="header-title">فاتورة ضريبية</div>
       <div class="qr">${qrMarkup}</div>
       <div class="section">
         <p>العميل: ${customer?.cust_name || ""}</p>
@@ -730,6 +754,7 @@ export default function InvoicePage() {
         <p>الضريبة (15%): ${taxAmount.toFixed(frac)}</p>
         <p><strong>الإجمالي شامل الضريبة: ${netAmount.toFixed(frac)} ريال</strong></p>
       </div>
+      <div class="footer">${footerText}</div>
     </body>
     </html>
   `;
