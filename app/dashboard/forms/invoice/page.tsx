@@ -635,7 +635,7 @@ export default function InvoicePage() {
     }
   };
 
-  const previewInvoice = () => {
+  const previewInvoice = async () => {
     if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
 
     const previewWindow = window.open(
@@ -647,6 +647,16 @@ export default function InvoicePage() {
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     const customer = customers.find((c) => c.id === selectedCustomer);
+    const homeData = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
+    const home = Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
+    const compAName = home.comp_a_name || "";
+    const compLName = home.comp_l_name || "";
+    const address = home.ADDRESS || "";
+    const addressE = home.ADDRESS_E || "";
+    const signImg = home.sign || "";
+    const footerText = home.footer || "";
+    const formattedDate = new Date(invoiceDate).toLocaleDateString("ar-EG");
+    const formattedTime = new Date(invoiceDate).toLocaleTimeString("ar-EG");
     const invQR = generateZatcaQR({
       sellerName: "شركة ثمار الصفاء المتميزة التجارية",
       vatNumber: "311452959900003",
@@ -691,23 +701,51 @@ export default function InvoicePage() {
     <html dir="rtl">
     <head>
       <title>معاينة الفاتورة</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet" />
       <style>
-        body { font-family: Arial; margin: 40px; }
+        body { font-family: 'Cairo', sans-serif; margin: 40px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #333; padding: 6px; font-size: 12px; text-align: center; }
-        .header { text-align: center; font-size: 18px; font-weight: bold; }
-        .section { margin-top: 20px; }
+        .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .inv-header .left { direction: ltr; text-align: left; }
+        .inv-header .right { text-align: right; }
+        .inv-header .center { flex: 0 0 150px; text-align: center; }
+        .inv-header img { max-height: 100px; }
+        .comp-name { font-weight: bold; }
+        .comp-address { font-weight: normal; }
+        .header-title { text-align: center; font-size: 18px; font-weight: bold; margin-top: 10px; }
+        .separator { margin-top: 10px; border-top: 1px solid #333; }
+        .section { margin-top: 12px; }
         .totals { margin-top: 20px; font-size: 14px; }
         .qr { text-align: center; margin-top: 10px; }
+        .footer { margin-top: 20px; text-align: center; }
       </style>
     </head>
     <body>
-      <div class="header">فاتورة ضريبية</div>
-      <div class="qr">${qrMarkup}</div>
+      <div class="inv-header">
+        <div class="right">
+          <div class="comp-name">${compAName}</div>
+          <div class="comp-address">${address}</div>
+        </div>
+        <div class="center"><img src="${signImg}" alt="sign" /></div>
+        <div class="left">
+          <div class="comp-name">${compLName}</div>
+          <div class="comp-address">${addressE}</div>
+        </div>
+      </div>
+      <div class="separator"></div>
+      <div class="header-title">فاتورة ضريبية</div>
+      <div class="section">
+        <p>رقم الفاتورة: ${invoiceNumber}</p>
+        <p>التاريخ: ${formattedDate}</p>
+        <p>الوقت: ${formattedTime}</p>
+      </div>
       <div class="section">
         <p>العميل: ${customer?.cust_name || ""}</p>
-        <p>التاريخ: ${new Date(invoiceDate).toLocaleDateString("ar-EG")}</p>
+        ${customer?.mobile ? `<p>رقم الجوال: ${customer.mobile}</p>` : ""}
+        ${customer?.address ? `<p>العنوان: ${customer.address}</p>` : ""}
       </div>
+      <div class="qr">${qrMarkup}</div>
       <table>
         <thead>
           <tr>
@@ -730,6 +768,7 @@ export default function InvoicePage() {
         <p>الضريبة (15%): ${taxAmount.toFixed(frac)}</p>
         <p><strong>الإجمالي شامل الضريبة: ${netAmount.toFixed(frac)} ريال</strong></p>
       </div>
+      <div class="footer">${footerText}</div>
     </body>
     </html>
   `;
