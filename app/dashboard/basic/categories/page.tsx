@@ -273,7 +273,7 @@ export default function CategoriesTable() {
   );
 
   return (
-    <div className="p-4 font-cairo">
+    <div className="p-4 font-cairo text-sm">
       <h1 className="text-2xl font-bold mb-6">الفئات</h1>
       <div className="flex justify-between mb-4">
         <Button onPress={openAddModal}>
@@ -281,14 +281,14 @@ export default function CategoriesTable() {
           <FaPlus /> إضافة فئة{" "}
         </Button>
         <Input
-          className="w-60"
+          className="w-60 text-sm"
           placeholder="بحث بالاسم..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
 
-      <Table aria-label="جدول الفئات">
+      <Table aria-label="جدول الفئات" className="text-sm">
         <TableHeader>
           {columns.map((col) => (
             <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -344,7 +344,7 @@ export default function CategoriesTable() {
             {modalMode === "edit" && "تعديل فئة"}
             {modalMode === "view" && "عرض الفئة"}
           </ModalHeader>
-          <ModalBody className="grid grid-cols-2 gap-4">
+          <ModalBody className="grid grid-cols-2 gap-4 text-sm">
             <Input
               isDisabled={modalMode === "view"}
               label="اسم الفئة"
