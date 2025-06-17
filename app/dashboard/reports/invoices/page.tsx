@@ -14,6 +14,7 @@ import {
   Input,
   Pagination,
 } from "@heroui/react";
+import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
 import { API_ENDPOINTS, fetchData } from "@/utilities/api";
@@ -61,7 +62,7 @@ export default function InvoicesPage() {
       await fetch(DELETE_INVOICE(id), { method: "DELETE" });
       loadInvoices();
     } catch {
-      alert("فشل حذف الفاتورة");
+      toast.error("فشل حذف الفاتورة");
     }
   };
 

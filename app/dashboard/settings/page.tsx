@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Input, Button, Checkbox } from "@heroui/react";
+import toast from "react-hot-toast";
+
 import { API_ENDPOINTS, apiFetch } from "@/utilities/api";
 
 interface HomeSettings {
@@ -49,7 +51,11 @@ const ACCOUNT_FIELDS = [
 ];
 
 const ZATCA_FIELDS = [
-  { key: "Enable_EInvoice", label: "تفعيل الفاتورة الإلكترونية", type: "checkbox" },
+  {
+    key: "Enable_EInvoice",
+    label: "تفعيل الفاتورة الإلكترونية",
+    type: "checkbox",
+  },
   { key: "LT", label: "وضع الفاتورة الإلكترونية" },
   { key: "LTD", label: "تاريخ تفعيل الربط", type: "date" },
   { key: "Xml_Path", label: "مسار ملفات XML" },
@@ -70,11 +76,13 @@ export default function SettingsPage() {
       try {
         const res = await apiFetch(API_ENDPOINTS.HOME_LIST);
         const data = await res.json();
+
         if (Array.isArray(data) && data.length > 0) setSettings(data[0]);
       } catch (e) {
         console.error("فشل تحميل الإعدادات", e);
       }
     };
+
     load();
   }, []);
 
@@ -90,14 +98,16 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
-      alert("تم الحفظ بنجاح");
+      toast.success("تم الحفظ بنجاح");
     } catch (e) {
-      alert("فشل الحفظ");
+      toast.error("فشل الحفظ");
       console.error(e);
     }
   };
 
-  const renderFields = (fields: { key: string; label: string; type?: string }[]) => (
+  const renderFields = (
+    fields: { key: string; label: string; type?: string }[],
+  ) => (
     <div className="grid grid-cols-2 gap-4">
       {fields.map((f) =>
         f.type === "checkbox" ? (
@@ -116,7 +126,7 @@ export default function SettingsPage() {
             value={settings[f.key] ?? ""}
             onChange={(e) => handleChange(f.key, e.target.value)}
           />
-        )
+        ),
       )}
     </div>
   );

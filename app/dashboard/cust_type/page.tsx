@@ -19,6 +19,8 @@ import {
   ModalFooter,
 } from "@heroui/react";
 import { FaPlus } from "react-icons/fa";
+import toast from "react-hot-toast";
+
 import ActionButtons from "@/components/ActionButtons";
 import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
 
@@ -58,6 +60,7 @@ export default function CustomerTypesTable() {
 
   const loadTypes = useCallback(async () => {
     const data = await fetchData(API_URL);
+
     if (Array.isArray(data)) setTypes(data);
   }, []);
 
@@ -67,7 +70,10 @@ export default function CustomerTypesTable() {
 
   const handleSave = async () => {
     try {
-      const url = modalMode === "edit" && currentType.id ? UPDATE_URL(currentType.id) : CREATE_URL;
+      const url =
+        modalMode === "edit" && currentType.id
+          ? UPDATE_URL(currentType.id)
+          : CREATE_URL;
       const method = modalMode === "edit" ? "PUT" : "POST";
 
       const response = await apiFetch(url, {
@@ -78,15 +84,24 @@ export default function CustomerTypesTable() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert("❌ فشل في العملية: " + (errorData?.detail || "يرجى التحقق من البيانات"));
+
+        toast.error(
+          "❌ فشل في العملية: " +
+            (errorData?.detail || "يرجى التحقق من البيانات"),
+        );
+
         return;
       }
 
-      alert(modalMode === "edit" ? "✅ تم تعديل النوع بنجاح" : "✅ تم إضافة النوع بنجاح");
+      toast.success(
+        modalMode === "edit"
+          ? "✅ تم تعديل النوع بنجاح"
+          : "✅ تم إضافة النوع بنجاح",
+      );
       setIsModalOpen(false);
       loadTypes();
     } catch {
-      alert("❌ حدث خطأ أثناء الحفظ");
+      toast.error("❌ حدث خطأ أثناء الحفظ");
     }
   };
 
@@ -97,30 +112,41 @@ export default function CustomerTypesTable() {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
+
       if (!response.ok) throw new Error();
-      alert("✅ تم حذف النوع بنجاح");
+      toast.success("✅ تم حذف النوع بنجاح");
       loadTypes();
     } catch {
-      alert("❌ حدث خطأ أثناء الحذف");
+      toast.error("❌ حدث خطأ أثناء الحذف");
     }
   };
 
   const renderActions = (type: CustomerType) => (
     <ActionButtons
-      onView={() => openModal("view", type)}
-      onEdit={() => openModal("edit", type)}
       onDelete={() => handleDelete(type.id)}
+      onEdit={() => openModal("edit", type)}
+      onView={() => openModal("view", type)}
     />
   );
 
-  const filtered = useMemo(() => types.filter(t => t.type_name?.toLowerCase().includes(search.toLowerCase())), [types, search]);
+  const filtered = useMemo(
+    () =>
+      types.filter((t) =>
+        t.type_name?.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [types, search],
+  );
 
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
+
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
-  const openModal = (mode: "add" | "edit" | "view", type: Partial<CustomerType> = {}) => {
+  const openModal = (
+    mode: "add" | "edit" | "view",
+    type: Partial<CustomerType> = {},
+  ) => {
     setModalMode(mode);
     setCurrentType(type);
     setIsModalOpen(true);
@@ -130,14 +156,26 @@ export default function CustomerTypesTable() {
 
   return (
     <div className="p-4 font-cairo">
-        <h1 className="text-2xl font-bold mb-6">أنواع العملاء</h1>
+      <h1 className="text-2xl font-bold mb-6">أنواع العملاء</h1>
       <div className="flex justify-between mb-4">
-        <Button onPress={() => openModal("add")}> <FaPlus /> إضافة نوع </Button>
-        <Input placeholder="بحث بالاسم..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-60" />
+        <Button onPress={() => openModal("add")}>
+          {" "}
+          <FaPlus /> إضافة نوع{" "}
+        </Button>
+        <Input
+          className="w-60"
+          placeholder="بحث بالاسم..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       <Table aria-label="جدول أنواع العملاء">
-        <TableHeader>{columns.map(col => <TableColumn key={col.uid}>{col.name}</TableColumn>)}</TableHeader>
+        <TableHeader>
+          {columns.map((col) => (
+            <TableColumn key={col.uid}>{col.name}</TableColumn>
+          ))}
+        </TableHeader>
         <TableBody>
           {paginated.map((type) => (
             <TableRow key={type.id}>
@@ -146,7 +184,9 @@ export default function CustomerTypesTable() {
               <TableCell>{type.type_name_e}</TableCell>
               <TableCell>{type.type_desc}</TableCell>
               <TableCell>{type.cr_date}</TableCell>
-              <TableCell><Checkbox isSelected={type.type_status} isReadOnly /></TableCell>
+              <TableCell>
+                <Checkbox isReadOnly isSelected={type.type_status} />
+              </TableCell>
               <TableCell>{renderActions(type)}</TableCell>
             </TableRow>
           ))}
@@ -155,10 +195,20 @@ export default function CustomerTypesTable() {
 
       <div className="flex justify-between items-center py-4">
         <span>عدد الأنواع: {filtered.length}</span>
-        <Pagination color="primary" page={page} total={Math.ceil(filtered.length / rowsPerPage)} onChange={setPage} />
+        <Pagination
+          color="primary"
+          page={page}
+          total={Math.ceil(filtered.length / rowsPerPage)}
+          onChange={setPage}
+        />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} scrollBehavior="inside" size="5xl">
+      <Modal
+        isOpen={isModalOpen}
+        scrollBehavior="inside"
+        size="5xl"
+        onClose={() => setIsModalOpen(false)}
+      >
         <ModalContent className="font-cairo">
           <ModalHeader>
             {modalMode === "add" && "إضافة نوع"}
@@ -167,19 +217,56 @@ export default function CustomerTypesTable() {
           </ModalHeader>
 
           <ModalBody className="grid grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto pr-2">
-            <Input isDisabled={isViewMode} label="نوع العميل" value={currentType.type_name || ""} onChange={(e) => setCurrentType({ ...currentType, type_name: e.target.value })} />
-            <Input isDisabled={isViewMode} label="نوع العميل بالإنجليزي" value={currentType.type_name_e || ""} onChange={(e) => setCurrentType({ ...currentType, type_name_e: e.target.value })} />
-            <Input isDisabled={isViewMode} label="الوصف" value={currentType.type_desc || ""} onChange={(e) => setCurrentType({ ...currentType, type_desc: e.target.value })} />
-            <Input isDisabled={true} label="تاريخ الإنشاء" value={currentType.cr_date || ""} />
+            <Input
+              isDisabled={isViewMode}
+              label="نوع العميل"
+              value={currentType.type_name || ""}
+              onChange={(e) =>
+                setCurrentType({ ...currentType, type_name: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="نوع العميل بالإنجليزي"
+              value={currentType.type_name_e || ""}
+              onChange={(e) =>
+                setCurrentType({ ...currentType, type_name_e: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="الوصف"
+              value={currentType.type_desc || ""}
+              onChange={(e) =>
+                setCurrentType({ ...currentType, type_desc: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={true}
+              label="تاريخ الإنشاء"
+              value={currentType.cr_date || ""}
+            />
             <div className="col-span-2">
-              <Checkbox isDisabled={isViewMode} isSelected={currentType.type_status || false} onValueChange={(val) => setCurrentType({ ...currentType, type_status: val })}>الحالة مفعلة</Checkbox>
+              <Checkbox
+                isDisabled={isViewMode}
+                isSelected={currentType.type_status || false}
+                onValueChange={(val) =>
+                  setCurrentType({ ...currentType, type_status: val })
+                }
+              >
+                الحالة مفعلة
+              </Checkbox>
             </div>
           </ModalBody>
 
           {modalMode !== "view" && (
             <ModalFooter className="flex justify-end gap-2">
-              <Button color="danger" onPress={() => setIsModalOpen(false)}>إلغاء</Button>
-              <Button color="success" onPress={handleSave}>{modalMode === "edit" ? "تحديث" : "حفظ"}</Button>
+              <Button color="danger" onPress={() => setIsModalOpen(false)}>
+                إلغاء
+              </Button>
+              <Button color="success" onPress={handleSave}>
+                {modalMode === "edit" ? "تحديث" : "حفظ"}
+              </Button>
             </ModalFooter>
           )}
         </ModalContent>

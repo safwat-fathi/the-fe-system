@@ -19,6 +19,8 @@ import {
   ModalFooter,
 } from "@heroui/react";
 import { FaPlus } from "react-icons/fa";
+import toast from "react-hot-toast";
+
 import ActionButtons from "@/components/ActionButtons";
 import { API_BASE_URL, apiFetch } from "@/utilities/api";
 
@@ -60,6 +62,7 @@ export default function UnitsTable() {
     try {
       const res = await apiFetch(API_URL);
       const data = await res.json();
+
       if (Array.isArray(data)) setUnits(data);
       else if (Array.isArray(data.results)) setUnits(data.results);
       else setUnits([]);
@@ -74,7 +77,10 @@ export default function UnitsTable() {
 
   const handleSave = async () => {
     try {
-      const url = modalMode === "edit" && currentUnit.id ? UPDATE_URL(currentUnit.id) : CREATE_URL;
+      const url =
+        modalMode === "edit" && currentUnit.id
+          ? UPDATE_URL(currentUnit.id)
+          : CREATE_URL;
       const method = modalMode === "edit" ? "PUT" : "POST";
 
       const response = await apiFetch(url, {
@@ -85,16 +91,25 @@ export default function UnitsTable() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert("❌ فشل في العملية: " + (errorData?.detail || JSON.stringify(errorData)));
+
+        toast.error(
+          "❌ فشل في العملية: " +
+            (errorData?.detail || JSON.stringify(errorData)),
+        );
+
         return;
       }
 
-      alert(modalMode === "edit" ? "✅ تم تعديل الوحدة بنجاح" : "✅ تم إضافة الوحدة بنجاح");
+      toast.success(
+        modalMode === "edit"
+          ? "✅ تم تعديل الوحدة بنجاح"
+          : "✅ تم إضافة الوحدة بنجاح",
+      );
       setIsModalOpen(false);
       loadUnits();
     } catch (error) {
       console.error("❌ خطأ أثناء الحفظ:", error);
-      alert("❌ حدث خطأ أثناء حفظ الوحدة");
+      toast.error("❌ حدث خطأ أثناء حفظ الوحدة");
     }
   };
 
@@ -105,24 +120,31 @@ export default function UnitsTable() {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
+
       if (!response.ok) throw new Error();
-      alert("✅ تم حذف الوحدة بنجاح");
+      toast.success("✅ تم حذف الوحدة بنجاح");
       loadUnits();
     } catch {
-      alert("❌ حدث خطأ أثناء الحذف");
+      toast.error("❌ حدث خطأ أثناء الحذف");
     }
   };
 
   const filtered = useMemo(() => {
-    return units.filter((u) => u.unit_name?.toLowerCase().includes(search.toLowerCase()));
+    return units.filter((u) =>
+      u.unit_name?.toLowerCase().includes(search.toLowerCase()),
+    );
   }, [units, search]);
 
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
+
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
-  const openModal = (mode: "add" | "edit" | "view", unit: Partial<Unit> = {}) => {
+  const openModal = (
+    mode: "add" | "edit" | "view",
+    unit: Partial<Unit> = {},
+  ) => {
     setModalMode(mode);
     setCurrentUnit(unit);
     setIsModalOpen(true);
@@ -132,14 +154,26 @@ export default function UnitsTable() {
 
   return (
     <div className="p-4 font-cairo">
-        <h1 className="text-2xl font-bold mb-6">الوحدات</h1>
+      <h1 className="text-2xl font-bold mb-6">الوحدات</h1>
       <div className="flex justify-between mb-4">
-        <Button onPress={() => openModal("add")}> <FaPlus /> إضافة وحدة </Button>
-        <Input placeholder="بحث بالاسم..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-60" />
+        <Button onPress={() => openModal("add")}>
+          {" "}
+          <FaPlus /> إضافة وحدة{" "}
+        </Button>
+        <Input
+          className="w-60"
+          placeholder="بحث بالاسم..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       <Table aria-label="جدول الوحدات">
-        <TableHeader>{columns.map(col => <TableColumn key={col.uid}>{col.name}</TableColumn>)}</TableHeader>
+        <TableHeader>
+          {columns.map((col) => (
+            <TableColumn key={col.uid}>{col.name}</TableColumn>
+          ))}
+        </TableHeader>
         <TableBody>
           {paginated.map((unit) => (
             <TableRow key={unit.id}>
@@ -147,13 +181,17 @@ export default function UnitsTable() {
               <TableCell>{unit.unit_name}</TableCell>
               <TableCell>{unit.unit_name_e}</TableCell>
               <TableCell>{unit.unit_type}</TableCell>
-              <TableCell><Checkbox isSelected={!!unit.unit_status} isReadOnly /></TableCell>
-              <TableCell><Checkbox isSelected={!!unit.unit_default} isReadOnly /></TableCell>
+              <TableCell>
+                <Checkbox isReadOnly isSelected={!!unit.unit_status} />
+              </TableCell>
+              <TableCell>
+                <Checkbox isReadOnly isSelected={!!unit.unit_default} />
+              </TableCell>
               <TableCell>
                 <ActionButtons
-                  onView={() => openModal("view", unit)}
-                  onEdit={() => openModal("edit", unit)}
                   onDelete={() => handleDelete(unit.id)}
+                  onEdit={() => openModal("edit", unit)}
+                  onView={() => openModal("view", unit)}
                 />
               </TableCell>
             </TableRow>
@@ -162,11 +200,22 @@ export default function UnitsTable() {
       </Table>
 
       <div className="py-4 flex justify-between items-center">
-        <span className="text-sm text-gray-500">عدد الوحدات: {filtered.length}</span>
-        <Pagination color="primary" page={page} total={Math.ceil(filtered.length / rowsPerPage)} onChange={setPage} />
+        <span className="text-sm text-gray-500">
+          عدد الوحدات: {filtered.length}
+        </span>
+        <Pagination
+          color="primary"
+          page={page}
+          total={Math.ceil(filtered.length / rowsPerPage)}
+          onChange={setPage}
+        />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} scrollBehavior="inside">
+      <Modal
+        isOpen={isModalOpen}
+        scrollBehavior="inside"
+        onClose={() => setIsModalOpen(false)}
+      >
         <ModalContent className="font-cairo">
           <ModalHeader>
             {modalMode === "add" && "إضافة وحدة"}
@@ -175,19 +224,64 @@ export default function UnitsTable() {
           </ModalHeader>
 
           <ModalBody className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
-            <Input isDisabled={isViewMode} label="اسم الوحدة" value={currentUnit.unit_name || ""} onChange={(e) => setCurrentUnit({ ...currentUnit, unit_name: e.target.value })} />
-            <Input isDisabled={isViewMode} label="اسم الوحدة بالإنجليزي" value={currentUnit.unit_name_e || ""} onChange={(e) => setCurrentUnit({ ...currentUnit, unit_name_e: e.target.value })} />
-            <Input isDisabled={isViewMode} type="number" label="نوع الوحدة" value={currentUnit.unit_type?.toString() || ""} onChange={(e) => setCurrentUnit({ ...currentUnit, unit_type: parseInt(e.target.value) })} />
+            <Input
+              isDisabled={isViewMode}
+              label="اسم الوحدة"
+              value={currentUnit.unit_name || ""}
+              onChange={(e) =>
+                setCurrentUnit({ ...currentUnit, unit_name: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="اسم الوحدة بالإنجليزي"
+              value={currentUnit.unit_name_e || ""}
+              onChange={(e) =>
+                setCurrentUnit({ ...currentUnit, unit_name_e: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="نوع الوحدة"
+              type="number"
+              value={currentUnit.unit_type?.toString() || ""}
+              onChange={(e) =>
+                setCurrentUnit({
+                  ...currentUnit,
+                  unit_type: parseInt(e.target.value),
+                })
+              }
+            />
             <div className="col-span-2 flex gap-6 items-center">
-              <Checkbox isDisabled={isViewMode} isSelected={currentUnit.unit_status || false} onValueChange={(val) => setCurrentUnit({ ...currentUnit, unit_status: val })}>مفعلة</Checkbox>
-              <Checkbox isDisabled={isViewMode} isSelected={currentUnit.unit_default || false} onValueChange={(val) => setCurrentUnit({ ...currentUnit, unit_default: val })}>افتراضية</Checkbox>
+              <Checkbox
+                isDisabled={isViewMode}
+                isSelected={currentUnit.unit_status || false}
+                onValueChange={(val) =>
+                  setCurrentUnit({ ...currentUnit, unit_status: val })
+                }
+              >
+                مفعلة
+              </Checkbox>
+              <Checkbox
+                isDisabled={isViewMode}
+                isSelected={currentUnit.unit_default || false}
+                onValueChange={(val) =>
+                  setCurrentUnit({ ...currentUnit, unit_default: val })
+                }
+              >
+                افتراضية
+              </Checkbox>
             </div>
           </ModalBody>
 
           {modalMode !== "view" && (
             <ModalFooter className="flex justify-end gap-2">
-              <Button color="danger" onPress={() => setIsModalOpen(false)}>إلغاء</Button>
-              <Button color="success" onPress={handleSave}>{modalMode === "edit" ? "تحديث" : "حفظ"}</Button>
+              <Button color="danger" onPress={() => setIsModalOpen(false)}>
+                إلغاء
+              </Button>
+              <Button color="success" onPress={handleSave}>
+                {modalMode === "edit" ? "تحديث" : "حفظ"}
+              </Button>
             </ModalFooter>
           )}
         </ModalContent>

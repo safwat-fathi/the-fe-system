@@ -19,6 +19,8 @@ import {
   ModalFooter,
 } from "@heroui/react";
 import { FaPlus } from "react-icons/fa";
+import toast from "react-hot-toast";
+
 import ActionButtons from "@/components/ActionButtons";
 import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
 
@@ -66,6 +68,7 @@ export default function CurrenciesTable() {
 
   const loadCurrencies = useCallback(async () => {
     const data = await fetchData(API_URL);
+
     if (Array.isArray(data)) setCurrencies(data);
   }, []);
 
@@ -75,7 +78,10 @@ export default function CurrenciesTable() {
 
   const handleSave = async () => {
     try {
-      const url = modalMode === "edit" && currentCurrency.id ? UPDATE_URL(currentCurrency.id) : CREATE_URL;
+      const url =
+        modalMode === "edit" && currentCurrency.id
+          ? UPDATE_URL(currentCurrency.id)
+          : CREATE_URL;
       const method = modalMode === "edit" ? "PUT" : "POST";
 
       const response = await apiFetch(url, {
@@ -86,17 +92,26 @@ export default function CurrenciesTable() {
 
       if (!response.ok) {
         const errorData = await response.json();
+
         console.error("❌ خطأ في الإرسال:", errorData);
-        alert("❌ فشل في العملية: " + (errorData?.detail || "يرجى التحقق من البيانات المدخلة"));
+        toast.error(
+          "❌ فشل في العملية: " +
+            (errorData?.detail || "يرجى التحقق من البيانات المدخلة"),
+        );
+
         return;
       }
 
-      alert(modalMode === "edit" ? "✅ تم تعديل العملة بنجاح" : "✅ تم إضافة العملة بنجاح");
+      toast.success(
+        modalMode === "edit"
+          ? "✅ تم تعديل العملة بنجاح"
+          : "✅ تم إضافة العملة بنجاح",
+      );
       setIsModalOpen(false);
       loadCurrencies();
     } catch (error) {
       console.error("❌ استثناء أثناء الحفظ:", error);
-      alert("❌ حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا");
+      toast.error("❌ حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا");
     }
   };
 
@@ -107,30 +122,41 @@ export default function CurrenciesTable() {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
+
       if (!response.ok) throw new Error();
-      alert("✅ تم حذف العملة بنجاح");
+      toast.success("✅ تم حذف العملة بنجاح");
       loadCurrencies();
     } catch {
-      alert("❌ حدث خطأ أثناء الحذف");
+      toast.error("❌ حدث خطأ أثناء الحذف");
     }
   };
 
   const renderActions = (cur: Currency) => (
     <ActionButtons
-      onView={() => openModal("view", cur)}
-      onEdit={() => openModal("edit", cur)}
       onDelete={() => handleDelete(cur.id)}
+      onEdit={() => openModal("edit", cur)}
+      onView={() => openModal("view", cur)}
     />
   );
 
-  const filtered = useMemo(() => currencies.filter(c => c.cur_name?.toLowerCase().includes(search.toLowerCase())), [currencies, search]);
+  const filtered = useMemo(
+    () =>
+      currencies.filter((c) =>
+        c.cur_name?.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [currencies, search],
+  );
 
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
+
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
-  const openModal = (mode: "add" | "edit" | "view", currency: Partial<Currency> = {}) => {
+  const openModal = (
+    mode: "add" | "edit" | "view",
+    currency: Partial<Currency> = {},
+  ) => {
     setModalMode(mode);
     setCurrentCurrency(currency);
     setIsModalOpen(true);
@@ -140,14 +166,26 @@ export default function CurrenciesTable() {
 
   return (
     <div className="p-4 font-cairo">
-        <h1 className="text-2xl font-bold mb-6">العملات</h1>
+      <h1 className="text-2xl font-bold mb-6">العملات</h1>
       <div className="flex justify-between mb-4">
-        <Button onPress={() => openModal("add")}> <FaPlus /> إضافة عملة </Button>
-        <Input placeholder="بحث بالاسم..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-60" />
+        <Button onPress={() => openModal("add")}>
+          {" "}
+          <FaPlus /> إضافة عملة{" "}
+        </Button>
+        <Input
+          className="w-60"
+          placeholder="بحث بالاسم..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       <Table aria-label="جدول العملات">
-        <TableHeader>{columns.map(col => <TableColumn key={col.uid}>{col.name}</TableColumn>)}</TableHeader>
+        <TableHeader>
+          {columns.map((col) => (
+            <TableColumn key={col.uid}>{col.name}</TableColumn>
+          ))}
+        </TableHeader>
         <TableBody>
           {paginated.map((cur) => (
             <TableRow key={cur.id}>
@@ -160,7 +198,9 @@ export default function CurrenciesTable() {
               <TableCell>{cur.cur_price}</TableCell>
               <TableCell>{cur.cur_tag}</TableCell>
               <TableCell>{cur.cr_date}</TableCell>
-              <TableCell><Checkbox isSelected={cur.cur_status} isReadOnly /></TableCell>
+              <TableCell>
+                <Checkbox isReadOnly isSelected={cur.cur_status} />
+              </TableCell>
               <TableCell>{renderActions(cur)}</TableCell>
             </TableRow>
           ))}
@@ -169,10 +209,20 @@ export default function CurrenciesTable() {
 
       <div className="flex justify-between items-center py-4">
         <span>عدد العملات: {filtered.length}</span>
-        <Pagination color="primary" page={page} total={Math.ceil(filtered.length / rowsPerPage)} onChange={setPage} />
+        <Pagination
+          color="primary"
+          page={page}
+          total={Math.ceil(filtered.length / rowsPerPage)}
+          onChange={setPage}
+        />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} scrollBehavior="inside" size="5xl">
+      <Modal
+        isOpen={isModalOpen}
+        scrollBehavior="inside"
+        size="5xl"
+        onClose={() => setIsModalOpen(false)}
+      >
         <ModalContent className="font-cairo">
           <ModalHeader>
             {modalMode === "add" && "إضافة عملة"}
@@ -181,23 +231,109 @@ export default function CurrenciesTable() {
           </ModalHeader>
 
           <ModalBody className="grid grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto pr-2">
-            <Input isDisabled={isViewMode} label="اسم العملة" value={currentCurrency.cur_name || ""} onChange={(e) => setCurrentCurrency({ ...currentCurrency, cur_name: e.target.value })} />
-            <Input isDisabled={isViewMode} label="اسم العملة بالإنجليزي" value={currentCurrency.cur_name_e || ""} onChange={(e) => setCurrentCurrency({ ...currentCurrency, cur_name_e: e.target.value })} />
-            <Input isDisabled={isViewMode} label="جزء العملة" value={currentCurrency.cur_part || ""} onChange={(e) => setCurrentCurrency({ ...currentCurrency, cur_part: e.target.value })} />
-            <Input isDisabled={isViewMode} label="جزء العملة بالإنجليزي" value={currentCurrency.cur_part_e || ""} onChange={(e) => setCurrentCurrency({ ...currentCurrency, cur_part_e: e.target.value })} />
-            <Input isDisabled={isViewMode} label="رمز العملة" value={currentCurrency.cur_sign || ""} onChange={(e) => setCurrentCurrency({ ...currentCurrency, cur_sign: e.target.value })} />
-            <Input isDisabled={isViewMode} label="السعر" value={currentCurrency.cur_price || ""} onChange={(e) => setCurrentCurrency({ ...currentCurrency, cur_price: e.target.value })} />
-            <Input isDisabled={isViewMode} label="الوسم" value={currentCurrency.cur_tag || ""} onChange={(e) => setCurrentCurrency({ ...currentCurrency, cur_tag: e.target.value })} />
-            <Input isDisabled={true} label="تاريخ الإنشاء" value={currentCurrency.cr_date || ""} />
+            <Input
+              isDisabled={isViewMode}
+              label="اسم العملة"
+              value={currentCurrency.cur_name || ""}
+              onChange={(e) =>
+                setCurrentCurrency({
+                  ...currentCurrency,
+                  cur_name: e.target.value,
+                })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="اسم العملة بالإنجليزي"
+              value={currentCurrency.cur_name_e || ""}
+              onChange={(e) =>
+                setCurrentCurrency({
+                  ...currentCurrency,
+                  cur_name_e: e.target.value,
+                })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="جزء العملة"
+              value={currentCurrency.cur_part || ""}
+              onChange={(e) =>
+                setCurrentCurrency({
+                  ...currentCurrency,
+                  cur_part: e.target.value,
+                })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="جزء العملة بالإنجليزي"
+              value={currentCurrency.cur_part_e || ""}
+              onChange={(e) =>
+                setCurrentCurrency({
+                  ...currentCurrency,
+                  cur_part_e: e.target.value,
+                })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="رمز العملة"
+              value={currentCurrency.cur_sign || ""}
+              onChange={(e) =>
+                setCurrentCurrency({
+                  ...currentCurrency,
+                  cur_sign: e.target.value,
+                })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="السعر"
+              value={currentCurrency.cur_price || ""}
+              onChange={(e) =>
+                setCurrentCurrency({
+                  ...currentCurrency,
+                  cur_price: e.target.value,
+                })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="الوسم"
+              value={currentCurrency.cur_tag || ""}
+              onChange={(e) =>
+                setCurrentCurrency({
+                  ...currentCurrency,
+                  cur_tag: e.target.value,
+                })
+              }
+            />
+            <Input
+              isDisabled={true}
+              label="تاريخ الإنشاء"
+              value={currentCurrency.cr_date || ""}
+            />
             <div className="col-span-2">
-              <Checkbox isDisabled={isViewMode} isSelected={currentCurrency.cur_status || false} onValueChange={(val) => setCurrentCurrency({ ...currentCurrency, cur_status: val })}>الحالة مفعلة</Checkbox>
+              <Checkbox
+                isDisabled={isViewMode}
+                isSelected={currentCurrency.cur_status || false}
+                onValueChange={(val) =>
+                  setCurrentCurrency({ ...currentCurrency, cur_status: val })
+                }
+              >
+                الحالة مفعلة
+              </Checkbox>
             </div>
           </ModalBody>
 
           {modalMode !== "view" && (
             <ModalFooter className="flex justify-end gap-2">
-              <Button color="danger" onPress={() => setIsModalOpen(false)}>إلغاء</Button>
-              <Button color="success" onPress={handleSave}>{modalMode === "edit" ? "تحديث" : "حفظ"}</Button>
+              <Button color="danger" onPress={() => setIsModalOpen(false)}>
+                إلغاء
+              </Button>
+              <Button color="success" onPress={handleSave}>
+                {modalMode === "edit" ? "تحديث" : "حفظ"}
+              </Button>
             </ModalFooter>
           )}
         </ModalContent>
