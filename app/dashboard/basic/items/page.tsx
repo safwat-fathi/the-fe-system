@@ -382,7 +382,7 @@ export default function CategoriesItemsPage() {
   };
 
   return (
-    <div className="p-4 space-y-6 font-cairo">
+    <div className="p-4 space-y-6 font-cairo text-sm">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">قائمة الأصناف</h1>
         <Button
@@ -424,7 +424,7 @@ export default function CategoriesItemsPage() {
       {/* جدول الفئات */}
       <div>
         <h2 className="text-xl font-semibold mb-2">الفئات</h2>
-        <table className="w-full border">
+        <table className="w-full border text-sm">
           <thead>
             <tr className="bg-gray-100">
               <th className="p-2 border">الفئة</th>
@@ -502,7 +502,7 @@ export default function CategoriesItemsPage() {
             ))}
           </select>
           <Input
-            className="w-60"
+            className="w-60 text-sm"
             placeholder="بحث..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -615,7 +615,7 @@ export default function CategoriesItemsPage() {
             {modalMode === "view" && "عرض بيانات الصنف"}
           </ModalHeader>
 
-          <ModalBody className="grid grid-cols-4 gap-4 max-h-[80vh] overflow-y-auto pr-2">
+          <ModalBody className="grid grid-cols-4 gap-4 max-h-[80vh] overflow-y-auto pr-2 text-sm">
             <div className="col-span-4 text-lg font-bold border-b pb-2">
               البيانات الأساسية
             </div>
