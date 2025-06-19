@@ -106,8 +106,11 @@ export default function InvoiceItemTable({
     // total_w = weight * wagePrice
     updated[index].total_w = wCalc * updated[index].price_w;
     const baseTotal =
-      updated[index].total_a +
-      updated[index].total_w -
+      (payType === 1
+        ? updated[index].total_a
+        : payType === 2
+          ? updated[index].total_w
+          : updated[index].total_a + updated[index].total_w) -
       (updated[index].item_disc_amt ?? 0);
 
     // tax amount based on total after discount
@@ -225,8 +228,11 @@ export default function InvoiceItemTable({
     }
 
     const base =
-      updated[index].total_a +
-      updated[index].total_w -
+      (payType === 1
+        ? updated[index].total_a
+        : payType === 2
+          ? updated[index].total_w
+          : updated[index].total_a + updated[index].total_w) -
       (updated[index].item_disc_amt ?? 0);
 
     updated[index].tax = parseFloat((base * taxRate).toFixed(frac));
@@ -397,16 +403,16 @@ export default function InvoiceItemTable({
                       // total_w = weight * wagePrice
                       updated[index].total_w =
                         updated[index].weight * updated[index].price_w;
-                      // total = total_a + total_w - discount
-                      updated[index].total =
-                        updated[index].total_a +
-                        updated[index].total_w -
+                      const base =
+                        (payType === 1
+                          ? updated[index].total_a
+                          : payType === 2
+                            ? updated[index].total_w
+                            : updated[index].total_a + updated[index].total_w) -
                         (updated[index].item_disc_amt ?? 0);
-                      // tax amount based on total after discount
                       updated[index].tax =
-                        (updated[index].total *
-                          (updated[index].tax_prc ?? 15)) /
-                        100;
+                        (base * (updated[index].tax_prc ?? 15)) / 100;
+                      updated[index].total = base + updated[index].tax;
 
                       setInvoiceItems(updated);
                     }}
@@ -427,6 +433,19 @@ export default function InvoiceItemTable({
                       setItems([...items, newItem]);
                       const updated = [...invoiceItems];
 
+                      const totalA =
+                        (newItem.item_weight ?? 0) *
+                        (goldPrice ?? newItem.item_price);
+                      const totalW =
+                        (newItem.item_weight ?? 0) *
+                        (newItem.work_price ?? 0);
+                      const base =
+                        (payType === 1
+                          ? totalA
+                          : payType === 2
+                            ? totalW
+                            : totalA + totalW) -
+                        (newItem.item_disc_amt ?? 0);
                       updated[index] = {
                         ...updated[index],
                         item_id: newItem.id,
@@ -444,34 +463,10 @@ export default function InvoiceItemTable({
                             : Number(newItem.item_weight ?? 0),
                         stones: newItem.stones ?? "",
                         purity: newItem.purity ?? "",
-                        // total_a = weight * price
-                        total_a:
-                          (newItem.item_weight ?? 0) *
-                          (goldPrice ?? newItem.item_price),
-                        // total_w = weight * wagePrice
-                        total_w:
-                          (newItem.item_weight ?? 0) *
-                          (newItem.work_price ?? 0),
-                        // total = total_a + total_w - discount
-                        total:
-                          (newItem.item_weight ?? 0) *
-                            (goldPrice ?? newItem.item_price) +
-                          (newItem.item_weight ?? 0) *
-                            (newItem.work_price ?? 0) -
-                          (newItem.item_disc_amt ?? 0) +
-                          ((newItem.item_weight ?? 0) *
-                            (goldPrice ?? newItem.item_price) +
-                            (newItem.item_weight ?? 0) *
-                              (newItem.work_price ?? 0) -
-                            (newItem.item_disc_amt ?? 0)) *
-                            ((newItem.tax_prc ?? 15) / 100),
-                        tax:
-                          ((newItem.item_weight ?? 0) *
-                            (goldPrice ?? newItem.item_price) +
-                            (newItem.item_weight ?? 0) *
-                              (newItem.work_price ?? 0) -
-                            (newItem.item_disc_amt ?? 0)) *
-                          ((newItem.tax_prc ?? 15) / 100),
+                        total_a: totalA,
+                        total_w: totalW,
+                        total: base + base * ((newItem.tax_prc ?? 15) / 100),
+                        tax: base * ((newItem.tax_prc ?? 15) / 100),
                       };
                       setInvoiceItems(updated);
                     }}
