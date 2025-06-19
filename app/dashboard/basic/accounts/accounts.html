@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TreeView - الحسابات</title>
+    <link rel="stylesheet" href="Style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <style>
+        .treeview {
+            font-family: JannaLT;
+            position: relative;
+            overflow: hidden;
+        }
+        .treeview ul {
+            list-style: none;
+            padding-left: 25px;
+            margin: 0;
+            position: relative;
+        }
+        .treeview ul::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 12px;
+            width: 2px;
+            background: #ccc;
+        }
+        .treeview li {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 10px;
+        }
+        .treeview li::before {
+            content: "";
+            position: absolute;
+            top: 12px;
+            left: 0;
+            width: 20px;
+            height: 2px;
+            background: #ccc;
+        }
+        .treeview span {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 6px -1px;
+            background-color: transparent;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        .treeview span:hover {
+            background-color: #f0f0f0;
+            color: #000;
+        }
+        .treeview li > span::before {
+            content: "▶";
+            font-size: 9px;
+            margin-right: 5px;
+            cursor: pointer;
+            display: inline-block;
+            transform: rotate(0deg);
+            transition: transform 0.3s ease;
+        }
+        .treeview li.expanded > span::before {
+            transform: rotate(90deg);
+        }
+        .modal-lg {
+        max-width: 90%;
+        height: 80%;
+        }
+
+        .modal-body {
+        font-family: JannaLT;
+        max-height: 70vh;
+        overflow-y: auto;
+        }
+
+        .form-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: space-between;
+        }
+
+        /* التحكم في عرض الحقول */
+        .form-group {
+        flex: 1 1 calc(25% - 20px);
+        }
+
+        .wide-field {
+        flex: 1 1 calc(50% - 20px);
+        }
+
+        .medium-field {
+        flex: 1 1 calc(33% - 20px);
+        }
+
+        .small-field {
+        flex: 1 1 calc(20% - 20px);
+        }
+
+        .switch-field {
+        flex: 1 1 100%;
+        text-align: center;
+        font-size: 1.2rem; /* لتكبير النص */
+        }
+
+        .form-control, .form-select, .form-check-label {
+        font-size: 1.1rem;
+        padding: 10px;
+        }
+
+        textarea.form-control {
+        resize: none;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="input-group mb-3">
+                <input type="text" id="searchBox" class="form-control" placeholder="بحث عن حساب">
+            </div>            
+            <button id="addAccountButton" class="btn btn-success mb-3 w-100">إضافة حساب جديد</button>
+            <div id="treeview" class="treeview border p-3"></div>
+        </div>
+        <div class="col-md-8">
+            <!-- <h4>تفاصيل الحسابات الفرعية</h4> -->
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>رقم الحساب</th>
+                    <th>اسم الحساب</th>
+                    <th>التقرير</th>
+                    <th>نوع الحساب</th>
+                    <th>العملة</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody id="account-details">
+                <tr>
+                    <td colspan="6" class="text-center">اختر حسابًا من الشجرة</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Adding/Viewing/Editing Account -->
+<div class="modal" tabindex="-1" id="addAccountModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">إضافة حساب جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <!-- <div class="form-group switch-field">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="accountStatusSwitch" checked>
+                        <label class="form-check-label" for="accountStatusSwitch">فعال - موقف</label>
+                    </div>
+                </div> -->
+            </div>
+            <div class="modal-body">
+                <form id="addAccountForm">
+                    <div class="form-container">
+                        <!-- رقم الحساب -->
+                        <div class="form-group small-field">
+                            <label for="accountId">رقم الحساب</label>
+                            <input type="text" id="accountId" class="form-control" readonly>
+                        </div>
+
+                        <!-- اسم الحساب -->
+                        <div class="form-group wide-field">
+                            <label for="accountName">اسم الحساب</label>
+                            <input type="text" id="accountName" class="form-control">
+                        </div>
+
+                        <!-- اسم الحساب بالإنجليزية -->
+                        <div class="form-group wide-field">
+                            <label for="accountNameE">اسم الحساب (بالإنجليزية)</label>
+                            <input type="text" id="accountNameE" class="form-control">
+                        </div>
+
+                        <!-- الحساب الأب -->
+                        <div class="form-group wide-field">
+                            <label for="accountParent">الحساب الأب</label>
+                            <select id="accountParent" class="form-select">
+                                <option value="">لا يوجد</option>
+                        <!-- سيتم تعبئة الخيارات ديناميكيًا -->
+                            </select>
+                        </div>
+                       <!-- الحقول المتبقية -->
+                        <div class="form-group medium-field">
+                            <label for="accountType">نوع الحساب</label>
+                            <select id="accountType" class="form-select">
+                                <option value="1">رئيسي</option>
+                                <option value="2">فرعي</option>
+                            </select>
+                        </div>
+                        <div class="form-group medium-field">
+                            <label for="accountKind">طبيعه الحساب</label>
+                            <select id="accountKind" class="form-select">
+                                <option value="1">مدين</option>
+                                <option value="2">دائن</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group medium-field">
+                            <label for="accountRep">تقرير الحساب</label>
+                            <select id="accountRep" class="form-select">
+                                <option value="1">الأرباح والخسائر</option>
+                                <option value="2">الميزانية العمومية</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group medium-field">
+                            <label for="accountDigit">عدد الخانات</label>
+                            <input type="number" id="accountDigit" class="form-control" value="4">
+                        </div>
+
+                        <div class="form-group medium-field">
+                            <label for="accountPriv">صلاحيات الحساب</label>
+                            <input type="number" id="accountPriv" class="form-control" value="1">
+                        </div>
+
+                        <div class="form-group medium-field">
+                            <label for="accountCat">فئة الحساب</label>
+                            <input type="number" id="accountCat" class="form-control" value="1">
+                        </div>
+
+                        <div class="form-group medium-field">
+                            <label for="accountLevel">مستوى الحساب</label>
+                            <input type="number" id="accountLevel" class="form-control">
+                        </div>
+
+                        <div class="form-group medium-field">
+                            <label for="accountVat">القيمة المضافة</label>
+                            <input type="text" id="accountVat" class="form-control">
+                        </div>
+
+                        <div class="form-group medium-field">
+                            <label for="accountCurrency">العملة</label>
+                            <select id="accountCurrency" class="form-select">
+                                <!-- سيتم تعبئة الخيارات ديناميكياً -->
+                            </select>
+                        </div>
+                        
+
+                        <div class="form-group medium-field">
+                            <label for="accountNotes">ملاحظات</label>
+                            <input type="text" id="accountNotes" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="editAccountButton" class="btn btn-secondary" style="display: none;" onclick="enableEditMode()">تعديل</button>
+                <button type="button" id="saveAccountButton" class="btn btn-primary">حفظ</button>
+            </div>            
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // تحديد الـ API والمعلومات المطلوبة
+    const apiUrl = "http://84.46.240.24:8000/api/accounts_list";
+    const createAccountApi = "http://84.46.240.24:8000/api/api_create_account";
+    let allAccounts = [];
+    let selectedAccountId = null;
+    let currentTreeItem = null; 
+    let selectedParentId = null;
+
+    // توليد رقم الحساب بناءً على الحساب الأب وقواعد التحقق
+function generateAccountId(parentId) {
+    const parentAccount = allAccounts.find(account => account.id === parentId);
+    const parentAccId = parentAccount ? parentAccount.acc_id : "";
+
+    // تحقق من المستوى الأب
+    if (parentAccount && parentAccount.acc_level >= 5) {
+        alert("لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.");
+        return null; // لا يتم توليد رقم حساب جديد
+    }
+
+    // إيجاد جميع الحسابات التي لها نفس الأب
+    const siblings = allAccounts.filter(account => account.parent === parentId);
+    const siblingCount = siblings.length;
+
+    // تحقق من العدد المسموح به بناءً على المستوى
+    if (parentAccount && parentAccount.acc_level < 5 && siblingCount >= 9) {
+        alert("لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.");
+        return null; // لا يتم توليد رقم حساب جديد
+    }
+
+    let newSuffix;
+    if (parentAccount && parentAccount.acc_level < 4) {
+        // للمستويات الأول إلى الثالث، يتم استخدام رقم تسلسلي (1-9)
+        newSuffix = siblingCount + 1;
+    } else if (parentAccount && parentAccount.acc_level === 4) {
+        // للمستوى الخامس، يتم استخدام أربع خانات تسلسلية
+        const siblingNumbers = siblings.map(sibling => parseInt(sibling.acc_id.substring(parentAccId.length)) || 0);
+        newSuffix = Math.max(...siblingNumbers, 0) + 1;
+        newSuffix = newSuffix.toString().padStart(4, "0"); // أربعة أرقام مع الصفر في البداية
+    } else {
+        // للمستويات الأخرى
+        newSuffix = siblingCount + 1;
+    }
+
+    return `${parentAccId}${newSuffix}`;
+}
+
+// بناء الشجرة من الحسابات
+function buildTreeView(accounts, parentId, container) {
+    // إذا كان الأب هو null، أضف الرأس الرئيسي "دليل الحسابات"
+    if (parentId === null) {
+        const rootItem = $("<li>");
+        const rootSpan = $("<span>")
+            .text("دليل الحسابات")
+            .attr("tabindex", "0")
+            .addClass("active")
+            .on("click", function () {
+                $("#treeview span").removeClass("active");
+                $(this).addClass("active");
+                selectedAccountId = 0; // القيمة 0 للرأس
+                showChildAccounts(null); // عرض الحسابات الفرعية
+            });
+
+        rootItem.append(rootSpan);
+        const rootContainer = $("<ul>").addClass("visible").appendTo(rootItem);
+        container.append(rootItem);
+
+        // بناء الشجرة للعناصر الفرعية التي يكون parent = null
+        buildTreeView(accounts, 0, rootContainer);
+        return;
+    }
+
+    accounts
+        .filter(account => (parentId === 0 ? account.parent === null : account.parent === parentId))
+        .forEach(account => {
+            const li = $("<li>");
+            const span = $("<span>")
+                .text(account.acc_name)
+                .attr("data-id", account.id)
+                .attr("tabindex", "0") // جعل العنصر قابلاً للتركيز
+                .on("click", function () {
+                    $("#treeview span").removeClass("active");
+                    $(this).addClass("active");
+                    selectedAccountId = account.id;
+                    showChildAccounts(account.id);
+                })
+                .on("dblclick", function () {
+                    // عند النقر المزدوج، استدعاء وظيفة العرض
+                    previewAccount(account);
+                });
+
+            li.append(span);
+
+            const childAccounts = accounts.filter(a => a.parent === account.id);
+            if (childAccounts.length > 0) {
+                const childContainer = $("<ul>").hide().appendTo(li);
+                buildTreeView(accounts, account.id, childContainer);
+
+                // إضافة خاصية التوسيع والتقليص
+                span.on("click", function (e) {
+                    e.stopPropagation(); // منع التفاعل مع العناصر الأخرى
+                    const isVisible = childContainer.is(":visible");
+                    childContainer.slideToggle(300); // إظهار/إخفاء مع تأثير
+                    span.parent().toggleClass("expanded", !isVisible); // تعديل رمز السهم
+                });
+            }
+
+            container.append(li);
+        });
+}
+
+$("#treeview").on("click", "span", function () {
+    selectedParentId = $(this).data("id"); // تخزين معرف الحساب الأب المحدد
+    console.log("Selected Parent Account ID:", selectedParentId); // طباعة لتأكيد الحساب الأب المحدد
+});
+
+
+
+function showChildAccounts(parentId) {
+    const detailsBody = $("#account-details");
+    detailsBody.empty();
+
+    const childAccounts = allAccounts.filter(account => account.parent === parentId);
+
+    if (childAccounts.length === 0) {
+        detailsBody.append(
+            $("<tr>").append(
+                $("<td>").attr("colspan", 6).addClass("text-center").text("لا توجد حسابات فرعية")
+            )
+        );
+        return;
+    }
+
+    childAccounts.forEach(account => {
+        const row = $("<tr>");
+        row.append($("<td>").text(account.acc_id)); // رقم الحساب
+        row.append($("<td>").text(account.acc_name)); // اسم الحساب
+        row.append($("<td>").text(account.acc_rep === 1 ? "الأرباح والخسائر" : "الميزانية العمومية")); // التقرير
+        row.append($("<td>").text(account.acc_type === 1 ? "رئيسي" : "فرعي")); // نوع الحساب
+
+        // جلب اسم العملة المرتبطة بالحساب
+        const currency = currencies.find(cur => String(cur.id) === String(account.cur));
+        row.append($("<td>").text(currency ? currency.cur_name : "غير محددة")); // اسم العملة
+
+        const actionsCell = $("<td>");
+
+        // زر التعديل
+        const editButton = $("<button>")
+            .addClass("btn btn-sm")
+            .css("color", "gray")
+            .html('<i class="fas fa-edit"></i>')
+            .on("click", function () {
+                editAccount(account);
+            });
+
+        // زر العرض
+        const viewButton = $("<button>")
+            .addClass("btn btn-sm")
+            .css("color", "#41A5EE")
+            .html('<i class="fas fa-eye"></i>')
+            .on("click", function () {
+                previewAccount(account);
+            });
+
+        // زر الحذف
+        const deleteButton = $("<button>")
+            .addClass("btn btn-sm")
+            .css("color", "red")
+            .html('<i class="fas fa-trash"></i>')
+            .on("click", function () {
+                deleteAccount(account.id);
+            });
+
+        actionsCell.append(editButton).append(viewButton).append(deleteButton);
+        row.append(actionsCell);
+
+        detailsBody.append(row);
+    });
+}
+
+// جلب بيانات العملات وتخزينها في متغير عالمي
+let currencies = []; // قائمة العملات
+async function fetchCurrencies() {
+    try {
+        const response = await fetch("http://84.46.240.24:8000/api/currencies_list/");
+        if (!response.ok) {
+            throw new Error("Failed to fetch currencies");
+        }
+
+        currencies = await response.json();
+        console.log("Fetched Currencies:", currencies); // طباعة بيانات العملات للتحقق
+    } catch (error) {
+        console.error("Error fetching currencies:", error);
+        alert("حدث خطأ أثناء جلب بيانات العملات.");
+    }
+}
+
+$(document).ready(function () {
+    // جلب العملات عند تحميل الصفحة
+    fetchCurrencies().then(() => {
+        // عند الانتهاء من جلب العملات، يمكن عرض الحسابات
+        fetchAccounts(); // وظيفة جلب الحسابات التي تُظهر الشجرة والجدول
+    });
+});
+
+
+
+// وظيفة الحذف
+async function deleteAccount(accountId) {
+    if (!confirm("هل أنت متأكد أنك تريد حذف هذا الحساب؟")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://84.46.240.24:8000/api/api_delete_account/${accountId}`, {
+            method: "DELETE",
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Error deleting account:", errorData);
+            alert(`حدث خطأ أثناء حذف الحساب: ${errorData.message || "تفاصيل غير معروفة"}`);
+            return;
+        }
+
+        alert("تم حذف الحساب بنجاح");
+        fetchAccounts(); // إعادة تحميل الشجرة والحسابات بعد الحذف
+    } catch (error) {
+        console.error("Error deleting account:", error);
+        alert("خطأ في الاتصال بالخادم. تحقق من الرابط أو الإعدادات.");
+    }
+}
+
+
+    // تعبئة قائمة الحسابات الأب
+    function populateParentDropdown() {
+        const dropdown = $("#accountParent");
+        dropdown.empty();
+        dropdown.append('<option value="">لا يوجد</option>');
+
+        allAccounts.forEach(account => {
+            dropdown.append(`<option value="${account.id}">${account.acc_name}</option>`);
+        });
+    }
+
+
+    $(document).ready(function () {
+        fetchAccounts();
+    });
+
+    $("#addAccountButton").on("click", function () {
+    $("#modalTitle").text("إضافة حساب جديد");
+    $("#addAccountForm")[0].reset();
+
+    // تعيين الحساب الأب إذا كان محددًا
+    if (selectedAccountId) {
+        const parentAccount = allAccounts.find(account => account.id === selectedAccountId);
+
+        if (parentAccount && parentAccount.acc_level >= 5) {
+            alert("لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.");
+            return;
+        }
+
+        // ضبط الحقل الافتراضي للحساب الأب
+        $("#accountParent").val(selectedAccountId);
+
+        // ضبط المستوى بناءً على مستوى الحساب الأب
+        if (parentAccount) {
+            $("#accountLevel").val(parentAccount.acc_level + 1); // مستوى الحساب = مستوى الأب + 1
+        } else {
+            $("#accountLevel").val(1); // مستوى افتراضي للحسابات الرئيسية
+        }
+    } else {
+        // إذا لم يتم تحديد حساب أب، يكون المستوى 1
+        $("#accountParent").val("");
+        $("#accountLevel").val(1);
+    }
+
+    // عرض المودال
+    $("#addAccountModal").modal("show");
+});
+
+
+async function addAccount() {
+    const newAccount = {
+        acc_id: $("#accountId").val(),
+        acc_name: $("#accountName").val(),
+        acc_name_e: $("#accountNameE").val() || "Unnamed Account",
+        acc_type: parseInt($("#accountType").val()),
+        parent: $("#accountParent").val() ? parseInt($("#accountParent").val()) : null,
+        acc_kind: parseInt($("#accountKind").val()) || 1,
+        acc_rep: parseInt($("#accountRep").val()) || 1,
+        acc_digit: parseInt($("#accountDigit").val()) || 4,
+        acc_priv: parseInt($("#accountPriv").val()) || 1,
+        acc_cat: parseInt($("#accountCat").val()) || 1,
+        acc_notes: $("#accountNotes").val() || "",
+        acc_vat: $("#accountVat").val() || "0%",
+        cur: parseInt($("#accountCurrency").val()) || 1,
+        acc_level: parseInt($("#accountLevel").val()) // إرسال مستوى الحساب
+    };
+
+    try {
+        const response = await fetch(createAccountApi, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newAccount)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            alert(`حدث خطأ أثناء إضافة الحساب: ${errorData.message || 'تفاصيل غير معروفة'}`);
+        } else {
+            alert("تمت إضافة الحساب بنجاح");
+            $("#addAccountModal").modal("hide");
+
+            // إعادة تحميل الحسابات الفرعية للحساب الأب
+            if (newAccount.parent) {
+                showChildAccounts(newAccount.parent);
+            } else {
+                fetchAccounts();
+            }
+        }
+    } catch (error) {
+        alert("حدث خطأ أثناء الاتصال بالخادم.");
+    }
+}
+
+
+    // استدعاء الحسابات مع معالجة الأخطاء وتحليل الردود
+async function fetchAccounts() {
+    try {
+        const response = await fetch(apiUrl, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        // التحقق من نجاح الاستجابة
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Error Details:", errorData);
+            alert(`خطأ: ${errorData.message || "تفاصيل غير معروفة"}`);
+            return;
+        }
+
+        // جلب البيانات وتحليلها
+        allAccounts = await response.json();
+        console.log("Fetched Accounts:", allAccounts);
+
+        // بناء الشجرة
+        $("#treeview").empty();
+        const treeRoot = $("<ul>").addClass("visible").appendTo("#treeview");
+        buildTreeView(allAccounts, null, treeRoot);
+
+        // تعبئة قائمة الحساب الأب
+        populateParentDropdown();
+    } catch (error) {
+        console.error("Connection Error:", error);
+        alert("خطأ في الاتصال بالخادم. تحقق من الرابط أو الإعدادات.");
+    }
+    }   
+
+    function populateParentDropdown() {
+        const dropdown = $("#accountParent");
+        dropdown.empty();
+        dropdown.append('<option value="">لا يوجد</option>');
+
+        allAccounts.forEach(account => {
+            dropdown.append(`<option value="${account.id}">${account.acc_name}</option>`);
+        });
+    }
+
+    // استدعاء دالة التعبئة عند جلب الحسابات
+    fetchAccounts().then(() => {
+        populateParentDropdown();
+    });
+
+    async function editAccount(account) {
+    selectedAccountId = account.id;
+
+    // تعبئة الحقول بالبيانات
+    $("#accountId").val(account.acc_id);
+    $("#accountName").val(account.acc_name);
+    $("#accountNameE").val(account.acc_name_e);
+    $("#accountType").val(account.acc_type);
+    $("#accountParent").val(account.parent || "");
+    $("#accountKind").val(account.acc_kind);
+    $("#accountRep").val(account.acc_rep);
+    $("#accountDigit").val(account.acc_digit);
+    $("#accountPriv").val(account.acc_priv);
+    $("#accountCat").val(account.acc_cat);
+    $("#accountNotes").val(account.acc_notes || "");
+    $("#accountVat").val(account.acc_vat || "");
+    $("#accountCurrency").val(account.cur);
+
+    // عرض المودال
+    $("#addAccountModal").modal("show");
+
+    // إضافة وظيفة الحفظ
+    $("#saveAccountButton").off("click").on("click", async function () {
+            const updatedAccount = {
+            id: account.id,
+            acc_id: $("#accountId").val(),
+            acc_name: $("#accountName").val(),
+            acc_name_e: $("#accountNameE").val(),
+            acc_type: parseInt($("#accountType").val()),
+            parent: $("#accountParent").val() ? parseInt($("#accountParent").val()) : null,
+            acc_kind: parseInt($("#accountKind").val()),
+            acc_rep: parseInt($("#accountRep").val()),
+            acc_digit: parseInt($("#accountDigit").val()),
+            acc_priv: parseInt($("#accountPriv").val()),
+            acc_cat: parseInt($("#accountCat").val()),
+            acc_notes: $("#accountNotes").val(),
+            acc_vat: $("#accountVat").val(),
+            cur: parseInt($("#accountCurrency").val()),
+            acc_level: parseInt($("#accountLevel").val()), // تأكد من تحويل القيمة إلى رقم
+            };
+            console.log("Updated Account Data:", updatedAccount);
+
+        try {
+            const response = await fetch(`http://84.46.240.24:8000/api_update_account/${account.id}`, {
+            method: "PUT",
+            headers: {
+            "Content-Type": "application/json",
+            },
+            body: JSON.stringify(updatedAccount),
+            });
+
+            // تحقق من الاستجابة
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Error Response:", errorData);
+                alert(`حدث خطأ أثناء تحديث الحساب: ${errorData.message || "تفاصيل غير معروفة"}`);
+                return;
+            }
+
+            alert("تم تحديث الحساب بنجاح");
+            $("#addAccountModal").modal("hide");
+            fetchAccounts();
+        } catch (error) {
+            console.error("Error updating account:", error);
+            alert("خطأ في الاتصال بالخادم. تحقق من الرابط أو الإعدادات.");
+        }
+    });
+}
+
+    // عرض الحساب عند النقر المزدوج
+    function previewAccount(account) {
+    selectedAccountId = account.id;
+
+    // تعبئة الحقول بالبيانات مع جعلها غير قابلة للتعديل
+    $("#accountId").val(account.acc_id).prop("readonly", true);
+    $("#accountName").val(account.acc_name).prop("readonly", true);
+    $("#accountNameE").val(account.acc_name_e).prop("readonly", true);
+    $("#accountType").val(account.acc_type).prop("disabled", true);
+    $("#accountParent").val(account.parent || "").prop("disabled", true);
+    $("#accountKind").val(account.acc_kind).prop("readonly", true);
+    $("#accountRep").val(account.acc_rep).prop("disabled", true);
+    $("#accountDigit").val(account.acc_digit).prop("readonly", true);
+    $("#accountPriv").val(account.acc_priv).prop("readonly", true);
+    $("#accountCat").val(account.acc_cat).prop("readonly", true);
+    $("#accountNotes").val(account.acc_notes || "").prop("readonly", true);
+    $("#accountVat").val(account.acc_vat || "").prop("readonly", true);
+    $("#accountCurrency").val(account.cur).prop("readonly", true);
+    $("#accountLevel").val(account.acc_level).prop("readonly", true);
+
+    // عرض زر التعديل
+    $("#editAccountButton").show();
+    $("#saveAccountButton").hide(); // إخفاء زر الحفظ
+
+    // عرض المودال
+    $("#modalTitle").text("عرض تفاصيل الحساب");
+    $("#addAccountModal").modal("show");
+}
+
+// وظيفة التعديل لفتح الحقول للتعديل
+function enableEditMode() {
+    // جعل الحقول قابلة للتعديل
+    $("#accountId").prop("readonly", false);
+    $("#accountName").prop("readonly", false);
+    $("#accountNameE").prop("readonly", false);
+    $("#accountType").prop("disabled", false);
+    $("#accountParent").prop("disabled", false);
+    $("#accountKind").prop("readonly", false);
+    $("#accountRep").prop("disabled", false);
+    $("#accountDigit").prop("readonly", false);
+    $("#accountPriv").prop("readonly", false);
+    $("#accountCat").prop("readonly", false);
+    $("#accountNotes").prop("readonly", false);
+    $("#accountVat").prop("readonly", false);
+    $("#accountCurrency").prop("readonly", false);
+    $("#accountLevel").prop("readonly", false);
+
+    // عرض زر الحفظ وإخفاء زر التعديل
+    $("#editAccountButton").hide();
+    $("#saveAccountButton").show();
+
+    // تعديل العنوان
+    $("#modalTitle").text("تعديل الحساب");
+}
+
+// وظيفة البحث وتحديد العناصر التي تحتوي على النص
+function searchAccount() {
+    const searchTerm = $("#searchBox").val().trim(); // الحصول على قيمة البحث
+
+    // إزالة التحديد الأصفر عن العناصر السابقة
+    $("#treeview span").css("background-color", "transparent");
+
+    if (!searchTerm) {
+        // إذا كان النص فارغًا، أعد الشجرة إلى حالتها الافتراضية
+        resetTreeToFirstLevel();
+        return;
+    }
+
+    // البحث عن جميع الحسابات التي تحتوي على النص
+    const matchedAccounts = allAccounts.filter(
+        account =>
+            account.acc_name.includes(searchTerm) ||
+            account.acc_id.includes(searchTerm)
+    );
+
+    if (matchedAccounts.length === 0) {
+        return; // لا يوجد حسابات مطابقة
+    }
+
+    // فتح وتحديد جميع العناصر المطابقة
+    matchedAccounts.forEach(account => {
+        const targetSpan = $(`#treeview span[data-id='${account.id}']`);
+        if (targetSpan.length > 0) {
+            // فتح الفروع المؤدية إلى العنصر
+            openBranchSmoothly(targetSpan);
+
+            // تحديد العنصر وتطبيق التحديد الأصفر
+            targetSpan.css("background-color", "#F6F7C4");
+        }
+    });
+
+    // تمرير إلى أول عنصر مطابق
+    const firstMatch = $(`#treeview span[data-id='${matchedAccounts[0].id}']`);
+    if (firstMatch.length > 0) {
+        firstMatch[0].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+}
+
+// إعادة الشجرة إلى حالتها الافتراضية (دليل الحسابات + المستوى الأول فقط)
+function resetTreeToFirstLevel() {
+    // إغلاق جميع الفروع مع تأثير
+    $("#treeview ul").slideUp(300);
+    $("#treeview span").parent().removeClass("expanded");
+
+    // عرض دليل الحسابات
+    const rootUl = $("#treeview > ul");
+    rootUl.slideDown(300);
+
+    // عرض المستوى الأول فقط مع تأثير
+    rootUl.children("li").each(function () {
+        $(this).children("ul").slideDown(300);
+    });
+}
+
+// فتح الفروع المؤدية إلى العنصر مع تأثير انسيابي
+function openBranchSmoothly(targetSpan) {
+    targetSpan.parents("ul").each(function () {
+        $(this).slideDown(300); // إظهار جميع القوائم المغلقة مع تأثير
+        $(this).prev("span").parent().addClass("expanded"); // إضافة فئة التوسيع للسهم
+    });
+}
+
+$(document).ready(function () {
+    // البحث عند الكتابة في الحقل
+    $("#searchBox").on("input", searchAccount);
+});
+
+// جلب بيانات العملات من API وتعبئة القائمة المنسدلة
+async function fetchCurrencies() {
+    try {
+        const response = await fetch("http://84.46.240.24:8000/api/currencies_list/");
+        if (!response.ok) {
+            throw new Error("Failed to fetch currencies");
+        }
+
+        const currencies = await response.json();
+        console.log("Fetched Currencies:", currencies); // طباعة بيانات العملات للتحقق
+
+        // تعبئة القائمة المنسدلة بالعملات
+        const currencySelect = $("#accountCurrency");
+        currencySelect.empty(); // تفريغ القائمة أولاً
+        currencies.forEach(currency => {
+            currencySelect.append(
+                `<option value="${currency.id}">${currency.cur_name}</option>` // استخدام الحقل الصحيح
+            );
+        });
+    } catch (error) {
+        console.error("Error fetching currencies:", error);
+        alert("حدث خطأ أثناء جلب بيانات العملات.");
+    }
+}
+
+$(document).ready(function () {
+    // استدعاء دالة جلب العملات عند تحميل الصفحة
+    fetchCurrencies();
+});
+
+$(document).on("keydown", function (e) {
+    const treeview = $("#treeview");
+    if (!treeview.find(":focus").length) {
+        console.log("No focus on treeview elements.");
+        return;
+    }
+
+    const items = treeview.find("span:visible"); // استهداف جميع العناصر المرئية
+    if (!currentTreeItem) {
+        currentTreeItem = items.first();
+        currentTreeItem.addClass("focused").focus();
+        console.log("Current tree item initialized:", currentTreeItem.text());
+    } else {
+        currentTreeItem.removeClass("focused");
+    }
+
+    switch (e.key) {
+        case "ArrowUp":
+            e.preventDefault();
+            const prev = items.eq(items.index(currentTreeItem) - 1); // العنصر السابق
+            if (prev.length) {
+                currentTreeItem = prev;
+            }
+            break;
+
+        case "ArrowDown":
+            e.preventDefault();
+            const next = items.eq(items.index(currentTreeItem) + 1); // العنصر التالي
+            if (next.length) {
+                currentTreeItem = next;
+            }
+            break;
+
+        case "ArrowRight":
+            e.preventDefault();
+            const childUl = currentTreeItem.siblings("ul");
+            if (childUl.length && !childUl.is(":visible")) {
+                childUl.slideDown(300);
+                currentTreeItem.parent().addClass("expanded");
+            }
+            break;
+
+        case "ArrowLeft":
+            e.preventDefault();
+            const parentUl = currentTreeItem.closest("ul").parent().find("> span");
+            const childUlVisible = currentTreeItem.siblings("ul:visible");
+            if (childUlVisible.length) {
+                childUlVisible.slideUp(300);
+                currentTreeItem.parent().removeClass("expanded");
+            } else if (parentUl.length) {
+                currentTreeItem = parentUl;
+            }
+            break;
+
+        case "Enter":
+            e.preventDefault();
+            currentTreeItem.trigger("click");
+            break;
+    }
+
+    if (currentTreeItem) {
+        currentTreeItem.addClass("focused").focus();
+        currentTreeItem[0].scrollIntoView({ behavior: "smooth", block: "center" });
+        console.log("Focused on:", currentTreeItem.text());
+    }
+});
+const style = `
+    .treeview span.focused {
+        outline: 2px solid #0D567E;
+        background-color: #0D567E !important;
+        color: #fff !important;
+    }
+`;
+$("<style>").text(style).appendTo("head");
+
+    $("#addAccountButton").on("click", function () {
+    $("#modalTitle").text("إضافة حساب جديد");
+    $("#addAccountForm")[0].reset();
+
+    // تعيين الحساب الأب إذا كان محددًا
+    if (selectedAccountId) {
+        const parentAccount = allAccounts.find(account => account.id === selectedAccountId);
+
+        if (parentAccount && parentAccount.acc_level >= 5) {
+            alert("لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.");
+            return;
+        }
+
+        // ضبط الحساب الأب والمستوى
+        $("#accountParent").val(selectedAccountId);
+        $("#accountLevel").val(parentAccount ? parentAccount.acc_level + 1 : 1);
+
+        // تعيين نوع الحساب كـ "فرعي" إذا كان الحساب الأب موجودًا
+        $("#accountType").val(2); // 2 = فرعي
+    } else {
+        // إذا لم يتم تحديد حساب أب، يكون الحساب "رئيسي"
+        $("#accountParent").val("");
+        $("#accountLevel").val(1);
+        $("#accountType").val(1); // 1 = رئيسي
+    }
+
+    // عرض المودال
+    $("#addAccountModal").modal("show");
+});
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+</body>
+</html>
