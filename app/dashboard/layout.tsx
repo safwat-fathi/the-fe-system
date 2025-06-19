@@ -85,7 +85,7 @@ export default function DashboardLayout({
   return (
     <div className="font-cairo flex min-h-screen bg-gray-100">
       <aside
-        className={`bg-gray-800 text-white p-4 transition-all ${isSidebarOpen ? "w-64" : "w-16"} min-h-screen`}
+        className={`bg-blue-600 text-white p-4 transition-all ${isSidebarOpen ? "w-64" : "w-16"} min-h-screen`}
       >
         <div className="flex justify-between items-center mb-6">
           <h2
