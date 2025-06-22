@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input, Button } from "@heroui/react";
-import { renderToStaticMarkup } from "react-dom/server";
-import QRCode from "react-qr-code";
+import toast from "react-hot-toast";
+
 import useFractions from "@/utilities/useFractions";
 import { renderInvoicePreview } from "@/components/invoices/TaxInvoicePreview";
-
 import {
   API_BASE_URL,
   API_ENDPOINTS,
@@ -19,7 +18,6 @@ import {
 const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
 
 import "bootstrap-icons/font/bootstrap-icons.css";
-import toast from "react-hot-toast";
 
 import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
@@ -41,7 +39,7 @@ interface Item {
   k?: string;
   purity?: string;
   cat?: number;
-  [key: string]: any; 
+  [key: string]: any;
 }
 
 interface Customer {
@@ -138,7 +136,6 @@ export default function InvoicePage() {
       setSearchNumber(invId);
       handleInvoiceSearch(invId);
     }
-    
   }, [searchParams]);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
@@ -162,11 +159,11 @@ export default function InvoicePage() {
 
           return {
             ...updated,
-            
+
             total_a: updated.weight * updated.price,
-            
+
             total_w: updated.weight * updated.price_w,
-            
+
             total: baseTotal + tax,
             tax,
           };
@@ -180,8 +177,10 @@ export default function InvoicePage() {
       items.map((itm) => {
         const purityVal = parseFloat(itm.purity || "0");
         const weightVal = parseFloat(String(itm.weight)) || 0;
+
         if (!homePurity || purityVal === 0) return itm;
         const g = (weightVal * purityVal) / homePurity;
+
         return { ...itm, g_weight: parseFloat(g.toFixed(frac2)) };
       }),
     );
@@ -210,12 +209,14 @@ export default function InvoicePage() {
   const fetchHomePurity = async () => {
     try {
       const res = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
+
       if (Array.isArray(res) && res.length > 0) {
         const p = parseFloat(res[0]?.purity);
+
         if (!isNaN(p)) setHomePurity(p);
       }
     } catch (e) {
-      console.error('failed to load home purity', e);
+      console.error("failed to load home purity", e);
     }
   };
 
@@ -226,8 +227,8 @@ export default function InvoicePage() {
       );
 
       if (response && Array.isArray(response.results)) {
-        console.log("Fetched items sample:", response.results[0]); 
-        setItems(response.results); 
+        console.log("Fetched items sample:", response.results[0]);
+        setItems(response.results);
         console.log("First item sample from API:", response.results[0]);
       } else {
         console.warn("No items found or invalid response.");
@@ -271,7 +272,6 @@ export default function InvoicePage() {
     }
   }
 
-  
   const totalAmount = invoiceItems.reduce((sum, item) => {
     const totalA = item.weight * item.price; // اجمالي القيمة
     const totalW = item.weight * (item.price_w ?? 0); // اجمالي الاجور
@@ -422,6 +422,12 @@ export default function InvoicePage() {
       for (const [index, row] of validItems.entries()) {
         if (!row.item_id) continue;
 
+        const dtlPrice = payType === 2 ? row.price_w : row.price;
+        const dtlTotalA =
+          payType === 2
+            ? (row.total_w ?? row.weight * row.price_w)
+            : (row.total_a ?? row.weight * row.price);
+
         const dtl = {
           id: row.id,
           trans_type: row.trans_type ?? 2,
@@ -429,7 +435,7 @@ export default function InvoicePage() {
           k: row.k ?? "",
           qty: row.qty,
           stones: row.stones ?? "",
-          price: row.price,
+          price: dtlPrice,
           price_w: row.price_w,
           weight: row.weight,
           g_weight: row.g_weight ?? 0,
@@ -440,7 +446,7 @@ export default function InvoicePage() {
               row.weight * row.price_w -
               (row.item_disc_amt ?? 0),
           total_w: row.total_w ?? row.weight * row.price_w,
-          total_a: row.total_a ?? row.weight * row.price,
+          total_a: dtlTotalA,
           tax:
             row.tax ??
             (row.weight * row.price +
@@ -568,6 +574,12 @@ export default function InvoicePage() {
       for (const [index, row] of validItems.entries()) {
         if (!row.item_id) continue;
 
+        const dtlPrice = payType === 2 ? row.price_w : row.price;
+        const dtlTotalA =
+          payType === 2
+            ? (row.total_w ?? row.weight * row.price_w)
+            : (row.total_a ?? row.weight * row.price);
+
         const dtl = {
           id: row.id,
           trans_type: row.trans_type ?? 2,
@@ -575,7 +587,7 @@ export default function InvoicePage() {
           k: row.k ?? "",
           qty: row.qty,
           stones: row.stones ?? "",
-          price: row.price,
+          price: dtlPrice,
           price_w: row.price_w,
           weight: row.weight,
           g_weight: row.g_weight ?? 0,
@@ -585,7 +597,7 @@ export default function InvoicePage() {
               row.weight * row.price_w -
               (row.item_disc_amt ?? 0),
           total_w: row.total_w ?? row.weight * row.price_w,
-          total_a: row.total_a ?? row.weight * row.price,
+          total_a: dtlTotalA,
           tax:
             row.tax ??
             (row.weight * row.price +
@@ -639,12 +651,18 @@ export default function InvoicePage() {
   const previewInvoice = async () => {
     if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
 
-    const previewWindow = window.open("", "InvoicePreview", "width=850,height=1000");
+    const previewWindow = window.open(
+      "",
+      "InvoicePreview",
+      "width=850,height=1000",
+    );
+
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     // جلب بيانات المنشأة من قاعدة البيانات
     const homeData = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
-    const home = Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
+    const home =
+      Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
 
     // تجهيز بيانات التقرير
     const html = renderInvoicePreview({
@@ -677,115 +695,120 @@ export default function InvoicePage() {
     previewWindow.document.close();
   };
 
-
   const handleInvoiceSearch = async (searchVal?: string) => {
-  const num = parseInt(searchVal ?? searchNumber, 10);
+    const num = parseInt(searchVal ?? searchNumber, 10);
 
-  if (!num) return toast.error("أدخل رقم الفاتورة");
+    if (!num) return toast.error("أدخل رقم الفاتورة");
 
-  try {
-    const invList = await fetchData<any[]>(
-      `${API_BASE_URL}invoices_list?inv_id=${num}`,
-    );
-
-    if (!invList || invList.length === 0) {
-      toast.error("الفاتورة غير موجودة");
-      return;
-    }
-
-    const inv = invList.find((i) => Number(i.inv_id) === num);
-
-    if (!inv) {
-      toast.error("الفاتورة غير موجودة");
-      return;
-    }
-
-    const invoicePk = inv.id;
-
-    // تعبئة البيانات الأساسية
-    setInvoiceNumber(inv.inv_id);
-    if (inv.inv_date) setInvoiceDate(inv.inv_date);
-    if (inv.cust) setSelectedCustomer(inv.cust);
-    if (inv.inv_type)
-      setPaymentMethod(inv.inv_type === 1 ? "cash" : "credit");
-    if (inv.ref_no) setReferenceNumber(inv.ref_no);
-    if (inv.vat_no) setVatNumber(inv.vat_no);
-    if (inv.handling) setHandlingMethod(inv.handling);
-    if (inv.mobile) setMobileMethod(inv.mobile);
-    if (inv.pay_type) setPayType(inv.pay_type);
-    if (typeof inv.commit !== "undefined") setCommitVal(!!inv.commit);
-    if (typeof inv.print !== "undefined") setPrintVal(!!inv.print);
-    if (inv.emp_id)
-      setEmployee(inv.emp_id === 1 ? "hashem" : inv.emp_id === 2 ? "othman" : "");
-    if (inv.inv_notes) setNote(inv.inv_notes);
-    if (inv.gold_price) setGoldPrice(parseFloat(inv.gold_price));
-
-    setIsExistingInvoice(true);
-    setIsEditing(false);
-
-    // جلب التفاصيل وربطها بالـ id الأساسي
-    const detailsRes = await fetchData<any>(`${API_BASE_URL}invoices_dtl_list`);
-
-    let detailRows: any[] = [];
-    if (Array.isArray(detailsRes)) {
-      detailRows = detailsRes;
-    } else if (Array.isArray(detailsRes.results)) {
-      detailRows = detailsRes.results;
-    } else if (Array.isArray(detailsRes.data)) {
-      detailRows = detailsRes.data;
-    }
-
-    const filteredDetails = detailRows.filter(
-      (row) => Number(row.inv) === invoicePk,
-    );
-
-    if (filteredDetails.length > 0) {
-      setInvoiceItems(
-        filteredDetails.map((row) => ({
-          id: row.id,
-          item_id: row.item ?? row.item_id ?? null,
-          item_code: row.item_code ?? "",
-          item_name: row.item_desc ?? "", 
-          qty: parseFloat(row.qty) || 0,
-          weight: parseFloat(row.weight) || 0,
-          g_weight: parseFloat(row.g_weight) || 0,
-          k: row.k ?? "",
-          price: parseFloat(row.price) || 0,
-          price_w: parseFloat(row.price_w) || 0,
-          note: row.inv_notes ?? "",
-          trans_type: row.trans_type ?? 2,
-          purity: row.purity ?? "",
-          total: parseFloat(row.total) || 0,
-          total_w: parseFloat(row.total_w) || 0,
-          total_a: parseFloat(row.total_a) || 0,
-          inv_note: row.inv_notes ?? "",
-          tax: parseFloat(row.tax) || 0,
-          tax_prc: parseFloat(row.tax_prc) || 0,
-          stones: row.stones ?? "",
-          item_disc_prc: parseFloat(row.item_disc_prc) || 0,
-          item_disc_amt: parseFloat(row.item_disc_amt) || 0,
-          sn: row.sn ?? "",
-          item_desc: "",
-          cr_date: row.cr_date ?? "",
-          cr_user: row.cr_user ?? "",
-          upd_date: row.upd_date ?? "",
-          upd_user: row.upd_user ?? "",
-          com: row.com ?? 0,
-          inv: row.inv ?? 0,
-          item: row.item ?? 0,
-        })),
+    try {
+      const invList = await fetchData<any[]>(
+        `${API_BASE_URL}invoices_list?inv_id=${num}`,
       );
 
-    } else {
-      setInvoiceItems([]);
-    }
+      if (!invList || invList.length === 0) {
+        toast.error("الفاتورة غير موجودة");
 
-    toast.success("تم جلب الفاتورة بنجاح ✅");
-  } catch (err) {
-    console.error("❌ خطأ في جلب الفاتورة:", err);
-    toast.error("فشل في جلب الفاتورة");
-  }
-};
+        return;
+      }
+
+      const inv = invList.find((i) => Number(i.inv_id) === num);
+
+      if (!inv) {
+        toast.error("الفاتورة غير موجودة");
+
+        return;
+      }
+
+      const invoicePk = inv.id;
+
+      // تعبئة البيانات الأساسية
+      setInvoiceNumber(inv.inv_id);
+      if (inv.inv_date) setInvoiceDate(inv.inv_date);
+      if (inv.cust) setSelectedCustomer(inv.cust);
+      if (inv.inv_type)
+        setPaymentMethod(inv.inv_type === 1 ? "cash" : "credit");
+      if (inv.ref_no) setReferenceNumber(inv.ref_no);
+      if (inv.vat_no) setVatNumber(inv.vat_no);
+      if (inv.handling) setHandlingMethod(inv.handling);
+      if (inv.mobile) setMobileMethod(inv.mobile);
+      if (inv.pay_type) setPayType(inv.pay_type);
+      if (typeof inv.commit !== "undefined") setCommitVal(!!inv.commit);
+      if (typeof inv.print !== "undefined") setPrintVal(!!inv.print);
+      if (inv.emp_id)
+        setEmployee(
+          inv.emp_id === 1 ? "hashem" : inv.emp_id === 2 ? "othman" : "",
+        );
+      if (inv.inv_notes) setNote(inv.inv_notes);
+      if (inv.gold_price) setGoldPrice(parseFloat(inv.gold_price));
+
+      setIsExistingInvoice(true);
+      setIsEditing(false);
+
+      // جلب التفاصيل وربطها بالـ id الأساسي
+      const detailsRes = await fetchData<any>(
+        `${API_BASE_URL}invoices_dtl_list`,
+      );
+
+      let detailRows: any[] = [];
+
+      if (Array.isArray(detailsRes)) {
+        detailRows = detailsRes;
+      } else if (Array.isArray(detailsRes.results)) {
+        detailRows = detailsRes.results;
+      } else if (Array.isArray(detailsRes.data)) {
+        detailRows = detailsRes.data;
+      }
+
+      const filteredDetails = detailRows.filter(
+        (row) => Number(row.inv) === invoicePk,
+      );
+
+      if (filteredDetails.length > 0) {
+        setInvoiceItems(
+          filteredDetails.map((row) => ({
+            id: row.id,
+            item_id: row.item ?? row.item_id ?? null,
+            item_code: row.item_code ?? "",
+            item_name: row.item_desc ?? "",
+            qty: parseFloat(row.qty) || 0,
+            weight: parseFloat(row.weight) || 0,
+            g_weight: parseFloat(row.g_weight) || 0,
+            k: row.k ?? "",
+            price: parseFloat(row.price) || 0,
+            price_w: parseFloat(row.price_w) || 0,
+            note: row.inv_notes ?? "",
+            trans_type: row.trans_type ?? 2,
+            purity: row.purity ?? "",
+            total: parseFloat(row.total) || 0,
+            total_w: parseFloat(row.total_w) || 0,
+            total_a: parseFloat(row.total_a) || 0,
+            inv_note: row.inv_notes ?? "",
+            tax: parseFloat(row.tax) || 0,
+            tax_prc: parseFloat(row.tax_prc) || 0,
+            stones: row.stones ?? "",
+            item_disc_prc: parseFloat(row.item_disc_prc) || 0,
+            item_disc_amt: parseFloat(row.item_disc_amt) || 0,
+            sn: row.sn ?? "",
+            item_desc: "",
+            cr_date: row.cr_date ?? "",
+            cr_user: row.cr_user ?? "",
+            upd_date: row.upd_date ?? "",
+            upd_user: row.upd_user ?? "",
+            com: row.com ?? 0,
+            inv: row.inv ?? 0,
+            item: row.item ?? 0,
+          })),
+        );
+      } else {
+        setInvoiceItems([]);
+      }
+
+      toast.success("تم جلب الفاتورة بنجاح ✅");
+    } catch (err) {
+      console.error("❌ خطأ في جلب الفاتورة:", err);
+      toast.error("فشل في جلب الفاتورة");
+    }
+  };
 
   return (
     <>
@@ -843,10 +866,10 @@ export default function InvoicePage() {
           <InvoiceItemTable
             categories={categories}
             goldPrice={goldPrice}
+            homePurity={homePurity}
             invoiceItems={invoiceItems}
             items={items}
             payType={payType}
-            homePurity={homePurity}
             setInvoiceItems={setInvoiceItems}
             setItems={setItems}
           />
