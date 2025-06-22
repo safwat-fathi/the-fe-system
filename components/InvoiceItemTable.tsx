@@ -3,8 +3,13 @@
 import type { InvoiceItem } from "@/types/invoice-item";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import useFractions from "@/utilities/useFractions";
 import CreatableSelect from "react-select/creatable";
+import { withAsyncPaginate } from "react-select-async-paginate";
+
+import useFractions from "@/utilities/useFractions";
+import { API_BASE_URL } from "@/utilities/api";
+
+const AsyncCreatableSelect = withAsyncPaginate(CreatableSelect);
 
 interface Item {
   id: number;
@@ -51,6 +56,38 @@ export default function InvoiceItemTable({
   const { frac, frac2 } = useFractions();
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
+
+  const loadItemOptions = async (
+    search: string,
+    _loaded: any,
+    { page }: { page: number },
+  ) => {
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
+      );
+      const json = await res.json();
+      const options = Array.isArray(json.results)
+        ? json.results.map((it: any) => ({
+            value: it.id,
+            label: `${it.item_code ?? it.id} - ${
+              it.item_name ?? it.text ?? ""
+            }`,
+            item: it,
+          }))
+        : [];
+
+      return {
+        options,
+        hasMore: !!json.next,
+        additional: { page: page + 1 },
+      };
+    } catch (e) {
+      console.error("failed to load items", e);
+
+      return { options: [], hasMore: false, additional: { page: page } };
+    }
+  };
 
   // prepare refs array when rows change
   useEffect(() => {
@@ -236,7 +273,9 @@ export default function InvoiceItemTable({
       (updated[index].item_disc_amt ?? 0);
 
     updated[index].tax = parseFloat((base * taxRate).toFixed(frac));
-    updated[index].total = parseFloat((base + updated[index].tax).toFixed(frac));
+    updated[index].total = parseFloat(
+      (base + updated[index].tax).toFixed(frac),
+    );
 
     setInvoiceItems(updated);
   };
@@ -297,9 +336,10 @@ export default function InvoiceItemTable({
             return (
               <tr key={item.id}>
                 <td>
-                  <CreatableSelect
+                  <AsyncCreatableSelect
                     isClearable
                     isSearchable
+                    additional={{ page: 1 }}
                     className="text-xs"
                     classNamePrefix="select"
                     components={{ IndicatorSeparator: () => null }}
@@ -307,14 +347,11 @@ export default function InvoiceItemTable({
                       `إضافة صنف جديد: "${inputValue}"`
                     }
                     instanceId={`item-select-${index}`}
+                    loadOptions={loadItemOptions}
                     menuPortalTarget={
                       typeof window !== "undefined" ? document.body : null
                     }
                     menuPosition="fixed"
-                    options={items.map((it) => ({
-                      value: it.id,
-                      label: `${it.item_code} - ${it.item_name}`,
-                    }))}
                     placeholder="اختر الصنف..."
                     styles={{
                       control: (base) => ({
@@ -333,44 +370,52 @@ export default function InvoiceItemTable({
                         : null
                     }
                     onChange={(selectedOption) => {
-                      const selected = items.find(
-                        (itm) => itm.id === selectedOption?.value,
-                      );
+                      // selectedOption may carry full item data via `item` field
+                      // or fallback to items state by id
+                      // @ts-ignore
+                      const opt: any = selectedOption;
+                      const selected =
+                        opt?.item || items.find((itm) => itm.id === opt?.value);
+
+                      if (!selected) return;
+
+                      // cache option in items list if not already present
+                      if (!items.find((i) => i.id === selected.id)) {
+                        setItems([...items, selected]);
+                      }
 
                       console.log("selected item raw:", selected);
 
                       const updated = [...invoiceItems];
 
-                      updated[index].item_id = selected?.id ?? null;
-                      updated[index].item_code = selected?.item_code ?? "";
-                      updated[index].item_name = selected?.item_name ?? "";
-                      const selk = selected?.k ?? "";
-                      const selPurity = selected?.purity ?? "";
+                      updated[index].item_id = selected.id ?? null;
+                      updated[index].item_code = selected.item_code ?? "";
+                      updated[index].item_name = selected.item_name ?? "";
+                      const selk = selected.k ?? "";
+                      const selPurity = selected.purity ?? "";
 
-                      updated[index].k = selected?.k ?? "";
+                      updated[index].k = selected.k ?? "";
                       updated[index].price =
-                        goldPrice ?? Number(selected?.item_price ?? 0);
-                      updated[index].price_w = Number(
-                        selected?.work_price ?? 0,
-                      );
-                      updated[index].purity = selected?.purity ?? "";
-                      updated[index].stones = selected?.stones ?? "";
+                        goldPrice ?? Number(selected.item_price ?? 0);
+                      updated[index].price_w = Number(selected.work_price ?? 0);
+                      updated[index].purity = selected.purity ?? "";
+                      updated[index].stones = selected.stones ?? "";
 
                       if (
-                        selected?.item_weight !== undefined &&
-                        selected?.item_weight !== null &&
+                        selected.item_weight !== undefined &&
+                        selected.item_weight !== null &&
                         selected.item_weight !== ""
                       ) {
                         updated[index].weight = Number(
-                          selected?.item_weight ?? 0,
+                          selected.item_weight ?? 0,
                         );
                         updated[index].g_weight = Number(
-                          selected?.item_g_weight ?? selected?.item_weight ?? 0,
+                          selected.item_g_weight ?? selected.item_weight ?? 0,
                         );
                       }
                       if (
-                        selected?.item_g_weight !== undefined &&
-                        selected?.item_g_weight !== null &&
+                        selected.item_g_weight !== undefined &&
+                        selected.item_g_weight !== null &&
                         selected.item_g_weight !== ""
                       ) {
                         updated[index].g_weight = Number(
@@ -382,7 +427,7 @@ export default function InvoiceItemTable({
                           selk === "0" ||
                           selPurity === "" ||
                           selPurity === "0") &&
-                        selected?.cat
+                        selected.cat
                       ) {
                         const cat = categories.find(
                           (c) => c.id === selected.cat,
@@ -410,6 +455,7 @@ export default function InvoiceItemTable({
                             ? updated[index].total_w
                             : updated[index].total_a + updated[index].total_w) -
                         (updated[index].item_disc_amt ?? 0);
+
                       updated[index].tax =
                         (base * (updated[index].tax_prc ?? 15)) / 100;
                       updated[index].total = base + updated[index].tax;
@@ -437,15 +483,14 @@ export default function InvoiceItemTable({
                         (newItem.item_weight ?? 0) *
                         (goldPrice ?? newItem.item_price);
                       const totalW =
-                        (newItem.item_weight ?? 0) *
-                        (newItem.work_price ?? 0);
+                        (newItem.item_weight ?? 0) * (newItem.work_price ?? 0);
                       const base =
                         (payType === 1
                           ? totalA
                           : payType === 2
                             ? totalW
-                            : totalA + totalW) -
-                        (newItem.item_disc_amt ?? 0);
+                            : totalA + totalW) - (newItem.item_disc_amt ?? 0);
+
                       updated[index] = {
                         ...updated[index],
                         item_id: newItem.id,
