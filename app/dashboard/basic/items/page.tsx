@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState , useCallback} from "react";
 import {
   Button,
   Input,
@@ -12,7 +12,10 @@ import {
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
 
-import { API_BASE_URL, API_ENDPOINTS, apiFetch } from "@/utilities/api";
+import { fetchData, API_BASE_URL, API_ENDPOINTS, apiFetch } from "@/utilities/api";
+import ReactSelect from "react-select";
+
+
 
 interface Category {
   id: number;
@@ -48,7 +51,6 @@ interface Item {
   k: string;
   purity: string;
   item_status: number;
-  cancel: boolean;
   cr_date: string;
   cr_user: string;
   upd_date: string;
@@ -65,12 +67,15 @@ interface ItemType {
 }
 
 export default function CategoriesItemsPage() {
+  const Item_Status_URL = `${API_BASE_URL}getItemStatus`;
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [selectedCatId, setSelectedCatId] = useState<number>(0);
   const [selectedTypeId, setSelectedTypeId] = useState<number>(0);
+  const [ItemStatus, setItemStatus] = useState<any[]>([]);
+  const [currentItem, setCurrentItem] = useState<Partial<Item>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const catPerPage = 4;
@@ -98,18 +103,17 @@ export default function CategoriesItemsPage() {
     item_name: "",
     item_name_e: "",
     item_price: "0.00",
-    item_img: "/default.jpg",
+    item_img: "/default.png",
     item_code: "0000000000000",
-    item_barcode: "",
-    first_cost: "",
-    item_weight: "",
-    item_g_weight: "",
-    stones: "",
+    item_barcode: " ",
+    first_cost:  "0.00",
+    item_weight:  "0.00",
+    item_g_weight:  "0.00",
+    stones: "0.00",
     model: "",
-    k: "",
-    purity: "",
+    k:  "0.00",
+    purity:  "0.00",
     item_status: 1,
-    cancel: false,
     cr_date: "",
     cr_user: "",
     upd_date: "",
@@ -126,8 +130,23 @@ export default function CategoriesItemsPage() {
     fetchBoxes();
     fetchCatTypes();
     fetchCatStatuses();
+    loadMetaData();
   }, []);
 
+
+  const loadMetaData = useCallback(async () => {
+    
+    const itemsResponse = await fetchData(Item_Status_URL);
+    const item = Array.isArray(itemsResponse?.results)
+      ? itemsResponse.results
+      : [];
+
+    setItemStatus(item);
+
+  
+    }, []);
+  
+    
   useEffect(() => {
     if (search.trim()) {
       searchItems(search);
@@ -232,6 +251,7 @@ export default function CategoriesItemsPage() {
     }
   };
 
+
   const fetchUnits = async () => {
     try {
       const res = await apiFetch(API_ENDPOINTS.UNITS_LIST);
@@ -243,7 +263,10 @@ export default function CategoriesItemsPage() {
     }
   };
 
+  
   const filteredItems = items;
+  
+  const [file, setFile] = useState(null);
 
   const handleAddItem = async () => {
     try {
@@ -261,13 +284,15 @@ export default function CategoriesItemsPage() {
       formData.append("model", newItem.model);
       formData.append("k", newItem.k);
       formData.append("purity", newItem.purity);
-      formData.append("item_status", String(1));
-      formData.append("cancel", String(false));
+      //formData.append("item_status", String(1));
       formData.append("cr_date", new Date().toISOString());
       formData.append("cat", String(newItem.cat));
       formData.append("item_type", String(newItem.item_type));
       formData.append("unit", String(newItem.unit));
-      // formData.append("item_img", newItem.item_img); // صورة حقيقية من input type="file"
+      
+    if (file) {
+      formData.append("item_img", newItem.item_img); // صورة حقيقية من input type="file"
+    }    
 
       const response = await apiFetch(API_ENDPOINTS.CREATE_ITEM, {
         method: "POST",
@@ -301,26 +326,31 @@ export default function CategoriesItemsPage() {
     try {
       const formData = new FormData();
 
-      formData.append("item_name", newItem.item_name);
-      formData.append("item_name_e", newItem.item_name_e);
-      formData.append("item_price", newItem.item_price);
-      formData.append("item_code", newItem.item_code);
-      formData.append("item_barcode", newItem.item_barcode);
-      formData.append("first_cost", newItem.first_cost);
-      formData.append("item_weight", newItem.item_weight);
-      formData.append("item_g_weight", newItem.item_g_weight);
-      formData.append("stones", newItem.stones);
-      formData.append("model", newItem.model);
-      formData.append("k", newItem.k);
-      formData.append("purity", newItem.purity);
-      formData.append("item_status", String(newItem.item_status));
-      formData.append("cancel", String(newItem.cancel));
-      formData.append("upd_date", new Date().toISOString());
-      formData.append("upd_user", "user"); // غيرها إذا في اسم مستخدم
-      formData.append("cat", String(newItem.cat));
-      formData.append("item_type", String(newItem.item_type));
-      formData.append("unit", String(newItem.unit));
+       formData.append("item_name", newItem.item_name);
+       formData.append("item_name_e", newItem.item_name_e);
+       formData.append("item_price", newItem.item_price ?? "");
+       formData.append("item_code", newItem.item_code);
+       formData.append("item_barcode", newItem.item_barcode);
+       formData.append("first_cost", newItem.first_cost?? "");
+       formData.append("item_weight", newItem.item_weight?? "");
+       formData.append("item_g_weight", newItem.item_g_weight?? "");
+       formData.append("stones", newItem.stones?? "");
+       formData.append("model", newItem.model);
+       formData.append("k", newItem.k?? "");
+       formData.append("purity", newItem.purity?? "");
+       formData.append("item_status", String(newItem.item_status));
+       formData.append("upd_date", new Date().toISOString());
+       formData.append("upd_user", "user"); // غيرها إذا في اسم مستخدم
+       formData.append("cat", String(newItem.cat));
 
+      if (newItem.item_type && typeof newItem.item_type !== "string") {
+        formData.append("item_type", String(newItem.item_type)?? "");
+      }
+       
+      if (newItem.unit && typeof newItem.unit !== "string") {
+        formData.append("unit", String(newItem.unit)?? "");
+      }
+       
       // فقط إذا كانت صورة جديدة
       if (newItem.item_img && typeof newItem.item_img !== "string") {
         formData.append("item_img", newItem.item_img);
@@ -329,7 +359,7 @@ export default function CategoriesItemsPage() {
       const response = await apiFetch(
         `${API_BASE_URL}api_update_item/${newItem.id}`,
         {
-          method: "PUT",
+          method: "PATCH",
           body: formData,
         },
       );
@@ -394,21 +424,20 @@ export default function CategoriesItemsPage() {
               cat: selectedCatId ?? 0,
               item_type: selectedTypeId ?? null,
               unit: null,
-              item_img: "/default.jpg",
+              item_img: "default.png",
               item_name: "",
               item_name_e: "",
-              item_price: "",
+              item_price: "0.00",
               item_code: "",
-              item_barcode: "",
-              first_cost: "",
-              item_weight: "",
-              item_g_weight: "",
-              stones: "",
+              item_barcode: " ",
+              first_cost: "0.00",
+              item_weight: "0.00",
+              item_g_weight: "0.00",
+              stones: "0.00",
               model: "",
-              k: "",
-              purity: "",
+              k: "0.00",
+              purity: "0.00",
               item_status: 1,
-              cancel: false,
               cr_date: "",
               cr_user: "",
               upd_date: "",
@@ -522,6 +551,7 @@ export default function CategoriesItemsPage() {
               <th className="p-2 border">التكلفة</th>
               <th className="p-2 border">نوع الصنف</th>
               <th className="p-2 border">الوحدة</th>
+              <th className="p-2 border">الحالة</th>
               <th className="p-2 border">الإجراءات</th>
             </tr>
           </thead>
@@ -544,6 +574,7 @@ export default function CategoriesItemsPage() {
                 <td className="p-2 border">{item.first_cost || "-"}</td>
                 <td className="p-2 border">{itemType?.type_name || "-"}</td>
                 <td className="p-2 border">{unitName?.unit_name || "-"}</td>
+                 <td className="p-2 border"> {ItemStatus.find((t) => t.code_id === item.item_status) ?.code_desc || "-"} </td> 
                 <td className="p-2 border">
                   <div className="flex justify-center gap-2">
                     <Button
@@ -633,11 +664,12 @@ export default function CategoriesItemsPage() {
               onChange={(e) =>
                 setNewItem({ ...newItem, item_name_e: e.target.value })
               }
+              required
             />
             <Input
               isDisabled={isViewMode}
               label="السعر"
-              value={newItem.item_price}
+              value={newItem.item_price ?? ""}
               onChange={(e) =>
                 setNewItem({ ...newItem, item_price: e.target.value })
               }
@@ -786,14 +818,60 @@ export default function CategoriesItemsPage() {
                 </option>
               ))}
             </select>
+
+
+            {/* حالة الصنف */}
+            <div className="col-span-1">
+              <ReactSelect
+                isSearchable
+                className="w-full text-sm"
+                classNamePrefix="heroui"
+                components={{
+                  IndicatorSeparator: () => null,
+                }}
+                isDisabled={isViewMode}
+                menuPlacement="auto"
+                menuPortalTarget={
+                  typeof window !== "undefined" ? document.body : null
+                }
+                menuPosition="fixed"
+                options={ItemStatus.map((item1) => ({
+                  value: item1.code_id,
+                  label: item1.code_desc,
+                }))}
+                placeholder="حالة الصنف "
+                styles={{
+                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                }}
+                value={
+                  currentItem.item_status
+                    ? {
+                        value: currentItem.item_status,
+                        label:
+                          ItemStatus.find(
+                            (b) => b.code_id === currentItem.item_status,
+                          )?.code_desc || "",
+                      }
+                    : null
+                }
+                 onChange={(selectedOption) => {
+                  setCurrentItem({
+                 ...currentItem,
+                 item_status: selectedOption ? Number(selectedOption.value) : undefined,
+                   });
+                 }}
+              />
+            </div>
+
             {/* <div className="col-span-4 text-lg font-bold border-b pb-2">الحالة والمستخدم</div>
       <Input isDisabled label="تاريخ الإضافة" value={newItem.cr_date ?? ""} />
       <Input isDisabled label="أضيف بواسطة" value={newItem.cr_user ?? ""} />
       <Input isDisabled label="تاريخ التعديل" value={newItem.upd_date ?? ""} />
       <Input isDisabled label="عدل بواسطة" value={newItem.upd_user ?? ""} /> */}
             {/* <div className="flex gap-6 items-center col-span-4">
-      </div> */}{" "}
-            update by moseed, i can update list for item_status
+      </div>
+      update by moseed, i can update list for item_status  */}{" "}
+           
           </ModalBody>
 
           {modalMode !== "view" && (
