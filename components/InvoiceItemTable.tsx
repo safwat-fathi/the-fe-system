@@ -138,8 +138,11 @@ export default function InvoiceItemTable({
         ? updated[index].weight * 1000
         : updated[index].weight;
 
-    // total_a = weight * price (using grams if needed)
-    updated[index].total_a = wCalc * updated[index].price;
+    // total_a depends on invoice type
+    updated[index].total_a =
+      payType === 2
+        ? wCalc * updated[index].price_w
+        : wCalc * updated[index].price;
     // total_w = weight * wagePrice
     updated[index].total_w = wCalc * updated[index].price_w;
     const baseTotal =
@@ -251,7 +254,8 @@ export default function InvoiceItemTable({
       } else {
         updated[index].price = (baseTotal - w * updated[index].price_w) / w;
       }
-      updated[index].total_a = w * updated[index].price;
+      updated[index].total_a =
+        payType === 2 ? w * updated[index].price_w : w * updated[index].price;
       updated[index].total_w = w * updated[index].price_w;
     } else {
       // when weight is zero simply store the entered total
@@ -442,9 +446,11 @@ export default function InvoiceItemTable({
                             updated[index].purity = cat.purity ?? "";
                         }
                       }
-                      // total_a = weight * price
+                      // total_a varies by invoice type
                       updated[index].total_a =
-                        updated[index].weight * updated[index].price;
+                        payType === 2
+                          ? updated[index].weight * updated[index].price_w
+                          : updated[index].weight * updated[index].price;
                       // total_w = weight * wagePrice
                       updated[index].total_w =
                         updated[index].weight * updated[index].price_w;
