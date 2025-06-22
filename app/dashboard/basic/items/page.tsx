@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState , useCallback} from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Button,
   Input,
@@ -11,11 +11,14 @@ import {
 } from "@heroui/react";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
-
-import { fetchData, API_BASE_URL, API_ENDPOINTS, apiFetch } from "@/utilities/api";
 import ReactSelect from "react-select";
 
-
+import {
+  fetchData,
+  API_BASE_URL,
+  API_ENDPOINTS,
+  apiFetch,
+} from "@/utilities/api";
 
 interface Category {
   id: number;
@@ -106,13 +109,13 @@ export default function CategoriesItemsPage() {
     item_img: "/default.png",
     item_code: "0000000000000",
     item_barcode: " ",
-    first_cost:  "0.00",
-    item_weight:  "0.00",
-    item_g_weight:  "0.00",
+    first_cost: "0.00",
+    item_weight: "0.00",
+    item_g_weight: "0.00",
     stones: "0.00",
     model: "",
-    k:  "0.00",
-    purity:  "0.00",
+    k: "0.00",
+    purity: "0.00",
     item_status: 1,
     cr_date: "",
     cr_user: "",
@@ -133,20 +136,15 @@ export default function CategoriesItemsPage() {
     loadMetaData();
   }, []);
 
-
   const loadMetaData = useCallback(async () => {
-    
     const itemsResponse = await fetchData(Item_Status_URL);
     const item = Array.isArray(itemsResponse?.results)
       ? itemsResponse.results
       : [];
 
     setItemStatus(item);
+  }, []);
 
-  
-    }, []);
-  
-    
   useEffect(() => {
     if (search.trim()) {
       searchItems(search);
@@ -251,7 +249,6 @@ export default function CategoriesItemsPage() {
     }
   };
 
-
   const fetchUnits = async () => {
     try {
       const res = await apiFetch(API_ENDPOINTS.UNITS_LIST);
@@ -263,9 +260,8 @@ export default function CategoriesItemsPage() {
     }
   };
 
-  
   const filteredItems = items;
-  
+
   const [file, setFile] = useState(null);
 
   const handleAddItem = async () => {
@@ -289,10 +285,10 @@ export default function CategoriesItemsPage() {
       formData.append("cat", String(newItem.cat));
       formData.append("item_type", String(newItem.item_type));
       formData.append("unit", String(newItem.unit));
-      
-    if (file) {
-      formData.append("item_img", newItem.item_img); // صورة حقيقية من input type="file"
-    }    
+
+      if (file) {
+        formData.append("item_img", newItem.item_img); // صورة حقيقية من input type="file"
+      }
 
       const response = await apiFetch(API_ENDPOINTS.CREATE_ITEM, {
         method: "POST",
@@ -326,31 +322,31 @@ export default function CategoriesItemsPage() {
     try {
       const formData = new FormData();
 
-       formData.append("item_name", newItem.item_name);
-       formData.append("item_name_e", newItem.item_name_e);
-       formData.append("item_price", newItem.item_price ?? "");
-       formData.append("item_code", newItem.item_code);
-       formData.append("item_barcode", newItem.item_barcode);
-       formData.append("first_cost", newItem.first_cost?? "");
-       formData.append("item_weight", newItem.item_weight?? "");
-       formData.append("item_g_weight", newItem.item_g_weight?? "");
-       formData.append("stones", newItem.stones?? "");
-       formData.append("model", newItem.model);
-       formData.append("k", newItem.k?? "");
-       formData.append("purity", newItem.purity?? "");
-       formData.append("item_status", String(newItem.item_status));
-       formData.append("upd_date", new Date().toISOString());
-       formData.append("upd_user", "user"); // غيرها إذا في اسم مستخدم
-       formData.append("cat", String(newItem.cat));
+      formData.append("item_name", newItem.item_name);
+      formData.append("item_name_e", newItem.item_name_e);
+      formData.append("item_price", newItem.item_price ?? "");
+      formData.append("item_code", newItem.item_code);
+      formData.append("item_barcode", newItem.item_barcode);
+      formData.append("first_cost", newItem.first_cost ?? "");
+      formData.append("item_weight", newItem.item_weight ?? "");
+      formData.append("item_g_weight", newItem.item_g_weight ?? "");
+      formData.append("stones", newItem.stones ?? "");
+      formData.append("model", newItem.model);
+      formData.append("k", newItem.k ?? "");
+      formData.append("purity", newItem.purity ?? "");
+      formData.append("item_status", String(newItem.item_status));
+      formData.append("upd_date", new Date().toISOString());
+      formData.append("upd_user", "user"); // غيرها إذا في اسم مستخدم
+      formData.append("cat", String(newItem.cat));
 
       if (newItem.item_type && typeof newItem.item_type !== "string") {
-        formData.append("item_type", String(newItem.item_type)?? "");
+        formData.append("item_type", String(newItem.item_type) ?? "");
       }
-       
+
       if (newItem.unit && typeof newItem.unit !== "string") {
-        formData.append("unit", String(newItem.unit)?? "");
+        formData.append("unit", String(newItem.unit) ?? "");
       }
-       
+
       // فقط إذا كانت صورة جديدة
       if (newItem.item_img && typeof newItem.item_img !== "string") {
         formData.append("item_img", newItem.item_img);
@@ -470,7 +466,13 @@ export default function CategoriesItemsPage() {
               <tr
                 key={cat.id}
                 className={`cursor-pointer hover:bg-gray-200 ${selectedCatId === cat.id ? "bg-green-100" : ""}`}
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelectedCatId(cat.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ")
+                    setSelectedCatId(cat.id);
+                }}
               >
                 <td className="p-2 border">{cat.cat_name}</td>
                 <td className="p-2 border">{cat.gauge}</td>
@@ -516,10 +518,13 @@ export default function CategoriesItemsPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold mb-2">الأصناف</h2>
         <div className="flex items-center gap-2">
-          <label className="text-sm">نوع الصنف:</label>
+          <label className="text-sm" htmlFor="filter-type">
+            نوع الصنف:
+          </label>
           <select
             aria-label="اختر نوع الصنف"
             className="p-2 border rounded w-full"
+            id="filter-type"
             value={selectedTypeId ?? ""}
             onChange={(e) => setSelectedTypeId(Number(e.target.value))}
           >
@@ -538,23 +543,23 @@ export default function CategoriesItemsPage() {
           />
         </div>
       </div>
-        <table className="w-full border text-sm">
-          <thead>
-            <tr className="bg-gray-100 text-center text-xs font-semibold">
-              <th className="p-2 border">الكود</th>
-              <th className="p-2 border">الاسم</th>
-              <th className="p-2 border">السعر</th>
-              <th className="p-2 border">الكود</th>
-              <th className="p-2 border">الوزن</th>
-              <th className="p-2 border">العيار</th>
-              <th className="p-2 border">المعايرة</th>
-              <th className="p-2 border">التكلفة</th>
-              <th className="p-2 border">نوع الصنف</th>
-              <th className="p-2 border">الوحدة</th>
-              <th className="p-2 border">الحالة</th>
-              <th className="p-2 border">الإجراءات</th>
-            </tr>
-          </thead>
+      <table className="w-full border text-sm">
+        <thead>
+          <tr className="bg-gray-100 text-center text-xs font-semibold">
+            <th className="p-2 border">الكود</th>
+            <th className="p-2 border">الاسم</th>
+            <th className="p-2 border">السعر</th>
+            <th className="p-2 border">الكود</th>
+            <th className="p-2 border">الوزن</th>
+            <th className="p-2 border">العيار</th>
+            <th className="p-2 border">المعايرة</th>
+            <th className="p-2 border">التكلفة</th>
+            <th className="p-2 border">نوع الصنف</th>
+            <th className="p-2 border">الوحدة</th>
+            <th className="p-2 border">الحالة</th>
+            <th className="p-2 border">الإجراءات</th>
+          </tr>
+        </thead>
         <tbody>
           {filteredItems.map((item) => {
             const itemType = itemTypes.find(
@@ -574,7 +579,11 @@ export default function CategoriesItemsPage() {
                 <td className="p-2 border">{item.first_cost || "-"}</td>
                 <td className="p-2 border">{itemType?.type_name || "-"}</td>
                 <td className="p-2 border">{unitName?.unit_name || "-"}</td>
-                 <td className="p-2 border"> {ItemStatus.find((t) => t.code_id === item.item_status) ?.code_desc || "-"} </td> 
+                <td className="p-2 border">
+                  {" "}
+                  {ItemStatus.find((t) => t.code_id === item.item_status)
+                    ?.code_desc || "-"}{" "}
+                </td>
                 <td className="p-2 border">
                   <div className="flex justify-center gap-2">
                     <Button
@@ -658,13 +667,13 @@ export default function CategoriesItemsPage() {
               }
             />
             <Input
+              required
               isDisabled={isViewMode}
               label="اسم الصنف بالإنجليزية"
               value={newItem.item_name_e}
               onChange={(e) =>
                 setNewItem({ ...newItem, item_name_e: e.target.value })
               }
-              required
             />
             <Input
               isDisabled={isViewMode}
@@ -745,13 +754,17 @@ export default function CategoriesItemsPage() {
               }
             />
             <div className="col-span-3">
-              <label className="block mb-2 font-medium text-sm">
+              <label
+                className="block mb-2 font-medium text-sm"
+                htmlFor="item-image"
+              >
                 صورة الصنف
               </label>
               <div className="flex items-center gap-4">
                 <input
                   accept="image/*"
                   className="p-2 border rounded w-full"
+                  id="item-image"
                   type="file"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -818,8 +831,6 @@ export default function CategoriesItemsPage() {
                 </option>
               ))}
             </select>
-
-
             {/* حالة الصنف */}
             <div className="col-span-1">
               <ReactSelect
@@ -854,15 +865,16 @@ export default function CategoriesItemsPage() {
                       }
                     : null
                 }
-                 onChange={(selectedOption) => {
+                onChange={(selectedOption) => {
                   setCurrentItem({
-                 ...currentItem,
-                 item_status: selectedOption ? Number(selectedOption.value) : undefined,
-                   });
-                 }}
+                    ...currentItem,
+                    item_status: selectedOption
+                      ? Number(selectedOption.value)
+                      : undefined,
+                  });
+                }}
               />
             </div>
-
             {/* <div className="col-span-4 text-lg font-bold border-b pb-2">الحالة والمستخدم</div>
       <Input isDisabled label="تاريخ الإضافة" value={newItem.cr_date ?? ""} />
       <Input isDisabled label="أضيف بواسطة" value={newItem.cr_user ?? ""} />
@@ -871,7 +883,6 @@ export default function CategoriesItemsPage() {
             {/* <div className="flex gap-6 items-center col-span-4">
       </div>
       update by moseed, i can update list for item_status  */}{" "}
-           
           </ModalBody>
 
           {modalMode !== "view" && (
