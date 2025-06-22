@@ -16,6 +16,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Button, Input } from "@heroui/react";
+import CountUp from "react-countup";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ChartTitle, Tooltip, Legend);
 
@@ -56,9 +57,21 @@ export default function DashboardPage() {
         setMonthlySales(monthly);
       }
 
-      if (Array.isArray(customers)) setCustomerCount(customers.length);
-      if (Array.isArray(categories)) setCategoryCount(categories.length);
-      if (Array.isArray(itemsRes)) setItemCount(itemsRes.length);
+      if (Array.isArray(customers)) {
+        setCustomerCount(customers.length);
+      }
+
+      if (Array.isArray(categories)) {
+        setCategoryCount(categories.length);
+      } else if (Array.isArray(categories?.results)) {
+        setCategoryCount(categories.results.length);
+      }
+
+      if (Array.isArray(itemsRes)) {
+        setItemCount(itemsRes.length);
+      } else if (Array.isArray(itemsRes?.results)) {
+        setItemCount(itemsRes.results.length);
+      }
     };
 
     const loadGold = async () => {
@@ -121,10 +134,45 @@ export default function DashboardPage() {
       <div className="text-sm text-gray-500">فرع: {branch || "-"} | السنة: {year || "-"}</div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="الفواتير" value={invoiceCount ?? "-"} />
-        <StatCard title="العملاء" value={customerCount ?? "-"} />
-        <StatCard title="الأصناف" value={itemCount ?? "-"} />
-        <StatCard title="الفئات" value={categoryCount ?? "-"} />
+        <Link href="/dashboard/reports/invoices" className="bg-white rounded-xl shadow-md border border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all duration-300 p-6 flex items-center gap-4">
+          <div className="text-yellow-500 text-3xl">🧾</div>
+          <div>
+            <h3 className="text-sm text-gray-500">الفواتير</h3>
+            <p className="text-2xl font-bold text-gray-800">
+              {invoiceCount !== null ? <CountUp end={invoiceCount} duration={1.5} separator="," /> : <span className="text-gray-400">...</span>}
+            </p>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/basic/customers" className="bg-white rounded-xl shadow-md border border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all duration-300 p-6 flex items-center gap-4">
+          <div className="text-blue-600 text-3xl">👥</div>
+          <div>
+            <h3 className="text-sm text-gray-500">العملاء</h3>
+            <p className="text-2xl font-bold text-gray-800">
+              {customerCount !== null ? <CountUp end={customerCount} duration={1.5} separator="," /> : <span className="text-gray-400">...</span>}
+            </p>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/basic/items" className="bg-white rounded-xl shadow-md border border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all duration-300 p-6 flex items-center gap-4">
+          <div className="text-green-600 text-3xl">📦</div>
+          <div>
+            <h3 className="text-sm text-gray-500">الأصناف</h3>
+            <p className="text-2xl font-bold text-gray-800">
+              {itemCount !== null ? <CountUp end={itemCount} duration={1.5} separator="," /> : <span className="text-gray-400">...</span>}
+            </p>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/basic/categories" className="bg-white rounded-xl shadow-md border border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all duration-300 p-6 flex items-center gap-4">
+          <div className="text-purple-600 text-3xl">🏷️</div>
+          <div>
+            <h3 className="text-sm text-gray-500">الفئات</h3>
+            <p className="text-2xl font-bold text-gray-800">
+              {categoryCount !== null ? <CountUp end={categoryCount} duration={1.5} separator="," /> : <span className="text-gray-400">...</span>}
+            </p>
+          </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -135,19 +183,9 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <h2 className="text-base font-bold text-gray-700">تحليل أسعار الذهب (من الفواتير)</h2>
           <div className="flex flex-wrap gap-2 items-center">
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="max-w-[160px]"
-            />
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="max-w-[160px]" />
             <span className="text-sm text-gray-500">إلى</span>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="max-w-[160px]"
-            />
+            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="max-w-[160px]" />
           </div>
         </div>
         <Line data={goldChartData} height={90} />
@@ -157,14 +195,14 @@ export default function DashboardPage() {
         <Line data={salesChartData} />
       </div>
 
-      <div className="flex gap-4">
+      {/* <div className="flex gap-4">
         <Button as={Link} href="/dashboard/forms/invoice" color="primary">
           فاتورة جديدة
         </Button>
         <Button as={Link} href="/dashboard/reports/invoices" color="secondary">
           قائمة الفواتير
         </Button>
-      </div>
+      </div> */}
     </div>
   );
 }
