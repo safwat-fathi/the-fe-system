@@ -1,7 +1,6 @@
 "use client";
 
 import ReactSelect from "react-select";
-import CreatableSelect from "react-select/creatable";
 
 interface Item {
   id: number;
@@ -78,28 +77,45 @@ export default function InvoiceSelectors({
   return (
     <div className="grid grid-cols-12 gap-2 text-sm mb-4">
       <div className="col-span-4">
-        <label className="block mb-1">العميل:</label>
+        <label className="block mb-1" htmlFor="customer-select-input">
+          العميل:
+        </label>
         <ReactSelect
-          instanceId="customer-select"
+          isSearchable
           className="w-full text-sm"
           classNamePrefix="react-select"
-          isSearchable
+          components={{ IndicatorSeparator: () => null }}
+          inputId="customer-select-input"
+          instanceId="customer-select"
+          menuPortalTarget={
+            typeof window !== "undefined" ? document.body : null
+          }
+          menuPosition="fixed"
           options={customers
             .filter((cust) =>
-              paymentMethod === "cash" ? cust.cust_type === 99 : cust.cust_type !== 99
+              paymentMethod === "cash"
+                ? cust.cust_type === 99
+                : cust.cust_type !== 99,
             )
             .map((cust) => ({
               value: cust.id,
               label: `${cust.cust_code ?? cust.id} - ${cust.cust_name}`,
             }))}
+          placeholder="اختر العميل..."
+          styles={{
+            control: (base) => ({ ...base, height: 38, minHeight: 38 }),
+            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+          }}
           value={
             selectedCustomer
               ? {
                   value: selectedCustomer,
                   label: `${
-                    customers.find((c) => c.id === selectedCustomer)?.cust_code ?? selectedCustomer
+                    customers.find((c) => c.id === selectedCustomer)
+                      ?.cust_code ?? selectedCustomer
                   } - ${
-                    customers.find((c) => c.id === selectedCustomer)?.cust_name || `عميل رقم ${selectedCustomer}`
+                    customers.find((c) => c.id === selectedCustomer)
+                      ?.cust_name || `عميل رقم ${selectedCustomer}`
                   }`,
                 }
               : null
@@ -107,34 +123,29 @@ export default function InvoiceSelectors({
           onChange={(selectedOption) => {
             setSelectedCustomer(selectedOption?.value ?? null);
 
-            const selectedCust = customers.find((c) => c.id === selectedOption?.value);
+            const selectedCust = customers.find(
+              (c) => c.id === selectedOption?.value,
+            );
 
             if (selectedCust) {
               if (selectedCust.mobile) setMobileMethod(selectedCust.mobile);
-              if (selectedCust.acc) setHandlingMethod(selectedCust.handling?.toString() || "");
+              if (selectedCust.acc)
+                setHandlingMethod(selectedCust.handling?.toString() || "");
               if (selectedCust.vat_no) setVatNumber(selectedCust.vat_no);
             }
           }}
-          placeholder="اختر العميل..."
-          styles={{
-            control: (base) => ({ ...base, height: 38, minHeight: 38 }),
-            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-          }}
-          menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-          menuPosition="fixed"
-          components={{ IndicatorSeparator: () => null }}
         />
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">طريقة الدفع:</label>
+        <span className="block mb-1">طريقة الدفع:</span>
         <div className="w-full h-[38px] border rounded flex items-center justify-around px-2">
           <label className="flex items-center gap-1">
             <input
-              type="radio"
-              name="payment"
-              value="cash"
               checked={paymentMethod === "cash"}
+              name="payment"
+              type="radio"
+              value="cash"
               onChange={(e) => {
                 setPaymentMethod(e.target.value);
                 setSelectedCustomer(null);
@@ -144,10 +155,10 @@ export default function InvoiceSelectors({
           </label>
           <label className="flex items-center gap-1">
             <input
-              type="radio"
-              name="payment"
-              value="credit"
               checked={paymentMethod === "credit"}
+              name="payment"
+              type="radio"
+              value="credit"
               onChange={(e) => {
                 setPaymentMethod(e.target.value);
                 setSelectedCustomer(null);
@@ -159,9 +170,12 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">على:</label>
+        <label className="block mb-1" htmlFor="payType-select">
+          على:
+        </label>
         <select
           className="w-full h-[38px] border px-2 rounded"
+          id="payType-select"
           value={payType}
           onChange={(e) => setPayType(parseInt(e.target.value))}
         >
@@ -172,53 +186,68 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">رقم المرجع:</label>
+        <label className="block mb-1" htmlFor="reference-number">
+          رقم المرجع:
+        </label>
         <input
-          type="text"
           className="w-full h-[38px] border px-2 rounded"
+          id="reference-number"
+          placeholder=" المرجع "
+          type="text"
           value={referenceNumber}
           onChange={(e) => setReferenceNumber(e.target.value)}
-          placeholder=" المرجع "
         />
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">الرقم الضريبي:</label>
+        <label className="block mb-1" htmlFor="vat-number">
+          الرقم الضريبي:
+        </label>
         <input
-          type="text"
-          className="w-full h-[38px] border px-2 rounded"
-          value={vatNumber}
           readOnly
+          className="w-full h-[38px] border px-2 rounded"
+          id="vat-number"
           placeholder="الرقم الضريبي"
+          type="text"
+          value={vatNumber}
         />
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">مناولة:</label>
+        <label className="block mb-1" htmlFor="handling">
+          مناولة:
+        </label>
         <input
-          type="text"
           className="w-full h-[38px] border px-2 rounded"
+          id="handling"
+          placeholder="مناولة"
+          type="text"
           value={handlingMethod}
           onChange={(e) => setHandlingMethod(e.target.value)}
-          placeholder="مناولة"
         />
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">جوال:</label>
+        <label className="block mb-1" htmlFor="mobile">
+          جوال:
+        </label>
         <input
-          type="text"
           className="w-full h-[38px] border px-2 rounded"
+          id="mobile"
+          placeholder=" الجوال"
+          type="text"
           value={mobileMethod}
           onChange={(e) => setMobileMethod(e.target.value)}
-          placeholder=" الجوال"
         />
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">البائع:</label>
+        <label className="block mb-1" htmlFor="employee-select">
+          البائع:
+        </label>
         <select
           className="w-full h-[38px] border px-2 rounded"
+          id="employee-select"
           value={employee}
           onChange={(e) => setEmployee(e.target.value)}
         >
@@ -229,30 +258,38 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">سعر الذهب بالريال:</label>
+        <label className="block mb-1" htmlFor="gold-price">
+          سعر الذهب بالريال:
+        </label>
         <input
-          type="text"
-          className="w-full h-[38px] border px-2 rounded bg-gray-100"
-          value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
           readOnly
+          className="w-full h-[38px] border px-2 rounded bg-gray-100"
+          id="gold-price"
+          type="text"
+          value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
         />
       </div>
 
       <div className="col-span-12">
-        <label className="block mb-1">البيان:</label>
+        <label className="block mb-1" htmlFor="note">
+          البيان:
+        </label>
         <input
-          type="text"
           className="w-full h-[38px] border px-2 rounded"
+          id="note"
+          placeholder="البيان"
+          type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="البيان"
         />
       </div>
 
       <div className="col-span-12 text-sm text-gray-700">
         {(() => {
           const cust = customers.find((c) => c.id === selectedCustomer);
+
           if (!cust) return null;
+
           return (
             <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
               {cust.cr_no && <span>السجل: {cust.cr_no}</span>}
@@ -270,4 +307,3 @@ export default function InvoiceSelectors({
     </div>
   );
 }
-
