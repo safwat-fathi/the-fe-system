@@ -81,7 +81,7 @@ export default function InvoicePage() {
       id: Date.now(),
       item_id: null,
       item_code: "",
-      qty: 0,
+      qty: 1,
       weight: 0,
       g_weight: 0,
       k: "",

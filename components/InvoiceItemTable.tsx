@@ -57,39 +57,39 @@ export default function InvoiceItemTable({
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
 
-  const loadItemOptions = async (
-    search: string,
-    _loaded: any,
-    { page }: { page: number },
-  ) => {
-    try {
-      const res = await fetch(
-        `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
-      );
-      const json = await res.json();
-      const options = Array.isArray(json.results)
-        ? json.results.map((it: any) => ({
+const loadItemOptions = async (
+  search: string,
+  _loaded: any,
+  { page }: { page: number },
+) => {
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
+    );
+    const json = await res.json();
+    const options = Array.isArray(json.results)
+      ? json.results.map((it: any) => {
+          const itemCode = it.item_code ?? it.code ?? "";
+          const itemName = it.item_name ?? it.name ?? "";
+          return {
             value: it.id,
-            label: `${it.item_code ?? it.id} - ${
-              it.item_name ?? it.text ?? ""
-            }`,
+            label: `${itemCode} - ${itemName}`,
             item: it,
-          }))
-        : [];
+          };
+        })
+      : [];
 
-      return {
-        options,
-        hasMore: !!json.next,
-        additional: { page: page + 1 },
-      };
-    } catch (e) {
-      console.error("failed to load items", e);
+    return {
+      options,
+      hasMore: !!json.next,
+      additional: { page: page + 1 },
+    };
+  } catch (e) {
+    console.error("failed to load items", e);
 
-      return { options: [], hasMore: false, additional: { page: page } };
-    }
-  };
-
-  // prepare refs array when rows change
+    return { options: [], hasMore: false, additional: { page: page } };
+  }
+};  
   useEffect(() => {
     invoiceItems.forEach((_, i) => {
       if (!inputRefs.current[i]) {
@@ -369,7 +369,7 @@ export default function InvoiceItemTable({
                       item.item_id
                         ? {
                             value: item.item_id,
-                            label: `${item.item_code ?? item.item_id} - ${item.item_name}`,
+                            label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
                           }
                         : null
                     }

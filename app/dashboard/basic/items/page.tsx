@@ -291,7 +291,7 @@ export default function CategoriesItemsPage() {
       formData.append("unit", String(newItem.unit));
       
     if (file) {
-      formData.append("item_img", newItem.item_img); // صورة حقيقية من input type="file"
+      formData.append("item_img", newItem.item_img); 
     }    
 
       const response = await apiFetch(API_ENDPOINTS.CREATE_ITEM, {
@@ -318,7 +318,7 @@ export default function CategoriesItemsPage() {
 
   const handleEditItem = (item: Item) => {
     setModalMode("edit");
-    setNewItem(item); // يعبئ المودال ببيانات الصنف المحدد
+    setNewItem(item);
     setIsModalOpen(true);
   };
 
@@ -340,7 +340,7 @@ export default function CategoriesItemsPage() {
        formData.append("purity", newItem.purity?? "");
        formData.append("item_status", String(newItem.item_status));
        formData.append("upd_date", new Date().toISOString());
-       formData.append("upd_user", "user"); // غيرها إذا في اسم مستخدم
+       formData.append("upd_user", "user");
        formData.append("cat", String(newItem.cat));
 
       if (newItem.item_type && typeof newItem.item_type !== "string") {
@@ -544,7 +544,6 @@ export default function CategoriesItemsPage() {
               <th className="p-2 border">الكود</th>
               <th className="p-2 border">الاسم</th>
               <th className="p-2 border">السعر</th>
-              <th className="p-2 border">الكود</th>
               <th className="p-2 border">الوزن</th>
               <th className="p-2 border">العيار</th>
               <th className="p-2 border">المعايرة</th>
@@ -564,10 +563,9 @@ export default function CategoriesItemsPage() {
 
             return (
               <tr key={item.id} className="text-center hover:bg-gray-50">
-                <td className="p-2 border">{item.id}</td>
+                <td className="p-2 border">{item.item_code || "-"}</td>
                 <td className="p-2 border">{item.item_name}</td>
                 <td className="p-2 border">{item.item_price || "-"}</td>
-                <td className="p-2 border">{item.item_code || "-"}</td>
                 <td className="p-2 border">{item.item_weight || "-"}</td>
                 <td className="p-2 border">{item.k || "-"}</td>
                 <td className="p-2 border">{item.purity || "-"}</td>
