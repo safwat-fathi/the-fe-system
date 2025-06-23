@@ -67,36 +67,15 @@ export default function InvoiceItemTable({
         `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
       );
       const json = await res.json();
-
-      let results: any[] = Array.isArray(json.results) ? json.results : [];
-      const q = search.trim().toLowerCase();
-
-      if (q) {
-        const idx = (it: any) => {
-          const code = String(it.item_code ?? "").toLowerCase();
-          const name = String(it.item_name ?? "").toLowerCase();
-          const nameE = String(it.item_name_e ?? "").toLowerCase();
-          const indices = [
-            code.indexOf(q),
-            name.indexOf(q),
-            nameE.indexOf(q),
-          ].filter((i) => i !== -1);
-
-          return indices.length > 0
-            ? Math.min(...indices)
-            : Number.MAX_SAFE_INTEGER;
-        };
-
-        results = results
-          .filter((it) => idx(it) !== Number.MAX_SAFE_INTEGER)
-          .sort((a, b) => idx(a) - idx(b));
-      }
-
-      const options = results.map((it: any) => ({
-        value: it.id,
-        label: `${it.item_code ?? it.id} - ${it.item_name ?? it.text ?? ""}`,
-        item: it,
-      }));
+      const options = Array.isArray(json.results)
+        ? json.results.map((it: any) => ({
+            value: it.id,
+            label: `${it.item_code ?? it.id} - ${
+              it.item_name ?? it.text ?? ""
+            }`,
+            item: it,
+          }))
+        : [];
 
       return {
         options,
@@ -415,12 +394,7 @@ export default function InvoiceItemTable({
 
                       updated[index].item_id = selected.id ?? null;
                       updated[index].item_code = selected.item_code ?? "";
-                      updated[index].item_name =
-                        selected.item_name ??
-                        selected.item_name_e ??
-                        selected.text ??
-                        selected.item_desc ??
-                        "";
+                      updated[index].item_name = selected.item_name ?? "";
                       const selk = selected.k ?? "";
                       const selPurity = selected.purity ?? "";
 
