@@ -2,6 +2,7 @@
 
 import { Button, Checkbox } from "@heroui/react";
 import { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import useFractions from "@/utilities/useFractions";
 
 interface Props {
@@ -40,6 +41,7 @@ export default function InvoiceTotalsActions({
   children,
 }: Props) {
   const { frac } = useFractions();
+  const router = useRouter();
   return (
     <div className="p-6 max-w-[1500px] mx-auto bg-white rounded shadow">
       <div className="flex justify-between items-center border-b pb-3 mb-6">
@@ -79,7 +81,7 @@ export default function InvoiceTotalsActions({
           </Button>
           <Button
             className="bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 text-sm rounded"
-            onClick={() => window.location.reload()}
+            onClick={() => router.push('/dashboard/forms/invoice')}
           >
             <i className="bi bi-file-earmark-plus me-2" /> فاتورة جديدة
           </Button>
