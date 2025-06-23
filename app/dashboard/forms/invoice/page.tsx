@@ -769,7 +769,7 @@ export default function InvoicePage() {
             id: row.id,
             item_id: row.item ?? row.item_id ?? null,
             item_code: row.item_code ?? "",
-            item_name: row.item_name ?? row.item_name_e ?? row.item_desc ?? "",
+            item_name: row.item_name ?? row.item_desc ?? "",
             qty: parseFloat(row.qty) || 0,
             weight: parseFloat(row.weight) || 0,
             g_weight: parseFloat(row.g_weight) || 0,
