@@ -284,6 +284,66 @@ const loadItemOptions = async (
     setInvoiceItems(updated);
   };
 
+  const handleTotalAChange = (index: number, value: any) => {
+    const updated = [...invoiceItems];
+    const totalA = parseFloat(value) || 0;
+
+    if (updated[index].weight > 0) {
+      const w =
+        updated[index].weight < 1 &&
+        updated[index].g_weight > updated[index].weight
+          ? updated[index].weight * 1000
+          : updated[index].weight;
+
+      updated[index].price = totalA / w;
+    }
+
+    updated[index].total_a = totalA;
+
+    const baseTotal =
+      (payType === 1
+        ? updated[index].total_a
+        : payType === 2
+          ? updated[index].total_w
+          : updated[index].total_a + updated[index].total_w) -
+      (updated[index].item_disc_amt ?? 0);
+
+    updated[index].tax = (baseTotal * (updated[index].tax_prc ?? 15)) / 100;
+    updated[index].total = baseTotal + updated[index].tax;
+
+    setInvoiceItems(updated);
+  };
+
+  const handleTotalWChange = (index: number, value: any) => {
+    const updated = [...invoiceItems];
+    const totalW = parseFloat(value) || 0;
+
+    if (updated[index].weight > 0) {
+      const w =
+        updated[index].weight < 1 &&
+        updated[index].g_weight > updated[index].weight
+          ? updated[index].weight * 1000
+          : updated[index].weight;
+
+      updated[index].price_w = totalW / w;
+    }
+
+    updated[index].total_w = totalW;
+
+    const baseTotal =
+      (payType === 1
+        ? updated[index].total_a
+        : payType === 2
+          ? updated[index].total_w
+          : updated[index].total_a + updated[index].total_w) -
+      (updated[index].item_disc_amt ?? 0);
+
+    updated[index].tax = (baseTotal * (updated[index].tax_prc ?? 15)) / 100;
+    updated[index].total = baseTotal + updated[index].tax;
+
+    setInvoiceItems(updated);
+  };
+
   const setRef = (row: number, col: number, el: HTMLInputElement | null) => {
     if (!inputRefs.current[row]) inputRefs.current[row] = [];
     inputRefs.current[row][col] = el;
@@ -629,10 +689,38 @@ const loadItemOptions = async (
                   </td>
                 )}
                 {(payType === 1 || payType === 3) && (
-                  <td>{(item.total_a ?? 0).toFixed(frac)}</td>
+                  <td>
+                    <input
+                      ref={(el) => {
+                        inputRefs.current[index][++col] = el;
+                      }}
+                      className="border w-full p-1 text-xs text-center"
+                      style={{ minWidth: 0, maxWidth: "100%" }}
+                      type="number"
+                      value={item.total_a}
+                      onChange={(e) =>
+                        handleTotalAChange(index, e.target.value)
+                      }
+                      onKeyDown={(e) => handleEnter(e, index, col)}
+                    />
+                  </td>
                 )}
                 {(payType === 2 || payType === 3) && (
-                  <td>{(item.total_w ?? 0).toFixed(frac)}</td>
+                  <td>
+                    <input
+                      ref={(el) => {
+                        inputRefs.current[index][++col] = el;
+                      }}
+                      className="border w-full p-1 text-xs text-center"
+                      style={{ minWidth: 0, maxWidth: "100%" }}
+                      type="number"
+                      value={item.total_w}
+                      onChange={(e) =>
+                        handleTotalWChange(index, e.target.value)
+                      }
+                      onKeyDown={(e) => handleEnter(e, index, col)}
+                    />
+                  </td>
                 )}
                 <td>
                   <input
