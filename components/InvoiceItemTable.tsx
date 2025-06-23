@@ -56,6 +56,8 @@ export default function InvoiceItemTable({
   const { frac, frac2 } = useFractions();
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
+  const [searchValue, setSearchValue] = useState("");
+
 
 const loadItemOptions = async (
   search: string,
@@ -67,16 +69,20 @@ const loadItemOptions = async (
       `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
     );
     const json = await res.json();
+    const term = search.toLowerCase();
+
     const options = Array.isArray(json.results)
-      ? json.results.map((it: any) => {
-          const itemCode = it.item_code ?? it.code ?? "";
-          const itemName = it.item_name ?? it.name ?? "";
-          return {
+      ? json.results
+          .filter((it: any) => {
+            const itemCode = (it.item_code ?? it.code ?? "").toLowerCase();
+            const itemName = (it.item_name ?? it.name ?? "").toLowerCase();
+            return itemCode.includes(term) || itemName.includes(term);
+          })
+          .map((it: any) => ({
             value: it.id,
-            label: `${itemCode} - ${itemName}`,
+            label: `${it.item_code ?? it.code ?? "غير معروف"} - ${it.item_name ?? it.name ?? ""}`,
             item: it,
-          };
-        })
+          }))
       : [];
 
     return {
@@ -89,8 +95,19 @@ const loadItemOptions = async (
 
     return { options: [], hasMore: false, additional: { page: page } };
   }
-};  
-  useEffect(() => {
+};
+
+// عند عرض الصنف المحدد
+const getItemSelectValue = (item: InvoiceItem) => {
+  return item.item_id
+    ? {
+        value: item.item_id,
+        label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
+      }
+    : null;
+};
+
+useEffect(() => {
     invoiceItems.forEach((_, i) => {
       if (!inputRefs.current[i]) {
         inputRefs.current[i] = [];
@@ -173,7 +190,7 @@ const loadItemOptions = async (
           id: Date.now(),
           item_id: null,
           item_code: "",
-          qty: 0,
+          qty: 1,
           g_weight: 0,
           weight: 0,
           k: "",
@@ -425,14 +442,14 @@ const loadItemOptions = async (
                       }),
                       menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                     }}
-                    value={
-                      item.item_id
-                        ? {
-                            value: item.item_id,
-                            label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
-                          }
-                        : null
-                    }
+                      value={
+                        item.item_id
+                          ? {
+                              value: item.item_id,
+                              label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
+                            }
+                          : null
+                      }
                     onChange={(selectedOption) => {
                       // selectedOption may carry full item data via `item` field
                       // or fallback to items state by id
