@@ -465,7 +465,6 @@ useEffect(() => {
                         setItems([...items, selected]);
                       }
 
-                      console.log("selected item raw:", selected);
 
                       const updated = [...invoiceItems];
 

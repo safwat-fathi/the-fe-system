@@ -186,7 +186,6 @@ export default function CustomersTable() {
         return;
       }
 
-      console.log("🚀 البيانات المرسلة:", cleanedCustomer);
 
       const response = await apiFetch(url, {
         method,
