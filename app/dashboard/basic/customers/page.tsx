@@ -28,6 +28,7 @@ import {
 
 import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
 import ActionButtons from "@/components/ActionButtons";
+import { handleLanguageChange } from "@/utilities/global";
 
 interface Customer {
   id: number;
@@ -80,10 +81,6 @@ const columns = [
   { name: "الحالة", uid: "cust_status" },
   { name: "", uid: "actions" },
 ];
-
-export function handleLanguageChange(e: React.FocusEvent<HTMLInputElement>) {
-  e.target.setAttribute("lang", "en");
-}
 
 export default function CustomersTable() {
   const [customers, setCustomers] = useState<Customer[]>([]);
