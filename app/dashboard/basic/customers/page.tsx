@@ -26,7 +26,8 @@ import {
   SelectItem,
 } from "@heroui/react";
 
-import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
+import { fetchData, API_BASE_URL } from "@/utilities/api";
+import useCrud from "@/utilities/useCrud";
 import ActionButtons from "@/components/ActionButtons";
 
 interface Customer {
@@ -101,16 +102,12 @@ export default function CustomersTable() {
   const router = useRouter();
   const rowsPerPage = 12;
 
-  const loadCustomers = useCallback(async () => {
-    const data = await fetchData(API_URL);
+  const { loadItems, createItem, updateItem, deleteItem } = useCrud();
 
-    if (Array.isArray(data)) {
-      setCustomers(data as Customer[]);
-    } else {
-      console.error("البيانات غير متوقعة:", data);
-      setCustomers([]);
-    }
-  }, []);
+  const loadCustomers = useCallback(async () => {
+    const data = await loadItems<Customer>(API_URL);
+    setCustomers(data);
+  }, [loadItems]);
 
   const loadMetaData = useCallback(async () => {
     const types = await fetchData(cust_type_URL);
@@ -145,7 +142,6 @@ export default function CustomersTable() {
         modalMode === "edit" && currentCustomer.id
           ? UPDATE_URL(currentCustomer.id)
           : CREATE_URL;
-      const method = modalMode === "edit" ? "PUT" : "POST";
 
       // ✅ استخدم نسخة محلية بدلاً من setState
       let updatedCustomer = { ...currentCustomer };
@@ -188,11 +184,10 @@ export default function CustomersTable() {
 
       console.log("🚀 البيانات المرسلة:", cleanedCustomer);
 
-      const response = await apiFetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cleanedCustomer),
-      });
+      const response =
+        modalMode === "edit" && currentCustomer.id
+          ? await updateItem(url, cleanedCustomer)
+          : await createItem(url, cleanedCustomer);
 
       if (!response.ok) {
         const err = await response.json();
@@ -224,10 +219,7 @@ export default function CustomersTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذا العميل؟")) return;
     try {
-      const response = await apiFetch(DELETE_URL(id), {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await deleteItem(DELETE_URL(id));
 
       if (!response.ok) throw new Error();
       toast.success("✅ تم حذف العميل بنجاح");
