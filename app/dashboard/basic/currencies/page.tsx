@@ -22,7 +22,8 @@ import { FaPlus } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
-import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
+import { fetchData, API_BASE_URL } from "@/utilities/api";
+import useCrud from "@/utilities/useCrud";
 
 const API_URL = `${API_BASE_URL}currencies_list/`;
 const CREATE_URL = `${API_BASE_URL}api_create_currency`;
@@ -66,11 +67,12 @@ export default function CurrenciesTable() {
 
   const rowsPerPage = 12;
 
-  const loadCurrencies = useCallback(async () => {
-    const data = await fetchData(API_URL);
+  const { loadItems, createItem, updateItem, deleteItem } = useCrud();
 
-    if (Array.isArray(data)) setCurrencies(data);
-  }, []);
+  const loadCurrencies = useCallback(async () => {
+    const data = await loadItems<Currency>(API_URL);
+    setCurrencies(data);
+  }, [loadItems]);
 
   useEffect(() => {
     loadCurrencies();
@@ -82,13 +84,11 @@ export default function CurrenciesTable() {
         modalMode === "edit" && currentCurrency.id
           ? UPDATE_URL(currentCurrency.id)
           : CREATE_URL;
-      const method = modalMode === "edit" ? "PUT" : "POST";
 
-      const response = await apiFetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentCurrency),
-      });
+      const response =
+        modalMode === "edit" && currentCurrency.id
+          ? await updateItem(url, currentCurrency)
+          : await createItem(url, currentCurrency);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -118,10 +118,7 @@ export default function CurrenciesTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذه العملة؟")) return;
     try {
-      const response = await apiFetch(DELETE_URL(id), {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await deleteItem(DELETE_URL(id));
 
       if (!response.ok) throw new Error();
       toast.success("✅ تم حذف العملة بنجاح");

@@ -13,6 +13,7 @@ import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 import { fetchData, API_BASE_URL, API_ENDPOINTS, apiFetch } from "@/utilities/api";
+import useCrud from "@/utilities/useCrud";
 import ReactSelect from "react-select";
 
 
@@ -122,6 +123,8 @@ export default function CategoriesItemsPage() {
     item_type: null,
     unit: null,
   });
+
+  const { createItem, updateItem, deleteItem } = useCrud();
 
   useEffect(() => {
     fetchCategories();
@@ -294,10 +297,11 @@ export default function CategoriesItemsPage() {
       formData.append("item_img", newItem.item_img); 
     }    
 
-      const response = await apiFetch(API_ENDPOINTS.CREATE_ITEM, {
-        method: "POST",
-        body: formData,
-      });
+      const response = await createItem(
+        API_ENDPOINTS.CREATE_ITEM,
+        formData,
+        { isFormData: true },
+      );
 
       if (response.ok) {
         toast.success("✅ تمت إضافة الصنف بنجاح");
@@ -356,12 +360,10 @@ export default function CategoriesItemsPage() {
         formData.append("item_img", newItem.item_img);
       }
 
-      const response = await apiFetch(
+      const response = await updateItem(
         `${API_BASE_URL}api_update_item/${newItem.id}`,
-        {
-          method: "PATCH",
-          body: formData,
-        },
+        formData,
+        { method: "PATCH", isFormData: true },
       );
 
       if (response.ok) {
@@ -384,10 +386,9 @@ export default function CategoriesItemsPage() {
     if (!confirmed) return;
 
     try {
-      const response = await apiFetch(`${API_BASE_URL}api_delete_item/`, {
+      const response = await deleteItem(`${API_BASE_URL}api_delete_item/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        payload: { id },
       });
 
       if (response.ok) {
