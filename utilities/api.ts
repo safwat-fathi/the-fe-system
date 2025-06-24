@@ -1,6 +1,9 @@
 export const API_BASE_URL: string =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://149.102.143.102:8000/api/";
 
+export const GOLD_API_TOKEN: string =
+  process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
+
 export async function fetchGoldPrice(): Promise<number | null> {
   try {
     const response = await fetch("https://data-asg.goldprice.org/dbXRates/SAR");
