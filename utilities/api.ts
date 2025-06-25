@@ -53,7 +53,6 @@ export async function fetchData<T>(
 ): Promise<T | null> {
   try {
     url = appendBranchParams(url);
-    console.log(`Fetching data from: ${url}`);
     const response = await fetch(url, { method });
 
     if (!response.ok) {

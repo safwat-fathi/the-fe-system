@@ -227,9 +227,7 @@ export default function InvoicePage() {
       );
 
       if (response && Array.isArray(response.results)) {
-        console.log("Fetched items sample:", response.results[0]);
         setItems(response.results);
-        console.log("First item sample from API:", response.results[0]);
       } else {
         console.warn("No items found or invalid response.");
         setItems([]);
@@ -250,7 +248,6 @@ export default function InvoicePage() {
     } else {
       setCustomers([]);
     }
-    console.log("العملاء:", response);
   }
 
   async function fetchCategories() {
@@ -398,9 +395,6 @@ export default function InvoicePage() {
       inv_QR: invQR,
     };
 
-    console.log("🚀 بيانات الفاتورة:");
-    console.table(invData);
-
     try {
       const res = await fetch(`${API_BASE_URL}api_create_invoice`, {
         method: "POST",
@@ -470,9 +464,6 @@ export default function InvoicePage() {
           inv: invPk,
           item: row.item_id,
         };
-
-        console.log(`📦 تفاصيل السطر ${index + 1}:`);
-        console.table(dtl);
 
         const dtlRes = await apiFetch(CREATE_INVOICE_DTL, {
           method: "POST",
