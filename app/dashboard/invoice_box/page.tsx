@@ -23,6 +23,7 @@ import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
 import { API_ENDPOINTS } from "@/utilities/api";
+import useCrud from "@/utilities/useCrud";
 
 const {
   INVOICE_BOX_LIST,
@@ -51,18 +52,12 @@ export default function InvoiceBoxPage() {
 
   const rowsPerPage = 10;
 
-  const loadBoxes = useCallback(async () => {
-    try {
-      const res = await fetch(INVOICE_BOX_LIST);
-      const data = await res.json();
+  const { loadItems, createItem, updateItem, deleteItem } = useCrud();
 
-      if (Array.isArray(data)) setBoxes(data);
-      else if (Array.isArray(data.results)) setBoxes(data.results);
-      else setBoxes([]);
-    } catch (err) {
-      console.error("❌ خطأ في تحميل البيانات:", err);
-    }
-  }, []);
+  const loadBoxes = useCallback(async () => {
+    const data = await loadItems<InvoiceBox>(INVOICE_BOX_LIST);
+    setBoxes(data);
+  }, [loadItems]);
 
   useEffect(() => {
     loadBoxes();
@@ -74,13 +69,11 @@ export default function InvoiceBoxPage() {
         modalMode === "edit" && currentBox.id
           ? UPDATE_INVOICE_BOX(currentBox.id)
           : CREATE_INVOICE_BOX;
-      const method = modalMode === "edit" ? "PUT" : "POST";
 
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentBox),
-      });
+      const response =
+        modalMode === "edit" && currentBox.id
+          ? await updateItem(url, currentBox)
+          : await createItem(url, currentBox);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -109,10 +102,7 @@ export default function InvoiceBoxPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف هذا الصندوق؟")) return;
     try {
-      const response = await fetch(DELETE_INVOICE_BOX(id), {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await deleteItem(DELETE_INVOICE_BOX(id));
 
       if (!response.ok) throw new Error();
       toast.success("✅ تم حذف الصندوق بنجاح");
