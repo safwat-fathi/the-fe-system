@@ -1,8 +1,10 @@
 // fetchGoldHistory.ts
 
 export async function fetchGoldPriceByDate(date: string) {
+  const token =
+    process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
   const headers = new Headers();
-  headers.append("x-access-token", "goldapi-5chasmbzw52m3-io");
+  headers.append("x-access-token", token);
   headers.append("Content-Type", "application/json");
 
   const url = `https://www.goldapi.io/api/XAU/SAR/${date}`; // date format: YYYYMMDD
