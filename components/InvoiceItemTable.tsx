@@ -73,16 +73,29 @@ const loadItemOptions = async (
 
     const options = Array.isArray(json.results)
       ? json.results
-          .filter((it: any) => {
+          .map((it: any) => {
             const itemCode = (it.item_code ?? it.code ?? "").toLowerCase();
             const itemName = (it.item_name ?? it.name ?? "").toLowerCase();
-            return itemCode.includes(term) || itemName.includes(term);
+            const codeMatch = itemCode.indexOf(term);
+            const nameMatch = itemName.indexOf(term);
+            return {
+              value: it.id,
+              label: `${it.item_code ?? it.code ?? "غير معروف"} - ${it.item_name ?? it.name ?? ""}`,
+              item: it,
+              codeMatch,
+              nameMatch,
+            };
           })
-          .map((it: any) => ({
-            value: it.id,
-            label: `${it.item_code ?? it.code ?? "غير معروف"} - ${it.item_name ?? it.name ?? ""}`,
-            item: it,
-          }))
+          .filter((opt) => opt.codeMatch !== -1 || opt.nameMatch !== -1)
+          .sort((a, b) => {
+            const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
+            const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+            if (aCode !== bCode) return aCode - bCode;
+            const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
+            const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+            return aName - bName;
+          })
+          .map(({ value, label, item }) => ({ value, label, item }))
       : [];
 
     return {
