@@ -228,7 +228,13 @@ export default function CategoriesItemsPage() {
       const res = await apiFetch(fetchUrl);
       const data = await res.json();
       const itemsArray = Array.isArray(data.results) ? data.results : [];
-      const mapped = itemsArray.map((item: any) => ({
+      const term = query.toLowerCase();
+      const filtered = itemsArray.filter((item: any) => {
+        const code = (item.item_code ?? item.code ?? "").toLowerCase();
+        const name = (item.item_name ?? item.text ?? "").toLowerCase();
+        return code.includes(term) || name.includes(term);
+      });
+      const mapped = filtered.map((item: any) => ({
         ...item,
         item_name: item.item_name ?? item.text ?? "",
       }));
@@ -266,8 +272,16 @@ export default function CategoriesItemsPage() {
     }
   };
 
-  
-  const filteredItems = items;
+
+  const filteredItems = search.trim()
+    ? items.filter((item) => {
+        const term = search.toLowerCase();
+        return (
+          (item.item_name ?? "").toLowerCase().includes(term) ||
+          (item.item_code ?? "").toLowerCase().includes(term)
+        );
+      })
+    : items;
   
   const [file, setFile] = useState(null);
 
