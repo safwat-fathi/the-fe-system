@@ -858,25 +858,41 @@ export default function InvoicePage() {
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
           <InvoiceSelectors
+            area={area}
+            buildNo={buildNo}
+            city={city}
+            crNo={crNo}
             customers={customers}
             employee={employee}
             goldPrice={goldPrice}
+            gov={gov}
             handlingMethod={handlingMethod}
             mobileMethod={mobileMethod}
             note={note}
             payType={payType}
             paymentMethod={paymentMethod}
+            postCode={postCode}
+            postNo={postNo}
             referenceNumber={referenceNumber}
             selectedCustomer={selectedCustomer}
+            setArea={setArea}
+            setBuildNo={setBuildNo}
+            setCity={setCity}
+            setCrNo={setCrNo}
             setEmployee={setEmployee}
+            setGov={setGov}
             setHandlingMethod={setHandlingMethod}
             setMobileMethod={setMobileMethod}
             setNote={setNote}
             setPayType={setPayType}
             setPaymentMethod={setPaymentMethod}
+            setPostCode={setPostCode}
+            setPostNo={setPostNo}
             setReferenceNumber={setReferenceNumber}
             setSelectedCustomer={setSelectedCustomer}
+            setStreet={setStreet}
             setVatNumber={setVatNumber}
+            street={street}
             vatNumber={vatNumber}
           />
           <InvoiceItemTable

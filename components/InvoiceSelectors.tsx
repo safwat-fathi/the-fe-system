@@ -2,14 +2,6 @@
 
 import ReactSelect from "react-select";
 
-interface Item {
-  id: number;
-  item_code: string;
-  item_name: string;
-  item_price: number;
-  k?: string;
-}
-
 interface Customer {
   id: number;
   cust_name: string;
@@ -109,7 +101,9 @@ export default function InvoiceSelectors({
   return (
     <div className="grid grid-cols-12 gap-2 text-sm mb-4">
       <div className="col-span-4">
-        <label className="block mb-1">العميل:</label>
+        <label className="block mb-1" htmlFor="customer-select">
+          العميل:
+        </label>
         <ReactSelect
           isSearchable
           className="w-full text-sm"
@@ -186,7 +180,7 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">طريقة الدفع:</label>
+        <span className="block mb-1">طريقة الدفع:</span>
         <div className="w-full h-[38px] border rounded flex items-center justify-around px-2">
           <label className="flex items-center gap-1">
             <input
@@ -218,9 +212,12 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">على:</label>
+        <label className="block mb-1" htmlFor="pay-type">
+          على:
+        </label>
         <select
           className="w-full h-[38px] border px-2 rounded"
+          id="pay-type"
           value={payType}
           onChange={(e) => setPayType(parseInt(e.target.value))}
         >
@@ -231,7 +228,9 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">رقم المرجع:</label>
+        <label className="block mb-1" htmlFor="reference-number">
+          رقم المرجع:
+        </label>
         <input
           className="w-full h-[38px] border px-2 rounded"
           placeholder=" المرجع "
@@ -242,7 +241,9 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">الرقم الضريبي:</label>
+        <label className="block mb-1" htmlFor="vat-number">
+          الرقم الضريبي:
+        </label>
         <input
           readOnly
           className="w-full h-[38px] border px-2 rounded"
@@ -253,7 +254,9 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">مناولة:</label>
+        <label className="block mb-1" htmlFor="handling-method">
+          مناولة:
+        </label>
         <input
           className="w-full h-[38px] border px-2 rounded"
           placeholder="مناولة"
@@ -264,7 +267,9 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">جوال:</label>
+        <label className="block mb-1" htmlFor="mobile-method">
+          جوال:
+        </label>
         <input
           className="w-full h-[38px] border px-2 rounded"
           placeholder=" الجوال"
@@ -275,9 +280,12 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">البائع:</label>
+        <label className="block mb-1" htmlFor="employee">
+          البائع:
+        </label>
         <select
           className="w-full h-[38px] border px-2 rounded"
+          id="employee"
           value={employee}
           onChange={(e) => setEmployee(e.target.value)}
         >
@@ -288,7 +296,9 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-4">
-        <label className="block mb-1">سعر الذهب بالريال:</label>
+        <label className="block mb-1" htmlFor="gold-price">
+          سعر الذهب بالريال:
+        </label>
         <input
           readOnly
           className="w-full h-[38px] border px-2 rounded bg-gray-100"
@@ -298,7 +308,9 @@ export default function InvoiceSelectors({
       </div>
 
       <div className="col-span-12">
-        <label className="block mb-1">البيان:</label>
+        <label className="block mb-1" htmlFor="note">
+          البيان:
+        </label>
         <input
           className="w-full h-[38px] border px-2 rounded"
           placeholder="البيان"
