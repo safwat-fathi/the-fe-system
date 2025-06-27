@@ -120,6 +120,14 @@ export default function InvoicePage() {
   // payType: 1=gold value, 2=wage only, 3=both
   const [payType, setPayType] = useState<number>(1);
   const [goldPrice, setGoldPrice] = useState<number | null>(null);
+  const [crNo, setCrNo] = useState<string>("");
+  const [gov, setGov] = useState<string>("");
+  const [city, setCity] = useState<string>("");
+  const [area, setArea] = useState<string>("");
+  const [street, setStreet] = useState<string>("");
+  const [buildNo, setBuildNo] = useState<string>("");
+  const [postNo, setPostNo] = useState<string>("");
+  const [postCode, setPostCode] = useState<string>("");
   const [searchNumber, setSearchNumber] = useState<string>("");
   const [commitVal, setCommitVal] = useState<boolean>(false);
   const [printVal, setPrintVal] = useState<boolean>(false);
@@ -384,14 +392,14 @@ export default function InvoicePage() {
       vat_no: vatNumber,
       pay_type: payType,
       gold_price: goldPrice ?? 0,
-      cr_no: selectedCust?.cr_no || null,
-      gov: selectedCust?.gov || null,
-      city: selectedCust?.city || null,
-      area: selectedCust?.area || null,
-      street: selectedCust?.street || null,
-      build_no: selectedCust?.build_no || null,
-      post_no: selectedCust?.post_no || null,
-      post_code: selectedCust?.post_code || null,
+      cr_no: crNo || null,
+      gov: gov || null,
+      city: city || null,
+      area: area || null,
+      street: street || null,
+      build_no: buildNo || null,
+      post_no: postNo || null,
+      post_code: postCode || null,
       inv_QR: invQR,
     };
 
@@ -534,14 +542,14 @@ export default function InvoicePage() {
       vat_no: vatNumber,
       pay_type: payType,
       gold_price: goldPrice ?? 0,
-      cr_no: selectedCust?.cr_no || null,
-      gov: selectedCust?.gov || null,
-      city: selectedCust?.city || null,
-      area: selectedCust?.area || null,
-      street: selectedCust?.street || null,
-      build_no: selectedCust?.build_no || null,
-      post_no: selectedCust?.post_no || null,
-      post_code: selectedCust?.post_code || null,
+      cr_no: crNo || null,
+      gov: gov || null,
+      city: city || null,
+      area: area || null,
+      street: street || null,
+      build_no: buildNo || null,
+      post_no: postNo || null,
+      post_code: postCode || null,
     };
 
     try {
@@ -656,9 +664,18 @@ export default function InvoicePage() {
       Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
 
     // تجهيز بيانات التقرير
+    const previewCustomer = selectedCust
+      ? {
+          ...selectedCust,
+          address: [gov, city, area, street, buildNo, postNo, postCode]
+            .filter(Boolean)
+            .join(" - "),
+        }
+      : undefined;
+
     const html = renderInvoicePreview({
       items: invoiceItems,
-      customer: selectedCust,
+      customer: previewCustomer,
       companyAName: home.comp_a_name || "",
       companyLName: home.comp_l_name || "",
       addressA: home.ADDRESS || "",
@@ -731,6 +748,14 @@ export default function InvoicePage() {
         );
       if (inv.inv_notes) setNote(inv.inv_notes);
       if (inv.gold_price) setGoldPrice(parseFloat(inv.gold_price));
+      if (inv.cr_no) setCrNo(String(inv.cr_no));
+      if (inv.gov) setGov(inv.gov);
+      if (inv.city) setCity(inv.city);
+      if (inv.area) setArea(inv.area);
+      if (inv.street) setStreet(inv.street);
+      if (inv.build_no) setBuildNo(inv.build_no);
+      if (inv.post_no) setPostNo(inv.post_no);
+      if (inv.post_code) setPostCode(inv.post_code);
 
       setIsExistingInvoice(true);
       setIsEditing(false);
@@ -833,25 +858,41 @@ export default function InvoicePage() {
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
           <InvoiceSelectors
+            area={area}
+            buildNo={buildNo}
+            city={city}
+            crNo={crNo}
             customers={customers}
             employee={employee}
             goldPrice={goldPrice}
+            gov={gov}
             handlingMethod={handlingMethod}
             mobileMethod={mobileMethod}
             note={note}
             payType={payType}
             paymentMethod={paymentMethod}
+            postCode={postCode}
+            postNo={postNo}
             referenceNumber={referenceNumber}
             selectedCustomer={selectedCustomer}
+            setArea={setArea}
+            setBuildNo={setBuildNo}
+            setCity={setCity}
+            setCrNo={setCrNo}
             setEmployee={setEmployee}
+            setGov={setGov}
             setHandlingMethod={setHandlingMethod}
             setMobileMethod={setMobileMethod}
             setNote={setNote}
             setPayType={setPayType}
             setPaymentMethod={setPaymentMethod}
+            setPostCode={setPostCode}
+            setPostNo={setPostNo}
             setReferenceNumber={setReferenceNumber}
             setSelectedCustomer={setSelectedCustomer}
+            setStreet={setStreet}
             setVatNumber={setVatNumber}
+            street={street}
             vatNumber={vatNumber}
           />
           <InvoiceItemTable
