@@ -109,7 +109,6 @@ export default function InvoiceSelectors({
           className="w-full text-sm"
           classNamePrefix="react-select"
           components={{ IndicatorSeparator: () => null }}
-          inputId="customer-select"
           instanceId="customer-select"
           menuPortalTarget={
             typeof window !== "undefined" ? document.body : null
@@ -234,7 +233,6 @@ export default function InvoiceSelectors({
         </label>
         <input
           className="w-full h-[38px] border px-2 rounded"
-          id="reference-number"
           placeholder=" المرجع "
           type="text"
           value={referenceNumber}
@@ -249,7 +247,6 @@ export default function InvoiceSelectors({
         <input
           readOnly
           className="w-full h-[38px] border px-2 rounded"
-          id="vat-number"
           placeholder="الرقم الضريبي"
           type="text"
           value={vatNumber}
@@ -262,7 +259,6 @@ export default function InvoiceSelectors({
         </label>
         <input
           className="w-full h-[38px] border px-2 rounded"
-          id="handling-method"
           placeholder="مناولة"
           type="text"
           value={handlingMethod}
@@ -276,7 +272,6 @@ export default function InvoiceSelectors({
         </label>
         <input
           className="w-full h-[38px] border px-2 rounded"
-          id="mobile-method"
           placeholder=" الجوال"
           type="text"
           value={mobileMethod}
@@ -307,7 +302,6 @@ export default function InvoiceSelectors({
         <input
           readOnly
           className="w-full h-[38px] border px-2 rounded bg-gray-100"
-          id="gold-price"
           type="text"
           value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
         />
@@ -319,7 +313,6 @@ export default function InvoiceSelectors({
         </label>
         <input
           className="w-full h-[38px] border px-2 rounded"
-          id="note"
           placeholder="البيان"
           type="text"
           value={note}
