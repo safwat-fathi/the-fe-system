@@ -1,7 +1,6 @@
 "use client";
 
 import ReactSelect from "react-select";
-import CreatableSelect from "react-select/creatable";
 
 interface Item {
   id: number;
@@ -42,6 +41,22 @@ interface Props {
   setReferenceNumber: (val: string) => void;
   vatNumber: string;
   setVatNumber: (val: string) => void;
+  crNo: string;
+  setCrNo: (val: string) => void;
+  gov: string;
+  setGov: (val: string) => void;
+  city: string;
+  setCity: (val: string) => void;
+  area: string;
+  setArea: (val: string) => void;
+  street: string;
+  setStreet: (val: string) => void;
+  buildNo: string;
+  setBuildNo: (val: string) => void;
+  postNo: string;
+  setPostNo: (val: string) => void;
+  postCode: string;
+  setPostCode: (val: string) => void;
   handlingMethod: string;
   setHandlingMethod: (val: string) => void;
   mobileMethod: string;
@@ -65,6 +80,22 @@ export default function InvoiceSelectors({
   setReferenceNumber,
   vatNumber,
   setVatNumber,
+  crNo,
+  setCrNo,
+  gov,
+  setGov,
+  city,
+  setCity,
+  area,
+  setArea,
+  street,
+  setStreet,
+  buildNo,
+  setBuildNo,
+  postNo,
+  setPostNo,
+  postCode,
+  setPostCode,
   handlingMethod,
   setHandlingMethod,
   mobileMethod,
@@ -80,26 +111,40 @@ export default function InvoiceSelectors({
       <div className="col-span-4">
         <label className="block mb-1">العميل:</label>
         <ReactSelect
-          instanceId="customer-select"
+          isSearchable
           className="w-full text-sm"
           classNamePrefix="react-select"
-          isSearchable
+          components={{ IndicatorSeparator: () => null }}
+          instanceId="customer-select"
+          menuPortalTarget={
+            typeof window !== "undefined" ? document.body : null
+          }
+          menuPosition="fixed"
           options={customers
             .filter((cust) =>
-              paymentMethod === "cash" ? cust.cust_type === 99 : cust.cust_type !== 99
+              paymentMethod === "cash"
+                ? cust.cust_type === 99
+                : cust.cust_type !== 99,
             )
             .map((cust) => ({
               value: cust.id,
               label: `${cust.cust_code ?? cust.id} - ${cust.cust_name}`,
             }))}
+          placeholder="اختر العميل..."
+          styles={{
+            control: (base) => ({ ...base, height: 38, minHeight: 38 }),
+            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+          }}
           value={
             selectedCustomer
               ? {
                   value: selectedCustomer,
                   label: `${
-                    customers.find((c) => c.id === selectedCustomer)?.cust_code ?? selectedCustomer
+                    customers.find((c) => c.id === selectedCustomer)
+                      ?.cust_code ?? selectedCustomer
                   } - ${
-                    customers.find((c) => c.id === selectedCustomer)?.cust_name || `عميل رقم ${selectedCustomer}`
+                    customers.find((c) => c.id === selectedCustomer)
+                      ?.cust_name || `عميل رقم ${selectedCustomer}`
                   }`,
                 }
               : null
@@ -107,22 +152,36 @@ export default function InvoiceSelectors({
           onChange={(selectedOption) => {
             setSelectedCustomer(selectedOption?.value ?? null);
 
-            const selectedCust = customers.find((c) => c.id === selectedOption?.value);
+            const selectedCust = customers.find(
+              (c) => c.id === selectedOption?.value,
+            );
 
             if (selectedCust) {
-              if (selectedCust.mobile) setMobileMethod(selectedCust.mobile);
-              if (selectedCust.acc) setHandlingMethod(selectedCust.handling?.toString() || "");
-              if (selectedCust.vat_no) setVatNumber(selectedCust.vat_no);
+              setMobileMethod(selectedCust.mobile ?? "");
+              setHandlingMethod(selectedCust.handling?.toString() ?? "");
+              setVatNumber(selectedCust.vat_no ?? "");
+              setCrNo(selectedCust.cr_no ?? "");
+              setGov(selectedCust.gov ?? "");
+              setCity(selectedCust.city ?? "");
+              setArea(selectedCust.area ?? "");
+              setStreet(selectedCust.street ?? "");
+              setBuildNo(selectedCust.build_no ?? "");
+              setPostNo(selectedCust.post_no ?? "");
+              setPostCode(selectedCust.post_code ?? "");
+            } else {
+              setMobileMethod("");
+              setHandlingMethod("");
+              setVatNumber("");
+              setCrNo("");
+              setGov("");
+              setCity("");
+              setArea("");
+              setStreet("");
+              setBuildNo("");
+              setPostNo("");
+              setPostCode("");
             }
           }}
-          placeholder="اختر العميل..."
-          styles={{
-            control: (base) => ({ ...base, height: 38, minHeight: 38 }),
-            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-          }}
-          menuPortalTarget={typeof window !== "undefined" ? document.body : null}
-          menuPosition="fixed"
-          components={{ IndicatorSeparator: () => null }}
         />
       </div>
 
@@ -131,10 +190,10 @@ export default function InvoiceSelectors({
         <div className="w-full h-[38px] border rounded flex items-center justify-around px-2">
           <label className="flex items-center gap-1">
             <input
-              type="radio"
-              name="payment"
-              value="cash"
               checked={paymentMethod === "cash"}
+              name="payment"
+              type="radio"
+              value="cash"
               onChange={(e) => {
                 setPaymentMethod(e.target.value);
                 setSelectedCustomer(null);
@@ -144,10 +203,10 @@ export default function InvoiceSelectors({
           </label>
           <label className="flex items-center gap-1">
             <input
-              type="radio"
-              name="payment"
-              value="credit"
               checked={paymentMethod === "credit"}
+              name="payment"
+              type="radio"
+              value="credit"
               onChange={(e) => {
                 setPaymentMethod(e.target.value);
                 setSelectedCustomer(null);
@@ -174,44 +233,44 @@ export default function InvoiceSelectors({
       <div className="col-span-4">
         <label className="block mb-1">رقم المرجع:</label>
         <input
-          type="text"
           className="w-full h-[38px] border px-2 rounded"
+          placeholder=" المرجع "
+          type="text"
           value={referenceNumber}
           onChange={(e) => setReferenceNumber(e.target.value)}
-          placeholder=" المرجع "
         />
       </div>
 
       <div className="col-span-4">
         <label className="block mb-1">الرقم الضريبي:</label>
         <input
-          type="text"
-          className="w-full h-[38px] border px-2 rounded"
-          value={vatNumber}
           readOnly
+          className="w-full h-[38px] border px-2 rounded"
           placeholder="الرقم الضريبي"
+          type="text"
+          value={vatNumber}
         />
       </div>
 
       <div className="col-span-4">
         <label className="block mb-1">مناولة:</label>
         <input
-          type="text"
           className="w-full h-[38px] border px-2 rounded"
+          placeholder="مناولة"
+          type="text"
           value={handlingMethod}
           onChange={(e) => setHandlingMethod(e.target.value)}
-          placeholder="مناولة"
         />
       </div>
 
       <div className="col-span-4">
         <label className="block mb-1">جوال:</label>
         <input
-          type="text"
           className="w-full h-[38px] border px-2 rounded"
+          placeholder=" الجوال"
+          type="text"
           value={mobileMethod}
           onChange={(e) => setMobileMethod(e.target.value)}
-          placeholder=" الجوال"
         />
       </div>
 
@@ -231,43 +290,86 @@ export default function InvoiceSelectors({
       <div className="col-span-4">
         <label className="block mb-1">سعر الذهب بالريال:</label>
         <input
-          type="text"
-          className="w-full h-[38px] border px-2 rounded bg-gray-100"
-          value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
           readOnly
+          className="w-full h-[38px] border px-2 rounded bg-gray-100"
+          type="text"
+          value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
         />
       </div>
 
       <div className="col-span-12">
         <label className="block mb-1">البيان:</label>
         <input
-          type="text"
           className="w-full h-[38px] border px-2 rounded"
+          placeholder="البيان"
+          type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="البيان"
         />
       </div>
 
       <div className="col-span-12 text-sm text-gray-700">
-        {(() => {
-          const cust = customers.find((c) => c.id === selectedCustomer);
-          if (!cust) return null;
-          return (
-            <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
-              {cust.cr_no && <span>السجل: {cust.cr_no}</span>}
-              {cust.gov && <span>العنوان: {cust.gov}</span>}
-              {cust.city && <span>المدينة: {cust.city}</span>}
-              {cust.area && <span>المنطقة: {cust.area}</span>}
-              {cust.street && <span>الشارع: {cust.street}</span>}
-              {cust.build_no && <span>مبنى: {cust.build_no}</span>}
-              {cust.post_no && <span>ص.ب: {cust.post_no}</span>}
-              {cust.post_code && <span>الرمز: {cust.post_code}</span>}
-            </div>
-          );
-        })()}
+        {selectedCustomer && (
+          <div className="mt-2 grid grid-cols-4 gap-2">
+            <input
+              className="w-full h-[38px] border px-2 rounded"
+              placeholder="السجل"
+              type="text"
+              value={crNo}
+              onChange={(e) => setCrNo(e.target.value)}
+            />
+            <input
+              className="w-full h-[38px] border px-2 rounded"
+              placeholder="العنوان"
+              type="text"
+              value={gov}
+              onChange={(e) => setGov(e.target.value)}
+            />
+            <input
+              className="w-full h-[38px] border px-2 rounded"
+              placeholder="المدينة"
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+            />
+            <input
+              className="w-full h-[38px] border px-2 rounded"
+              placeholder="المنطقة"
+              type="text"
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+            />
+            <input
+              className="w-full h-[38px] border px-2 rounded"
+              placeholder="الشارع"
+              type="text"
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+            />
+            <input
+              className="w-full h-[38px] border px-2 rounded"
+              placeholder="مبنى"
+              type="text"
+              value={buildNo}
+              onChange={(e) => setBuildNo(e.target.value)}
+            />
+            <input
+              className="w-full h-[38px] border px-2 rounded"
+              placeholder="ص.ب"
+              type="text"
+              value={postNo}
+              onChange={(e) => setPostNo(e.target.value)}
+            />
+            <input
+              className="w-full h-[38px] border px-2 rounded"
+              placeholder="الرمز"
+              type="text"
+              value={postCode}
+              onChange={(e) => setPostCode(e.target.value)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
