@@ -1,11 +1,14 @@
 "use client";
 
+import type { InvoiceBox } from "@/types/invoice-box";
+
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Input, Select, SelectItem } from "@heroui/react";
 import toast from "react-hot-toast";
+
+import NumericKeypad from "@/components/NumericKeypad";
 import { API_ENDPOINTS } from "@/utilities/api";
-import type { InvoiceBox } from "@/types/invoice-box";
 
 const {
   INVOICE_BOX_LIST,
@@ -22,6 +25,7 @@ export default function InvoicePaymentPage() {
   const [selectedBox, setSelectedBox] = useState<number | null>(null);
 
   const [invoiceTotal, setInvoiceTotal] = useState<number>(0);
+  const [paidAmountStr, setPaidAmountStr] = useState<string>("0");
   const [paidAmount, setPaidAmount] = useState<number>(0);
   const [paymentId, setPaymentId] = useState<number | null>(null);
 
@@ -39,6 +43,7 @@ export default function InvoicePaymentPage() {
 
   useEffect(() => {
     const total = parseFloat(searchParams.get("total") || "0");
+
     if (!Number.isNaN(total)) setInvoiceTotal(total);
   }, [searchParams]);
 
@@ -55,6 +60,7 @@ export default function InvoicePaymentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+
       if (!res.ok) throw new Error();
       toast.success("تم الحفظ بنجاح");
       router.push("/dashboard/forms/invoice");
@@ -71,6 +77,7 @@ export default function InvoicePaymentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+
       if (!res.ok) throw new Error();
       toast.success("تم التحديث بنجاح");
       router.push("/dashboard/forms/invoice");
@@ -86,6 +93,7 @@ export default function InvoicePaymentPage() {
       const res = await fetch(DELETE_INVOICE_BOX(paymentId), {
         method: "DELETE",
       });
+
       if (!res.ok) throw new Error();
       toast.success("تم الحذف بنجاح");
       router.push("/dashboard/forms/invoice");
@@ -103,40 +111,63 @@ export default function InvoicePaymentPage() {
           selectedKeys={selectedBox ? [String(selectedBox)] : []}
           onSelectionChange={(keys) => {
             const id = Number(Array.from(keys)[0]);
+
             setSelectedBox(id);
           }}
         >
           {boxes.map((box) => (
-            <SelectItem key={box.id} value={box.id} textValue={box.box_name}>
+            <SelectItem key={box.id} textValue={box.box_name} value={box.id}>
               {box.box_name}
             </SelectItem>
           ))}
         </Select>
 
         <Input
-          type="number"
           label="اجمالي الفاتورة"
+          type="number"
           value={invoiceTotal.toString()}
           onChange={(e) => setInvoiceTotal(parseFloat(e.target.value) || 0)}
         />
 
         <Input
-          type="number"
           label="المبلغ المدفوع"
-          value={paidAmount.toString()}
-          onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
+          type="text"
+          value={paidAmountStr}
+          onChange={(e) => {
+            const val = e.target.value;
+
+            setPaidAmountStr(val);
+            setPaidAmount(parseFloat(val) || 0);
+          }}
+        />
+
+        <NumericKeypad
+          onBackspace={() => {
+            const next = paidAmountStr.slice(0, -1) || "0";
+
+            setPaidAmountStr(next);
+            setPaidAmount(parseFloat(next) || 0);
+          }}
+          onDigit={(d) => {
+            const next = (
+              paidAmountStr === "0" ? d : paidAmountStr + d
+            ).replace(/^0+(?=\d)/, "");
+
+            setPaidAmountStr(next);
+            setPaidAmount(parseFloat(next) || 0);
+          }}
         />
 
         <Input
-          type="number"
-          label="المتبقي"
-          value={remainingAmount.toString()}
           readOnly
+          label="المتبقي"
+          type="number"
+          value={remainingAmount.toString()}
         />
 
         <Input
-          type="number"
           label="معرف العملية (للتعديل أو الحذف)"
+          type="number"
           value={paymentId ? paymentId.toString() : ""}
           onChange={(e) => setPaymentId(parseInt(e.target.value) || null)}
         />
