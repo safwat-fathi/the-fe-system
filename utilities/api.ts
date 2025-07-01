@@ -1,8 +1,8 @@
 export const API_BASE_URL: string =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://149.102.143.102:8000/api/";
 
-export const GOLD_API_TOKEN: string =
-  process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
+// export const GOLD_API_TOKEN: string =
+//   process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
 
 export async function fetchGoldPrice(): Promise<number | null> {
   try {
@@ -108,6 +108,12 @@ export const API_ENDPOINTS = {
 
   // الحسابات
   ACCOUNTS_LIST: `${API_BASE_URL}accounts_list`,
+
+  //العملات
+  // CURRENCIES_LIST : `${API_BASE_URL}currencies_list/`;
+  // CREATE_CURRENCY : `${API_BASE_URL}api_create_currency`;
+  // UPDATE_CURRENCY : (id: number) => `${API_BASE_URL}api_update_currency/${id}`;
+  // DELETE_CURRENCY : (id: number) => `${API_BASE_URL}api_delete_currency/${id}`;
 
   // روابط الفئات والأصناف
   CATEGORIES_LIST: `${API_BASE_URL}categories_list/`,

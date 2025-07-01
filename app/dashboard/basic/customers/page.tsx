@@ -29,7 +29,7 @@ import {
 import { fetchData, API_BASE_URL } from "@/utilities/api";
 import useCrud from "@/utilities/useCrud";
 import ActionButtons from "@/components/ActionButtons";
-import { handleLanguageChange } from "@/utilities/global";
+// import { handleLanguageChange } from "@/utilities/global";
 
 interface Customer {
   id: number;
@@ -387,7 +387,7 @@ export default function CustomersTable() {
                   cust_name_e: e.target.value,
                 })
               }
-              onFocus={handleLanguageChange}
+              // onFocus={handleLanguageChange}
             />
             <Input
               isDisabled={isViewMode}
@@ -410,7 +410,7 @@ export default function CustomersTable() {
                   email: e.target.value,
                 })
               }
-              onFocus={handleLanguageChange}
+              // onFocus={handleLanguageChange}
             />
             <Input
               isDisabled={isViewMode}

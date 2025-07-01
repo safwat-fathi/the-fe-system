@@ -86,7 +86,8 @@ export default function Login() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.6 }}
           >
-            حيث يلتقي بريق الذهب بدقة التقنية 💰
+            حيث يلتقي بريق الذهب بالتقنية 
+            {/* 💰 */}
           </motion.p>
         </div>
 

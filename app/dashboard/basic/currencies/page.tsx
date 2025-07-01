@@ -20,10 +20,10 @@ import {
 } from "@heroui/react";
 import { FaPlus } from "react-icons/fa";
 import toast from "react-hot-toast";
-
 import ActionButtons from "@/components/ActionButtons";
 import { fetchData, API_BASE_URL } from "@/utilities/api";
 import useCrud from "@/utilities/useCrud";
+import { apiFetch } from "@/utilities/api";
 
 const API_URL = `${API_BASE_URL}currencies_list/`;
 const CREATE_URL = `${API_BASE_URL}api_create_currency`;
@@ -231,6 +231,7 @@ export default function CurrenciesTable() {
             <Input
               isDisabled={isViewMode}
               label="اسم العملة"
+              required
               value={currentCurrency.cur_name || ""}
               onChange={(e) =>
                 setCurrentCurrency({
@@ -286,6 +287,7 @@ export default function CurrenciesTable() {
             <Input
               isDisabled={isViewMode}
               label="السعر"
+              required
               value={currentCurrency.cur_price || ""}
               onChange={(e) =>
                 setCurrentCurrency({

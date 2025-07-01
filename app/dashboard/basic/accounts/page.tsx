@@ -506,6 +506,7 @@ export default function AccountsPage() {
                       className="form-control"
                       id="accountName"
                       type="text"
+                      required
                     />
                   </div>
                   <div className="form-group wide-field">
