@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@heroui/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { API_ENDPOINTS } from "@/utilities/api";
 
 const { CREATE_INVOICE_BOX } = API_ENDPOINTS;
@@ -26,7 +26,6 @@ export default function InvoicePaymentPage() {
   const [boxes, setBoxes] = useState<any[]>([]);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
 
-  // ✅ الدالة هنا في الأعلى
   const handleSave = async () => {
     if (paidAmount > invoiceTotal) {
       alert("المبلغ المدفوع أكبر من قيمة الفاتورة.");
@@ -70,15 +69,6 @@ export default function InvoicePaymentPage() {
     setPaidAmount(total);
   }, [boxInputs]);
 
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter") handleSave();
-      if (e.key === "Escape") router.back();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [handleSave]);
-
   const updateBoxInput = (index: number, field: string, value: any) => {
     const updated = [...boxInputs];
     updated[index][field] = value;
@@ -102,91 +92,87 @@ export default function InvoicePaymentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 font-cairo flex items-center justify-center">
-      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl p-8">
-        <div className="grid grid-cols-5 gap-8">
-          {/* معلومات الفاتورة */}
-          <div className="flex flex-col gap-6">
-            <div className="bg-gray-50 rounded-xl shadow-inner p-4 text-center">
-              <p className="text-sm text-gray-500">قيمة الفاتورة</p>
-              <p className="text-2xl font-bold text-green-600">SR {invoiceTotal.toFixed(2)}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl shadow-inner p-4 text-center">
-              <p className="text-sm text-gray-500">المبلغ المدفوع</p>
-              <p className="text-2xl font-bold text-blue-600">SR {paidAmount.toFixed(2)}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl shadow-inner p-4 text-center">
-              <p className="text-sm text-gray-500">المتبقي</p>
-              <p className="text-2xl font-bold text-red-500">SR {(invoiceTotal - paidAmount).toFixed(2)}</p>
-            </div>
-            <Button color="primary" className="py-3 text-lg font-semibold rounded-xl" onClick={handleSave}>حفظ</Button>
-            <Button color="default" className="py-3 text-lg font-semibold rounded-xl" onClick={() => router.back()}>العودة</Button>
-            <Button variant="outline" className="py-2 text-sm rounded-xl" onClick={clearAll}>تصفير الكل</Button>
+    <div className="min-h-screen bg-gray-100 p-6 font-cairo flex items-start justify-center">
+      <div className="w-full max-w-7xl bg-white rounded-3xl shadow-2xl p-8 grid grid-cols-12 gap-6">
+
+        {/* المبالغ في اليسار */}
+        <div className="col-span-3 flex flex-col gap-6 justify-start">
+          <div className="bg-gray-50 rounded-xl p-6 text-center">
+            <p className="text-base text-gray-500">قيمة الفاتورة</p>
+            <p className="text-3xl font-bold text-green-600">SR {invoiceTotal.toFixed(2)}</p>
           </div>
+          <div className="bg-gray-50 rounded-xl p-6 text-center">
+            <p className="text-base text-gray-500">المبلغ المدفوع</p>
+            <p className="text-3xl font-bold text-blue-600">SR {paidAmount.toFixed(2)}</p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-6 text-center">
+            <p className="text-base text-gray-500">المتبقي</p>
+            <p className="text-3xl font-bold text-red-500">SR {(invoiceTotal - paidAmount).toFixed(2)}</p>
+          </div>
+          <Button color="primary" className="py-4 text-xl font-semibold rounded-xl" onClick={handleSave}>حفظ</Button>
+          <Button color="default" className="py-4 text-xl font-semibold rounded-xl" onClick={() => router.back()}>العودة</Button>
+          <Button variant="outline" className="py-3 text-md rounded-xl" onClick={clearAll}>تصفير الكل</Button>
+        </div>
 
-          {/* جدول الصناديق وكيبورد الأرقام */}
-          <div className="col-span-3 flex flex-col items-center gap-6">
-            <div className="text-6xl font-extrabold text-gray-800 tracking-wide">SR {paidAmountStr}</div>
-
-            <div className="w-full space-y-2">
-              <div className="grid grid-cols-3 gap-2 font-semibold text-sm text-gray-600">
-                <div>الصندوق</div>
-                <div>المبلغ</div>
-                <div></div>
-              </div>
-              {boxInputs.map((row, index) => (
-                <div
-                  key={index}
-                  onClick={() => setSelectedRow(index)}
-                  className={`grid grid-cols-3 gap-2 items-center transition-all duration-300 ${parseFloat(row.amount || "0") > invoiceTotal ? "bg-red-100" : ""} ${selectedRow === index ? "ring-2 ring-blue-400" : ""}`}
-                >
-                  <select
-                    className="border rounded-lg px-3 py-2"
-                    value={row.boxId || ""}
-                    onChange={(e) => updateBoxInput(index, "boxId", parseInt(e.target.value))}
-                  >
-                    <option value="">اختر الصندوق</option>
-                    {boxes.map((box) => (
-                      <option key={box.id} value={box.id}>{box.box_name}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    className="border rounded-lg px-3 py-2"
-                    placeholder="0"
-                    value={row.amount}
-                    onChange={(e) => updateBoxInput(index, "amount", e.target.value)}
-                  />
-                  <Button size="sm" variant="destructive" onClick={() => removeBoxRow(index)}>حذف</Button>
-                </div>
-              ))}
-              <Button variant="light" onClick={addBoxRow} className="mt-2 w-full">+ إضافة صف</Button>
-              <div className="text-sm text-gray-500 mt-1 text-end">
-                المجموع: <span className={`font-bold ${paidAmount > invoiceTotal ? "text-red-500" : "text-green-600"}`}>SR {paidAmount.toFixed(2)}</span>
-              </div>
+        {/* جدول الصناديق في المنتصف */}
+        <div className="col-span-6 flex flex-col gap-4">
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2 text-lg font-semibold text-gray-600">
+              <div>الصندوق</div>
+              <div>المبلغ</div>
+              <div></div>
             </div>
-
-            {/* كيباد الأرقام */}
-            <div className="grid grid-cols-4 gap-3 w-full max-w-md mt-6">
-              {KEYPAD_BUTTONS.flat().map((btn, index) => (
-                <motion.button
-                  key={index}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => {
-                    if (boxInputs.length === 0 || selectedRow === null) return;
-                    const currentAmount = boxInputs[selectedRow].amount || "";
-                    if (btn === "⌫") {
-                      updateBoxInput(selectedRow, "amount", currentAmount.slice(0, -1));
-                    } else if (/^\d+$/.test(btn)) {
-                      updateBoxInput(selectedRow, "amount", currentAmount + btn);
-                    }
-                  }}
-                  className={`text-lg font-semibold py-3 rounded-xl shadow-sm bg-white border hover:bg-blue-50 transition-colors duration-200 ${btn === "⌫" ? "text-red-500" : ""}`}
+            {boxInputs.map((row, index) => (
+              <div
+                key={index}
+                onClick={() => setSelectedRow(index)}
+                className={`grid grid-cols-3 gap-3 items-center transition-all duration-300 ${parseFloat(row.amount || "0") > invoiceTotal ? "bg-red-100" : ""} ${selectedRow === index ? "ring-2 ring-blue-400" : ""}`}
+              >
+                <select
+                  className="border rounded-lg px-4 py-3 text-lg"
+                  value={row.boxId || ""}
+                  onChange={(e) => updateBoxInput(index, "boxId", parseInt(e.target.value))}
                 >
-                  {btn}
-                </motion.button>
-              ))}
-            </div>
+                  <option value="">اختر الصندوق</option>
+                  {boxes.map((box) => (
+                    <option key={box.id} value={box.id}>{box.box_name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  className="border rounded-lg px-4 py-3 text-lg"
+                  placeholder="0"
+                  value={row.amount}
+                  onChange={(e) => updateBoxInput(index, "amount", e.target.value)}
+                />
+                <Button size="lg" variant="destructive" onClick={() => removeBoxRow(index)}>حذف</Button>
+              </div>
+            ))}
+            <Button variant="light" onClick={addBoxRow} className="mt-3 w-full text-lg">+ إضافة صف</Button>
+          </div>
+        </div>
+
+        {/* كيباد الأرقام في أسفل اليمين */}
+        <div className="col-span-3 flex flex-col justify-end items-end">
+          <div className="grid grid-cols-4 gap-4 w-full max-w-md">
+            {KEYPAD_BUTTONS.flat().map((btn, index) => (
+              <motion.button
+                key={index}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => {
+                  if (boxInputs.length === 0 || selectedRow === null) return;
+                  const currentAmount = boxInputs[selectedRow].amount || "";
+                  if (btn === "⌫") {
+                    updateBoxInput(selectedRow, "amount", currentAmount.slice(0, -1));
+                  } else if (/^\d+$/.test(btn)) {
+                    updateBoxInput(selectedRow, "amount", currentAmount + btn);
+                  }
+                }}
+                className={`text-xl font-bold py-5 rounded-xl shadow-sm bg-white border hover:bg-blue-50 transition-colors duration-200 ${btn === "⌫" ? "text-red-500" : ""}`}
+              >
+                {btn}
+              </motion.button>
+            ))}
           </div>
         </div>
       </div>
