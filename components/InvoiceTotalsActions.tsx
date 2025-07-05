@@ -1,8 +1,9 @@
 "use client";
 
 import { Button, Checkbox } from "@heroui/react";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
+import InvoicePaymentModal from "./InvoicePaymentModal";
 import useFractions from "@/utilities/useFractions";
 
 interface Props {
@@ -42,6 +43,7 @@ export default function InvoiceTotalsActions({
 }: Props) {
   const { frac } = useFractions();
   const router = useRouter();
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   return (
     <div className="p-6 max-w-[1500px] mx-auto bg-white rounded shadow">
       <div className="flex justify-between items-center border-b pb-3 mb-6">
@@ -93,7 +95,7 @@ export default function InvoiceTotalsActions({
             </Button>
             <Button
               className="bg-purple-600 text-white hover:bg-purple-700 px-2 py-1 text-sm rounded"
-              onClick={() => router.push(`/dashboard/invoice_payment?total=${netAmount}`)}
+              onClick={() => setIsPaymentOpen(true)}
             >
               <i className="bi bi-credit-card me-2" /> شاشة الدفع
             </Button>
@@ -120,6 +122,11 @@ export default function InvoiceTotalsActions({
           </div>
         </div>
       </div>
+      <InvoicePaymentModal
+        isOpen={isPaymentOpen}
+        onClose={() => setIsPaymentOpen(false)}
+        invoiceTotal={netAmount}
+      />
     </div>
   );
 }
