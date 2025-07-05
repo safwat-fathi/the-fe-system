@@ -8,6 +8,13 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Pagination,
 } from "@heroui/react";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
@@ -78,17 +85,19 @@ export default function CategoriesItemsPage() {
   const [ItemStatus, setItemStatus] = useState<any[]>([]);
   const [currentItem, setCurrentItem] = useState<Partial<Item>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [catPage, setCatPage] = useState(1);
   const catPerPage = 4;
 
-  const startIndex = (currentPage - 1) * catPerPage;
+  const startIndex = (catPage - 1) * catPerPage;
   const endIndex = startIndex + catPerPage;
   const pagedCategories = categories.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(categories.length / catPerPage);
+  const totalCatPages = Math.ceil(categories.length / catPerPage);
 
   const [itemsNextUrl, setItemsNextUrl] = useState<string | null>(null);
   const [itemsPrevUrl, setItemsPrevUrl] = useState<string | null>(null);
   const [itemsCount, setItemsCount] = useState<number>(0);
+  const [itemsPage, setItemsPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [search, setSearch] = useState("");
 
   const [boxes, setBoxes] = useState<{ id: number; box_name: string }[]>([]);
@@ -202,16 +211,22 @@ export default function CategoriesItemsPage() {
     }
   };
 
-  const fetchItems = async (xcat: number, xtype: number, url?: string) => {
+  const fetchItems = async (
+    xcat: number,
+    xtype: number,
+    url?: string,
+    page = 1,
+  ) => {
     try {
       const fetchUrl =
-        url ?? `http://149.102.143.102:8000/api/items_list_p/${xcat}/${xtype}/`;
+        url ?? `${API_BASE_URL}items_list_p/${xcat}/${xtype}/?page=${page}`;
       const res = await apiFetch(fetchUrl);
       const data = await res.json();
 
       const itemsArray = Array.isArray(data.results) ? data.results : [];
 
       setItems(itemsArray);
+      if (itemsArray.length) setItemsPerPage(itemsArray.length);
       setItemsNextUrl(data.next);
       setItemsPrevUrl(data.previous);
       setItemsCount(data.count);
@@ -221,10 +236,17 @@ export default function CategoriesItemsPage() {
     }
   };
 
-  const searchItems = async (query: string, url?: string) => {
+  const searchItems = async (
+    query: string,
+    url?: string,
+    page = 1,
+  ) => {
     try {
       const fetchUrl =
-        url ?? `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(query)}`;
+        url ??
+        `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(
+          query,
+        )}&page=${page}`;
       const res = await apiFetch(fetchUrl);
       const data = await res.json();
       const itemsArray = Array.isArray(data.results) ? data.results : [];
@@ -240,6 +262,7 @@ export default function CategoriesItemsPage() {
       }));
 
       setItems(mapped);
+      if (mapped.length) setItemsPerPage(mapped.length);
       setItemsNextUrl(data.next);
       setItemsPrevUrl(data.previous);
       setItemsCount(data.count);
@@ -468,62 +491,42 @@ export default function CategoriesItemsPage() {
       {/* جدول الفئات */}
       <div>
         <h2 className="text-lg font-semibold mb-2">الفئات</h2>
-        <table className="w-full border text-sm">
-          <thead>
-            <tr className="bg-gray-100 text-xs font-semibold">
-              <th className="p-2 border">الفئة</th>
-              <th className="p-2 border">العيار</th>
-              <th className="p-2 border">المعايرة</th>
-              <th className="p-2 border">الصندوق</th>
-              <th className="p-2 border">الضريبة</th>
-              <th className="p-2 border">النوع</th>
-              <th className="p-2 border">حالة الفئة</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagedCategories.map((cat) => (
-              <tr
-                key={cat.id}
-                className={`cursor-pointer hover:bg-gray-200 ${selectedCatId === cat.id ? "bg-green-100" : ""}`}
-                onClick={() => setSelectedCatId(cat.id)}
-              >
-                <td className="p-2 border">{cat.cat_name}</td>
-                <td className="p-2 border">{cat.gauge}</td>
-                <td className="p-2 border">{cat.purity}</td>
-                <td className="p-2 border">
-                  {boxes.find((b) => b.id === cat.box)?.box_name || "-"}
-                </td>
-                <td className="p-2 border">{cat.tax}</td>
-                <td className="p-2 border">
-                  {catTypes.find((t) => t.code_id === cat.cat_type)
-                    ?.code_desc || "-"}
-                </td>
-                <td className="p-2 border">
-                  {catStatuses.find((s) => s.code_id === cat.cat_status)
-                    ?.code_desc || "-"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="flex justify-center mt-4 gap-2">
-          <Button
-            isDisabled={currentPage === 1}
-            onPress={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          >
-            السابق
-          </Button>
-          <span className="px-4 py-2 text-sm">
-            صفحة {currentPage} من {totalPages}
-          </span>
-          <Button
-            isDisabled={currentPage === totalPages}
-            onPress={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-          >
-            التالي
-          </Button>
+        <Table aria-label="جدول الفئات" removeWrapper>
+                  <TableHeader>
+                    <TableColumn>الفئة</TableColumn>
+                    <TableColumn>العيار</TableColumn>
+                    <TableColumn>المعايرة</TableColumn>
+                    <TableColumn>الصندوق</TableColumn>
+                    <TableColumn>الضريبة</TableColumn>
+                    <TableColumn>النوع</TableColumn>
+                    <TableColumn>حالة الفئة</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {pagedCategories.map((cat) => (
+                      <TableRow
+                        key={cat.id}
+                        className={`cursor-pointer ${selectedCatId === cat.id ? "bg-green-100" : ""}`}
+                        onClick={() => setSelectedCatId(cat.id)}
+                      >
+                        <TableCell>{cat.cat_name}</TableCell>
+                        <TableCell>{cat.gauge}</TableCell>
+                        <TableCell>{cat.purity}</TableCell>
+                        <TableCell>{boxes.find((b) => b.id === cat.box)?.box_name || "-"}</TableCell>
+                        <TableCell>{cat.tax}</TableCell>
+                        <TableCell>{catTypes.find((t) => t.code_id === cat.cat_type)?.code_desc || "-"}</TableCell>
+                        <TableCell>{catStatuses.find((s) => s.code_id === cat.cat_status)?.code_desc || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+        <div className="flex justify-between items-center py-4">
+          <span className="text-sm text-gray-500">عدد الفئات: {categories.length}</span>
+          <Pagination
+            color="primary"
+            page={catPage}
+            total={totalCatPages}
+            onChange={setCatPage}
+          />
         </div>
       </div>
 
@@ -553,96 +556,71 @@ export default function CategoriesItemsPage() {
           />
         </div>
       </div>
-        <table className="w-full border text-sm">
-          <thead>
-            <tr className="bg-gray-100 text-center text-xs font-semibold">
-              <th className="p-2 border">الكود</th>
-              <th className="p-2 border">الاسم</th>
-              <th className="p-2 border">السعر</th>
-              <th className="p-2 border">الوزن</th>
-              <th className="p-2 border">العيار</th>
-              <th className="p-2 border">المعايرة</th>
-              <th className="p-2 border">التكلفة</th>
-              <th className="p-2 border">نوع الصنف</th>
-              <th className="p-2 border">الوحدة</th>
-              <th className="p-2 border">الحالة</th>
-              <th className="p-2 border">الإجراءات</th>
-            </tr>
-          </thead>
-        <tbody>
-          {filteredItems.map((item) => {
-            const itemType = itemTypes.find(
-              (type) => type.id === item.item_type,
-            );
-            const unitName = units.find((unit) => unit.id === item.unit);
+        <Table aria-label="جدول الأصناف" removeWrapper>
+          <TableHeader>
+            <TableColumn>الكود</TableColumn>
+            <TableColumn>الاسم</TableColumn>
+            <TableColumn>السعر</TableColumn>
+            <TableColumn>الوزن</TableColumn>
+            <TableColumn>العيار</TableColumn>
+            <TableColumn>المعايرة</TableColumn>
+            <TableColumn>التكلفة</TableColumn>
+            <TableColumn>نوع الصنف</TableColumn>
+            <TableColumn>الوحدة</TableColumn>
+            <TableColumn>الحالة</TableColumn>
+            <TableColumn>الإجراءات</TableColumn>
+          </TableHeader>
+          <TableBody>
+            {filteredItems.map((item) => {
+              const itemType = itemTypes.find((type) => type.id === item.item_type);
+              const unitName = units.find((unit) => unit.id === item.unit);
 
-            return (
-              <tr key={item.id} className="text-center hover:bg-gray-50">
-                <td className="p-2 border">{item.item_code || "-"}</td>
-                <td className="p-2 border">{item.item_name}</td>
-                <td className="p-2 border">{item.item_price || "-"}</td>
-                <td className="p-2 border">{item.item_weight || "-"}</td>
-                <td className="p-2 border">{item.k || "-"}</td>
-                <td className="p-2 border">{item.purity || "-"}</td>
-                <td className="p-2 border">{item.first_cost || "-"}</td>
-                <td className="p-2 border">{itemType?.type_name || "-"}</td>
-                <td className="p-2 border">{unitName?.unit_name || "-"}</td>
-                 <td className="p-2 border"> {ItemStatus.find((t) => t.code_id === item.item_status) ?.code_desc || "-"} </td> 
-                <td className="p-2 border">
-                  <div className="flex justify-center gap-2">
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onClick={() => handleViewItem(item)}
-                    >
-                      <FaEye className="text-blue-500" />
-                    </Button>
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onClick={() => handleEditItem(item)}
-                    >
-                      <FaEdit className="text-yellow-500" />
-                    </Button>
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onClick={() => handleDeleteItem(item.id)}
-                    >
-                      <FaTrash className="text-red-500" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <div className="flex justify-center mt-4 gap-2">
-        <Button
-          isDisabled={!itemsPrevUrl}
-          onPress={() =>
-            search.trim()
-              ? searchItems(search, itemsPrevUrl!)
-              : fetchItems(selectedCatId, selectedTypeId, itemsPrevUrl!)
-          }
-        >
-          السابق
-        </Button>
-        <span className="px-4 py-2 text-sm">عدد النتائج: {itemsCount}</span>
-        <Button
-          isDisabled={!itemsNextUrl}
-          onPress={() =>
-            search.trim()
-              ? searchItems(search, itemsNextUrl!)
-              : fetchItems(selectedCatId, selectedTypeId, itemsNextUrl!)
-          }
-        >
-          التالي
-        </Button>
+              return (
+                <TableRow key={item.id} className="text-center hover:bg-gray-50">
+                  <TableCell>{item.item_code || "-"}</TableCell>
+                  <TableCell>{item.item_name}</TableCell>
+                  <TableCell>{item.item_price || "-"}</TableCell>
+                  <TableCell>{item.item_weight || "-"}</TableCell>
+                  <TableCell>{item.k || "-"}</TableCell>
+                  <TableCell>{item.purity || "-"}</TableCell>
+                  <TableCell>{item.first_cost || "-"}</TableCell>
+                  <TableCell>{itemType?.type_name || "-"}</TableCell>
+                  <TableCell>{unitName?.unit_name || "-"}</TableCell>
+                  <TableCell>{ItemStatus.find((t) => t.code_id === item.item_status)?.code_desc || "-"}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-center gap-2">
+                      <Button isIconOnly size="sm" variant="light" onClick={() => handleViewItem(item)}>
+                        <FaEye className="text-blue-500" />
+                      </Button>
+                      <Button isIconOnly size="sm" variant="light" onClick={() => handleEditItem(item)}>
+                        <FaEdit className="text-yellow-500" />
+                      </Button>
+                      <Button isIconOnly size="sm" variant="light" onClick={() => handleDeleteItem(item.id)}>
+                        <FaTrash className="text-red-500" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+
+      <div className="flex justify-between items-center py-4">
+        <span className="text-sm text-gray-500">عدد الأصناف: {itemsCount}</span>
+        <Pagination
+          color="primary"
+          page={itemsPage}
+          total={Math.ceil(itemsCount / itemsPerPage) || 1}
+          onChange={(p) => {
+            setItemsPage(p);
+            if (search.trim()) {
+              searchItems(search, undefined, p);
+            } else {
+              fetchItems(selectedCatId, selectedTypeId, undefined, p);
+            }
+          }}
+        />
       </div>
 
       <Modal
