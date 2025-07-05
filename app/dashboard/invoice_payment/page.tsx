@@ -27,10 +27,6 @@ export default function InvoicePaymentPage() {
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
 
   const handleSave = async () => {
-    if (paidAmount > invoiceTotal) {
-      alert("المبلغ المدفوع أكبر من قيمة الفاتورة.");
-      return;
-    }
 
     const body = {
       boxes: boxInputs.filter((b) => b.boxId && b.amount),
@@ -64,10 +60,23 @@ export default function InvoicePaymentPage() {
   }, []);
 
   useEffect(() => {
-    const total = boxInputs.reduce((acc, row) => acc + parseFloat(row.amount || "0"), 0);
-    setPaidAmountStr(total.toString());
-    setPaidAmount(total);
-  }, [boxInputs]);
+    const otherRowsTotal = boxInputs
+      .slice(1)
+      .reduce((acc, row) => acc + parseFloat(row.amount || "0"), 0);
+
+    setPaidAmount(otherRowsTotal);
+    setPaidAmountStr(otherRowsTotal.toString());
+
+    const firstAmount = (invoiceTotal - otherRowsTotal).toString();
+    if (boxInputs[0]?.amount !== firstAmount) {
+      setBoxInputs((prev) => {
+        const updated = [...prev];
+        if (updated.length === 0) return [{ boxId: null, amount: firstAmount }];
+        updated[0] = { ...updated[0], amount: firstAmount };
+        return updated;
+      });
+    }
+  }, [boxInputs, invoiceTotal]);
 
   const updateBoxInput = (index: number, field: string, value: any) => {
     const updated = [...boxInputs];
@@ -80,6 +89,7 @@ export default function InvoicePaymentPage() {
   };
 
   const removeBoxRow = (index: number) => {
+    if (index === 0) return;
     const updated = [...boxInputs];
     updated.splice(index, 1);
     setBoxInputs(updated);
@@ -87,7 +97,7 @@ export default function InvoicePaymentPage() {
   };
 
   const clearAll = () => {
-    setBoxInputs([{ boxId: null, amount: "" }]);
+    setBoxInputs([{ boxId: null, amount: invoiceTotal.toString() }]);
     setSelectedRow(null);
   };
 
@@ -144,8 +154,9 @@ export default function InvoicePaymentPage() {
                   placeholder="0"
                   value={row.amount}
                   onChange={(e) => updateBoxInput(index, "amount", e.target.value)}
+                  readOnly={index === 0}
                 />
-                <Button size="lg" variant="destructive" onClick={() => removeBoxRow(index)}>حذف</Button>
+                <Button size="lg" variant="destructive" onClick={() => removeBoxRow(index)} disabled={index === 0}>حذف</Button>
               </div>
             ))}
             <Button variant="light" onClick={addBoxRow} className="mt-3 w-full text-lg">+ إضافة صف</Button>
