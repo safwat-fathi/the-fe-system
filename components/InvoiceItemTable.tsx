@@ -53,10 +53,16 @@ export default function InvoiceItemTable({
   categories,
   homePurity,
 }: Props) {
+  const weightDigits = useFractions("weight") as number;
   const gWeightDigits = useFractions("g_weight") as number;
+  const priceDigits = useFractions("price") as number;
+  const priceWDigits = useFractions("price_w") as number;
+  const totalADigits = useFractions("total_a") as number;
+  const totalWDigits = useFractions("total_w") as number;
+  const itemDiscDigits = useFractions("item_disc_amt") as number;
   const totalDigits = useFractions("total") as number;
   const taxDigits = useFractions("tax") as number;
-  const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
+  const inputRefs = useRef<(HTMLElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
   const [searchValue, setSearchValue] = useState("");
 
@@ -147,7 +153,17 @@ useEffect(() => {
         "item_disc_amt",
       ].includes(field)
     ) {
-      updated[index][field] = parseFloat(value) || 0;
+      const num = parseFloat(value) || 0;
+      const map: Record<string, number> = {
+        weight: weightDigits,
+        price: priceDigits,
+        price_w: priceWDigits,
+        g_weight: gWeightDigits,
+        item_disc_amt: itemDiscDigits,
+      };
+      const digits = map[field];
+      updated[index][field] =
+        digits !== undefined ? parseFloat(num.toFixed(digits)) : num;
     } else {
       // @ts-ignore
       updated[index][field] = value;
@@ -300,6 +316,7 @@ useEffect(() => {
       return;
     }
 
+
     if (e.key === "ArrowDown") {
       e.preventDefault();
       if (rows[rowIndex + 1]?.[colIndex]) {
@@ -404,10 +421,10 @@ useEffect(() => {
           ? updated[index].weight * 1000
           : updated[index].weight;
 
-      updated[index].price = totalA / w;
+      updated[index].price = parseFloat((totalA / w).toFixed(priceDigits));
     }
 
-    updated[index].total_a = totalA;
+    updated[index].total_a = parseFloat(totalA.toFixed(totalADigits));
 
     const baseTotal =
       (payType === 1
@@ -434,10 +451,10 @@ useEffect(() => {
           ? updated[index].weight * 1000
           : updated[index].weight;
 
-      updated[index].price_w = totalW / w;
+      updated[index].price_w = parseFloat((totalW / w).toFixed(priceWDigits));
     }
 
-    updated[index].total_w = totalW;
+    updated[index].total_w = parseFloat(totalW.toFixed(totalWDigits));
 
     const baseTotal =
       (payType === 1
@@ -453,7 +470,7 @@ useEffect(() => {
     setInvoiceItems(updated);
   };
 
-  const setRef = (row: number, col: number, el: HTMLInputElement | null) => {
+  const setRef = (row: number, col: number, el: HTMLElement | null) => {
     if (!inputRefs.current[row]) inputRefs.current[row] = [];
     inputRefs.current[row][col] = el;
   };
@@ -510,6 +527,10 @@ useEffect(() => {
               <tr key={item.id}>
                 <td>
                   <AsyncCreatableSelect
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el as unknown as HTMLElement;
+                    }}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                     isClearable
                     isSearchable
                     additional={{ page: 1 }}
@@ -712,7 +733,7 @@ useEffect(() => {
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={item.weight}
+                    value={Number(item.weight).toFixed(weightDigits)}
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
                     }
@@ -741,7 +762,7 @@ useEffect(() => {
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={item.g_weight}
+                    value={Number(item.g_weight).toFixed(gWeightDigits)}
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
                     }
@@ -771,7 +792,7 @@ useEffect(() => {
                       className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={item.price}
+                      value={Number(item.price).toFixed(priceDigits)}
                       onChange={(e) =>
                         handleFieldChange(index, "price", e.target.value)
                       }
@@ -788,7 +809,7 @@ useEffect(() => {
                       className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={item.price_w}
+                      value={Number(item.price_w).toFixed(priceWDigits)}
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
                       }
@@ -805,7 +826,7 @@ useEffect(() => {
                       className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={item.total_a}
+                      value={Number(item.total_a).toFixed(totalADigits)}
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
                       }
@@ -822,7 +843,7 @@ useEffect(() => {
                       className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={item.total_w}
+                      value={Number(item.total_w).toFixed(totalWDigits)}
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
                       }
@@ -838,7 +859,7 @@ useEffect(() => {
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={item.item_disc_amt}
+                    value={Number(item.item_disc_amt).toFixed(itemDiscDigits)}
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
                     }
@@ -857,7 +878,7 @@ useEffect(() => {
                     value={
                       tempTotals[item.id] !== undefined
                         ? tempTotals[item.id]
-                        : (item.total ?? total + tax)
+                        : (item.total ?? total + tax).toFixed(totalDigits)
                     }
                     onBlur={(e) => {
                       setTempTotals((prev) => {

@@ -6,9 +6,7 @@ export interface Fractions {
   frac2: number;
 }
 
-export default function useFractions(
-  fieldName?: string,
-): Fractions | number {
+export default function useFractions(fieldName?: string): Fractions | number {
   const [digits, setDigits] = useState<Fractions>({ frac: 2, frac2: 3 });
 
   useEffect(() => {
@@ -19,19 +17,20 @@ export default function useFractions(
 
   if (!fieldName) return digits;
 
-  const mapping: Record<string, keyof Fractions> = {
-    qty: "frac2",
-    weight: "frac2",
-    g_weight: "frac2",
-    price: "frac",
-    price_w: "frac",
-    total: "frac",
-    total_a: "frac",
-    total_w: "frac",
-    item_disc_amt: "frac",
-    tax: "frac",
+  if (fieldName === "qty") return 0;
+
+  const mapping: Record<string, number> = {
+    weight: digits.frac2,
+    g_weight: digits.frac2,
+    price: digits.frac,
+    price_w: digits.frac,
+    total: digits.frac,
+    total_a: digits.frac,
+    total_w: digits.frac,
+    item_disc_amt: digits.frac,
+    tax: digits.frac,
   };
 
-  const key = mapping[fieldName] ?? "frac";
-  return digits[key];
+  return mapping[fieldName] ?? digits.frac;
+}
 }
