@@ -53,7 +53,9 @@ export default function InvoiceItemTable({
   categories,
   homePurity,
 }: Props) {
-  const { frac, frac2 } = useFractions();
+  const gWeightDigits = useFractions("g_weight") as number;
+  const totalDigits = useFractions("total") as number;
+  const taxDigits = useFractions("tax") as number;
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
   const [searchValue, setSearchValue] = useState("");
@@ -158,7 +160,7 @@ useEffect(() => {
       if (homePurity) {
         const g = (weightVal * purityVal) / homePurity;
 
-        updated[index].g_weight = parseFloat(g.toFixed(frac2));
+        updated[index].g_weight = parseFloat(g.toFixed(gWeightDigits));
       }
     }
 
@@ -241,25 +243,102 @@ useEffect(() => {
     setInvoiceItems(updated);
   };
 
-  const handleEnter = (
+  const addRow = () => {
+    setInvoiceItems((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        item_id: null,
+        item_code: "",
+        qty: 1,
+        g_weight: 0,
+        weight: 0,
+        k: "",
+        price: goldPrice ?? 0,
+        price_w: goldPrice ?? 0,
+        note: "",
+        trans_type: 2,
+        purity: "",
+        total: 0,
+        total_w: 0,
+        total_a: 0,
+        inv_note: "",
+        tax: 0,
+        tax_prc: 15,
+        stones: "",
+        item_disc_prc: 0,
+        item_disc_amt: 0,
+        sn: "",
+        item_desc: "",
+        cr_date: "",
+        cr_user: "",
+        upd_date: "",
+        upd_user: "",
+        com: 0,
+        inv: 0,
+        item: 0,
+      },
+    ]);
+  };
+
+  const handleKey = (
     e: KeyboardEvent<HTMLInputElement>,
     rowIndex: number,
     colIndex: number,
   ) => {
-    if (e.key === "Enter") {
+    const rows = inputRefs.current;
+
+    const focusCell = (r: number, c: number) => {
+      setTimeout(() => rows[r]?.[c]?.focus(), 0);
+    };
+
+    if (e.key === "ArrowUp") {
       e.preventDefault();
-
-      const nextCol = colIndex + 1;
-      const rowRefs = inputRefs.current[rowIndex];
-      let nextRef: HTMLInputElement | null | undefined = rowRefs?.[nextCol];
-
-      if (!nextRef) {
-        const nextRowRefs = inputRefs.current[rowIndex + 1];
-
-        nextRef = nextRowRefs?.[0];
+      if (rows[rowIndex - 1]?.[colIndex]) {
+        rows[rowIndex - 1][colIndex]?.focus();
       }
+      return;
+    }
 
-      nextRef?.focus();
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (rows[rowIndex + 1]?.[colIndex]) {
+        rows[rowIndex + 1][colIndex]?.focus();
+      } else {
+        addRow();
+        focusCell(rowIndex + 1, colIndex);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowLeft" || (e.key === "Tab" && e.shiftKey)) {
+      e.preventDefault();
+      let r = rowIndex;
+      let c = colIndex - 1;
+      if (c < 0 && rows[rowIndex - 1]) {
+        r = rowIndex - 1;
+        c = rows[r].length - 1;
+      }
+      if (rows[r]?.[c]) rows[r][c]?.focus();
+      return;
+    }
+
+    if (
+      e.key === "ArrowRight" ||
+      e.key === "Enter" ||
+      (e.key === "Tab" && !e.shiftKey)
+    ) {
+      e.preventDefault();
+      let r = rowIndex;
+      let c = colIndex + 1;
+      if (!rows[r]?.[c]) {
+        r = rowIndex + 1;
+        c = 0;
+        if (!rows[r]) addRow();
+        focusCell(r, c);
+      } else {
+        rows[r][c]?.focus();
+      }
     }
   };
 
@@ -289,9 +368,9 @@ useEffect(() => {
       updated[index].total_w = w * updated[index].price_w;
     } else {
       // when weight is zero simply store the entered total
-      updated[index].total = parseFloat(totalWithTax.toFixed(frac));
+      updated[index].total = parseFloat(totalWithTax.toFixed(totalDigits));
       updated[index].tax = parseFloat(
-        (totalWithTax - baseWithoutDisc).toFixed(frac),
+        (totalWithTax - baseWithoutDisc).toFixed(totalDigits),
       );
       setInvoiceItems(updated);
 
@@ -306,9 +385,9 @@ useEffect(() => {
           : updated[index].total_a + updated[index].total_w) -
       (updated[index].item_disc_amt ?? 0);
 
-    updated[index].tax = parseFloat((base * taxRate).toFixed(frac));
+    updated[index].tax = parseFloat((base * taxRate).toFixed(taxDigits));
     updated[index].total = parseFloat(
-      (base + updated[index].tax).toFixed(frac),
+      (base + updated[index].tax).toFixed(totalDigits),
     );
 
     setInvoiceItems(updated);
@@ -615,14 +694,14 @@ useEffect(() => {
                 <td>
                   <input
                     ref={(el) => setRef(index, ++col, el)}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.qty}
                     onChange={(e) =>
                       handleFieldChange(index, "qty", e.target.value)
                     }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                   />
                 </td>
                 <td>
@@ -630,14 +709,14 @@ useEffect(() => {
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.weight}
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
                     }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                   />
                 </td>
                 <td>
@@ -645,13 +724,13 @@ useEffect(() => {
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.purity}
                     onChange={(e) =>
                       handleFieldChange(index, "purity", e.target.value)
                     }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                   />
                 </td>
                 <td>
@@ -659,14 +738,14 @@ useEffect(() => {
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.g_weight}
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
                     }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                   />
                 </td>
                 <td>
@@ -674,13 +753,13 @@ useEffect(() => {
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.stones}
                     onChange={(e) =>
                       handleFieldChange(index, "stones", e.target.value)
                     }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                   />
                 </td>
                 {(payType === 1 || payType === 3) && (
@@ -689,14 +768,14 @@ useEffect(() => {
                       ref={(el) => {
                         inputRefs.current[index][++col] = el;
                       }}
-                      className="border w-full p-1 text-xs text-center"
+                      className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
                       value={item.price}
                       onChange={(e) =>
                         handleFieldChange(index, "price", e.target.value)
                       }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
+                      onKeyDown={(e) => handleKey(e, index, col)}
                     />
                   </td>
                 )}
@@ -706,14 +785,14 @@ useEffect(() => {
                       ref={(el) => {
                         inputRefs.current[index][++col] = el;
                       }}
-                      className="border w-full p-1 text-xs text-center"
+                      className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
                       value={item.price_w}
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
                       }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
+                      onKeyDown={(e) => handleKey(e, index, col)}
                     />
                   </td>
                 )}
@@ -723,14 +802,14 @@ useEffect(() => {
                       ref={(el) => {
                         inputRefs.current[index][++col] = el;
                       }}
-                      className="border w-full p-1 text-xs text-center"
+                      className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
                       value={item.total_a}
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
                       }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
+                      onKeyDown={(e) => handleKey(e, index, col)}
                     />
                   </td>
                 )}
@@ -740,14 +819,14 @@ useEffect(() => {
                       ref={(el) => {
                         inputRefs.current[index][++col] = el;
                       }}
-                      className="border w-full p-1 text-xs text-center"
+                      className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
                       value={item.total_w}
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
                       }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
+                      onKeyDown={(e) => handleKey(e, index, col)}
                     />
                   </td>
                 )}
@@ -756,23 +835,23 @@ useEffect(() => {
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.item_disc_amt}
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
                     }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                   />
                 </td>
-                <td>{(item.tax ?? tax).toFixed(frac)}</td>
+                <td>{(item.tax ?? tax).toFixed(taxDigits)}</td>
                 <td>
                   <input
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={
@@ -794,7 +873,7 @@ useEffect(() => {
                         [item.id]: e.target.value,
                       }))
                     }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                   />
                 </td>
                 <td>
@@ -802,13 +881,13 @@ useEffect(() => {
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.item_desc}
                     onChange={(e) =>
                       handleFieldChange(index, "item_desc", e.target.value)
                     }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                   />
                 </td>
                 <td>
