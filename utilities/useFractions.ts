@@ -33,3 +33,4 @@ export default function useFractions(fieldName?: string): Fractions | number {
 
   return mapping[fieldName] ?? digits.frac;
 }
+}

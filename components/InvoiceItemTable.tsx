@@ -298,7 +298,7 @@ useEffect(() => {
   };
 
   const handleKey = (
-    e: KeyboardEvent<any>,
+    e: KeyboardEvent<HTMLInputElement>,
     rowIndex: number,
     colIndex: number,
   ) => {
@@ -315,6 +315,7 @@ useEffect(() => {
       }
       return;
     }
+
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
