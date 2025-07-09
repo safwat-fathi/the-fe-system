@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@heroui/react";
 import { motion } from "framer-motion";
 import { API_ENDPOINTS } from "@/utilities/api";
+import useFractions from "@/utilities/useFractions";
 
 const { CREATE_INVOICE_BOX } = API_ENDPOINTS;
 
@@ -18,6 +19,7 @@ const KEYPAD_BUTTONS = [
 export default function InvoicePaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { frac } = useFractions();
 
   const [invoiceTotal, setInvoiceTotal] = useState<number>(0);
   const [paidAmountStr, setPaidAmountStr] = useState<string>("0");
@@ -109,15 +111,15 @@ export default function InvoicePaymentPage() {
         <div className="col-span-3 flex flex-col gap-6 justify-start">
           <div className="bg-gray-50 rounded-xl p-6 text-center">
             <p className="text-base text-gray-500">قيمة الفاتورة</p>
-            <p className="text-3xl font-bold text-green-600">SR {invoiceTotal.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-green-600">SR {invoiceTotal.toFixed(frac)}</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-6 text-center">
             <p className="text-base text-gray-500">المبلغ المدفوع</p>
-            <p className="text-3xl font-bold text-blue-600">SR {paidAmount.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-blue-600">SR {paidAmount.toFixed(frac)}</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-6 text-center">
             <p className="text-base text-gray-500">المتبقي</p>
-            <p className="text-3xl font-bold text-red-500">SR {(invoiceTotal - paidAmount).toFixed(2)}</p>
+            <p className="text-3xl font-bold text-red-500">SR {(invoiceTotal - paidAmount).toFixed(frac)}</p>
           </div>
           <Button color="primary" className="py-4 text-xl font-semibold rounded-xl" onClick={handleSave}>حفظ</Button>
           <Button color="default" className="py-4 text-xl font-semibold rounded-xl" onClick={() => router.back()}>العودة</Button>
