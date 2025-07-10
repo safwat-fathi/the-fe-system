@@ -133,6 +133,7 @@ export default function InvoicePage() {
   const [printVal, setPrintVal] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(true);
   const [isExistingInvoice, setIsExistingInvoice] = useState<boolean>(false);
+  const [invoicePk, setInvoicePk] = useState<number | null>(null);
   const [homePurity, setHomePurity] = useState<number>(1000);
   const { frac, frac2 } = useFractions();
   const searchParams = useSearchParams();
@@ -421,6 +422,8 @@ export default function InvoicePage() {
       const result = await res.json();
       const invPk = result.id;
 
+      setInvoicePk(invPk);
+
       for (const [index, row] of validItems.entries()) {
         if (!row.item_id) continue;
 
@@ -513,6 +516,7 @@ export default function InvoicePage() {
     setCommitVal(true);
 
     const invData = {
+      inv_id: invoiceNumber,
       inv_date: invoiceDate,
       cust: selectedCustomer,
       cust_name: selectedCust?.cust_name || null,
@@ -550,11 +554,20 @@ export default function InvoicePage() {
       build_no: buildNo || null,
       post_no: postNo || null,
       post_code: postCode || null,
+      inv_QR: generateZatcaQR({
+        sellerName: "شركة ثمار الصفاء المتميزة التجارية",
+        vatNumber: "311452959900003",
+        timestamp: invoiceDate,
+        totalWithVat: netAmount.toFixed(frac),
+        vatTotal: taxAmount.toFixed(frac),
+      }),
     };
 
     try {
+      if (invoicePk === null) throw new Error("Invoice primary key missing");
+
       const res = await apiFetch(
-        `${API_BASE_URL}api_update_invoice/${invoiceNumber}`,
+        `${API_BASE_URL}api_update_invoice/${invoicePk}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -615,7 +628,7 @@ export default function InvoicePage() {
             typeof window !== "undefined"
               ? Number(localStorage.getItem("selectedBranch")) || undefined
               : undefined,
-          inv: invoiceNumber,
+          inv: invoicePk ?? invoiceNumber,
           item: row.item_id,
         };
 
@@ -728,6 +741,8 @@ export default function InvoicePage() {
       }
 
       const invoicePk = inv.id;
+
+      setInvoicePk(invoicePk);
 
       // تعبئة البيانات الأساسية
       setInvoiceNumber(inv.inv_id);
