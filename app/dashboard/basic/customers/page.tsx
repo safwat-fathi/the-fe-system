@@ -226,15 +226,38 @@ export default function CustomersTable() {
   };
 
 const filteredCustomers = useMemo(() => {
+  const searchLower = search.toLowerCase();
+
   return customers.filter((c) => {
-    const searchLower = search.toLowerCase();
+    const fieldsToSearch = [
+      c.cust_code?.toString(),
+      c.cust_name,
+      c.cust_name_e,
+      c.mobile?.toString(),
+      c.email,
+      c.vat_no?.toString(),
+      c.cr_no?.toString(),
+      c.phone,
+      c.fax,
+      c.address,
+      c.gov,
+      c.city,
+      c.area,
+      c.street,
+      c.build_no,
+      c.post_code,
+      c.handling,
+    ];
+
     return (
-      (c.cust_name?.toLowerCase().includes(searchLower) ||
-        c.cust_code?.toString().toLowerCase().includes(searchLower)) &&
+      fieldsToSearch.some((field) =>
+        field?.toString().toLowerCase().includes(searchLower),
+      ) &&
       (!custTypeFilter || c.cust_type === custTypeFilter)
     );
   });
 }, [customers, search, custTypeFilter]);
+
 
   const paginatedCustomers = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
