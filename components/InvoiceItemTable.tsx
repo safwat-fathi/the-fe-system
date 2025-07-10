@@ -153,17 +153,8 @@ useEffect(() => {
         "item_disc_amt",
       ].includes(field)
     ) {
-      const num = parseFloat(value) || 0;
-      const map: Record<string, number> = {
-        weight: weightDigits,
-        price: priceDigits,
-        price_w: priceWDigits,
-        g_weight: gWeightDigits,
-        item_disc_amt: itemDiscDigits,
-      };
-      const digits = map[field];
-      updated[index][field] =
-        digits !== undefined ? parseFloat(num.toFixed(digits)) : num;
+      const num = parseFloat(value);
+      updated[index][field] = isNaN(num) ? 0 : num;
     } else {
       // @ts-ignore
       updated[index][field] = value;
@@ -733,7 +724,8 @@ useEffect(() => {
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={Number(item.weight).toFixed(weightDigits)}
+                    step="any"
+                    value={item.weight}
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
                     }
@@ -762,7 +754,8 @@ useEffect(() => {
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={Number(item.g_weight).toFixed(gWeightDigits)}
+                    step="any"
+                    value={item.g_weight}
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
                     }
@@ -792,7 +785,8 @@ useEffect(() => {
                       className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={Number(item.price).toFixed(priceDigits)}
+                      step="any"
+                      value={item.price}
                       onChange={(e) =>
                         handleFieldChange(index, "price", e.target.value)
                       }
@@ -809,7 +803,8 @@ useEffect(() => {
                       className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={Number(item.price_w).toFixed(priceWDigits)}
+                      step="any"
+                      value={item.price_w}
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
                       }
@@ -826,7 +821,8 @@ useEffect(() => {
                       className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={Number(item.total_a).toFixed(totalADigits)}
+                      step="any"
+                      value={item.total_a}
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
                       }
@@ -843,7 +839,8 @@ useEffect(() => {
                       className="border w-full p-1 text-xs text-center appearance-none"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={Number(item.total_w).toFixed(totalWDigits)}
+                      step="any"
+                      value={item.total_w}
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
                       }
@@ -859,7 +856,8 @@ useEffect(() => {
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={Number(item.item_disc_amt).toFixed(itemDiscDigits)}
+                    step="any"
+                    value={item.item_disc_amt}
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
                     }
@@ -875,10 +873,11 @@ useEffect(() => {
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
+                    step="any"
                     value={
                       tempTotals[item.id] !== undefined
                         ? tempTotals[item.id]
-                        : (item.total ?? total + tax).toFixed(totalDigits)
+                        : item.total ?? total + tax
                     }
                     onBlur={(e) => {
                       setTempTotals((prev) => {
