@@ -66,69 +66,71 @@ export default function InvoiceItemTable({
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
   const [searchValue, setSearchValue] = useState("");
 
+  const loadItemOptions = async (
+    search: string,
+    _loaded: any,
+    { page }: { page: number },
+  ) => {
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
+      );
+      const json = await res.json();
+      const term = search.toLowerCase();
 
-const loadItemOptions = async (
-  search: string,
-  _loaded: any,
-  { page }: { page: number },
-) => {
-  try {
-    const res = await fetch(
-      `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
-    );
-    const json = await res.json();
-    const term = search.toLowerCase();
+      const options = Array.isArray(json.results)
+        ? json.results
+            .map((it: any) => {
+              const itemCode = (it.item_code ?? it.code ?? "").toLowerCase();
+              const itemName = (it.item_name ?? it.name ?? "").toLowerCase();
+              const codeMatch = itemCode.indexOf(term);
+              const nameMatch = itemName.indexOf(term);
 
-    const options = Array.isArray(json.results)
-      ? json.results
-          .map((it: any) => {
-            const itemCode = (it.item_code ?? it.code ?? "").toLowerCase();
-            const itemName = (it.item_name ?? it.name ?? "").toLowerCase();
-            const codeMatch = itemCode.indexOf(term);
-            const nameMatch = itemName.indexOf(term);
-            return {
-              value: it.id,
-              label: `${it.item_code ?? it.code ?? "غير معروف"} - ${it.item_name ?? it.name ?? ""}`,
-              item: it,
-              codeMatch,
-              nameMatch,
-            };
-          })
-          .filter((opt) => opt.codeMatch !== -1 || opt.nameMatch !== -1)
-          .sort((a, b) => {
-            const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
-            const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
-            if (aCode !== bCode) return aCode - bCode;
-            const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
-            const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
-            return aName - bName;
-          })
-          .map(({ value, label, item }) => ({ value, label, item }))
-      : [];
+              return {
+                value: it.id,
+                label: `${it.item_code ?? it.code ?? "غير معروف"} - ${it.item_name ?? it.name ?? ""}`,
+                item: it,
+                codeMatch,
+                nameMatch,
+              };
+            })
+            .filter((opt) => opt.codeMatch !== -1 || opt.nameMatch !== -1)
+            .sort((a, b) => {
+              const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
+              const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
 
-    return {
-      options,
-      hasMore: !!json.next,
-      additional: { page: page + 1 },
-    };
-  } catch (e) {
-    console.error("failed to load items", e);
+              if (aCode !== bCode) return aCode - bCode;
+              const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
+              const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
 
-    return { options: [], hasMore: false, additional: { page: page } };
-  }
-};
+              return aName - bName;
+            })
+            .map(({ value, label, item }) => ({ value, label, item }))
+        : [];
 
-// عند عرض الصنف المحدد
-const getItemSelectValue = (item: InvoiceItem) => {
-  return item.item_id
-    ? {
-        value: item.item_id,
-        label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
-      }
-    : null;
-};
+      return {
+        options,
+        hasMore: !!json.next,
+        additional: { page: page + 1 },
+      };
+    } catch (e) {
+      console.error("failed to load items", e);
 
-useEffect(() => {
+      return { options: [], hasMore: false, additional: { page: page } };
+    }
+  };
+
+  // عند عرض الصنف المحدد
+  const getItemSelectValue = (item: InvoiceItem) => {
+    return item.item_id
+      ? {
+          value: item.item_id,
+          label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
+        }
+      : null;
+  };
+
+  useEffect(() => {
     invoiceItems.forEach((_, i) => {
       if (!inputRefs.current[i]) {
         inputRefs.current[i] = [];
@@ -154,6 +156,7 @@ useEffect(() => {
       ].includes(field)
     ) {
       const num = parseFloat(value);
+
       updated[index][field] = isNaN(num) ? 0 : num;
     } else {
       // @ts-ignore
@@ -304,9 +307,9 @@ useEffect(() => {
       if (rows[rowIndex - 1]?.[colIndex]) {
         rows[rowIndex - 1][colIndex]?.focus();
       }
+
       return;
     }
-
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -316,6 +319,7 @@ useEffect(() => {
         addRow();
         focusCell(rowIndex + 1, colIndex);
       }
+
       return;
     }
 
@@ -323,11 +327,13 @@ useEffect(() => {
       e.preventDefault();
       let r = rowIndex;
       let c = colIndex - 1;
+
       if (c < 0 && rows[rowIndex - 1]) {
         r = rowIndex - 1;
         c = rows[r].length - 1;
       }
       if (rows[r]?.[c]) rows[r][c]?.focus();
+
       return;
     }
 
@@ -339,6 +345,7 @@ useEffect(() => {
       e.preventDefault();
       let r = rowIndex;
       let c = colIndex + 1;
+
       if (!rows[r]?.[c]) {
         r = rowIndex + 1;
         c = 0;
@@ -490,6 +497,7 @@ useEffect(() => {
               <th className="w-[100px]">اجمالي الاجور</th>
             )}
             <th className="w-[100px]">الخصم</th>
+            <th className="w-[80px]">نسبة الضريبة</th>
             <th className="w-[100px]">الضريبة</th>
             <th className="w-[120px]">الاجمالي شامل الضريبة</th>
             <th className="w-[200px]">البيان</th>
@@ -519,9 +527,9 @@ useEffect(() => {
                 <td>
                   <AsyncCreatableSelect
                     ref={(el) => {
-                      inputRefs.current[index][++col] = el as unknown as HTMLElement;
+                      inputRefs.current[index][++col] =
+                        el as unknown as HTMLElement;
                     }}
-                    onKeyDown={(e) => handleKey(e, index, col)}
                     isClearable
                     isSearchable
                     additional={{ page: 1 }}
@@ -546,14 +554,14 @@ useEffect(() => {
                       }),
                       menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                     }}
-                      value={
-                        item.item_id
-                          ? {
-                              value: item.item_id,
-                              label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
-                            }
-                          : null
-                      }
+                    value={
+                      item.item_id
+                        ? {
+                            value: item.item_id,
+                            label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
+                          }
+                        : null
+                    }
                     onChange={(selectedOption) => {
                       // selectedOption may carry full item data via `item` field
                       // or fallback to items state by id
@@ -568,7 +576,6 @@ useEffect(() => {
                       if (!items.find((i) => i.id === selected.id)) {
                         setItems([...items, selected]);
                       }
-
 
                       const updated = [...invoiceItems];
 
@@ -701,6 +708,7 @@ useEffect(() => {
                       };
                       setInvoiceItems(updated);
                     }}
+                    onKeyDown={(e) => handleKey(e, index, col)}
                   />
                 </td>
                 <td>
@@ -722,9 +730,9 @@ useEffect(() => {
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    step="any"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    step="any"
                     value={item.weight}
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
@@ -752,9 +760,9 @@ useEffect(() => {
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    step="any"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    step="any"
                     value={item.g_weight}
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
@@ -783,9 +791,9 @@ useEffect(() => {
                         inputRefs.current[index][++col] = el;
                       }}
                       className="border w-full p-1 text-xs text-center appearance-none"
+                      step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      step="any"
                       value={item.price}
                       onChange={(e) =>
                         handleFieldChange(index, "price", e.target.value)
@@ -801,9 +809,9 @@ useEffect(() => {
                         inputRefs.current[index][++col] = el;
                       }}
                       className="border w-full p-1 text-xs text-center appearance-none"
+                      step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      step="any"
                       value={item.price_w}
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
@@ -819,9 +827,9 @@ useEffect(() => {
                         inputRefs.current[index][++col] = el;
                       }}
                       className="border w-full p-1 text-xs text-center appearance-none"
+                      step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      step="any"
                       value={item.total_a}
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
@@ -837,9 +845,9 @@ useEffect(() => {
                         inputRefs.current[index][++col] = el;
                       }}
                       className="border w-full p-1 text-xs text-center appearance-none"
+                      step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      step="any"
                       value={item.total_w}
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
@@ -854,12 +862,28 @@ useEffect(() => {
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    step="any"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    step="any"
                     value={item.item_disc_amt}
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
+                    }
+                    onKeyDown={(e) => handleKey(e, index, col)}
+                  />
+                </td>
+                <td>
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[index][++col] = el;
+                    }}
+                    className="border w-full p-1 text-xs text-center appearance-none"
+                    step="any"
+                    style={{ minWidth: 0, maxWidth: "100%" }}
+                    type="number"
+                    value={item.tax_prc}
+                    onChange={(e) =>
+                      handleFieldChange(index, "tax_prc", e.target.value)
                     }
                     onKeyDown={(e) => handleKey(e, index, col)}
                   />
@@ -871,13 +895,13 @@ useEffect(() => {
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    step="any"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    step="any"
                     value={
                       tempTotals[item.id] !== undefined
                         ? tempTotals[item.id]
-                        : item.total ?? total + tax
+                        : (item.total ?? total + tax)
                     }
                     onBlur={(e) => {
                       setTempTotals((prev) => {
