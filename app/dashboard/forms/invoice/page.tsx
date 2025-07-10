@@ -516,6 +516,7 @@ export default function InvoicePage() {
     setCommitVal(true);
 
     const invData = {
+      inv_id: invoiceNumber,
       inv_date: invoiceDate,
       cust: selectedCustomer,
       cust_name: selectedCust?.cust_name || null,
@@ -553,6 +554,13 @@ export default function InvoicePage() {
       build_no: buildNo || null,
       post_no: postNo || null,
       post_code: postCode || null,
+      inv_QR: generateZatcaQR({
+        sellerName: "شركة ثمار الصفاء المتميزة التجارية",
+        vatNumber: "311452959900003",
+        timestamp: invoiceDate,
+        totalWithVat: netAmount.toFixed(frac),
+        vatTotal: taxAmount.toFixed(frac),
+      }),
     };
 
     try {
