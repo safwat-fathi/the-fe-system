@@ -225,13 +225,16 @@ export default function CustomersTable() {
     }
   };
 
-  const filteredCustomers = useMemo(() => {
-    return customers.filter(
-      (c) =>
-        c.cust_name?.toLowerCase().includes(search.toLowerCase()) &&
-        (!custTypeFilter || c.cust_type === custTypeFilter),
+const filteredCustomers = useMemo(() => {
+  return customers.filter((c) => {
+    const searchLower = search.toLowerCase();
+    return (
+      (c.cust_name?.toLowerCase().includes(searchLower) ||
+        c.cust_code?.toString().toLowerCase().includes(searchLower)) &&
+      (!custTypeFilter || c.cust_type === custTypeFilter)
     );
-  }, [customers, search, custTypeFilter]);
+  });
+}, [customers, search, custTypeFilter]);
 
   const paginatedCustomers = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
