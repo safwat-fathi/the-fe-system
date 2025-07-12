@@ -41,6 +41,7 @@ interface Props {
   payType: number; // 1=gold, 2=wage, 3=both
   categories: Category[];
   homePurity: number;
+  isEditing: boolean;
 }
 
 export default function InvoiceItemTable({
@@ -52,6 +53,7 @@ export default function InvoiceItemTable({
   payType,
   categories,
   homePurity,
+  isEditing,
 }: Props) {
   const weightDigits = useFractions("weight") as number;
   const gWeightDigits = useFractions("g_weight") as number;
@@ -532,6 +534,7 @@ export default function InvoiceItemTable({
                     }}
                     isClearable
                     isSearchable
+                    isDisabled={!isEditing}
                     additional={{ page: 1 }}
                     className="text-xs"
                     classNamePrefix="select"
@@ -718,6 +721,7 @@ export default function InvoiceItemTable({
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.qty}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "qty", e.target.value)
                     }
@@ -734,6 +738,7 @@ export default function InvoiceItemTable({
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.weight}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
                     }
@@ -748,6 +753,7 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.purity}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "purity", e.target.value)
                     }
@@ -764,6 +770,7 @@ export default function InvoiceItemTable({
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.g_weight}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
                     }
@@ -778,6 +785,7 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.stones}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "stones", e.target.value)
                     }
@@ -795,6 +803,7 @@ export default function InvoiceItemTable({
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
                       value={item.price}
+                      disabled={!isEditing}
                       onChange={(e) =>
                         handleFieldChange(index, "price", e.target.value)
                       }
@@ -813,6 +822,7 @@ export default function InvoiceItemTable({
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
                       value={item.price_w}
+                      disabled={!isEditing}
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
                       }
@@ -831,6 +841,7 @@ export default function InvoiceItemTable({
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
                       value={item.total_a}
+                      disabled={!isEditing}
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
                       }
@@ -849,6 +860,7 @@ export default function InvoiceItemTable({
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
                       value={item.total_w}
+                      disabled={!isEditing}
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
                       }
@@ -866,6 +878,7 @@ export default function InvoiceItemTable({
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.item_disc_amt}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
                     }
@@ -882,6 +895,7 @@ export default function InvoiceItemTable({
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={item.tax_prc}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "tax_prc", e.target.value)
                     }
@@ -903,6 +917,7 @@ export default function InvoiceItemTable({
                         ? tempTotals[item.id]
                         : (item.total ?? total + tax)
                     }
+                    disabled={!isEditing}
                     onBlur={(e) => {
                       setTempTotals((prev) => {
                         const { [item.id]: removed, ...rest } = prev;
@@ -928,6 +943,7 @@ export default function InvoiceItemTable({
                     className="border w-full p-1 text-xs text-center appearance-none"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.item_desc}
+                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "item_desc", e.target.value)
                     }
@@ -939,6 +955,7 @@ export default function InvoiceItemTable({
                     className="text-red-600 font-bold"
                     tabIndex={-1}
                     onClick={() => removeRow(item.id)}
+                    disabled={!isEditing}
                   >
                     ×
                   </button>

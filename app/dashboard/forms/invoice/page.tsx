@@ -566,14 +566,11 @@ export default function InvoicePage() {
     try {
       if (invoicePk === null) throw new Error("Invoice primary key missing");
 
-      const res = await apiFetch(
-        `${API_BASE_URL}api_update_invoice/${invoicePk}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(invData),
-        },
-      );
+      const res = await apiFetch(`${API_BASE_URL}api_update_invoice/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: invoicePk, ...invData }),
+      });
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -633,7 +630,7 @@ export default function InvoicePage() {
         };
 
         const url = row.inv
-          ? `${API_BASE_URL}api_update_invoice_dtl/${row.id}`
+          ? `${API_BASE_URL}api_update_invoice_dtl/`
           : `${API_BASE_URL}api_create_invoice_dtl`;
 
         const method = row.inv ? "PATCH" : "POST";
@@ -641,7 +638,7 @@ export default function InvoicePage() {
         const dtlRes = await apiFetch(url, {
           method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dtl),
+          body: JSON.stringify(row.inv ? { id: row.id, ...dtl } : dtl),
         });
 
         if (!dtlRes.ok) {
@@ -919,6 +916,7 @@ export default function InvoicePage() {
             payType={payType}
             setInvoiceItems={setInvoiceItems}
             setItems={setItems}
+            isEditing={isEditing}
           />
         </div>
       </InvoiceTotalsActions>
