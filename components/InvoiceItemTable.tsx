@@ -41,7 +41,6 @@ interface Props {
   payType: number; // 1=gold, 2=wage, 3=both
   categories: Category[];
   homePurity: number;
-  /** يحدد إن كانت الحقول قابلة للتعديل */
   isEditing: boolean;
 }
 
