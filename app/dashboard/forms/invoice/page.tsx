@@ -566,14 +566,11 @@ export default function InvoicePage() {
     try {
       if (invoicePk === null) throw new Error("Invoice primary key missing");
 
-      const res = await apiFetch(
-        `${API_BASE_URL}api_update_invoice/${invoicePk}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(invData),
-        },
-      );
+      const res = await apiFetch(`${API_BASE_URL}api_update_invoice/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: invoicePk, ...invData }),
+      });
 
       if (!res.ok) {
         const errorText = await res.text();
