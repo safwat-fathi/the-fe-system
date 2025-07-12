@@ -41,6 +41,7 @@ interface Props {
   payType: number; // 1=gold, 2=wage, 3=both
   categories: Category[];
   homePurity: number;
+  isEditing: boolean;
 }
 
 export default function InvoiceItemTable({
@@ -52,6 +53,7 @@ export default function InvoiceItemTable({
   payType,
   categories,
   homePurity,
+  isEditing,
 }: Props) {
   const weightDigits = useFractions("weight") as number;
   const gWeightDigits = useFractions("g_weight") as number;

@@ -919,6 +919,7 @@ export default function InvoicePage() {
             payType={payType}
             setInvoiceItems={setInvoiceItems}
             setItems={setItems}
+            isEditing={isEditing}
           />
         </div>
       </InvoiceTotalsActions>
