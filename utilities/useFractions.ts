@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchFractions } from "./api";
+import { fetchFractions } from "@/utilities/api";
 
 export interface Fractions {
   frac: number;
@@ -20,17 +20,17 @@ export default function useFractions(fieldName?: string): Fractions | number {
   if (fieldName === "qty") return 0;
 
   const mapping: Record<string, number> = {
-    weight: digits.frac2,
+    weight: digits.frac,
     g_weight: digits.frac2,
     price: digits.frac,
     price_w: digits.frac,
-    total: digits.frac,
     total_a: digits.frac,
     total_w: digits.frac,
-    item_disc_amt: digits.frac,
+    total: digits.frac,
     tax: digits.frac,
+    item_disc_amt: digits.frac,
+    item_disc_prc: digits.frac,
   };
 
-  return mapping[fieldName] ?? digits.frac;
+  return mapping[fieldName] ?? digits.frac ?? 2;
 }
-

@@ -506,7 +506,7 @@ export default function InvoiceItemTable({
         </thead>
         <tbody>
           {invoiceItems.map((item, index) => {
-            // totals for display
+            let colIndex = 0;
             const totalA = item.weight * item.price;
             const totalW = item.weight * item.price_w; // wagePrice
             let rowTotal = 0;

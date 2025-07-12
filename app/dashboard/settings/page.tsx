@@ -56,7 +56,7 @@ const ZATCA_FIELDS = [
     label: "تفعيل الفاتورة الإلكترونية",
     type: "checkbox",
   },
-  { key: "LT", label: "وضع الفاتورة الإلكترونية" },
+  { key: "LT", label: "نوع الربط  " },
   { key: "LTD", label: "تاريخ تفعيل الربط", type: "date" },
   { key: "Xml_Path", label: "مسار ملفات XML" },
   { key: "USERNAME", label: "اسم المستخدم" },
