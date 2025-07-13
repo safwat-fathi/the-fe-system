@@ -86,7 +86,7 @@ export default function CategoriesItemsPage() {
   const [currentItem, setCurrentItem] = useState<Partial<Item>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [catPage, setCatPage] = useState(1);
-  const catPerPage = 4;
+  const catPerPage = 3;
 
   const startIndex = (catPage - 1) * catPerPage;
   const endIndex = startIndex + catPerPage;
@@ -97,7 +97,7 @@ export default function CategoriesItemsPage() {
   const [itemsPrevUrl, setItemsPrevUrl] = useState<string | null>(null);
   const [itemsCount, setItemsCount] = useState<number>(0);
   const [itemsPage, setItemsPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(7);
   const [search, setSearch] = useState("");
 
   const [boxes, setBoxes] = useState<{ id: number; box_name: string }[]>([]);
@@ -226,7 +226,6 @@ export default function CategoriesItemsPage() {
       const itemsArray = Array.isArray(data.results) ? data.results : [];
 
       setItems(itemsArray);
-      if (itemsArray.length) setItemsPerPage(itemsArray.length);
       setItemsNextUrl(data.next);
       setItemsPrevUrl(data.previous);
       setItemsCount(data.count);
@@ -262,7 +261,6 @@ export default function CategoriesItemsPage() {
       }));
 
       setItems(mapped);
-      if (mapped.length) setItemsPerPage(mapped.length);
       setItemsNextUrl(data.next);
       setItemsPrevUrl(data.previous);
       setItemsCount(data.count);
@@ -305,6 +303,8 @@ export default function CategoriesItemsPage() {
         );
       })
     : items;
+
+  const pagedItems = filteredItems.slice((itemsPage - 1) * itemsPerPage, itemsPage * itemsPerPage);
   
   const [file, setFile] = useState(null);
 
@@ -450,89 +450,56 @@ export default function CategoriesItemsPage() {
   };
 
   return (
-    <div className="p-4 space-y-6 font-cairo text-sm">
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold">قائمة الأصناف</h1>
-        <Button
-          color="success"
-          onPress={() => {
-            setModalMode("add");
-            setNewItem({
-              ...newItem,
-              cat: selectedCatId ?? 0,
-              item_type: selectedTypeId ?? null,
-              unit: null,
-              item_img: "default.png",
-              item_name: "",
-              item_name_e: "",
-              item_price: "0.00",
-              item_code: "",
-              item_barcode: " ",
-              first_cost: "0.00",
-              item_weight: "0.00",
-              item_g_weight: "0.00",
-              stones: "0.00",
-              model: "",
-              k: "0.00",
-              purity: "0.00",
-              item_status: 1,
-              cr_date: "",
-              cr_user: "",
-              upd_date: "",
-              upd_user: "",
-            });
-            setIsModalOpen(true);
-          }}
-        >
+    <div className="p-2 space-y-2 font-cairo text-sm">
+      <div className="flex justify-between items-center mb-1">
+        <h1 className="text-xl font-bold">الفئات</h1>
+        <Button color="default" className="mb-2 text-xs" onClick={() => setIsModalOpen(true)}>
           إضافة صنف جديد
         </Button>
       </div>
-
-      {/* جدول الفئات */}
-      <div>
-        <h2 className="text-lg font-semibold mb-2">الفئات</h2>
+      <div className="bg-white rounded-3xl shadow-md p-2 min-h-[180px] flex flex-col justify-between">
+        {/* جدول الفئات */}
         <Table aria-label="جدول الفئات" removeWrapper>
-                  <TableHeader>
-                    <TableColumn>الفئة</TableColumn>
-                    <TableColumn>العيار</TableColumn>
-                    <TableColumn>المعايرة</TableColumn>
-                    <TableColumn>الصندوق</TableColumn>
-                    <TableColumn>الضريبة</TableColumn>
-                    <TableColumn>النوع</TableColumn>
-                    <TableColumn>حالة الفئة</TableColumn>
-                  </TableHeader>
-                  <TableBody>
-                    {pagedCategories.map((cat) => (
-                      <TableRow
-                        key={cat.id}
-                        className={`cursor-pointer ${selectedCatId === cat.id ? "bg-green-100" : ""}`}
-                        onClick={() => setSelectedCatId(cat.id)}
-                      >
-                        <TableCell>{cat.cat_name}</TableCell>
-                        <TableCell>{cat.gauge}</TableCell>
-                        <TableCell>{cat.purity}</TableCell>
-                        <TableCell>{boxes.find((b) => b.id === cat.box)?.box_name || "-"}</TableCell>
-                        <TableCell>{cat.tax}</TableCell>
-                        <TableCell>{catTypes.find((t) => t.code_id === cat.cat_type)?.code_desc || "-"}</TableCell>
-                        <TableCell>{catStatuses.find((s) => s.code_id === cat.cat_status)?.code_desc || "-"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-        <div className="flex justify-between items-center py-4">
-          <span className="text-sm text-gray-500">عدد الفئات: {categories.length}</span>
-          <Pagination
-            color="primary"
-            page={catPage}
-            total={totalCatPages}
-            onChange={setCatPage}
-          />
-        </div>
+          <TableHeader>
+            <TableColumn>الفئة</TableColumn>
+            <TableColumn>العيار</TableColumn>
+            <TableColumn>المعايرة</TableColumn>
+            <TableColumn>الصندوق</TableColumn>
+            <TableColumn>الضريبة</TableColumn>
+            <TableColumn>النوع</TableColumn>
+            <TableColumn>حالة الفئة</TableColumn>
+          </TableHeader>
+          <TableBody>
+            {pagedCategories.map((cat) => (
+              <TableRow
+                key={cat.id}
+                className={`cursor-pointer ${selectedCatId === cat.id ? "bg-green-100" : ""}`}
+                onClick={() => setSelectedCatId(cat.id)}
+              >
+                <TableCell>{cat.cat_name}</TableCell>
+                <TableCell>{cat.gauge}</TableCell>
+                <TableCell>{cat.purity}</TableCell>
+                <TableCell>{boxes.find((b) => b.id === cat.box)?.box_name || "-"}</TableCell>
+                <TableCell>{cat.tax}</TableCell>
+                <TableCell>{catTypes.find((t) => t.code_id === cat.cat_type)?.code_desc || "-"}</TableCell>
+                <TableCell>{catStatuses.find((s) => s.code_id === cat.cat_status)?.code_desc || "-"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
-
+      <div className="flex justify-between items-center py-1">
+        <span className="text-sm text-gray-500">عدد الفئات: {categories.length}</span>
+        <Pagination
+          color="primary"
+          page={catPage}
+          total={totalCatPages}
+          onChange={setCatPage}
+        />
+      </div>
       {/* فلتر نوع الصنف */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold mb-2">الأصناف</h2>
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-base font-semibold">الأصناف</label>
         <div className="flex items-center gap-2">
           <label className="text-sm">نوع الصنف:</label>
           <select
@@ -556,6 +523,7 @@ export default function CategoriesItemsPage() {
           />
         </div>
       </div>
+      <div className="bg-white rounded-3xl shadow-md p-2">
         <Table aria-label="جدول الأصناف" removeWrapper>
           <TableHeader>
             <TableColumn>الكود</TableColumn>
@@ -571,10 +539,9 @@ export default function CategoriesItemsPage() {
             <TableColumn>الإجراءات</TableColumn>
           </TableHeader>
           <TableBody>
-            {filteredItems.map((item) => {
+            {pagedItems.map((item) => {
               const itemType = itemTypes.find((type) => type.id === item.item_type);
               const unitName = units.find((unit) => unit.id === item.unit);
-
               return (
                 <TableRow key={item.id} className="text-center hover:bg-gray-50">
                   <TableCell>{item.item_code || "-"}</TableCell>
@@ -589,13 +556,13 @@ export default function CategoriesItemsPage() {
                   <TableCell>{ItemStatus.find((t) => t.code_id === item.item_status)?.code_desc || "-"}</TableCell>
                   <TableCell>
                     <div className="flex justify-center gap-2">
-                      <Button isIconOnly size="sm" variant="light" onClick={() => handleViewItem(item)}>
+                      <Button isIconOnly size="sm" variant="light" className="text-xs" onClick={() => handleViewItem(item)}>
                         <FaEye className="text-blue-500" />
                       </Button>
-                      <Button isIconOnly size="sm" variant="light" onClick={() => handleEditItem(item)}>
+                      <Button isIconOnly size="sm" variant="light" className="text-xs" onClick={() => handleEditItem(item)}>
                         <FaEdit className="text-yellow-500" />
                       </Button>
-                      <Button isIconOnly size="sm" variant="light" onClick={() => handleDeleteItem(item.id)}>
+                      <Button isIconOnly size="sm" variant="light" className="text-xs" onClick={() => handleDeleteItem(item.id)}>
                         <FaTrash className="text-red-500" />
                       </Button>
                     </div>
@@ -605,8 +572,8 @@ export default function CategoriesItemsPage() {
             })}
           </TableBody>
         </Table>
-
-      <div className="flex justify-between items-center py-4">
+      </div>
+      <div className="flex justify-between items-center py-1 mt-1">
         <span className="text-sm text-gray-500">عدد الأصناف: {itemsCount}</span>
         <Pagination
           color="primary"

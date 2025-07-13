@@ -180,5 +180,12 @@ export function fetchCompanies() {
 }
 
 export function apiFetch(input: string, init?: RequestInit) {
+  // لا تضف معاملات com و year إذا كان الرابط لتحديث الفاتورة أو تفاصيلها
+  if (
+    input.includes("api_update_invoice/") ||
+    input.includes("api_update_invoice_dtl/")
+  ) {
+    return fetch(input, init);
+  }
   return fetch(appendBranchParams(input), init);
 }

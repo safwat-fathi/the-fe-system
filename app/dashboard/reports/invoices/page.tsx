@@ -41,7 +41,7 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const rowsPerPage = 10;
+  const rowsPerPage = 12;
 
   const loadInvoices = useCallback(async () => {
     const data = await fetchData<Invoice[]>(INVOICES_LIST);

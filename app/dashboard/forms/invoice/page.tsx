@@ -566,10 +566,16 @@ export default function InvoicePage() {
     try {
       if (invoicePk === null) throw new Error("Invoice primary key missing");
 
-      const res = await apiFetch(`${API_BASE_URL}api_update_invoice/`, {
+      // تنظيف الحقول ذات القيمة null أو undefined
+      const cleanInvData = Object.fromEntries(
+        Object.entries(invData).filter(([_, v]) => v !== null && v !== undefined)
+      );
+      console.log("[updateInvoice] cleanInvData:", cleanInvData);
+
+      const res = await apiFetch(`${API_BASE_URL}api_update_invoice/${invoicePk}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: invoicePk, ...invData }),
+        body: JSON.stringify(cleanInvData),
       });
 
       if (!res.ok) {
@@ -630,7 +636,7 @@ export default function InvoicePage() {
         };
 
         const url = row.inv
-          ? `${API_BASE_URL}api_update_invoice_dtl/`
+          ? `${API_BASE_URL}api_update_invoice_dtl/${row.id}`
           : `${API_BASE_URL}api_create_invoice_dtl`;
 
         const method = row.inv ? "PATCH" : "POST";
@@ -638,7 +644,7 @@ export default function InvoicePage() {
         const dtlRes = await apiFetch(url, {
           method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(row.inv ? { id: row.id, ...dtl } : dtl),
+          body: JSON.stringify(dtl),
         });
 
         if (!dtlRes.ok) {

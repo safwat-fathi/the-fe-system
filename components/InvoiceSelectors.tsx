@@ -324,56 +324,56 @@ export default function InvoiceSelectors({
         {selectedCustomer && (
           <div className="mt-2 grid grid-cols-4 gap-2">
             <input
-              className="w-full h-[38px] border px-2 rounded"
+              className="w-full h-[28px] border px-1 rounded text-xs"
               placeholder="السجل"
               type="text"
               value={crNo}
               onChange={(e) => setCrNo(e.target.value)}
             />
             <input
-              className="w-full h-[38px] border px-2 rounded"
+              className="w-full h-[28px] border px-1 rounded text-xs"
               placeholder="العنوان"
               type="text"
               value={gov}
               onChange={(e) => setGov(e.target.value)}
             />
             <input
-              className="w-full h-[38px] border px-2 rounded"
+              className="w-full h-[28px] border px-1 rounded text-xs"
               placeholder="المدينة"
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
             />
             <input
-              className="w-full h-[38px] border px-2 rounded"
+              className="w-full h-[28px] border px-1 rounded text-xs"
               placeholder="المنطقة"
               type="text"
               value={area}
               onChange={(e) => setArea(e.target.value)}
             />
             <input
-              className="w-full h-[38px] border px-2 rounded"
+              className="w-full h-[28px] border px-1 rounded text-xs"
               placeholder="الشارع"
               type="text"
               value={street}
               onChange={(e) => setStreet(e.target.value)}
             />
             <input
-              className="w-full h-[38px] border px-2 rounded"
+              className="w-full h-[28px] border px-1 rounded text-xs"
               placeholder="مبنى"
               type="text"
               value={buildNo}
               onChange={(e) => setBuildNo(e.target.value)}
             />
             <input
-              className="w-full h-[38px] border px-2 rounded"
+              className="w-full h-[28px] border px-1 rounded text-xs"
               placeholder="ص.ب"
               type="text"
               value={postNo}
               onChange={(e) => setPostNo(e.target.value)}
             />
             <input
-              className="w-full h-[38px] border px-2 rounded"
+              className="w-full h-[28px] border px-1 rounded text-xs"
               placeholder="الرمز"
               type="text"
               value={postCode}
