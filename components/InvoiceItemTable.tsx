@@ -64,7 +64,7 @@ export default function InvoiceItemTable({
   const itemDiscDigits = useFractions("item_disc_amt") as number;
   const totalDigits = useFractions("total") as number;
   const taxDigits = useFractions("tax") as number;
-  const inputRefs = useRef<(HTMLElement | null)[][]>([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
   const [searchValue, setSearchValue] = useState("");
 
@@ -293,69 +293,25 @@ export default function InvoiceItemTable({
     ]);
   };
 
-  const handleKey = (
+  const handleEnter = (
     e: KeyboardEvent<HTMLInputElement>,
     rowIndex: number,
     colIndex: number,
   ) => {
-    const rows = inputRefs.current;
-
-    const focusCell = (r: number, c: number) => {
-      setTimeout(() => rows[r]?.[c]?.focus(), 0);
-    };
-
-    if (e.key === "ArrowUp") {
+    if (e.key === "Enter") {
       e.preventDefault();
-      if (rows[rowIndex - 1]?.[colIndex]) {
-        rows[rowIndex - 1][colIndex]?.focus();
+
+      const nextCol = colIndex + 1;
+      const rowRefs = inputRefs.current[rowIndex];
+      let nextRef: HTMLInputElement | null | undefined = rowRefs?.[nextCol];
+
+      if (!nextRef) {
+        const nextRowRefs = inputRefs.current[rowIndex + 1];
+
+        nextRef = nextRowRefs?.[0];
       }
 
-      return;
-    }
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (rows[rowIndex + 1]?.[colIndex]) {
-        rows[rowIndex + 1][colIndex]?.focus();
-      } else {
-        addRow();
-        focusCell(rowIndex + 1, colIndex);
-      }
-
-      return;
-    }
-
-    if (e.key === "ArrowLeft" || (e.key === "Tab" && e.shiftKey)) {
-      e.preventDefault();
-      let r = rowIndex;
-      let c = colIndex - 1;
-
-      if (c < 0 && rows[rowIndex - 1]) {
-        r = rowIndex - 1;
-        c = rows[r].length - 1;
-      }
-      if (rows[r]?.[c]) rows[r][c]?.focus();
-
-      return;
-    }
-
-    if (
-      e.key === "ArrowRight" ||
-      e.key === "Enter" ||
-      (e.key === "Tab" && !e.shiftKey)
-    ) {
-      e.preventDefault();
-      let r = rowIndex;
-      let c = colIndex + 1;
-
-      if (!rows[r]?.[c]) {
-        r = rowIndex + 1;
-        c = 0;
-        if (!rows[r]) addRow();
-        focusCell(r, c);
-      } else {
-        rows[r][c]?.focus();
-      }
+      nextRef?.focus();
     }
   };
 
@@ -711,7 +667,7 @@ export default function InvoiceItemTable({
                       };
                       setInvoiceItems(updated);
                     }}
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
@@ -725,7 +681,7 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "qty", e.target.value)
                     }
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
@@ -742,7 +698,7 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
                     }
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
@@ -757,7 +713,7 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "purity", e.target.value)
                     }
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
@@ -774,7 +730,7 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
                     }
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
@@ -789,7 +745,7 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "stones", e.target.value)
                     }
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 {(payType === 1 || payType === 3) && (
@@ -807,7 +763,7 @@ export default function InvoiceItemTable({
                       onChange={(e) =>
                         handleFieldChange(index, "price", e.target.value)
                       }
-                      onKeyDown={(e) => handleKey(e, index, col)}
+                      onKeyDown={(e) => handleEnter(e, index, col)}
                     />
                   </td>
                 )}
@@ -826,7 +782,7 @@ export default function InvoiceItemTable({
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
                       }
-                      onKeyDown={(e) => handleKey(e, index, col)}
+                      onKeyDown={(e) => handleEnter(e, index, col)}
                     />
                   </td>
                 )}
@@ -845,7 +801,7 @@ export default function InvoiceItemTable({
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
                       }
-                      onKeyDown={(e) => handleKey(e, index, col)}
+                      onKeyDown={(e) => handleEnter(e, index, col)}
                     />
                   </td>
                 )}
@@ -864,7 +820,7 @@ export default function InvoiceItemTable({
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
                       }
-                      onKeyDown={(e) => handleKey(e, index, col)}
+                      onKeyDown={(e) => handleEnter(e, index, col)}
                     />
                   </td>
                 )}
@@ -882,7 +838,7 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
                     }
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
@@ -899,7 +855,7 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "tax_prc", e.target.value)
                     }
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>{(item.tax ?? tax).toFixed(taxDigits)}</td>
@@ -932,7 +888,7 @@ export default function InvoiceItemTable({
                         [item.id]: e.target.value,
                       }))
                     }
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
@@ -947,7 +903,7 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "item_desc", e.target.value)
                     }
-                    onKeyDown={(e) => handleKey(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
                 <td>
