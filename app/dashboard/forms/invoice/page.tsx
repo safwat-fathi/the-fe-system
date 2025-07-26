@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input, Button } from "@heroui/react";
 import toast from "react-hot-toast";
@@ -14,6 +14,7 @@ import {
   fetchGoldPrice,
   apiFetch,
 } from "@/utilities/api";
+import { formatAmount } from "@/utilities/formatAmount";
 
 const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
 
@@ -135,8 +136,16 @@ export default function InvoicePage() {
   const [isExistingInvoice, setIsExistingInvoice] = useState<boolean>(false);
   const [invoicePk, setInvoicePk] = useState<number | null>(null);
   const [homePurity, setHomePurity] = useState<number>(1000);
-  const { frac, frac2 } = useFractions();
+  // معالجة إرجاع useFractions (قد يرجع رقم أو كائن)
+  const fractions = useFractions();
+  const frac = typeof fractions === "object" ? fractions.frac : 2;
+  const frac2 = typeof fractions === "object" ? fractions.frac2 : 2;
   const searchParams = useSearchParams();
+
+  // منع تكرار استدعاء نفس الفاتورة
+  const [lastLoadedInvoice, setLastLoadedInvoice] = useState<string | null>(null);
+  // منع تكرار استدعاء نفس الفاتورة بشكل فوري
+  const lastLoadedInvoiceRef = useRef<string | null>(null);
 
   useEffect(() => {
     const invId = searchParams.get("inv_id");
@@ -202,11 +211,17 @@ export default function InvoicePage() {
     fetchHomePurity();
     if (typeof window !== "undefined") {
       const now = new Date();
-
       setInvoiceDate(now.toISOString());
     }
     getGoldPrice();
-    getNextInvoiceNumber().then(setInvoiceNumber);
+    // لا تعيّن رقم فاتورة جديد إذا تم تحميل فاتورة من التقرير (أي إذا كان invoiceNumber تم تغييره من handleInvoiceSearch)
+    setTimeout(() => {
+      setInvoiceNumber((prev) => {
+        if (prev && prev !== 1) return prev; // إذا تم تعيين رقم فاتورة حقيقي لا تغيّره
+        getNextInvoiceNumber().then(setInvoiceNumber);
+        return prev;
+      });
+    }, 0);
   }, []);
 
   const getGoldPrice = async () => {
@@ -343,8 +358,8 @@ export default function InvoicePage() {
       return toast.error("يرجى إدخال تفاصيل الفاتورة");
     }
 
+    // فقط في حالة الإضافة الجديدة يتم توليد رقم جديد
     const generatedInvId = await getNextInvoiceNumber();
-
     setInvoiceNumber(generatedInvId);
 
     const employeeMap: Record<string, number> = {
@@ -368,8 +383,8 @@ export default function InvoicePage() {
       cust: selectedCustomer,
       cust_name: selectedCust?.cust_name || null,
       cust_code: selectedCust?.cust_code || null,
-      inv_amt: Math.round(netAmount),
-      inv_net: Math.round(totalAmount),
+      inv_amt: parseFloat(Number(netAmount).toFixed(frac2)),
+      inv_net: parseFloat(Number(totalAmount).toFixed(frac2)),
       tax: taxAmount.toFixed(frac),
       inv_status: 1,
       trans_type: 2,
@@ -586,15 +601,28 @@ export default function InvoicePage() {
         return toast.error("فشل في تعديل الفاتورة");
       }
 
-      for (const [index, row] of validItems.entries()) {
-        if (!row.item_id) continue;
+      // تحديث ذكي لتفاصيل الفاتورة عند التعديل
+      // 1. تحديث الأسطر المعدلة (PATCH)
+      // 2. إضافة الأسطر الجديدة (POST)
+      // 3. حذف الأسطر المحذوفة (DELETE)
+      const originalIds = originalInvoiceItems.map((item) => item.id);
+      const currentIds = invoiceItems.map((item) => item.id);
 
+      // حذف الأسطر المحذوفة
+      for (const orig of originalInvoiceItems) {
+        if (!currentIds.includes(orig.id)) {
+          await apiFetch(`${API_BASE_URL}api_delete_invoice_dtl/${orig.id}`, { method: "DELETE" });
+        }
+      }
+
+      // تحديث أو إضافة الأسطر
+      for (const row of invoiceItems) {
+        if (!row.item_id) continue;
         const dtlPrice = payType === 2 ? row.price_w : row.price;
         const dtlTotalA =
           payType === 2
             ? (row.total_w ?? row.weight * row.price_w)
             : (row.total_a ?? row.weight * row.price);
-
         const dtl = {
           id: row.id,
           trans_type: row.trans_type ?? 2,
@@ -634,24 +662,20 @@ export default function InvoicePage() {
           inv: invoicePk ?? invoiceNumber,
           item: row.item_id,
         };
-
-        const url = row.inv
-          ? `${API_BASE_URL}api_update_invoice_dtl/${row.id}`
-          : `${API_BASE_URL}api_create_invoice_dtl`;
-
-        const method = row.inv ? "PATCH" : "POST";
-
-        const dtlRes = await apiFetch(url, {
-          method,
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dtl),
-        });
-
-        if (!dtlRes.ok) {
-          const dtlError = await dtlRes.text();
-
-          console.error(`❌ خطأ في تفاصيل السطر ${index + 1}:`, dtlError);
-          toast.error(`فشل في حفظ تفاصيل السطر ${index + 1}`);
+        if (originalIds.includes(row.id)) {
+          // تحديث سطر موجود
+          await apiFetch(`${API_BASE_URL}api_update_invoice_dtl/${row.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dtl),
+          });
+        } else {
+          // إضافة سطر جديد
+          await apiFetch(`${API_BASE_URL}api_create_invoice_dtl`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dtl),
+          });
         }
       }
 
@@ -720,9 +744,12 @@ export default function InvoicePage() {
   };
 
   const handleInvoiceSearch = async (searchVal?: string) => {
-    const num = parseInt(searchVal ?? searchNumber, 10);
+    const num = searchVal ?? searchNumber;
+    if (!num || num === lastLoadedInvoiceRef.current) return; // منع التكرار الفوري
+    lastLoadedInvoiceRef.current = num;
 
-    if (!num) return toast.error("أدخل رقم الفاتورة");
+    // لا تعيد الاستدعاء لنفس الفاتورة
+    if (lastLoadedInvoice === searchVal) return;
 
     try {
       const invList = await fetchData<any[]>(
@@ -735,7 +762,7 @@ export default function InvoicePage() {
         return;
       }
 
-      const inv = invList.find((i) => Number(i.inv_id) === num);
+      const inv = invList.find((i) => String(i.inv_id) === String(num));
 
       if (!inv) {
         toast.error("الفاتورة غير موجودة");
@@ -833,8 +860,44 @@ export default function InvoicePage() {
             item: row.item ?? 0,
           })),
         );
+        setOriginalInvoiceItems(
+          filteredDetails.map((row) => ({
+            id: row.id,
+            item_id: row.item ?? row.item_id ?? null,
+            item_code: row.item_code ?? "",
+            item_name: row.item_name ?? row.item_desc ?? "",
+            qty: parseFloat(row.qty) || 0,
+            weight: parseFloat(row.weight) || 0,
+            g_weight: parseFloat(row.g_weight) || 0,
+            k: row.k ?? "",
+            price: parseFloat(row.price) || 0,
+            price_w: parseFloat(row.price_w) || 0,
+            note: row.inv_notes ?? "",
+            trans_type: row.trans_type ?? 2,
+            purity: row.purity ?? "",
+            total: parseFloat(row.total) || 0,
+            total_w: parseFloat(row.total_w) || 0,
+            total_a: parseFloat(row.total_a) || 0,
+            inv_note: row.inv_notes ?? "",
+            tax: parseFloat(row.tax) || 0,
+            tax_prc: parseFloat(row.tax_prc) || 0,
+            stones: row.stones ?? "",
+            item_disc_prc: parseFloat(row.item_disc_prc) || 0,
+            item_disc_amt: parseFloat(row.item_disc_amt) || 0,
+            sn: row.sn ?? "",
+            item_desc: row.item_desc ?? "",
+            cr_date: row.cr_date ?? "",
+            cr_user: row.cr_user ?? "",
+            upd_date: row.upd_date ?? "",
+            upd_user: row.upd_user ?? "",
+            com: row.com ?? 0,
+            inv: row.inv ?? 0,
+            item: row.item ?? 0,
+          })),
+        );
       } else {
         setInvoiceItems([]);
+        setOriginalInvoiceItems([]);
       }
 
       toast.success("تم جلب الفاتورة بنجاح ✅");
@@ -843,6 +906,24 @@ export default function InvoicePage() {
       toast.error("فشل في جلب الفاتورة");
     }
   };
+
+  // قائمة تفاصيل الفاتورة الأصلية عند تحميل الفاتورة (للمقارنة عند التعديل)
+  const [originalInvoiceItems, setOriginalInvoiceItems] = useState<InvoiceItem[]>([]);
+
+  // تحويل invoiceItems إلى items متوافقة مع Item[] عند تمريرها فقط
+  const itemsForTable: Item[] = invoiceItems.map((itm) => ({
+    id: itm.id,
+    item_code: itm.item_code || "",
+    item_name: itm.item_name || "",
+    item_price: typeof itm.price === "number" ? itm.price : Number(itm.price) || 0,
+    item_weight: typeof itm.weight === "number" ? itm.weight : Number(itm.weight) || 0,
+    item_g_weight: typeof itm.g_weight === "number" ? itm.g_weight : Number(itm.g_weight) || 0,
+    work_price: typeof itm.price_w === "number" ? itm.price_w : Number(itm.price_w) || 0,
+    stones: itm.stones ?? "",
+    k: itm.k ?? "",
+    purity: itm.purity ?? "",
+    cat: undefined,
+  }));
 
   return (
     <>
@@ -918,7 +999,7 @@ export default function InvoicePage() {
             goldPrice={goldPrice}
             homePurity={homePurity}
             invoiceItems={invoiceItems}
-            items={items}
+            items={itemsForTable}
             payType={payType}
             setInvoiceItems={setInvoiceItems}
             setItems={setItems}

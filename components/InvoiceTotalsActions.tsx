@@ -5,6 +5,7 @@ import { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 import InvoicePaymentModal from "./InvoicePaymentModal";
 import useFractions from "@/utilities/useFractions";
+import { RiyalIcon } from "./RiyalIcon";
 
 interface Props {
   invoiceNumber: number;
@@ -106,19 +107,19 @@ export default function InvoiceTotalsActions({
         <div className="flex items-center gap-6 text-sm font-semibold">
           <div className="text-gray-600">
             <span>الإجمالي: </span>
-            <span>{totalAmount.toFixed(frac)} ﷼</span>
+            <span className="flex items-center gap-1">{Number(totalAmount).toFixed(frac)}<RiyalIcon /></span>
           </div>
           <div className="text-gray-600">
             <span>إجمالي الخصم: </span>
-            <span>{totalDiscount.toFixed(frac)} ﷼</span>
+            <span className="flex items-center gap-1">{Number(totalDiscount).toFixed(frac)}<RiyalIcon /></span>
           </div>
           <div className="text-green-500">
             <span>الضريبة: </span>
-            <span>{taxAmount.toFixed(frac)} ﷼</span>
+            <span className="flex items-center gap-1">{Number(taxAmount).toFixed(frac)}<RiyalIcon /></span>
           </div>
           <div className="text-gray-600 text-base font-bold">
             <span>الإجمالي شامل الضريبة: </span>
-            <span>{netAmount.toFixed(frac)} ﷼</span>
+            <span className="flex items-center gap-1">{Number(netAmount).toFixed(frac)}<RiyalIcon /></span>
           </div>
         </div>
       </div>

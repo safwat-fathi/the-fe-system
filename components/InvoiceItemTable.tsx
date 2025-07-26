@@ -1,6 +1,7 @@
 "use client";
 
 import type { InvoiceItem } from "@/types/invoice-item";
+import { formatAmount } from "@/utilities/formatAmount";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import CreatableSelect from "react-select/creatable";
@@ -787,42 +788,10 @@ export default function InvoiceItemTable({
                   </td>
                 )}
                 {(payType === 1 || payType === 3) && (
-                  <td>
-                    <input
-                      ref={(el) => {
-                        inputRefs.current[index][++col] = el;
-                      }}
-                      className="border w-full p-1 text-xs text-center appearance-none"
-                      step="any"
-                      style={{ minWidth: 0, maxWidth: "100%" }}
-                      type="number"
-                      value={item.total_a}
-                      disabled={!isEditing}
-                      onChange={(e) =>
-                        handleTotalAChange(index, e.target.value)
-                      }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
-                    />
-                  </td>
+                  <td>{formatAmount(item.total_a, totalADigits)}</td>
                 )}
                 {(payType === 2 || payType === 3) && (
-                  <td>
-                    <input
-                      ref={(el) => {
-                        inputRefs.current[index][++col] = el;
-                      }}
-                      className="border w-full p-1 text-xs text-center appearance-none"
-                      step="any"
-                      style={{ minWidth: 0, maxWidth: "100%" }}
-                      type="number"
-                      value={item.total_w}
-                      disabled={!isEditing}
-                      onChange={(e) =>
-                        handleTotalWChange(index, e.target.value)
-                      }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
-                    />
-                  </td>
+                  <td>{formatAmount(item.total_w, totalWDigits)}</td>
                 )}
                 <td>
                   <input
@@ -858,20 +827,18 @@ export default function InvoiceItemTable({
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
-                <td>{(item.tax ?? tax).toFixed(taxDigits)}</td>
+                <td>{formatAmount(item.tax ?? tax, taxDigits)}</td>
                 <td>
                   <input
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
-                    step="any"
                     style={{ minWidth: 0, maxWidth: "100%" }}
-                    type="number"
                     value={
                       tempTotals[item.id] !== undefined
                         ? tempTotals[item.id]
-                        : (item.total ?? total + tax)
+                        : formatAmount(item.total ?? total + (item.tax ?? tax), totalDigits)
                     }
                     disabled={!isEditing}
                     onBlur={(e) => {

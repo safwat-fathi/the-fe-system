@@ -8,8 +8,8 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 
 export default function AccountsPage() {
   useEffect(() => {
-    const apiUrl = "http://84.46.240.24:8000/api/accounts_list";
-    const createAccountApi = "http://84.46.240.24:8000/api/api_create_account";
+    const apiUrl = "http://149.102.143.102:8000/api/accounts_list";
+    const createAccountApi = "http://149.102.143.102:8000/api/api_create_account";
     let allAccounts: any[] = [];
     let selectedAccountId: number | null = null;
     let currentTreeItem: JQuery<HTMLElement> | null = null;
@@ -289,7 +289,7 @@ export default function AccountsPage() {
       if (!confirm("هل أنت متأكد أنك تريد حذف هذا الحساب؟")) return;
       try {
         const response = await fetch(
-          `http://84.46.240.24:8000/api/api_delete_account/${id}`,
+          `http://149.102.143.102:8000/api/api_delete_account/${id}`,
           { method: "DELETE" },
         );
 
@@ -360,7 +360,7 @@ export default function AccountsPage() {
     async function fetchCurrencies() {
       try {
         const response = await fetch(
-          "http://84.46.240.24:8000/api/currencies_list/",
+          "http://149.102.143.102:8000/api/currencies_list/",
         );
 
         if (!response.ok) throw new Error();

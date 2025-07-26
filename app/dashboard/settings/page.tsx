@@ -36,18 +36,19 @@ const GENERAL_FIELDS = [
 
 const ACCOUNT_FIELDS = [
   { key: "fin_year", label: "السنة المالية" },
-  { key: "init_date", label: "بداية السنة المالية", type: "date" },
-  { key: "finaly_date", label: "نهاية السنة المالية", type: "date" },
   { key: "close_month", label: "آخر شهر مقفل" },
   { key: "close_year", label: "آخر سنة مقفلة" },
-  { key: "cl", label: "عدد خانات الكسور" },
+  { key: "init_date", label: "بداية السنة المالية", type: "date" },
+  { key: "finaly_date", label: "نهاية السنة المالية", type: "date" },
+  { key: "frac", label: "عدد خانات الكسور للمبالغ" },
+  { key: "frac2", label: "عدد خانات الكسور للوزن/الجرام" },
   { key: "disc_acc", label: "حساب الخصم المسموح به" },
   { key: "disc_acc2", label: "حساب الخصم المكتسب" },
   { key: "buy_acc", label: "حساب المشتريات" },
   { key: "sell_acc", label: "حساب المبيعات" },
   { key: "p_l_acc", label: "حساب الأرباح والخسائر" },
-  { key: "store", label: "طريقة ترحيل المخزون" },
-  { key: "Vat_perc", label: "نسبة ضريبة القيمة المضافة" },
+  { key: "store", label: "حساب المخزون" },
+  { key: "Vat_perc", label: " % نسبة ضريبة القيمة المضافة" },
 ];
 
 const ZATCA_FIELDS = [
@@ -98,6 +99,14 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
+      // تحديث كاش الكسور بعد الحفظ
+      if (typeof window !== "undefined") {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const api = require("@/utilities/api");
+        if (api && api.fractionsCache !== undefined) {
+          api.fractionsCache = null;
+        }
+      }
       toast.success("تم الحفظ بنجاح");
     } catch (e) {
       toast.error("فشل الحفظ");
