@@ -214,15 +214,18 @@ export default function InvoicePage() {
       setInvoiceDate(now.toISOString());
     }
     getGoldPrice();
-    // لا تعيّن رقم فاتورة جديد إذا تم تحميل فاتورة من التقرير (أي إذا كان invoiceNumber تم تغييره من handleInvoiceSearch)
-    setTimeout(() => {
-      setInvoiceNumber((prev) => {
-        if (prev && prev !== 1) return prev; // إذا تم تعيين رقم فاتورة حقيقي لا تغيّره
-        getNextInvoiceNumber().then(setInvoiceNumber);
-        return prev;
-      });
-    }, 0);
-  }, []);
+    const invId = searchParams.get("inv_id");
+    // لا تولد رقم فاتورة جديد إذا كنا نستعرض فاتورة موجودة للتعديل
+    if (!invId) {
+      setTimeout(() => {
+        setInvoiceNumber((prev) => {
+          if (prev && prev !== 1) return prev; // إذا تم تعيين رقم فاتورة حقيقي لا تغيّره
+          getNextInvoiceNumber().then(setInvoiceNumber);
+          return prev;
+        });
+      }, 0);
+    }
+  }, [searchParams]);
 
   const getGoldPrice = async () => {
     const price = await fetchGoldPrice();
