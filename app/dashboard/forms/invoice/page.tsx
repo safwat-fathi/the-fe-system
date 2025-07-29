@@ -215,8 +215,8 @@ export default function InvoicePage() {
     }
     getGoldPrice();
     const invId = searchParams.get("inv_id");
-    // لا تولد رقم فاتورة جديد إذا كنا نستعرض فاتورة موجودة للتعديل
-    if (!invId) {
+    // توليد رقم فاتورة جديد فقط إذا لم يكن هناك inv_id ولم تكن الفاتورة في وضع التعديل
+    if (!invId && !isExistingInvoice) {
       setTimeout(() => {
         setInvoiceNumber((prev) => {
           if (prev && prev !== 1) return prev; // إذا تم تعيين رقم فاتورة حقيقي لا تغيّره
@@ -352,7 +352,10 @@ export default function InvoicePage() {
   };
 
   const saveInvoice = async () => {
-    if (isExistingInvoice) return updateInvoice();
+    if (isExistingInvoice) {
+      // إذا كانت الفاتورة موجودة، لا يتم توليد رقم جديد ويتم التحديث فقط
+      return updateInvoice();
+    }
     if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
 
     const validItems = invoiceItems.filter((itm) => itm.item_id);
@@ -362,6 +365,7 @@ export default function InvoicePage() {
     }
 
     // فقط في حالة الإضافة الجديدة يتم توليد رقم جديد
+    // إذا لم يكن هناك inv_id في الرابط ولم تكن الفاتورة موجودة
     const generatedInvId = await getNextInvoiceNumber();
     setInvoiceNumber(generatedInvId);
 
@@ -917,14 +921,14 @@ export default function InvoicePage() {
   const itemsForTable: Item[] = invoiceItems.map((itm) => ({
     id: itm.id,
     item_code: itm.item_code || "",
-    item_name: itm.item_name || "",
+    item_name: typeof itm.item_name === "string" ? itm.item_name : (itm.item_name ? String(itm.item_name) : ""),
     item_price: typeof itm.price === "number" ? itm.price : Number(itm.price) || 0,
     item_weight: typeof itm.weight === "number" ? itm.weight : Number(itm.weight) || 0,
     item_g_weight: typeof itm.g_weight === "number" ? itm.g_weight : Number(itm.g_weight) || 0,
     work_price: typeof itm.price_w === "number" ? itm.price_w : Number(itm.price_w) || 0,
-    stones: itm.stones ?? "",
-    k: itm.k ?? "",
-    purity: itm.purity ?? "",
+    stones: typeof itm.stones === "string" ? itm.stones : (itm.stones ? String(itm.stones) : ""),
+    k: typeof itm.k === "string" ? itm.k : (itm.k ? String(itm.k) : ""),
+    purity: typeof itm.purity === "string" ? itm.purity : (itm.purity ? String(itm.purity) : ""),
     cat: undefined,
   }));
 
