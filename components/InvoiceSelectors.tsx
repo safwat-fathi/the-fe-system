@@ -58,6 +58,7 @@ interface Props {
   goldPrice: number | null;
   note: string;
   setNote: (val: string) => void;
+  saleInvoices?: { inv_id: number }[];
 }
 
 export default function InvoiceSelectors({
@@ -97,6 +98,7 @@ export default function InvoiceSelectors({
   goldPrice,
   note,
   setNote,
+  saleInvoices,
 }: Props) {
   return (
     <div className="grid grid-cols-12 gap-2 text-sm mb-4">
@@ -145,6 +147,7 @@ export default function InvoiceSelectors({
           }
           onChange={(selectedOption) => {
             setSelectedCustomer(selectedOption?.value ?? null);
+            setReferenceNumber("");
 
             const selectedCust = customers.find(
               (c) => c.id === selectedOption?.value,
@@ -227,18 +230,54 @@ export default function InvoiceSelectors({
         </select>
       </div>
 
-      <div className="col-span-4">
-        <label className="block mb-1" htmlFor="reference-number">
-          رقم المرجع:
-        </label>
-        <input
-          className="w-full h-[38px] border px-2 rounded"
-          placeholder=" المرجع "
-          type="text"
-          value={referenceNumber}
-          onChange={(e) => setReferenceNumber(e.target.value)}
-        />
-      </div>
+      {saleInvoices ? (
+        <div className="col-span-4">
+          <label className="block mb-1" htmlFor="reference-number">
+            فواتير العميل:
+          </label>
+          <ReactSelect
+            isSearchable
+            className="w-full text-sm"
+            classNamePrefix="react-select"
+            components={{ IndicatorSeparator: () => null }}
+            instanceId="invoice-select"
+            menuPortalTarget={
+              typeof window !== "undefined" ? document.body : null
+            }
+            menuPosition="fixed"
+            options={saleInvoices.map((inv) => ({
+              value: inv.inv_id,
+              label: String(inv.inv_id),
+            }))}
+            placeholder="اختر الفاتورة..."
+            styles={{
+              control: (base) => ({ ...base, height: 38, minHeight: 38 }),
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+            }}
+            value={
+              referenceNumber
+                ? { value: Number(referenceNumber), label: referenceNumber }
+                : null
+            }
+            onChange={(opt) =>
+              setReferenceNumber(opt?.value ? String(opt.value) : "")
+            }
+          />
+        </div>
+      ) : (
+        <div className="col-span-4">
+          <label className="block mb-1" htmlFor="reference-number">
+            رقم المرجع:
+          </label>
+          <input
+            className="w-full h-[38px] border px-2 rounded"
+            placeholder=" المرجع "
+            type="text"
+            value={referenceNumber}
+            onChange={(e) => setReferenceNumber(e.target.value)}
+          />
+        </div>
+      )}
 
       <div className="col-span-4">
         <label className="block mb-1" htmlFor="vat-number">
