@@ -35,6 +35,7 @@ const dataLinks = [
 
 const formLinks = [
   { name: "فاتورة البيع", href: "/dashboard/forms/invoice", icon: <FaFileAlt /> },
+  { name: "مرتجع البيع", href: "/dashboard/forms/sales_return", icon: <FaFileAlt /> },
   // { name: " الصناديق", href: "/dashboard/invoice_box", icon: <FaFileAlt /> },
   // { name: "شاشة الدفع ", href: "/dashboard/invoice_payment", icon: <FaFileAlt /> },
 
