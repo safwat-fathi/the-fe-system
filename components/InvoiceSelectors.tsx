@@ -58,7 +58,9 @@ interface Props {
   goldPrice: number | null;
   note: string;
   setNote: (val: string) => void;
-  saleInvoices?: { inv_id: number }[];
+  // saleInvoices?: { inv_id: number }[];
+  saleInvoices?: { inv_id: number; cust?: number }[];
+  onInvoiceSelect?: (invoiceId: number) => void;
 }
 
 export default function InvoiceSelectors({
@@ -99,6 +101,7 @@ export default function InvoiceSelectors({
   note,
   setNote,
   saleInvoices,
+  onInvoiceSelect,
 }: Props) {
   return (
     <div className="grid grid-cols-12 gap-2 text-sm mb-4">
@@ -245,10 +248,11 @@ export default function InvoiceSelectors({
               typeof window !== "undefined" ? document.body : null
             }
             menuPosition="fixed"
-            options={saleInvoices.map((inv) => ({
-              value: inv.inv_id,
-              label: String(inv.inv_id),
-            }))}
+            options={(saleInvoices || [])
+              .filter((inv) =>
+                selectedCustomer ? inv.cust === selectedCustomer : true,
+              )
+              .map((inv) => ({ value: inv.inv_id, label: String(inv.inv_id) }))}
             placeholder="اختر الفاتورة..."
             styles={{
               control: (base) => ({ ...base, height: 38, minHeight: 38 }),
@@ -259,9 +263,16 @@ export default function InvoiceSelectors({
                 ? { value: Number(referenceNumber), label: referenceNumber }
                 : null
             }
-            onChange={(opt) =>
-              setReferenceNumber(opt?.value ? String(opt.value) : "")
-            }
+            onChange={(opt) => {
+              const val = opt?.value ? String(opt.value) : "";
+              setReferenceNumber(val);
+              if (opt?.value && onInvoiceSelect) {
+                const confirmLoad = window.confirm(
+                  "هل تريد تنزيل أصناف الفاتورة المختارة؟",
+                );
+                if (confirmLoad) onInvoiceSelect(opt.value);
+              }
+            }}
           />
         </div>
       ) : (
