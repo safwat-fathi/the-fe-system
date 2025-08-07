@@ -1,11 +1,12 @@
 "use client";
 
 import { Button, Checkbox } from "@heroui/react";
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import InvoicePaymentModal from "./InvoicePaymentModal";
-import useFractions from "@/utilities/useFractions";
+
 import { RiyalIcon } from "./RiyalIcon";
+
+import useFractions from "@/utilities/useFractions";
 
 interface Props {
   invoiceNumber: number;
@@ -44,7 +45,7 @@ export default function InvoiceTotalsActions({
 }: Props) {
   const { frac } = useFractions();
   const router = useRouter();
-  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+
   return (
     <div className="p-6 max-w-[1500px] mx-auto bg-white rounded shadow">
       <div className="flex justify-between items-center border-b pb-3 mb-6">
@@ -84,50 +85,59 @@ export default function InvoiceTotalsActions({
           </Button>
           <Button
             className="bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 text-sm rounded"
-            onClick={() => router.push('/dashboard/forms/invoice')}
+            onClick={() => router.push("/dashboard/forms/invoice")}
           >
             <i className="bi bi-file-earmark-plus me-2" /> فاتورة جديدة
           </Button>
-            <Button
-              className="bg-gray-600 text-white hover:bg-gray-700 px-2 py-1 text-sm rounded"
-              onClick={previewInvoice}
-            >
-              <i className="bi bi-eye me-2" /> معاينة الفاتورة
-            </Button>
-            <Button
-              className="bg-purple-600 text-white hover:bg-purple-700 px-2 py-1 text-sm rounded"
-              onClick={() => setIsPaymentOpen(true)}
-            >
-              <i className="bi bi-credit-card me-2" /> شاشة الدفع
-            </Button>
-          </div>
+          <Button
+            className="bg-gray-600 text-white hover:bg-gray-700 px-2 py-1 text-sm rounded"
+            onClick={previewInvoice}
+          >
+            <i className="bi bi-eye me-2" /> معاينة الفاتورة
+          </Button>
+          <Button
+            className="bg-purple-600 text-white hover:bg-purple-700 px-2 py-1 text-sm rounded"
+            onClick={() =>
+              router.push(`/dashboard/invoice_payment?total=${netAmount}`)
+            }
+          >
+            <i className="bi bi-credit-card me-2" /> شاشة الدفع
+          </Button>
         </div>
+      </div>
       {children}
       <div className="flex justify-between items-center mt-4">
         <div className="flex items-center gap-6 text-sm font-semibold">
           <div className="text-gray-600">
             <span>الإجمالي: </span>
-            <span className="flex items-center gap-1">{Number(totalAmount).toFixed(frac)}<RiyalIcon /></span>
+            <span className="flex items-center gap-1">
+              {Number(totalAmount).toFixed(frac)}
+              <RiyalIcon />
+            </span>
           </div>
           <div className="text-gray-600">
             <span>إجمالي الخصم: </span>
-            <span className="flex items-center gap-1">{Number(totalDiscount).toFixed(frac)}<RiyalIcon /></span>
+            <span className="flex items-center gap-1">
+              {Number(totalDiscount).toFixed(frac)}
+              <RiyalIcon />
+            </span>
           </div>
           <div className="text-green-500">
             <span>الضريبة: </span>
-            <span className="flex items-center gap-1">{Number(taxAmount).toFixed(frac)}<RiyalIcon /></span>
+            <span className="flex items-center gap-1">
+              {Number(taxAmount).toFixed(frac)}
+              <RiyalIcon />
+            </span>
           </div>
           <div className="text-gray-600 text-base font-bold">
             <span>الإجمالي شامل الضريبة: </span>
-            <span className="flex items-center gap-1">{Number(netAmount).toFixed(frac)}<RiyalIcon /></span>
+            <span className="flex items-center gap-1">
+              {Number(netAmount).toFixed(frac)}
+              <RiyalIcon />
+            </span>
           </div>
         </div>
       </div>
-      <InvoicePaymentModal
-        isOpen={isPaymentOpen}
-        onClose={() => setIsPaymentOpen(false)}
-        invoiceTotal={netAmount}
-      />
     </div>
   );
 }
