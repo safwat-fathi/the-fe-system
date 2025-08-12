@@ -16,7 +16,6 @@ export interface InvoiceItem {
   total?: number;
   total_w?: number;
   total_a?: number;
-  inv_note?: string;
   tax?: number;
   tax_prc?: number;
   stones?: string;

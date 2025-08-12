@@ -18,9 +18,8 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
-import ActionButtons from "@/components/ActionButtons";
 import { fetchData, API_BASE_URL } from "@/utilities/api";
 import useCrud from "@/utilities/useCrud";
 import { apiFetch } from "@/utilities/api";
@@ -129,11 +128,33 @@ export default function CurrenciesTable() {
   };
 
   const renderActions = (cur: Currency) => (
-    <ActionButtons
-      onDelete={() => handleDelete(cur.id)}
-      onEdit={() => openModal("edit", cur)}
-      onView={() => openModal("view", cur)}
-    />
+    <div className="flex gap-2">
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("view", cur)}
+      >
+        <FaEye className="text-blue-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("edit", cur)}
+      >
+        <FaEdit className="text-yellow-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        color="danger"
+        onPress={() => handleDelete(cur.id)}
+      >
+        <FaTrash />
+      </Button>
+    </div>
   );
 
   const filtered = useMemo(

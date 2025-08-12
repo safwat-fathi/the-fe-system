@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import ReactSelect from "react-select";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { Tooltip } from "@nextui-org/react";
 import toast from "react-hot-toast";
 import {
@@ -110,22 +110,22 @@ export default function CustomersTable() {
     const types = await fetchData(cust_type_URL);
 
     const custsResponse = await fetchData(Cust_Status_URL);
-    const custs = Array.isArray(custsResponse?.results)
-      ? custsResponse.results
+    const custs = Array.isArray((custsResponse as any)?.results)
+      ? (custsResponse as any).results
       : [];
 
     const accs = await fetchData(ACCOUNTS_URL);
     const boxesResponse = await fetchData(BOX_TYPE_URL);
-    const boxes = Array.isArray(boxesResponse?.results)
-      ? boxesResponse.results
+    const boxes = Array.isArray((boxesResponse as any)?.results)
+      ? (boxesResponse as any).results
       : [];
     const CustId = await fetchData(Max_CustID_URL);
 
-    setCustomerTypes(types);
+    setCustomerTypes(types as any[]);
     setCustomerStatus(custs);
-    setAccounts(accs);
+    setAccounts(accs as any[]);
     setBoxTypes(boxes);
-    setMaxCustId(CustId);
+    setMaxCustId(CustId as any);
   }, []);
 
   useEffect(() => {
@@ -144,7 +144,7 @@ export default function CustomersTable() {
       let updatedCustomer = { ...currentCustomer };
 
       if (!updatedCustomer.id) {
-        updatedCustomer.cust_code = String(maxCustId.id__max);
+        updatedCustomer.cust_code = String((maxCustId as any).id__max);
       }
 
       if (!updatedCustomer.cust_code) {
@@ -205,11 +205,33 @@ export default function CustomersTable() {
   };
 
   const renderActions = (cust: Customer) => (
-    <ActionButtons
-      onDelete={() => handleDelete(cust.id)}
-      onEdit={() => openModal("edit", cust)}
-      onView={() => openModal("view", cust)}
-    />
+    <div className="flex gap-2">
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("view", cust)}
+      >
+        <FaEye className="text-blue-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("edit", cust)}
+      >
+        <FaEdit className="text-yellow-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        color="danger"
+        onPress={() => handleDelete(cust.id)}
+      >
+        <FaTrash />
+      </Button>
+    </div>
   );
 
   const handleDelete = async (id: number) => {
@@ -695,7 +717,7 @@ const filteredCustomers = useMemo(() => {
                 onChange={(selectedOption) => {
                   setCurrentCustomer({
                     ...currentCustomer,
-                    cust_type: selectedOption?.value || null,
+                    cust_type: selectedOption?.value as number || undefined,
                   });
                 }}
               />
@@ -778,7 +800,7 @@ const filteredCustomers = useMemo(() => {
                 onChange={(selectedOption) => {
                   setCurrentCustomer({
                     ...currentCustomer,
-                    cust_status: selectedOption?.value || "",
+                    cust_status: selectedOption?.value as number || 0,
                   });
                 }}
               />

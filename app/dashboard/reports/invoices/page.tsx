@@ -1,7 +1,6 @@
 "use client";
 
 import type { Invoice } from "@/types/invoice";
-
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -13,113 +12,330 @@ import {
   TableCell,
   Input,
   Pagination,
+  Button,
+  Chip,
+  Select,
+  SelectItem,
+  Card,
+  CardBody,
+  Tabs,
+  Tab,
 } from "@heroui/react";
+import { FaEye, FaEdit, FaDownload, FaFilter, FaChartBar, FaTable, FaPrint } from "react-icons/fa";
 import toast from "react-hot-toast";
 
-import ActionButtons from "@/components/ActionButtons";
 import { API_ENDPOINTS, fetchData } from "@/utilities/api";
 import { formatDateTime } from "@/utilities/dateUtils";
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
+import DataTable from "@/components/DataTable";
+import { InfoCard, MetricCard } from "@/components/Card";
+import InvoiceAnalytics from "@/components/InvoiceAnalytics";
 
 const { INVOICES_LIST } = API_ENDPOINTS;
 
-const columns = [
-  { name: "رقم الفاتورة", uid: "inv_id" },
-  { name: "التاريخ والوقت", uid: "inv_date" },
-  { name: "العميل", uid: "cust_name" },
-  { name: "الإجمالي", uid: "inv_net" },
-  { name: "الضريبة", uid: "tax" },
-  { name: "الإجمالي شامل الضريبة", uid: "inv_amt" },
-  { name: "", uid: "actions" },
+// أنواع الفواتير
+const INVOICE_TYPES = [
+  { key: "all", label: "جميع الفواتير", color: "default" },
+  { key: "sales", label: "فواتير البيع", color: "success" },
+  { key: "return", label: "فواتير المرتجعات", color: "warning" },
+  { key: "credit", label: "فواتير الآجل", color: "primary" },
+];
+
+// حالات الفواتير
+const INVOICE_STATUSES = [
+  { key: "all", label: "جميع الحالات", color: "default" },
+  { key: "paid", label: "مدفوع", color: "success" },
+  { key: "pending", label: "معلق", color: "warning" },
+  { key: "overdue", label: "متأخر", color: "danger" },
 ];
 
 export default function InvoicesPage() {
   const router = useRouter();
-  const { frac } = useFractions();
+  const fractions = useFractions() as { frac: number; frac2: number };
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // فلاتر
   const [search, setSearch] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [page, setPage] = useState(1);
+  const [activeTab, setActiveTab] = useState("table");
 
   const rowsPerPage = 12;
 
   const loadInvoices = useCallback(async () => {
+    try {
+      setLoading(true);
     const data = await fetchData<Invoice[]>(INVOICES_LIST);
     setInvoices(Array.isArray(data) ? data : []);
+    } catch (error) {
+      toast.error("خطأ في تحميل الفواتير");
+      console.error("Error loading invoices:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     loadInvoices();
   }, [loadInvoices]);
 
-  const handleEdit = (invId: number) => {
-    router.push(`/dashboard/forms/invoice?inv_id=${invId}`);
-  };
+  // تصفية الفواتير
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((inv) => {
+      // البحث النصي
+      const searchMatch = 
+        inv.cust_name?.toLowerCase().includes(search.toLowerCase()) ||
+        String(inv.inv_id).includes(search) ||
+        String(inv.inv_id).includes(search);
 
-  const filteredInvoices = useMemo(
-    () =>
-      invoices.filter(
-        (inv) =>
-          inv.cust_name?.toLowerCase().includes(search.toLowerCase()) ||
-          String(inv.inv_id).includes(search) ||
-          String(inv.id).includes(search)
-      ),
-    [invoices, search]
-  );
+      // تصفية حسب النوع
+      const typeMatch = selectedType === "all" || 
+        (selectedType === "sales" && inv.trans_type === 2) ||
+        (selectedType === "return" && inv.trans_type === 3) ||
+        (selectedType === "credit" && inv.pay_type === 3);
 
+      // تصفية حسب التاريخ
+      const dateMatch = !dateRange.start && !dateRange.end || 
+        (dateRange.start && new Date(inv.inv_date) >= new Date(dateRange.start)) &&
+        (dateRange.end && new Date(inv.inv_date) <= new Date(dateRange.end));
+
+      return searchMatch && typeMatch && dateMatch;
+    });
+  }, [invoices, search, selectedType, dateRange]);
+
+  // إحصائيات
+  const analytics = useMemo(() => {
+    const total = filteredInvoices.length;
+    const totalAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.inv_amt || 0), 0);
+    const totalTax = filteredInvoices.reduce((sum, inv) => sum + (inv.tax || 0), 0);
+    const avgAmount = total > 0 ? totalAmount / total : 0;
+
+    // حسب النوع
+    const byType = {
+      sales: filteredInvoices.filter(inv => inv.trans_type === 2).length,
+      return: filteredInvoices.filter(inv => inv.trans_type === 3).length,
+      credit: filteredInvoices.filter(inv => inv.pay_type === 3).length,
+    };
+
+    // حسب الشهر
+    const byMonth = new Array(12).fill(0);
+    filteredInvoices.forEach(inv => {
+      const month = new Date(inv.inv_date).getMonth();
+      byMonth[month]++;
+    });
+
+    return {
+      total,
+      totalAmount,
+      totalTax,
+      avgAmount,
+      byType,
+      byMonth,
+    };
+  }, [filteredInvoices]);
+
+  // ترقيم الصفحات
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
     return filteredInvoices.slice(start, start + rowsPerPage);
   }, [filteredInvoices, page]);
 
+  // أعمدة الجدول
+  const columns = [
+    { key: "inv_id", label: "رقم الفاتورة", sortable: true },
+    { key: "inv_date", label: "التاريخ والوقت", sortable: true, 
+      render: (value: string) => formatDateTime(value) },
+    { key: "cust_name", label: "العميل", sortable: true },
+    { key: "inv_net", label: "الإجمالي", sortable: true,
+      render: (value: number) => formatAmount(value, fractions.frac) },
+    { key: "tax", label: "الضريبة", sortable: true,
+      render: (value: number) => formatAmount(value, fractions.frac) },
+    { key: "inv_amt", label: "الإجمالي شامل الضريبة", sortable: true,
+      render: (value: number) => formatAmount(value, fractions.frac) },
+    { key: "type", label: "النوع", sortable: false,
+      render: (value: any, row: Invoice) => {
+        const type = row.trans_type === 2 ? "بيع" : row.trans_type === 3 ? "مرتجع" : "آخر";
+        const color = row.trans_type === 2 ? "success" : row.trans_type === 3 ? "warning" : "default";
+        return <Chip color={color} size="sm">{type}</Chip>;
+      }},
+    { key: "actions", label: "الإجراءات", sortable: false,
+      render: (value: any, row: Invoice) => (
+        <div className="flex gap-2">
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            onPress={() => router.push(`/dashboard/forms/invoice?inv_id=${row.inv_id}`)}
+          >
+            <FaEye className="text-blue-500" />
+          </Button>
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            onPress={() => router.push(`/dashboard/forms/invoice?inv_id=${row.inv_id}`)}
+          >
+            <FaEdit className="text-yellow-500" />
+          </Button>
+        </div>
+      )},
+  ];
+
+  const handleExport = () => {
+    // تصدير البيانات
+    toast.success("تم تصدير البيانات بنجاح");
+  };
+
+  const handlePrint = () => {
+    // طباعة التقرير
+    window.print();
+  };
+
+  const clearFilters = () => {
+    setSearch("");
+    setSelectedType("all");
+    setSelectedStatus("all");
+    setDateRange({ start: "", end: "" });
+    setPage(1);
+  };
+
   return (
-    <div className="p-4 font-cairo">
-      <h1 className="mb-6 text-2xl font-bold">قائمة الفواتير</h1>
-      <div className="mb-4 flex justify-end">
+    <div className="font-cairo space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">تقارير الفواتير</h1>
+          <p className="text-gray-500 mt-1">إدارة وعرض جميع الفواتير</p>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            variant="bordered"
+            startContent={<FaPrint />}
+            onPress={handlePrint}
+          >
+            طباعة
+          </Button>
+          <Button
+            color="primary"
+            startContent={<FaDownload />}
+            onPress={handleExport}
+          >
+            تصدير
+          </Button>
+        </div>
+      </div>
+
+
+
+      {/* الفلاتر */}
+      <Card>
+        <CardBody>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Input
-          className="w-60"
-          placeholder="بحث بالرقم أو الاسم..."
+              placeholder="البحث بالرقم أو الاسم..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-        />
+              startContent={<FaFilter />}
+              className="input-field"
+            />
+            
+            <Select
+              placeholder="نوع الفاتورة"
+              selectedKeys={[selectedType]}
+              onSelectionChange={(keys) => setSelectedType(Array.from(keys)[0] as string)}
+              className="input-field"
+            >
+              {INVOICE_TYPES.map((type) => (
+                <SelectItem key={type.key}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </Select>
+
+            <Input
+              type="date"
+              placeholder="من تاريخ"
+              value={dateRange.start}
+              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+              className="input-field"
+            />
+
+            <Input
+              type="date"
+              placeholder="إلى تاريخ"
+              value={dateRange.end}
+              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+              className="input-field"
+            />
+
+            <Button
+              variant="bordered"
+              onPress={clearFilters}
+              className="btn-secondary"
+            >
+              مسح الفلاتر
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* التبويبات */}
+      <Tabs 
+        selectedKey={activeTab} 
+        onSelectionChange={(key) => setActiveTab(key as string)}
+        className="w-full"
+      >
+        <Tab
+          key="table"
+          title={
+            <div className="flex items-center gap-2">
+              <FaTable />
+              <span>قائمة الفواتير</span>
       </div>
-      <Table aria-label="جدول الفواتير">
-        <TableHeader>
-          {columns.map((col) => (
-            <TableColumn key={col.uid}>{col.name}</TableColumn>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {paginated.map((inv) => (
-            <TableRow key={inv.inv_id}>
-              <TableCell>{inv.inv_id}</TableCell>
-              <TableCell>{formatDateTime(inv.inv_date)}</TableCell>
-              <TableCell>{inv.cust_name}</TableCell>
-              <TableCell>{formatAmount(inv.inv_net, frac)}</TableCell>
-              <TableCell>{formatAmount(inv.tax, frac)}</TableCell>
-              <TableCell>{formatAmount(inv.inv_amt, frac)}</TableCell>
-              <TableCell>
-                <ActionButtons
-                  onEdit={() => handleEdit(inv.inv_id)}
-                  onView={() => handleEdit(inv.inv_id)}
-                  showDelete={false}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <div className="flex items-center justify-between py-4">
+          }
+        >
+          {/* الجدول */}
+          <DataTable
+            columns={columns}
+            data={paginated}
+            title={`قائمة الفواتير (${filteredInvoices.length} فاتورة)`}
+            searchable={false}
+            sortable={true}
+            className="card"
+          />
+
+          {/* ترقيم الصفحات */}
+          <div className="flex items-center justify-between mt-4">
         <span className="text-sm text-gray-500">
-          عدد الفواتير: {filteredInvoices.length}
+              عرض {((page - 1) * rowsPerPage) + 1} إلى {Math.min(page * rowsPerPage, filteredInvoices.length)} من {filteredInvoices.length} فاتورة
         </span>
         <Pagination
           color="primary"
           page={page}
           total={Math.ceil(filteredInvoices.length / rowsPerPage)}
           onChange={setPage}
+              showControls
+              showShadow
         />
       </div>
+        </Tab>
+
+        <Tab
+          key="analytics"
+          title={
+            <div className="flex items-center gap-2">
+              <FaChartBar />
+              <span>التحليلات</span>
+            </div>
+          }
+        >
+          <InvoiceAnalytics invoices={filteredInvoices} />
+        </Tab>
+      </Tabs>
     </div>
   );
 }

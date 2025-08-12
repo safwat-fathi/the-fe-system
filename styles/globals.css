@@ -9,27 +9,94 @@
   font-style: normal;
 }
 
-html, body {
-  font-family: "Cairo", sans-serif;
+@font-face {
+  font-family: "Cairo";
+  src: url("/fonts/CairoFont.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
 }
 
+@font-face {
+  font-family: "Cairo";
+  src: url("/fonts/CairoFont.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Base styles */
+html, body {
+  font-family: "Cairo", sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #374151;
+  background-color: #f8fafc;
+}
+
+/* Typography scale */
+.text-xs { font-size: 0.75rem; line-height: 1.5; }
+.text-sm { font-size: 0.875rem; line-height: 1.5; }
+.text-base { font-size: 1rem; line-height: 1.6; }
+.text-lg { font-size: 1.125rem; line-height: 1.6; }
+.text-xl { font-size: 1.25rem; line-height: 1.5; }
+.text-2xl { font-size: 1.5rem; line-height: 1.4; }
+.text-3xl { font-size: 1.875rem; line-height: 1.3; }
+.text-4xl { font-size: 2.25rem; line-height: 1.2; }
+
+/* Improved spacing */
+.space-y-2 > * + * { margin-top: 0.5rem; }
+.space-y-3 > * + * { margin-top: 0.75rem; }
+.space-y-4 > * + * { margin-top: 1rem; }
+.space-y-6 > * + * { margin-top: 1.5rem; }
+.space-y-8 > * + * { margin-top: 2rem; }
+
+/* Card improvements */
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200;
+}
+
+.card-hover {
+  @apply hover:border-blue-200 hover:shadow-lg;
+}
+
+/* Button improvements */
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-lg transition-colors duration-200;
+}
+
+.btn-secondary {
+  @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2.5 rounded-lg transition-colors duration-200;
+}
+
+/* Input improvements */
+.input-field {
+  @apply bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
+}
+
+/* HeroUI customizations */
 .heroui__control {
-  background-color: #f7f7f7 !important;
-  border: none !important;
-  border-radius: 0.75rem !important; /* rounded-xl */
-  height: 3.5rem !important;
-  font-family: 'Cairo', sans-serif;
-  font-size: 14px;
-  padding-inline: 1rem;
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.75rem !important;
+  height: 3rem !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 0.875rem !important;
+  padding-inline: 0.75rem !important;
   box-shadow: none !important;
   direction: rtl;
   display: flex;
   align-items: center;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.heroui__control:hover {
+  border-color: #d1d5db !important;
+  background-color: #ffffff !important;
 }
 
 .heroui__control--is-focused {
-  background-color: #f7f7f7 !important;
-  box-shadow: none !important;
+  background-color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
   outline: none !important;
 }
 
@@ -40,42 +107,50 @@ html, body {
 .heroui__input,
 .heroui__single-value,
 .heroui__placeholder {
-  color: #333 !important;
-  font-size: 14px !important;
+  color: #374151 !important;
+  font-size: 0.875rem !important;
   font-weight: 500;
   font-family: 'Cairo', sans-serif !important;
 }
 
 .heroui__menu {
   z-index: 9999 !important;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  animation: slideDown 0.15s ease-out;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e5e7eb !important;
+  animation: slideDown 0.2s ease-out;
   font-family: 'Cairo', sans-serif !important;
+  margin-top: 0.25rem !important;
 }
 
 .heroui__option {
-  padding: 10px 16px;
-  font-size: 14px;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
   text-align: right;
   cursor: pointer;
   font-family: 'Cairo', sans-serif !important;
+  transition: background-color 0.15s ease-in-out !important;
+}
+
+.heroui__option:hover {
+  background-color: #f3f4f6 !important;
 }
 
 .heroui__option--is-selected {
-  background-color: #f0f0f0;
-  font-weight: bold;
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+  font-weight: 600 !important;
 }
 
 .heroui__indicator {
-  color: #999;
+  color: #6b7280 !important;
 }
 
-/* animation */
+/* Animation improvements */
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
@@ -83,7 +158,7 @@ html, body {
   }
 }
 
-/* remove spinners from number inputs */
+/* Remove spinners from number inputs */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -92,4 +167,201 @@ input[type="number"]::-webkit-outer-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* Scrollbar improvements */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Focus improvements */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Loading states */
+.loading {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  html, body {
+    font-size: 14px;
+  }
+  
+  .text-2xl { font-size: 1.25rem; }
+  .text-3xl { font-size: 1.5rem; }
+  .text-4xl { font-size: 1.75rem; }
+}
+
+/* Print styles */
+@media print {
+  /* Hide navigation and buttons */
+  aside, 
+  button, 
+  .btn-primary, 
+  .btn-secondary,
+  .heroui-tabs-tablist,
+  .heroui-pagination {
+    display: none !important;
+  }
+
+  /* Full width for main content */
+  main {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Card styles for print */
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    break-inside: avoid;
+  }
+
+  /* Table styles for print */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #e5e7eb !important;
+    padding: 8px !important;
+    text-align: right !important;
+  }
+
+  th {
+    background-color: #f9fafb !important;
+    font-weight: bold !important;
+  }
+
+  /* Chart container styles */
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  .avoid-break {
+    break-inside: avoid;
+  }
+
+  /* Text colors for print */
+  * {
+    color: #000 !important;
+    background-color: #fff !important;
+  }
+
+  /* Header for print */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+  }
+
+  .print-header h1 {
+    font-size: 24px !important;
+    margin: 0 !important;
+  }
+
+  .print-header p {
+    font-size: 14px !important;
+    margin: 5px 0 0 0 !important;
+  }
+}
+
+/* Dark mode support (future) */
+@media (prefers-color-scheme: dark) {
+  /* Dark mode styles can be added here */
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card {
+    border-width: 2px !important;
+  }
+  
+  .btn-primary {
+    border: 2px solid #1d4ed8 !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Custom scrollbar styles */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Table specific scrollbar hiding */
+.table-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.table-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbars for all table elements */
+table {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+table::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbars for table containers */
+.table-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.table-container::-webkit-scrollbar {
+  display: none;
 }

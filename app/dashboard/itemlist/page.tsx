@@ -12,7 +12,7 @@ type OptionType = {
 export default function ItemSelect() {
   const [value, setValue] = useState<OptionType | null>(null);
 
-  const loadOptions = async (search: string, loadedOptions: OptionType[], { page }: any) => {
+  const loadOptions = async (search: string, loadedOptions: any, { page }: any) => {
     const res = await fetch(
       `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`
     );

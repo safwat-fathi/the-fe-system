@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@heroui/react";
+import AuthGuard from "@/components/AuthGuard";
+import LogoutButton from "@/components/LogoutButton";
+import UserHeader from "@/components/UserHeader";
 import {
   FaBars,
   FaHome,
@@ -15,6 +18,7 @@ import {
   FaCog,
   FaChevronDown,
   FaChevronUp,
+  FaReceipt,
 } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -24,33 +28,56 @@ const settingsLinks = [
   { name: "إعدادات النظام", href: "/dashboard/settings", icon: <FaCog /> },
 ];
 
-const dataLinks = [
+// نظام الحسابات
+const accountingBasicLinks = [
   { name: "الحسابات", href: "/dashboard/basic/accounts", icon: <FaMoneyBill /> },
+  { name: "الصناديق", href: "/dashboard/boxes", icon: <FaFileAlt /> },
   { name: "العملات", href: "/dashboard/basic/currencies", icon: <FaMoneyBill /> },
+];
+
+const accountingFormLinks: Array<{ name: string; href: string; icon: React.ReactNode }> = [
+          { name: "قيد تسوية", href: "/dashboard/forms/voucher", icon: <FaFileAlt /> },
+          { name: "سند قبض", href: "/dashboard/forms/receipt_voucher", icon: <FaReceipt /> },
+];
+
+const accountingReportLinks: Array<{ name: string; href: string; icon: React.ReactNode }> = [
+  { name: "تقرير السندات", href: "/dashboard/reports/vouchers", icon: <FaFileAlt /> },
+];
+
+// نظام الذهب
+const goldBasicLinks = [
   { name: "العملاء", href: "/dashboard/basic/customers", icon: <FaUsers /> },
+  { name: "أنواع العملاء", href: "/dashboard/cust_type", icon: <FaUsers /> },
   { name: "الأصناف", href: "/dashboard/basic/items", icon: <FaBoxOpen /> },
   { name: "الفئات", href: "/dashboard/basic/categories", icon: <FaTags /> },
   { name: "الوحدات", href: "/dashboard/basic/units", icon: <FaTags /> },
 ];
 
-const formLinks = [
-  { name: "فاتورة البيع", href: "/dashboard/forms/invoice", icon: <FaFileAlt /> },
-  { name: "مرتجع البيع", href: "/dashboard/forms/sales_return", icon: <FaFileAlt /> },
-  // { name: " الصناديق", href: "/dashboard/invoice_box", icon: <FaFileAlt /> },
-  // { name: "شاشة الدفع ", href: "/dashboard/invoice_payment", icon: <FaFileAlt /> },
-
+const goldFormLinks = [
+  { name: "فاتورة البيع", href: "/dashboard/forms/invoice?new=true", icon: <FaFileAlt /> },
+  { name: "مردود البيع", href: "/dashboard/forms/sales_return", icon: <FaFileAlt /> },
 ];
 
-const reportLinks = [
+const goldReportLinks = [
   { name: "قائمة الفواتير", href: "/dashboard/reports/invoices", icon: <FaFileAlt /> },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showDataLinks, setShowDataLinks] = useState(true);
-  const [showFormLinks, setShowFormLinks] = useState(true);
+  
+  // نظام الحسابات
+  const [showAccountingSystem, setShowAccountingSystem] = useState(true);
+  const [showAccountingBasic, setShowAccountingBasic] = useState(true);
+  const [showAccountingForms, setShowAccountingForms] = useState(true);
+  const [showAccountingReports, setShowAccountingReports] = useState(false);
+  
+  // نظام الذهب
+  const [showGoldSystem, setShowGoldSystem] = useState(true);
+  const [showGoldBasic, setShowGoldBasic] = useState(true);
+  const [showGoldForms, setShowGoldForms] = useState(true);
+  const [showGoldReports, setShowGoldReports] = useState(true);
+  
   const [showSettingsLinks, setShowSettingsLinks] = useState(true);
-  const [showReportLinks, setShowReportLinks] = useState(true);
   const pathname = usePathname();
 
   const animationVariants = {
@@ -58,186 +85,430 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     visible: { clipPath: "inset(0% 0% 0% 0%)", opacity: 1 },
   };
 
-  const transition = { duration: 0.7, ease: "easeInOut", delay: 0.05 };
+  const transition = { duration: 0.3, ease: "easeInOut", delay: 0.05 };
 
   return (
-    <div className="font-cairo flex min-h-screen bg-gray-100">
+    <div className="font-cairo flex min-h-screen bg-gray-50">
+      {/* Sidebar */}
       <aside
-        className={`bg-gray-800 text-white transition-all duration-300 ease-in-out flex flex-col ${
-          isSidebarOpen ? "w-64 px-4" : "w-16 px-2"
-        } min-h-screen`}
+        className={`bg-gradient-to-b from-gray-800 to-gray-900 text-white transition-all duration-300 ease-in-out flex flex-col ${
+          isSidebarOpen ? "w-72 px-6" : "w-20 px-3"
+        } min-h-screen shadow-xl`}
       >
-        <div className="flex items-center justify-between h-12 mb-6 relative">
+        {/* Header */}
+        <div className="flex items-center justify-between h-16 mb-8 relative border-b border-gray-700 pb-4">
           {isSidebarOpen && (
-            <h2 className="text-lg font-semibold whitespace-nowrap">لوحة التحكم</h2>
+            <h2 className="text-xl font-bold whitespace-nowrap text-white">لوحة التحكم</h2>
           )}
           <Button
             size="sm"
             variant="light"
             onPress={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="text-white"
+            className="text-white hover:bg-gray-700"
           >
             <FaBars />
           </Button>
         </div>
 
-        <nav className="flex flex-col gap-2">
+        {/* Navigation */}
+        <nav className="flex flex-col gap-1 flex-1">
+          {/* Main Links */}
           {mainLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline ${
-                pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"
+              className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
+                pathname === link.href 
+                  ? "bg-blue-600 shadow-lg" 
+                  : "hover:bg-gray-700 hover:shadow-md"
               }`}
             >
-              {link.icon}
-              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
+              <div className={`text-lg ${pathname === link.href ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                {link.icon}
+              </div>
+              <span className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}>{link.name}</span>
             </Link>
           ))}
 
-          {/* البيانات الأساسية */}
-          <div
-            className="mt-4 px-2 text-sm text-white cursor-pointer flex justify-between items-center"
-            onClick={() => setShowDataLinks(!showDataLinks)}
-          >
-            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>البيانات الأساسية</span>
-            {isSidebarOpen && (showDataLinks ? <FaChevronUp /> : <FaChevronDown />)}
+          {/* نظام الحسابات */}
+          <div className="mt-6">
+            <div
+              className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
+              onClick={() => setShowAccountingSystem(!showAccountingSystem)}
+            >
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>نظام الحسابات</span>
+              {isSidebarOpen && (
+                <div className="text-gray-400">
+                  {showAccountingSystem ? <FaChevronUp /> : <FaChevronDown />}
+                </div>
+              )}
+            </div>
+
+            <AnimatePresence initial={false}>
+              {showAccountingSystem && (
+                <motion.div
+                  animate="visible"
+                  className="flex flex-col overflow-hidden mt-2"
+                  exit="hidden"
+                  initial="hidden"
+                  transition={transition}
+                  variants={animationVariants}
+                >
+                  {/* البيانات الأساسية - نظام الحسابات */}
+                  <div
+                    className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                    onClick={() => setShowAccountingBasic(!showAccountingBasic)}
+                  >
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>البيانات الأساسية</span>
+                    {isSidebarOpen && (
+                      <div className="text-gray-500">
+                        {showAccountingBasic ? <FaChevronUp /> : <FaChevronDown />}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <AnimatePresence initial={false}>
+                    {showAccountingBasic && (
+                      <motion.div
+                        animate="visible"
+                        className="flex flex-col overflow-hidden"
+                        exit="hidden"
+                        initial="hidden"
+                        transition={transition}
+                        variants={animationVariants}
+                      >
+                        {accountingBasicLinks.map((link) => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                              pathname === link.href 
+                                ? "bg-blue-600/20 text-blue-300" 
+                                : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                            }`}
+                            style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                          >
+                            <div className="text-sm">{link.icon}</div>
+                            <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* النماذج - نظام الحسابات */}
+                  {accountingFormLinks.length > 0 && (
+                    <>
+                      <div
+                        className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                        onClick={() => setShowAccountingForms(!showAccountingForms)}
+                      >
+                        <span className={`${isSidebarOpen ? "block" : "hidden"}`}>النماذج</span>
+                        {isSidebarOpen && (
+                          <div className="text-gray-500">
+                            {showAccountingForms ? <FaChevronUp /> : <FaChevronDown />}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <AnimatePresence initial={false}>
+                        {showAccountingForms && (
+                          <motion.div
+                            animate="visible"
+                            className="flex flex-col overflow-hidden"
+                            exit="hidden"
+                            initial="hidden"
+                            transition={transition}
+                            variants={animationVariants}
+                          >
+                            {accountingFormLinks.map((link) => (
+                              <Link
+                                key={link.href}
+                                href={link.href}
+                                className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                                  pathname === link.href 
+                                    ? "bg-blue-600/20 text-blue-300" 
+                                    : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                                }`}
+                                style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                              >
+                                <div className="text-sm">{link.icon}</div>
+                                <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                              </Link>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </>
+                  )}
+
+                  {/* التقارير - نظام الحسابات */}
+                  {accountingReportLinks.length > 0 && (
+                    <>
+                      <div
+                        className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                        onClick={() => setShowAccountingReports(!showAccountingReports)}
+                      >
+                        <span className={`${isSidebarOpen ? "block" : "hidden"}`}>التقارير</span>
+                        {isSidebarOpen && (
+                          <div className="text-gray-500">
+                            {showAccountingReports ? <FaChevronUp /> : <FaChevronDown />}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <AnimatePresence initial={false}>
+                        {showAccountingReports && (
+                          <motion.div
+                            animate="visible"
+                            className="flex flex-col overflow-hidden"
+                            exit="hidden"
+                            initial="hidden"
+                            transition={transition}
+                            variants={animationVariants}
+                          >
+                            {accountingReportLinks.map((link) => (
+                              <Link
+                                key={link.href}
+                                href={link.href}
+                                className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                                  pathname === link.href 
+                                    ? "bg-blue-600/20 text-blue-300" 
+                                    : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                                }`}
+                                style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                              >
+                                <div className="text-sm">{link.icon}</div>
+                                <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                              </Link>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          <AnimatePresence initial={false}>
-            {showDataLinks && (
-              <motion.div
-                animate="visible"
-                className="flex flex-col overflow-hidden"
-                exit="hidden"
-                initial="hidden"
-                transition={transition}
-                variants={animationVariants}
-              >
-                {dataLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline ${
-                      pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"
-                    }`}
-                  >
-                    {link.icon}
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
-                  </Link>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* نظام الذهب */}
+          <div className="mt-6">
+            <div
+              className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
+              onClick={() => setShowGoldSystem(!showGoldSystem)}
+            >
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>نظام الذهب</span>
+              {isSidebarOpen && (
+                <div className="text-gray-400">
+                  {showGoldSystem ? <FaChevronUp /> : <FaChevronDown />}
+                </div>
+              )}
+            </div>
 
-          {/* النماذج */}
-          <div
-            className="mt-4 px-2 text-sm text-white cursor-pointer flex justify-between items-center"
-            onClick={() => setShowFormLinks(!showFormLinks)}
-          >
-            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>النماذج</span>
-            {isSidebarOpen && (showFormLinks ? <FaChevronUp /> : <FaChevronDown />)}
+            <AnimatePresence initial={false}>
+              {showGoldSystem && (
+                <motion.div
+                  animate="visible"
+                  className="flex flex-col overflow-hidden mt-2"
+                  exit="hidden"
+                  initial="hidden"
+                  transition={transition}
+                  variants={animationVariants}
+                >
+                  {/* البيانات الأساسية - نظام الذهب */}
+                  <div
+                    className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                    onClick={() => setShowGoldBasic(!showGoldBasic)}
+                  >
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>البيانات الأساسية</span>
+                    {isSidebarOpen && (
+                      <div className="text-gray-500">
+                        {showGoldBasic ? <FaChevronUp /> : <FaChevronDown />}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <AnimatePresence initial={false}>
+                    {showGoldBasic && (
+                      <motion.div
+                        animate="visible"
+                        className="flex flex-col overflow-hidden"
+                        exit="hidden"
+                        initial="hidden"
+                        transition={transition}
+                        variants={animationVariants}
+                      >
+                        {goldBasicLinks.map((link) => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                              pathname === link.href 
+                                ? "bg-blue-600/20 text-blue-300" 
+                                : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                            }`}
+                            style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                          >
+                            <div className="text-sm">{link.icon}</div>
+                            <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* النماذج - نظام الذهب */}
+                  <div
+                    className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                    onClick={() => setShowGoldForms(!showGoldForms)}
+                  >
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>النماذج</span>
+                    {isSidebarOpen && (
+                      <div className="text-gray-500">
+                        {showGoldForms ? <FaChevronUp /> : <FaChevronDown />}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <AnimatePresence initial={false}>
+                    {showGoldForms && (
+                      <motion.div
+                        animate="visible"
+                        className="flex flex-col overflow-hidden"
+                        exit="hidden"
+                        initial="hidden"
+                        transition={transition}
+                        variants={animationVariants}
+                      >
+                        {goldFormLinks.map((link) => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                              pathname === link.href 
+                                ? "bg-blue-600/20 text-blue-300" 
+                                : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                            }`}
+                            style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                          >
+                            <div className="text-sm">{link.icon}</div>
+                            <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* التقارير - نظام الذهب */}
+                  <div
+                    className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                    onClick={() => setShowGoldReports(!showGoldReports)}
+                  >
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>التقارير</span>
+                    {isSidebarOpen && (
+                      <div className="text-gray-500">
+                        {showGoldReports ? <FaChevronUp /> : <FaChevronDown />}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <AnimatePresence initial={false}>
+                    {showGoldReports && (
+                      <motion.div
+                        animate="visible"
+                        className="flex flex-col overflow-hidden"
+                        exit="hidden"
+                        initial="hidden"
+                        transition={transition}
+                        variants={animationVariants}
+                      >
+                        {goldReportLinks.map((link) => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                              pathname === link.href 
+                                ? "bg-blue-600/20 text-blue-300" 
+                                : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                            }`}
+                            style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                          >
+                            <div className="text-sm">{link.icon}</div>
+                            <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-
-          <AnimatePresence initial={false}>
-            {showFormLinks && (
-              <motion.div
-                animate="visible"
-                className="flex flex-col overflow-hidden"
-                exit="hidden"
-                initial="hidden"
-                transition={transition}
-                variants={animationVariants}
-              >
-                {formLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline ${
-                      pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"
-                    }`}
-                  >
-                    {link.icon}
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
-                  </Link>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* التقارير */}
-          <div
-            className="mt-4 px-2 text-sm text-white cursor-pointer flex justify-between items-center"
-            onClick={() => setShowReportLinks(!showReportLinks)}
-          >
-            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>التقارير</span>
-            {isSidebarOpen && (showReportLinks ? <FaChevronUp /> : <FaChevronDown />)}
-          </div>
-
-          <AnimatePresence initial={false}>
-            {showReportLinks && (
-              <motion.div
-                animate="visible"
-                className="flex flex-col overflow-hidden"
-                exit="hidden"
-                initial="hidden"
-                transition={transition}
-                variants={animationVariants}
-              >
-                {reportLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline ${
-                      pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"
-                    }`}
-                  >
-                    {link.icon}
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
-                  </Link>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* الإعدادات */}
-          <div
-            className="mt-4 px-2 text-sm text-white cursor-pointer flex justify-between items-center"
-            onClick={() => setShowSettingsLinks(!showSettingsLinks)}
-          >
-            <span className={`${isSidebarOpen ? "block" : "hidden"}`}>الإعدادات</span>
-            {isSidebarOpen && (showSettingsLinks ? <FaChevronUp /> : <FaChevronDown />)}
+          <div className="mt-6">
+            <div
+              className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
+              onClick={() => setShowSettingsLinks(!showSettingsLinks)}
+            >
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>الإعدادات</span>
+              {isSidebarOpen && (
+                <div className="text-gray-400">
+                  {showSettingsLinks ? <FaChevronUp /> : <FaChevronDown />}
+                </div>
+              )}
+            </div>
+
+            <AnimatePresence initial={false}>
+              {showSettingsLinks && (
+                <motion.div
+                  animate="visible"
+                  className="flex flex-col overflow-hidden mt-2"
+                  exit="hidden"
+                  initial="hidden"
+                  transition={transition}
+                  variants={animationVariants}
+                >
+                  {settingsLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
+                        pathname === link.href 
+                          ? "bg-blue-600 shadow-lg" 
+                          : "hover:bg-gray-700 hover:shadow-md"
+                      }`}
+                    >
+                      <div className={`text-lg ${pathname === link.href ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                        {link.icon}
+                      </div>
+                      <span className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}>{link.name}</span>
+                    </Link>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          <AnimatePresence initial={false}>
-            {showSettingsLinks && (
-              <motion.div
-                animate="visible"
-                className="flex flex-col overflow-hidden"
-                exit="hidden"
-                initial="hidden"
-                transition={transition}
-                variants={animationVariants}
-              >
-                {settingsLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline ${
-                      pathname === link.href ? "bg-gray-700" : "hover:bg-gray-700"
-                    }`}
-                  >
-                    {link.icon}
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>{link.name}</span>
-                  </Link>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* زر الخروج */}
+          <div className="mt-auto pt-6 border-t border-gray-700">
+            <div className="flex justify-center">
+              <LogoutButton />
+            </div>
+          </div>
         </nav>
       </aside>
 
-      <main className="flex-1 w-full min-h-screen p-6">{children}</main>
+      {/* Main Content */}
+      <main className="flex-1 w-full min-h-screen overflow-auto">
+        <AuthGuard>
+          <UserHeader />
+          <div className="p-8">
+            {children}
+          </div>
+        </AuthGuard>
+      </main>
     </div>
   );
 }

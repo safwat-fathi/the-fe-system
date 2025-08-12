@@ -18,11 +18,12 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
 import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
+import useCrud from "@/utilities/useCrud";
 
 const API_URL = `${API_BASE_URL}cust_type_list`;
 const CREATE_URL = `${API_BASE_URL}api_create_cust_type`;
@@ -122,11 +123,33 @@ export default function CustomerTypesTable() {
   };
 
   const renderActions = (type: CustomerType) => (
-    <ActionButtons
-      onDelete={() => handleDelete(type.id)}
-      onEdit={() => openModal("edit", type)}
-      onView={() => openModal("view", type)}
-    />
+    <div className="flex gap-2">
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("view", type)}
+      >
+        <FaEye className="text-blue-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("edit", type)}
+      >
+        <FaEdit className="text-yellow-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        color="danger"
+        onPress={() => handleDelete(type.id)}
+      >
+        <FaTrash />
+      </Button>
+    </div>
   );
 
   const filtered = useMemo(

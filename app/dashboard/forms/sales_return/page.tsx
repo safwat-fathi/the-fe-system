@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Input, Button } from "@heroui/react";
 import toast from "react-hot-toast";
 
@@ -70,6 +70,7 @@ interface Category {
 }
 
 export default function SalesReturnPage() {
+  const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -94,7 +95,6 @@ export default function SalesReturnPage() {
       total: 0,
       total_w: 0,
       total_a: 0,
-      inv_note: "",
       tax: 0,
       tax_prc: 15,
       stones: "",
@@ -136,6 +136,11 @@ export default function SalesReturnPage() {
   const [isExistingInvoice, setIsExistingInvoice] = useState<boolean>(false);
   const [invoicePk, setInvoicePk] = useState<number | null>(null);
   const [homePurity, setHomePurity] = useState<number>(1000);
+  const [defaultTaxPrc, setDefaultTaxPrc] = useState<number>(15);
+  // متغيرات التنقل
+  const [currentRecord, setCurrentRecord] = useState<number>(1);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [invoicesList, setInvoicesList] = useState<any[]>([]);
   // معالجة إرجاع useFractions (قد يرجع رقم أو كائن)
   const fractions = useFractions();
   const frac = typeof fractions === "object" ? fractions.frac : 2;
@@ -223,6 +228,23 @@ export default function SalesReturnPage() {
     );
   }, [homePurity]);
 
+  // معادلة عكسية: حساب العيار من الوزن المعاير عند تغيير الوزن المعاير
+  useEffect(() => {
+    setInvoiceItems((items) =>
+      items.map((itm) => {
+        const gWeightVal = parseFloat(String(itm.g_weight)) || 0;
+        const weightVal = parseFloat(String(itm.weight)) || 0;
+
+        // إذا كان الوزن المعاير تم تغييره يدوياً وكان الوزن موجود
+        if (homePurity && weightVal > 0 && gWeightVal > 0) {
+          const purity = (gWeightVal * homePurity) / weightVal;
+          return { ...itm, purity: parseFloat(purity.toFixed(2)).toString() };
+        }
+        return itm;
+      }),
+    );
+  }, [homePurity]);
+
   useEffect(() => {
     fetchItems();
     fetchCustomers();
@@ -234,6 +256,7 @@ export default function SalesReturnPage() {
       setInvoiceDate(now.toISOString());
     }
     getGoldPrice();
+    loadInvoicesList(); // تحميل قائمة الفواتير للتنقل
     const invId = searchParams.get("inv_id");
 
     // توليد رقم فاتورة جديد فقط إذا لم يكن هناك inv_id ولم تكن الفاتورة في وضع التعديل
@@ -261,11 +284,13 @@ export default function SalesReturnPage() {
 
       if (Array.isArray(res) && res.length > 0) {
         const p = parseFloat(res[0]?.purity);
+        const vatPerc = parseFloat(res[0]?.Vat_perc);
 
         if (!isNaN(p)) setHomePurity(p);
+        if (!isNaN(vatPerc)) setDefaultTaxPrc(vatPerc);
       }
     } catch (e) {
-      console.error("failed to load home purity", e);
+      console.error("failed to load home settings", e);
     }
   };
 
@@ -356,24 +381,48 @@ export default function SalesReturnPage() {
     0,
   );
 
+  // حساب الإجماليات الإضافية الجديدة
+  const totalGWeight = invoiceItems.reduce((sum, item) => {
+    return sum + (item.g_weight || 0);
+  }, 0);
+
+  const totalValueTax = invoiceItems.reduce((sum, item) => {
+    const totalA = item.weight * item.price;
+    const base = totalA - (item.item_disc_amt ?? 0);
+    return sum + (base * 0.15);
+  }, 0);
+
+  const totalWagesTax = invoiceItems.reduce((sum, item) => {
+    const totalW = item.weight * (item.price_w ?? 0);
+    const base = totalW - (item.item_disc_amt ?? 0);
+    return sum + (base * 0.15);
+  }, 0);
+
+  const totalTax = totalValueTax + totalWagesTax;
+
   const formattedDateTime = new Date(invoiceDate).toLocaleString("ar-EG", {
     dateStyle: "short",
     timeStyle: "short",
   });
 
-  const getNextInvoiceNumber = async (): Promise<number> => {
-    const invoices = await fetchData<any[]>(
-      `${API_BASE_URL}invoices_list?trans_type=4`,
-    );
+const getNextInvoiceNumber = async (): Promise<number> => {
+  const invoices = await fetchData<any[]>(
+    `${API_BASE_URL}invoices_list?trans_type=4`,
+  );
 
-    if (!Array.isArray(invoices) || invoices.length === 0) return 1;
+  if (!Array.isArray(invoices) || invoices.length === 0) return 1;
 
-    const maxInvId = invoices.reduce((max, curr) => {
-      return curr.inv_id > max ? curr.inv_id : max;
-    }, 0);
+  // فلترة محلية للتأكد من أن الفواتير فقط trans_type === 4 (مردود البيع)
+  const filtered = invoices.filter((inv) => inv.trans_type === 4);
 
-    return maxInvId + 1;
-  };
+  if (filtered.length === 0) return 1;
+
+  const maxInvId = filtered.reduce((max, curr) => {
+    return curr.inv_id > max ? curr.inv_id : max;
+  }, 0);
+
+  return maxInvId + 1;
+};
 
   const saveInvoice = async () => {
     if (isExistingInvoice) {
@@ -418,6 +467,7 @@ export default function SalesReturnPage() {
       inv_amt: parseFloat(Number(netAmount).toFixed(frac2)),
       inv_net: parseFloat(Number(totalAmount).toFixed(frac2)),
       tax: taxAmount.toFixed(frac),
+      tax_prc: parseFloat(defaultTaxPrc.toFixed(2)),
       inv_status: 1,
       trans_type: 4,
       cr_date: invoiceDate,
@@ -451,12 +501,14 @@ export default function SalesReturnPage() {
       inv_QR: invQR,
     };
 
-    try {
-      const res = await fetch(`${API_BASE_URL}api_create_invoice`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(invData),
-      });
+         try {
+       console.log("🔍 [Sales Return] Invoice Data being sent:", JSON.stringify(invData, null, 2));
+       
+       const res = await fetch(`${API_BASE_URL}api_create_invoice`, {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify(invData),
+       });
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -483,7 +535,7 @@ export default function SalesReturnPage() {
         const dtl = {
           id: row.id,
           trans_type: row.trans_type ?? 4,
-          purity: row.purity ?? "",
+          G875: row.purity ? parseFloat(row.purity) : null,
           k: row.k ?? "",
           qty: row.qty,
           stones: row.stones ?? "",
@@ -505,12 +557,12 @@ export default function SalesReturnPage() {
               row.weight * row.price_w -
               (row.item_disc_amt ?? 0)) *
               ((row.tax_prc ?? 15) / 100),
-          inv_note: row.note || "",
           tax_prc: row.tax_prc ?? 15,
           item_disc_prc: row.item_disc_prc ?? 0,
           item_disc_amt: row.item_disc_amt ?? 0,
           sn: row.sn ?? "",
-          item_desc: row.item_desc || row.item_name,
+          item_desc: row.item_desc || row.item_name || "",
+          inv_notes: row.note || "",
           cr_date: invoiceDate,
           cr_user: row.cr_user ?? "",
           upd_date: row.upd_date || new Date().toISOString(),
@@ -523,11 +575,13 @@ export default function SalesReturnPage() {
           item: row.item_id,
         };
 
-        const dtlRes = await apiFetch(CREATE_INVOICE_DTL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dtl),
-        });
+                 console.log(`🔍 [Sales Return] Detail ${index + 1} being sent:`, JSON.stringify(dtl, null, 2));
+         
+         const dtlRes = await apiFetch(CREATE_INVOICE_DTL, {
+           method: "POST",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify(dtl),
+         });
 
         if (!dtlRes.ok) {
           const dtlError = await dtlRes.text();
@@ -571,6 +625,7 @@ export default function SalesReturnPage() {
       inv_amt: Math.round(netAmount),
       inv_net: Math.round(totalAmount),
       tax: taxAmount.toFixed(frac),
+      tax_prc: parseFloat(defaultTaxPrc.toFixed(2)),
       inv_status: 1,
       trans_type: 4,
       cr_date: invoiceDate,
@@ -666,7 +721,7 @@ export default function SalesReturnPage() {
         const dtl = {
           id: row.id,
           trans_type: row.trans_type ?? 4,
-          purity: row.purity ?? "",
+          G875: row.purity ? parseFloat(row.purity) : null,
           k: row.k ?? "",
           qty: row.qty,
           stones: row.stones ?? "",
@@ -687,12 +742,12 @@ export default function SalesReturnPage() {
               row.weight * row.price_w -
               (row.item_disc_amt ?? 0)) *
               ((row.tax_prc ?? 15) / 100),
-          inv_note: row.note || "",
           tax_prc: row.tax_prc ?? 15,
           item_disc_prc: row.item_disc_prc ?? 0,
           item_disc_amt: row.item_disc_amt ?? 0,
           sn: row.sn ?? "",
-          item_desc: row.item_desc || row.item_name,
+          item_desc: row.item_desc || row.item_name || "",
+          inv_notes: row.note || "",
           cr_date: row.cr_date || invoiceDate,
           upd_date: new Date().toISOString(),
           com:
@@ -755,7 +810,15 @@ export default function SalesReturnPage() {
       : undefined;
 
     const html = renderInvoicePreview({
-      items: invoiceItems,
+      items: invoiceItems.map(item => ({
+        item_name: item.item_name || "",
+        qty: item.qty || 0,
+        weight: item.weight || 0,
+        price: item.price || 0,
+        price_w: item.price_w || 0,
+        item_disc_amt: item.item_disc_amt || 0,
+        k: item.k || "",
+      })),
       customer: previewCustomer,
       companyAName: home.comp_a_name || "",
       companyLName: home.comp_l_name || "",
@@ -784,7 +847,8 @@ export default function SalesReturnPage() {
     previewWindow.document.close();
   };
 
-  const handleInvoiceSearch = async (searchVal?: string) => {
+  // تعديل: عند اختيار فاتورة مرجعية، يتم فقط إنزال تفاصيل الفاتورة (جدول الأصناف) دون رأس الفاتورة
+  const handleInvoiceSearch = async (searchVal?: string, onlyDetails = false) => {
     const num = searchVal ?? searchNumber;
 
     if (!num || num === lastLoadedInvoiceRef.current) return; // منع التكرار الفوري
@@ -795,57 +859,22 @@ export default function SalesReturnPage() {
 
     try {
       const invList = await fetchData<any[]>(
-        `${API_BASE_URL}invoices_list?inv_id=${num}&trans_type=4`,
+        `${API_BASE_URL}invoices_list?inv_id=${num}&trans_type=2`,
       );
 
       if (!invList || invList.length === 0) {
         toast.error("الفاتورة غير موجودة");
-
         return;
       }
 
       const inv = invList.find((i) => String(i.inv_id) === String(num));
-
       if (!inv) {
         toast.error("الفاتورة غير موجودة");
-
         return;
       }
 
       const invoicePk = inv.id;
-
       setInvoicePk(invoicePk);
-
-      // تعبئة البيانات الأساسية
-      setInvoiceNumber(inv.inv_id);
-      if (inv.inv_date) setInvoiceDate(inv.inv_date);
-      if (inv.cust) setSelectedCustomer(inv.cust);
-      if (inv.inv_type)
-        setPaymentMethod(inv.inv_type === 1 ? "cash" : "credit");
-      if (inv.ref_no) setReferenceNumber(inv.ref_no);
-      if (inv.vat_no) setVatNumber(inv.vat_no);
-      if (inv.handling) setHandlingMethod(inv.handling);
-      if (inv.mobile) setMobileMethod(inv.mobile);
-      if (inv.pay_type) setPayType(inv.pay_type);
-      if (typeof inv.commit !== "undefined") setCommitVal(!!inv.commit);
-      if (typeof inv.print !== "undefined") setPrintVal(!!inv.print);
-      if (inv.emp_id)
-        setEmployee(
-          inv.emp_id === 1 ? "hashem" : inv.emp_id === 2 ? "othman" : "",
-        );
-      if (inv.inv_notes) setNote(inv.inv_notes);
-      if (inv.gold_price) setGoldPrice(parseFloat(inv.gold_price));
-      if (inv.cr_no) setCrNo(String(inv.cr_no));
-      if (inv.gov) setGov(inv.gov);
-      if (inv.city) setCity(inv.city);
-      if (inv.area) setArea(inv.area);
-      if (inv.street) setStreet(inv.street);
-      if (inv.build_no) setBuildNo(inv.build_no);
-      if (inv.post_no) setPostNo(inv.post_no);
-      if (inv.post_code) setPostCode(inv.post_code);
-
-      setIsExistingInvoice(true);
-      setIsEditing(false);
 
       // جلب التفاصيل وربطها بالـ id الأساسي
       const detailsRes = await fetchData<any>(
@@ -853,7 +882,6 @@ export default function SalesReturnPage() {
       );
 
       let detailRows: any[] = [];
-
       if (Array.isArray(detailsRes)) {
         detailRows = detailsRes;
       } else if (Array.isArray(detailsRes.results)) {
@@ -881,11 +909,10 @@ export default function SalesReturnPage() {
             price_w: parseFloat(row.price_w) || 0,
             note: row.inv_notes ?? "",
             trans_type: row.trans_type ?? 4,
-            purity: row.purity ?? "",
+            purity: row.G875 ?? "",
             total: parseFloat(row.total) || 0,
             total_w: parseFloat(row.total_w) || 0,
             total_a: parseFloat(row.total_a) || 0,
-            inv_note: row.inv_notes ?? "",
             tax: parseFloat(row.tax) || 0,
             tax_prc: parseFloat(row.tax_prc) || 0,
             stones: row.stones ?? "",
@@ -916,11 +943,10 @@ export default function SalesReturnPage() {
             price_w: parseFloat(row.price_w) || 0,
             note: row.inv_notes ?? "",
             trans_type: row.trans_type ?? 4,
-            purity: row.purity ?? "",
+            purity: row.G875 ?? "",
             total: parseFloat(row.total) || 0,
             total_w: parseFloat(row.total_w) || 0,
             total_a: parseFloat(row.total_a) || 0,
-            inv_note: row.inv_notes ?? "",
             tax: parseFloat(row.tax) || 0,
             tax_prc: parseFloat(row.tax_prc) || 0,
             stones: row.stones ?? "",
@@ -942,10 +968,99 @@ export default function SalesReturnPage() {
         setOriginalInvoiceItems([]);
       }
 
-      toast.success("تم جلب الفاتورة بنجاح ✅");
+      // إذا لم يكن onlyDetails=true، يتم تعبئة رأس الفاتورة أيضًا (سلوك البحث العادي)
+      if (!onlyDetails) {
+        setInvoiceNumber(inv.inv_id);
+        if (inv.inv_date) setInvoiceDate(inv.inv_date);
+        if (inv.cust) setSelectedCustomer(inv.cust);
+        if (inv.inv_type)
+          setPaymentMethod(inv.inv_type === 1 ? "cash" : "credit");
+        if (inv.ref_no) setReferenceNumber(inv.ref_no);
+        if (inv.vat_no) setVatNumber(inv.vat_no);
+        if (inv.handling) setHandlingMethod(inv.handling);
+        if (inv.mobile) setMobileMethod(inv.mobile);
+        if (inv.pay_type) setPayType(inv.pay_type);
+        if (typeof inv.commit !== "undefined") setCommitVal(!!inv.commit);
+        if (typeof inv.print !== "undefined") setPrintVal(!!inv.print);
+        if (inv.emp_id)
+          setEmployee(
+            inv.emp_id === 1 ? "hashem" : inv.emp_id === 2 ? "othman" : "",
+          );
+        if (inv.inv_notes) setNote(inv.inv_notes);
+        if (inv.gold_price) setGoldPrice(parseFloat(inv.gold_price));
+        if (inv.cr_no) setCrNo(String(inv.cr_no));
+        if (inv.gov) setGov(inv.gov);
+        if (inv.city) setCity(inv.city);
+        if (inv.area) setArea(inv.area);
+        if (inv.street) setStreet(inv.street);
+        if (inv.build_no) setBuildNo(inv.build_no);
+        if (inv.post_no) setPostNo(inv.post_no);
+        if (inv.post_code) setPostCode(inv.post_code);
+
+        // تحديث currentRecord للتنقل
+        const currentIndex = invoicesList.findIndex(v => v.id === inv.id);
+        if (currentIndex !== -1) {
+          setCurrentRecord(currentIndex + 1);
+        }
+
+        setIsExistingInvoice(true);
+        setIsEditing(false);
+        toast.success("تم جلب الفاتورة بنجاح ✅");
+      } else {
+        // فقط تفاصيل الفاتورة
+        toast.success("تم جلب تفاصيل الفاتورة فقط ✅");
+      }
     } catch (err) {
       console.error("❌ خطأ في جلب الفاتورة:", err);
       toast.error("فشل في جلب الفاتورة");
+    }
+  };
+
+  const navigateToInvoice = (direction: 'first' | 'prev' | 'next' | 'last') => {
+    if (invoicesList.length === 0) return;
+
+    let targetIndex = 0;
+    const currentIndex = invoicesList.findIndex(v => v.id === invoicePk);
+
+    switch (direction) {
+      case 'first':
+        targetIndex = 0;
+        break;
+      case 'prev':
+        targetIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+        break;
+      case 'next':
+        targetIndex = currentIndex < invoicesList.length - 1 ? currentIndex + 1 : invoicesList.length - 1;
+        break;
+      case 'last':
+        targetIndex = invoicesList.length - 1;
+        break;
+    }
+
+    const targetInvoice = invoicesList[targetIndex];
+    if (targetInvoice) {
+      router.push(`/dashboard/forms/sales_return?inv_id=${targetInvoice.inv_id}`);
+    }
+  };
+
+  // تحميل قائمة الفواتير للتنقل
+  const loadInvoicesList = async () => {
+    try {
+      const response = await fetchData<any[]>(`${API_BASE_URL}invoices_list?trans_type=4`);
+      if (Array.isArray(response)) {
+        setInvoicesList(response);
+        setTotalRecords(response.length);
+        
+        // تحديث currentRecord إذا كان هناك فاتورة محملة
+        if (invoicePk) {
+          const currentIndex = response.findIndex(v => v.id === invoicePk);
+          if (currentIndex !== -1) {
+            setCurrentRecord(currentIndex + 1);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading invoices list:", error);
     }
   };
 
@@ -992,18 +1107,6 @@ export default function SalesReturnPage() {
 
   return (
     <>
-      <div className="mb-4 flex gap-2">
-        <Input
-          className="w-60"
-          placeholder="بحث برقم الفاتورة..."
-          type="number"
-          value={searchNumber}
-          onChange={(e) => setSearchNumber(e.target.value)}
-        />
-        <Button color="primary" onPress={() => handleInvoiceSearch()}>
-          بحث
-        </Button>
-      </div>
       <InvoiceTotalsActions
         commit={commitVal}
         formattedDateTime={formattedDateTime}
@@ -1019,6 +1122,31 @@ export default function SalesReturnPage() {
         totalAmount={totalAmount}
         totalDiscount={totalDiscount}
         onEdit={() => setIsEditing(true)}
+        invoiceType="sales_return"
+        // إجماليات قابلة للإدخال
+        autoTotalValue={0}
+        autoTotalWages={0}
+        manualTotalValue={0}
+        manualTotalWages={0}
+        useManualTotals={false}
+        onManualTotalChange={() => {}}
+        onUseManualTotalsChange={() => {}}
+        onResetManualTotals={() => {}}
+        // البحث برقم الفاتورة
+        searchNumber={searchNumber}
+        setSearchNumber={setSearchNumber}
+        onInvoiceSearch={() => handleInvoiceSearch()}
+        // إجماليات إضافية جديدة
+        totalGWeight={totalGWeight}
+        totalValueTax={totalValueTax}
+        totalWagesTax={totalWagesTax}
+        totalTax={totalTax}
+        // طريقة الدفع
+        paymentMethod={paymentMethod}
+        // أزرار التنقل
+        currentRecord={currentRecord}
+        totalRecords={totalRecords}
+        navigateToInvoice={navigateToInvoice}
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
           <InvoiceSelectors
@@ -1040,6 +1168,7 @@ export default function SalesReturnPage() {
             referenceNumber={referenceNumber}
             saleInvoices={customerInvoices}
             selectedCustomer={selectedCustomer}
+            onInvoiceSelect={(id) => handleInvoiceSearch(String(id), true)}
             setArea={setArea}
             setBuildNo={setBuildNo}
             setCity={setCity}
@@ -1059,18 +1188,34 @@ export default function SalesReturnPage() {
             setVatNumber={setVatNumber}
             street={street}
             vatNumber={vatNumber}
-          />
-          <InvoiceItemTable
-            categories={categories}
-            goldPrice={goldPrice}
-            homePurity={homePurity}
-            invoiceItems={invoiceItems}
+            searchValue=""
+            setSearchValue={() => {}}
+            onBarcodeSearch={() => {}}
             isEditing={isEditing}
-            items={itemsForTable}
-            payType={payType}
-            setInvoiceItems={setInvoiceItems}
-            setItems={setItems}
           />
+                      <InvoiceItemTable
+              categories={categories}
+              goldPrice={goldPrice}
+              homePurity={homePurity}
+              invoiceItems={invoiceItems}
+              isEditing={isEditing}
+              items={itemsForTable.map(item => ({
+                id: item.id,
+                item_code: item.item_code || "",
+                item_name: item.item_name || "",
+                item_price: typeof item.item_price === 'string' ? parseFloat(item.item_price) || 0 : item.item_price || 0,
+                k: item.k || "",
+                item_weight: typeof item.item_weight === 'string' ? parseFloat(item.item_weight) || 0 : item.item_weight || 0,
+                item_g_weight: typeof item.item_g_weight === 'string' ? parseFloat(item.item_g_weight) || 0 : item.item_g_weight || 0,
+                stones: item.stones || "",
+                purity: item.purity || "",
+                work_price: typeof item.work_price === 'string' ? parseFloat(item.work_price) || 0 : item.work_price || 0,
+                cat: item.cat || 0,
+              }))}
+              payType={payType}
+              setInvoiceItems={setInvoiceItems}
+              setItems={setItems}
+            />
         </div>
       </InvoiceTotalsActions>
     </>

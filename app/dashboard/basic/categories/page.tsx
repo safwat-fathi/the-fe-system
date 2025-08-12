@@ -20,11 +20,12 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
 import { API_BASE_URL, apiFetch } from "@/utilities/api";
+import useCrud from "@/utilities/useCrud";
 
 const API_URL = `${API_BASE_URL}categories_list/`;
 const CREATE_URL = `${API_BASE_URL}api_create_category`;
@@ -260,7 +261,7 @@ export default function CategoriesTable() {
     return [...filteredCategories].sort((a, b) => {
       const first = a[sortDescriptor.column as keyof Category];
       const second = b[sortDescriptor.column as keyof Category];
-      const cmp = first < second ? -1 : first > second ? 1 : 0;
+      const cmp = (first || "") < (second || "") ? -1 : (first || "") > (second || "") ? 1 : 0;
 
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
     });
@@ -270,6 +271,36 @@ export default function CategoriesTable() {
   const paginated = sortedCategories.slice(
     (page - 1) * rowsPerPage,
     page * rowsPerPage,
+  );
+
+  const renderActions = (cat: Category) => (
+    <div className="flex gap-2">
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openViewModal(cat)}
+      >
+        <FaEye className="text-blue-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openEditModal(cat)}
+      >
+        <FaEdit className="text-yellow-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        color="danger"
+        onPress={() => handleDelete(cat.id)}
+      >
+        <FaTrash />
+      </Button>
+    </div>
   );
 
   return (
@@ -314,11 +345,7 @@ export default function CategoriesTable() {
                 <Checkbox isReadOnly isSelected={cat.cat_status} />
               </TableCell>
               <TableCell>
-                <ActionButtons
-                  onDelete={() => handleDelete(cat.id)}
-                  onEdit={() => openEditModal(cat)}
-                  onView={() => openViewModal(cat)}
-                />
+                {renderActions(cat)}
               </TableCell>
             </TableRow>
           ))}
@@ -390,7 +417,7 @@ export default function CategoriesTable() {
               }}
             >
               {boxes.map((b) => (
-                <SelectItem key={b.id} textValue={b.box_name} value={b.id}>
+                <SelectItem key={b.id} textValue={b.box_name}>
                   {b.box_name}
                 </SelectItem>
               ))}
@@ -399,7 +426,7 @@ export default function CategoriesTable() {
               isDisabled={modalMode === "view"}
               label="نسبة الضريبة"
               type="number"
-              value={newCategory.tax}
+              value={String(newCategory.tax)}
               onChange={(e) =>
                 setNewCategory({
                   ...newCategory,

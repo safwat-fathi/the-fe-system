@@ -5,49 +5,63 @@ import {
   Button,
   Form,
   Input,
-  Select,
-  SelectItem,
   Spacer,
 } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { fetchCompanies } from "@/utilities/api";
+import { loginUser, setAuthToken } from "@/utilities/api";
 import { motion } from "framer-motion";
 
 export default function Login() {
   const router = useRouter();
 
-  const [branches, setBranches] = useState<{ id: number; comp_name: string }[]>([]);
-  const [branch, setBranch] = useState<string>("");
-  const [year, setYear] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
     setMounted(true);
-    fetchCompanies().then((data) => {
-      if (Array.isArray(data)) setBranches(data as any);
-      setIsLoading(false);
-    });
   }, []);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!branch || !year) {
-      setFormError("* يجب اختيار الفرع وكتابة السنة المالية");
+    if (!username || !password) {
+      setFormError("* يجب إدخال اسم المستخدم وكلمة المرور");
       return;
     }
 
     setFormError("");
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      localStorage.setItem("selectedBranch", branch);
-      localStorage.setItem("selectedYear", year);
-      router.push("/dashboard");
-    }, 1000); // محاكاة عملية تسجيل دخول
+    try {
+      const response = await loginUser(username, password);
+      
+      if (response && response.success && response.token) {
+        setAuthToken(response.token);
+        router.push("/dashboard");
+      } else {
+        setFormError("فشل في تسجيل الدخول. يرجى التحقق من البيانات المدخلة.");
+      }
+    } catch (error) {
+      console.error("خطأ في تسجيل الدخول:", error);
+      // عرض رسالة الخطأ المحددة من الخادم إذا كانت متوفرة
+      if (error instanceof Error) {
+        // تحقق من نوع الخطأ
+        if (error.message.includes('fetch') || error.message.includes('Network')) {
+          setFormError("لا يمكن الاتصال بالخادم. تأكد من اتصال الإنترنت.");
+        } else if (error.message.includes('JSON')) {
+          setFormError("استجابة غير صحيحة من الخادم.");
+        } else {
+          setFormError(error.message);
+        }
+      } else {
+        setFormError("حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!mounted) return null;
@@ -94,7 +108,8 @@ export default function Login() {
         <Form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <Input
             label="اسم المستخدم"
-            name="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             type="text"
             variant="bordered"
             placeholder="مثال: admin"
@@ -104,38 +119,12 @@ export default function Login() {
 
           <Input
             label="كلمة المرور"
-            name="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             type="password"
             variant="bordered"
             placeholder="••••••••"
             required
-            className="text-right"
-          />
-
-          <Select
-            label="اختيار الفرع"
-            selectedKeys={branch ? [branch] : []}
-            onSelectionChange={(keys) => setBranch(Array.from(keys)[0] as string)}
-            className="text-right w-full"
-            isDisabled={isLoading}
-          >
-            {isLoading ? (
-              <SelectItem key="loading" isDisabled>
-                جاري تحميل الفروع...
-              </SelectItem>
-            ) : (
-              branches.map((b) => (
-                <SelectItem key={String(b.id)}>{b.comp_name}</SelectItem>
-              ))
-            )}
-          </Select>
-
-          <Input
-            label="السنة المالية"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            variant="bordered"
-            placeholder="مثال: 2024"
             className="text-right"
           />
 

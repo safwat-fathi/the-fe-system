@@ -15,15 +15,20 @@ import {
   TableRow,
   TableCell,
   Pagination,
+  Card,
+  CardBody,
+  CardHeader,
+  Chip,
+  Select,
+  SelectItem,
+  Divider,
 } from "@heroui/react";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaFilter } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 import { fetchData, API_BASE_URL, API_ENDPOINTS, apiFetch } from "@/utilities/api";
 import useCrud from "@/utilities/useCrud";
 import ReactSelect from "react-select";
-
-
 
 interface Category {
   id: number;
@@ -145,20 +150,14 @@ export default function CategoriesItemsPage() {
     loadMetaData();
   }, []);
 
-
   const loadMetaData = useCallback(async () => {
-    
     const itemsResponse = await fetchData(Item_Status_URL);
-    const item = Array.isArray(itemsResponse?.results)
-      ? itemsResponse.results
+    const item = Array.isArray((itemsResponse as any)?.results)
+      ? (itemsResponse as any).results
       : [];
-
     setItemStatus(item);
-
+  }, []);
   
-    }, []);
-  
-    
   useEffect(() => {
     if (search.trim()) {
       searchItems(search);
@@ -171,7 +170,6 @@ export default function CategoriesItemsPage() {
     try {
       const res = await apiFetch(API_ENDPOINTS.CatTypeList);
       const data = await res.json();
-
       setCatTypes(Array.isArray(data.results) ? data.results : []);
     } catch (err) {
       console.error("فشل تحميل أنواع الفئات:", err);
@@ -182,7 +180,6 @@ export default function CategoriesItemsPage() {
     try {
       const res = await apiFetch(API_ENDPOINTS.CatStatusList);
       const data = await res.json();
-
       setCatStatuses(Array.isArray(data.results) ? data.results : []);
     } catch (err) {
       console.error("فشل تحميل حالة الفئات:", err);
@@ -193,7 +190,6 @@ export default function CategoriesItemsPage() {
     try {
       const res = await apiFetch(API_ENDPOINTS.BOXES_LIST);
       const data = await res.json();
-
       setBoxes(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("فشل تحميل الصناديق:", err);
@@ -204,8 +200,7 @@ export default function CategoriesItemsPage() {
     try {
       const res = await apiFetch(API_ENDPOINTS.CATEGORIES_LIST);
       const data = await res.json();
-
-      setCategories(data.results || []);
+      setCategories((data as any).results || []);
     } catch (err) {
       console.error("خطأ في تحميل الفئات:", err);
     }
@@ -223,12 +218,12 @@ export default function CategoriesItemsPage() {
       const res = await apiFetch(fetchUrl);
       const data = await res.json();
 
-      const itemsArray = Array.isArray(data.results) ? data.results : [];
+      const itemsArray = Array.isArray((data as any).results) ? (data as any).results : [];
 
       setItems(itemsArray);
-      setItemsNextUrl(data.next);
-      setItemsPrevUrl(data.previous);
-      setItemsCount(data.count);
+      setItemsNextUrl((data as any).next);
+      setItemsPrevUrl((data as any).previous);
+      setItemsCount((data as any).count);
     } catch (err) {
       console.error("خطأ في تحميل الأصناف:", err);
       setItems([]);
@@ -248,7 +243,7 @@ export default function CategoriesItemsPage() {
         )}&page=${page}`;
       const res = await apiFetch(fetchUrl);
       const data = await res.json();
-      const itemsArray = Array.isArray(data.results) ? data.results : [];
+      const itemsArray = Array.isArray((data as any).results) ? (data as any).results : [];
       const term = query.toLowerCase();
       const filtered = itemsArray.filter((item: any) => {
         const code = (item.item_code ?? item.code ?? "").toLowerCase();
@@ -261,9 +256,9 @@ export default function CategoriesItemsPage() {
       }));
 
       setItems(mapped);
-      setItemsNextUrl(data.next);
-      setItemsPrevUrl(data.previous);
-      setItemsCount(data.count);
+      setItemsNextUrl((data as any).next);
+      setItemsPrevUrl((data as any).previous);
+      setItemsCount((data as any).count);
     } catch (err) {
       console.error("خطأ في البحث عن الأصناف:", err);
       setItems([]);
@@ -274,25 +269,21 @@ export default function CategoriesItemsPage() {
     try {
       const res = await apiFetch(API_ENDPOINTS.ITEM_TYPES_LIST);
       const data = await res.json();
-
-      setItemTypes(data);
+      setItemTypes(data as ItemType[]);
     } catch (err) {
       console.error("خطأ في تحميل أنواع الأصناف:", err);
     }
   };
 
-
   const fetchUnits = async () => {
     try {
       const res = await apiFetch(API_ENDPOINTS.UNITS_LIST);
       const data = await res.json();
-
-      setUnits(data);
+      setUnits(data as Unit[]);
     } catch (err) {
       console.error("خطأ في تحميل الوحدات:", err);
     }
   };
-
 
   const filteredItems = search.trim()
     ? items.filter((item) => {
@@ -324,15 +315,14 @@ export default function CategoriesItemsPage() {
       formData.append("model", newItem.model);
       formData.append("k", newItem.k);
       formData.append("purity", newItem.purity);
-      //formData.append("item_status", String(1));
       formData.append("cr_date", new Date().toISOString());
       formData.append("cat", String(newItem.cat));
       formData.append("item_type", String(newItem.item_type));
       formData.append("unit", String(newItem.unit));
       
-    if (file) {
-      formData.append("item_img", newItem.item_img); 
-    }    
+      if (file) {
+        formData.append("item_img", newItem.item_img as unknown as File); 
+      }    
 
       const response = await createItem(
         API_ENDPOINTS.CREATE_ITEM,
@@ -343,10 +333,9 @@ export default function CategoriesItemsPage() {
       if (response.ok) {
         toast.success("✅ تمت إضافة الصنف بنجاح");
         setIsModalOpen(false);
-        fetchItems();
+        fetchItems(selectedCatId, selectedTypeId);
       } else {
         const error = await response.json();
-
         toast.error("❌ فشل في الإضافة:\n" + JSON.stringify(error));
       }
     } catch (err) {
@@ -367,22 +356,22 @@ export default function CategoriesItemsPage() {
     try {
       const formData = new FormData();
 
-       formData.append("item_name", newItem.item_name);
-       formData.append("item_name_e", newItem.item_name_e);
-       formData.append("item_price", newItem.item_price ?? "");
-       formData.append("item_code", newItem.item_code);
-       formData.append("item_barcode", newItem.item_barcode);
-       formData.append("first_cost", newItem.first_cost?? "");
-       formData.append("item_weight", newItem.item_weight?? "");
-       formData.append("item_g_weight", newItem.item_g_weight?? "");
-       formData.append("stones", newItem.stones?? "");
-       formData.append("model", newItem.model);
-       formData.append("k", newItem.k?? "");
-       formData.append("purity", newItem.purity?? "");
-       formData.append("item_status", String(newItem.item_status));
-       formData.append("upd_date", new Date().toISOString());
-       formData.append("upd_user", "user");
-       formData.append("cat", String(newItem.cat));
+      formData.append("item_name", newItem.item_name);
+      formData.append("item_name_e", newItem.item_name_e);
+      formData.append("item_price", newItem.item_price ?? "");
+      formData.append("item_code", newItem.item_code);
+      formData.append("item_barcode", newItem.item_barcode);
+      formData.append("first_cost", newItem.first_cost?? "");
+      formData.append("item_weight", newItem.item_weight?? "");
+      formData.append("item_g_weight", newItem.item_g_weight?? "");
+      formData.append("stones", newItem.stones?? "");
+      formData.append("model", newItem.model);
+      formData.append("k", newItem.k?? "");
+      formData.append("purity", newItem.purity?? "");
+      formData.append("item_status", String(newItem.item_status));
+      formData.append("upd_date", new Date().toISOString());
+      formData.append("upd_user", "user");
+      formData.append("cat", String(newItem.cat));
 
       if (newItem.item_type && typeof newItem.item_type !== "string") {
         formData.append("item_type", String(newItem.item_type)?? "");
@@ -392,9 +381,8 @@ export default function CategoriesItemsPage() {
         formData.append("unit", String(newItem.unit)?? "");
       }
        
-      // فقط إذا كانت صورة جديدة
       if (newItem.item_img && typeof newItem.item_img !== "string") {
-        formData.append("item_img", newItem.item_img);
+        formData.append("item_img", newItem.item_img as unknown as File);
       }
 
       const response = await updateItem(
@@ -406,10 +394,9 @@ export default function CategoriesItemsPage() {
       if (response.ok) {
         toast.success("✅ تم تعديل الصنف بنجاح");
         setIsModalOpen(false);
-        fetchItems();
+        fetchItems(selectedCatId, selectedTypeId);
       } else {
         const error = await response.json();
-
         toast.error("❌ فشل في التعديل:\n" + JSON.stringify(error));
       }
     } catch (err) {
@@ -430,11 +417,7 @@ export default function CategoriesItemsPage() {
 
       if (response.ok) {
         toast.success("تم حذف الصنف بنجاح ✅");
-        const updatedItems = await (
-          await apiFetch(`${API_BASE_URL}cat_items_list/`)
-        ).json();
-
-        setItems(updatedItems);
+        fetchItems(selectedCatId, selectedTypeId);
       } else {
         toast.error("فشل في حذف الصنف ❌");
       }
@@ -450,398 +433,527 @@ export default function CategoriesItemsPage() {
   };
 
   return (
-    <div className="p-2 space-y-2 font-cairo text-sm">
-      <div className="flex justify-between items-center mb-1">
-        <h1 className="text-xl font-bold">الفئات</h1>
-        <Button color="default" className="mb-2 text-xs" onClick={() => setIsModalOpen(true)}>
-          إضافة صنف جديد
-        </Button>
-      </div>
-      <div className="bg-white rounded-3xl shadow-md p-2 min-h-[180px] flex flex-col justify-between">
-        {/* جدول الفئات */}
-        <Table aria-label="جدول الفئات" removeWrapper>
-          <TableHeader>
-            <TableColumn>الفئة</TableColumn>
-            <TableColumn>العيار</TableColumn>
-            <TableColumn>المعايرة</TableColumn>
-            <TableColumn>الصندوق</TableColumn>
-            <TableColumn>الضريبة</TableColumn>
-            <TableColumn>النوع</TableColumn>
-            <TableColumn>حالة الفئة</TableColumn>
-          </TableHeader>
-          <TableBody>
-            {pagedCategories.map((cat) => (
-              <TableRow
-                key={cat.id}
-                className={`cursor-pointer ${selectedCatId === cat.id ? "bg-green-100" : ""}`}
-                onClick={() => setSelectedCatId(cat.id)}
-              >
-                <TableCell>{cat.cat_name}</TableCell>
-                <TableCell>{cat.gauge}</TableCell>
-                <TableCell>{cat.purity}</TableCell>
-                <TableCell>{boxes.find((b) => b.id === cat.box)?.box_name || "-"}</TableCell>
-                <TableCell>{cat.tax}</TableCell>
-                <TableCell>{catTypes.find((t) => t.code_id === cat.cat_type)?.code_desc || "-"}</TableCell>
-                <TableCell>{catStatuses.find((s) => s.code_id === cat.cat_status)?.code_desc || "-"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex justify-between items-center py-1">
-        <span className="text-sm text-gray-500">عدد الفئات: {categories.length}</span>
-        <Pagination
-          color="primary"
-          page={catPage}
-          total={totalCatPages}
-          onChange={setCatPage}
-        />
-      </div>
-      {/* فلتر نوع الصنف */}
-      <div className="flex items-center justify-between mb-1">
-        <label className="text-base font-semibold">الأصناف</label>
-        <div className="flex items-center gap-2">
-          <label className="text-sm">نوع الصنف:</label>
-          <select
-            aria-label="اختر نوع الصنف"
-            className="p-2 border rounded w-full"
-            value={selectedTypeId ?? ""}
-            onChange={(e) => setSelectedTypeId(Number(e.target.value))}
-          >
-            <option value="">اختر نوع الصنف</option>
-            {itemTypes.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.type_name}
-              </option>
-            ))}
-          </select>
-          <Input
-            className="w-60 text-sm"
-            placeholder="بحث..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="bg-white rounded-3xl shadow-md p-2">
-        <Table aria-label="جدول الأصناف" removeWrapper>
-          <TableHeader>
-            <TableColumn>الكود</TableColumn>
-            <TableColumn>الاسم</TableColumn>
-            <TableColumn>السعر</TableColumn>
-            <TableColumn>الوزن</TableColumn>
-            <TableColumn>العيار</TableColumn>
-            <TableColumn>المعايرة</TableColumn>
-            <TableColumn>التكلفة</TableColumn>
-            <TableColumn>نوع الصنف</TableColumn>
-            <TableColumn>الوحدة</TableColumn>
-            <TableColumn>الحالة</TableColumn>
-            <TableColumn>الإجراءات</TableColumn>
-          </TableHeader>
-          <TableBody>
-            {pagedItems.map((item) => {
-              const itemType = itemTypes.find((type) => type.id === item.item_type);
-              const unitName = units.find((unit) => unit.id === item.unit);
-              return (
-                <TableRow key={item.id} className="text-center hover:bg-gray-50">
-                  <TableCell>{item.item_code || "-"}</TableCell>
-                  <TableCell>{item.item_name}</TableCell>
-                  <TableCell>{item.item_price || "-"}</TableCell>
-                  <TableCell>{item.item_weight || "-"}</TableCell>
-                  <TableCell>{item.k || "-"}</TableCell>
-                  <TableCell>{item.purity || "-"}</TableCell>
-                  <TableCell>{item.first_cost || "-"}</TableCell>
-                  <TableCell>{itemType?.type_name || "-"}</TableCell>
-                  <TableCell>{unitName?.unit_name || "-"}</TableCell>
-                  <TableCell>{ItemStatus.find((t) => t.code_id === item.item_status)?.code_desc || "-"}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-center gap-2">
-                      <Button isIconOnly size="sm" variant="light" className="text-xs" onClick={() => handleViewItem(item)}>
-                        <FaEye className="text-blue-500" />
-                      </Button>
-                      <Button isIconOnly size="sm" variant="light" className="text-xs" onClick={() => handleEditItem(item)}>
-                        <FaEdit className="text-yellow-500" />
-                      </Button>
-                      <Button isIconOnly size="sm" variant="light" className="text-xs" onClick={() => handleDeleteItem(item.id)}>
-                        <FaTrash className="text-red-500" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex justify-between items-center py-1 mt-1">
-        <span className="text-sm text-gray-500">عدد الأصناف: {itemsCount}</span>
-        <Pagination
-          color="primary"
-          page={itemsPage}
-          total={Math.ceil(itemsCount / itemsPerPage) || 1}
-          onChange={(p) => {
-            setItemsPage(p);
-            if (search.trim()) {
-              searchItems(search, undefined, p);
-            } else {
-              fetchItems(selectedCatId, selectedTypeId, undefined, p);
-            }
-          }}
-        />
-      </div>
+    <div className="font-cairo p-2 bg-gray-50 min-h-screen space-y-1">
+      {/* قسم الفئات */}
+      <Card className="card">
+        <CardHeader className="flex justify-between items-center py-2">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">الفئات</h2>
+            <p className="text-gray-500 text-sm">إدارة فئات الأصناف</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Input
+              placeholder="البحث في الفئات..."
+              className="w-64"
+              startContent={<FaSearch className="text-gray-400" />}
+            />
+          </div>
+        </CardHeader>
+        <CardBody className="py-2">
+          <div className="table-container">
+            <Table aria-label="جدول الفئات" className="min-h-[250px] table-no-scrollbar">
+              <TableHeader>
+                <TableColumn className="text-right">اسم الفئة</TableColumn>
+                <TableColumn className="text-center">العيار</TableColumn>
+                <TableColumn className="text-center">المعايرة</TableColumn>
+                <TableColumn className="text-center">الصندوق</TableColumn>
+                <TableColumn className="text-center">الضريبة</TableColumn>
+                <TableColumn className="text-center">النوع</TableColumn>
+                <TableColumn className="text-center">الحالة</TableColumn>
+                <TableColumn className="text-center">الإجراءات</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {pagedCategories.map((cat) => (
+                  <TableRow key={cat.id} className="hover:bg-gray-50 transition-colors">
+                    <TableCell className="font-medium max-w-md truncate">
+                      {cat.cat_name}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Chip color="primary" variant="flat" size="sm">
+                        {cat.gauge}
+                      </Chip>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {cat.purity}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {boxes.find((b) => b.id === cat.box)?.box_name || "-"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Chip color="success" variant="flat" size="sm">
+                        {cat.tax}%
+                      </Chip>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {catTypes.find((t) => t.code_id === cat.cat_type)?.code_desc || "-"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Chip 
+                        color={cat.cat_status === 1 ? "success" : "warning"} 
+                        variant="flat" 
+                        size="sm"
+                      >
+                        {catStatuses.find((s) => s.code_id === cat.cat_status)?.code_desc || "-"}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-center gap-1">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => {
+                            setSelectedCatId(cat.id);
+                            // يمكن إضافة منطق عرض تفاصيل الفئة هنا
+                          }}
+                          className="text-blue-500 hover:bg-blue-50"
+                        >
+                          <FaEye />
+                        </Button>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => {
+                            setSelectedCatId(cat.id);
+                            // يمكن إضافة منطق تعديل الفئة هنا
+                          }}
+                          className="text-yellow-500 hover:bg-yellow-50"
+                        >
+                          <FaEdit />
+                        </Button>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onPress={() => {
+                            // يمكن إضافة منطق حذف الفئة هنا
+                          }}
+                          className="hover:bg-red-50"
+                        >
+                          <FaTrash />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          
+          <div className="flex justify-between items-center mt-1 pt-1 border-t">
+            <span className="text-sm text-gray-500">
+              عدد الفئات: {categories.length}
+            </span>
+            <Pagination
+              color="primary"
+              page={catPage}
+              total={totalCatPages}
+              onChange={setCatPage}
+              showControls
+              showShadow
+            />
+          </div>
+        </CardBody>
+      </Card>
 
+      {/* قسم الأصناف */}
+      <Card className="card">
+        <CardHeader className="flex justify-between items-center py-2">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">الأصناف</h2>
+            <p className="text-gray-500 text-sm">إدارة الأصناف والمنتجات</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Input
+              placeholder="البحث في الأصناف..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-64"
+              startContent={<FaSearch className="text-gray-400" />}
+            />
+          </div>
+        </CardHeader>
+        <CardBody className="py-2">
+          <div className="table-container">
+            <Table aria-label="جدول الأصناف" className="min-h-[250px] table-no-scrollbar">
+              <TableHeader>
+                <TableColumn className="text-right">الكود</TableColumn>
+                <TableColumn className="text-right">الاسم</TableColumn>
+                <TableColumn className="text-center">السعر</TableColumn>
+                <TableColumn className="text-center">الوزن</TableColumn>
+                <TableColumn className="text-center">العيار</TableColumn>
+                <TableColumn className="text-center">المعايرة</TableColumn>
+                <TableColumn className="text-center">التكلفة</TableColumn>
+                <TableColumn className="text-center">الوحدة</TableColumn>
+                <TableColumn className="text-center">الحالة</TableColumn>
+                <TableColumn className="text-center">الإجراءات</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {pagedItems.map((item) => {
+                  const unitName = units.find((unit) => unit.id === item.unit);
+                  const status = ItemStatus.find((t) => t.code_id === item.item_status);
+                  
+                  return (
+                    <TableRow key={item.id} className="hover:bg-gray-50 transition-colors">
+                      <TableCell className="font-mono text-sm">
+                        {item.item_code || "-"}
+                      </TableCell>
+                      <TableCell className="font-medium max-w-md truncate">
+                        {item.item_name}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Chip color="success" variant="flat" size="sm">
+                          {item.item_price || "-"} ﷼
+                        </Chip>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {item.item_weight || "-"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Chip color="primary" variant="flat" size="sm">
+                          {item.k || "-"}
+                        </Chip>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {item.purity || "-"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {item.first_cost || "-"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {unitName?.unit_name || "-"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Chip 
+                          color={item.item_status === 1 ? "success" : "warning"} 
+                          variant="flat" 
+                          size="sm"
+                        >
+                          {status?.code_desc || "-"}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-center gap-1">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onPress={() => handleViewItem(item)}
+                            className="text-blue-500 hover:bg-blue-50"
+                          >
+                            <FaEye />
+                          </Button>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            onPress={() => handleEditItem(item)}
+                            className="text-yellow-500 hover:bg-yellow-50"
+                          >
+                            <FaEdit />
+                          </Button>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            color="danger"
+                            onPress={() => handleDeleteItem(item.id)}
+                            className="hover:bg-red-50"
+                          >
+                            <FaTrash />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          
+          <div className="flex justify-between items-center mt-1 pt-1 border-t">
+            <span className="text-sm text-gray-500">
+              عدد الأصناف: {itemsCount}
+            </span>
+            <Pagination
+              color="primary"
+              page={itemsPage}
+              total={Math.ceil(itemsCount / itemsPerPage) || 1}
+              onChange={(p) => {
+                setItemsPage(p);
+                if (search.trim()) {
+                  searchItems(search, undefined, p);
+                } else {
+                  fetchItems(selectedCatId, selectedTypeId, undefined, p);
+                }
+              }}
+              showControls
+              showShadow
+            />
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Modal */}
       <Modal
         isOpen={isModalOpen}
         scrollBehavior="inside"
-        size="7xl"
+        size="5xl"
         onClose={() => setIsModalOpen(false)}
       >
         <ModalContent className="font-cairo">
           <ModalHeader>
-            {modalMode === "add" && "إضافة صنف جديد"}
-            {modalMode === "edit" && "تعديل صنف"}
-            {modalMode === "view" && "عرض بيانات الصنف"}
+            <div>
+              <h3 className="text-xl font-bold">
+                {modalMode === "add" && "إضافة صنف جديد"}
+                {modalMode === "edit" && "تعديل صنف"}
+                {modalMode === "view" && "عرض بيانات الصنف"}
+              </h3>
+              <p className="text-gray-500 text-sm">
+                {modalMode === "add" && "أدخل بيانات الصنف الجديد"}
+                {modalMode === "edit" && "قم بتعديل بيانات الصنف"}
+                {modalMode === "view" && "عرض تفاصيل الصنف"}
+              </p>
+            </div>
           </ModalHeader>
 
-          <ModalBody className="grid grid-cols-4 gap-4 max-h-[80vh] overflow-y-auto pr-2 text-sm">
-            <div className="col-span-4 text-base font-bold border-b pb-2">
-              البيانات الأساسية
-            </div>
-            <Input
-              isDisabled={isViewMode}
-              label="اسم الصنف"
-              value={newItem.item_name}
-              onChange={(e) =>
-                setNewItem({ ...newItem, item_name: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="اسم الصنف بالإنجليزية"
-              value={newItem.item_name_e}
-              onChange={(e) =>
-                setNewItem({ ...newItem, item_name_e: e.target.value })
-              }
-              required
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="السعر"
-              value={newItem.item_price ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, item_price: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="سعر التكلفة"
-              value={newItem.first_cost ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, first_cost: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="كود الصنف"
-              value={newItem.item_code}
-              onChange={(e) =>
-                setNewItem({ ...newItem, item_code: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="باركود الصنف"
-              value={newItem.item_barcode ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, item_barcode: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الوزن"
-              value={newItem.item_weight ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, item_weight: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الوزن بالجرام"
-              value={newItem.item_g_weight ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, item_g_weight: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الحجر"
-              value={newItem.stones ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, stones: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الموديل"
-              value={newItem.model ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, model: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="العيار (K)"
-              value={newItem.k ?? ""}
-              onChange={(e) => setNewItem({ ...newItem, k: e.target.value })}
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="المعايرة"
-              value={newItem.purity ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, purity: e.target.value })
-              }
-            />
-            <div className="col-span-3">
-              <label className="block mb-2 font-medium text-sm">
-                صورة الصنف
-              </label>
-              <div className="flex items-center gap-4">
-                <input
-                  accept="image/*"
-                  className="p-2 border rounded w-full"
-                  type="file"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-
-                    if (file) {
-                      setNewItem({ ...newItem, item_img: file });
+          <ModalBody className="space-y-6">
+            {/* البيانات الأساسية */}
+            <Card className="card">
+              <CardHeader>
+                <h4 className="text-lg font-semibold text-gray-800">البيانات الأساسية</h4>
+              </CardHeader>
+              <CardBody>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Input
+                    isDisabled={isViewMode}
+                    label="اسم الصنف"
+                    value={newItem.item_name}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, item_name: e.target.value })
                     }
-                  }}
-                />
-                {newItem.item_img && typeof newItem.item_img !== "string" && (
-                  <img
-                    alt="معاينة الصورة"
-                    className="w-16 h-16 object-cover rounded border"
-                    src={URL.createObjectURL(newItem.item_img)}
+                    className="input-field"
                   />
-                )}
-              </div>
-            </div>
-            <div className="col-span-4 text-base font-bold border-b pb-2">
-              التصنيفات
-            </div>
-            <select
-              className="p-2 border rounded"
-              disabled={isViewMode}
-              value={newItem.cat ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, cat: Number(e.target.value) })
-              }
-            >
-              <option value="">اختر الفئة</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.cat_name}
-                </option>
-              ))}
-            </select>
-            <select
-              className="p-2 border rounded"
-              disabled={isViewMode}
-              value={newItem.item_type ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, item_type: Number(e.target.value) })
-              }
-            >
-              <option value="">اختر نوع الصنف</option>
-              {itemTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.type_name}
-                </option>
-              ))}
-            </select>
-            <select
-              className="p-2 border rounded"
-              disabled={isViewMode}
-              value={newItem.unit ?? ""}
-              onChange={(e) =>
-                setNewItem({ ...newItem, unit: Number(e.target.value) })
-              }
-            >
-              <option value="">اختر الوحدة</option>
-              {units.map((unit) => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.unit_name}
-                </option>
-              ))}
-            </select>
+                  <Input
+                    isDisabled={isViewMode}
+                    label="اسم الصنف بالإنجليزية"
+                    value={newItem.item_name_e}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, item_name_e: e.target.value })
+                    }
+                    className="input-field"
+                  />
+                  <Input
+                    isDisabled={isViewMode}
+                    label="السعر"
+                    value={newItem.item_price ?? ""}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, item_price: e.target.value })
+                    }
+                    className="input-field"
+                    startContent={<span className="text-gray-400">﷼</span>}
+                  />
+                  <Input
+                    isDisabled={isViewMode}
+                    label="سعر التكلفة"
+                    value={newItem.first_cost ?? ""}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, first_cost: e.target.value })
+                    }
+                    className="input-field"
+                    startContent={<span className="text-gray-400">﷼</span>}
+                  />
+                  <Input
+                    isDisabled={isViewMode}
+                    label="كود الصنف"
+                    value={newItem.item_code}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, item_code: e.target.value })
+                    }
+                    className="input-field"
+                  />
+                  <Input
+                    isDisabled={isViewMode}
+                    label="باركود الصنف"
+                    value={newItem.item_barcode ?? ""}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, item_barcode: e.target.value })
+                    }
+                    className="input-field"
+                  />
+                </div>
+              </CardBody>
+            </Card>
 
+            {/* البيانات الفنية */}
+            <Card className="card">
+              <CardHeader>
+                <h4 className="text-lg font-semibold text-gray-800">البيانات الفنية</h4>
+              </CardHeader>
+              <CardBody>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Input
+                    isDisabled={isViewMode}
+                    label="الوزن"
+                    value={newItem.item_weight ?? ""}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, item_weight: e.target.value })
+                    }
+                    className="input-field"
+                  />
+                  <Input
+                    isDisabled={isViewMode}
+                    label="الوزن بالجرام"
+                    value={newItem.item_g_weight ?? ""}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, item_g_weight: e.target.value })
+                    }
+                    className="input-field"
+                  />
+                  <Input
+                    isDisabled={isViewMode}
+                    label="الحجر"
+                    value={newItem.stones ?? ""}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, stones: e.target.value })
+                    }
+                    className="input-field"
+                  />
+                  <Input
+                    isDisabled={isViewMode}
+                    label="الموديل"
+                    value={newItem.model ?? ""}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, model: e.target.value })
+                    }
+                    className="input-field"
+                  />
+                  <Input
+                    isDisabled={isViewMode}
+                    label="العيار (K)"
+                    value={newItem.k ?? ""}
+                    onChange={(e) => setNewItem({ ...newItem, k: e.target.value })}
+                    className="input-field"
+                  />
+                  <Input
+                    isDisabled={isViewMode}
+                    label="المعايرة"
+                    value={newItem.purity ?? ""}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, purity: e.target.value })
+                    }
+                    className="input-field"
+                  />
+                </div>
+              </CardBody>
+            </Card>
 
-            {/* حالة الصنف */}
-            <div className="col-span-1">
-              <ReactSelect
-                isSearchable
-                className="w-full text-sm"
-                classNamePrefix="heroui"
-                components={{
-                  IndicatorSeparator: () => null,
-                }}
-                isDisabled={isViewMode}
-                menuPlacement="auto"
-                menuPortalTarget={
-                  typeof window !== "undefined" ? document.body : null
-                }
-                menuPosition="fixed"
-                options={ItemStatus.map((item1) => ({
-                  value: item1.code_id,
-                  label: item1.code_desc,
-                }))}
-                placeholder="حالة الصنف "
-                styles={{
-                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                }}
-                value={
-                  currentItem.item_status
-                    ? {
-                        value: currentItem.item_status,
-                        label:
-                          ItemStatus.find(
-                            (b) => b.code_id === currentItem.item_status,
-                          )?.code_desc || "",
+            {/* التصنيفات */}
+            <Card className="card">
+              <CardHeader>
+                <h4 className="text-lg font-semibold text-gray-800">التصنيفات</h4>
+              </CardHeader>
+              <CardBody>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Select
+                    label="الفئة"
+                    selectedKeys={newItem.cat ? [newItem.cat.toString()] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+                      setNewItem({ ...newItem, cat: Number(selectedKey) });
+                    }}
+                    isDisabled={isViewMode}
+                    className="input-field"
+                  >
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id}>
+                        {cat.cat_name}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                  <Select
+                    label="نوع الصنف"
+                    selectedKeys={newItem.item_type ? [newItem.item_type.toString()] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+                      setNewItem({ ...newItem, item_type: Number(selectedKey) });
+                    }}
+                    isDisabled={isViewMode}
+                    className="input-field"
+                  >
+                    {itemTypes.map((type) => (
+                      <SelectItem key={type.id}>
+                        {type.type_name}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                  <Select
+                    label="الوحدة"
+                    selectedKeys={newItem.unit ? [newItem.unit.toString()] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+                      setNewItem({ ...newItem, unit: Number(selectedKey) });
+                    }}
+                    isDisabled={isViewMode}
+                    className="input-field"
+                  >
+                    {units.map((unit) => (
+                      <SelectItem key={unit.id}>
+                        {unit.unit_name}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* صورة الصنف */}
+            <Card className="card">
+              <CardHeader>
+                <h4 className="text-lg font-semibold text-gray-800">صورة الصنف</h4>
+              </CardHeader>
+              <CardBody>
+                <div className="flex items-center gap-4">
+                  <input
+                    accept="image/*"
+                    className="input-field flex-1"
+                    type="file"
+                    disabled={isViewMode}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setNewItem({ ...newItem, item_img: file as any });
                       }
-                    : null
-                }
-                 onChange={(selectedOption) => {
-                  setCurrentItem({
-                 ...currentItem,
-                 item_status: selectedOption ? Number(selectedOption.value) : undefined,
-                   });
-                 }}
-              />
-            </div>
-
-            {/* <div className="col-span-4 text-lg font-bold border-b pb-2">الحالة والمستخدم</div>
-      <Input isDisabled label="تاريخ الإضافة" value={newItem.cr_date ?? ""} />
-      <Input isDisabled label="أضيف بواسطة" value={newItem.cr_user ?? ""} />
-      <Input isDisabled label="تاريخ التعديل" value={newItem.upd_date ?? ""} />
-      <Input isDisabled label="عدل بواسطة" value={newItem.upd_user ?? ""} /> */}
-            {/* <div className="flex gap-6 items-center col-span-4">
-      </div>
-      update by moseed, i can update list for item_status  */}{" "}
-           
+                    }}
+                  />
+                  {newItem.item_img && typeof newItem.item_img !== "string" && (
+                    <img
+                      alt="معاينة الصورة"
+                      className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200"
+                      src={URL.createObjectURL(newItem.item_img as File)}
+                    />
+                  )}
+                </div>
+              </CardBody>
+            </Card>
           </ModalBody>
 
           {modalMode !== "view" && (
-            <ModalFooter className="flex justify-end gap-2">
-              <Button color="danger" onPress={() => setIsModalOpen(false)}>
+            <ModalFooter className="flex justify-end gap-3">
+              <Button 
+                color="danger" 
+                variant="bordered"
+                onPress={() => setIsModalOpen(false)}
+                className="btn-secondary"
+              >
                 إلغاء
               </Button>
               <Button
                 color="success"
-                onPress={
-                  modalMode === "edit" ? handleUpdateItem : handleAddItem
-                }
+                onPress={modalMode === "edit" ? handleUpdateItem : handleAddItem}
+                className="btn-primary"
               >
                 {modalMode === "edit" ? "تحديث" : "حفظ"}
               </Button>

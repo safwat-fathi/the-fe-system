@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Input, Button } from "@heroui/react";
 import toast from "react-hot-toast";
 
@@ -32,10 +32,10 @@ interface Item {
   id: number;
   item_code: string;
   item_name: string;
-  item_price?: string | number;
-  item_weight?: string | number;
-  item_g_weight?: string | number;
-  work_price?: string | number;
+  item_price: number;
+  item_weight?: number;
+  item_g_weight?: number;
+  work_price?: number;
   stones?: string;
   k?: string;
   purity?: string;
@@ -71,6 +71,7 @@ interface Category {
 }
 
 export default function InvoicePage() {
+  const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -94,7 +95,6 @@ export default function InvoicePage() {
       total: 0,
       total_w: 0,
       total_a: 0,
-      inv_note: "",
       tax: 0,
       tax_prc: 15,
       stones: "",
@@ -130,12 +130,25 @@ export default function InvoicePage() {
   const [postNo, setPostNo] = useState<string>("");
   const [postCode, setPostCode] = useState<string>("");
   const [searchNumber, setSearchNumber] = useState<string>("");
+  const [searchValue, setSearchValue] = useState<string>("");
   const [commitVal, setCommitVal] = useState<boolean>(false);
   const [printVal, setPrintVal] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(true);
   const [isExistingInvoice, setIsExistingInvoice] = useState<boolean>(false);
   const [invoicePk, setInvoicePk] = useState<number | null>(null);
   const [homePurity, setHomePurity] = useState<number>(1000);
+  const [defaultTaxPrc, setDefaultTaxPrc] = useState<number>(15);
+  
+  // إجماليات قابلة للإدخال
+  const [manualTotalValue, setManualTotalValue] = useState<number>(0);
+  const [manualTotalWages, setManualTotalWages] = useState<number>(0);
+  const [useManualTotals, setUseManualTotals] = useState<boolean>(false);
+  
+  // متغيرات التنقل
+  const [currentRecord, setCurrentRecord] = useState<number>(1);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [invoicesList, setInvoicesList] = useState<any[]>([]);
+  
   // معالجة إرجاع useFractions (قد يرجع رقم أو كائن)
   const fractions = useFractions();
   const frac = typeof fractions === "object" ? fractions.frac : 2;
@@ -149,6 +162,13 @@ export default function InvoicePage() {
 
   useEffect(() => {
     const invId = searchParams.get("inv_id");
+    const isNewInvoice = searchParams.get("new") === "true";
+
+    // إذا كان هناك طلب لفاتورة جديدة، قم بإعادة تعيين الحالة
+    if (isNewInvoice) {
+      resetInvoiceForm();
+      return;
+    }
 
     if (invId) {
       setSearchNumber(invId);
@@ -190,6 +210,15 @@ export default function InvoicePage() {
     }
   }, [goldPrice]);
 
+  // تحديث الإجماليات اليدوية عند تغيير العناصر
+  useEffect(() => {
+    if (!useManualTotals) {
+      const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
+      setManualTotalValue(autoTotalValue);
+      setManualTotalWages(autoTotalWages);
+    }
+  }, [invoiceItems, useManualTotals]);
+
   useEffect(() => {
     setInvoiceItems((items) =>
       items.map((itm) => {
@@ -204,6 +233,23 @@ export default function InvoicePage() {
     );
   }, [homePurity]);
 
+  // معادلة عكسية: حساب العيار من الوزن المعاير عند تغيير الوزن المعاير
+  useEffect(() => {
+    setInvoiceItems((items) =>
+      items.map((itm) => {
+        const gWeightVal = parseFloat(String(itm.g_weight)) || 0;
+        const weightVal = parseFloat(String(itm.weight)) || 0;
+
+        // إذا كان الوزن المعاير تم تغييره يدوياً وكان الوزن موجود
+        if (homePurity && weightVal > 0 && gWeightVal > 0) {
+          const purity = (gWeightVal * homePurity) / weightVal;
+          return { ...itm, purity: parseFloat(purity.toFixed(2)).toString() };
+        }
+        return itm;
+      }),
+    );
+  }, [homePurity]);
+
   useEffect(() => {
     fetchItems();
     fetchCustomers();
@@ -214,6 +260,7 @@ export default function InvoicePage() {
       setInvoiceDate(now.toISOString());
     }
     getGoldPrice();
+    loadInvoicesList(); // تحميل قائمة الفواتير للتنقل
     const invId = searchParams.get("inv_id");
     // توليد رقم فاتورة جديد فقط إذا لم يكن هناك inv_id ولم تكن الفاتورة في وضع التعديل
     if (!invId && !isExistingInvoice) {
@@ -239,11 +286,13 @@ export default function InvoicePage() {
 
       if (Array.isArray(res) && res.length > 0) {
         const p = parseFloat(res[0]?.purity);
+        const vatPerc = parseFloat(res[0]?.Vat_perc);
 
         if (!isNaN(p)) setHomePurity(p);
+        if (!isNaN(vatPerc)) setDefaultTaxPrc(vatPerc);
       }
     } catch (e) {
-      console.error("failed to load home purity", e);
+      console.error("failed to load home settings", e);
     }
   };
 
@@ -296,9 +345,28 @@ export default function InvoicePage() {
     }
   }
 
+  // حساب الإجماليات التلقائية
+  const calculateAutoTotals = () => {
+    const autoTotalValue = invoiceItems.reduce((sum, item) => {
+      return sum + (item.weight * item.price);
+    }, 0);
+    
+    const autoTotalWages = invoiceItems.reduce((sum, item) => {
+      return sum + (item.weight * (item.price_w ?? 0));
+    }, 0);
+    
+    return { autoTotalValue, autoTotalWages };
+  };
+
+  const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
+
+  // استخدام الإجماليات اليدوية أو التلقائية
+  const effectiveTotalValue = useManualTotals ? manualTotalValue : autoTotalValue;
+  const effectiveTotalWages = useManualTotals ? manualTotalWages : autoTotalWages;
+
   const totalAmount = invoiceItems.reduce((sum, item) => {
-    const totalA = item.weight * item.price; // اجمالي القيمة
-    const totalW = item.weight * (item.price_w ?? 0); // اجمالي الاجور
+    const totalA = effectiveTotalValue > 0 ? (item.weight * item.price * effectiveTotalValue / autoTotalValue) : (item.weight * item.price);
+    const totalW = effectiveTotalWages > 0 ? (item.weight * (item.price_w ?? 0) * effectiveTotalWages / autoTotalWages) : (item.weight * (item.price_w ?? 0));
     let rowTotal = 0;
 
     // 1=gold only, 2=wage only, 3=both
@@ -333,6 +401,41 @@ export default function InvoicePage() {
     (sum, item) => sum + (parseFloat(String(item.item_disc_amt)) || 0),
     0,
   );
+
+  // حساب الإجماليات الإضافية الجديدة
+  const totalGWeight = invoiceItems.reduce((sum, item) => {
+    return sum + (item.g_weight || 0);
+  }, 0);
+
+  const totalValueTax = invoiceItems.reduce((sum, item) => {
+    const totalA = item.weight * item.price;
+    const base = totalA - (item.item_disc_amt ?? 0);
+    return sum + (base * 0.15);
+  }, 0);
+
+  const totalWagesTax = invoiceItems.reduce((sum, item) => {
+    const totalW = item.weight * (item.price_w ?? 0);
+    const base = totalW - (item.item_disc_amt ?? 0);
+    return sum + (base * 0.15);
+  }, 0);
+
+  const totalTax = totalValueTax + totalWagesTax;
+
+  // تحديث الإجماليات اليدوية عند تغييرها
+  const handleManualTotalChange = (type: 'value' | 'wages', newValue: number) => {
+    if (type === 'value') {
+      setManualTotalValue(newValue);
+    } else {
+      setManualTotalWages(newValue);
+    }
+  };
+
+  // إعادة تعيين الإجماليات اليدوية
+  const resetManualTotals = () => {
+    setManualTotalValue(autoTotalValue);
+    setManualTotalWages(autoTotalWages);
+    setUseManualTotals(false);
+  };
 
   const formattedDateTime = new Date(invoiceDate).toLocaleString("ar-EG", {
     dateStyle: "short",
@@ -382,8 +485,6 @@ export default function InvoicePage() {
       vatTotal: taxAmount.toFixed(frac),
     });
 
-    setCommitVal(true);
-
     const invData = {
       inv_id: generatedInvId,
       inv_date: invoiceDate,
@@ -393,6 +494,7 @@ export default function InvoicePage() {
       inv_amt: parseFloat(Number(netAmount).toFixed(frac2)),
       inv_net: parseFloat(Number(totalAmount).toFixed(frac2)),
       tax: taxAmount.toFixed(frac),
+      tax_prc: parseFloat(defaultTaxPrc.toFixed(2)),
       inv_status: 1,
       trans_type: 2,
       cr_date: invoiceDate,
@@ -455,37 +557,37 @@ export default function InvoicePage() {
             ? (row.total_w ?? row.weight * row.price_w)
             : (row.total_a ?? row.weight * row.price);
 
-        const dtl = {
-          id: row.id,
-          trans_type: row.trans_type ?? 2,
-          purity: row.purity ?? "",
-          k: row.k ?? "",
-          qty: row.qty,
-          stones: row.stones ?? "",
-          price: dtlPrice,
-          price_w: row.price_w,
-          weight: row.weight,
-          g_weight: row.g_weight ?? 0,
-          // totals stored with the row (total includes tax)
-          total:
-            row.total ??
-            row.weight * row.price +
-              row.weight * row.price_w -
-              (row.item_disc_amt ?? 0),
-          total_w: row.total_w ?? row.weight * row.price_w,
-          total_a: dtlTotalA,
-          tax:
-            row.tax ??
-            (row.weight * row.price +
-              row.weight * row.price_w -
-              (row.item_disc_amt ?? 0)) *
-              ((row.tax_prc ?? 15) / 100),
-          inv_note: row.note || "",
-          tax_prc: row.tax_prc ?? 15,
-          item_disc_prc: row.item_disc_prc ?? 0,
-          item_disc_amt: row.item_disc_amt ?? 0,
-          sn: row.sn ?? "",
-          item_desc: row.item_desc || row.item_name,
+                 const dtl = {
+           id: row.id,
+           trans_type: row.trans_type ?? 2,
+           G875: row.purity ? parseFloat(row.purity) : null,
+           k: row.k ?? "",
+           qty: row.qty,
+           stones: row.stones ?? "",
+           price: dtlPrice,
+           price_w: row.price_w,
+           weight: row.weight,
+           g_weight: row.g_weight ?? 0,
+           // totals stored with the row (total includes tax)
+           total:
+             row.total ??
+             row.weight * row.price +
+               row.weight * row.price_w -
+               (row.item_disc_amt ?? 0),
+           total_w: row.total_w ?? row.weight * row.price_w,
+           total_a: dtlTotalA,
+           tax:
+             row.tax ??
+             (row.weight * row.price +
+               row.weight * row.price_w -
+               (row.item_disc_amt ?? 0)) *
+               ((row.tax_prc ?? 15) / 100),
+           tax_prc: row.tax_prc ?? 15,
+           item_disc_prc: row.item_disc_prc ?? 0,
+           item_disc_amt: row.item_disc_amt ?? 0,
+           sn: row.sn ?? "",
+           item_desc: row.item_desc || row.item_name || "",
+           inv_notes: row.note || "",
           cr_date: invoiceDate,
           cr_user: row.cr_user ?? "",
           upd_date: row.upd_date || new Date().toISOString(),
@@ -513,6 +615,7 @@ export default function InvoicePage() {
       }
 
       toast.success("تم حفظ الفاتورة بنجاح ✅");
+      setCommitVal(true);
       setIsExistingInvoice(true);
       setIsEditing(false);
     } catch (err) {
@@ -535,8 +638,6 @@ export default function InvoicePage() {
       othman: 2,
     };
 
-    setCommitVal(true);
-
     const invData = {
       inv_id: invoiceNumber,
       inv_date: invoiceDate,
@@ -546,6 +647,7 @@ export default function InvoicePage() {
       inv_amt: Math.round(netAmount),
       inv_net: Math.round(totalAmount),
       tax: taxAmount.toFixed(frac),
+      tax_prc: parseFloat(defaultTaxPrc.toFixed(2)),
       inv_status: 1,
       trans_type: 2,
       cr_date: invoiceDate,
@@ -615,11 +717,31 @@ export default function InvoicePage() {
       const originalIds = originalInvoiceItems.map((item) => item.id);
       const currentIds = invoiceItems.map((item) => item.id);
 
-      // حذف الأسطر المحذوفة
-      for (const orig of originalInvoiceItems) {
-        if (!currentIds.includes(orig.id)) {
-          await apiFetch(`${API_BASE_URL}api_delete_invoice_dtl/${orig.id}`, { method: "DELETE" });
+      // حذف الأسطر المحذوفة من قاعدة البيانات
+      if (deletedItems.length > 0) {
+        console.log(`🔴 سيتم حذف ${deletedItems.length} صنف من قاعدة البيانات:`, deletedItems.map(item => `${item.item_name} (ID: ${item.id})`));
+        
+        for (const itemToDelete of deletedItems) {
+          try {
+            console.log(`🔄 جاري حذف الصنف: ${itemToDelete.item_name} (ID: ${itemToDelete.id})`);
+            const deleteRes = await apiFetch(`${API_BASE_URL}api_delete_invoice_dtl/${itemToDelete.id}`, { 
+              method: "DELETE" 
+            });
+            
+            if (!deleteRes.ok) {
+              const errorText = await deleteRes.text();
+              console.error(`❌ فشل في حذف الصنف ${itemToDelete.id}:`, errorText);
+              toast.error(`فشل في حذف الصنف ${itemToDelete.item_name || itemToDelete.id}`);
+            } else {
+              console.log(`✅ تم حذف الصنف ${itemToDelete.item_name || itemToDelete.id} بنجاح`);
+            }
+          } catch (error) {
+            console.error(`❌ خطأ في حذف الصنف ${itemToDelete.id}:`, error);
+            toast.error(`خطأ في حذف الصنف ${itemToDelete.item_name || itemToDelete.id}`);
+          }
         }
+      } else {
+        console.log("📝 لا توجد عناصر محذوفة");
       }
 
       // تحديث أو إضافة الأسطر
@@ -630,36 +752,36 @@ export default function InvoicePage() {
           payType === 2
             ? (row.total_w ?? row.weight * row.price_w)
             : (row.total_a ?? row.weight * row.price);
-        const dtl = {
-          id: row.id,
-          trans_type: row.trans_type ?? 2,
-          purity: row.purity ?? "",
-          k: row.k ?? "",
-          qty: row.qty,
-          stones: row.stones ?? "",
-          price: dtlPrice,
-          price_w: row.price_w,
-          weight: row.weight,
-          g_weight: row.g_weight ?? 0,
-          total:
-            row.total ??
-            row.weight * row.price +
-              row.weight * row.price_w -
-              (row.item_disc_amt ?? 0),
-          total_w: row.total_w ?? row.weight * row.price_w,
-          total_a: dtlTotalA,
-          tax:
-            row.tax ??
-            (row.weight * row.price +
-              row.weight * row.price_w -
-              (row.item_disc_amt ?? 0)) *
-              ((row.tax_prc ?? 15) / 100),
-          inv_note: row.note || "",
-          tax_prc: row.tax_prc ?? 15,
-          item_disc_prc: row.item_disc_prc ?? 0,
-          item_disc_amt: row.item_disc_amt ?? 0,
-          sn: row.sn ?? "",
-          item_desc: row.item_desc || row.item_name,
+                 const dtl = {
+           id: row.id,
+           trans_type: row.trans_type ?? 2,
+           G875: row.purity ? parseFloat(row.purity) : null,
+           k: row.k ?? "",
+           qty: row.qty,
+           stones: row.stones ?? "",
+           price: dtlPrice,
+           price_w: row.price_w,
+           weight: row.weight,
+           g_weight: row.g_weight ?? 0,
+           total:
+             row.total ??
+             row.weight * row.price +
+               row.weight * row.price_w -
+               (row.item_disc_amt ?? 0),
+           total_w: row.total_w ?? row.weight * row.price_w,
+           total_a: dtlTotalA,
+           tax:
+             row.tax ??
+             (row.weight * row.price +
+               row.weight * row.price_w -
+               (row.item_disc_amt ?? 0)) *
+               ((row.tax_prc ?? 15) / 100),
+           tax_prc: row.tax_prc ?? 15,
+           item_disc_prc: row.item_disc_prc ?? 0,
+           item_disc_amt: row.item_disc_amt ?? 0,
+           sn: row.sn ?? "",
+           item_desc: row.item_desc || row.item_name || "",
+           inv_notes: row.note || "",
           cr_date: row.cr_date || invoiceDate,
           upd_date: new Date().toISOString(),
           com:
@@ -687,7 +809,13 @@ export default function InvoicePage() {
       }
 
       toast.success("تم تعديل الفاتورة بنجاح ✅");
+      setCommitVal(true);
       setIsEditing(false);
+      
+      // تحديث originalInvoiceItems ليعكس التغييرات الحالية
+      setOriginalInvoiceItems([...invoiceItems]);
+      // مسح قائمة العناصر المحذوفة بعد الحفظ الناجح
+      setDeletedItems([]);
     } catch (err) {
       console.error("❌ خطأ أثناء التعديل:", err);
       toast.error("حدث خطأ أثناء تعديل الفاتورة");
@@ -721,7 +849,15 @@ export default function InvoicePage() {
       : undefined;
 
     const html = renderInvoicePreview({
-      items: invoiceItems,
+      items: invoiceItems.map(item => ({
+        item_name: item.item_name || "",
+        qty: item.qty,
+        weight: item.weight,
+        price: item.price,
+        price_w: item.price_w || 0,
+        item_disc_amt: item.item_disc_amt || 0,
+        k: item.k || "",
+      })) as any,
       customer: previewCustomer,
       companyAName: home.comp_a_name || "",
       companyLName: home.comp_l_name || "",
@@ -750,13 +886,251 @@ export default function InvoicePage() {
     previewWindow.document.close();
   };
 
+  const handleBarcodeSearch = async () => {
+    if (!searchValue.trim() || !isEditing) return;
+
+    try {
+      console.log("البحث عن الكود:", searchValue.trim());
+      
+      const searchTerm = searchValue.trim();
+      let exactMatch = null;
+      
+      console.log("بدء البحث المحسن...");
+      
+      console.log("البحث السريع في الأصناف المحملة:", items.length, "صنف");
+      exactMatch = items.find((item: any) => {
+        const itemCode = (item.item_code ?? item.code ?? "").toString().trim();
+        return itemCode === searchTerm;
+      });
+      
+      if (!exactMatch) {
+        console.log("لم يجد في الأصناف المحملة، البحث في API...");
+        
+        const res = await fetch(
+          `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
+        );
+        const json = await res.json();
+        
+        console.log("نتائج API:", {
+          count: json.count,
+          resultsCount: json.results?.length || 0
+        });
+        
+        if (Array.isArray(json.results)) {
+        
+          exactMatch = json.results.find((item: any) => {
+            const itemCode = (item.item_code ?? item.code ?? "").toString().trim();
+            
+            console.log("مقارنة دقيقة:", `"${itemCode}" === "${searchTerm}"`);
+            console.log("نوع البيانات:", typeof itemCode, typeof searchTerm);
+            console.log("طول النصوص:", itemCode.length, searchTerm.length);
+            
+            // البحث عن تطابق دقيق في الكود فقط
+            if (itemCode === searchTerm) {
+              console.log("✅ وجد تطابق دقيق في الكود:", itemCode);
+              return true;
+            }
+            
+            return false;
+          });
+        }
+      } else {
+        console.log("✅ وجد تطابق دقيق في الأصناف المحملة:", exactMatch.item_code);
+      }
+
+              if (exactMatch) {
+          const firstEmptyRowIndex = invoiceItems.findIndex(
+            (item) => !item.item_id && !item.item_name && item.weight === 0
+          );
+
+          const targetIndex = firstEmptyRowIndex !== -1 ? firstEmptyRowIndex : 0;
+          const updated = [...invoiceItems];
+
+          if (firstEmptyRowIndex === -1) {
+            updated.unshift({
+              id: Date.now(),
+              item_id: null,
+              item_code: "",
+              qty: 1,
+              g_weight: 0,
+              weight: 0,
+              k: "",
+              price: goldPrice ?? 0,
+              price_w: goldPrice ?? 0,
+              note: "",
+              trans_type: 2,
+              purity: "",
+              total: 0,
+              total_w: 0,
+              total_a: 0,
+              item_desc: "",
+              tax: 0,
+              tax_prc: 15,
+              stones: "",
+              item_disc_prc: 0,
+              item_disc_amt: 0,
+              sn: "",
+              cr_date: "",
+              cr_user: "",
+              upd_date: "",
+              upd_user: "",
+              com: 0,
+              inv: 0,
+              item: 0,
+            });
+          }
+
+          const selected = exactMatch;
+
+          if (!items.find((i) => i.id === selected.id)) {
+            setItems([...items, selected]);
+          }
+
+          updated[targetIndex].item_id = selected.id ?? null;
+          updated[targetIndex].item_code = selected.item_code ?? "";
+          updated[targetIndex].item_name = selected.item_name ?? "";
+          updated[targetIndex].item_desc = selected.item_name ?? "";
+
+          const selk = selected.k ?? "";
+          const selPurity = selected.purity ?? "";
+
+          updated[targetIndex].k = selected.k ?? "";
+          updated[targetIndex].price = goldPrice ?? Number(selected.item_price ?? 0);
+          updated[targetIndex].price_w = Number(selected.work_price ?? 0);
+          updated[targetIndex].purity = selected.purity ?? "";
+          updated[targetIndex].stones = selected.stones ?? "";
+
+          if (
+            selected.item_weight !== undefined &&
+            selected.item_weight !== null &&
+            selected.item_weight !== ""
+          ) {
+            updated[targetIndex].weight = Number(selected.item_weight ?? 0);
+            updated[targetIndex].g_weight = Number(
+              selected.item_g_weight ?? selected.item_weight ?? 0
+            );
+          }
+
+          if (
+            selected.item_g_weight !== undefined &&
+            selected.item_g_weight !== null &&
+            selected.item_g_weight !== ""
+          ) {
+            updated[targetIndex].g_weight = Number(selected.item_g_weight);
+          }
+
+          if (
+            (selk === "" || selk === "0" || selPurity === "" || selPurity === "0") &&
+            selected.cat
+          ) {
+            const cat = categories.find((c) => c.id === selected.cat);
+            if (cat) {
+              if (!selk || selk === "0")
+                updated[targetIndex].k = (cat.gauge ?? cat.k ?? "") as string;
+              if (!selPurity || selPurity === "0")
+                updated[targetIndex].purity = cat.purity ?? "";
+            }
+          }
+
+          if (!updated[targetIndex].purity || updated[targetIndex].purity === "0" || updated[targetIndex].purity === "") {
+            updated[targetIndex].purity = homePurity.toString();
+          }
+
+          const wCalc =
+            updated[targetIndex].weight < 1 &&
+            updated[targetIndex].g_weight > updated[targetIndex].weight
+              ? updated[targetIndex].weight * 1000
+              : updated[targetIndex].weight;
+
+          updated[targetIndex].total_a =
+            payType === 2
+              ? wCalc * updated[targetIndex].price_w
+              : wCalc * updated[targetIndex].price;
+          updated[targetIndex].total_w = wCalc * updated[targetIndex].price_w;
+
+          const base =
+            (payType === 1
+              ? updated[targetIndex].total_a
+              : payType === 2
+                ? updated[targetIndex].total_w
+                : updated[targetIndex].total_a + updated[targetIndex].total_w) -
+            (updated[targetIndex].item_disc_amt ?? 0);
+
+          updated[targetIndex].tax = (base * (updated[targetIndex].tax_prc ?? 15)) / 100;
+          updated[targetIndex].total = base + updated[targetIndex].tax;
+
+          setInvoiceItems(updated);
+
+                      setSearchValue("");
+
+            toast.success(`✅ تم إضافة الصنف: ${selected.item_name || selected.item_code} (${selected.item_code})`);
+
+            const isLastRow = targetIndex === updated.length - 1;
+          const isRowFilled =
+            updated[targetIndex].item_id ||
+            updated[targetIndex].item_name ||
+            updated[targetIndex].weight > 0;
+
+          if (isLastRow && isRowFilled) {
+            setInvoiceItems([
+              ...updated,
+              {
+                id: Date.now(),
+                item_id: null,
+                item_code: "",
+                qty: 1,
+                g_weight: 0,
+                weight: 0,
+                k: "",
+                price: goldPrice ?? 0,
+                price_w: goldPrice ?? 0,
+                note: "",
+                trans_type: 2,
+                purity: "",
+                total: 0,
+                total_w: 0,
+                total_a: 0,
+                item_desc: "",
+                tax: 0,
+                tax_prc: 15,
+                stones: "",
+                item_disc_prc: 0,
+                item_disc_amt: 0,
+                sn: "",
+                cr_date: "",
+                cr_user: "",
+                upd_date: "",
+                upd_user: "",
+                com: 0,
+                inv: 0,
+                item: 0,
+              },
+            ]);
+          }
+        } else {
+          // إذا لم يجد تطابق دقيق، لا تعرض أي شيء
+          console.log("❌ لم يجد تطابق دقيق للكود:", searchValue.trim());
+          console.log("تم البحث في الأصناف المحملة و API");
+          
+          toast.error(`لم يتم العثور على صنف : ${searchValue.trim()}`);
+          setSearchValue("");
+          return;
+        }
+    } catch (error) {
+      console.error("خطأ في البحث بالباركود:", error);
+      toast.error("حدث خطأ أثناء البحث بالباركود");
+    }
+  };
+
   const handleInvoiceSearch = async (searchVal?: string) => {
     const num = searchVal ?? searchNumber;
-    if (!num || num === lastLoadedInvoiceRef.current) return; // منع التكرار الفوري
+    if (!num || num === lastLoadedInvoiceRef.current) return; 
     lastLoadedInvoiceRef.current = num;
 
-    // لا تعيد الاستدعاء لنفس الفاتورة
+    
     if (lastLoadedInvoice === searchVal) return;
+
+    setDeletedItems([]);
 
     try {
       const invList = await fetchData<any[]>(
@@ -792,7 +1166,9 @@ export default function InvoicePage() {
       if (inv.handling) setHandlingMethod(inv.handling);
       if (inv.mobile) setMobileMethod(inv.mobile);
       if (inv.pay_type) setPayType(inv.pay_type);
-      if (typeof inv.commit !== "undefined") setCommitVal(!!inv.commit);
+      if (typeof inv.commit !== "undefined") {
+        setCommitVal(!!inv.commit);
+      }
       if (typeof inv.print !== "undefined") setPrintVal(!!inv.print);
       if (inv.emp_id)
         setEmployee(
@@ -808,6 +1184,12 @@ export default function InvoicePage() {
       if (inv.build_no) setBuildNo(inv.build_no);
       if (inv.post_no) setPostNo(inv.post_no);
       if (inv.post_code) setPostCode(inv.post_code);
+
+      // تحديث currentRecord للتنقل
+      const currentIndex = invoicesList.findIndex(v => v.id === inv.id);
+      if (currentIndex !== -1) {
+        setCurrentRecord(currentIndex + 1);
+      }
 
       setIsExistingInvoice(true);
       setIsEditing(false);
@@ -832,7 +1214,7 @@ export default function InvoicePage() {
       );
 
       if (filteredDetails.length > 0) {
-        setInvoiceItems(
+                         setInvoiceItems(
           filteredDetails.map((row) => ({
             id: row.id,
             item_id: row.item ?? row.item_id ?? null,
@@ -846,18 +1228,17 @@ export default function InvoicePage() {
             price_w: parseFloat(row.price_w) || 0,
             note: row.inv_notes ?? "",
             trans_type: row.trans_type ?? 2,
-            purity: row.purity ?? "",
+            purity: row.G875 ?? "",
             total: parseFloat(row.total) || 0,
-            total_w: parseFloat(row.total_w) || 0,
-            total_a: parseFloat(row.total_a) || 0,
-            inv_note: row.inv_notes ?? "",
-            tax: parseFloat(row.tax) || 0,
-            tax_prc: parseFloat(row.tax_prc) || 0,
-            stones: row.stones ?? "",
-            item_disc_prc: parseFloat(row.item_disc_prc) || 0,
-            item_disc_amt: parseFloat(row.item_disc_amt) || 0,
-            sn: row.sn ?? "",
-            item_desc: row.item_desc ?? "",
+             total_w: parseFloat(row.total_w) || 0,
+             total_a: parseFloat(row.total_a) || 0,
+             tax: parseFloat(row.tax) || 0,
+             tax_prc: parseFloat(row.tax_prc) || 0,
+             stones: row.stones ?? "",
+             item_disc_prc: parseFloat(row.item_disc_prc) || 0,
+             item_disc_amt: parseFloat(row.item_disc_amt) || 0,
+             sn: row.sn ?? "",
+             item_desc: row.item_desc ?? "",
             cr_date: row.cr_date ?? "",
             cr_user: row.cr_user ?? "",
             upd_date: row.upd_date ?? "",
@@ -867,32 +1248,31 @@ export default function InvoicePage() {
             item: row.item ?? 0,
           })),
         );
-        setOriginalInvoiceItems(
-          filteredDetails.map((row) => ({
-            id: row.id,
-            item_id: row.item ?? row.item_id ?? null,
-            item_code: row.item_code ?? "",
-            item_name: row.item_name ?? row.item_desc ?? "",
-            qty: parseFloat(row.qty) || 0,
-            weight: parseFloat(row.weight) || 0,
-            g_weight: parseFloat(row.g_weight) || 0,
-            k: row.k ?? "",
-            price: parseFloat(row.price) || 0,
-            price_w: parseFloat(row.price_w) || 0,
-            note: row.inv_notes ?? "",
-            trans_type: row.trans_type ?? 2,
-            purity: row.purity ?? "",
-            total: parseFloat(row.total) || 0,
-            total_w: parseFloat(row.total_w) || 0,
-            total_a: parseFloat(row.total_a) || 0,
-            inv_note: row.inv_notes ?? "",
-            tax: parseFloat(row.tax) || 0,
-            tax_prc: parseFloat(row.tax_prc) || 0,
-            stones: row.stones ?? "",
-            item_disc_prc: parseFloat(row.item_disc_prc) || 0,
-            item_disc_amt: parseFloat(row.item_disc_amt) || 0,
-            sn: row.sn ?? "",
-            item_desc: row.item_desc ?? "",
+                 setOriginalInvoiceItems(
+           filteredDetails.map((row) => ({
+             id: row.id,
+             item_id: row.item ?? row.item_id ?? null,
+             item_code: row.item_code ?? "",
+             item_name: row.item_name ?? row.item_desc ?? "",
+             qty: parseFloat(row.qty) || 0,
+             weight: parseFloat(row.weight) || 0,
+             g_weight: parseFloat(row.g_weight) || 0,
+             k: row.k ?? "",
+             price: parseFloat(row.price) || 0,
+             price_w: parseFloat(row.price_w) || 0,
+             note: row.inv_notes ?? "",
+             trans_type: row.trans_type ?? 2,
+             purity: row.G875 ?? "",
+             total: parseFloat(row.total) || 0,
+             total_w: parseFloat(row.total_w) || 0,
+             total_a: parseFloat(row.total_a) || 0,
+             tax: parseFloat(row.tax) || 0,
+             tax_prc: parseFloat(row.tax_prc) || 0,
+             stones: row.stones ?? "",
+             item_disc_prc: parseFloat(row.item_disc_prc) || 0,
+             item_disc_amt: parseFloat(row.item_disc_amt) || 0,
+             sn: row.sn ?? "",
+             item_desc: row.item_desc ?? "",
             cr_date: row.cr_date ?? "",
             cr_user: row.cr_user ?? "",
             upd_date: row.upd_date ?? "",
@@ -905,7 +1285,16 @@ export default function InvoicePage() {
       } else {
         setInvoiceItems([]);
         setOriginalInvoiceItems([]);
+        setDeletedItems([]);
       }
+
+      // تحديث الإجماليات اليدوية بعد تحميل الفاتورة
+      setTimeout(() => {
+        const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
+        setManualTotalValue(autoTotalValue);
+        setManualTotalWages(autoTotalWages);
+        setUseManualTotals(false);
+      }, 100);
 
       toast.success("تم جلب الفاتورة بنجاح ✅");
     } catch (err) {
@@ -916,6 +1305,150 @@ export default function InvoicePage() {
 
   // قائمة تفاصيل الفاتورة الأصلية عند تحميل الفاتورة (للمقارنة عند التعديل)
   const [originalInvoiceItems, setOriginalInvoiceItems] = useState<InvoiceItem[]>([]);
+  // قائمة العناصر المحذوفة (للتأكد من حذفها من قاعدة البيانات)
+  const [deletedItems, setDeletedItems] = useState<InvoiceItem[]>([]);
+
+    // دالة لإعادة تعيين حالة الفاتورة لفاتورة جديدة
+  const resetInvoiceForm = () => {
+    // إعادة تعيين جميع الحقول
+    setSelectedCustomer(null);
+    setInvoiceItems([{
+      id: Date.now(),
+      item_id: null,
+      item_code: "",
+      qty: 1,
+      weight: 0,
+      g_weight: 0,
+      k: "",
+      price: 0,
+      price_w: 0,
+      note: "",
+      trans_type: 2,
+      purity: "",
+      total: 0,
+      total_w: 0,
+      total_a: 0,
+      tax: 0,
+      tax_prc: 15,
+      stones: "",
+      item_disc_prc: 0,
+      item_disc_amt: 0,
+      sn: "",
+      item_desc: "",
+      cr_date: "",
+      cr_user: "",
+      upd_date: "",
+      upd_user: "",
+      com: 0,
+      inv: 0,
+      item: 0,
+    }]);
+    setPaymentMethod("cash");
+    setEmployee("");
+    setNote("");
+    setHandlingMethod("");
+    setMobileMethod("");
+    setReferenceNumber("");
+    setVatNumber("");
+    setPayType(1);
+    setCrNo("");
+    setGov("");
+    setCity("");
+    setArea("");
+    setStreet("");
+    setBuildNo("");
+    setPostNo("");
+    setPostCode("");
+    setSearchNumber("");
+    setSearchValue("");
+    setCommitVal(false);
+    setPrintVal(false);
+    setIsEditing(true);
+    setIsExistingInvoice(false);
+    setInvoicePk(null);
+    setOriginalInvoiceItems([]);
+    setDeletedItems([]);
+    setLastLoadedInvoice(null);
+    lastLoadedInvoiceRef.current = null;
+    
+    // إعادة تعيين الإجماليات اليدوية
+    setManualTotalValue(0);
+    setManualTotalWages(0);
+    setUseManualTotals(false);
+    
+    // تعيين التاريخ الحالي
+    if (typeof window !== "undefined") {
+      const now = new Date();
+      setInvoiceDate(now.toISOString());
+    }
+    
+    // توليد رقم فاتورة جديد
+    getNextInvoiceNumber().then(setInvoiceNumber);
+    
+    console.log("تم إعادة تعيين الفاتورة لفاتورة جديدة");
+  };
+
+  const navigateToInvoice = (direction: 'first' | 'prev' | 'next' | 'last') => {
+    if (invoicesList.length === 0) return;
+
+    let targetIndex = 0;
+    const currentIndex = invoicesList.findIndex(v => v.id === invoicePk);
+
+    switch (direction) {
+      case 'first':
+        targetIndex = 0;
+        break;
+      case 'prev':
+        targetIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+        break;
+      case 'next':
+        targetIndex = currentIndex < invoicesList.length - 1 ? currentIndex + 1 : invoicesList.length - 1;
+        break;
+      case 'last':
+        targetIndex = invoicesList.length - 1;
+        break;
+    }
+
+    const targetInvoice = invoicesList[targetIndex];
+    if (targetInvoice) {
+      router.push(`/dashboard/forms/invoice?inv_id=${targetInvoice.inv_id}`);
+    }
+  };
+
+  // تحميل قائمة الفواتير للتنقل
+  const loadInvoicesList = async () => {
+    try {
+      const response = await fetchData<any[]>(`${API_BASE_URL}invoices_list?trans_type=2`);
+      if (Array.isArray(response)) {
+        setInvoicesList(response);
+        setTotalRecords(response.length);
+        
+        // تحديث currentRecord إذا كان هناك فاتورة محملة
+        if (invoicePk) {
+          const currentIndex = response.findIndex(v => v.id === invoicePk);
+          if (currentIndex !== -1) {
+            setCurrentRecord(currentIndex + 1);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading invoices list:", error);
+    }
+  };
+
+  // دالة لتحديث قائمة العناصر المحذوفة عند حذف صنف
+  const handleItemRemoved = (removedItem: InvoiceItem) => {
+    // التحقق من أن العنصر المحذوف موجود في originalInvoiceItems (أي أنه عنصر موجود في قاعدة البيانات)
+    const isOriginalItem = originalInvoiceItems.some(item => item.id === removedItem.id);
+
+    if (isOriginalItem) {
+      // إضافة العنصر إلى قائمة العناصر المحذوفة بدلاً من حذفه من originalInvoiceItems
+      setDeletedItems(prev => [...prev, removedItem]);
+      console.log(`🗑️ تم إضافة الصنف "${removedItem.item_name}" (ID: ${removedItem.id}) إلى قائمة العناصر المحذوفة`);
+    } else {
+      console.log(`ℹ️ الصنف "${removedItem.item_name}" (ID: ${removedItem.id}) ليس عنصراً أصلياً، لن يتم حذفه من قاعدة البيانات`);
+    }
+  };
 
   // تحويل invoiceItems إلى items متوافقة مع Item[] عند تمريرها فقط
   const itemsForTable: Item[] = invoiceItems.map((itm) => ({
@@ -934,18 +1467,6 @@ export default function InvoicePage() {
 
   return (
     <>
-      <div className="mb-4 flex gap-2">
-        <Input
-          className="w-60"
-          placeholder="بحث برقم الفاتورة..."
-          type="number"
-          value={searchNumber}
-          onChange={(e) => setSearchNumber(e.target.value)}
-        />
-        <Button color="primary" onPress={() => handleInvoiceSearch()}>
-          بحث
-        </Button>
-      </div>
       <InvoiceTotalsActions
         commit={commitVal}
         formattedDateTime={formattedDateTime}
@@ -961,6 +1482,31 @@ export default function InvoicePage() {
         totalAmount={totalAmount}
         totalDiscount={totalDiscount}
         onEdit={() => setIsEditing(true)}
+        invoiceType="invoice"
+        // إجماليات قابلة للإدخال
+        autoTotalValue={autoTotalValue}
+        autoTotalWages={autoTotalWages}
+        manualTotalValue={manualTotalValue}
+        manualTotalWages={manualTotalWages}
+        useManualTotals={useManualTotals}
+        onManualTotalChange={handleManualTotalChange}
+        onUseManualTotalsChange={setUseManualTotals}
+        onResetManualTotals={resetManualTotals}
+        // البحث برقم الفاتورة
+        searchNumber={searchNumber}
+        setSearchNumber={setSearchNumber}
+        onInvoiceSearch={() => handleInvoiceSearch()}
+        // إجماليات إضافية جديدة
+        totalGWeight={totalGWeight}
+        totalValueTax={totalValueTax}
+        totalWagesTax={totalWagesTax}
+        totalTax={totalTax}
+        // طريقة الدفع
+        paymentMethod={paymentMethod}
+        // أزرار التنقل
+        currentRecord={currentRecord}
+        totalRecords={totalRecords}
+        navigateToInvoice={navigateToInvoice}
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
           <InvoiceSelectors
@@ -1000,6 +1546,11 @@ export default function InvoicePage() {
             setVatNumber={setVatNumber}
             street={street}
             vatNumber={vatNumber}
+            // البحث بالباركود
+            searchValue={searchValue}
+            setSearchValue={setSearchValue}
+            onBarcodeSearch={handleBarcodeSearch}
+            isEditing={isEditing}
           />
           <InvoiceItemTable
             categories={categories}
@@ -1011,6 +1562,7 @@ export default function InvoicePage() {
             setInvoiceItems={setInvoiceItems}
             setItems={setItems}
             isEditing={isEditing}
+            onItemRemoved={handleItemRemoved}
           />
         </div>
       </InvoiceTotalsActions>

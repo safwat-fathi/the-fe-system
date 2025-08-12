@@ -18,7 +18,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
@@ -38,7 +38,9 @@ const columns = [
   { name: "رقم الصندوق", uid: "id" },
   { name: "اسم الصندوق", uid: "box_name" },
   { name: "الاسم بالإنجليزي", uid: "box_name_e" },
+  { name: "نوع الصندوق", uid: "box_type" },
   { name: "الحالة", uid: "box_status" },
+  { name: "افتراضي", uid: "box_default" },
   { name: "", uid: "actions" },
 ];
 
@@ -135,9 +137,39 @@ export default function InvoiceBoxPage() {
 
   const isViewMode = modalMode === "view";
 
+  const renderActions = (box: InvoiceBox) => (
+    <div className="flex gap-2">
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("view", box)}
+      >
+        <FaEye className="text-blue-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("edit", box)}
+      >
+        <FaEdit className="text-yellow-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        color="danger"
+        onPress={() => handleDelete(box.id)}
+      >
+        <FaTrash />
+      </Button>
+    </div>
+  );
+
   return (
     <div className="p-4 font-cairo">
-      <h1 className="text-2xl font-bold mb-6">صناديق الفواتير</h1>
+      <h1 className="text-2xl font-bold mb-6">الصناديق</h1>
       <div className="flex justify-between mb-4">
         <Button onPress={() => openModal("add")}>
           {" "}
@@ -163,15 +195,15 @@ export default function InvoiceBoxPage() {
               <TableCell>{box.id}</TableCell>
               <TableCell>{box.box_name}</TableCell>
               <TableCell>{box.box_name_e}</TableCell>
+              <TableCell>{box.box_type || "-"}</TableCell>
               <TableCell>
                 <Checkbox isReadOnly isSelected={!!box.box_status} />
               </TableCell>
               <TableCell>
-                <ActionButtons
-                  onDelete={() => handleDelete(box.id)}
-                  onEdit={() => openModal("edit", box)}
-                  onView={() => openModal("view", box)}
-                />
+                <Checkbox isReadOnly isSelected={!!box.box_default} />
+              </TableCell>
+              <TableCell>
+                {renderActions(box)}
               </TableCell>
             </TableRow>
           ))}
@@ -219,6 +251,32 @@ export default function InvoiceBoxPage() {
                 setCurrentBox({ ...currentBox, box_name_e: e.target.value })
               }
             />
+            <Input
+              isDisabled={isViewMode}
+              label="نوع الصندوق"
+              value={currentBox.box_type || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, box_type: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="رصيد المبلغ"
+              type="number"
+              value={currentBox.balance_amt?.toString() || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, balance_amt: parseFloat(e.target.value) || null })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="رصيد الذهب"
+              type="number"
+              value={currentBox.balance_gold?.toString() || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, balance_gold: parseFloat(e.target.value) || null })
+              }
+            />
             <div className="col-span-2 flex gap-6 items-center">
               <Checkbox
                 isDisabled={isViewMode}
@@ -228,6 +286,15 @@ export default function InvoiceBoxPage() {
                 }
               >
                 مفعلة
+              </Checkbox>
+              <Checkbox
+                isDisabled={isViewMode}
+                isSelected={currentBox.box_default || false}
+                onValueChange={(val) =>
+                  setCurrentBox({ ...currentBox, box_default: val })
+                }
+              >
+                افتراضي
               </Checkbox>
             </div>
           </ModalBody>

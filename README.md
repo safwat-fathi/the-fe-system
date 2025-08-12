@@ -1,131 +1,139 @@
-# Next.js & HeroUI Template
+# نظام إدارة الذهب والحسابات
 
-This is a template for creating applications using Next.js 14 (app directory) and HeroUI (v2).
+نظام متكامل لإدارة الذهب والحسابات مع واجهة مستخدم محسنة ومريحة للعين.
 
-[Try it on CodeSandbox](https://githubbox.com/heroui-inc/heroui/next-app-template)
+## المميزات الجديدة
 
-## Technologies Used
+### 🎨 تحسينات التصميم
+- **نظام ألوان متناسق**: ألوان هادئة ومريحة للعين
+- **خطوط محسنة**: استخدام خط Cairo مع أحجام متناسقة
+- **مسافات منطقية**: تباعد محسن بين العناصر
+- **ظلال ناعمة**: تأثيرات بصرية محسنة
 
-- [Next.js 14](https://nextjs.org/docs/getting-started)
-- [HeroUI v2](https://heroui.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Tailwind Variants](https://tailwind-variants.org)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [next-themes](https://github.com/pacocoursey/next-themes)
+### 📱 واجهة مستخدم محسنة
+- **شريط جانبي محسن**: تصميم أكثر تنظيماً مع تدرج لوني
+- **بطاقات إحصائية**: عرض البيانات بطريقة جذابة
+- **جداول محسنة**: عرض منظم للبيانات مع إمكانية البحث والترتيب
+- **أزرار محسنة**: تصميم متناسق للأزرار مع تأثيرات تفاعلية
 
-## How to Use
+### 🔧 مكونات جديدة
+- **DataTable**: جدول محسن مع إمكانية البحث والترتيب
+- **Card**: بطاقات متنوعة للعرض
+- **ActionButtons**: أزرار إجراءات محسنة
+- **StatCard**: بطاقات إحصائية محسنة
 
-### Use the template with create-next-app
+## التقنيات المستخدمة
 
-To create a new project based on this template using `create-next-app`, run the following command:
+- **Next.js 14**: إطار عمل React
+- **TypeScript**: لكتابة كود آمن ومنظم
+- **Tailwind CSS**: لتصميم الواجهة
+- **HeroUI**: مكتبة مكونات React
+- **Framer Motion**: للرسوم المتحركة
+- **Chart.js**: لعرض الرسوم البيانية
 
-```bash
-npx create-next-app -e https://github.com/heroui-inc/next-app-template
+## البنية الجديدة
+
+```
+├── app/                    # صفحات التطبيق
+│   ├── dashboard/         # لوحة التحكم
+│   └── ...
+├── components/            # المكونات
+│   ├── Card.tsx          # مكونات البطاقات
+│   ├── DataTable.tsx     # جدول البيانات
+│   ├── ActionButtons.tsx # أزرار الإجراءات
+│   └── StatCard.tsx      # البطاقات الإحصائية
+├── styles/               # ملفات التصميم
+│   └── globals.css       # التصميم العام المحسن
+└── ...
 ```
 
-### Install dependencies
+## التحسينات في التصميم
 
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
+### 1. نظام الألوان
+- **الألوان الأساسية**: أزرق هادئ (#3b82f6)
+- **الألوان الثانوية**: رمادي ناعم (#f8fafc)
+- **ألوان النجاح**: أخضر (#22c55e)
+- **ألوان التحذير**: برتقالي (#f59e0b)
+- **ألوان الخطأ**: أحمر (#ef4444)
 
+### 2. الخطوط والأحجام
+- **الخط الرئيسي**: Cairo
+- **الأحجام المتناسقة**: نظام أحجام منطقي
+- **التباعد**: مسافات مريحة للعين
+
+### 3. المكونات المحسنة
+- **البطاقات**: تصميم ناعم مع ظلال خفيفة
+- **الأزرار**: تأثيرات تفاعلية محسنة
+- **الجداول**: عرض منظم مع إمكانية البحث
+- **النماذج**: حقول إدخال محسنة
+
+## كيفية الاستخدام
+
+### تشغيل المشروع
 ```bash
 npm install
-```
-
-### Run the development server
-
-```bash
 npm run dev
 ```
 
-### Setup pnpm (optional)
+### استخدام المكونات الجديدة
 
-If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
+#### DataTable
+```tsx
+import DataTable from '@/components/DataTable';
 
-```bash
-public-hoist-pattern[]=*@heroui/*
+const columns = [
+  { key: 'name', label: 'الاسم', sortable: true },
+  { key: 'email', label: 'البريد الإلكتروني', sortable: true },
+];
+
+<DataTable 
+  columns={columns} 
+  data={data} 
+  title="قائمة المستخدمين"
+  searchable={true}
+  sortable={true}
+/>
 ```
 
-After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
+#### Card
+```tsx
+import Card, { InfoCard, MetricCard } from '@/components/Card';
 
-## Invoice and Payment Features
+<Card title="عنوان البطاقة" subtitle="وصف فرعي">
+  محتوى البطاقة
+</Card>
 
-### Supported Invoice Detail Fields
+<InfoCard 
+  title="إجمالي المبيعات" 
+  value="1,234,567" 
+  icon="💰"
+  trend={{ value: 12, isPositive: true }}
+/>
+```
 
-The application works with all columns available in the invoice detail table. The following table lists each field and its purpose:
+#### ActionButtons
+```tsx
+import ActionButtons from '@/components/ActionButtons';
 
+const buttons = [
+  { label: 'إضافة جديد', href: '/add', color: 'primary' },
+  { label: 'تصدير', href: '/export', color: 'secondary' },
+];
 
-| Field | Description | DB Field |
-|-------|-------------|----------|
-| `id` | Auto increment key | `id` |
-| `trans_type` | Invoice type (`2` means sales invoice) | `trans_type` |
-| `purity` | Purity/calibration value | `purity` |
-| `qty` | Number of pieces | `qty` |
-| `weight` | Gross weight | `weight` |
-| `g_weight` | Net/gauged weight | `g_weight` |
-| `k` | Gold carat (gauge) | `k` |
-| `price` | Price per gram | `price` |
-| `price_w` | Wage per gram | `price_w` |
-| `total` | Total value | `total` |
-| `total_w` | Total wages | `total_w` |
-| `total_a` | Value + wages | `total_a` |
-| `inv_note` | Line notes | `inv_note` |
-| `tax` | Added tax amount | `tax` |
-| `tax_prc` | Tax percentage (15% by default) | `tax_prc` |
-| `stones` | Stones information | `stones` |
-| `item_disc_prc` | Item discount percentage | `item_disc_prc` |
-| `item_disc_amt` | Item discount amount | `item_disc_amt` |
-| `sn` | Serial number of the item line | `sn` |
-| `item_desc` | Item description text | `item_desc` |
-| `cr_date` | Creation timestamp | `cr_date` |
-| `cr_user` | Username who created the line | `cr_user` |
-| `upd_date` | Last update timestamp | `upd_date` |
-| `upd_user` | Username who updated the line | `upd_user` |
-| `com` | Branch identifier | `com` |
-| `inv` | Invoice number (foreign key) | `inv` |
-| `item` | Item ID (foreign key) | `item` |
+<ActionButtons buttons={buttons} />
+```
 
-### payType
+## التحسينات المستقبلية
 
-The `payType` dropdown controls the visibility of four financial columns when editing an invoice:
+- [ ] إضافة الوضع المظلم
+- [ ] تحسين الأداء
+- [ ] إضافة المزيد من الرسوم البيانية
+- [ ] تحسين التجاوب مع الأجهزة المحمولة
 
-- **price** – price per gram
-- **price_w** – wage per gram
-- **total** – total value
-- **total_w** – total wages
+## المساهمة
 
-`total_a` and the weight columns remain visible regardless of the selected pay type. The numeric options are:
+نرحب بالمساهمات! يرجى اتباع معايير الكود الموجودة وإضافة اختبارات للميزات الجديدة.
 
-1 – value only
-2 – wages only
-3 – value and wages
+## الترخيص
 
-### Recording Payments
-
-1. Open the **Payments** page from the dashboard.
-2. Select the invoice to pay.
-3. Enter payment amount, method and reference.
-4. Click **Save** to record the payment.
-
-### ZATCA QR Generation
-
-When an invoice is saved, a Phase 1 ZATCA QR string is generated using the
-company name **"شركة ثمار الصفاء المتميزة التجارية"** and VAT number
-**311452959900003**. The timestamp, VAT amount and total come from the invoice
-data. The resulting value is stored in the `inv_QR` field of the invoice.
-
-#### API Endpoints
-
-- `getPayTypeList`
-- `customers_list`
-- `GetItemsList/`
-- `invoices_list`
-- `api_create_invoice`
-- `api_create_invoice_dtl`
-- `invoices_dtl_list`
-- `api_update_invoice_dtl`
-- `api_delete_invoice_dtl`
-
-## License
-
-Licensed under the [MIT license](https://github.com/heroui-inc/next-app-template/blob/main/LICENSE).
+هذا المشروع مرخص تحت رخصة MIT.

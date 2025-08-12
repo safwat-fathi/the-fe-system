@@ -18,11 +18,12 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
 import { API_BASE_URL, apiFetch } from "@/utilities/api";
+import useCrud from "@/utilities/useCrud";
 
 const API_URL = `${API_BASE_URL}units_list/`;
 const CREATE_URL = `${API_BASE_URL}api_create_unit`;
@@ -152,6 +153,36 @@ export default function UnitsTable() {
 
   const isViewMode = modalMode === "view";
 
+  const renderActions = (unit: Unit) => (
+    <div className="flex gap-2">
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("view", unit)}
+      >
+        <FaEye className="text-blue-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        onPress={() => openModal("edit", unit)}
+      >
+        <FaEdit className="text-yellow-500" />
+      </Button>
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        color="danger"
+        onPress={() => handleDelete(unit.id)}
+      >
+        <FaTrash />
+      </Button>
+    </div>
+  );
+
   return (
     <div className="p-4 font-cairo">
       <h1 className="text-2xl font-bold mb-6">الوحدات</h1>
@@ -188,11 +219,7 @@ export default function UnitsTable() {
                 <Checkbox isReadOnly isSelected={!!unit.unit_default} />
               </TableCell>
               <TableCell>
-                <ActionButtons
-                  onDelete={() => handleDelete(unit.id)}
-                  onEdit={() => openModal("edit", unit)}
-                  onView={() => openModal("view", unit)}
-                />
+                {renderActions(unit)}
               </TableCell>
             </TableRow>
           ))}

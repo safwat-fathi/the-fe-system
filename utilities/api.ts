@@ -4,6 +4,90 @@ export const API_BASE_URL: string =
 // export const GOLD_API_TOKEN: string =
 //   process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
 
+// وظائف المصادقة
+export async function loginUser(username: string, password: string) {
+  try {
+    console.log('محاولة تسجيل الدخول إلى:', `${API_BASE_URL}login/`);
+    console.log('بيانات تسجيل الدخول:', { username, password: '***' });
+    
+    const response = await fetch(`${API_BASE_URL}login/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    console.log('استجابة الخادم:', response.status, response.statusText);
+    
+    let data;
+    try {
+      data = await response.json();
+      console.log('بيانات الاستجابة:', data);
+    } catch (jsonError) {
+      console.error('خطأ في تحليل JSON:', jsonError);
+      throw new Error('استجابة غير صحيحة من الخادم');
+    }
+    
+    if (!response.ok) {
+      // إذا كان هناك رسالة خطأ من الخادم، استخدمها
+      if (data && data.message) {
+        throw new Error(data.message);
+      }
+      // وإلا استخدم رسالة خطأ عامة
+      throw new Error(`خطأ في الاتصال: ${response.status}`);
+    }
+
+    // التحقق من أن الاستجابة تحتوي على البيانات المطلوبة
+    if (!data || typeof data !== 'object') {
+      throw new Error('استجابة غير صحيحة من الخادم');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('خطأ في تسجيل الدخول:', error);
+    
+    // معالجة أخطاء الشبكة
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('لا يمكن الاتصال بالخادم. تأكد من اتصال الإنترنت.');
+    }
+    
+    // إعادة رمي الخطأ مع رسالة واضحة
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      throw new Error('حدث خطأ غير متوقع في الاتصال');
+    }
+  }
+}
+
+export function getAuthToken(): string | null {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth_token');
+  }
+  return null;
+}
+
+export function setAuthToken(token: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('auth_token', token);
+    // إضافة التوكن للكوكيز أيضاً للـ middleware
+    document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Strict`;
+  }
+}
+
+export function removeAuthToken() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('auth_token');
+    // حذف التوكن من الكوكيز
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  }
+}
+
+export function isAuthenticated(): boolean {
+  return getAuthToken() !== null;
+}
+
 export async function fetchGoldPrice(): Promise<number | null> {
   try {
     const response = await fetch("https://data-asg.goldprice.org/dbXRates/SAR");
@@ -50,23 +134,57 @@ export function appendBranchParams(url: string): string {
 export async function fetchData<T>(
   url: string,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  body?: any,
 ): Promise<T | null> {
   try {
+    console.log(`Fetching: ${url} with method: ${method}`);
     url = appendBranchParams(url);
-    const response = await fetch(url, { method });
+    console.log(`Final URL: ${url}`);
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // إضافة التوكن للطلبات إذا كان موجوداً
+    const token = getAuthToken();
+    if (token) {
+      headers['Authorization'] = `Token ${token}`;
+    }
+
+    const requestInit: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (body && (method === 'POST' || method === 'PUT')) {
+      requestInit.body = JSON.stringify(body);
+    }
+    
+    const response = await fetch(url, requestInit);
 
     if (!response.ok) {
       const errorMessage = await response.text();
-
+      console.error(`HTTP ${response.status} error for ${url}:`, errorMessage);
+      
+      // إذا كان الخطأ 401 (غير مصرح)، حذف التوكن وتوجيه لصفحة تسجيل الدخول
+      if (response.status === 401) {
+        removeAuthToken();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      }
+      
       throw new Error(`HTTP ${response.status} - ${errorMessage}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log(`Success response from ${url}:`, data);
+    return data;
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
 
-    console.error("Fetch error:", errorMessage);
+    console.error(`Fetch error for ${url}:`, errorMessage);
 
     return null;
   }
@@ -110,10 +228,10 @@ export const API_ENDPOINTS = {
   ACCOUNTS_LIST: `${API_BASE_URL}accounts_list`,
 
   //العملات
-  // CURRENCIES_LIST : `${API_BASE_URL}currencies_list/`;
-  // CREATE_CURRENCY : `${API_BASE_URL}api_create_currency`;
-  // UPDATE_CURRENCY : (id: number) => `${API_BASE_URL}api_update_currency/${id}`;
-  // DELETE_CURRENCY : (id: number) => `${API_BASE_URL}api_delete_currency/${id}`;
+  CURRENCIES_LIST: `${API_BASE_URL}currencies_list/`,
+  CREATE_CURRENCY: `${API_BASE_URL}api_create_currency`,
+  UPDATE_CURRENCY: (id: number) => `${API_BASE_URL}api_update_currency/${id}`,
+  DELETE_CURRENCY: (id: number) => `${API_BASE_URL}api_delete_currency/${id}`,
 
   // روابط الفئات والأصناف
   CATEGORIES_LIST: `${API_BASE_URL}categories_list/`,
@@ -148,12 +266,38 @@ export const API_ENDPOINTS = {
   VoucherTypeList: `${API_BASE_URL}getVoucherTypeList`,
   PayTypeList: `${API_BASE_URL}getPayTypeList`,
   ItemStatusList: `${API_BASE_URL}getItemStatus`, // add by Moseed 31-5-2025
-  INVOICE_BOX_LIST: `${API_BASE_URL}invoices_box_list`,
-  CREATE_INVOICE_BOX: `${API_BASE_URL}api_create_invoice_box`,
+  INVOICE_BOX_LIST: `${API_BASE_URL}boxes_list`,
+  CREATE_INVOICE_BOX: `${API_BASE_URL}api_create_box`,
   UPDATE_INVOICE_BOX: (id: number) =>
-    `${API_BASE_URL}api_update_invoice_box/${id}`,
+    `${API_BASE_URL}api_update_box/${id}`,
   DELETE_INVOICE_BOX: (id: number) =>
-    `${API_BASE_URL}api_delete_invoice_box/${id}`,
+    `${API_BASE_URL}api_delete_box/${id}`,
+
+  // Vouchers
+  VOUCHERS_LIST: `${API_BASE_URL}vouchers_list`,
+  CREATE_VOUCHER: `${API_BASE_URL}api_create_vouch`,
+  UPDATE_VOUCHER: (id: number) => `${API_BASE_URL}api_update_vouch/${id}`,
+  DELETE_VOUCHER: (id: number) => `${API_BASE_URL}api_delete_vouch/${id}`,
+
+  // Cost Centers
+  COST_CENTERS_LIST: `${API_BASE_URL}cost_centers_list`,
+  CREATE_COST_CENTER: `${API_BASE_URL}api_create_cost`,
+  UPDATE_COST_CENTER: (id: number) => `${API_BASE_URL}api_updatecost/${id}`,
+  DELETE_COST_CENTER: (id: number) => `${API_BASE_URL}api_delete_cost/${id}`,
+
+  // Voucher Details
+  VOUCHERS_DTL_LIST: `${API_BASE_URL}vouchers_dtl_list`,
+  VOUCHER_DETAILS: (vouchId: number) => `${API_BASE_URL}vouchers_dtl_list?vouch_id=${vouchId}`,
+  CREATE_VOUCHER_DTL: `${API_BASE_URL}api_create_vouch_dtl`,
+  UPDATE_VOUCHER_DTL: (id: number) => `${API_BASE_URL}api_update_vouch_dtl/${id}`,
+  DELETE_VOUCHER_DTL: (id: number) => `${API_BASE_URL}api_delete_vouch_dtl/${id}`,
+
+  // Voucher Box Details
+  VOUCHERS_BOX_LIST: `${API_BASE_URL}vouchers_box_list`,
+  VOUCHER_BOX_DETAILS: (vouchId: number) => `${API_BASE_URL}vouchers_box_list?vouch_id=${vouchId}`,
+  CREATE_VOUCHER_BOX: `${API_BASE_URL}api_create_vouch_box`,
+  UPDATE_VOUCHER_BOX: (id: number) => `${API_BASE_URL}api_update_vouch_box/${id}`,
+  DELETE_VOUCHER_BOX: (id: number) => `${API_BASE_URL}api_delete_vouch_box/${id}`,
 
   // system settings
   HOME_LIST: `${API_BASE_URL}home_list`,
@@ -187,5 +331,25 @@ export function apiFetch(input: string, init?: RequestInit) {
   ) {
     return fetch(input, init);
   }
-  return fetch(appendBranchParams(input), init);
+  
+  const url = appendBranchParams(input);
+  
+  // إضافة التوكن للطلبات إذا كان موجوداً
+  const token = getAuthToken();
+  if (token && init) {
+    init.headers = {
+      ...init.headers,
+      'Authorization': `Token ${token}`,
+    };
+  } else if (token) {
+    init = {
+      ...init,
+      headers: {
+        ...init?.headers,
+        'Authorization': `Token ${token}`,
+      },
+    };
+  }
+  
+  return fetch(url, init);
 }
