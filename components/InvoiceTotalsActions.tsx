@@ -255,8 +255,8 @@ export default function InvoiceTotalsActions({
       {children}
       
       {/* شريط الإجماليات في سطر واحد */}
-      <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
-        <div className="flex flex-wrap items-center gap-6 text-sm">
+      <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-200">
+        <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-gray-700 font-medium">الإجمالي:</span>
             <span className="font-semibold text-blue-800 flex items-center gap-1">

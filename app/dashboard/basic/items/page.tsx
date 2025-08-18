@@ -3,11 +3,6 @@ import { useEffect, useState , useCallback} from "react";
 import {
   Button,
   Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
   Table,
   TableHeader,
   TableColumn,
@@ -15,14 +10,14 @@ import {
   TableRow,
   TableCell,
   Pagination,
-  Card,
-  CardBody,
-  CardHeader,
   Chip,
   Select,
   SelectItem,
   Divider,
 } from "@heroui/react";
+import { HeroModal as Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@/components/Modal";
+import Card from "@/components/Card";
+import { CardBody, CardHeader } from "@heroui/react";
 import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaFilter } from "react-icons/fa";
 import toast from "react-hot-toast";
 
@@ -91,7 +86,7 @@ export default function CategoriesItemsPage() {
   const [currentItem, setCurrentItem] = useState<Partial<Item>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [catPage, setCatPage] = useState(1);
-  const catPerPage = 3;
+  const catPerPage = 2;
 
   const startIndex = (catPage - 1) * catPerPage;
   const endIndex = startIndex + catPerPage;
@@ -102,7 +97,7 @@ export default function CategoriesItemsPage() {
   const [itemsPrevUrl, setItemsPrevUrl] = useState<string | null>(null);
   const [itemsCount, setItemsCount] = useState<number>(0);
   const [itemsPage, setItemsPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(7);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [search, setSearch] = useState("");
 
   const [boxes, setBoxes] = useState<{ id: number; box_name: string }[]>([]);
@@ -433,61 +428,73 @@ export default function CategoriesItemsPage() {
   };
 
   return (
-    <div className="font-cairo p-2 bg-gray-50 min-h-screen space-y-1">
+    <div className="font-cairo p-1 bg-gray-50 h-screen overflow-hidden flex flex-col">
       {/* قسم الفئات */}
-      <Card className="card">
-        <CardHeader className="flex justify-between items-center py-2">
+      <Card className="card mb-1 flex-shrink-0" style={{ maxHeight: '35vh' }}>
+        <CardHeader className="flex justify-between items-center py-1">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">الفئات</h2>
-            <p className="text-gray-500 text-sm">إدارة فئات الأصناف</p>
+            <h2 className="text-lg font-bold text-gray-800">الفئات</h2>
+            <p className="text-gray-500 text-xs">إدارة فئات الأصناف</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <Input
               placeholder="البحث في الفئات..."
-              className="w-64"
+              className="w-48"
+              size="sm"
               startContent={<FaSearch className="text-gray-400" />}
             />
+            <Button
+              color="primary"
+              size="sm"
+              onPress={() => {
+                // يمكن إضافة منطق إضافة فئة جديدة هنا
+                toast.info("سيتم إضافة هذه الميزة قريباً");
+              }}
+              startContent={<FaPlus className="text-xs" />}
+            >
+              إضافة فئة
+            </Button>
           </div>
         </CardHeader>
-        <CardBody className="py-2">
+        <CardBody className="py-1">
           <div className="table-container">
-            <Table aria-label="جدول الفئات" className="min-h-[250px] table-no-scrollbar">
+            <Table aria-label="جدول الفئات" className="min-h-[80px] table-no-scrollbar" size="sm">
               <TableHeader>
-                <TableColumn className="text-right">اسم الفئة</TableColumn>
-                <TableColumn className="text-center">العيار</TableColumn>
-                <TableColumn className="text-center">المعايرة</TableColumn>
-                <TableColumn className="text-center">الصندوق</TableColumn>
-                <TableColumn className="text-center">الضريبة</TableColumn>
-                <TableColumn className="text-center">النوع</TableColumn>
-                <TableColumn className="text-center">الحالة</TableColumn>
-                <TableColumn className="text-center">الإجراءات</TableColumn>
+                <TableColumn className="text-right text-xs">اسم الفئة</TableColumn>
+                <TableColumn className="text-center text-xs">العيار</TableColumn>
+                <TableColumn className="text-center text-xs">المعايرة</TableColumn>
+                <TableColumn className="text-center text-xs">الصندوق</TableColumn>
+                <TableColumn className="text-center text-xs">الضريبة</TableColumn>
+                <TableColumn className="text-center text-xs">النوع</TableColumn>
+                <TableColumn className="text-center text-xs">الحالة</TableColumn>
+                <TableColumn className="text-center text-xs">الإجراءات</TableColumn>
               </TableHeader>
               <TableBody>
                 {pagedCategories.map((cat) => (
                   <TableRow key={cat.id} className="hover:bg-gray-50 transition-colors">
-                    <TableCell className="font-medium max-w-md truncate">
+                    <TableCell className="font-medium max-w-md truncate text-xs">
                       {cat.cat_name}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center text-xs">
                       <Chip color="primary" variant="flat" size="sm">
                         {cat.gauge}
                       </Chip>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center text-xs">
                       {cat.purity}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center text-xs">
                       {boxes.find((b) => b.id === cat.box)?.box_name || "-"}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center text-xs">
                       <Chip color="success" variant="flat" size="sm">
                         {cat.tax}%
                       </Chip>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center text-xs">
                       {catTypes.find((t) => t.code_id === cat.cat_type)?.code_desc || "-"}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center text-xs">
                       <Chip 
                         color={cat.cat_status === 1 ? "success" : "warning"} 
                         variant="flat" 
@@ -506,9 +513,9 @@ export default function CategoriesItemsPage() {
                             setSelectedCatId(cat.id);
                             // يمكن إضافة منطق عرض تفاصيل الفئة هنا
                           }}
-                          className="text-blue-500 hover:bg-blue-50"
+                          className="text-blue-500 hover:bg-blue-50 text-xs"
                         >
-                          <FaEye />
+                          <FaEye className="text-xs" />
                         </Button>
                         <Button
                           isIconOnly
@@ -518,9 +525,9 @@ export default function CategoriesItemsPage() {
                             setSelectedCatId(cat.id);
                             // يمكن إضافة منطق تعديل الفئة هنا
                           }}
-                          className="text-yellow-500 hover:bg-yellow-50"
+                          className="text-yellow-500 hover:bg-yellow-50 text-xs"
                         >
-                          <FaEdit />
+                          <FaEdit className="text-xs" />
                         </Button>
                         <Button
                           isIconOnly
@@ -530,9 +537,9 @@ export default function CategoriesItemsPage() {
                           onPress={() => {
                             // يمكن إضافة منطق حذف الفئة هنا
                           }}
-                          className="hover:bg-red-50"
+                          className="hover:bg-red-50 text-xs"
                         >
-                          <FaTrash />
+                          <FaTrash className="text-xs" />
                         </Button>
                       </div>
                     </TableCell>
@@ -543,11 +550,12 @@ export default function CategoriesItemsPage() {
           </div>
           
           <div className="flex justify-between items-center mt-1 pt-1 border-t">
-            <span className="text-sm text-gray-500">
+            <span className="text-xs text-gray-500">
               عدد الفئات: {categories.length}
             </span>
             <Pagination
               color="primary"
+              size="sm"
               page={catPage}
               total={totalCatPages}
               onChange={setCatPage}
@@ -559,36 +567,72 @@ export default function CategoriesItemsPage() {
       </Card>
 
       {/* قسم الأصناف */}
-      <Card className="card">
-        <CardHeader className="flex justify-between items-center py-2">
+      <Card className="card flex-1 flex flex-col">
+        <CardHeader className="flex justify-between items-center py-1 flex-shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">الأصناف</h2>
-            <p className="text-gray-500 text-sm">إدارة الأصناف والمنتجات</p>
+            <h2 className="text-lg font-bold text-gray-800">الأصناف</h2>
+            <p className="text-gray-500 text-xs">إدارة الأصناف والمنتجات</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <Input
               placeholder="البحث في الأصناف..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-64"
+              className="w-48"
+              size="sm"
               startContent={<FaSearch className="text-gray-400" />}
             />
+            <Button
+              color="primary"
+              size="sm"
+              onPress={() => {
+                setModalMode("add");
+                setNewItem({
+                  id: 0,
+                  item_name: "",
+                  item_name_e: "",
+                  item_price: "0.00",
+                  item_img: "/default.png",
+                  item_code: "0000000000000",
+                  item_barcode: " ",
+                  first_cost: "0.00",
+                  item_weight: "0.00",
+                  item_g_weight: "0.00",
+                  stones: "0.00",
+                  model: "",
+                  k: "0.00",
+                  purity: "0.00",
+                  item_status: 1,
+                  cr_date: "",
+                  cr_user: "",
+                  upd_date: "",
+                  upd_user: "",
+                  cat: null,
+                  item_type: null,
+                  unit: null,
+                });
+                setIsModalOpen(true);
+              }}
+              startContent={<FaPlus className="text-xs" />}
+            >
+              إضافة صنف
+            </Button>
           </div>
         </CardHeader>
-        <CardBody className="py-2">
-          <div className="table-container">
-            <Table aria-label="جدول الأصناف" className="min-h-[250px] table-no-scrollbar">
+        <CardBody className="py-1 flex-1 flex flex-col">
+          <div className="table-container flex-1">
+            <Table aria-label="جدول الأصناف" className="h-full table-no-scrollbar" size="sm" style={{ minHeight: '200px' }}>
               <TableHeader>
-                <TableColumn className="text-right">الكود</TableColumn>
-                <TableColumn className="text-right">الاسم</TableColumn>
-                <TableColumn className="text-center">السعر</TableColumn>
-                <TableColumn className="text-center">الوزن</TableColumn>
-                <TableColumn className="text-center">العيار</TableColumn>
-                <TableColumn className="text-center">المعايرة</TableColumn>
-                <TableColumn className="text-center">التكلفة</TableColumn>
-                <TableColumn className="text-center">الوحدة</TableColumn>
-                <TableColumn className="text-center">الحالة</TableColumn>
-                <TableColumn className="text-center">الإجراءات</TableColumn>
+                <TableColumn className="text-right text-xs">الكود</TableColumn>
+                <TableColumn className="text-right text-xs">الاسم</TableColumn>
+                <TableColumn className="text-center text-xs">السعر</TableColumn>
+                <TableColumn className="text-center text-xs">الوزن</TableColumn>
+                <TableColumn className="text-center text-xs">العيار</TableColumn>
+                <TableColumn className="text-center text-xs">المعايرة</TableColumn>
+                <TableColumn className="text-center text-xs">التكلفة</TableColumn>
+                <TableColumn className="text-center text-xs">الوحدة</TableColumn>
+                <TableColumn className="text-center text-xs">الحالة</TableColumn>
+                <TableColumn className="text-center text-xs">الإجراءات</TableColumn>
               </TableHeader>
               <TableBody>
                 {pagedItems.map((item) => {
@@ -597,35 +641,35 @@ export default function CategoriesItemsPage() {
                   
                   return (
                     <TableRow key={item.id} className="hover:bg-gray-50 transition-colors">
-                      <TableCell className="font-mono text-sm">
+                      <TableCell className="font-mono text-xs">
                         {item.item_code || "-"}
                       </TableCell>
-                      <TableCell className="font-medium max-w-md truncate">
+                      <TableCell className="font-medium max-w-md truncate text-xs">
                         {item.item_name}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center text-xs">
                         <Chip color="success" variant="flat" size="sm">
                           {item.item_price || "-"} ﷼
                         </Chip>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center text-xs">
                         {item.item_weight || "-"}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center text-xs">
                         <Chip color="primary" variant="flat" size="sm">
                           {item.k || "-"}
                         </Chip>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center text-xs">
                         {item.purity || "-"}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center text-xs">
                         {item.first_cost || "-"}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center text-xs">
                         {unitName?.unit_name || "-"}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center text-xs">
                         <Chip 
                           color={item.item_status === 1 ? "success" : "warning"} 
                           variant="flat" 
@@ -641,18 +685,18 @@ export default function CategoriesItemsPage() {
                             size="sm"
                             variant="light"
                             onPress={() => handleViewItem(item)}
-                            className="text-blue-500 hover:bg-blue-50"
+                            className="text-blue-500 hover:bg-blue-50 text-xs"
                           >
-                            <FaEye />
+                            <FaEye className="text-xs" />
                           </Button>
                           <Button
                             isIconOnly
                             size="sm"
                             variant="light"
                             onPress={() => handleEditItem(item)}
-                            className="text-yellow-500 hover:bg-yellow-50"
+                            className="text-yellow-500 hover:bg-yellow-50 text-xs"
                           >
-                            <FaEdit />
+                            <FaEdit className="text-xs" />
                           </Button>
                           <Button
                             isIconOnly
@@ -660,9 +704,9 @@ export default function CategoriesItemsPage() {
                             variant="light"
                             color="danger"
                             onPress={() => handleDeleteItem(item.id)}
-                            className="hover:bg-red-50"
+                            className="hover:bg-red-50 text-xs"
                           >
-                            <FaTrash />
+                            <FaTrash className="text-xs" />
                           </Button>
                         </div>
                       </TableCell>
@@ -673,12 +717,13 @@ export default function CategoriesItemsPage() {
             </Table>
           </div>
           
-          <div className="flex justify-between items-center mt-1 pt-1 border-t">
-            <span className="text-sm text-gray-500">
+          <div className="flex justify-between items-center mt-1 pt-1 border-t flex-shrink-0">
+            <span className="text-xs text-gray-500">
               عدد الأصناف: {itemsCount}
             </span>
             <Pagination
               color="primary"
+              size="sm"
               page={itemsPage}
               total={Math.ceil(itemsCount / itemsPerPage) || 1}
               onChange={(p) => {

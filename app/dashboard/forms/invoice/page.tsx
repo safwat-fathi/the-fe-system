@@ -160,6 +160,111 @@ export default function InvoicePage() {
   // منع تكرار استدعاء نفس الفاتورة بشكل فوري
   const lastLoadedInvoiceRef = useRef<string | null>(null);
 
+  // حفظ البيانات في localStorage
+  useEffect(() => {
+    if (isEditing && !isExistingInvoice) {
+      const invoiceData = {
+        selectedCustomer,
+        invoiceItems,
+        paymentMethod,
+        employee,
+        note,
+        handlingMethod,
+        mobileMethod,
+        referenceNumber,
+        vatNumber,
+        payType,
+        crNo,
+        gov,
+        city,
+        area,
+        street,
+        buildNo,
+        postNo,
+        postCode,
+        manualTotalValue,
+        manualTotalWages,
+        useManualTotals,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('invoice_draft', JSON.stringify(invoiceData));
+    }
+  }, [
+    isEditing, isExistingInvoice, selectedCustomer, invoiceItems, paymentMethod,
+    employee, note, handlingMethod, mobileMethod, referenceNumber, vatNumber,
+    payType, crNo, gov, city, area, street, buildNo, postNo, postCode,
+    manualTotalValue, manualTotalWages, useManualTotals
+  ]);
+
+  // استعادة البيانات من localStorage
+  useEffect(() => {
+    if (isEditing && !isExistingInvoice) {
+      const savedData = localStorage.getItem('invoice_draft');
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          const isRecent = Date.now() - data.timestamp < 30 * 60 * 1000; // 30 دقيقة
+          
+          if (isRecent) {
+            setSelectedCustomer(data.selectedCustomer);
+            setInvoiceItems(data.invoiceItems || [{
+              id: Date.now(),
+              item_id: null,
+              item_code: "",
+              qty: 1,
+              weight: 0,
+              g_weight: 0,
+              k: "",
+              price: 0,
+              price_w: 0,
+              note: "",
+              trans_type: 2,
+              purity: "",
+              total: 0,
+              total_w: 0,
+              total_a: 0,
+              tax: 0,
+              tax_prc: 15,
+              stones: "",
+              item_disc_prc: 0,
+              item_disc_amt: 0,
+              sn: "",
+              item_desc: "",
+              cr_date: "",
+              cr_user: "",
+              upd_date: "",
+              upd_user: "",
+              com: 0,
+              inv: 0,
+              item: 0,
+            }]);
+            setPaymentMethod(data.paymentMethod || "cash");
+            setEmployee(data.employee || "");
+            setNote(data.note || "");
+            setHandlingMethod(data.handlingMethod || "");
+            setMobileMethod(data.mobileMethod || "");
+            setReferenceNumber(data.referenceNumber || "");
+            setVatNumber(data.vatNumber || "");
+            setPayType(data.payType || 1);
+            setCrNo(data.crNo || "");
+            setGov(data.gov || "");
+            setCity(data.city || "");
+            setArea(data.area || "");
+            setStreet(data.street || "");
+            setBuildNo(data.buildNo || "");
+            setPostNo(data.postNo || "");
+            setPostCode(data.postCode || "");
+            setManualTotalValue(data.manualTotalValue || 0);
+            setManualTotalWages(data.manualTotalWages || 0);
+            setUseManualTotals(data.useManualTotals || false);
+          }
+        } catch (error) {
+          console.error("خطأ في استعادة البيانات المحفوظة:", error);
+        }
+      }
+    }
+  }, [isEditing, isExistingInvoice]);
+
   useEffect(() => {
     const invId = searchParams.get("inv_id");
     const isNewInvoice = searchParams.get("new") === "true";
@@ -618,6 +723,9 @@ export default function InvoicePage() {
       setCommitVal(true);
       setIsExistingInvoice(true);
       setIsEditing(false);
+      
+      // مسح البيانات المحفوظة بعد الحفظ الناجح
+      localStorage.removeItem('invoice_draft');
     } catch (err) {
       console.error("❌ خطأ أثناء الحفظ:", err);
       toast.error("حدث خطأ أثناء حفظ الفاتورة");
@@ -1384,6 +1492,9 @@ export default function InvoicePage() {
     
     // توليد رقم فاتورة جديد
     getNextInvoiceNumber().then(setInvoiceNumber);
+    
+    // مسح البيانات المحفوظة
+    localStorage.removeItem('invoice_draft');
     
     console.log("تم إعادة تعيين الفاتورة لفاتورة جديدة");
   };

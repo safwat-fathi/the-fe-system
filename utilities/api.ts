@@ -226,6 +226,9 @@ export const API_ENDPOINTS = {
 
   // الحسابات
   ACCOUNTS_LIST: `${API_BASE_URL}accounts_list`,
+  CREATE_ACCOUNT: `${API_BASE_URL}api_create_account`,
+  UPDATE_ACCOUNT: (id: number) => `${API_BASE_URL}api_update_account/${id}`,
+  DELETE_ACCOUNT: (id: number) => `${API_BASE_URL}api_delete_account/${id}`,
 
   //العملات
   CURRENCIES_LIST: `${API_BASE_URL}currencies_list/`,
@@ -273,6 +276,9 @@ export const API_ENDPOINTS = {
   DELETE_INVOICE_BOX: (id: number) =>
     `${API_BASE_URL}api_delete_box/${id}`,
 
+  // روابط الصناديق من جدول العملاء (النوع = 99)
+  CUSTOMER_BOXES_LIST: `${API_BASE_URL}customers_list?cust_type=99`,
+
   // Vouchers
   VOUCHERS_LIST: `${API_BASE_URL}vouchers_list`,
   CREATE_VOUCHER: `${API_BASE_URL}api_create_vouch`,
@@ -317,10 +323,84 @@ export const API_ENDPOINTS = {
 
   // companies
   COMPANIES_LIST: `${API_BASE_URL}companies_list`,
+  
+  // البحث بالباركود - API جديد للمطابقة التامة
+  ITEM_BARCODE_SEARCH: (barcode: string) => `${API_BASE_URL}ItemBarcode/${encodeURIComponent(barcode)}`,
+  
+  // البحث في الحسابات - API جديد للبحث في الحسابات
+  SEARCH_ACCOUNTS: (query: string, page: number = 1) => `${API_BASE_URL}SearchAccountsList/?q=${encodeURIComponent(query)}&page=${page}`,
 };
 
 export function fetchCompanies() {
   return fetchData<any[]>(API_ENDPOINTS.COMPANIES_LIST);
+}
+
+// دالة البحث بالباركود باستخدام API الجديد
+export async function fetchItemByBarcode(barcode: string): Promise<any | null> {
+  try {
+    console.log('البحث بالباركود:', barcode);
+    
+    const response = await fetch(API_ENDPOINTS.ITEM_BARCODE_SEARCH(barcode), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Token ${getAuthToken()}`,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log('لم يتم العثور على الصنف بالباركود:', barcode);
+        return null;
+      }
+      throw new Error(`خطأ في البحث: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('نتيجة البحث بالباركود:', data);
+    
+    // API يعيد مصفوفة، نأخذ العنصر الأول
+    if (Array.isArray(data) && data.length > 0) {
+      console.log('تم العثور على الصنف:', data[0]);
+      return data[0];
+    } else if (Array.isArray(data) && data.length === 0) {
+      console.log('لم يتم العثور على الصنف بالباركود:', barcode);
+      return null;
+    } else {
+      // إذا لم تكن مصفوفة، نعيد البيانات كما هي
+      return data;
+    }
+  } catch (error) {
+    console.error('خطأ في البحث بالباركود:', error);
+    throw error;
+  }
+}
+
+// دالة البحث في الحسابات
+export async function searchAccounts(query: string, page: number = 1): Promise<any> {
+  try {
+    console.log('البحث في الحسابات:', query);
+    
+    const response = await fetch(API_ENDPOINTS.SEARCH_ACCOUNTS(query, page), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Token ${getAuthToken()}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`خطأ في البحث في الحسابات: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('نتيجة البحث في الحسابات:', data);
+    
+    return data;
+  } catch (error) {
+    console.error('خطأ في البحث في الحسابات:', error);
+    throw error;
+  }
 }
 
 export function apiFetch(input: string, init?: RequestInit) {

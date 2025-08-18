@@ -12,70 +12,118 @@ import {
   Button,
   Checkbox,
   Pagination,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  Select,
+  SelectItem,
 } from "@heroui/react";
+import { HeroModal as Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/Modal";
 import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
-import { API_ENDPOINTS } from "@/utilities/api";
+import { API_ENDPOINTS, fetchData } from "@/utilities/api";
 import useCrud from "@/utilities/useCrud";
 
 const {
-  INVOICE_BOX_LIST,
-  CREATE_INVOICE_BOX,
-  UPDATE_INVOICE_BOX,
-  DELETE_INVOICE_BOX,
+  CUSTOMER_BOXES_LIST,
+  CREATE_CUSTOMER,
+  UPDATE_CUSTOMER,
+  DELETE_CUSTOMER,
+  BoxTypeList,
 } = API_ENDPOINTS;
 
-import type { InvoiceBox } from "@/types/invoice-box";
+// Interface for customer boxes (customers with cust_type = 99)
+interface CustomerBox {
+  id: number;
+  cust_code?: string;
+  cust_name: string;
+  cust_name_e: string;
+  mobile: number | string;
+  email: string;
+  address: string;
+  vat_no: number | null;
+  cr_no: number | null;
+  phone: string;
+  fax: string;
+  gov: string;
+  city: string;
+  area: string;
+  street: string;
+  build_no: string;
+  post_code: string;
+  cust_status: number;
+  acc?: number;
+  acc_name?: string;
+  cust_type?: number;
+  box_type: string;
+  handling: string;
+  handling_e?: string;
+  perc?: number;
+  expt?: boolean;
+  hide?: boolean;
+}
 
 const columns = [
   { name: "رقم الصندوق", uid: "id" },
-  { name: "اسم الصندوق", uid: "box_name" },
-  { name: "الاسم بالإنجليزي", uid: "box_name_e" },
+  { name: "كود الصندوق", uid: "cust_code" },
+  { name: "اسم الصندوق", uid: "cust_name" },
+  { name: "الاسم بالإنجليزي", uid: "cust_name_e" },
   { name: "نوع الصندوق", uid: "box_type" },
-  { name: "الحالة", uid: "box_status" },
-  { name: "افتراضي", uid: "box_default" },
+  { name: "الحالة", uid: "cust_status" },
   { name: "", uid: "actions" },
 ];
 
-export default function InvoiceBoxPage() {
-  const [boxes, setBoxes] = useState<InvoiceBox[]>([]);
+export default function CustomerBoxPage() {
+  const [boxes, setBoxes] = useState<CustomerBox[]>([]);
+  const [boxTypes, setBoxTypes] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
-  const [currentBox, setCurrentBox] = useState<Partial<InvoiceBox>>({});
+  const [currentBox, setCurrentBox] = useState<Partial<CustomerBox>>({});
 
   const rowsPerPage = 10;
 
   const { loadItems, createItem, updateItem, deleteItem } = useCrud();
 
   const loadBoxes = useCallback(async () => {
-    const data = await loadItems<InvoiceBox>(INVOICE_BOX_LIST);
+    const data = await loadItems<CustomerBox>(CUSTOMER_BOXES_LIST);
     setBoxes(data);
   }, [loadItems]);
 
+  const loadBoxTypes = useCallback(async () => {
+    try {
+      const data = await fetchData(BoxTypeList);
+      const types = Array.isArray(data?.results) ? data.results : [];
+      setBoxTypes(types);
+    } catch (error) {
+      console.error("❌ خطأ في تحميل أنواع الصناديق:", error);
+    }
+  }, []);
+
   useEffect(() => {
     loadBoxes();
-  }, [loadBoxes]);
+    loadBoxTypes();
+  }, [loadBoxes, loadBoxTypes]);
 
   const handleSave = async () => {
     try {
       const url =
         modalMode === "edit" && currentBox.id
-          ? UPDATE_INVOICE_BOX(currentBox.id)
-          : CREATE_INVOICE_BOX;
+          ? UPDATE_CUSTOMER(currentBox.id)
+          : CREATE_CUSTOMER;
+
+      // Prepare customer data for boxes (cust_type = 99)
+      const boxData = {
+        ...currentBox,
+        cust_type: 99, // Set customer type to 99 for boxes
+        cust_code: currentBox.cust_code || String(currentBox.id || ""),
+        cust_status: currentBox.cust_status || 1, // Default active status
+      };
 
       const response =
         modalMode === "edit" && currentBox.id
-          ? await updateItem(url, currentBox)
-          : await createItem(url, currentBox);
+          ? await updateItem(url, boxData)
+          : await createItem(url, boxData);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -104,7 +152,7 @@ export default function InvoiceBoxPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف هذا الصندوق؟")) return;
     try {
-      const response = await deleteItem(DELETE_INVOICE_BOX(id));
+      const response = await deleteItem(DELETE_CUSTOMER(id));
 
       if (!response.ok) throw new Error();
       toast.success("✅ تم حذف الصندوق بنجاح");
@@ -116,7 +164,9 @@ export default function InvoiceBoxPage() {
 
   const filtered = useMemo(() => {
     return boxes.filter((b) =>
-      b.box_name?.toLowerCase().includes(search.toLowerCase()),
+      b.cust_name?.toLowerCase().includes(search.toLowerCase()) ||
+      b.cust_code?.toLowerCase().includes(search.toLowerCase()) ||
+      b.cust_name_e?.toLowerCase().includes(search.toLowerCase()),
     );
   }, [boxes, search]);
 
@@ -128,7 +178,7 @@ export default function InvoiceBoxPage() {
 
   const openModal = (
     mode: "add" | "edit" | "view",
-    box: Partial<InvoiceBox> = {},
+    box: Partial<CustomerBox> = {},
   ) => {
     setModalMode(mode);
     setCurrentBox(box);
@@ -137,7 +187,7 @@ export default function InvoiceBoxPage() {
 
   const isViewMode = modalMode === "view";
 
-  const renderActions = (box: InvoiceBox) => (
+  const renderActions = (box: CustomerBox) => (
     <div className="flex gap-2">
       <Button
         isIconOnly
@@ -177,7 +227,7 @@ export default function InvoiceBoxPage() {
         </Button>
         <Input
           className="w-60"
-          placeholder="بحث بالاسم..."
+          placeholder="بحث بالاسم أو الكود..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -193,14 +243,14 @@ export default function InvoiceBoxPage() {
           {paginated.map((box) => (
             <TableRow key={box.id}>
               <TableCell>{box.id}</TableCell>
-              <TableCell>{box.box_name}</TableCell>
-              <TableCell>{box.box_name_e}</TableCell>
-              <TableCell>{box.box_type || "-"}</TableCell>
+              <TableCell>{box.cust_code}</TableCell>
+              <TableCell>{box.cust_name}</TableCell>
+              <TableCell>{box.cust_name_e}</TableCell>
               <TableCell>
-                <Checkbox isReadOnly isSelected={!!box.box_status} />
+                {boxTypes.find(type => type.code_id === box.box_type)?.code_desc || box.box_type || "-"}
               </TableCell>
               <TableCell>
-                <Checkbox isReadOnly isSelected={!!box.box_default} />
+                <Checkbox isReadOnly isSelected={!!box.cust_status} />
               </TableCell>
               <TableCell>
                 {renderActions(box)}
@@ -237,64 +287,174 @@ export default function InvoiceBoxPage() {
           <ModalBody className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
             <Input
               isDisabled={isViewMode}
-              label="اسم الصندوق"
-              value={currentBox.box_name || ""}
+              label="كود الصندوق"
+              value={currentBox.cust_code || ""}
               onChange={(e) =>
-                setCurrentBox({ ...currentBox, box_name: e.target.value })
+                setCurrentBox({ ...currentBox, cust_code: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="اسم الصندوق"
+              value={currentBox.cust_name || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, cust_name: e.target.value })
               }
             />
             <Input
               isDisabled={isViewMode}
               label="الاسم بالإنجليزي"
-              value={currentBox.box_name_e || ""}
+              value={currentBox.cust_name_e || ""}
               onChange={(e) =>
-                setCurrentBox({ ...currentBox, box_name_e: e.target.value })
+                setCurrentBox({ ...currentBox, cust_name_e: e.target.value })
               }
             />
-            <Input
+            <Select
               isDisabled={isViewMode}
               label="نوع الصندوق"
-              value={currentBox.box_type || ""}
+              selectedKeys={currentBox.box_type ? [currentBox.box_type] : []}
+              onSelectionChange={(keys) => {
+                const selectedKey = Array.from(keys)[0];
+                setCurrentBox({ ...currentBox, box_type: selectedKey as string });
+              }}
+            >
+              {boxTypes.map((type) => (
+                <SelectItem key={type.code_id} textValue={type.code_desc}>
+                  {type.code_desc}
+                </SelectItem>
+              ))}
+            </Select>
+            <Input
+              isDisabled={isViewMode}
+              label="الجوال"
+              value={currentBox.mobile?.toString() || ""}
               onChange={(e) =>
-                setCurrentBox({ ...currentBox, box_type: e.target.value })
+                setCurrentBox({ ...currentBox, mobile: e.target.value })
               }
             />
             <Input
               isDisabled={isViewMode}
-              label="رصيد المبلغ"
-              type="number"
-              value={currentBox.balance_amt?.toString() || ""}
+              label="البريد الإلكتروني"
+              value={currentBox.email || ""}
               onChange={(e) =>
-                setCurrentBox({ ...currentBox, balance_amt: parseFloat(e.target.value) || null })
+                setCurrentBox({ ...currentBox, email: e.target.value })
               }
             />
             <Input
               isDisabled={isViewMode}
-              label="رصيد الذهب"
-              type="number"
-              value={currentBox.balance_gold?.toString() || ""}
+              label="العنوان"
+              value={currentBox.address || ""}
               onChange={(e) =>
-                setCurrentBox({ ...currentBox, balance_gold: parseFloat(e.target.value) || null })
+                setCurrentBox({ ...currentBox, address: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="المحافظة"
+              value={currentBox.gov || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, gov: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="المدينة"
+              value={currentBox.city || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, city: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="المنطقة"
+              value={currentBox.area || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, area: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="الشارع"
+              value={currentBox.street || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, street: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="المبنى"
+              value={currentBox.build_no || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, build_no: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="الرمز البريدي"
+              value={currentBox.post_code || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, post_code: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="الهاتف"
+              value={currentBox.phone || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, phone: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="الفاكس"
+              value={currentBox.fax || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, fax: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="المحصل"
+              value={currentBox.handling || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, handling: e.target.value })
+              }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="المحصل (بالإنجليزي)"
+              value={currentBox.handling_e || ""}
+              onChange={(e) =>
+                setCurrentBox({ ...currentBox, handling_e: e.target.value })
               }
             />
             <div className="col-span-2 flex gap-6 items-center">
               <Checkbox
                 isDisabled={isViewMode}
-                isSelected={currentBox.box_status || false}
+                isSelected={currentBox.cust_status || false}
                 onValueChange={(val) =>
-                  setCurrentBox({ ...currentBox, box_status: val })
+                  setCurrentBox({ ...currentBox, cust_status: val ? 1 : 0 })
                 }
               >
                 مفعلة
               </Checkbox>
               <Checkbox
                 isDisabled={isViewMode}
-                isSelected={currentBox.box_default || false}
+                isSelected={currentBox.expt || false}
                 onValueChange={(val) =>
-                  setCurrentBox({ ...currentBox, box_default: val })
+                  setCurrentBox({ ...currentBox, expt: val })
                 }
               >
-                افتراضي
+                مستثنى من كشف الأرصدة
+              </Checkbox>
+              <Checkbox
+                isDisabled={isViewMode}
+                isSelected={currentBox.hide || false}
+                onValueChange={(val) =>
+                  setCurrentBox({ ...currentBox, hide: val })
+                }
+              >
+                مخفي
               </Checkbox>
             </div>
           </ModalBody>

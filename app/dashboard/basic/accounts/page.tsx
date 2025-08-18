@@ -1,9 +1,21 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Input, Button, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Card, CardBody } from "@heroui/react";
+import { Input, Button, Select, SelectItem, CardBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import toast from "react-hot-toast";
-import { ChevronRightIcon, ChevronDownIcon, FolderIcon, DocumentIcon, PlusIcon, PencilIcon, EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { API_ENDPOINTS, fetchData } from "../../../../utilities/api";
+import Card from "../../../../components/Card";
+import { FormModal, InfoModal } from "../../../../components/Modal";
+
+// Simple icon components
+const ChevronRightIcon = ({ className }: { className?: string }) => <span className={className}>▶</span>;
+const ChevronDownIcon = ({ className }: { className?: string }) => <span className={className}>▼</span>;
+const FolderIcon = ({ className }: { className?: string }) => <span className={className}>📁</span>;
+const DocumentIcon = ({ className }: { className?: string }) => <span className={className}>📄</span>;
+const PlusIcon = ({ className }: { className?: string }) => <span className={className}>+</span>;
+const PencilIcon = ({ className }: { className?: string }) => <span className={className}>✏️</span>;
+const EyeIcon = ({ className }: { className?: string }) => <span className={className}>👁️</span>;
+const TrashIcon = ({ className }: { className?: string }) => <span className={className}>🗑️</span>;
 
 interface Account {
   id: number;
@@ -59,7 +71,7 @@ export default function AccountsPage() {
     acc_level: 1
   });
 
-  const API_BASE_URL = "http://84.46.240.24:8000/api";
+
 
   useEffect(() => {
     fetchAccounts();
@@ -68,15 +80,12 @@ export default function AccountsPage() {
 
   const fetchAccounts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/accounts_list`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error Details:", errorData);
-        toast.error(`خطأ: ${errorData.message || "تفاصيل غير معروفة"}`);
+      const allAccountsData = await fetchData<Account[]>(API_ENDPOINTS.ACCOUNTS_LIST);
+      if (!allAccountsData || !Array.isArray(allAccountsData)) {
+        toast.error("فشل في تحميل الحسابات");
         return;
       }
       
-      const allAccountsData = await response.json();
       console.log("Fetched Accounts:", allAccountsData);
       
       const accountsWithChildren = buildAccountTree(allAccountsData);
@@ -89,12 +98,12 @@ export default function AccountsPage() {
 
   const fetchCurrencies = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/currencies_list/`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch currencies");
+      const currenciesData = await fetchData<Currency[]>(API_ENDPOINTS.CURRENCIES_LIST);
+      if (!currenciesData || !Array.isArray(currenciesData)) {
+        toast.error("حدث خطأ أثناء جلب بيانات العملات.");
+        return;
       }
       
-      const currenciesData = await response.json();
       console.log("Fetched Currencies:", currenciesData);
       setCurrencies(currenciesData);
     } catch (error) {
@@ -239,14 +248,9 @@ export default function AccountsPage() {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذا الحساب؟")) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api_delete_account/${accountId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error deleting account:", errorData);
-        toast.error(`حدث خطأ أثناء حذف الحساب: ${errorData.message || "تفاصيل غير معروفة"}`);
+      const result = await fetchData(API_ENDPOINTS.DELETE_ACCOUNT(accountId), "DELETE");
+      if (result === null) {
+        toast.error("حدث خطأ أثناء حذف الحساب");
         return;
       }
 
@@ -282,18 +286,12 @@ export default function AccountsPage() {
         newAccount.id = selectedAccount.id;
       }
 
-      const url = isEdit ? `${API_BASE_URL}/api_update_account/${selectedAccount?.id}` : `${API_BASE_URL}/api_create_account`;
+      const url = isEdit ? API_ENDPOINTS.UPDATE_ACCOUNT(selectedAccount?.id!) : API_ENDPOINTS.CREATE_ACCOUNT;
       const method = isEdit ? "PUT" : "POST";
 
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAccount)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        toast.error(`حدث خطأ: ${errorData.message || 'تفاصيل غير معروفة'}`);
+      const result = await fetchData(url, method, newAccount);
+      if (result === null) {
+        toast.error("حدث خطأ أثناء حفظ الحساب");
         return;
       }
 
@@ -415,20 +413,20 @@ export default function AccountsPage() {
   });
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">دليل الحسابات</h1>
-          <p className="text-gray-600">إدارة وتنظيم شجرة الحسابات المحاسبية</p>
+        <div className="mb-3">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">دليل الحسابات</h1>
+          <p className="text-gray-600 text-sm">إدارة وتنظيم شجرة الحسابات المحاسبية</p>
         </div>
 
-                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
            {/* Tree Panel */}
            <div className="lg:col-span-1">
-             <Card className="h-[800px]">
-              <CardBody className="p-4">
-                                 <div className="flex items-center justify-between mb-4">
+             <Card className="h-[700px]">
+              <CardBody className="p-2">
+                                 <div className="flex items-center justify-between mb-2">
                    <h2 className="text-lg font-semibold text-gray-900">شجرة الحسابات</h2>
                    <Button
                      size="sm"
@@ -440,8 +438,8 @@ export default function AccountsPage() {
                    </Button>
                  </div>
 
-                {/* Search and Filters */}
-                <div className="space-y-3 mb-4">
+                                {/* Search and Filters */}
+                <div className="space-y-2 mb-2">
                                      <Input
                      placeholder="بحث في الحسابات..."
                      value={searchTerm}
@@ -450,7 +448,7 @@ export default function AccountsPage() {
                      size="sm"
                      variant="bordered"
                    />
-                  
+
                   <Select
                     placeholder="تصفية حسب النوع"
                     selectedKeys={[filterType]}
@@ -465,7 +463,7 @@ export default function AccountsPage() {
                 </div>
 
                                                                    {/* Tree View */}
-                  <div className="overflow-y-auto max-h-[600px] text-right">
+                  <div className="overflow-y-auto max-h-[500px] text-right">
                     {filteredAccounts.length > 0 ? (
                       renderAccountTree(filteredAccounts)
                     ) : (
@@ -480,9 +478,9 @@ export default function AccountsPage() {
 
                                 {/* Details Panel */}
             <div className="lg:col-span-2">
-              <Card className="h-[800px]">
-               <CardBody className="p-4">
-                                                                       <div className="flex items-center justify-between mb-4">
+              <Card className="h-[700px]">
+               <CardBody className="p-2">
+                                                                       <div className="flex items-center justify-between mb-2">
                      <div className="flex items-center gap-3">
                        <h2 className="text-lg font-semibold text-gray-900">
                          {selectedAccount ? `حسابات ${selectedAccount.acc_name}` : "تفاصيل الحسابات"}
@@ -513,11 +511,11 @@ export default function AccountsPage() {
                    </div>
 
                  {selectedAccount ? (
-                   <div className="space-y-4">
+                   <div className="space-y-2">
                      {/* معلومات الحساب المختار */}
-                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                       <h3 className="font-semibold text-blue-900 mb-2">معلومات الحساب المختار</h3>
-                                               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                     <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
+                       <h3 className="font-semibold text-blue-900 mb-1 text-sm">معلومات الحساب المختار</h3>
+                                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                           <div>
                             <span className="text-gray-600">رقم الحساب:</span>
                             <div className="font-medium">{selectedAccount.acc_id}</div>
@@ -537,22 +535,22 @@ export default function AccountsPage() {
                         </div>
                      </div>
 
-                                           {/* جدول الحسابات الفرعية */}
+                                                                                      {/* جدول الحسابات الفرعية */}
                       <div>
-                                                 <h3 className="font-semibold text-gray-900 mb-3">
+                                                 <h3 className="font-semibold text-gray-900 mb-2 text-sm">
                            المستوى {selectedAccount.acc_level + 1} - الحسابات الفرعية المباشرة
                          </h3>
-                         <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                         <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                            <table className="w-full border-collapse border border-gray-300">
                                                          <thead className="bg-gray-100">
                                <tr>
-                                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-medium text-gray-700">رقم الحساب</th>
-                                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-medium text-gray-700">اسم الحساب</th>
-                                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-medium text-gray-700">نوع الحساب</th>
-                                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-medium text-gray-700">المستوى</th>
-                                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-medium text-gray-700">نوع التقرير</th>
-                                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-medium text-gray-700">العملة</th>
-                                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-medium text-gray-700">الإجراءات</th>
+                                 <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">رقم الحساب</th>
+                                 <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">اسم الحساب</th>
+                                 <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">نوع الحساب</th>
+                                 <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">المستوى</th>
+                                 <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">نوع التقرير</th>       
+                                 <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">العملة</th>
+                                 <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">الإجراءات</th>
                                </tr>
                              </thead>
                             <tbody>
@@ -564,19 +562,19 @@ export default function AccountsPage() {
                                      onDoubleClick={() => setSelectedAccount(account)}
                                      title="انقر مزدوج للانتقال إلى المستوى التالي"
                                    >
-                                     <td className="border border-gray-300 px-3 py-2 text-sm">{account.acc_id}</td>
-                                     <td className="border border-gray-300 px-3 py-2 text-sm font-medium">{account.acc_name}</td>
-                                     <td className="border border-gray-300 px-3 py-2 text-sm">
+                                     <td className="border border-gray-300 px-2 py-1 text-xs">{account.acc_id}</td>
+                                     <td className="border border-gray-300 px-2 py-1 text-xs font-medium">{account.acc_name}</td>
+                                     <td className="border border-gray-300 px-2 py-1 text-xs">
                                        {account.acc_type === 1 ? "رئيسي" : "فرعي"}
                                      </td>
-                                     <td className="border border-gray-300 px-3 py-2 text-sm text-center">{account.acc_level}</td>
-                                     <td className="border border-gray-300 px-3 py-2 text-sm">
+                                     <td className="border border-gray-300 px-2 py-1 text-xs text-center">{account.acc_level}</td>
+                                     <td className="border border-gray-300 px-2 py-1 text-xs">
                                        {account.acc_rep === 1 ? "الأرباح والخسائر" : "الميزانية العمومية"}
                                      </td>
-                                     <td className="border border-gray-300 px-3 py-2 text-sm">
+                                     <td className="border border-gray-300 px-2 py-1 text-xs">
                                        {currencies.find(c => c.id === account.cur)?.cur_name || "غير محددة"}
                                      </td>
-                                     <td className="border border-gray-300 px-3 py-2 text-sm">
+                                     <td className="border border-gray-300 px-2 py-1 text-xs">
                                        <div className="flex items-center gap-1 justify-center">
                                          <button
                                            onClick={(e) => {
@@ -614,7 +612,7 @@ export default function AccountsPage() {
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={7} className="border border-gray-300 px-3 py-4 text-center text-gray-500">
+                                  <td colSpan={7} className="border border-gray-300 px-2 py-2 text-center text-gray-500 text-xs">
                                     لا توجد حسابات فرعية مباشرة لهذا الحساب
                                   </td>
                                 </tr>
@@ -625,9 +623,9 @@ export default function AccountsPage() {
                       </div>
                    </div>
                                    ) : (
-                                         <div className="text-center text-gray-500 py-12">
-                       <DocumentIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                       <p>اختر حساباً لعرض تفاصيله والحسابات الفرعية</p>
+                                         <div className="text-center text-gray-500 py-6">
+                       <DocumentIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                       <p className="text-sm">اختر حساباً لعرض تفاصيله والحسابات الفرعية</p>
                      </div>
                   )}
                </CardBody>
@@ -637,91 +635,85 @@ export default function AccountsPage() {
       </div>
 
              {/* Add Account Modal */}
-       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} size="2xl">
-         <ModalContent>
-           <ModalHeader>إضافة حساب جديد</ModalHeader>
-          <ModalBody>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="رقم الحساب"
-                value={formData.acc_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, acc_id: e.target.value }))}
-                variant="bordered"
-              />
-              
-              <Input
-                label="اسم الحساب"
-                value={formData.acc_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, acc_name: e.target.value }))}
-                variant="bordered"
-              />
+       <FormModal
+         isOpen={isAddModalOpen}
+         onClose={() => setIsAddModalOpen(false)}
+         onSubmit={() => handleSubmit(false)}
+         title="إضافة حساب جديد"
+         submitText="إضافة الحساب"
+         cancelText="إلغاء"
+       >
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <Input
+             label="رقم الحساب"
+             value={formData.acc_id}
+             onChange={(e) => setFormData(prev => ({ ...prev, acc_id: e.target.value }))}
+             variant="bordered"
+           />
+           
+           <Input
+             label="اسم الحساب"
+             value={formData.acc_name}
+             onChange={(e) => setFormData(prev => ({ ...prev, acc_name: e.target.value }))}
+             variant="bordered"
+           />
 
-              <Input
-                label="اسم الحساب (إنجليزي)"
-                value={formData.acc_name_e}
-                onChange={(e) => setFormData(prev => ({ ...prev, acc_name_e: e.target.value }))}
-                variant="bordered"
-              />
+           <Input
+             label="اسم الحساب (إنجليزي)"
+             value={formData.acc_name_e}
+             onChange={(e) => setFormData(prev => ({ ...prev, acc_name_e: e.target.value }))}
+             variant="bordered"
+           />
 
-              <Select
-                label="نوع الحساب"
-                selectedKeys={[formData.acc_type.toString()]}
-                onSelectionChange={(keys) => setFormData(prev => ({ ...prev, acc_type: parseInt(Array.from(keys)[0] as string) }))}
-                variant="bordered"
-              >
-                <SelectItem key="1">رئيسي</SelectItem>
-                <SelectItem key="2">فرعي</SelectItem>
-              </Select>
+           <Select
+             label="نوع الحساب"
+             selectedKeys={[formData.acc_type.toString()]}
+             onSelectionChange={(keys) => setFormData(prev => ({ ...prev, acc_type: parseInt(Array.from(keys)[0] as string) }))}
+             variant="bordered"
+           >
+             <SelectItem key="1">رئيسي</SelectItem>
+             <SelectItem key="2">فرعي</SelectItem>
+           </Select>
 
-              <Select
-                label="نوع التقرير"
-                selectedKeys={[formData.acc_rep.toString()]}
-                onSelectionChange={(keys) => setFormData(prev => ({ ...prev, acc_rep: parseInt(Array.from(keys)[0] as string) }))}
-                variant="bordered"
-              >
-                <SelectItem key="1">الأرباح والخسائر</SelectItem>
-                <SelectItem key="2">الميزانية العمومية</SelectItem>
-              </Select>
+           <Select
+             label="نوع التقرير"
+             selectedKeys={[formData.acc_rep.toString()]}
+             onSelectionChange={(keys) => setFormData(prev => ({ ...prev, acc_rep: parseInt(Array.from(keys)[0] as string) }))}
+             variant="bordered"
+           >
+             <SelectItem key="1">الأرباح والخسائر</SelectItem>
+             <SelectItem key="2">الميزانية العمومية</SelectItem>
+           </Select>
 
-              <Select
-                label="العملة"
-                selectedKeys={[formData.cur.toString()]}
-                onSelectionChange={(keys) => setFormData(prev => ({ ...prev, cur: parseInt(Array.from(keys)[0] as string) }))}
-                variant="bordered"
-              >
-                {currencies.map(currency => (
-                  <SelectItem key={currency.id.toString()}>
-                    {currency.cur_name}
-                  </SelectItem>
-                ))}
-              </Select>
+           <Select
+             label="العملة"
+             selectedKeys={[formData.cur.toString()]}
+             onSelectionChange={(keys) => setFormData(prev => ({ ...prev, cur: parseInt(Array.from(keys)[0] as string) }))}
+             variant="bordered"
+           >
+             {currencies.map(currency => (
+               <SelectItem key={currency.id.toString()}>
+                 {currency.cur_name}
+               </SelectItem>
+             ))}
+           </Select>
 
-              <Input
-                label="عدد الخانات العشرية"
-                type="number"
-                value={formData.acc_digit.toString()}
-                onChange={(e) => setFormData(prev => ({ ...prev, acc_digit: parseInt(e.target.value) }))}
-                variant="bordered"
-              />
+           <Input
+             label="عدد الخانات العشرية"
+             type="number"
+             value={formData.acc_digit.toString()}
+             onChange={(e) => setFormData(prev => ({ ...prev, acc_digit: parseInt(e.target.value) }))}
+             variant="bordered"
+           />
 
-              <Input
-                label="ملاحظات"
-                value={formData.acc_notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, acc_notes: e.target.value }))}
-                variant="bordered"
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button color="danger" variant="flat" onPress={() => setIsAddModalOpen(false)}>
-              إلغاء
-            </Button>
-            <Button color="primary" onPress={() => handleSubmit(false)}>
-              إضافة الحساب
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+           <Input
+             label="ملاحظات"
+             value={formData.acc_notes}
+             onChange={(e) => setFormData(prev => ({ ...prev, acc_notes: e.target.value }))}
+             variant="bordered"
+           />
+         </div>
+       </FormModal>
 
              {/* Edit Account Modal */}
        <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} size="2xl">

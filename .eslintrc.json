@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/eslintrc.json",
   "env": {
-    "browser": false,
+    "browser": true,
     "es2021": true,
     "node": true
   },
@@ -27,27 +27,45 @@
     }
   },
   "rules": {
-    "no-console": "warn",
+    // منع console.log في الإنتاج
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    
+    // قواعد React
     "react/prop-types": "off",
     "react/jsx-uses-react": "off",
     "react/react-in-jsx-scope": "off",
-    "react-hooks/exhaustive-deps": "off",
-    "jsx-a11y/click-events-have-key-events": "warn",
-    "jsx-a11y/interactive-supports-focus": "warn",
-    "prettier/prettier": "warn",
-    "no-unused-vars": "off",
-    "unused-imports/no-unused-vars": "off",
-    "unused-imports/no-unused-imports": "warn",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/self-closing-comp": "error",
+    "react/jsx-sort-props": [
+      "error",
+      {
+        "callbacksLast": true,
+        "shorthandFirst": true,
+        "noSortAlphabetically": false,
+        "reservedFirst": true
+      }
+    ],
+    
+    // قواعد Accessibility
+    "jsx-a11y/click-events-have-key-events": "error",
+    "jsx-a11y/interactive-supports-focus": "error",
+    "jsx-a11y/alt-text": "error",
+    
+    // قواعد TypeScript
     "@typescript-eslint/no-unused-vars": [
-      "warn",
+      "error",
       {
         "args": "after-used",
         "ignoreRestSiblings": false,
         "argsIgnorePattern": "^_.*?$"
       }
     ],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/prefer-const": "error",
+    
+    // قواعد Import
     "import/order": [
-      "warn",
+      "error",
       {
         "groups": [
           "type",
@@ -69,18 +87,12 @@
         "newlines-between": "always"
       }
     ],
-    "react/self-closing-comp": "warn",
-    "react/jsx-sort-props": [
-      "warn",
-      {
-        "callbacksLast": true,
-        "shorthandFirst": true,
-        "noSortAlphabetically": false,
-        "reservedFirst": true
-      }
-    ],
+    "unused-imports/no-unused-imports": "error",
+    
+    // قواعد التنسيق
+    "prettier/prettier": "error",
     "padding-line-between-statements": [
-      "warn",
+      "error",
       {"blankLine": "always", "prev": "*", "next": "return"},
       {"blankLine": "always", "prev": ["const", "let", "var"], "next": "*"},
       {
@@ -88,6 +100,11 @@
         "prev": ["const", "let", "var"],
         "next": ["const", "let", "var"]
       }
-    ]
+    ],
+    
+    // قواعد عامة
+    "no-var": "error",
+    "prefer-const": "error",
+    "no-duplicate-imports": "error"
   }
 }

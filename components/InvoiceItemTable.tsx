@@ -8,7 +8,7 @@ import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 
 import useFractions from "@/utilities/useFractions";
-import { API_BASE_URL } from "@/utilities/api";
+import { API_BASE_URL, API_ENDPOINTS, fetchData } from "@/utilities/api";
 
 const AsyncCreatableSelect = withAsyncPaginate(CreatableSelect);
 
@@ -71,6 +71,24 @@ export default function InvoiceItemTable({
   const taxDigits = useFractions("tax") as number;
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
+  const [taxRates, setTaxRates] = useState<number[]>([0, 5, 10, 15, 20]);
+
+  // تحميل قائمة الضرائب من API
+  useEffect(() => {
+    const loadTaxRates = async () => {
+      try {
+        const response = await fetchData<any[]>(API_ENDPOINTS.TaxPrcList);
+        if (Array.isArray(response) && response.length > 0) {
+          const rates = response.map(item => parseFloat(item.tax_prc || item.value || 0));
+          setTaxRates([0, ...rates.filter(rate => rate > 0)]);
+        }
+      } catch (error) {
+        console.error("فشل في تحميل قائمة الضرائب:", error);
+      }
+    };
+    
+    loadTaxRates();
+  }, []);
 
   const loadItemOptions = async (
     search: string,
@@ -186,6 +204,32 @@ export default function InvoiceItemTable({
       if (homePurity && weightVal > 0) {
         const purity = (gWeightVal * homePurity) / weightVal;
         updated[index].purity = String(parseFloat(purity.toFixed(2)));
+        
+        // إعادة حساب الإجماليات بعد تغيير الوزن المعاير
+        const wCalc = weightVal < 1 && gWeightVal > weightVal ? weightVal * 1000 : weightVal;
+        
+        // total_a depends on invoice type
+        updated[index].total_a =
+          payType === 2
+            ? 0
+            : payType === 1
+            ? wCalc * updated[index].price
+            : wCalc * updated[index].price;
+
+        // total_w depends on invoice type
+        updated[index].total_w =
+          payType === 1
+            ? 0
+            : payType === 2
+            ? gWeightVal * updated[index].price_w
+            : gWeightVal * updated[index].price_w;
+
+        // total is the sum of total_a and total_w
+        updated[index].total = updated[index].total_a + updated[index].total_w;
+
+        // calculate tax
+        const base = updated[index].total - (updated[index].item_disc_amt || 0);
+        updated[index].tax = base * ((updated[index].tax_prc || 15) / 100);
       }
     }
 
@@ -300,28 +344,50 @@ export default function InvoiceItemTable({
     const updated = [...invoiceItems];
     
     if (updated[index]) {
+      // حساب الإجمالي بدون ضريبة
+      const taxRate = (updated[index].tax_prc ?? 15) / 100;
+      const totalWithoutTax = num / (1 + taxRate);
+      
       updated[index].total = num;
       
-      // Recalculate based on payType
+      // تحديث الأسعار بناءً على الإجمالي الجديد
       if (payType === 1) {
-        // Gold only
-        updated[index].total_a = num;
-        updated[index].total_w = 0;
+        // Gold only - تحديث سعر الجرام
+        if (updated[index].weight > 0) {
+          updated[index].price = totalWithoutTax / updated[index].weight;
+          updated[index].total_a = totalWithoutTax;
+          updated[index].total_w = 0;
+        }
       } else if (payType === 2) {
-        // Wage only
-        updated[index].total_a = 0;
-        updated[index].total_w = num;
+        // Wage only - تحديث سعر الأجرة
+        if (updated[index].weight > 0) {
+          updated[index].price_w = totalWithoutTax / updated[index].weight;
+          updated[index].total_a = 0;
+          updated[index].total_w = totalWithoutTax;
+        }
       } else {
-        // Both - distribute proportionally
+        // Both - توزيع نسبي
         const totalA = updated[index].total_a || 0;
         const totalW = updated[index].total_w || 0;
         const total = totalA + totalW;
         
         if (total > 0) {
-          updated[index].total_a = (totalA / total) * num;
-          updated[index].total_w = (totalW / total) * num;
+          const newTotalA = (totalA / total) * totalWithoutTax;
+          const newTotalW = (totalW / total) * totalWithoutTax;
+          
+          if (updated[index].weight > 0) {
+            updated[index].price = newTotalA / updated[index].weight;
+            updated[index].price_w = newTotalW / updated[index].weight;
+          }
+          
+          updated[index].total_a = newTotalA;
+          updated[index].total_w = newTotalW;
         }
       }
+      
+      // إعادة حساب الضريبة
+      const base = (updated[index].total_a || 0) + (updated[index].total_w || 0) - (updated[index].item_disc_amt ?? 0);
+      updated[index].tax = base * taxRate;
       
       setInvoiceItems(updated);
     }
@@ -363,6 +429,8 @@ export default function InvoiceItemTable({
 
   return (
     <div className="w-full overflow-x-auto mb-6 max-w-full">
+
+      
       <table className="min-w-[1000px] border text-sm text-center table-fixed">
         <thead className="bg-gray-100 text-xs font-semibold">
           <tr>
@@ -780,21 +848,22 @@ export default function InvoiceItemTable({
                   />
                 </td>
                 <td>
-                  <input
+                  <select
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
-                    step="any"
-                    style={{ minWidth: 0, maxWidth: "100%" }}
-                    type="number"
-                    value={parseFloat(item.tax_prc?.toFixed(2) || "0")}
+                    value={parseFloat(item.tax_prc?.toFixed(2) || "15")}
                     disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "tax_prc", e.target.value)
                     }
                     onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
+                  >
+                    {taxRates.map(rate => (
+                      <option key={rate} value={rate}>{rate}%</option>
+                    ))}
+                  </select>
                 </td>
                 <td>{formatAmount(item.tax ?? tax, taxDigits)}</td>
                 <td>
@@ -807,7 +876,7 @@ export default function InvoiceItemTable({
                     value={
                       tempTotals[item.id] !== undefined
                         ? tempTotals[item.id]
-                        : formatAmount(item.total ?? total + (item.tax ?? tax), totalDigits)
+                        : formatAmount(total + tax, totalDigits)
                     }
                     disabled={!isEditing}
                     onBlur={(e) => {

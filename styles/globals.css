@@ -72,6 +72,37 @@ html, body {
   @apply bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
 }
 
+/* Table improvements for items page */
+.table-no-scrollbar {
+  overflow: hidden !important;
+}
+
+.table-no-scrollbar .heroui__table {
+  overflow: hidden !important;
+}
+
+.table-no-scrollbar .heroui__table-wrapper {
+  overflow: hidden !important;
+}
+
+.table-container {
+  overflow: hidden !important;
+}
+
+/* Compact table styles */
+.heroui__table-wrapper {
+  overflow: hidden !important;
+}
+
+.heroui__table {
+  overflow: hidden !important;
+}
+
+/* Ensure tables don't scroll */
+.heroui__table-container {
+  overflow: hidden !important;
+}
+
 /* HeroUI customizations */
 .heroui__control {
   background-color: #f9fafb !important;

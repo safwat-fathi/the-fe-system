@@ -39,6 +39,8 @@ export interface VoucherDetail {
   vouch_status?: number;
   cr_date: string;
   acc_id: number;
+  acc_code?: string; // رمز الحساب
+  acc_name?: string; // اسم الحساب
   cr_user?: string;
   upd_date?: string;
   upd_user?: string;

@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { title } from "@/components/primitives";
-import StatCard from "@/components/StatCard";
+import { StatCard } from "@/components/Card";
 import { API_ENDPOINTS, fetchData, fetchGoldPrice } from "@/utilities/api";
 import {
   Chart as ChartJS,

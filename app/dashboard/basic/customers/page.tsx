@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import ReactSelect from "react-select";
 import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
-import { Tooltip } from "@nextui-org/react";
 import toast from "react-hot-toast";
 import {
   Table,
@@ -24,6 +23,7 @@ import {
   ModalFooter,
   Select,
   SelectItem,
+  Tooltip,
 } from "@heroui/react";
 
 import { fetchData, API_BASE_URL } from "@/utilities/api";
@@ -61,6 +61,11 @@ interface Customer {
   hide?: boolean;
 }
 
+interface CustomerType {
+  id: number;
+  type_name: string;
+}
+
 const API_URL = `${API_BASE_URL}customers_list`;
 const CREATE_URL = `${API_BASE_URL}api_create_customer`;
 const UPDATE_URL = (id: number) => `${API_BASE_URL}api_update_customer/${id}`;
@@ -85,7 +90,7 @@ const columns = [
 
 export default function CustomersTable() {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [customerTypes, setCustomerTypes] = useState<any[]>([]);
+  const [customerTypes, setCustomerTypes] = useState<CustomerType[]>([]);
   const [customerStatus, setCustomerStatus] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [boxTypes, setBoxTypes] = useState<any[]>([]);

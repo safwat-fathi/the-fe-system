@@ -19,14 +19,10 @@ import {
   Divider,
   Tooltip,
   Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Checkbox,
 } from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/Modal";
 import {
   FaSave,
   FaPrint,
@@ -51,6 +47,7 @@ import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 import { API_ENDPOINTS, fetchData, apiFetch } from "@/utilities/api";
 import { formatAmount } from "@/utilities/formatAmount";
 import { getCurrDate } from "@/utilities/getCurrDate";
+import { getNextReceiptVoucherNumber } from "@/utilities/numbering";
 import useFractions from "@/utilities/useFractions";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -68,7 +65,7 @@ export default function ReceiptVoucherPage() {
   // State Management
   const [voucher, setVoucher] = useState<Voucher>({
     vouch_id: 0,
-    vouch_date: getCurrDate(),
+    vouch_date: new Date().toISOString(),
     vouch_type: 1, // سند قبض
     vouch_amt: 0,
     pay_type: 1,
@@ -106,6 +103,7 @@ export default function ReceiptVoucherPage() {
   useEffect(() => {
     if (isClient) {
       loadInitialData();
+      loadVouchersList();
     }
   }, [isClient]);
 
@@ -155,15 +153,7 @@ export default function ReceiptVoucherPage() {
 
   const getNextVoucherNumber = async () => {
     try {
-      console.log("=== الحصول على رقم سند القبض التالي ===");
-      
-      const data = await fetchData(`${API_ENDPOINTS.VOUCHERS_LIST}/next-number?type=1`);
-      const nextNumber = (data as any)?.next_number || 1;
-      
-      console.log("Next receipt voucher number:", nextNumber);
-      console.log("=== انتهاء الحصول على رقم سند القبض التالي ===");
-      
-      return nextNumber;
+      return await getNextReceiptVoucherNumber();
     } catch (error) {
       console.error('Error getting next voucher number:', error);
       return 1;
@@ -173,12 +163,20 @@ export default function ReceiptVoucherPage() {
   const loadVoucher = async (id: number) => {
     try {
       setIsLoading(true);
-      const data = await fetchData(`${API_ENDPOINTS.VOUCHERS_LIST}/${id}`);
-      const voucherData = data as any;
-      setVoucher(voucherData.voucher);
-      setDetails(voucherData.details || []);
-      setBoxDetails(voucherData.box_details || []);
-      setCurrentRecord(voucherData.voucher.vouch_id);
+      
+      // جلب بيانات السند الأساسية
+      const voucherData = await fetchData(`${API_ENDPOINTS.VOUCHERS_LIST}/${id}`);
+      
+      // جلب تفاصيل السند المحدد
+      const detailsData = await fetchData(API_ENDPOINTS.VOUCHER_DETAILS(id));
+      
+      // جلب تفاصيل الصناديق للسند المحدد
+      const boxDetailsData = await fetchData(API_ENDPOINTS.VOUCHER_BOX_DETAILS(id));
+      
+      setVoucher(voucherData as any);
+      setDetails(Array.isArray(detailsData) ? detailsData : []);
+      setBoxDetails(Array.isArray(boxDetailsData) ? boxDetailsData : []);
+      setCurrentRecord((voucherData as any).vouch_id);
     } catch (error) {
       console.error('Error loading voucher:', error);
     } finally {
@@ -265,13 +263,15 @@ export default function ReceiptVoucherPage() {
     try {
       setIsLoading(true);
       
+      // حفظ السند الأساسي
       const voucherData = {
         ...voucher,
-        details: details,
-        box_details: boxDetails
+        vouch_amt: totalBoxAmount // تحديث المبلغ الإجمالي
       };
 
       let response;
+      let savedVoucher;
+      
       if (voucher.id) {
         response = await apiFetch(`${API_ENDPOINTS.UPDATE_VOUCHER(voucher.id)}`, {
           method: 'PUT',
@@ -285,10 +285,55 @@ export default function ReceiptVoucherPage() {
       }
 
       if (response.ok) {
-        const savedVoucher = await response.json();
-        // تحديث حالة الحفظ
+        savedVoucher = await response.json();
+        
+        // حفظ تفاصيل الحسابات
+        for (const detail of details) {
+          if (detail.acc_id) {
+            const detailData = {
+              ...detail,
+              vouch_id: savedVoucher.id || voucher.id
+            };
+            
+            if (detail.id) {
+              await apiFetch(`${API_ENDPOINTS.UPDATE_VOUCHER_DTL(detail.id)}`, {
+                method: 'PUT',
+                body: JSON.stringify(detailData)
+              });
+            } else {
+              await apiFetch(API_ENDPOINTS.CREATE_VOUCHER_DTL, {
+                method: 'POST',
+                body: JSON.stringify(detailData)
+              });
+            }
+          }
+        }
+        
+        // حفظ تفاصيل الصناديق
+        for (const boxDetail of boxDetails) {
+          if (boxDetail.box_id) {
+            const boxDetailData = {
+              ...boxDetail,
+              vouch_id: savedVoucher.id || voucher.id
+            };
+            
+            if (boxDetail.id) {
+              await apiFetch(`${API_ENDPOINTS.UPDATE_VOUCHER_BOX(boxDetail.id)}`, {
+                method: 'PUT',
+                body: JSON.stringify(boxDetailData)
+              });
+            } else {
+              await apiFetch(API_ENDPOINTS.CREATE_VOUCHER_BOX, {
+                method: 'POST',
+                body: JSON.stringify(boxDetailData)
+              });
+            }
+          }
+        }
+        
+        // تحديث حالة الحفظ وإعادة تحميل البيانات
         setVoucher({ ...savedVoucher, commit: true });
-        router.push(`/dashboard/forms/receipt_voucher?id=${savedVoucher.id}`);
+        router.push(`/dashboard/forms/receipt_voucher?id=${savedVoucher.id || voucher.id}`);
       }
     } catch (error) {
       console.error('Error saving voucher:', error);
@@ -324,18 +369,42 @@ export default function ReceiptVoucherPage() {
     }
   };
 
-  const createNewVoucher = () => {
-    setVoucher({
-      vouch_id: 0,
-      vouch_date: getCurrDate(),
-      vouch_type: 1,
-      vouch_amt: 0,
-      pay_type: 1,
-      cr_date: new Date().toISOString(),
-      vouch_status: 1,
-    });
-    setDetails([]);
-    setBoxDetails([]);
+  const createNewVoucher = async () => {
+    try {
+      console.log("=== إنشاء سند قبض جديد ===");
+      
+      // توليد الرقم التالي
+      const nextNumber = await getNextReceiptVoucherNumber();
+      console.log("الرقم التالي لسند القبض:", nextNumber);
+      
+      setVoucher({
+        vouch_id: nextNumber,
+        vouch_date: new Date().toISOString(),
+        vouch_type: 1,
+        vouch_amt: 0,
+        pay_type: 1,
+        cr_date: new Date().toISOString(),
+        vouch_status: 1,
+      });
+      setDetails([]);
+      setBoxDetails([]);
+      
+      console.log("=== انتهاء إنشاء سند القبض الجديد ===");
+    } catch (error) {
+      console.error("خطأ في إنشاء سند القبض الجديد:", error);
+      // في حالة الخطأ، نبدأ من 1
+      setVoucher({
+        vouch_id: 1,
+        vouch_date: new Date().toISOString(),
+        vouch_type: 1,
+        vouch_amt: 0,
+        pay_type: 1,
+        cr_date: new Date().toISOString(),
+        vouch_status: 1,
+      });
+      setDetails([]);
+      setBoxDetails([]);
+    }
   };
 
   const deleteVoucher = async () => {
@@ -548,79 +617,66 @@ export default function ReceiptVoucherPage() {
         </div>
         
         <div className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* تاريخ السند */}
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                تاريخ السند
-              </label>
-              <Input
-                type="date"
-                value={voucher.vouch_date}
-                onChange={(e) => setVoucher(prev => ({ ...prev, vouch_date: e.target.value }))}
-                className="h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
-              />
+          <div className="grid grid-cols-1 gap-2 text-xs">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="block mb-1 font-medium text-gray-700 text-xs">تاريخ السند:</span>
+                <Input
+                  type="date"
+                  value={voucher.vouch_date}
+                  onChange={(e) => setVoucher(prev => ({ ...prev, vouch_date: e.target.value }))}
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                />
+              </div>
+              <div>
+                <span className="block mb-1 font-medium text-gray-700 text-xs">نوع الدفع:</span>
+                <Select
+                  selectedKeys={[voucher.pay_type?.toString() || "1"]}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    setVoucher(prev => ({ ...prev, pay_type: parseInt(value) }));
+                  }}
+                  className="w-full h-[32px] text-sm"
+                >
+                  <SelectItem key="1">نقدي</SelectItem>
+                  <SelectItem key="2">شيك</SelectItem>
+                  <SelectItem key="3">تحويل بنكي</SelectItem>
+                </Select>
+              </div>
             </div>
 
-            {/* نوع الدفع */}
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                نوع الدفع
-              </label>
-              <Select
-                selectedKeys={[voucher.pay_type?.toString() || "1"]}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setVoucher(prev => ({ ...prev, pay_type: parseInt(value) }));
-                }}
-                className="h-8 text-xs"
-              >
-                <SelectItem key="1">نقدي</SelectItem>
-                <SelectItem key="2">شيك</SelectItem>
-                <SelectItem key="3">تحويل بنكي</SelectItem>
-              </Select>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="block mb-1 font-medium text-gray-700 text-xs">حالة السند:</span>
+                <Select
+                  selectedKeys={[voucher.vouch_status?.toString() || "1"]}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    setVoucher(prev => ({ ...prev, vouch_status: parseInt(value) }));
+                  }}
+                  className="w-full h-[32px] text-sm"
+                >
+                  {(voucherStatuses || []).map((status) => (
+                    <SelectItem key={status.id}>
+                      {status.name}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <span className="block mb-1 font-medium text-gray-700 text-xs">استلمت من:</span>
+                <Input
+                  value={voucher.vouch_notes || ""}
+                  onChange={(e) => setVoucher(prev => ({ ...prev, vouch_notes: e.target.value }))}
+                  placeholder="اسم المستلم"
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                />
+              </div>
             </div>
 
-            {/* حالة السند */}
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                حالة السند
-              </label>
-              <Select
-                selectedKeys={[voucher.vouch_status?.toString() || "1"]}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setVoucher(prev => ({ ...prev, vouch_status: parseInt(value) }));
-                }}
-                className="h-8 text-xs"
-              >
-                                                   {(voucherStatuses || []).map((status) => (
-                   <SelectItem key={status.id}>
-                     {status.name}
-                   </SelectItem>
-                 ))}
-              </Select>
-            </div>
-
-            {/* استلمت من */}
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                استلمت من
-              </label>
-              <Input
-                value={voucher.vouch_notes || ""}
-                onChange={(e) => setVoucher(prev => ({ ...prev, vouch_notes: e.target.value }))}
-                placeholder="اسم المستلم"
-                className="h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
-              />
-            </div>
-
-            {/* النقدية */}
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                النقدية
-              </label>
-              <div className="h-8 text-sm font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-md px-3 flex items-center">
+              <span className="block mb-1 font-medium text-gray-700 text-xs">النقدية:</span>
+              <div className="w-full h-[32px] text-sm font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-md px-3 flex items-center">
                 {formatAmount(totalBoxAmount, frac)} ريال
               </div>
             </div>

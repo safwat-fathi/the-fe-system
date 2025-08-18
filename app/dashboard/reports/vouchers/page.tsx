@@ -11,9 +11,6 @@ import {
   TableCell,
   Input,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   Select,
   SelectItem,
   Tabs,
@@ -22,6 +19,8 @@ import {
   Tooltip,
   Pagination,
 } from "@heroui/react";
+import Card from "@/components/Card";
+import { CardBody, CardHeader } from "@heroui/react";
 import {
   FaSearch,
   FaPrint,
@@ -274,11 +273,11 @@ export default function VoucherReportsPage() {
   const totals = calculateTotals();
 
   return (
-    <div className="font-cairo p-6 bg-gray-50 min-h-screen">
+    <div className="font-cairo p-4 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-gray-800">تقرير السندات</h1>
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-3">
+        <h1 className="text-2xl font-bold mt-2">تقرير السندات</h1>
           <div className="flex gap-2">
             <Button
               color="primary"

@@ -19,6 +19,7 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaReceipt,
+  FaCalculator,
 } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -31,6 +32,7 @@ const settingsLinks = [
 // نظام الحسابات
 const accountingBasicLinks = [
   { name: "الحسابات", href: "/dashboard/basic/accounts", icon: <FaMoneyBill /> },
+  { name: "مراكز التكلفة", href: "/dashboard/basic/cost-centers", icon: <FaCalculator /> },
   { name: "الصناديق", href: "/dashboard/boxes", icon: <FaFileAlt /> },
   { name: "العملات", href: "/dashboard/basic/currencies", icon: <FaMoneyBill /> },
 ];

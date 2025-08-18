@@ -16,12 +16,12 @@ import {
   Chip,
   Select,
   SelectItem,
-  Card,
-  CardBody,
   Tabs,
   Tab,
 } from "@heroui/react";
-import { FaEye, FaEdit, FaDownload, FaFilter, FaChartBar, FaTable, FaPrint } from "react-icons/fa";
+import Card from "@/components/Card";
+import { CardBody } from "@heroui/react";
+import { FaEye, FaEdit, FaDownload, FaFilter, FaChartBar, FaTable, FaPrint, FaPlus } from "react-icons/fa";
 import toast from "react-hot-toast";
 
 import { API_ENDPOINTS, fetchData } from "@/utilities/api";
@@ -204,14 +204,21 @@ export default function InvoicesPage() {
   };
 
   return (
-    <div className="font-cairo space-y-6">
+    <div className="font-cairo space-y-4 p-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">تقارير الفواتير</h1>
+          <h1 className="text-2xl font-bold text-gray-800">تقارير الفواتير</h1>
           <p className="text-gray-500 mt-1">إدارة وعرض جميع الفواتير</p>
         </div>
         <div className="flex gap-3">
+          <Button
+            color="success"
+            startContent={<FaPlus />}
+            onPress={() => router.push("/dashboard/forms/invoice?new=true")}
+          >
+            إضافة فاتورة
+          </Button>
           <Button
             variant="bordered"
             startContent={<FaPrint />}

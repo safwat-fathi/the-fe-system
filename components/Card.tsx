@@ -3,6 +3,9 @@
 import { ReactNode } from "react";
 import { Card as HeroCard, CardHeader, CardBody, CardFooter } from "@heroui/react";
 
+// Re-export HeroUI components for convenience
+export { CardHeader, CardBody, CardFooter };
+
 interface CardProps {
   title?: string;
   subtitle?: string;
@@ -138,3 +141,6 @@ export function MetricCard({ title, value, description, icon, color = "blue", cl
     </Card>
   );
 }
+
+// Re-export StatCard for convenience
+export { default as StatCard } from './StatCard';

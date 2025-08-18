@@ -11,15 +11,13 @@ import {
   TableCell,
   Input,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   Select,
   SelectItem,
   Chip,
   Tooltip,
   Pagination,
 } from "@heroui/react";
+import { Card, CardBody, CardHeader } from "@/components/Card";
 import {
   FaSearch,
   FaPrint,

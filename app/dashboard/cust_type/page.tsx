@@ -12,12 +12,8 @@ import {
   Button,
   Checkbox,
   Pagination,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
 } from "@heroui/react";
+import { HeroModal as Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/Modal";
 import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import toast from "react-hot-toast";
 
