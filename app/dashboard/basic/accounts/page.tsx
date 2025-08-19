@@ -8,8 +8,6 @@ import Card from "../../../../components/Card";
 import { FormModal, InfoModal } from "../../../../components/Modal";
 
 // Simple icon components
-const ChevronRightIcon = ({ className }: { className?: string }) => <span className={className}>▶</span>;
-const ChevronDownIcon = ({ className }: { className?: string }) => <span className={className}>▼</span>;
 const FolderIcon = ({ className }: { className?: string }) => <span className={className}>📁</span>;
 const DocumentIcon = ({ className }: { className?: string }) => <span className={className}>📄</span>;
 const PlusIcon = ({ className }: { className?: string }) => <span className={className}>+</span>;
@@ -90,6 +88,9 @@ export default function AccountsPage() {
       
       const accountsWithChildren = buildAccountTree(allAccountsData);
       setAccounts(accountsWithChildren);
+      
+      // الحسابات الرئيسية مقفلة افتراضياً
+      setExpandedNodes(new Set());
     } catch (error) {
       toast.error("فشل في تحميل الحسابات");
       console.error("Error fetching accounts:", error);
@@ -116,22 +117,31 @@ export default function AccountsPage() {
     const accountMap = new Map<number, Account>();
     const rootAccounts: Account[] = [];
 
+    // تصفية المستوى 0 والحساب "0" من البداية
+    const filteredAccounts = flatAccounts.filter(account => 
+      account.acc_level !== 0 && account.acc_id !== "0"
+    );
+
     // Create a map of all accounts
-    flatAccounts.forEach(account => {
+    filteredAccounts.forEach(account => {
       accountMap.set(account.id, { ...account, children: [] });
     });
 
     // Build the tree structure
-    flatAccounts.forEach(account => {
+    filteredAccounts.forEach(account => {
       const accountWithChildren = accountMap.get(account.id)!;
       
-      if (account.parent === null) {
+      // إذا كان الحساب له أب هو الحساب "0" أو null، اجعله حساب جذر
+      if (account.parent === null || account.parent === 0) {
         rootAccounts.push(accountWithChildren);
       } else {
         const parent = accountMap.get(account.parent);
         if (parent) {
           parent.children = parent.children || [];
           parent.children.push(accountWithChildren);
+        } else {
+          // إذا لم يتم العثور على الأب، اجعله حساب جذر
+          rootAccounts.push(accountWithChildren);
         }
       }
     });
@@ -148,6 +158,8 @@ export default function AccountsPage() {
     }
     setExpandedNodes(newExpanded);
   };
+
+
 
   const generateAccountId = (parentId: number | null): string => {
     const parentAccount = accounts.find(account => account.id === parentId);
@@ -325,34 +337,31 @@ export default function AccountsPage() {
       const hasChildren = account.children && account.children.length > 0;
       const isExpanded = expandedNodes.has(account.id);
       const isSelected = selectedAccount?.id === account.id;
+      
+      // التحقق من تطابق البحث
+      const matchesSearch = searchTerm && (
+        account.acc_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.acc_id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
       return (
         <div key={account.id} className="w-full">
           <div 
             className={`
               flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200
-              ${isSelected ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'}
+              ${isSelected ? 'bg-blue-50 border border-blue-200' : ''}
+              ${matchesSearch ? 'bg-yellow-100 border border-yellow-300' : ''}
+              ${!isSelected && !matchesSearch ? 'hover:bg-gray-50' : ''}
               ${level > 0 ? 'mr-' + (level * 4) : ''}
             `}
-            onClick={() => setSelectedAccount(account)}
+            onClick={() => {
+              setSelectedAccount(account);
+              // إذا كان الحساب يحتوي على حسابات فرعية، قم بتبديل حالة التوسعة
+              if (hasChildren) {
+                toggleNode(account.id);
+              }
+            }}
           >
-            {hasChildren && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleNode(account.id);
-                }}
-                className="p-1 hover:bg-gray-200 rounded"
-              >
-                {isExpanded ? (
-                  <ChevronDownIcon className="w-4 h-4 text-gray-600" />
-                ) : (
-                  <ChevronRightIcon className="w-4 h-4 text-gray-600" />
-                )}
-              </button>
-            )}
-            {!hasChildren && <div className="w-6" />}
-            
             {hasChildren ? (
               <FolderIcon className="w-5 h-5 text-blue-500" />
             ) : (
@@ -362,9 +371,6 @@ export default function AccountsPage() {
             <div className="flex-1 min-w-0 text-right">
               <div className="font-medium text-gray-900 truncate">
                 {account.acc_name}
-              </div>
-              <div className="text-sm text-gray-500">
-                {account.acc_id}
               </div>
             </div>
           </div>
@@ -401,16 +407,98 @@ export default function AccountsPage() {
     return subAccounts;
   };
 
-  const filteredAccounts = accounts.filter(account => {
-    const matchesSearch = account.acc_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         account.acc_id.toLowerCase().includes(searchTerm.toLowerCase());
+  // دالة للبحث في جميع مستويات الشجرة
+  const searchInTree = (accounts: Account[], searchTerm: string): Account[] => {
+    const results: Account[] = [];
+    const nodesToExpand: number[] = [];
     
-    if (filterType === "all") return matchesSearch;
-    if (filterType === "main") return matchesSearch && account.acc_type === 1;
-    if (filterType === "sub") return matchesSearch && account.acc_type === 2;
+    const searchRecursive = (accountList: Account[]) => {
+      accountList.forEach(account => {
+        // إخفاء الحساب "0" نهائياً
+        if (account.acc_id === "0") return;
+        
+        const matchesSearch = account.acc_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             account.acc_id.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        let shouldInclude = false;
+        if (filterType === "all") shouldInclude = matchesSearch;
+        else if (filterType === "main") shouldInclude = matchesSearch && account.acc_type === 1;
+        else if (filterType === "sub") shouldInclude = matchesSearch && account.acc_type === 2;
+        
+        if (shouldInclude) {
+          results.push(account);
+          // إضافة جميع الأباء للفتح
+          let currentAccount = account;
+          while (currentAccount.parent && currentAccount.parent !== 0) {
+            const parent = accounts.find(acc => acc.id === currentAccount.parent);
+            if (parent) {
+              nodesToExpand.push(parent.id);
+              currentAccount = parent;
+            } else {
+              break;
+            }
+          }
+        }
+        
+        // البحث في الحسابات الفرعية
+        if (account.children && account.children.length > 0) {
+          searchRecursive(account.children);
+        }
+      });
+    };
     
-    return matchesSearch;
+    searchRecursive(accounts);
+    
+    // فتح العقد التي تحتوي على نتائج البحث
+    if (searchTerm && nodesToExpand.length > 0) {
+      const newExpanded = new Set(expandedNodes);
+      nodesToExpand.forEach(id => newExpanded.add(id));
+      setExpandedNodes(newExpanded);
+      
+      // تحديد أول نتيجة تلقائياً إذا كانت في المستوى الأخير
+      if (results.length > 0) {
+        const firstResult = results[0];
+        // إذا كان الحساب في المستوى الأخير (لا يحتوي على أطفال) أو المستوى 4 فأعلى
+        if (!firstResult.children || firstResult.children.length === 0 || firstResult.acc_level >= 4) {
+          setSelectedAccount(firstResult);
+        }
+      }
+    }
+    
+    return results;
+  };
+
+  const filteredAccounts = searchTerm ? searchInTree(accounts, searchTerm) : accounts.filter(account => {
+    // إخفاء الحساب "0" نهائياً
+    if (account.acc_id === "0") return false;
+    
+    if (filterType === "all") return true;
+    if (filterType === "main") return account.acc_type === 1;
+    if (filterType === "sub") return account.acc_type === 2;
+    
+    return true;
   });
+
+  // للتأكد من ظهور الحسابات الرئيسية الأربعة
+  console.log("Filtered Accounts:", filteredAccounts.map(acc => ({ id: acc.acc_id, name: acc.acc_name, level: acc.acc_level })));
+
+  // دالة لعرض مسار الحساب المحدد
+  const getAccountPath = (account: Account): Account[] => {
+    const path: Account[] = [account];
+    let currentAccount = account;
+    
+    while (currentAccount.parent && currentAccount.parent !== 0) {
+      const parent = accounts.find(acc => acc.id === currentAccount.parent);
+      if (parent) {
+        path.unshift(parent);
+        currentAccount = parent;
+      } else {
+        break;
+      }
+    }
+    
+    return path;
+  };
 
   return (
     <div className="p-2 bg-gray-50 min-h-screen">
@@ -418,7 +506,6 @@ export default function AccountsPage() {
         {/* Header */}
         <div className="mb-3">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">دليل الحسابات</h1>
-          <p className="text-gray-600 text-sm">إدارة وتنظيم شجرة الحسابات المحاسبية</p>
         </div>
 
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -427,7 +514,6 @@ export default function AccountsPage() {
              <Card className="h-[700px]">
               <CardBody className="p-2">
                                  <div className="flex items-center justify-between mb-2">
-                   <h2 className="text-lg font-semibold text-gray-900">شجرة الحسابات</h2>
                    <Button
                      size="sm"
                      color="primary"
@@ -445,6 +531,17 @@ export default function AccountsPage() {
                      value={searchTerm}
                      onChange={(e) => setSearchTerm(e.target.value)}
                      startContent={<i className="bi bi-search text-gray-400" />}
+                     endContent={
+                       searchTerm && (
+                         <button
+                           onClick={() => setSearchTerm("")}
+                           className="text-gray-400 hover:text-gray-600"
+                           title="مسح البحث"
+                         >
+                           ✕
+                         </button>
+                       )
+                     }
                      size="sm"
                      variant="bordered"
                    />
@@ -464,11 +561,30 @@ export default function AccountsPage() {
 
                                                                    {/* Tree View */}
                   <div className="overflow-y-auto max-h-[500px] text-right">
+                    {searchTerm && (
+                      <div className="text-xs text-gray-500 mb-2 text-center">
+                        تم العثور على {filteredAccounts.length} نتيجة
+                      </div>
+                    )}
                     {filteredAccounts.length > 0 ? (
                       renderAccountTree(filteredAccounts)
                     ) : (
                       <div className="text-center text-gray-500 py-8">
-                        لا توجد حسابات
+                        <FolderIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm">
+                          {searchTerm ? "لا توجد حسابات تطابق البحث" : "لا توجد حسابات"}
+                        </p>
+                        {!searchTerm && (
+                          <Button
+                            size="sm"
+                            color="primary"
+                            variant="flat"
+                            className="mt-2"
+                            onClick={handleAddAccount}
+                          >
+                            إضافة أول حساب
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -501,13 +617,19 @@ export default function AccountsPage() {
                        )}
                      </div>
                      {selectedAccount && (
-                       <div className="flex items-center gap-2">
-                         <span className="text-sm text-gray-500">المستوى:</span>
-                         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                           {selectedAccount.acc_level}
-                         </span>
+                       <div className="text-xs text-gray-500 mt-1">
+                         المسار: {getAccountPath(selectedAccount).map((acc, index) => (
+                           <span key={acc.id}>
+                             {index > 0 && <span className="mx-1">→</span>}
+                             <span className="hover:text-blue-600 cursor-pointer" 
+                                   onClick={() => setSelectedAccount(acc)}>
+                               {acc.acc_name}
+                             </span>
+                           </span>
+                         ))}
                        </div>
                      )}
+
                    </div>
 
                  {selectedAccount ? (
@@ -538,7 +660,7 @@ export default function AccountsPage() {
                                                                                       {/* جدول الحسابات الفرعية */}
                       <div>
                                                  <h3 className="font-semibold text-gray-900 mb-2 text-sm">
-                           المستوى {selectedAccount.acc_level + 1} - الحسابات الفرعية المباشرة
+                           الحسابات الفرعية المباشرة
                          </h3>
                          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                            <table className="w-full border-collapse border border-gray-300">
@@ -547,7 +669,6 @@ export default function AccountsPage() {
                                  <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">رقم الحساب</th>
                                  <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">اسم الحساب</th>
                                  <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">نوع الحساب</th>
-                                 <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">المستوى</th>
                                  <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">نوع التقرير</th>       
                                  <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">العملة</th>
                                  <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">الإجراءات</th>
@@ -567,7 +688,6 @@ export default function AccountsPage() {
                                      <td className="border border-gray-300 px-2 py-1 text-xs">
                                        {account.acc_type === 1 ? "رئيسي" : "فرعي"}
                                      </td>
-                                     <td className="border border-gray-300 px-2 py-1 text-xs text-center">{account.acc_level}</td>
                                      <td className="border border-gray-300 px-2 py-1 text-xs">
                                        {account.acc_rep === 1 ? "الأرباح والخسائر" : "الميزانية العمومية"}
                                      </td>
@@ -612,7 +732,7 @@ export default function AccountsPage() {
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={7} className="border border-gray-300 px-2 py-2 text-center text-gray-500 text-xs">
+                                  <td colSpan={6} className="border border-gray-300 px-2 py-2 text-center text-gray-500 text-xs">
                                     لا توجد حسابات فرعية مباشرة لهذا الحساب
                                   </td>
                                 </tr>
