@@ -1,4 +1,4 @@
-لع"use client";
+"use client";
 
 import { VoucherDetail } from "@/types/voucher";
 import AsyncCreatableSelect from "react-select/async-creatable";

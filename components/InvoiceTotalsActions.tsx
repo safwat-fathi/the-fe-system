@@ -178,7 +178,7 @@ export default function InvoiceTotalsActions({
 
             <Button
               className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-              onClick={() => router.push("/dashboard/forms/invoice?new=true")}
+              onClick={() => router.push("/dashboard/forms/invoices/Gold_invoice2?new=true")}
             >
               <i className="bi bi-plus-circle me-1"></i>
               جديد
@@ -277,7 +277,7 @@ export default function InvoiceTotalsActions({
             <span className="text-gray-700 font-medium">إجمالي الوزن المعاير:</span>
             <span className="font-semibold text-amber-800 flex items-center gap-1">
               {Number(totalGWeight).toFixed(fractions.frac2)}
-              <span className="text-xs text-amber-800">جرام</span>
+              <span className="text-xs text-amber-800">جم</span>
             </span>
           </div>
 
@@ -321,7 +321,7 @@ export default function InvoiceTotalsActions({
           <Button
             className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm"
             onClick={() =>
-              router.push(`/dashboard/invoice_payment?total=${netAmount}`)
+              router.push(`/dashboard/forms/invoices/invoice_payment?total=${netAmount}`)
             }
           >
             <i className="bi bi-credit-card me-2"></i>

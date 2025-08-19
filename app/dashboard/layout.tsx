@@ -33,7 +33,7 @@ const settingsLinks = [
 const accountingBasicLinks = [
   { name: "الحسابات", href: "/dashboard/basic/accounts", icon: <FaMoneyBill /> },
   { name: "مراكز التكلفة", href: "/dashboard/basic/cost-centers", icon: <FaCalculator /> },
-  { name: "الصناديق", href: "/dashboard/boxes", icon: <FaFileAlt /> },
+  { name: "الصناديق", href: "/dashboard/basic/boxes", icon: <FaFileAlt /> },
   { name: "العملات", href: "/dashboard/basic/currencies", icon: <FaMoneyBill /> },
 ];
 
@@ -49,19 +49,22 @@ const accountingReportLinks: Array<{ name: string; href: string; icon: React.Rea
 // نظام الذهب
 const goldBasicLinks = [
   { name: "العملاء", href: "/dashboard/basic/customers", icon: <FaUsers /> },
-  { name: "أنواع العملاء", href: "/dashboard/cust_type", icon: <FaUsers /> },
+  { name: "أنواع العملاء", href: "/dashboard/basic/cust_type", icon: <FaUsers /> },
   { name: "الأصناف", href: "/dashboard/basic/items", icon: <FaBoxOpen /> },
   { name: "الفئات", href: "/dashboard/basic/categories", icon: <FaTags /> },
   { name: "الوحدات", href: "/dashboard/basic/units", icon: <FaTags /> },
 ];
 
 const goldFormLinks = [
-  { name: "فاتورة البيع", href: "/dashboard/forms/invoice?new=true", icon: <FaFileAlt /> },
-  { name: "مردود البيع", href: "/dashboard/forms/sales_return", icon: <FaFileAlt /> },
+  { name: "فواتير الشراء", href: "/dashboard/forms/invoices/Gold_invoice1?new=true", icon: <FaFileAlt /> },
+  { name: "فواتير مردود الشراء", href: "/dashboard/forms/invoices/Gold_invoice3?new=true", icon: <FaFileAlt /> },
+  { name: "فواتير البيع", href: "/dashboard/forms/invoices/Gold_invoice2?new=true", icon: <FaFileAlt /> },
+  { name: "فواتير مردود البيع", href: "/dashboard/forms/invoices/Gold_invoice4", icon: <FaFileAlt /> },
 ];
 
 const goldReportLinks = [
   { name: "قائمة الفواتير", href: "/dashboard/reports/invoices", icon: <FaFileAlt /> },
+  { name: "تقرير الضريبة", href: "/dashboard/reports/vat", icon: <FaCalculator /> },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

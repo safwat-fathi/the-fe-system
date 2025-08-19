@@ -265,7 +265,51 @@ export default function InvoiceItemTable({
     setInvoiceItems(updated);
   };
 
+  /**
+   * دالة حذف الصفوف في تفاصيل الفاتورة
+   * - إذا كان هناك سجل واحد فقط: تفريغ محتوياته بدلاً من حذفه
+   * - إذا كان هناك أكثر من سجل: حذف السجل المحدد
+   */
   const removeRow = (id: number) => {
+    // إذا كان هناك سجل واحد فقط، لا نحذفه بل نفرغ محتوياته
+    if (invoiceItems.length === 1) {
+      const updated = [...invoiceItems];
+      const index = updated.findIndex(item => item.id === id);
+      
+      if (index !== -1) {
+        // تفريغ محتويات السجل إلى القيم الافتراضية
+        // هذا يضمن وجود سجل واحد على الأقل في الفاتورة
+        updated[index] = {
+          ...updated[index],
+          item_id: null,
+          item_code: "",
+          item_name: "",
+          item_desc: "",
+          qty: 1,
+          weight: 0,
+          g_weight: 0,
+          k: "",
+          price: 0,
+          price_w: 0,
+          item_disc_amt: 0,
+          item_disc_prc: 0,
+          note: "",
+          purity: "",
+          total: 0,
+          total_w: 0,
+          total_a: 0,
+          tax: 0,
+          tax_prc: 15,
+          stones: "",
+          sn: "",
+        };
+        
+        setInvoiceItems(updated);
+        return;
+      }
+    }
+    
+    // إذا كان هناك أكثر من سجل، احذف السجل المحدد
     const itemToRemove = invoiceItems.find(item => item.id === id);
     if (itemToRemove && onItemRemoved) {
       onItemRemoved(itemToRemove);

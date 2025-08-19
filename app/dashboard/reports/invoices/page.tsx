@@ -37,9 +37,10 @@ const { INVOICES_LIST } = API_ENDPOINTS;
 // أنواع الفواتير
 const INVOICE_TYPES = [
   { key: "all", label: "جميع الفواتير", color: "default" },
+  { key: "purchase", label: "فواتير الشراء", color: "primary" },
   { key: "sales", label: "فواتير البيع", color: "success" },
-  { key: "return", label: "فواتير المرتجعات", color: "warning" },
-  { key: "credit", label: "فواتير الآجل", color: "primary" },
+  { key: "purchase_return", label: "مردود الشراء", color: "warning" },
+  { key: "sales_return", label: "مردود البيع", color: "danger" },
 ];
 
 // حالات الفواتير
@@ -94,9 +95,10 @@ export default function InvoicesPage() {
 
       // تصفية حسب النوع
       const typeMatch = selectedType === "all" || 
+        (selectedType === "purchase" && inv.trans_type === 1) ||
         (selectedType === "sales" && inv.trans_type === 2) ||
-        (selectedType === "return" && inv.trans_type === 3) ||
-        (selectedType === "credit" && inv.pay_type === 3);
+        (selectedType === "purchase_return" && inv.trans_type === 3) ||
+        (selectedType === "sales_return" && inv.trans_type === 4);
 
       // تصفية حسب التاريخ
       const dateMatch = !dateRange.start && !dateRange.end || 
@@ -116,9 +118,10 @@ export default function InvoicesPage() {
 
     // حسب النوع
     const byType = {
+      purchase: filteredInvoices.filter(inv => inv.trans_type === 1).length,
       sales: filteredInvoices.filter(inv => inv.trans_type === 2).length,
-      return: filteredInvoices.filter(inv => inv.trans_type === 3).length,
-      credit: filteredInvoices.filter(inv => inv.pay_type === 3).length,
+      purchase_return: filteredInvoices.filter(inv => inv.trans_type === 3).length,
+      sales_return: filteredInvoices.filter(inv => inv.trans_type === 4).length,
     };
 
     // حسب الشهر
@@ -158,8 +161,31 @@ export default function InvoicesPage() {
       render: (value: number) => formatAmount(value, fractions.frac) },
     { key: "type", label: "النوع", sortable: false,
       render: (value: any, row: Invoice) => {
-        const type = row.trans_type === 2 ? "بيع" : row.trans_type === 3 ? "مرتجع" : "آخر";
-        const color = row.trans_type === 2 ? "success" : row.trans_type === 3 ? "warning" : "default";
+        let type = "";
+        let color = "default";
+        
+        switch (row.trans_type) {
+          case 1:
+            type = "شراء";
+            color = "primary";
+            break;
+          case 2:
+            type = "بيع";
+            color = "success";
+            break;
+          case 3:
+            type = "مردود شراء";
+            color = "warning";
+            break;
+          case 4:
+            type = "مردود بيع";
+            color = "danger";
+            break;
+          default:
+            type = "غير محدد";
+            color = "default";
+        }
+        
         return <Chip color={color} size="sm">{type}</Chip>;
       }},
     { key: "actions", label: "الإجراءات", sortable: false,
@@ -169,7 +195,7 @@ export default function InvoicesPage() {
             isIconOnly
             size="sm"
             variant="light"
-            onPress={() => router.push(`/dashboard/forms/invoice?inv_id=${row.inv_id}`)}
+            onPress={() => router.push(`/dashboard/forms/invoices/Gold_invoice2?inv_id=${row.inv_id}`)}
           >
             <FaEye className="text-blue-500" />
           </Button>
@@ -177,7 +203,7 @@ export default function InvoicesPage() {
             isIconOnly
             size="sm"
             variant="light"
-            onPress={() => router.push(`/dashboard/forms/invoice?inv_id=${row.inv_id}`)}
+            onPress={() => router.push(`/dashboard/forms/invoices/Gold_invoice2?inv_id=${row.inv_id}`)}
           >
             <FaEdit className="text-yellow-500" />
           </Button>
@@ -215,7 +241,7 @@ export default function InvoicesPage() {
           <Button
             color="success"
             startContent={<FaPlus />}
-            onPress={() => router.push("/dashboard/forms/invoice?new=true")}
+            onPress={() => router.push("/dashboard/forms/invoices/Gold_invoice2?new=true")}
           >
             إضافة فاتورة
           </Button>

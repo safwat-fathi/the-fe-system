@@ -6,7 +6,7 @@ import { Input, Button } from "@heroui/react";
 import toast from "react-hot-toast";
 
 import useFractions from "@/utilities/useFractions";
-import { renderInvoicePreview } from "@/components/invoices/TaxInvoicePreview";
+import { renderInvoicePreview } from "./components/TaxInvoicePreview";
 import {
   API_BASE_URL,
   API_ENDPOINTS,
@@ -1039,7 +1039,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
 
     const targetInvoice = invoicesList[targetIndex];
     if (targetInvoice) {
-      router.push(`/dashboard/forms/sales_return?inv_id=${targetInvoice.inv_id}`);
+      router.push(`/dashboard/forms/invoices/Gold_invoice4?inv_id=${targetInvoice.inv_id}`);
     }
   };
 

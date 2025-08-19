@@ -272,7 +272,7 @@ export default function InvoicePaymentPage() {
       
       // إعادة التوجيه
       if (inv > 0) {
-        router.push(`/dashboard/forms/invoice?inv_id=${inv}`);
+        router.push(`/dashboard/forms/invoices/Gold_invoice2?inv_id=${inv}`);
       } else {
         router.back();
       }

@@ -42,8 +42,10 @@ export const PAYMENT_TYPES = {
 
 // Transaction Types
 export const TRANSACTION_TYPES = {
+  PURCHASE: 1,
   SALE: 2,
-  RETURN: 3,
+  PURCHASE_RETURN: 3,
+  SALES_RETURN: 4,
 } as const;
 
 // Voucher Types
@@ -89,3 +91,6 @@ export const SUCCESS_MESSAGES = {
   DELETE_SUCCESS: 'تم الحذف بنجاح',
   UPDATE_SUCCESS: 'تم التحديث بنجاح',
 } as const;
+
+// Export Invoice Types
+export * from './invoice-types';

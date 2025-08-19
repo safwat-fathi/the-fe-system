@@ -1,3 +1,6 @@
+/* Import VAT Report Styles */
+@import './vat-report.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

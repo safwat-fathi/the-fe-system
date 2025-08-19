@@ -46,9 +46,10 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
 
     // حسب النوع
     const byType = {
+      purchase: invoices.filter(inv => inv.trans_type === 1).length,
       sales: invoices.filter(inv => inv.trans_type === 2).length,
-      return: invoices.filter(inv => inv.trans_type === 3).length,
-      credit: invoices.filter(inv => inv.pay_type === 3).length,
+      purchase_return: invoices.filter(inv => inv.trans_type === 3).length,
+      sales_return: invoices.filter(inv => inv.trans_type === 4).length,
     };
 
     // حسب الشهر
@@ -111,19 +112,26 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
   };
 
   const typeChartData = {
-    labels: ["فواتير البيع", "فواتير المرتجعات", "فواتير الآجل"],
+    labels: ["فواتير الشراء", "فواتير البيع", "مردود الشراء", "مردود البيع"],
     datasets: [
       {
-        data: [analytics.byType.sales, analytics.byType.return, analytics.byType.credit],
+        data: [
+          analytics.byType.purchase, 
+          analytics.byType.sales, 
+          analytics.byType.purchase_return, 
+          analytics.byType.sales_return
+        ],
         backgroundColor: [
-          "rgba(16, 185, 129, 0.8)",
-          "rgba(245, 158, 11, 0.8)",
-          "rgba(59, 130, 246, 0.8)",
+          "rgba(59, 130, 246, 0.8)",   // أزرق للشراء
+          "rgba(16, 185, 129, 0.8)",   // أخضر للبيع
+          "rgba(245, 158, 11, 0.8)",   // برتقالي لمردود الشراء
+          "rgba(239, 68, 68, 0.8)",    // أحمر لمردود البيع
         ],
         borderColor: [
+          "rgb(59, 130, 246)",
           "rgb(16, 185, 129)",
           "rgb(245, 158, 11)",
-          "rgb(59, 130, 246)",
+          "rgb(239, 68, 68)",
         ],
         borderWidth: 2,
       },
@@ -294,17 +302,21 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
           </CardHeader>
           <CardBody>
             <div className="space-y-4">
+              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                <span className="font-medium">فواتير الشراء</span>
+                <span className="text-blue-600 font-bold">{analytics.byType.purchase}</span>
+              </div>
               <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                 <span className="font-medium">فواتير البيع</span>
                 <span className="text-green-600 font-bold">{analytics.byType.sales}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <span className="font-medium">فواتير المرتجعات</span>
-                <span className="text-yellow-600 font-bold">{analytics.byType.return}</span>
+                <span className="font-medium">مردود الشراء</span>
+                <span className="text-yellow-600 font-bold">{analytics.byType.purchase_return}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span className="font-medium">فواتير الآجل</span>
-                <span className="text-blue-600 font-bold">{analytics.byType.credit}</span>
+              <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                <span className="font-medium">مردود البيع</span>
+                <span className="text-red-600 font-bold">{analytics.byType.sales_return}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium">نسبة الضريبة</span>

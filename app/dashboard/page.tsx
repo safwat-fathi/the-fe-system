@@ -250,7 +250,7 @@ export default function DashboardPage() {
       <div className="flex flex-wrap gap-4">
         <Button 
           as={Link} 
-          href="/dashboard/forms/invoice?new=true" 
+          href="/dashboard/forms/invoices/Gold_invoice2?new=true" 
           color="primary"
           className="btn-primary"
         >

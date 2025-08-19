@@ -339,7 +339,7 @@ const filteredCustomers = useMemo(() => {
               isIconOnly
               size="sm"
               variant="flat"
-              onPress={() => router.push("/dashboard/cust_types")}
+              onPress={() => router.push("/dashboard/basic/cust_type")}
             >
               +
             </Button>

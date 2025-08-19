@@ -6,7 +6,7 @@ import { Input, Button } from "@heroui/react";
 import toast from "react-hot-toast";
 
 import useFractions from "@/utilities/useFractions";
-import { renderInvoicePreview } from "@/components/invoices/TaxInvoicePreview";
+import { renderInvoicePreview } from "./components/TaxInvoicePreview";
 import {
   API_BASE_URL,
   API_ENDPOINTS,
@@ -323,6 +323,54 @@ export default function InvoicePage() {
       setManualTotalWages(autoTotalWages);
     }
   }, [invoiceItems, useManualTotals]);
+
+  // تحديث العناصر عند تغيير الإجماليات اليدوية
+  useEffect(() => {
+    if (useManualTotals && invoiceItems.length > 0) {
+      const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
+      
+      setInvoiceItems((items) =>
+        items.map((item) => {
+          // الحفاظ على السعر الأصلي كما هو
+          const originalPrice = item.price;
+          const originalPriceW = item.price_w;
+          
+          const totalA = item.weight * originalPrice;
+          const totalW = item.weight * (originalPriceW ?? 0);
+          
+          // حساب النسب المئوية للتوزيع مع تجنب تقسيم الصفر
+          const valueRatio = autoTotalValue > 0 ? totalA / autoTotalValue : (invoiceItems.length > 0 ? 1 / invoiceItems.length : 1);
+          const wagesRatio = autoTotalWages > 0 ? totalW / autoTotalWages : (invoiceItems.length > 0 ? 1 / invoiceItems.length : 1);
+          
+          // تطبيق الإجماليات اليدوية
+          const newTotalA = manualTotalValue * valueRatio;
+          const newTotalW = manualTotalWages * wagesRatio;
+          
+          // حساب الإجمالي حسب نوع الدفع
+          let rowTotal = 0;
+          if (payType === 1) {
+            rowTotal = newTotalA;
+          } else if (payType === 2) {
+            rowTotal = newTotalW;
+          } else {
+            rowTotal = newTotalA + newTotalW;
+          }
+          
+          return {
+            ...item,
+            // الحفاظ على الأسعار الأصلية
+            price: originalPrice,
+            price_w: originalPriceW,
+            // تحديث الإجماليات فقط
+            total: newTotalA,
+            total_w: newTotalW,
+            total_a: rowTotal,
+            tax: (rowTotal - (item.item_disc_amt ?? 0)) * (item.tax_prc / 100)
+          };
+        })
+      );
+    }
+  }, [manualTotalValue, manualTotalWages, useManualTotals, invoiceItems.length, payType]);
 
   useEffect(() => {
     setInvoiceItems((items) =>
@@ -1522,7 +1570,7 @@ export default function InvoicePage() {
 
     const targetInvoice = invoicesList[targetIndex];
     if (targetInvoice) {
-      router.push(`/dashboard/forms/invoice?inv_id=${targetInvoice.inv_id}`);
+      router.push(`/dashboard/forms/invoices/Gold_invoice2?inv_id=${targetInvoice.inv_id}`);
     }
   };
 

@@ -122,7 +122,7 @@ export default function InvoiceSelectors({
           <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
             📋 معلومات الفاتورة
           </h3>
-                     <div className="grid grid-cols-1 gap-2 text-xs">
+                     <div className="grid grid-cols-1 gap-1 text-xs">
              <div>
                <label className="block mb-1 font-medium text-gray-700 text-xs" htmlFor="customer-select">
                  العميل:
@@ -206,10 +206,10 @@ export default function InvoiceSelectors({
               />
             </div>
 
-                         <div className="grid grid-cols-2 gap-2">
+                         <div className="grid grid-cols-2 gap-1">
                <div>
                  <span className="block mb-1 font-medium text-gray-700 text-xs">طريقة الدفع:</span>
-                 <div className="w-full h-[28px] border rounded flex items-center justify-around px-2 bg-gray-50 text-xs">
+                 <div className="w-full h-[32px] border rounded flex items-center justify-around px-2 bg-gray-50 text-xs">
                    <label className="flex items-center gap-1">
                      <input
                        checked={paymentMethod === "cash"}
@@ -244,7 +244,7 @@ export default function InvoiceSelectors({
                    على:
                  </label>
                  <select
-                   className="w-full h-[28px] border px-2 rounded text-xs"
+                   className="w-full h-[32px] border px-2 rounded text-xs"
                    id="pay-type"
                    value={payType}
                    onChange={(e) => setPayType(parseInt(e.target.value))}
@@ -256,7 +256,7 @@ export default function InvoiceSelectors({
                </div>
              </div>
 
-                         <div className="grid grid-cols-2 gap-2">
+                         <div className="grid grid-cols-2 gap-1">
                {saleInvoices ? (
                  <div>
                    <label className="block mb-1 font-medium text-gray-700 text-xs" htmlFor="reference-number">
@@ -279,7 +279,7 @@ export default function InvoiceSelectors({
                        .map((inv) => ({ value: inv.inv_id, label: String(inv.inv_id) }))}
                      placeholder="اختر الفاتورة..."
                      styles={{
-                       control: (base) => ({ ...base, height: 28, minHeight: 28, fontSize: '12px' }),
+                       control: (base) => ({ ...base, height: 32, minHeight: 32, fontSize: '12px' }),
                        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                        option: (base) => ({ ...base, fontSize: '12px' }),
                        placeholder: (base) => ({ ...base, fontSize: '12px' }),
@@ -308,7 +308,7 @@ export default function InvoiceSelectors({
                      رقم المرجع:
                    </label>
                    <input
-                     className="w-full h-[28px] border px-2 rounded text-xs"
+                     className="w-full h-[32px] border px-2 rounded text-xs"
                      placeholder=" المرجع "
                      type="text"
                      value={referenceNumber}
@@ -323,7 +323,7 @@ export default function InvoiceSelectors({
                  </label>
                  <input
                    readOnly
-                   className="w-full h-[28px] border px-2 rounded bg-gray-50 text-xs"
+                   className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
                    placeholder="الرقم الضريبي"
                    type="text"
                    value={vatNumber}
@@ -331,13 +331,13 @@ export default function InvoiceSelectors({
                </div>
              </div>
 
-                         <div className="grid grid-cols-2 gap-2">
+                         <div className="grid grid-cols-2 gap-1">
                <div>
                  <label className="block mb-1 font-medium text-gray-700 text-xs" htmlFor="handling-method">
                    مناولة:
                  </label>
                  <input
-                   className="w-full h-[28px] border px-2 rounded text-xs"
+                   className="w-full h-[32px] border px-2 rounded text-xs"
                    placeholder="مناولة"
                    type="text"
                    value={handlingMethod}
@@ -350,7 +350,7 @@ export default function InvoiceSelectors({
                    جوال:
                  </label>
                  <input
-                   className="w-full h-[28px] border px-2 rounded text-xs"
+                   className="w-full h-[32px] border px-2 rounded text-xs"
                    placeholder=" الجوال"
                    type="text"
                    value={mobileMethod}
@@ -359,13 +359,13 @@ export default function InvoiceSelectors({
                </div>
              </div>
 
-             <div className="grid grid-cols-2 gap-2">
+             <div className="grid grid-cols-2 gap-1">
                <div>
                  <label className="block mb-1 font-medium text-gray-700 text-xs" htmlFor="employee">
                    البائع:
                  </label>
                  <select
-                   className="w-full h-[28px] border px-2 rounded text-xs"
+                   className="w-full h-[32px] border px-2 rounded text-xs"
                    id="employee"
                    value={employee}
                    onChange={(e) => setEmployee(e.target.value)}
@@ -382,7 +382,7 @@ export default function InvoiceSelectors({
                  </label>
                  <input
                    readOnly
-                   className="w-full h-[28px] border px-2 rounded bg-gray-100 text-xs"
+                   className="w-full h-[32px] border px-2 rounded bg-gray-100 text-xs"
                    type="text"
                    value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
                  />
@@ -394,7 +394,7 @@ export default function InvoiceSelectors({
                  البيان:
                </label>
                <input
-                 className="w-full h-[28px] border px-2 rounded text-xs"
+                 className="w-full h-[32px] border px-2 rounded text-xs"
                  placeholder="البيان"
                  type="text"
                  value={note}

@@ -6,7 +6,7 @@ import { Voucher, VoucherDetail } from "@/types/voucher";
 import { API_ENDPOINTS, fetchData, apiFetch } from "@/utilities/api";
 import { getCurrDate } from "@/utilities/getCurrDate";
 import { getNextVoucherNumber } from "@/utilities/numbering";
-import { VoucherContainer } from "@/components/voucher";
+import { VoucherContainer } from "./components";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
