@@ -443,7 +443,18 @@ export default function InvoiceItemTable({
     
     if (updated[index]) {
       updated[index].total_a = num;
+      
+      // إعادة حساب سعر الجرام بناءً على الإجمالي الجديد
+      if (updated[index].weight && updated[index].weight > 0) {
+        updated[index].price = num / updated[index].weight;
+      }
+      
+      // إعادة حساب الإجمالي الكلي
       updated[index].total = (updated[index].total_a || 0) + (updated[index].total_w || 0);
+      
+      // إعادة حساب الضريبة
+      const base = (updated[index].total_a || 0) + (updated[index].total_w || 0) - (updated[index].item_disc_amt ?? 0);
+      updated[index].tax = base * ((updated[index].tax_prc ?? 15) / 100);
       
       setInvoiceItems(updated);
     }
@@ -455,7 +466,18 @@ export default function InvoiceItemTable({
     
     if (updated[index]) {
       updated[index].total_w = num;
+      
+      // إعادة حساب سعر الأجور بناءً على الإجمالي الجديد
+      if (updated[index].weight && updated[index].weight > 0) {
+        updated[index].price_w = num / updated[index].weight;
+      }
+      
+      // إعادة حساب الإجمالي الكلي
       updated[index].total = (updated[index].total_a || 0) + (updated[index].total_w || 0);
+      
+      // إعادة حساب الضريبة
+      const base = (updated[index].total_a || 0) + (updated[index].total_w || 0) - (updated[index].item_disc_amt ?? 0);
+      updated[index].tax = base * ((updated[index].tax_prc ?? 15) / 100);
       
       setInvoiceItems(updated);
     }
@@ -846,7 +868,7 @@ export default function InvoiceItemTable({
                       step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={parseFloat(item.total_a?.toFixed(totalADigits) || "0")}
+                      value={parseFloat((item.weight * item.price).toFixed(totalADigits))}
                       disabled={!isEditing}
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
@@ -865,7 +887,7 @@ export default function InvoiceItemTable({
                       step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={parseFloat(item.total_w?.toFixed(totalWDigits) || "0")}
+                      value={parseFloat((item.weight * (item.price_w || 0)).toFixed(totalWDigits))}
                       disabled={!isEditing}
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
