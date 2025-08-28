@@ -75,6 +75,284 @@ html, body {
   @apply bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
 }
 
+/* ===== RESPONSIVE DESIGN SYSTEM ===== */
+
+/* Responsive Container */
+.responsive-container {
+  @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
+  max-width: 1536px;
+}
+
+/* Responsive Grid System */
+.responsive-grid {
+  @apply grid gap-4 sm:gap-6 lg:gap-8;
+}
+
+.responsive-grid-1 {
+  @apply grid-cols-1;
+}
+
+.responsive-grid-2 {
+  @apply grid-cols-1 sm:grid-cols-2;
+}
+
+.responsive-grid-3 {
+  @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.responsive-grid-4 {
+  @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+}
+
+.responsive-grid-6 {
+  @apply grid-cols-2 sm:grid-cols-3 lg:grid-cols-6;
+}
+
+/* Responsive Flex System */
+.responsive-flex {
+  @apply flex flex-col sm:flex-row;
+}
+
+.responsive-flex-wrap {
+  @apply flex flex-wrap gap-2 sm:gap-4;
+}
+
+.responsive-flex-center {
+  @apply flex flex-col sm:flex-row items-center justify-center;
+}
+
+.responsive-flex-between {
+  @apply flex flex-col sm:flex-row items-center justify-between;
+}
+
+/* Responsive Text */
+.responsive-text-xs {
+  @apply text-xs sm:text-sm lg:text-base;
+}
+
+.responsive-text-sm {
+  @apply text-sm sm:text-base lg:text-lg;
+}
+
+.responsive-text-base {
+  @apply text-base sm:text-lg lg:text-xl;
+}
+
+.responsive-text-lg {
+  @apply text-lg sm:text-xl lg:text-2xl;
+}
+
+.responsive-text-xl {
+  @apply text-xl sm:text-2xl lg:text-3xl;
+}
+
+.responsive-text-2xl {
+  @apply text-2xl sm:text-3xl lg:text-4xl;
+}
+
+/* Responsive Spacing */
+.responsive-p {
+  @apply p-2 sm:p-4 lg:p-6;
+}
+
+.responsive-px {
+  @apply px-2 sm:px-4 lg:px-6;
+}
+
+.responsive-py {
+  @apply py-2 sm:py-4 lg:py-6;
+}
+
+.responsive-m {
+  @apply m-2 sm:m-4 lg:m-6;
+}
+
+.responsive-mx {
+  @apply mx-2 sm:mx-4 lg:mx-6;
+}
+
+.responsive-my {
+  @apply my-2 sm:my-4 lg:my-6;
+}
+
+/* Responsive Width */
+.responsive-w-full {
+  @apply w-full;
+}
+
+.responsive-w-auto {
+  @apply w-auto;
+}
+
+.responsive-w-sm {
+  @apply w-full sm:w-auto;
+}
+
+.responsive-w-md {
+  @apply w-full md:w-auto;
+}
+
+.responsive-w-lg {
+  @apply w-full lg:w-auto;
+}
+
+/* Responsive Table */
+.responsive-table {
+  @apply overflow-x-auto;
+}
+
+.responsive-table-container {
+  @apply min-w-full overflow-hidden;
+}
+
+.responsive-table-wrapper {
+  @apply overflow-x-auto shadow ring-1 ring-black ring-opacity-5 md:rounded-lg;
+}
+
+/* Responsive Modal */
+.responsive-modal {
+  @apply w-full sm:w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3;
+  max-width: 1200px;
+}
+
+/* Responsive Form */
+.responsive-form {
+  @apply space-y-4 sm:space-y-6;
+}
+
+.responsive-form-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+}
+
+.responsive-form-full {
+  @apply col-span-1 sm:col-span-2 lg:col-span-3;
+}
+
+/* Responsive Navigation */
+.responsive-nav {
+  @apply flex flex-col sm:flex-row items-center justify-between;
+}
+
+.responsive-nav-menu {
+  @apply hidden sm:flex items-center space-x-4 rtl:space-x-reverse;
+}
+
+.responsive-nav-mobile {
+  @apply sm:hidden;
+}
+
+/* Responsive Buttons */
+.responsive-btn {
+  @apply w-full sm:w-auto;
+}
+
+.responsive-btn-group {
+  @apply flex flex-col sm:flex-row gap-2 sm:gap-4;
+}
+
+/* Responsive Cards */
+.responsive-card {
+  @apply p-4 sm:p-6 lg:p-8;
+}
+
+.responsive-card-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+}
+
+/* Responsive Sidebar */
+.responsive-sidebar {
+  @apply fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0;
+}
+
+.responsive-sidebar-open {
+  @apply translate-x-0;
+}
+
+/* Responsive Header */
+.responsive-header {
+  @apply flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6;
+}
+
+/* Responsive Footer */
+.responsive-footer {
+  @apply flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6;
+}
+
+/* Responsive Search */
+.responsive-search {
+  @apply w-full sm:w-64 lg:w-80;
+}
+
+.responsive-search-group {
+  @apply flex flex-col sm:flex-row gap-2 sm:gap-4;
+}
+
+/* Responsive Pagination */
+.responsive-pagination {
+  @apply flex flex-col sm:flex-row items-center justify-between gap-4;
+}
+
+/* Responsive Filters */
+.responsive-filters {
+  @apply flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4 sm:mb-6;
+}
+
+/* Responsive Actions */
+.responsive-actions {
+  @apply flex flex-col sm:flex-row gap-2 sm:gap-4;
+}
+
+/* Responsive Stats */
+.responsive-stats {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6;
+}
+
+/* Responsive Charts */
+.responsive-chart {
+  @apply w-full h-64 sm:h-80 lg:h-96;
+}
+
+/* Responsive Dashboard */
+.responsive-dashboard {
+  @apply grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6;
+}
+
+.responsive-dashboard-main {
+  @apply lg:col-span-3;
+}
+
+.responsive-dashboard-sidebar {
+  @apply lg:col-span-1;
+}
+
+/* Responsive Invoice */
+.responsive-invoice {
+  @apply grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6;
+}
+
+.responsive-invoice-main {
+  @apply lg:col-span-2;
+}
+
+.responsive-invoice-sidebar {
+  @apply lg:col-span-1;
+}
+
+/* Responsive Print */
+@media print {
+  .responsive-container {
+    @apply w-full mx-0 px-0;
+    max-width: none;
+  }
+  
+  .responsive-sidebar,
+  .responsive-nav-mobile {
+    @apply hidden;
+  }
+}
+
+/* ===== END RESPONSIVE DESIGN SYSTEM ===== */
+
 /* Table improvements for items page */
 .table-no-scrollbar {
   overflow: hidden !important;

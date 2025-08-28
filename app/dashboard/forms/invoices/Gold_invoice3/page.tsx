@@ -11,6 +11,7 @@ import {
   fetchData,
   fetchGoldPrice,
   apiFetch,
+  fetchItemByBarcode,
 } from "@/utilities/api";
 
 import InvoiceSelectors from "@/components/InvoiceSelectors";
@@ -130,7 +131,9 @@ export default function GoldInvoice3Page() {
   async function fetchCustomers() {
     const response = await fetchData<any[]>(`${API_BASE_URL}customers_list`);
     if (response) {
-      setCustomers(response);
+      // تصفية العملاء والموردين بحيث لا يكون box_type = 2
+      const filteredCustomers = response.filter((customer) => customer.box_type !== 2);
+      setCustomers(filteredCustomers);
     }
   }
 
@@ -199,7 +202,7 @@ export default function GoldInvoice3Page() {
   const totalTax = totalValueTax + totalWagesTax;
 
   const saveInvoice = async () => {
-    if (!selectedCustomer) return toast.error("يرجى اختيار العميل");
+    if (!selectedCustomer) return toast.error("يرجى اختيار المورد");
 
     const validItems = invoiceItems.filter((itm) => itm.item_id);
     if (validItems.length === 0) {
@@ -211,7 +214,7 @@ export default function GoldInvoice3Page() {
 
   const previewInvoice = () => {
     if (!selectedCustomer) {
-      toast.error("يرجى اختيار العميل");
+      toast.error("يرجى اختيار المورد");
       return;
     }
 
@@ -244,8 +247,174 @@ export default function GoldInvoice3Page() {
     toast.success("البحث برقم الفاتورة");
   };
 
-  const handleBarcodeSearch = () => {
-    toast.success("البحث بالباركود");
+  const handleBarcodeSearch = async () => {
+    if (!searchValue.trim() || !isEditing) return;
+
+    try {
+      console.log("البحث بالباركود:", searchValue.trim());
+      
+      const searchTerm = searchValue.trim();
+      let exactMatch = null;
+      
+      // البحث في الأصناف المحملة أولاً
+      console.log("البحث في الأصناف المحملة:", items.length, "صنف");
+      exactMatch = items.find((item: any) => {
+        const itemBarcode = (item.item_barcode ?? "").toString().trim();
+        const itemCode = (item.item_code ?? "").toString().trim();
+        
+        // البحث في الباركود أولاً، ثم في الكود
+        return itemBarcode === searchTerm || itemCode === searchTerm;
+      });
+      
+      if (!exactMatch) {
+        console.log("لم يجد في الأصناف المحملة، البحث في API...");
+        
+        // استخدام دالة البحث بالباركود المخصصة
+        const barcodeResult = await fetchItemByBarcode(searchTerm);
+        
+        if (barcodeResult) {
+          exactMatch = barcodeResult;
+          console.log("✅ وجد تطابق في API بالباركود:", exactMatch.item_barcode);
+        } else {
+          // إذا لم يجد بالباركود، جرب البحث في الكود
+          const res = await fetch(
+            `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
+          );
+          const json = await res.json();
+          
+          if (Array.isArray(json.results)) {
+            exactMatch = json.results.find((item: any) => {
+              const itemCode = (item.item_code ?? "").toString().trim();
+              return itemCode === searchTerm;
+            });
+          }
+        }
+      } else {
+        console.log("✅ وجد تطابق في الأصناف المحملة:", exactMatch.item_barcode || exactMatch.item_code);
+      }
+
+      if (exactMatch) {
+        const firstEmptyRowIndex = invoiceItems.findIndex(
+          (item) => !item.item_id && !item.item_name && item.weight === 0
+        );
+
+        const targetIndex = firstEmptyRowIndex !== -1 ? firstEmptyRowIndex : 0;
+        const updated = [...invoiceItems];
+
+        if (firstEmptyRowIndex === -1) {
+          updated.unshift({
+            id: Date.now(),
+            item_id: null,
+            item_code: "",
+            qty: 1,
+            g_weight: 0,
+            weight: 0,
+            k: "",
+            price: goldPrice ?? 0,
+            price_w: 0,
+            note: "",
+            trans_type: 3,
+            purity: "",
+            total: 0,
+            total_w: 0,
+            total_a: 0,
+            tax: 0,
+            tax_prc: 15,
+            stones: "",
+            item_disc_amt: 0,
+          });
+        }
+
+        const selected = exactMatch;
+
+        if (!items.find((i) => i.id === selected.id)) {
+          setItems([...items, selected]);
+        }
+
+        updated[targetIndex].item_id = selected.id ?? null;
+        updated[targetIndex].item_code = selected.item_code ?? "";
+        updated[targetIndex].item_name = selected.item_name ?? "";
+
+        updated[targetIndex].k = selected.k ?? "";
+        updated[targetIndex].price = goldPrice ?? Number(selected.item_price ?? 0);
+        updated[targetIndex].price_w = Number(selected.work_price ?? 0);
+        updated[targetIndex].purity = selected.purity ?? "";
+        updated[targetIndex].stones = selected.stones ?? "";
+
+        if (selected.item_weight !== undefined && selected.item_weight !== null && selected.item_weight !== "") {
+          updated[targetIndex].weight = Number(selected.item_weight ?? 0);
+          updated[targetIndex].g_weight = Number(selected.item_g_weight ?? selected.item_weight ?? 0);
+        }
+
+        if (selected.item_g_weight !== undefined && selected.item_g_weight !== null && selected.item_g_weight !== "") {
+          updated[targetIndex].g_weight = Number(selected.item_g_weight);
+        }
+
+        if (!updated[targetIndex].purity || updated[targetIndex].purity === "0" || updated[targetIndex].purity === "") {
+          updated[targetIndex].purity = homePurity.toString();
+        }
+
+        const wCalc = updated[targetIndex].weight < 1 && updated[targetIndex].g_weight > updated[targetIndex].weight
+          ? updated[targetIndex].weight * 1000
+          : updated[targetIndex].weight;
+
+        updated[targetIndex].total_a = payType === 2
+          ? wCalc * updated[targetIndex].price_w
+          : wCalc * updated[targetIndex].price;
+        updated[targetIndex].total_w = wCalc * updated[targetIndex].price_w;
+
+        const base = (payType === 1
+          ? updated[targetIndex].total_a
+          : payType === 2
+            ? updated[targetIndex].total_w
+            : updated[targetIndex].total_a + updated[targetIndex].total_w) - (updated[targetIndex].item_disc_amt ?? 0);
+
+        updated[targetIndex].tax = (base * (updated[targetIndex].tax_prc ?? 15)) / 100;
+        updated[targetIndex].total = base + updated[targetIndex].tax;
+
+        setInvoiceItems(updated);
+        setSearchValue("");
+        toast.success(`✅ تم إضافة الصنف: ${selected.item_name || selected.item_code} (${selected.item_code})`);
+
+        const isLastRow = targetIndex === updated.length - 1;
+        const isRowFilled = updated[targetIndex].item_id || updated[targetIndex].item_name || updated[targetIndex].weight > 0;
+
+        if (isLastRow && isRowFilled) {
+          setInvoiceItems([
+            ...updated,
+            {
+              id: Date.now(),
+              item_id: null,
+              item_code: "",
+              qty: 1,
+              g_weight: 0,
+              weight: 0,
+              k: "",
+              price: goldPrice ?? 0,
+              price_w: 0,
+              note: "",
+              trans_type: 3,
+              purity: "",
+              total: 0,
+              total_w: 0,
+              total_a: 0,
+              tax: 0,
+              tax_prc: 15,
+              stones: "",
+              item_disc_amt: 0,
+            },
+          ]);
+        }
+      } else {
+        console.log("❌ لم يجد تطابق للكود:", searchValue.trim());
+        toast.error(`لم يتم العثور على صنف: ${searchValue.trim()}`);
+        setSearchValue("");
+        return;
+      }
+    } catch (error) {
+      console.error("خطأ في البحث بالباركود:", error);
+      toast.error("حدث خطأ أثناء البحث بالباركود");
+    }
   };
 
   const navigateToInvoice = (direction: 'prev' | 'next' | 'first' | 'last') => {
@@ -344,6 +513,7 @@ export default function GoldInvoice3Page() {
                setSearchValue={setSearchValue}
                onBarcodeSearch={handleBarcodeSearch}
                isEditing={isEditing}
+               invoiceType="purchase_return"
              />
 
              <InvoiceItemTable

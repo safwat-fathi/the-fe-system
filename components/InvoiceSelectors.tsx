@@ -67,6 +67,7 @@ interface Props {
   setSearchValue: (val: string) => void;
   onBarcodeSearch: () => void;
   isEditing: boolean;
+  invoiceType?: "purchase" | "sale" | "purchase_return" | "sale_return";
 }
 
 export default function InvoiceSelectors({
@@ -113,6 +114,7 @@ export default function InvoiceSelectors({
   setSearchValue,
   onBarcodeSearch,
   isEditing,
+  invoiceType = "sale",
 }: Props) {
   return (
     <div className="mb-4">
@@ -125,7 +127,7 @@ export default function InvoiceSelectors({
                      <div className="grid grid-cols-1 gap-1 text-xs">
              <div>
                <label className="block mb-1 font-medium text-gray-700 text-xs" htmlFor="customer-select">
-                 العميل:
+                 {invoiceType === "purchase" || invoiceType === "purchase_return" ? "المورد:" : "العميل:"}
                </label>
                <ReactSelect
                  isSearchable
@@ -147,7 +149,7 @@ export default function InvoiceSelectors({
                      value: cust.id,
                      label: `${cust.cust_code ?? cust.id} - ${cust.cust_name}`,
                    }))}
-                 placeholder="اختر العميل..."
+                 placeholder={invoiceType === "purchase" || invoiceType === "purchase_return" ? "اختر المورد..." : "اختر العميل..."}
                  styles={{
                    control: (base) => ({ ...base, height: 32, minHeight: 32, fontSize: '12px' }),
                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
@@ -164,7 +166,7 @@ export default function InvoiceSelectors({
                             ?.cust_code ?? selectedCustomer
                         } - ${
                           customers.find((c) => c.id === selectedCustomer)
-                            ?.cust_name || `عميل رقم ${selectedCustomer}`
+                            ?.cust_name || `${invoiceType === "purchase" || invoiceType === "purchase_return" ? "مورد" : "عميل"} رقم ${selectedCustomer}`
                         }`,
                       }
                     : null
@@ -260,7 +262,7 @@ export default function InvoiceSelectors({
                {saleInvoices ? (
                  <div>
                    <label className="block mb-1 font-medium text-gray-700 text-xs" htmlFor="reference-number">
-                     فواتير العميل:
+                     فواتير {invoiceType === "purchase" || invoiceType === "purchase_return" ? "المورد" : "العميل"}:
                    </label>
                    <ReactSelect
                      isSearchable
@@ -519,7 +521,7 @@ export default function InvoiceSelectors({
            ) : (
              <div className="text-center text-gray-500 py-8">
                <div className="text-2xl mb-2">📍</div>
-               <p className="text-sm">اختر عميلاً لعرض معلومات العنوان</p>
+                                <p className="text-sm">اختر {invoiceType === "purchase" || invoiceType === "purchase_return" ? "مورداً" : "عميلاً"} لعرض معلومات العنوان</p>
              </div>
            )}
            

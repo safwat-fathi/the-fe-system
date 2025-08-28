@@ -304,14 +304,14 @@ const filteredCustomers = useMemo(() => {
   const isViewMode = modalMode === "view";
 
   return (
-    <div className="p-4 font-cairo">
-      <h1 className="text-2xl font-bold mb-6">العملاء</h1>
-      <div className="flex justify-between mb-4">
+    <div className="responsive-container font-cairo">
+      <h1 className="responsive-text-xl font-bold mb-4">العملاء</h1>
+      <div className="responsive-filters">
         <Button onPress={() => openModal("add")}>
           {" "}
           <FaPlus /> إضافة عميل{" "}
         </Button>
-        <div className="flex gap-2 items-center">
+        <div className="responsive-search-group">
           <Select
             className="w-60"
             placeholder="فرز حسب نوع العميل"
@@ -346,7 +346,7 @@ const filteredCustomers = useMemo(() => {
           </Tooltip>
 
           <Input
-            className="w-60"
+            className="responsive-search"
             placeholder="بحث بالاسم..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -354,7 +354,8 @@ const filteredCustomers = useMemo(() => {
         </div>
       </div>
 
-      <Table aria-label="جدول العملاء">
+      <div className="responsive-table">
+        <Table aria-label="جدول العملاء">
         <TableHeader>
           {columns.map((col) => (
             <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -376,9 +377,10 @@ const filteredCustomers = useMemo(() => {
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
 
-      <div className="flex justify-between items-center py-4">
+      <div className="responsive-pagination">
         <span>عدد العملاء: {filteredCustomers.length}</span>
         <Pagination
           color="primary"

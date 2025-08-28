@@ -13,6 +13,7 @@ import {
   fetchData,
   fetchGoldPrice,
   apiFetch,
+  fetchItemByBarcode,
 } from "@/utilities/api";
 import { formatAmount } from "@/utilities/formatAmount";
 
@@ -473,7 +474,9 @@ export default function InvoicePage() {
     );
 
     if (response) {
-      setCustomers(response);
+      // تصفية العملاء والموردين بحيث لا يكون box_type = 2
+      const filteredCustomers = response.filter((customer) => customer.box_type !== 2);
+      setCustomers(filteredCustomers);
     } else {
       setCustomers([]);
     }
@@ -1046,52 +1049,51 @@ export default function InvoicePage() {
     if (!searchValue.trim() || !isEditing) return;
 
     try {
-      console.log("البحث عن الكود:", searchValue.trim());
+      console.log("البحث بالباركود:", searchValue.trim());
       
       const searchTerm = searchValue.trim();
       let exactMatch = null;
       
-      console.log("بدء البحث المحسن...");
-      
-      console.log("البحث السريع في الأصناف المحملة:", items.length, "صنف");
+      // البحث في الأصناف المحملة أولاً
+      console.log("البحث في الأصناف المحملة:", items.length, "صنف");
       exactMatch = items.find((item: any) => {
-        const itemCode = (item.item_code ?? item.code ?? "").toString().trim();
-        return itemCode === searchTerm;
+        const itemBarcode = (item.item_barcode ?? "").toString().trim();
+        const itemCode = (item.item_code ?? "").toString().trim();
+        
+        // البحث في الباركود أولاً، ثم في الكود
+        return itemBarcode === searchTerm || itemCode === searchTerm;
       });
       
       if (!exactMatch) {
         console.log("لم يجد في الأصناف المحملة، البحث في API...");
         
-        const res = await fetch(
-          `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
-        );
-        const json = await res.json();
+        // استخدام دالة البحث بالباركود المخصصة
+        const barcodeResult = await fetchItemByBarcode(searchTerm);
         
-        console.log("نتائج API:", {
-          count: json.count,
-          resultsCount: json.results?.length || 0
-        });
-        
-        if (Array.isArray(json.results)) {
-        
-          exactMatch = json.results.find((item: any) => {
-            const itemCode = (item.item_code ?? item.code ?? "").toString().trim();
-            
-            console.log("مقارنة دقيقة:", `"${itemCode}" === "${searchTerm}"`);
-            console.log("نوع البيانات:", typeof itemCode, typeof searchTerm);
-            console.log("طول النصوص:", itemCode.length, searchTerm.length);
-            
-            // البحث عن تطابق دقيق في الكود فقط
-            if (itemCode === searchTerm) {
-              console.log("✅ وجد تطابق دقيق في الكود:", itemCode);
-              return true;
-            }
-            
-            return false;
+        if (barcodeResult) {
+          exactMatch = barcodeResult;
+          console.log("✅ وجد تطابق في API بالباركود:", exactMatch.item_barcode);
+        } else {
+          // إذا لم يجد بالباركود، جرب البحث في الكود
+          const res = await fetch(
+            `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
+          );
+          const json = await res.json();
+          
+          console.log("نتائج API للكود:", {
+            count: json.count,
+            resultsCount: json.results?.length || 0
           });
+          
+          if (Array.isArray(json.results)) {
+            exactMatch = json.results.find((item: any) => {
+              const itemCode = (item.item_code ?? "").toString().trim();
+              return itemCode === searchTerm;
+            });
+          }
         }
       } else {
-        console.log("✅ وجد تطابق دقيق في الأصناف المحملة:", exactMatch.item_code);
+        console.log("✅ وجد تطابق في الأصناف المحملة:", exactMatch.item_barcode || exactMatch.item_code);
       }
 
               if (exactMatch) {
@@ -1710,6 +1712,7 @@ export default function InvoicePage() {
             setSearchValue={setSearchValue}
             onBarcodeSearch={handleBarcodeSearch}
             isEditing={isEditing}
+            invoiceType="sale"
           />
           <InvoiceItemTable
             categories={categories}

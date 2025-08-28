@@ -13,6 +13,7 @@ import {
   fetchData,
   fetchGoldPrice,
   apiFetch,
+  fetchItemByBarcode,
 } from "@/utilities/api";
 
 const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
@@ -318,7 +319,9 @@ export default function SalesReturnPage() {
     );
 
     if (response) {
-      setCustomers(response);
+      // تصفية العملاء والموردين بحيث لا يكون box_type = 2
+      const filteredCustomers = response.filter((customer) => customer.box_type !== 2);
+      setCustomers(filteredCustomers);
     } else {
       setCustomers([]);
     }
@@ -1192,6 +1195,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
             setSearchValue={() => {}}
             onBarcodeSearch={() => {}}
             isEditing={isEditing}
+            invoiceType="sale_return"
           />
                       <InvoiceItemTable
               categories={categories}
