@@ -369,7 +369,7 @@ export default function AccountsPage() {
             )}
             
             <div className="flex-1 min-w-0 text-right">
-              <div className="font-medium text-gray-900 truncate">
+              <div className="font-medium text-gray-900 truncate text-sm">
                 {account.acc_name}
               </div>
             </div>
@@ -501,31 +501,32 @@ export default function AccountsPage() {
   };
 
   return (
-    <div className="p-2 bg-gray-50 min-h-screen">
+    <div className="responsive-container accounts-container bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-3">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">دليل الحسابات</h1>
+          <h1 className="text-lg font-bold text-gray-900 mb-1 text-right">دليل الحسابات</h1>
         </div>
 
-                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                 <div className="responsive-grid grid-cols-1 lg:grid-cols-3 gap-3">
            {/* Tree Panel */}
            <div className="lg:col-span-1">
              <Card className="h-[700px]">
               <CardBody className="p-2">
-                                 <div className="flex items-center justify-between mb-2">
+                                 <div className="responsive-filters mb-2">
                    <Button
                      size="sm"
                      color="primary"
                      startContent={<PlusIcon className="w-4 h-4" />}
                      onClick={handleAddAccount}
+                     className="responsive-btn"
                    >
                      إضافة حساب
                    </Button>
                  </div>
 
                                 {/* Search and Filters */}
-                <div className="space-y-2 mb-2">
+                <div className="responsive-search-group mb-2">
                                      <Input
                      placeholder="بحث في الحسابات..."
                      value={searchTerm}
@@ -544,6 +545,7 @@ export default function AccountsPage() {
                      }
                      size="sm"
                      variant="bordered"
+                     className="responsive-search"
                    />
 
                   <Select
@@ -552,6 +554,7 @@ export default function AccountsPage() {
                     onSelectionChange={(keys) => setFilterType(Array.from(keys)[0] as string)}
                     size="sm"
                     variant="bordered"
+                    className="responsive-search"
                   >
                     <SelectItem key="all">جميع الحسابات</SelectItem>
                     <SelectItem key="main">الحسابات الرئيسية</SelectItem>
@@ -596,9 +599,9 @@ export default function AccountsPage() {
             <div className="lg:col-span-2">
               <Card className="h-[700px]">
                <CardBody className="p-2">
-                                                                       <div className="flex items-center justify-between mb-2">
+                                                                       <div className="responsive-filters mb-2">
                      <div className="flex items-center gap-3">
-                       <h2 className="text-lg font-semibold text-gray-900">
+                       <h2 className="text-base font-semibold text-gray-900 text-right">
                          {selectedAccount ? `حسابات ${selectedAccount.acc_name}` : "تفاصيل الحسابات"}
                        </h2>
                        {selectedAccount && selectedAccount.parent && (
@@ -617,7 +620,7 @@ export default function AccountsPage() {
                        )}
                      </div>
                      {selectedAccount && (
-                       <div className="text-xs text-gray-500 mt-1">
+                       <div className="text-xs text-gray-500 mt-1 text-right">
                          المسار: {getAccountPath(selectedAccount).map((acc, index) => (
                            <span key={acc.id}>
                              {index > 0 && <span className="mx-1">→</span>}
@@ -636,21 +639,21 @@ export default function AccountsPage() {
                    <div className="space-y-2">
                      {/* معلومات الحساب المختار */}
                      <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
-                       <h3 className="font-semibold text-blue-900 mb-1 text-sm">معلومات الحساب المختار</h3>
-                                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                          <div>
+                       <h3 className="font-semibold text-blue-900 mb-1 text-sm text-right">معلومات الحساب المختار</h3>
+                                               <div className="responsive-grid accounts-info-grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                          <div className="text-right">
                             <span className="text-gray-600">رقم الحساب:</span>
                             <div className="font-medium">{selectedAccount.acc_id}</div>
                           </div>
-                          <div>
+                          <div className="text-right">
                             <span className="text-gray-600">اسم الحساب:</span>
                             <div className="font-medium">{selectedAccount.acc_name}</div>
                           </div>
-                          <div>
+                          <div className="text-right">
                             <span className="text-gray-600">نوع الحساب:</span>
                             <div className="font-medium">{selectedAccount.acc_type === 1 ? "رئيسي" : "فرعي"}</div>
                           </div>
-                          <div>
+                          <div className="text-right">
                             <span className="text-gray-600">العملة:</span>
                             <div className="font-medium">{currencies.find(c => c.id === selectedAccount.cur)?.cur_name || "غير محددة"}</div>
                           </div>
@@ -659,11 +662,11 @@ export default function AccountsPage() {
 
                                                                                       {/* جدول الحسابات الفرعية */}
                       <div>
-                                                 <h3 className="font-semibold text-gray-900 mb-2 text-sm">
+                                                 <h3 className="font-semibold text-gray-900 mb-2 text-sm text-right">
                            الحسابات الفرعية المباشرة
                          </h3>
-                         <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                           <table className="w-full border-collapse border border-gray-300">
+                         <div className="responsive-table accounts-table-container overflow-x-auto max-h-[400px] overflow-y-auto">
+                           <table className="w-full border-collapse border border-gray-300 accounts-table">
                                                          <thead className="bg-gray-100">
                                <tr>
                                  <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">رقم الحساب</th>
@@ -683,15 +686,15 @@ export default function AccountsPage() {
                                      onDoubleClick={() => setSelectedAccount(account)}
                                      title="انقر مزدوج للانتقال إلى المستوى التالي"
                                    >
-                                     <td className="border border-gray-300 px-2 py-1 text-xs">{account.acc_id}</td>
-                                     <td className="border border-gray-300 px-2 py-1 text-xs font-medium">{account.acc_name}</td>
-                                     <td className="border border-gray-300 px-2 py-1 text-xs">
+                                     <td className="border border-gray-300 px-2 py-1 text-xs text-right">{account.acc_id}</td>
+                                     <td className="border border-gray-300 px-2 py-1 text-xs font-medium text-right">{account.acc_name}</td>
+                                     <td className="border border-gray-300 px-2 py-1 text-xs text-right">
                                        {account.acc_type === 1 ? "رئيسي" : "فرعي"}
                                      </td>
-                                     <td className="border border-gray-300 px-2 py-1 text-xs">
+                                     <td className="border border-gray-300 px-2 py-1 text-xs text-right">
                                        {account.acc_rep === 1 ? "الأرباح والخسائر" : "الميزانية العمومية"}
                                      </td>
-                                     <td className="border border-gray-300 px-2 py-1 text-xs">
+                                     <td className="border border-gray-300 px-2 py-1 text-xs text-right">
                                        {currencies.find(c => c.id === account.cur)?.cur_name || "غير محددة"}
                                      </td>
                                      <td className="border border-gray-300 px-2 py-1 text-xs">
@@ -745,7 +748,7 @@ export default function AccountsPage() {
                                    ) : (
                                          <div className="text-center text-gray-500 py-6">
                        <DocumentIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                       <p className="text-sm">اختر حساباً لعرض تفاصيله والحسابات الفرعية</p>
+                       <p className="text-sm text-right">اختر حساباً لعرض تفاصيله والحسابات الفرعية</p>
                      </div>
                   )}
                </CardBody>

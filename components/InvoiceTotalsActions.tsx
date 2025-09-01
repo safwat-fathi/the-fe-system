@@ -315,8 +315,8 @@ export default function InvoiceTotalsActions({
         </div>
       </div>
 
-      {/* زر الدفع - يظهر فقط للفواتير النقدية */}
-      {paymentMethod === "cash" && (
+      {/* زر الدفع - يظهر فقط للفواتير النقدية وليس لفواتير الشراء أو المردودات */}
+      {paymentMethod === "cash" && invoiceType !== 'purchase' && invoiceType !== 'purchase_return' && invoiceType !== 'sales_return' && (
         <div className="mt-3 flex justify-start">
           <Button
             className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm"

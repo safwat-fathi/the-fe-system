@@ -677,3 +677,126 @@ table::-webkit-scrollbar {
 .table-container::-webkit-scrollbar {
   display: none;
 }
+
+/* ===== ACCOUNTS PAGE SPECIFIC STYLES ===== */
+
+/* تحسين عرض النصوص العربية في شاشة الحسابات */
+.accounts-container {
+  direction: rtl;
+  text-align: right;
+  font-size: 0.875rem; /* تصغير حجم الخط العام */
+}
+
+/* تصغير أحجام الخطوط في شاشة الحسابات */
+.accounts-container h1 {
+  font-size: 1.125rem !important; /* 18px */
+}
+
+.accounts-container h2 {
+  font-size: 1rem !important; /* 16px */
+}
+
+.accounts-container h3 {
+  font-size: 0.875rem !important; /* 14px */
+}
+
+.accounts-container p,
+.accounts-container span,
+.accounts-container div {
+  font-size: 0.75rem !important; /* 12px */
+}
+
+.accounts-container .text-xs {
+  font-size: 0.75rem !important; /* 12px */
+}
+
+.accounts-container .text-sm {
+  font-size: 0.875rem !important; /* 14px */
+}
+
+.accounts-container .text-base {
+  font-size: 1rem !important; /* 16px */
+}
+
+.accounts-container .text-lg {
+  font-size: 1.125rem !important; /* 18px */
+}
+
+.accounts-text-right {
+  text-align: right;
+  direction: rtl;
+}
+
+.accounts-table th,
+.accounts-table td {
+  text-align: right;
+  direction: rtl;
+}
+
+.accounts-info-grid {
+  direction: rtl;
+  text-align: right;
+}
+
+.accounts-info-grid > div {
+  text-align: right;
+  direction: rtl;
+}
+
+/* تحسين عرض شجرة الحسابات */
+.accounts-tree {
+  direction: rtl;
+  text-align: right;
+}
+
+.accounts-tree-item {
+  text-align: right;
+  direction: rtl;
+}
+
+/* تحسين عرض النماذج */
+.accounts-form {
+  direction: rtl;
+  text-align: right;
+}
+
+.accounts-form input,
+.accounts-form select,
+.accounts-form textarea {
+  text-align: right;
+  direction: rtl;
+}
+
+/* تحسين عرض العناوين */
+.accounts-header {
+  text-align: right;
+  direction: rtl;
+}
+
+/* تحسين عرض الأزرار */
+.accounts-btn {
+  direction: rtl;
+}
+
+/* تحسين عرض البحث */
+.accounts-search {
+  direction: rtl;
+  text-align: right;
+}
+
+/* تحسين عرض الجداول */
+.accounts-table-container {
+  direction: rtl;
+}
+
+.accounts-table-container table {
+  direction: rtl;
+}
+
+.accounts-table-container th,
+.accounts-table-container td {
+  text-align: right;
+  direction: rtl;
+}
+
+/* ===== END ACCOUNTS PAGE SPECIFIC STYLES ===== */

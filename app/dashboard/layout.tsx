@@ -39,7 +39,7 @@ const accountingBasicLinks = [
 
 const accountingFormLinks: Array<{ name: string; href: string; icon: React.ReactNode }> = [
           { name: "قيد تسوية", href: "/dashboard/forms/voucher", icon: <FaFileAlt /> },
-          { name: "سند قبض", href: "/dashboard/forms/receipt_voucher", icon: <FaReceipt /> },
+          { name: "قيد افتتاحي", href: "/dashboard/forms/balance", icon: <FaFileAlt /> },
 ];
 
 const accountingReportLinks: Array<{ name: string; href: string; icon: React.ReactNode }> = [
