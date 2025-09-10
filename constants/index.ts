@@ -33,6 +33,12 @@ export const API_ENDPOINTS = {
   GOLD_PRICE: 'https://data-asg.goldprice.org/dbXRates/SAR',
 } as const;
 
+export const ROUTE_RULES = {
+  public: ["/login", "/register", "/forgot-password"],
+  private: ["/dashboard"],
+  admin: ["/admin"],
+};
+
 // Payment Types
 export const PAYMENT_TYPES = {
   GOLD: 1,
