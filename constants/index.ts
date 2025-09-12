@@ -57,9 +57,10 @@ export const VOUCHER_TYPES = {
 
 // Local Storage Keys
 export const STORAGE_KEYS = {
-  AUTH_TOKEN: 'auth_token',
-  USER_DATA: 'user_data',
-  THEME: 'theme',
+  AUTH_TOKEN: "auth_token",
+  SESSION: "session",
+  USER_DATA: "user_data",
+  THEME: "theme",
 } as const;
 
 // Validation Rules

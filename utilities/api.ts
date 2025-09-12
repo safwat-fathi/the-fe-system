@@ -7,16 +7,17 @@ export const API_BASE_URL: string =
 // وظائف المصادقة
 export async function loginUser(username: string, password: string) {
   try {
-    console.log('محاولة تسجيل الدخول إلى:', `${API_BASE_URL}login/`);
-    console.log('بيانات تسجيل الدخول:', { username, password: '***' });
-    
-    const response = await fetch(`${API_BASE_URL}login/`, {
-      method: 'POST',
+    console.log("محاولة تسجيل الدخول إلى:", `${API_BASE_URL}/login/`);
+    console.log("بيانات تسجيل الدخول:", { username, password: "***" });
+
+    const response = await fetch(`${API_BASE_URL}/login/`, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password }),
     });
+    console.log("🚀 ~ :20 ~ loginUser ~ response:", response);
 
     console.log('استجابة الخادم:', response.status, response.statusText);
     
