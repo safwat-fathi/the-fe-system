@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@heroui/react";
-import AuthGuard from "@/components/AuthGuard";
 import LogoutButton from "@/components/LogoutButton";
 import UserHeader from "@/components/UserHeader";
 import {
@@ -18,7 +17,6 @@ import {
   FaCog,
   FaChevronDown,
   FaChevronUp,
-  FaReceipt,
   FaCalculator,
 } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
@@ -103,7 +101,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Header */}
         <div className="flex items-center justify-between h-16 mb-8 relative border-b border-gray-700 pb-4">
           {isSidebarOpen && (
-            <h2 className="text-xl font-bold whitespace-nowrap text-white">لوحة التحكم</h2>
+            <h2 className="text-xl font-bold whitespace-nowrap text-white">
+              لوحة التحكم
+            </h2>
           )}
           <Button
             size="sm"
@@ -123,15 +123,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={link.href}
               href={link.href}
               className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
-                pathname === link.href 
-                  ? "bg-blue-600 shadow-lg" 
+                pathname === link.href
+                  ? "bg-blue-600 shadow-lg"
                   : "hover:bg-gray-700 hover:shadow-md"
               }`}
             >
-              <div className={`text-lg ${pathname === link.href ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+              <div
+                className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
+              >
                 {link.icon}
               </div>
-              <span className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}>{link.name}</span>
+              <span
+                className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
+              >
+                {link.name}
+              </span>
             </Link>
           ))}
 
@@ -141,7 +147,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
               onClick={() => setShowAccountingSystem(!showAccountingSystem)}
             >
-              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>نظام الحسابات</span>
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                نظام الحسابات
+              </span>
               {isSidebarOpen && (
                 <div className="text-gray-400">
                   {showAccountingSystem ? <FaChevronUp /> : <FaChevronDown />}
@@ -164,14 +172,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
                     onClick={() => setShowAccountingBasic(!showAccountingBasic)}
                   >
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>البيانات الأساسية</span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      البيانات الأساسية
+                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
-                        {showAccountingBasic ? <FaChevronUp /> : <FaChevronDown />}
+                        {showAccountingBasic ? (
+                          <FaChevronUp />
+                        ) : (
+                          <FaChevronDown />
+                        )}
                       </div>
                     )}
                   </div>
-                  
+
                   <AnimatePresence initial={false}>
                     {showAccountingBasic && (
                       <motion.div
@@ -187,14 +201,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             key={link.href}
                             href={link.href}
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                              pathname === link.href 
-                                ? "bg-blue-600/20 text-blue-300" 
+                              pathname === link.href
+                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
-                            style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                            style={{
+                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
-                            <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                            <span
+                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            >
+                              {link.name}
+                            </span>
                           </Link>
                         ))}
                       </motion.div>
@@ -206,16 +226,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <>
                       <div
                         className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
-                        onClick={() => setShowAccountingForms(!showAccountingForms)}
+                        onClick={() =>
+                          setShowAccountingForms(!showAccountingForms)
+                        }
                       >
-                        <span className={`${isSidebarOpen ? "block" : "hidden"}`}>النماذج</span>
+                        <span
+                          className={`${isSidebarOpen ? "block" : "hidden"}`}
+                        >
+                          النماذج
+                        </span>
                         {isSidebarOpen && (
                           <div className="text-gray-500">
-                            {showAccountingForms ? <FaChevronUp /> : <FaChevronDown />}
+                            {showAccountingForms ? (
+                              <FaChevronUp />
+                            ) : (
+                              <FaChevronDown />
+                            )}
                           </div>
                         )}
                       </div>
-                      
+
                       <AnimatePresence initial={false}>
                         {showAccountingForms && (
                           <motion.div
@@ -231,14 +261,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 key={link.href}
                                 href={link.href}
                                 className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                                  pathname === link.href 
-                                    ? "bg-blue-600/20 text-blue-300" 
+                                  pathname === link.href
+                                    ? "bg-blue-600/20 text-blue-300"
                                     : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                                 }`}
-                                style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                                style={{
+                                  paddingLeft: isSidebarOpen
+                                    ? "2.5rem"
+                                    : "0.75rem",
+                                }}
                               >
                                 <div className="text-sm">{link.icon}</div>
-                                <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                                <span
+                                  className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                                >
+                                  {link.name}
+                                </span>
                               </Link>
                             ))}
                           </motion.div>
@@ -252,16 +290,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <>
                       <div
                         className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
-                        onClick={() => setShowAccountingReports(!showAccountingReports)}
+                        onClick={() =>
+                          setShowAccountingReports(!showAccountingReports)
+                        }
                       >
-                        <span className={`${isSidebarOpen ? "block" : "hidden"}`}>التقارير</span>
+                        <span
+                          className={`${isSidebarOpen ? "block" : "hidden"}`}
+                        >
+                          التقارير
+                        </span>
                         {isSidebarOpen && (
                           <div className="text-gray-500">
-                            {showAccountingReports ? <FaChevronUp /> : <FaChevronDown />}
+                            {showAccountingReports ? (
+                              <FaChevronUp />
+                            ) : (
+                              <FaChevronDown />
+                            )}
                           </div>
                         )}
                       </div>
-                      
+
                       <AnimatePresence initial={false}>
                         {showAccountingReports && (
                           <motion.div
@@ -277,14 +325,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 key={link.href}
                                 href={link.href}
                                 className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                                  pathname === link.href 
-                                    ? "bg-blue-600/20 text-blue-300" 
+                                  pathname === link.href
+                                    ? "bg-blue-600/20 text-blue-300"
                                     : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                                 }`}
-                                style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                                style={{
+                                  paddingLeft: isSidebarOpen
+                                    ? "2.5rem"
+                                    : "0.75rem",
+                                }}
                               >
                                 <div className="text-sm">{link.icon}</div>
-                                <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                                <span
+                                  className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                                >
+                                  {link.name}
+                                </span>
                               </Link>
                             ))}
                           </motion.div>
@@ -303,7 +359,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
               onClick={() => setShowGoldSystem(!showGoldSystem)}
             >
-              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>نظام الذهب</span>
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                نظام الذهب
+              </span>
               {isSidebarOpen && (
                 <div className="text-gray-400">
                   {showGoldSystem ? <FaChevronUp /> : <FaChevronDown />}
@@ -326,14 +384,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
                     onClick={() => setShowGoldBasic(!showGoldBasic)}
                   >
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>البيانات الأساسية</span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      البيانات الأساسية
+                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showGoldBasic ? <FaChevronUp /> : <FaChevronDown />}
                       </div>
                     )}
                   </div>
-                  
+
                   <AnimatePresence initial={false}>
                     {showGoldBasic && (
                       <motion.div
@@ -349,14 +409,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             key={link.href}
                             href={link.href}
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                              pathname === link.href 
-                                ? "bg-blue-600/20 text-blue-300" 
+                              pathname === link.href
+                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
-                            style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                            style={{
+                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
-                            <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                            <span
+                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            >
+                              {link.name}
+                            </span>
                           </Link>
                         ))}
                       </motion.div>
@@ -368,14 +434,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
                     onClick={() => setShowGoldForms(!showGoldForms)}
                   >
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>النماذج</span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      النماذج
+                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showGoldForms ? <FaChevronUp /> : <FaChevronDown />}
                       </div>
                     )}
                   </div>
-                  
+
                   <AnimatePresence initial={false}>
                     {showGoldForms && (
                       <motion.div
@@ -391,14 +459,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             key={link.href}
                             href={link.href}
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                              pathname === link.href 
-                                ? "bg-blue-600/20 text-blue-300" 
+                              pathname === link.href
+                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
-                            style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                            style={{
+                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
-                            <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                            <span
+                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            >
+                              {link.name}
+                            </span>
                           </Link>
                         ))}
                       </motion.div>
@@ -410,14 +484,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
                     onClick={() => setShowGoldReports(!showGoldReports)}
                   >
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>التقارير</span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      التقارير
+                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showGoldReports ? <FaChevronUp /> : <FaChevronDown />}
                       </div>
                     )}
                   </div>
-                  
+
                   <AnimatePresence initial={false}>
                     {showGoldReports && (
                       <motion.div
@@ -433,14 +509,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             key={link.href}
                             href={link.href}
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                              pathname === link.href 
-                                ? "bg-blue-600/20 text-blue-300" 
+                              pathname === link.href
+                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
-                            style={{ paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem" }}
+                            style={{
+                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
-                            <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}>{link.name}</span>
+                            <span
+                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            >
+                              {link.name}
+                            </span>
                           </Link>
                         ))}
                       </motion.div>
@@ -457,7 +539,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
               onClick={() => setShowSettingsLinks(!showSettingsLinks)}
             >
-              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>الإعدادات</span>
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                الإعدادات
+              </span>
               {isSidebarOpen && (
                 <div className="text-gray-400">
                   {showSettingsLinks ? <FaChevronUp /> : <FaChevronDown />}
@@ -480,15 +564,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       key={link.href}
                       href={link.href}
                       className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
-                        pathname === link.href 
-                          ? "bg-blue-600 shadow-lg" 
+                        pathname === link.href
+                          ? "bg-blue-600 shadow-lg"
                           : "hover:bg-gray-700 hover:shadow-md"
                       }`}
                     >
-                      <div className={`text-lg ${pathname === link.href ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                      <div
+                        className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
+                      >
                         {link.icon}
                       </div>
-                      <span className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}>{link.name}</span>
+                      <span
+                        className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
+                      >
+                        {link.name}
+                      </span>
                     </Link>
                   ))}
                 </motion.div>
@@ -507,12 +597,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <main className="flex-1 w-full min-h-screen overflow-auto">
-        <AuthGuard>
-          <UserHeader />
-          <div className="p-8">
-            {children}
-          </div>
-        </AuthGuard>
+        <UserHeader />
+        <div className="p-8">{children}</div>
       </main>
     </div>
   );

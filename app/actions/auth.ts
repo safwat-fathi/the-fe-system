@@ -1,14 +1,13 @@
 "use server";
 
 import { z } from "zod";
-import { LoginFormState, loginSchema } from "@/utilities/schemas/login.schema";
+import { loginSchema } from "@/utilities/schemas/login.schema";
 
-import { setCookieAction, getCookieAction } from "./cookie-store";
+import { setCookieAction } from "./cookie-store";
 import { STORAGE_KEYS } from "@/constants";
 import { User } from "@/types/services/auth";
 import { redirect } from "next/navigation";
 import { authService } from "@/services/api";
-import { loginUser } from "@/utilities";
 
 interface LoginResult {
   success: boolean;
@@ -41,12 +40,7 @@ export async function loginAction(
 
   try {
     // Call authentication service
-    const response = await authService.login(
-      { username, password },
-      // { signal: AbortSignal.timeout(100000) },
-    );
-    // const response = await loginUser(username, password);
-    // const response = await loginUser( username, password);
+    const response = await authService.login({ username, password });
     console.log("🚀 ~ :42 ~ loginAction ~ response:", response);
 
     if (response.success && response.data) {

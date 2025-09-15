@@ -7,41 +7,8 @@ import { useActionState } from "react";
 
 const LoginForm = () => {
   const [state, action, pending] = useActionState(loginAction, undefined);
-  console.log("🚀 ~ :15 ~ LoginForm ~ state:", state);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    // setIsSubmitting(true);
-    // setFormError("");
-
-    try {
-      // Create FormData object
-      const formData = new FormData();
-
-      formData.append("username", event.currentTarget.username.value);
-      formData.append("password", event.currentTarget.password.value);
-
-      // Call server action
-      // const result = await loginAction(formData);
-      const result = await loginUser(
-        formData.get("username"),
-        formData.get("password"),
-      );
-
-      // if (!result.success) {
-      //   setFormError(result.message || "فشل في تسجيل الدخول. يرجى التحقق من البيانات المدخلة.");
-      // }
-    } catch (error) {
-      console.error("خطأ غير متوقع في تسجيل الدخول:", error);
-      // setFormError("حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.");
-    } finally {
-      // setIsSubmitting(false);
-    }
-  };
 
   return (
-    // <Form className="flex flex-col gap-4" onSubmit={handleSubmit}>
     <Form className="flex flex-col gap-4" action={action}>
       <Input
         name="username"

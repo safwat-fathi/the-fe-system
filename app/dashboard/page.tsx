@@ -1,116 +1,36 @@
-"use client";
-import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { title } from "@/components/primitives";
+import { cookies } from "next/headers";
 import { StatCard } from "@/components/Card";
-import { API_ENDPOINTS, fetchData, fetchGoldPrice } from "@/utilities/api";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title as ChartTitle,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
-import { Button, Input } from "@heroui/react";
-import CountUp from "react-countup";
+import { dashboardService } from "@/services/api";
+import DashboardClient from "./dashboard-client";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ChartTitle, Tooltip, Legend);
+export default async function DashboardPage() {
+  // Get branch and year from localStorage (now using cookies as a fallback)
+  const cookieStore = await cookies();
+  const branch = cookieStore.get("selectedBranch")?.value || "";
+  const year = cookieStore.get("selectedYear")?.value || "";
 
-export default function DashboardPage() {
-  const [invoiceCount, setInvoiceCount] = useState<number | null>(null);
-  const [customerCount, setCustomerCount] = useState<number | null>(null);
-  const [itemCount, setItemCount] = useState<number | null>(null);
-  const [categoryCount, setCategoryCount] = useState<number | null>(null);
-  const [goldPrice, setGoldPrice] = useState<number | null>(null);
-  const [monthlySales, setMonthlySales] = useState<number[]>([]);
-  const [branch, setBranch] = useState<string>("");
-  const [year, setYear] = useState<string>("");
-
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-
-  useEffect(() => {
-    setBranch(localStorage.getItem("selectedBranch") || "");
-    setYear(localStorage.getItem("selectedYear") || "");
-
-    const loadCounts = async () => {
-      const invoicesData = await fetchData<any[]>(API_ENDPOINTS.INVOICES_LIST);
-      const customers = await fetchData<any[]>(API_ENDPOINTS.CUSTOMERS_LIST);
-      const categories = await fetchData<any[]>(API_ENDPOINTS.CATEGORIES_LIST);
-      const itemsRes = await fetchData<any[]>(API_ENDPOINTS.GET_ITEMS_LIST);
-
-      if (Array.isArray(invoicesData)) {
-        setInvoices(invoicesData);
-        setInvoiceCount(invoicesData.length);
-
-        const monthly: number[] = new Array(12).fill(0);
-        invoicesData.forEach((inv) => {
-          const date = new Date(inv.inv_date);
-          const month = date.getMonth();
-          monthly[month] += parseFloat(inv.inv_amt ?? inv.inv_net ?? 0);
-        });
-        setMonthlySales(monthly);
-      }
-
-      if (Array.isArray(customers)) {
-        setCustomerCount(customers.length);
-      }
-
-      if (Array.isArray(categories)) {
-        setCategoryCount(categories.length);
-      } else if (Array.isArray((categories as any)?.results)) {
-        setCategoryCount((categories as any).results.length);
-      }
-
-      if (Array.isArray(itemsRes)) {
-        setItemCount(itemsRes.length);
-      } else if (Array.isArray((itemsRes as any)?.results)) {
-        setItemCount((itemsRes as any).results.length);
-      }
-    };
-
-    const loadGold = async () => {
-      const price = await fetchGoldPrice();
-      setGoldPrice(price);
-    };
-
-    loadCounts();
-    loadGold();
-  }, []);
-
-  const filteredGoldData = useMemo(() => {
-    return invoices
-      .filter((inv) => {
-        const date = new Date(inv.inv_date);
-        const from = startDate ? new Date(startDate) : null;
-        const to = endDate ? new Date(endDate) : null;
-        return (!from || date >= from) && (!to || date <= to);
-      })
-      .filter((inv) => !isNaN(parseFloat(inv.gold_price)))
-      .map((inv) => ({
-        date: new Date(inv.inv_date).toLocaleDateString("ar-EG"),
-        price: parseFloat(inv.gold_price),
-      }));
-  }, [invoices, startDate, endDate]);
-
-  const goldChartData = {
-    labels: filteredGoldData.map((d) => d.date),
-    datasets: [
-      {
-        label: "سعر الذهب (من الفواتير)",
-        data: filteredGoldData.map((d) => d.price),
-        borderColor: "#f59e0b",
-        backgroundColor: "#facc15",
-        tension: 0.3,
-        fill: false,
-      },
-    ],
+  // Fetch dashboard data on the server
+  let dashboardData = {
+    invoiceCount: 0,
+    customerCount: 0,
+    itemCount: 0,
+    categoryCount: 0,
+    goldPrice: null as number | null,
+    monthlySales: [] as number[],
   };
+
+  try {
+    dashboardData = await dashboardService.getDashboardStats();
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+    // We'll still render the page but with default values
+  }
+
+  // Fill in missing monthly sales data with zeros
+  const monthlySales = dashboardData.monthlySales.length === 12 
+    ? dashboardData.monthlySales 
+    : new Array(12).fill(0);
 
   const salesChartData = {
     labels: [
@@ -144,25 +64,25 @@ export default function DashboardPage() {
         <StatCard 
           title="الفواتير" 
           icon="🧾" 
-          value={invoiceCount !== null ? invoiceCount : 0} 
+          value={dashboardData.invoiceCount} 
           href="/dashboard/reports/invoices" 
         />
         <StatCard 
           title="العملاء" 
           icon="👥" 
-          value={customerCount !== null ? customerCount : 0} 
+          value={dashboardData.customerCount} 
           href="/dashboard/basic/customers" 
         />
         <StatCard 
           title="الأصناف" 
           icon="📦" 
-          value={itemCount !== null ? itemCount : 0} 
+          value={dashboardData.itemCount} 
           href="/dashboard/basic/items" 
         />
         <StatCard 
           title="الفئات" 
           icon="🏷️" 
-          value={categoryCount !== null ? categoryCount : 0} 
+          value={dashboardData.categoryCount} 
           href="/dashboard/basic/categories" 
         />
       </div>
@@ -172,98 +92,31 @@ export default function DashboardPage() {
         <StatCard 
           title="سعر الذهب للجرام" 
           icon="💰" 
-          value={goldPrice ? `${goldPrice} ﷼` : "-"} 
+          value={dashboardData.goldPrice ? `${dashboardData.goldPrice} ﷼` : "-"} 
         />
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Gold Price Chart */}
-        <div className="card p-6 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">تحليل أسعار الذهب</h2>
-            <div className="flex flex-wrap gap-3 items-center">
-              <Input 
-                type="date" 
-                value={startDate} 
-                onChange={(e) => setStartDate(e.target.value)} 
-                className="max-w-[140px]"
-                placeholder="من تاريخ"
-              />
-              <span className="text-sm text-gray-500">إلى</span>
-              <Input 
-                type="date" 
-                value={endDate} 
-                onChange={(e) => setEndDate(e.target.value)} 
-                className="max-w-[140px]"
-                placeholder="إلى تاريخ"
-              />
-            </div>
-          </div>
-          <div className="h-64">
-            <Line 
-              data={goldChartData} 
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'top' as const,
-                  },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Sales Chart */}
-        <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-800">المبيعات الشهرية</h2>
-          <div className="h-64">
-            <Line 
-              data={salesChartData} 
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'top' as const,
-                  },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Pass data to client component for interactive charts */}
+      <DashboardClient 
+        salesChartData={salesChartData}
+        branch={branch}
+        year={year}
+      />
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4">
-        <Button 
-          as={Link} 
-          href="/dashboard/forms/invoices/Gold_invoice2?new=true" 
-          color="primary"
+        <Link 
+          href="/dashboard/forms/invoices/Gold_invoice2?new=true"
           className="btn-primary"
         >
           فاتورة جديدة
-        </Button>
-        <Button 
-          as={Link} 
-          href="/dashboard/reports/invoices" 
-          color="secondary"
+        </Link>
+        <Link 
+          href="/dashboard/reports/invoices"
           className="btn-secondary"
         >
           قائمة الفواتير
-        </Button>
+        </Link>
       </div>
     </div>
   );
