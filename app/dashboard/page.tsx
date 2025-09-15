@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { StatCard } from "@/components/Card";
-import { dashboardService } from "@/services/api";
 import DashboardClient from "./dashboard-client";
+import dashboardService from "@/services/bff/dashboard.service";
 
 export default async function DashboardPage() {
   // Get branch and year from localStorage (now using cookies as a fallback)

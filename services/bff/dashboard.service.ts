@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
 import { STORAGE_KEYS } from "@/constants";
-import invoiceService from "./invoice.service";
-import customerService from "./customer.service";
-import categoryService from "./category.service";
-import itemService from "./item.service";
-import goldPriceService from "./gold-price.service";
+import invoiceService from "../api/invoice.service";
+import customerService from "../api/customer.service";
+import categoryService from "../api/category.service";
+import itemService from "../api/item.service";
+import goldPriceService from "../api/gold-price.service";
 import { HttpService } from "@/services/base";
 
 interface DashboardStats {
