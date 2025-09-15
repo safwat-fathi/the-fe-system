@@ -8,7 +8,7 @@ import { STORAGE_KEYS } from "@/constants";
 import { User } from "@/types/services/auth";
 import { redirect } from "next/navigation";
 import { authService } from "@/services/api";
-
+import { cookies } from "next/headers";
 interface LoginResult {
   success: boolean;
   message?: string;
@@ -113,4 +113,10 @@ export async function loginAction(
   } else {
     return loginResult as LoginResult;
   }
+}
+
+export async function onLogoutAction() {
+  (await cookies()).set(STORAGE_KEYS.AUTH_TOKEN, "", {
+    maxAge: 0,
+  });
 }

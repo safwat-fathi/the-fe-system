@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { STORAGE_KEYS } from "@/constants";
 
 export async function getCookieAction(name: string) {
   return (await cookies()).get(name)?.value;
@@ -34,12 +33,6 @@ export async function setCookieAction(
 
 export async function deleteCookieAction(name: string) {
   (await cookies()).delete(name);
-}
-
-export async function onLogoutAction() {
-	(await cookies()).set(STORAGE_KEYS.AUTH_TOKEN, "", {
-		maxAge: 0,
-	});
 }
 
 export async function appRedirect(route: string) {

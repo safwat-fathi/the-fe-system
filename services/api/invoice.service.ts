@@ -1,5 +1,4 @@
 import { HttpService } from "@/services/base";
-import { API_ENDPOINTS } from "@/utilities/api";
 
 interface Invoice {
   id: number;
@@ -17,12 +16,12 @@ class InvoiceService extends HttpService<Invoice> {
 
   async getAllInvoices(): Promise<Invoice[]> {
     try {
-      const response = await this.get<Invoice[]>(API_ENDPOINTS.INVOICES_LIST.replace(this._baseUrl, "").replace(/^\//, ""));
-      
+      const response = await this.get<Invoice[]>("invoices_list");
+
       if (response.success && Array.isArray(response.data)) {
         return response.data;
       }
-      
+
       return [];
     } catch (error) {
       console.error("Error fetching invoices:", error);
@@ -37,13 +36,13 @@ class InvoiceService extends HttpService<Invoice> {
 
   async calculateMonthlySales(invoices: Invoice[]): Promise<number[]> {
     const monthlySales: number[] = new Array(12).fill(0);
-    
+
     invoices.forEach((inv) => {
       const date = new Date(inv.inv_date);
       const month = date.getMonth();
       monthlySales[month] += parseFloat(inv.inv_amt ?? inv.inv_net ?? "0");
     });
-    
+
     return monthlySales;
   }
 

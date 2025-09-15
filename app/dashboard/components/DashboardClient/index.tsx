@@ -12,36 +12,27 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Input } from "@heroui/react";
-import { API_ENDPOINTS, fetchData } from "@/utilities/api";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ChartTitle, Tooltip, Legend);
 
+interface Invoice {
+  id: number;
+  inv_date: string;
+  inv_amt?: string;
+  inv_net?: string;
+  gold_price?: string;
+}
+
 interface DashboardClientProps {
   salesChartData: any;
+  invoices: Invoice[];
   branch: string;
   year: string;
 }
 
-export default function DashboardClient({ salesChartData, branch, year }: DashboardClientProps) {
+export default function DashboardClient({ salesChartData, invoices, branch, year }: DashboardClientProps) {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [invoices, setInvoices] = useState<any[]>([]);
-
-  // Fetch invoices data for the gold price chart
-  useState(() => {
-    const loadInvoices = async () => {
-      try {
-        const invoicesData = await fetchData<any[]>(API_ENDPOINTS.INVOICES_LIST);
-        if (Array.isArray(invoicesData)) {
-          setInvoices(invoicesData);
-        }
-      } catch (error) {
-        console.error("Error fetching invoices:", error);
-      }
-    };
-
-    loadInvoices();
-  });
 
   const filteredGoldData = useMemo(() => {
     return invoices
@@ -51,10 +42,10 @@ export default function DashboardClient({ salesChartData, branch, year }: Dashbo
         const to = endDate ? new Date(endDate) : null;
         return (!from || date >= from) && (!to || date <= to);
       })
-      .filter((inv) => !isNaN(parseFloat(inv.gold_price)))
+      .filter((inv) => !isNaN(parseFloat(inv.gold_price ?? "0")))
       .map((inv) => ({
         date: new Date(inv.inv_date).toLocaleDateString("ar-EG"),
-        price: parseFloat(inv.gold_price),
+        price: parseFloat(inv.gold_price ?? "0"),
       }));
   }, [invoices, startDate, endDate]);
 

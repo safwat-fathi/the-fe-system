@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { StatCard } from "@/components/Card";
-import DashboardClient from "./dashboard-client";
+import DashboardClient from "./components/DashboardClient";
 import dashboardService from "@/services/bff/dashboard.service";
+import invoiceService from "@/services/api/invoice.service";
 
 export default async function DashboardPage() {
   // Get branch and year from localStorage (now using cookies as a fallback)
@@ -20,22 +21,39 @@ export default async function DashboardPage() {
     monthlySales: [] as number[],
   };
 
+  let invoicesData: any[] = [];
+
   try {
     dashboardData = await dashboardService.getDashboardStats();
+    console.log("🚀 ~ :25 ~ DashboardPage ~ dashboardData:", dashboardData);
+    
+    // Fetch invoices data for the client component
+    invoicesData = await invoiceService.getAllInvoices();
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
     // We'll still render the page but with default values
   }
 
   // Fill in missing monthly sales data with zeros
-  const monthlySales = dashboardData.monthlySales.length === 12 
-    ? dashboardData.monthlySales 
-    : new Array(12).fill(0);
+  const monthlySales =
+    dashboardData.monthlySales.length === 12
+      ? dashboardData.monthlySales
+      : new Array(12).fill(0);
 
   const salesChartData = {
     labels: [
-      "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-      "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+      "يناير",
+      "فبراير",
+      "مارس",
+      "أبريل",
+      "مايو",
+      "يونيو",
+      "يوليو",
+      "أغسطس",
+      "سبتمبر",
+      "أكتوبر",
+      "نوفمبر",
+      "ديسمبر",
     ],
     datasets: [
       {
@@ -61,60 +79,58 @@ export default async function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="الفواتير" 
-          icon="🧾" 
-          value={dashboardData.invoiceCount} 
-          href="/dashboard/reports/invoices" 
+        <StatCard
+          title="الفواتير"
+          icon="🧾"
+          value={dashboardData.invoiceCount}
+          href="/dashboard/reports/invoices"
         />
-        <StatCard 
-          title="العملاء" 
-          icon="👥" 
-          value={dashboardData.customerCount} 
-          href="/dashboard/basic/customers" 
+        <StatCard
+          title="العملاء"
+          icon="👥"
+          value={dashboardData.customerCount}
+          href="/dashboard/basic/customers"
         />
-        <StatCard 
-          title="الأصناف" 
-          icon="📦" 
-          value={dashboardData.itemCount} 
-          href="/dashboard/basic/items" 
+        <StatCard
+          title="الأصناف"
+          icon="📦"
+          value={dashboardData.itemCount}
+          href="/dashboard/basic/items"
         />
-        <StatCard 
-          title="الفئات" 
-          icon="🏷️" 
-          value={dashboardData.categoryCount} 
-          href="/dashboard/basic/categories" 
+        <StatCard
+          title="الفئات"
+          icon="🏷️"
+          value={dashboardData.categoryCount}
+          href="/dashboard/basic/categories"
         />
       </div>
 
       {/* Gold Price Card */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <StatCard 
-          title="سعر الذهب للجرام" 
-          icon="💰" 
-          value={dashboardData.goldPrice ? `${dashboardData.goldPrice} ﷼` : "-"} 
+        <StatCard
+          title="سعر الذهب للجرام"
+          icon="💰"
+          value={dashboardData.goldPrice ? `${dashboardData.goldPrice} ﷼` : "-"}
         />
       </div>
 
       {/* Pass data to client component for interactive charts */}
-      <DashboardClient 
+      <DashboardClient
         salesChartData={salesChartData}
+        invoices={invoicesData}
         branch={branch}
         year={year}
       />
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4">
-        <Link 
+        <Link
           href="/dashboard/forms/invoices/Gold_invoice2?new=true"
           className="btn-primary"
         >
           فاتورة جديدة
         </Link>
-        <Link 
-          href="/dashboard/reports/invoices"
-          className="btn-secondary"
-        >
+        <Link href="/dashboard/reports/invoices" className="btn-secondary">
           قائمة الفواتير
         </Link>
       </div>

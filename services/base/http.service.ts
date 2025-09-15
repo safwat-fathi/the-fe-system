@@ -9,8 +9,8 @@ import {
 
 
 
-import { authService } from "@/services/api";
-import { appRedirect, getCookieAction, onLogoutAction } from "@/app/actions/cookie-store";
+
+import { getCookieAction } from "@/app/actions/cookie-store";
 import { createParams } from "@/utilities/qs";
 import { STORAGE_KEYS } from "@/constants";
 
@@ -30,6 +30,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   private _refreshPromise: Promise<boolean> | null = null;
 
   constructor(url: string, timeout = 15000) {
+    console.log("🚀 ~ :33 ~ HttpService ~ constructor ~ url:", url);
     super();
     // this._baseUrl = CONSTANTS.BASE_URL + url;
     this._baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL + url;
