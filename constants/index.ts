@@ -1,36 +1,36 @@
 // API Endpoints
 export const API_ENDPOINTS = {
   // Authentication
-  LOGIN: '/login/',
-  LOGOUT: '/logout/',
-  
+  LOGIN: "/login/",
+  LOGOUT: "/logout/",
+
   // Accounts
-  ACCOUNTS: '/accounts/',
+  ACCOUNTS: "/accounts/",
   ACCOUNT_DETAILS: (id: number) => `/accounts/${id}/`,
-  
+
   // Vouchers
-  VOUCHERS: '/vouchers/',
+  VOUCHERS: "/vouchers/",
   VOUCHER_DETAILS: (id: number) => `/vouchers/${id}/details/`,
-  
+
   // Invoices
-  INVOICES: '/invoices/',
+  INVOICES: "/invoices/",
   INVOICE_DETAILS: (id: number) => `/invoices/${id}/`,
-  
+
   // Items
-  ITEMS: '/items/',
-  SEARCH_ITEMS: '/SearchItemsList/',
-  
+  ITEMS: "/items/",
+  SEARCH_ITEMS: "/SearchItemsList/",
+
   // Customers
-  CUSTOMERS: '/customers/',
-  
+  CUSTOMERS: "/customers/",
+
   // Categories
-  CATEGORIES: '/categories/',
-  
+  CATEGORIES: "/categories/",
+
   // Currencies
-  CURRENCIES: '/currencies/',
-  
+  CURRENCIES: "/currencies/",
+
   // Gold Price
-  GOLD_PRICE: 'https://data-asg.goldprice.org/dbXRates/SAR',
+  GOLD_PRICE: process.env.NEXT_PUBLIC_API_GOLD_PRICE || "",
 } as const;
 
 // Payment Types
