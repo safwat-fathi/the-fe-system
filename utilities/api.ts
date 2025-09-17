@@ -17,7 +17,6 @@ export async function loginUser(username: string, password: string) {
       },
       body: JSON.stringify({ username, password }),
     });
-    console.log("🚀 ~ :20 ~ loginUser ~ response:", response);
 
     console.log('استجابة الخادم:', response.status, response.statusText);
     

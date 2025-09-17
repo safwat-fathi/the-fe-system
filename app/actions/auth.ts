@@ -41,7 +41,6 @@ export async function loginAction(
   try {
     // Call authentication service
     const response = await authService.login({ username, password });
-    console.log("🚀 ~ :42 ~ loginAction ~ response:", response);
 
     if (response.success && response.data) {
       // Extract token and user data from response

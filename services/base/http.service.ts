@@ -29,12 +29,10 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   private _isRefreshing = false;
   private _refreshPromise: Promise<boolean> | null = null;
 
-  constructor(url: string, timeout = 15000) {
-    console.log("🚀 ~ :33 ~ HttpService ~ constructor ~ url:", url);
+  constructor(url: string, timeout = 10000) {
     super();
     // this._baseUrl = CONSTANTS.BASE_URL + url;
     this._baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL + url;
-    console.log("🚀 ~ :36 ~ HttpService ~ constructor ~ this._baseUrl:", this._baseUrl)
 
     this._defaultOptions = {
       signal: AbortSignal.timeout(timeout),
@@ -103,7 +101,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
 
       const requestOptions: RequestInit = {
-				credentials: "include",
+        credentials: "include",
         ...this._defaultOptions,
         ...options,
         method,
@@ -113,7 +111,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
           ...options.headers,
         },
       };
-			
+
       const response = await fetch(fullURL, requestOptions);
 
       // Handle no content
@@ -214,7 +212,6 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     params?: IParams,
     options?: RequestInit,
   ): Promise<ServiceResponse<R>> {
-    console.log("🚀 ~ :216 ~ HttpService ~ post ~ route:", route)
     const { processedBody, headers } = this._prepareBody(body);
 
     return this._request<R>(
