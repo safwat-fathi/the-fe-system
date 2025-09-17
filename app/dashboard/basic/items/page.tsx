@@ -18,7 +18,7 @@ import {
 import { HeroModal as Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@/components/Modal";
 import Card from "@/components/Card";
 import { CardBody, CardHeader } from "@heroui/react";
-import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaFilter } from "react-icons/fa";
+import { EyeIcon, PencilIcon, TrashIcon, PlusIcon, MagnifyingGlassIcon, FunnelIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { fetchData, API_BASE_URL, API_ENDPOINTS, apiFetch } from "@/utilities/api";
@@ -441,7 +441,7 @@ export default function CategoriesItemsPage() {
               placeholder="البحث في الفئات..."
               className="w-48"
               size="sm"
-              startContent={<FaSearch className="text-gray-400" />}
+              startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
             />
             <Button
               color="primary"
@@ -450,7 +450,7 @@ export default function CategoriesItemsPage() {
                 // يمكن إضافة منطق إضافة فئة جديدة هنا
                 toast.info("سيتم إضافة هذه الميزة قريباً");
               }}
-              startContent={<FaPlus className="text-xs" />}
+              startContent={<PlusIcon className="h-4 w-4" />}
             >
               إضافة فئة
             </Button>
@@ -515,7 +515,7 @@ export default function CategoriesItemsPage() {
                           }}
                           className="text-blue-500 hover:bg-blue-50 text-xs"
                         >
-                          <FaEye className="text-xs" />
+                          <EyeIcon className="h-4 w-4" />
                         </Button>
                         <Button
                           isIconOnly
@@ -527,7 +527,7 @@ export default function CategoriesItemsPage() {
                           }}
                           className="text-yellow-500 hover:bg-yellow-50 text-xs"
                         >
-                          <FaEdit className="text-xs" />
+                          <PencilIcon className="h-4 w-4" />
                         </Button>
                         <Button
                           isIconOnly
@@ -539,7 +539,7 @@ export default function CategoriesItemsPage() {
                           }}
                           className="hover:bg-red-50 text-xs"
                         >
-                          <FaTrash className="text-xs" />
+                          <TrashIcon className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -580,7 +580,7 @@ export default function CategoriesItemsPage() {
               onChange={(e) => setSearch(e.target.value)}
               className="w-48"
               size="sm"
-              startContent={<FaSearch className="text-gray-400" />}
+              startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
             />
             <Button
               color="primary"
@@ -613,7 +613,7 @@ export default function CategoriesItemsPage() {
                 });
                 setIsModalOpen(true);
               }}
-              startContent={<FaPlus className="text-xs" />}
+              startContent={<PlusIcon className="h-4 w-4" />}
             >
               إضافة صنف
             </Button>
@@ -687,7 +687,7 @@ export default function CategoriesItemsPage() {
                             onPress={() => handleViewItem(item)}
                             className="text-blue-500 hover:bg-blue-50 text-xs"
                           >
-                            <FaEye className="text-xs" />
+                            <EyeIcon className="h-4 w-4" />
                           </Button>
                           <Button
                             isIconOnly
@@ -696,7 +696,7 @@ export default function CategoriesItemsPage() {
                             onPress={() => handleEditItem(item)}
                             className="text-yellow-500 hover:bg-yellow-50 text-xs"
                           >
-                            <FaEdit className="text-xs" />
+                            <PencilIcon className="h-4 w-4" />
                           </Button>
                           <Button
                             isIconOnly
@@ -706,7 +706,7 @@ export default function CategoriesItemsPage() {
                             onPress={() => handleDeleteItem(item.id)}
                             className="hover:bg-red-50 text-xs"
                           >
-                            <FaTrash className="text-xs" />
+                            <TrashIcon className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>

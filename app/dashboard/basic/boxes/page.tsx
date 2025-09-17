@@ -16,7 +16,7 @@ import {
   SelectItem,
 } from "@heroui/react";
 import { HeroModal as Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/Modal";
-import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
@@ -195,7 +195,7 @@ export default function CustomerBoxPage() {
         variant="light"
         onPress={() => openModal("view", box)}
       >
-        <FaEye className="text-blue-500" />
+        <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
       <Button
         isIconOnly
@@ -203,7 +203,7 @@ export default function CustomerBoxPage() {
         variant="light"
         onPress={() => openModal("edit", box)}
       >
-        <FaEdit className="text-yellow-500" />
+        <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
       <Button
         isIconOnly
@@ -212,7 +212,7 @@ export default function CustomerBoxPage() {
         color="danger"
         onPress={() => handleDelete(box.id)}
       >
-        <FaTrash />
+        <TrashIcon className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -221,9 +221,8 @@ export default function CustomerBoxPage() {
     <div className="p-4 font-cairo">
       <h1 className="text-2xl font-bold mb-6">الصناديق</h1>
       <div className="flex justify-between mb-4">
-        <Button onPress={() => openModal("add")}>
-          {" "}
-          <FaPlus /> إضافة صندوق{" "}
+        <Button className="btn-primary" onPress={() => openModal("add")}>
+          <PlusIcon className="h-4 w-4" /> إضافة صندوق
         </Button>
         <Input
           className="w-60"

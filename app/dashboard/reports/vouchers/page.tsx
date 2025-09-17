@@ -21,16 +21,7 @@ import {
 } from "@heroui/react";
 import Card from "@/components/Card";
 import { CardBody, CardHeader } from "@heroui/react";
-import {
-  FaSearch,
-  FaPrint,
-  FaEye,
-  FaEdit,
-  FaTrash,
-  FaPlus,
-  FaFilter,
-  FaDownload,
-} from "react-icons/fa";
+import { MagnifyingGlassIcon, PrinterIcon, EyeIcon, PencilIcon, TrashIcon, PlusIcon, FunnelIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { Voucher } from "@/types/voucher";
 import { API_ENDPOINTS, fetchData } from "@/utilities/api";
 import { formatAmount } from "@/utilities/formatAmount";
@@ -92,7 +83,7 @@ function VouchersTable({ vouchers, onView, onEdit, onDelete, getVoucherTypeName,
                     variant="light"
                     onPress={() => onView(voucher)}
                   >
-                    <FaEye />
+                    <EyeIcon className="h-4 w-4" />
                   </Button>
                 </Tooltip>
                 <Tooltip content="تعديل">
@@ -103,7 +94,7 @@ function VouchersTable({ vouchers, onView, onEdit, onDelete, getVoucherTypeName,
                     color="primary"
                     onPress={() => onEdit(voucher)}
                   >
-                    <FaEdit />
+                    <PencilIcon className="h-4 w-4" />
                   </Button>
                 </Tooltip>
                 <Tooltip content="حذف">
@@ -114,7 +105,7 @@ function VouchersTable({ vouchers, onView, onEdit, onDelete, getVoucherTypeName,
                     color="danger"
                     onPress={() => onDelete(voucher)}
                   >
-                    <FaTrash />
+                    <TrashIcon className="h-4 w-4" />
                   </Button>
                 </Tooltip>
               </div>
@@ -281,20 +272,20 @@ export default function VoucherReportsPage() {
           <div className="flex gap-2">
             <Button
               color="primary"
-              startContent={<FaPlus />}
+              startContent={<PlusIcon className="h-4 w-4" />}
               onPress={handleNewVoucher}
             >
               سند جديد
             </Button>
             <Button
               color="secondary"
-              startContent={<FaPrint />}
+              startContent={<PrinterIcon className="h-4 w-4" />}
             >
               طباعة
             </Button>
             <Button
               color="success"
-              startContent={<FaDownload />}
+              startContent={<ArrowDownTrayIcon className="h-4 w-4" />}
             >
               تصدير
             </Button>
@@ -309,7 +300,7 @@ export default function VoucherReportsPage() {
                 placeholder="بحث..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                startContent={<FaSearch className="text-gray-400" />}
+                startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
               />
               <Select
                 placeholder="نوع السند"

@@ -20,7 +20,7 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
@@ -281,7 +281,7 @@ export default function CategoriesTable() {
         variant="light"
         onPress={() => openViewModal(cat)}
       >
-        <FaEye className="text-blue-500" />
+        <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
       <Button
         isIconOnly
@@ -289,7 +289,7 @@ export default function CategoriesTable() {
         variant="light"
         onPress={() => openEditModal(cat)}
       >
-        <FaEdit className="text-yellow-500" />
+        <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
       <Button
         isIconOnly
@@ -298,7 +298,7 @@ export default function CategoriesTable() {
         color="danger"
         onPress={() => handleDelete(cat.id)}
       >
-        <FaTrash />
+        <TrashIcon className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -307,9 +307,9 @@ export default function CategoriesTable() {
     <div className="p-4 font-cairo">
       <h1 className="text-2xl font-bold mb-6">الفئات</h1>
       <div className="flex justify-between mb-4">
-        <Button onPress={openAddModal}>
+        <Button className=\"btn-primary\" onPress={openAddModal}>
           {" "}
-          <FaPlus /> إضافة فئة{" "}
+          <PlusIcon className="h-4 w-4" /> إضافة فئة{" "}
         </Button>
         <Input
           className="w-60"

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Button } from '@heroui/react';
-import { FaSignOutAlt } from 'react-icons/fa';
+import { ArrowLeftStartOnRectangleIcon } from '@heroicons/react/24/outline';
 import { removeAuthToken } from '@/utilities/api';
 
 export default function LogoutButton() {
@@ -19,7 +19,7 @@ export default function LogoutButton() {
       variant="light"
       onPress={handleLogout}
       className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-      startContent={<FaSignOutAlt />}
+      startContent={<ArrowLeftStartOnRectangleIcon className="h-4 w-4" />}
     >
       خروج
     </Button>

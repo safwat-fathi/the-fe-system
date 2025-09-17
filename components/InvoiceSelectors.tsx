@@ -1,7 +1,7 @@
 "use client";
 
 import ReactSelect from "react-select";
-import { FaBarcode } from "react-icons/fa";
+import { BarcodeIcon } from "@heroicons/react/24/outline";
 
 interface Customer {
   id: number;
@@ -528,7 +528,7 @@ export default function InvoiceSelectors({
            {/* حقل البحث بالباركود - تحت العنوان */}
            <div className="mt-4 pt-4 border-t border-gray-200">
              <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-               <FaBarcode className="text-blue-600" />
+               <BarcodeIcon className="h-4 w-4 text-blue-600" />
                البحث بالباركود
              </h4>
              <div className="flex items-center gap-3">
@@ -551,7 +551,7 @@ export default function InvoiceSelectors({
                  disabled={!isEditing || !searchValue.trim()}
                  className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
                >
-                 <FaBarcode className="text-sm" />
+                 <BarcodeIcon className="h-4 w-4" />
                  بحث
                </button>
              </div>

@@ -7,64 +7,51 @@ import { Button } from "@heroui/react";
 import AuthGuard from "@/components/AuthGuard";
 import LogoutButton from "@/components/LogoutButton";
 import UserHeader from "@/components/UserHeader";
-import {
-  FaBars,
-  FaHome,
-  FaMoneyBill,
-  FaUsers,
-  FaBoxOpen,
-  FaTags,
-  FaFileAlt,
-  FaCog,
-  FaChevronDown,
-  FaChevronUp,
-  FaReceipt,
-  FaCalculator,
-} from "react-icons/fa";
+import { Bars3Icon, HomeIcon, BanknotesIcon, UserGroupIcon, CubeIcon, TagIcon, DocumentTextIcon, Cog6ToothIcon, ChevronDownIcon, ChevronUpIcon, ReceiptRefundIcon, CalculatorIcon } from "@heroicons/react/24/outline";
 import { AnimatePresence, motion } from "framer-motion";
 
-const mainLinks = [{ name: "الرئيسية", href: "/dashboard", icon: <FaHome /> }];
+const mainLinks = [{ name: "الرئيسية", href: "/dashboard", icon: <HomeIcon className="h-5 w-5" /> }];
 
 const settingsLinks = [
-  { name: "إعدادات النظام", href: "/dashboard/settings", icon: <FaCog /> },
+  { name: "إعدادات النظام", href: "/dashboard/settings", icon: <Cog6ToothIcon className="h-5 w-5" /> },
 ];
 
 // نظام الحسابات
 const accountingBasicLinks = [
-  { name: "الحسابات", href: "/dashboard/basic/accounts", icon: <FaMoneyBill /> },
-  { name: "مراكز التكلفة", href: "/dashboard/basic/cost-centers", icon: <FaCalculator /> },
-  { name: "الصناديق", href: "/dashboard/basic/boxes", icon: <FaFileAlt /> },
-  { name: "العملات", href: "/dashboard/basic/currencies", icon: <FaMoneyBill /> },
+  { name: "الحسابات", href: "/dashboard/basic/accounts", icon: <BanknotesIcon className="h-5 w-5" /> },
+  { name: "مراكز التكلفة", href: "/dashboard/basic/cost-centers", icon: <CalculatorIcon className="h-5 w-5" /> },
+  { name: "الصناديق", href: "/dashboard/basic/boxes", icon: <DocumentTextIcon className="h-5 w-5" /> },
+  { name: "العملات", href: "/dashboard/basic/currencies", icon: <BanknotesIcon className="h-5 w-5" /> },
 ];
 
 const accountingFormLinks: Array<{ name: string; href: string; icon: React.ReactNode }> = [
-          { name: "قيد تسوية", href: "/dashboard/forms/voucher", icon: <FaFileAlt /> },
-          { name: "قيد افتتاحي", href: "/dashboard/forms/balance", icon: <FaFileAlt /> },
+          { name: "قيد تسوية", href: "/dashboard/forms/voucher", icon: <DocumentTextIcon className="h-5 w-5" /> },
+          { name: "قيد افتتاحي", href: "/dashboard/forms/balance", icon: <DocumentTextIcon className="h-5 w-5" /> },
 ];
 
 const accountingReportLinks: Array<{ name: string; href: string; icon: React.ReactNode }> = [
-  { name: "تقرير السندات", href: "/dashboard/reports/vouchers", icon: <FaFileAlt /> },
+  { name: "تقرير السندات", href: "/dashboard/reports/vouchers", icon: <DocumentTextIcon className="h-5 w-5" /> },
 ];
 
 // نظام الذهب
 const goldBasicLinks = [
-  { name: "العملاء", href: "/dashboard/basic/customers", icon: <FaUsers /> },
-  { name: "أنواع العملاء", href: "/dashboard/basic/cust_type", icon: <FaUsers /> },
-  { name: "الأصناف", href: "/dashboard/basic/items", icon: <FaBoxOpen /> },
-  { name: "الفئات", href: "/dashboard/basic/categories", icon: <FaTags /> },
-  { name: "الوحدات", href: "/dashboard/basic/units", icon: <FaTags /> },
+  { name: "العملاء", href: "/dashboard/basic/customers", icon: <UserGroupIcon className="h-5 w-5" /> },
+  { name: "أنواع العملاء", href: "/dashboard/basic/cust_type", icon: <UserGroupIcon className="h-5 w-5" /> },
+  { name: "الأصناب", href: "/dashboard/basic/items", icon: <CubeIcon className="h-5 w-5" /> },
+  { name: "الفئات", href: "/dashboard/basic/categories", icon: <TagIcon className="h-5 w-5" /> },
+  { name: "الوحدات", href: "/dashboard/basic/units", icon: <TagIcon className="h-5 w-5" /> },
 ];
 
 const goldFormLinks = [
-  { name: "فواتير الشراء", href: "/dashboard/forms/invoices/Gold_invoice1?new=true", icon: <FaFileAlt /> },
-  { name: "فواتير مردود الشراء", href: "/dashboard/forms/invoices/Gold_invoice3?new=true", icon: <FaFileAlt /> },
-  { name: "فواتير البيع", href: "/dashboard/forms/invoices/Gold_invoice2?new=true", icon: <FaFileAlt /> },
-  { name: "فواتير مردود البيع", href: "/dashboard/forms/invoices/Gold_invoice4", icon: <FaFileAlt /> },
+  { name: "فواتير الشراء", href: "/dashboard/forms/invoices/Gold_invoice1?new=true", icon: <DocumentTextIcon className="h-5 w-5" /> },
+  { name: "فواتير مردود الشراء", href: "/dashboard/forms/invoices/Gold_invoice3?new=true", icon: <DocumentTextIcon className="h-5 w-5" /> },
+  { name: "فواتير البيع", href: "/dashboard/forms/invoices/Gold_invoice2?new=true", icon: <DocumentTextIcon className="h-5 w-5" /> },
+  { name: "فواتير مردود البيع", href: "/dashboard/forms/invoices/Gold_invoice4", icon: <DocumentTextIcon className="h-5 w-5" /> },
 ];
 
 const goldReportLinks = [
-  { name: "قائمة الفواتير", href: "/dashboard/reports/invoices", icon: <FaFileAlt /> },
-  { name: "تقرير الضريبة", href: "/dashboard/reports/vat", icon: <FaCalculator /> },
+  { name: "قائمة الفواتير", href: "/dashboard/reports/invoices", icon: <DocumentTextIcon className="h-5 w-5" /> },
+  { name: "تقرير الضريبة", href: "/dashboard/reports/vat", icon: <CalculatorIcon className="h-5 w-5" /> },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -111,7 +98,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onPress={() => setIsSidebarOpen(!isSidebarOpen)}
             className="text-white hover:bg-gray-700"
           >
-            <FaBars />
+            <Bars3Icon className="h-5 w-5" />
           </Button>
         </div>
 
@@ -144,7 +131,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className={`${isSidebarOpen ? "block" : "hidden"}`}>نظام الحسابات</span>
               {isSidebarOpen && (
                 <div className="text-gray-400">
-                  {showAccountingSystem ? <FaChevronUp /> : <FaChevronDown />}
+                  {showAccountingSystem ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
                 </div>
               )}
             </div>
@@ -167,7 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <span className={`${isSidebarOpen ? "block" : "hidden"}`}>البيانات الأساسية</span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
-                        {showAccountingBasic ? <FaChevronUp /> : <FaChevronDown />}
+                        {showAccountingBasic ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
                       </div>
                     )}
                   </div>
@@ -211,7 +198,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <span className={`${isSidebarOpen ? "block" : "hidden"}`}>النماذج</span>
                         {isSidebarOpen && (
                           <div className="text-gray-500">
-                            {showAccountingForms ? <FaChevronUp /> : <FaChevronDown />}
+                            {showAccountingForms ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
                           </div>
                         )}
                       </div>
