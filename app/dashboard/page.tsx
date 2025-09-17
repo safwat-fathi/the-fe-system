@@ -4,6 +4,12 @@ import { StatCard } from "@/components/Card";
 import DashboardClient from "./components/DashboardClient";
 import dashboardService from "@/services/bff/dashboard.service";
 import invoiceService from "@/services/api/invoice.service";
+import { Metadata } from "next";
+
+// meta data
+export const metadata: Metadata = {
+  title: "الرئيسية",
+};
 
 export default async function DashboardPage() {
   // Get branch and year from localStorage (now using cookies as a fallback)
@@ -25,7 +31,6 @@ export default async function DashboardPage() {
 
   try {
     dashboardData = await dashboardService.getDashboardStats();
-    console.log("🚀 ~ :25 ~ DashboardPage ~ dashboardData:", dashboardData);
     
     // Fetch invoices data for the client component
     invoicesData = await invoiceService.getAllInvoices();
