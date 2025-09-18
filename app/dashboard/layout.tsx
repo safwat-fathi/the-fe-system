@@ -22,6 +22,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { AnimatePresence, motion } from "framer-motion";
 
+import clsx from "clsx";
+
 const mainLinks = [
   {
     name: "الرئيسية",
@@ -199,9 +201,6 @@ export default function DashboardLayout({
             <h2 className="text-xl font-bold whitespace-nowrap text-white">
               لوحة التحكم
             </h2>
-            <h2 className="text-xl font-bold whitespace-nowrap text-white">
-              لوحة التحكم
-            </h2>
           )}
           <Button
             size="sm"
@@ -220,29 +219,28 @@ export default function DashboardLayout({
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
-                pathname === link.href
-                  ? "bg-blue-600 shadow-lg"
-                pathname === link.href
-                  ? "bg-blue-600 shadow-lg"
-                  : "hover:bg-gray-700 hover:shadow-md"
-              }`}
+              className={clsx(
+                "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group",
+                {
+                  "bg-blue-600 shadow-lg": pathname === link.href,
+                  "hover:bg-gray-700 hover:shadow-md": pathname !== link.href,
+                },
+              )}
             >
               <div
-                className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
-              >
-              <div
-                className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
+                className={clsx("text-lg", {
+                  "text-white": pathname === link.href,
+                  "text-gray-300 group-hover:text-white":
+                    pathname !== link.href,
+                })}
               >
                 {link.icon}
               </div>
               <span
-                className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
-              >
-                {link.name}
-              </span>
-              <span
-                className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
+                className={clsx("font-medium", {
+                  block: isSidebarOpen,
+                  hidden: !isSidebarOpen,
+                })}
               >
                 {link.name}
               </span>
@@ -255,9 +253,6 @@ export default function DashboardLayout({
               className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
               onClick={() => setShowAccountingSystem(!showAccountingSystem)}
             >
-              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                نظام الحسابات
-              </span>
               <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                 نظام الحسابات
               </span>
@@ -287,10 +282,12 @@ export default function DashboardLayout({
                     className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
                     onClick={() => setShowAccountingBasic(!showAccountingBasic)}
                   >
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                      البيانات الأساسية
-                    </span>
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                    <span
+                      className={clsx({
+                        block: isSidebarOpen,
+                        hidden: !isSidebarOpen,
+                      })}
+                    >
                       البيانات الأساسية
                     </span>
                     {isSidebarOpen && (
@@ -303,7 +300,6 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
-
 
                   <AnimatePresence initial={false}>
                     {showAccountingBasic && (
@@ -322,23 +318,13 @@ export default function DashboardLayout({
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                               pathname === link.href
                                 ? "bg-blue-600/20 text-blue-300"
-                              pathname === link.href
-                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
                             style={{
                               paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                             }}
-                            style={{
-                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
-                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
-                            <span
-                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
-                            >
-                              {link.name}
-                            </span>
                             <span
                               className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                             >
@@ -358,15 +344,7 @@ export default function DashboardLayout({
                         onClick={() =>
                           setShowAccountingForms(!showAccountingForms)
                         }
-                        onClick={() =>
-                          setShowAccountingForms(!showAccountingForms)
-                        }
                       >
-                        <span
-                          className={`${isSidebarOpen ? "block" : "hidden"}`}
-                        >
-                          النماذج
-                        </span>
                         <span
                           className={`${isSidebarOpen ? "block" : "hidden"}`}
                         >
@@ -382,7 +360,6 @@ export default function DashboardLayout({
                           </div>
                         )}
                       </div>
-
 
                       <AnimatePresence initial={false}>
                         {showAccountingForms && (
@@ -401,8 +378,6 @@ export default function DashboardLayout({
                                 className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                                   pathname === link.href
                                     ? "bg-blue-600/20 text-blue-300"
-                                  pathname === link.href
-                                    ? "bg-blue-600/20 text-blue-300"
                                     : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                                 }`}
                                 style={{
@@ -410,18 +385,8 @@ export default function DashboardLayout({
                                     ? "2.5rem"
                                     : "0.75rem",
                                 }}
-                                style={{
-                                  paddingLeft: isSidebarOpen
-                                    ? "2.5rem"
-                                    : "0.75rem",
-                                }}
                               >
                                 <div className="text-sm">{link.icon}</div>
-                                <span
-                                  className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
-                                >
-                                  {link.name}
-                                </span>
                                 <span
                                   className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                                 >
@@ -443,16 +408,13 @@ export default function DashboardLayout({
                         onClick={() =>
                           setShowAccountingReports(!showAccountingReports)
                         }
-                        onClick={() =>
-                          setShowAccountingReports(!showAccountingReports)
-                        }
                       >
                         <span
                           className={`${isSidebarOpen ? "block" : "hidden"}`}
                         >
                           التقارير
                         </span>
-                                                  {isSidebarOpen && (
+                        {isSidebarOpen && (
                           <div className="text-gray-500">
                             {showAccountingReports ? (
                               <ChevronUpIcon className="h-4 w-4" />
@@ -462,7 +424,6 @@ export default function DashboardLayout({
                           </div>
                         )}
                       </div>
-
 
                       <AnimatePresence initial={false}>
                         {showAccountingReports && (
@@ -481,8 +442,6 @@ export default function DashboardLayout({
                                 className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                                   pathname === link.href
                                     ? "bg-blue-600/20 text-blue-300"
-                                  pathname === link.href
-                                    ? "bg-blue-600/20 text-blue-300"
                                     : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                                 }`}
                                 style={{
@@ -490,18 +449,8 @@ export default function DashboardLayout({
                                     ? "2.5rem"
                                     : "0.75rem",
                                 }}
-                                style={{
-                                  paddingLeft: isSidebarOpen
-                                    ? "2.5rem"
-                                    : "0.75rem",
-                                }}
                               >
                                 <div className="text-sm">{link.icon}</div>
-                                <span
-                                  className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
-                                >
-                                  {link.name}
-                                </span>
                                 <span
                                   className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                                 >
@@ -525,9 +474,6 @@ export default function DashboardLayout({
               className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
               onClick={() => setShowGoldSystem(!showGoldSystem)}
             >
-              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                نظام الذهب
-              </span>
               <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                 نظام الذهب
               </span>
@@ -560,9 +506,6 @@ export default function DashboardLayout({
                     <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                       البيانات الأساسية
                     </span>
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                      البيانات الأساسية
-                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showGoldBasic ? (
@@ -573,7 +516,6 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
-
 
                   <AnimatePresence initial={false}>
                     {showGoldBasic && (
@@ -592,23 +534,14 @@ export default function DashboardLayout({
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                               pathname === link.href
                                 ? "bg-blue-600/20 text-blue-300"
-                              pathname === link.href
-                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
                             style={{
                               paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                             }}
-                            style={{
-                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
-                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
-                            <span
-                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
-                            >
-                              {link.name}
-                            </span>
+
                             <span
                               className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                             >
@@ -628,9 +561,6 @@ export default function DashboardLayout({
                     <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                       النماذج
                     </span>
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                      النماذج
-                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showGoldForms ? (
@@ -641,7 +571,6 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
-
 
                   <AnimatePresence initial={false}>
                     {showGoldForms && (
@@ -660,23 +589,13 @@ export default function DashboardLayout({
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                               pathname === link.href
                                 ? "bg-blue-600/20 text-blue-300"
-                              pathname === link.href
-                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
                             style={{
                               paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                             }}
-                            style={{
-                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
-                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
-                            <span
-                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
-                            >
-                              {link.name}
-                            </span>
                             <span
                               className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                             >
@@ -696,9 +615,6 @@ export default function DashboardLayout({
                     <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                       التقارير
                     </span>
-                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                      التقارير
-                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showGoldReports ? (
@@ -709,7 +625,6 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
-
 
                   <AnimatePresence initial={false}>
                     {showGoldReports && (
@@ -728,23 +643,13 @@ export default function DashboardLayout({
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                               pathname === link.href
                                 ? "bg-blue-600/20 text-blue-300"
-                              pathname === link.href
-                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
                             style={{
                               paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                             }}
-                            style={{
-                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
-                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
-                            <span
-                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
-                            >
-                              {link.name}
-                            </span>
                             <span
                               className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                             >
@@ -766,9 +671,6 @@ export default function DashboardLayout({
               className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
               onClick={() => setShowSettingsLinks(!showSettingsLinks)}
             >
-              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                الإعدادات
-              </span>
               <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                 الإعدادات
               </span>
@@ -800,24 +702,14 @@ export default function DashboardLayout({
                       className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
                         pathname === link.href
                           ? "bg-blue-600 shadow-lg"
-                        pathname === link.href
-                          ? "bg-blue-600 shadow-lg"
                           : "hover:bg-gray-700 hover:shadow-md"
                       }`}
                     >
                       <div
                         className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
                       >
-                      <div
-                        className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
-                      >
                         {link.icon}
                       </div>
-                      <span
-                        className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
-                      >
-                        {link.name}
-                      </span>
                       <span
                         className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
                       >
@@ -841,10 +733,8 @@ export default function DashboardLayout({
 
       {/* Main Content */}
       <main className="flex-1 w-full min-h-screen overflow-auto">
-        <AuthGuard>
-          <UserHeader />
-          <div className="p-8">{children}</div>
-        </AuthGuard>
+        <UserHeader />
+        <div className="p-8">{children}</div>
       </main>
     </div>
   );

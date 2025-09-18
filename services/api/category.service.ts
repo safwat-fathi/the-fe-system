@@ -13,7 +13,14 @@ class CategoryService extends HttpService<Category> {
 
   async getAllCategories(): Promise<Category[]> {
     try {
-      const response = await this.get<Category[]>(API_ENDPOINTS.CATEGORIES_LIST.replace(this._baseUrl, "").replace(/^\//, ""));
+      const response = await this.get<Category[]>(
+        "categories_list",
+        undefined,
+        {
+          cache: "force-cache",
+          next: { tags: ["categories"] },
+        },
+      );
       
       if (response.success) {
         if (Array.isArray(response.data)) {

@@ -6,7 +6,7 @@ import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function getCookieAction(name: string) {
-  return cookies().get(name)?.value;
+  return (await cookies()).get(name)?.value;
 }
 
 export async function setCookieAction(
@@ -20,7 +20,7 @@ export async function setCookieAction(
     sameSite?: "strict" | "lax" | "none";
   },
 ) {
-  cookies().set({
+  (await cookies()).set({
     name,
     value,
     httpOnly: options?.httpOnly ?? true,
@@ -32,11 +32,11 @@ export async function setCookieAction(
 }
 
 export async function deleteCookieAction(name: string) {
-  cookies().delete(name);
+  (await cookies()).delete(name);
 }
 
 export async function onLogoutAction() {
-  cookies().delete("token");
+  (await cookies()).delete("token");
 }
 
 export async function appRedirect(route: string) {

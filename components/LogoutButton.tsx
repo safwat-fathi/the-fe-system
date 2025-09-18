@@ -1,16 +1,12 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
-import { Button } from '@heroui/react';
-import { ArrowLeftStartOnRectangleIcon } from '@heroicons/react/24/outline';
-import { removeAuthToken } from '@/utilities/api';
+import { Button } from "@heroui/react";
+import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import { onLogoutAction } from "@/app/actions/auth";
 
 export default function LogoutButton() {
-  const router = useRouter();
-
-  const handleLogout = () => {
-    removeAuthToken();
-    router.push('/');
+  const handleLogout = async () => {
+    await onLogoutAction();
   };
 
   return (

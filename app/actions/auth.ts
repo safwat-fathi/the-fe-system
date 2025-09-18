@@ -38,9 +38,17 @@ export async function loginAction(
   let loginSuccess = false;
   let loginResult: LoginResult | null = null;
 
+	const requestOptions: RequestInit = {
+    signal: AbortSignal.timeout(30000), // 30 seconds
+  };
+
   try {
     // Call authentication service
-    const response = await authService.login({ username, password });
+    const response = await authService.login(
+      { username, password },
+      requestOptions,
+    );
+    console.log("🚀 ~ :52 ~ loginAction ~ response:", response);
 
     if (response.success && response.data) {
       // Extract token and user data from response
@@ -118,4 +126,6 @@ export async function onLogoutAction() {
   (await cookies()).set(STORAGE_KEYS.AUTH_TOKEN, "", {
     maxAge: 0,
   });
+
+	redirect("/");
 }
