@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@heroui/react";
-import AuthGuard from "@/components/AuthGuard";
 import LogoutButton from "@/components/LogoutButton";
 import UserHeader from "@/components/UserHeader";
 import {
@@ -200,6 +199,9 @@ export default function DashboardLayout({
             <h2 className="text-xl font-bold whitespace-nowrap text-white">
               لوحة التحكم
             </h2>
+            <h2 className="text-xl font-bold whitespace-nowrap text-white">
+              لوحة التحكم
+            </h2>
           )}
           <Button
             size="sm"
@@ -221,14 +223,24 @@ export default function DashboardLayout({
               className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
                 pathname === link.href
                   ? "bg-blue-600 shadow-lg"
+                pathname === link.href
+                  ? "bg-blue-600 shadow-lg"
                   : "hover:bg-gray-700 hover:shadow-md"
               }`}
             >
               <div
                 className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
               >
+              <div
+                className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
+              >
                 {link.icon}
               </div>
+              <span
+                className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
+              >
+                {link.name}
+              </span>
               <span
                 className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
               >
@@ -243,6 +255,9 @@ export default function DashboardLayout({
               className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
               onClick={() => setShowAccountingSystem(!showAccountingSystem)}
             >
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                نظام الحسابات
+              </span>
               <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                 نظام الحسابات
               </span>
@@ -275,6 +290,9 @@ export default function DashboardLayout({
                     <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                       البيانات الأساسية
                     </span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      البيانات الأساسية
+                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showAccountingBasic ? (
@@ -285,6 +303,7 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
+
 
                   <AnimatePresence initial={false}>
                     {showAccountingBasic && (
@@ -303,13 +322,23 @@ export default function DashboardLayout({
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                               pathname === link.href
                                 ? "bg-blue-600/20 text-blue-300"
+                              pathname === link.href
+                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
                             style={{
                               paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                             }}
+                            style={{
+                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
+                            <span
+                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            >
+                              {link.name}
+                            </span>
                             <span
                               className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                             >
@@ -329,7 +358,15 @@ export default function DashboardLayout({
                         onClick={() =>
                           setShowAccountingForms(!showAccountingForms)
                         }
+                        onClick={() =>
+                          setShowAccountingForms(!showAccountingForms)
+                        }
                       >
+                        <span
+                          className={`${isSidebarOpen ? "block" : "hidden"}`}
+                        >
+                          النماذج
+                        </span>
                         <span
                           className={`${isSidebarOpen ? "block" : "hidden"}`}
                         >
@@ -345,6 +382,7 @@ export default function DashboardLayout({
                           </div>
                         )}
                       </div>
+
 
                       <AnimatePresence initial={false}>
                         {showAccountingForms && (
@@ -363,6 +401,8 @@ export default function DashboardLayout({
                                 className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                                   pathname === link.href
                                     ? "bg-blue-600/20 text-blue-300"
+                                  pathname === link.href
+                                    ? "bg-blue-600/20 text-blue-300"
                                     : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                                 }`}
                                 style={{
@@ -370,8 +410,18 @@ export default function DashboardLayout({
                                     ? "2.5rem"
                                     : "0.75rem",
                                 }}
+                                style={{
+                                  paddingLeft: isSidebarOpen
+                                    ? "2.5rem"
+                                    : "0.75rem",
+                                }}
                               >
                                 <div className="text-sm">{link.icon}</div>
+                                <span
+                                  className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                                >
+                                  {link.name}
+                                </span>
                                 <span
                                   className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                                 >
@@ -393,6 +443,9 @@ export default function DashboardLayout({
                         onClick={() =>
                           setShowAccountingReports(!showAccountingReports)
                         }
+                        onClick={() =>
+                          setShowAccountingReports(!showAccountingReports)
+                        }
                       >
                         <span
                           className={`${isSidebarOpen ? "block" : "hidden"}`}
@@ -409,6 +462,7 @@ export default function DashboardLayout({
                           </div>
                         )}
                       </div>
+
 
                       <AnimatePresence initial={false}>
                         {showAccountingReports && (
@@ -427,6 +481,8 @@ export default function DashboardLayout({
                                 className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                                   pathname === link.href
                                     ? "bg-blue-600/20 text-blue-300"
+                                  pathname === link.href
+                                    ? "bg-blue-600/20 text-blue-300"
                                     : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                                 }`}
                                 style={{
@@ -434,8 +490,18 @@ export default function DashboardLayout({
                                     ? "2.5rem"
                                     : "0.75rem",
                                 }}
+                                style={{
+                                  paddingLeft: isSidebarOpen
+                                    ? "2.5rem"
+                                    : "0.75rem",
+                                }}
                               >
                                 <div className="text-sm">{link.icon}</div>
+                                <span
+                                  className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                                >
+                                  {link.name}
+                                </span>
                                 <span
                                   className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                                 >
@@ -459,6 +525,9 @@ export default function DashboardLayout({
               className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
               onClick={() => setShowGoldSystem(!showGoldSystem)}
             >
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                نظام الذهب
+              </span>
               <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                 نظام الذهب
               </span>
@@ -491,6 +560,9 @@ export default function DashboardLayout({
                     <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                       البيانات الأساسية
                     </span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      البيانات الأساسية
+                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showGoldBasic ? (
@@ -501,6 +573,7 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
+
 
                   <AnimatePresence initial={false}>
                     {showGoldBasic && (
@@ -519,13 +592,23 @@ export default function DashboardLayout({
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                               pathname === link.href
                                 ? "bg-blue-600/20 text-blue-300"
+                              pathname === link.href
+                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
                             style={{
                               paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                             }}
+                            style={{
+                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
+                            <span
+                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            >
+                              {link.name}
+                            </span>
                             <span
                               className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                             >
@@ -545,6 +628,9 @@ export default function DashboardLayout({
                     <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                       النماذج
                     </span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      النماذج
+                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showGoldForms ? (
@@ -555,6 +641,7 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
+
 
                   <AnimatePresence initial={false}>
                     {showGoldForms && (
@@ -573,13 +660,23 @@ export default function DashboardLayout({
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                               pathname === link.href
                                 ? "bg-blue-600/20 text-blue-300"
+                              pathname === link.href
+                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
                             style={{
                               paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                             }}
+                            style={{
+                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
+                            <span
+                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            >
+                              {link.name}
+                            </span>
                             <span
                               className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                             >
@@ -599,6 +696,9 @@ export default function DashboardLayout({
                     <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                       التقارير
                     </span>
+                    <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                      التقارير
+                    </span>
                     {isSidebarOpen && (
                       <div className="text-gray-500">
                         {showGoldReports ? (
@@ -609,6 +709,7 @@ export default function DashboardLayout({
                       </div>
                     )}
                   </div>
+
 
                   <AnimatePresence initial={false}>
                     {showGoldReports && (
@@ -627,13 +728,23 @@ export default function DashboardLayout({
                             className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                               pathname === link.href
                                 ? "bg-blue-600/20 text-blue-300"
+                              pathname === link.href
+                                ? "bg-blue-600/20 text-blue-300"
                                 : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                             }`}
                             style={{
                               paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                             }}
+                            style={{
+                              paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                            }}
                           >
                             <div className="text-sm">{link.icon}</div>
+                            <span
+                              className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            >
+                              {link.name}
+                            </span>
                             <span
                               className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
                             >
@@ -655,6 +766,9 @@ export default function DashboardLayout({
               className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
               onClick={() => setShowSettingsLinks(!showSettingsLinks)}
             >
+              <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
+                الإعدادات
+              </span>
               <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                 الإعدادات
               </span>
@@ -686,14 +800,24 @@ export default function DashboardLayout({
                       className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
                         pathname === link.href
                           ? "bg-blue-600 shadow-lg"
+                        pathname === link.href
+                          ? "bg-blue-600 shadow-lg"
                           : "hover:bg-gray-700 hover:shadow-md"
                       }`}
                     >
                       <div
                         className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
                       >
+                      <div
+                        className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
+                      >
                         {link.icon}
                       </div>
+                      <span
+                        className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
+                      >
+                        {link.name}
+                      </span>
                       <span
                         className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
                       >
