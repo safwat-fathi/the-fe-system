@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import { Input, Button, Select, SelectItem, CardBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import toast from "react-hot-toast";
-import { API_ENDPOINTS, fetchData } from "../../../../utilities/api";
-import Card from "../../../../components/Card";
-import { FormModal, InfoModal } from "../../../../components/Modal";
+import { API_ENDPOINTS, fetchData } from "../../../../../utilities/api";
+import Card from "../../../../../components/Card";
+import { FormModal, InfoModal } from "../../../../../components/Modal";
 
 // Simple icon components
 const FolderIcon = ({ className }: { className?: string }) => <span className={className}>📁</span>;

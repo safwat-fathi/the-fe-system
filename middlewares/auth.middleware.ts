@@ -21,10 +21,10 @@ const authMiddleware: MiddlewareFactory = () => {
       return NextResponse.next();
     }
 
-    // For API routes that don't require authentication, we can skip
-    if (pathname.startsWith("/api/auth")) {
-      return NextResponse.next();
-    }
+    // // For API routes that don't require authentication, we can skip
+    // if (pathname.startsWith("/api/auth")) {
+    //   return NextResponse.next();
+    // }
 
     try {
       // Get the authentication token
@@ -36,13 +36,13 @@ const authMiddleware: MiddlewareFactory = () => {
         if (pathname === "/") {
           return NextResponse.next();
         }
-        
+
         const loginUrl = new URL("/", request.url);
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);
       }
 
-      // TODO: If user has token - verify it 
+      // TODO: If user has token - verify it
       // TODO: Add token verification implementation
 
       // Token exists, allow the request to proceed
@@ -53,7 +53,7 @@ const authMiddleware: MiddlewareFactory = () => {
       if (pathname === "/") {
         return NextResponse.next();
       }
-      
+
       const loginUrl = new URL("/", request.url);
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);

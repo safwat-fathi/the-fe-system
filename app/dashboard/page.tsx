@@ -5,7 +5,6 @@ import DashboardClient from "./components/DashboardClient";
 import dashboardService from "@/services/bff/dashboard.service";
 import invoiceService from "@/services/api/invoice.service";
 import { Metadata } from "next";
-import { Suspense } from "react";
 
 // meta data
 export const metadata: Metadata = {
@@ -104,17 +103,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* Pass data to client component for interactive charts */}
-      <Suspense
-        key={JSON.stringify(salesChartData)}
-        fallback={<div>Loading...</div>}
-      >
-        <DashboardClient
-          salesChartData={salesChartData}
-          invoices={invoicesData}
-          branch={branch}
-          year={year}
-        />
-      </Suspense>
+
+      <DashboardClient
+        salesChartData={salesChartData}
+        invoices={invoicesData}
+        branch={branch}
+        year={year}
+      />
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4">
