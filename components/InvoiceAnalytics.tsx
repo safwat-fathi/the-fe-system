@@ -33,29 +33,33 @@ ChartJS.register(
 
 interface InvoiceAnalyticsProps {
   invoices: Invoice[];
+  
 }
 
 export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
   const fractions = useFractions() as { frac: number; frac2: number };
-  
+
   const analytics = useMemo(() => {
     const total = invoices.length;
-    const totalAmount = invoices.reduce((sum, inv) => sum + (inv.inv_amt || 0), 0);
+    const totalAmount = invoices.reduce(
+      (sum, inv) => sum + (inv.inv_amt || 0),
+      0,
+    );
     const totalTax = invoices.reduce((sum, inv) => sum + (inv.tax || 0), 0);
     const avgAmount = total > 0 ? totalAmount / total : 0;
 
     // حسب النوع
     const byType = {
-      purchase: invoices.filter(inv => inv.trans_type === 1).length,
-      sales: invoices.filter(inv => inv.trans_type === 2).length,
-      purchase_return: invoices.filter(inv => inv.trans_type === 3).length,
-      sales_return: invoices.filter(inv => inv.trans_type === 4).length,
+      purchase: invoices.filter((inv) => inv.trans_type === 1).length,
+      sales: invoices.filter((inv) => inv.trans_type === 2).length,
+      purchase_return: invoices.filter((inv) => inv.trans_type === 3).length,
+      sales_return: invoices.filter((inv) => inv.trans_type === 4).length,
     };
 
     // حسب الشهر
     const byMonth = new Array(12).fill(0);
     const byMonthAmount = new Array(12).fill(0);
-    invoices.forEach(inv => {
+    invoices.forEach((inv) => {
       const month = new Date(inv.inv_date).getMonth();
       byMonth[month]++;
       byMonthAmount[month] += inv.inv_amt || 0;
@@ -63,7 +67,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
 
     // حسب اليوم
     const byDay = new Array(7).fill(0);
-    invoices.forEach(inv => {
+    invoices.forEach((inv) => {
       const day = new Date(inv.inv_date).getDay();
       byDay[day]++;
     });
@@ -81,12 +85,28 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
   }, [invoices]);
 
   const monthNames = [
-    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+    "يناير",
+    "فبراير",
+    "مارس",
+    "أبريل",
+    "مايو",
+    "يونيو",
+    "يوليو",
+    "أغسطس",
+    "سبتمبر",
+    "أكتوبر",
+    "نوفمبر",
+    "ديسمبر",
   ];
 
   const dayNames = [
-    "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"
+    "الأحد",
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة",
+    "السبت",
   ];
 
   const salesChartData = {
@@ -116,16 +136,16 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
     datasets: [
       {
         data: [
-          analytics.byType.purchase, 
-          analytics.byType.sales, 
-          analytics.byType.purchase_return, 
-          analytics.byType.sales_return
+          analytics.byType.purchase,
+          analytics.byType.sales,
+          analytics.byType.purchase_return,
+          analytics.byType.sales_return,
         ],
         backgroundColor: [
-          "rgba(59, 130, 246, 0.8)",   // أزرق للشراء
-          "rgba(16, 185, 129, 0.8)",   // أخضر للبيع
-          "rgba(245, 158, 11, 0.8)",   // برتقالي لمردود الشراء
-          "rgba(239, 68, 68, 0.8)",    // أحمر لمردود البيع
+          "rgba(59, 130, 246, 0.8)", // أزرق للشراء
+          "rgba(16, 185, 129, 0.8)", // أخضر للبيع
+          "rgba(245, 158, 11, 0.8)", // برتقالي لمردود الشراء
+          "rgba(239, 68, 68, 0.8)", // أحمر لمردود البيع
         ],
         borderColor: [
           "rgb(59, 130, 246)",
@@ -304,26 +324,38 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                 <span className="font-medium">فواتير الشراء</span>
-                <span className="text-blue-600 font-bold">{analytics.byType.purchase}</span>
+                <span className="text-blue-600 font-bold">
+                  {analytics.byType.purchase}
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                 <span className="font-medium">فواتير البيع</span>
-                <span className="text-green-600 font-bold">{analytics.byType.sales}</span>
+                <span className="text-green-600 font-bold">
+                  {analytics.byType.sales}
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
                 <span className="font-medium">مردود الشراء</span>
-                <span className="text-yellow-600 font-bold">{analytics.byType.purchase_return}</span>
+                <span className="text-yellow-600 font-bold">
+                  {analytics.byType.purchase_return}
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
                 <span className="font-medium">مردود البيع</span>
-                <span className="text-red-600 font-bold">{analytics.byType.sales_return}</span>
+                <span className="text-red-600 font-bold">
+                  {analytics.byType.sales_return}
+                </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-medium">نسبة الضريبة</span>
                 <span className="text-gray-600 font-bold">
-                  {analytics.totalAmount > 0 
-                    ? ((analytics.totalTax / analytics.totalAmount) * 100).toFixed(1)
-                    : 0}%
+                  {analytics.totalAmount > 0
+                    ? (
+                        (analytics.totalTax / analytics.totalAmount) *
+                        100
+                      ).toFixed(1)
+                    : 0}
+                  %
                 </span>
               </div>
             </div>
@@ -345,9 +377,14 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 5)
                 .map((item, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                  >
                     <span className="font-medium">{item.month}</span>
-                    <span className="text-blue-600 font-bold">{item.count} فاتورة</span>
+                    <span className="text-blue-600 font-bold">
+                      {item.count} فاتورة
+                    </span>
                   </div>
                 ))}
             </div>
@@ -365,9 +402,14 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
                 .map((count, index) => ({ count, day: dayNames[index] }))
                 .sort((a, b) => b.count - a.count)
                 .map((item, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                  >
                     <span className="font-medium">{item.day}</span>
-                    <span className="text-green-600 font-bold">{item.count} فاتورة</span>
+                    <span className="text-green-600 font-bold">
+                      {item.count} فاتورة
+                    </span>
                   </div>
                 ))}
             </div>

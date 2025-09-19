@@ -42,11 +42,7 @@ class DashboardService extends HttpService<any> {
           itemService.getAllItems(),
           goldPriceService.getCurrentGoldPrice(),
         ]);
-			
-			console.log(
-        "🚀 ~ :38 ~ DashboardService ~ getDashboardStats ~ invoices:",
-        invoices,
-      );
+
       // Calculate monthly sales
       const monthlySales = await invoiceService.calculateMonthlySales(invoices);
 

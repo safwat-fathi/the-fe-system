@@ -1,5 +1,3 @@
-import { setCookieAction, getCookieAction } from "./cookie-store.action";
-
 // export async function onLoginAction(data: User, remember = false) {
 //   const expires = remember
 //     ? new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) // if user checked remember me, set cookie to expire in 30 days
