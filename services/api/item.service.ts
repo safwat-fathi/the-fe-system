@@ -13,7 +13,10 @@ class ItemService extends HttpService<Item> {
 
   async getAllItems(): Promise<Item[]> {
     try {
-      const response = await this.get<Item[]>(API_ENDPOINTS.GET_ITEMS_LIST.replace(this._baseUrl, "").replace(/^\//, ""));
+      const response = await this.get<Item[]>("items_list", undefined, {
+        cache: "force-cache",
+        next: { tags: ["items"] },
+      });
       
       if (response.success) {
         if (Array.isArray(response.data)) {

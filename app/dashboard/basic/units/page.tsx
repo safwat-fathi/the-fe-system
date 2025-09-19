@@ -18,7 +18,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
@@ -161,7 +161,7 @@ export default function UnitsTable() {
         variant="light"
         onPress={() => openModal("view", unit)}
       >
-        <FaEye className="text-blue-500" />
+        <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
       <Button
         isIconOnly
@@ -169,7 +169,7 @@ export default function UnitsTable() {
         variant="light"
         onPress={() => openModal("edit", unit)}
       >
-        <FaEdit className="text-yellow-500" />
+        <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
       <Button
         isIconOnly
@@ -178,7 +178,7 @@ export default function UnitsTable() {
         color="danger"
         onPress={() => handleDelete(unit.id)}
       >
-        <FaTrash />
+        <TrashIcon className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -188,9 +188,8 @@ export default function UnitsTable() {
       <h1 className="text-2xl font-bold mb-6">الوحدات</h1>
       <div className="flex justify-between mb-4">
         <Button onPress={() => openModal("add")}>
-          {" "}
-          <FaPlus /> إضافة وحدة{" "}
-        </Button>
+  <PlusIcon className="h-4 w-4" /> إضافة وحدة
+</Button>
         <Input
           className="w-60"
           placeholder="بحث بالاسم..."

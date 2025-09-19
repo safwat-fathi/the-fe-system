@@ -18,7 +18,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { fetchData, API_BASE_URL } from "@/utilities/api";
 import useCrud from "@/utilities/useCrud";
@@ -135,7 +135,7 @@ export default function CurrenciesTable() {
         variant="light"
         onPress={() => openModal("view", cur)}
       >
-        <FaEye className="text-blue-500" />
+        <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
       <Button
         isIconOnly
@@ -143,7 +143,7 @@ export default function CurrenciesTable() {
         variant="light"
         onPress={() => openModal("edit", cur)}
       >
-        <FaEdit className="text-yellow-500" />
+        <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
       <Button
         isIconOnly
@@ -152,7 +152,7 @@ export default function CurrenciesTable() {
         color="danger"
         onPress={() => handleDelete(cur.id)}
       >
-        <FaTrash />
+        <TrashIcon className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -186,9 +186,8 @@ export default function CurrenciesTable() {
     <div className="p-4 font-cairo">
       <h1 className="text-2xl font-bold mb-6">العملات</h1>
       <div className="flex justify-between mb-4">
-        <Button onPress={() => openModal("add")}>
-          {" "}
-          <FaPlus /> إضافة عملة{" "}
+        <Button className="btn-primary" onPress={() => openModal("add")}>
+          <PlusIcon className="h-4 w-4" /> إضافة عملة
         </Button>
         <Input
           className="w-60"

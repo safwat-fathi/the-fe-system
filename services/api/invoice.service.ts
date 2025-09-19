@@ -16,7 +16,10 @@ class InvoiceService extends HttpService<Invoice> {
 
   async getAllInvoices(): Promise<Invoice[]> {
     try {
-      const response = await this.get<Invoice[]>("invoices_list");
+			const response = await this.get<Invoice[]>("invoices_list", undefined, {
+        cache: "force-cache",
+        next: { tags: ["invoices"] },
+      });
 
       if (response.success && Array.isArray(response.data)) {
         return response.data;

@@ -7,7 +7,10 @@ const TROY_OUNCE_TO_GRAM = 31.1035;
 export class GoldPriceService {
   async getCurrentGoldPrice(): Promise<number | null> {
     try {
-      const response = await fetch(API_ENDPOINTS.GOLD_PRICE);
+			const response = await fetch(API_ENDPOINTS.GOLD_PRICE, {
+        method: "GET",
+        next: { revalidate: 3600, tags: ["gold-price"] },
+      });
       
       if (!response.ok) {
         throw new Error(`Network response was not ok: ${response.status}`);

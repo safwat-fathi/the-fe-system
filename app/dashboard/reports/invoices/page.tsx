@@ -21,7 +21,7 @@ import {
 } from "@heroui/react";
 import Card from "@/components/Card";
 import { CardBody } from "@heroui/react";
-import { FaEye, FaEdit, FaDownload, FaFilter, FaChartBar, FaTable, FaPrint, FaPlus } from "react-icons/fa";
+import { EyeIcon, PencilIcon, ArrowDownTrayIcon, FunnelIcon, ChartBarIcon, TableCellsIcon, PrinterIcon, PlusIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { API_ENDPOINTS, fetchData } from "@/utilities/api";
@@ -197,7 +197,7 @@ export default function InvoicesPage() {
             variant="light"
             onPress={() => router.push(`/dashboard/forms/invoices/Gold_invoice2?inv_id=${row.inv_id}`)}
           >
-            <FaEye className="text-blue-500" />
+            <EyeIcon className="h-4 w-4 text-blue-500" />
           </Button>
           <Button
             isIconOnly
@@ -205,7 +205,7 @@ export default function InvoicesPage() {
             variant="light"
             onPress={() => router.push(`/dashboard/forms/invoices/Gold_invoice2?inv_id=${row.inv_id}`)}
           >
-            <FaEdit className="text-yellow-500" />
+            <PencilIcon className="h-4 w-4 text-yellow-500" />
           </Button>
         </div>
       )},
@@ -240,21 +240,21 @@ export default function InvoicesPage() {
         <div className="flex gap-3">
           <Button
             color="success"
-            startContent={<FaPlus />}
+            startContent={<PlusIcon className="h-4 w-4" />}
             onPress={() => router.push("/dashboard/forms/invoices/Gold_invoice2?new=true")}
           >
             إضافة فاتورة
           </Button>
           <Button
             variant="bordered"
-            startContent={<FaPrint />}
+            startContent={<PrinterIcon className="h-4 w-4" />}
             onPress={handlePrint}
           >
             طباعة
           </Button>
           <Button
             color="primary"
-            startContent={<FaDownload />}
+            startContent={<ArrowDownTrayIcon className="h-4 w-4" />}
             onPress={handleExport}
           >
             تصدير
@@ -272,7 +272,7 @@ export default function InvoicesPage() {
               placeholder="البحث بالرقم أو الاسم..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-              startContent={<FaFilter />}
+              startContent={<FunnelIcon className="h-4 w-4" />}
               className="input-field"
             />
             
@@ -326,7 +326,7 @@ export default function InvoicesPage() {
           key="table"
           title={
             <div className="flex items-center gap-2">
-              <FaTable />
+              <TableCellsIcon className="h-4 w-4" />
               <span>قائمة الفواتير</span>
       </div>
           }
@@ -361,7 +361,7 @@ export default function InvoicesPage() {
           key="analytics"
           title={
             <div className="flex items-center gap-2">
-              <FaChartBar />
+              <ChartBarIcon className="h-4 w-4" />
               <span>التحليلات</span>
             </div>
           }

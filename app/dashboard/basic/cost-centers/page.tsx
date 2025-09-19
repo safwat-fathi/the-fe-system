@@ -16,7 +16,7 @@ import {
   SelectItem,
 } from "@heroui/react";
 import { HeroModal as Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/Modal";
-import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
@@ -174,7 +174,7 @@ export default function CostCentersPage() {
         variant="light"
         onPress={() => openModal("view", costCenter)}
       >
-        <FaEye className="text-blue-500" />
+        <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
       <Button
         isIconOnly
@@ -182,7 +182,7 @@ export default function CostCentersPage() {
         variant="light"
         onPress={() => openModal("edit", costCenter)}
       >
-        <FaEdit className="text-yellow-500" />
+        <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
       <Button
         isIconOnly
@@ -191,7 +191,7 @@ export default function CostCentersPage() {
         color="danger"
         onPress={() => handleDelete(costCenter.id)}
       >
-        <FaTrash />
+        <TrashIcon className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -202,7 +202,7 @@ export default function CostCentersPage() {
       <div className="flex justify-between mb-4">
         <Button onPress={() => openModal("add")}>
           {" "}
-          <FaPlus /> إضافة مركز تكلفة{" "}
+          <PlusIcon className="h-4 w-4" /> إضافة مركز تكلفة{" "}
         </Button>
         <Input
           className="w-60"

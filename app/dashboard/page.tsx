@@ -5,6 +5,7 @@ import DashboardClient from "./components/DashboardClient";
 import dashboardService from "@/services/bff/dashboard.service";
 import invoiceService from "@/services/api/invoice.service";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 // meta data
 export const metadata: Metadata = {
@@ -17,27 +18,10 @@ export default async function DashboardPage() {
   const branch = cookieStore.get("selectedBranch")?.value || "";
   const year = cookieStore.get("selectedYear")?.value || "";
 
-  // Fetch dashboard data on the server
-  let dashboardData = {
-    invoiceCount: 0,
-    customerCount: 0,
-    itemCount: 0,
-    categoryCount: 0,
-    goldPrice: null as number | null,
-    monthlySales: [] as number[],
-  };
+  const dashboardData = await dashboardService.getDashboardStats();
 
-  let invoicesData: any[] = [];
-
-  try {
-    dashboardData = await dashboardService.getDashboardStats();
-    
-    // Fetch invoices data for the client component
-    invoicesData = await invoiceService.getAllInvoices();
-  } catch (error) {
-    console.error("Error fetching dashboard data:", error);
-    // We'll still render the page but with default values
-  }
+  // Fetch invoices data for the client component
+  const invoicesData = await invoiceService.getAllInvoices();
 
   // Fill in missing monthly sales data with zeros
   const monthlySales =
@@ -120,12 +104,17 @@ export default async function DashboardPage() {
       </div>
 
       {/* Pass data to client component for interactive charts */}
-      <DashboardClient
-        salesChartData={salesChartData}
-        invoices={invoicesData}
-        branch={branch}
-        year={year}
-      />
+      <Suspense
+        key={JSON.stringify(salesChartData)}
+        fallback={<div>Loading...</div>}
+      >
+        <DashboardClient
+          salesChartData={salesChartData}
+          invoices={invoicesData}
+          branch={branch}
+          year={year}
+        />
+      </Suspense>
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4">

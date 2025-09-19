@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import ReactSelect from "react-select";
-import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import {
   Table,
@@ -217,7 +217,7 @@ export default function CustomersTable() {
         variant="light"
         onPress={() => openModal("view", cust)}
       >
-        <FaEye className="text-blue-500" />
+        <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
       <Button
         isIconOnly
@@ -225,7 +225,7 @@ export default function CustomersTable() {
         variant="light"
         onPress={() => openModal("edit", cust)}
       >
-        <FaEdit className="text-yellow-500" />
+        <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
       <Button
         isIconOnly
@@ -234,7 +234,7 @@ export default function CustomersTable() {
         color="danger"
         onPress={() => handleDelete(cust.id)}
       >
-        <FaTrash />
+        <TrashIcon className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -309,7 +309,7 @@ const filteredCustomers = useMemo(() => {
       <div className="responsive-filters">
         <Button onPress={() => openModal("add")}>
           {" "}
-          <FaPlus /> إضافة عميل{" "}
+          <PlusIcon className="h-4 w-4" /> إضافة عميل{" "}
         </Button>
         <div className="responsive-search-group">
           <Select

@@ -13,7 +13,10 @@ class CustomerService extends HttpService<Customer> {
 
   async getAllCustomers(): Promise<Customer[]> {
     try {
-      const response = await this.get<Customer[]>(API_ENDPOINTS.CUSTOMERS_LIST.replace(this._baseUrl, "").replace(/^\//, ""));
+      const response = await this.get<Customer[]>("customers_list", undefined, {
+        cache: "force-cache",
+        next: { tags: ["customers"] },
+      });
       
       if (response.success) {
         if (Array.isArray(response.data)) {

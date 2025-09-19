@@ -20,7 +20,7 @@ import {
   CardBody,
   CardHeader,
 } from "@heroui/react";
-import { FaEye, FaPrint, FaDownload, FaFilter, FaChartBar, FaTable, FaFileAlt } from "react-icons/fa";
+import { EyeIcon, PrinterIcon, ArrowDownTrayIcon, FunnelIcon, ChartBarIcon, TableCellsIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { API_ENDPOINTS, fetchData } from "@/utilities/api";
@@ -291,14 +291,14 @@ export default function VATReportPage() {
         <div className="flex gap-3">
           <Button
             variant="bordered"
-            startContent={<FaPrint />}
+            startContent={<PrinterIcon className="h-4 w-4" />}
             onPress={handlePrint}
           >
             طباعة
           </Button>
           <Button
             color="primary"
-            startContent={<FaDownload />}
+            startContent={<ArrowDownTrayIcon className="h-4 w-4" />}
             onPress={handleExport}
           >
             تصدير
@@ -378,7 +378,7 @@ export default function VATReportPage() {
           key="summary"
           title={
             <div className="flex items-center gap-2">
-              <FaFileAlt />
+              <DocumentTextIcon className="h-4 w-4" />
               <span>التقرير الإجمالي</span>
             </div>
           }
@@ -495,7 +495,7 @@ export default function VATReportPage() {
           key="detailed"
           title={
             <div className="flex items-center gap-2">
-              <FaTable />
+              <TableCellsIcon className="h-4 w-4" />
               <span>التقرير التفصيلي</span>
             </div>
           }

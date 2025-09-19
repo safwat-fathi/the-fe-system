@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Button, Chip } from "@heroui/react";
-import { FaSearch, FaFilter, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { MagnifyingGlassIcon, FunnelIcon, ArrowsUpDownIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 
 interface Column {
   key: string;
@@ -65,8 +65,8 @@ export default function DataTable({
   };
 
   const getSortIcon = (columnKey: string) => {
-    if (sortColumn !== columnKey) return <FaSort className="text-gray-400" />;
-    return sortDirection === "asc" ? <FaSortUp className="text-blue-500" /> : <FaSortDown className="text-blue-500" />;
+    if (sortColumn !== columnKey) return <ArrowsUpDownIcon className="h-4 w-4 text-gray-400" />;
+    return sortDirection === "asc" ? <ChevronUpIcon className="h-4 w-4 text-blue-500" /> : <ChevronDownIcon className="h-4 w-4 text-blue-500" />;
   };
 
   return (
@@ -87,7 +87,7 @@ export default function DataTable({
                 placeholder="البحث..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                startContent={<FaSearch className="text-gray-400" />}
+                startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
                 className="input-field"
               />
             </div>
@@ -97,7 +97,7 @@ export default function DataTable({
             <div className="flex gap-2">
               <Button
                 variant="bordered"
-                startContent={<FaFilter />}
+                startContent={<FunnelIcon className="h-4 w-4" />}
                 className="btn-secondary"
               >
                 تصفية
