@@ -106,7 +106,7 @@ export default async function DashboardPage() {
 
       <DashboardClient
         salesChartData={salesChartData}
-        invoices={invoicesData}
+        invoices={invoicesData?.results}
         branch={branch}
         year={year}
       />
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4">
         <Link
-          href="/dashboard/forms/invoices/Gold_invoice2?new=true"
+          href="/dashboard/forms/invoices/sale?new=true"
           className="btn-primary"
         >
           فاتورة جديدة

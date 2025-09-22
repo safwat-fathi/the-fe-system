@@ -44,10 +44,12 @@ class DashboardService extends HttpService<any> {
         ]);
 
       // Calculate monthly sales
-      const monthlySales = await invoiceService.calculateMonthlySales(invoices);
+      const monthlySales = await invoiceService.calculateMonthlySales(
+        invoices?.results as any,
+      );
 
       return {
-        invoiceCount: invoices.length,
+        invoiceCount: invoices?.count || 0,
         customerCount: customers.length,
         itemCount: items.length,
         categoryCount: categories.length,

@@ -126,5 +126,5 @@ export async function onLogoutAction() {
     maxAge: 0,
   });
 
-	redirect("/");
+	redirect("/auth/login");
 }

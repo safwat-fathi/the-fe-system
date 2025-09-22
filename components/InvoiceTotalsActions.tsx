@@ -144,7 +144,7 @@ export default function InvoiceTotalsActions({
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value)}
             />
-            <Button 
+            <Button
               size="sm"
               className="h-7 px-2 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
               onPress={onInvoiceSearch}
@@ -178,7 +178,9 @@ export default function InvoiceTotalsActions({
 
             <Button
               className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-              onClick={() => router.push("/dashboard/forms/invoices/Gold_invoice2?new=true")}
+              onClick={() =>
+                router.push("/dashboard/forms/invoices/sale?new=true")
+              }
             >
               <i className="bi bi-plus-circle me-1"></i>
               جديد
@@ -198,14 +200,14 @@ export default function InvoiceTotalsActions({
                 <Button
                   size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                  onClick={() => navigateToInvoice('first')}
+                  onClick={() => navigateToInvoice("first")}
                 >
                   <i className="bi bi-chevron-double-right text-xs"></i>
                 </Button>
                 <Button
                   size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                  onClick={() => navigateToInvoice('prev')}
+                  onClick={() => navigateToInvoice("prev")}
                 >
                   <i className="bi bi-chevron-right text-xs"></i>
                 </Button>
@@ -215,14 +217,14 @@ export default function InvoiceTotalsActions({
                 <Button
                   size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                  onClick={() => navigateToInvoice('next')}
+                  onClick={() => navigateToInvoice("next")}
                 >
                   <i className="bi bi-chevron-left text-xs"></i>
                 </Button>
                 <Button
                   size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                  onClick={() => navigateToInvoice('last')}
+                  onClick={() => navigateToInvoice("last")}
                 >
                   <i className="bi bi-chevron-double-left text-xs"></i>
                 </Button>
@@ -232,28 +234,18 @@ export default function InvoiceTotalsActions({
 
           {/* حالة الفاتورة */}
           <div className="flex items-center gap-3">
-            <Checkbox
-              isSelected={commit}
-              isReadOnly
-              color="success"
-              size="sm"
-            >
+            <Checkbox isSelected={commit} isReadOnly color="success" size="sm">
               <span className="text-xs text-slate-600">حُفظ</span>
             </Checkbox>
-            
-            <Checkbox
-              isSelected={print}
-              isReadOnly
-              color="warning"
-              size="sm"
-            >
+
+            <Checkbox isSelected={print} isReadOnly color="warning" size="sm">
               <span className="text-xs text-slate-600">طُبع</span>
             </Checkbox>
           </div>
         </div>
       </div>
       {children}
-      
+
       {/* شريط الإجماليات في سطر واحد */}
       <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-200">
         <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
@@ -274,7 +266,9 @@ export default function InvoiceTotalsActions({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">إجمالي الوزن المعاير:</span>
+            <span className="text-gray-700 font-medium">
+              إجمالي الوزن المعاير:
+            </span>
             <span className="font-semibold text-amber-800 flex items-center gap-1">
               {Number(totalGWeight).toFixed(fractions.frac2)}
               <span className="text-xs text-amber-800">جم</span>
@@ -306,7 +300,9 @@ export default function InvoiceTotalsActions({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-gray-800 font-semibold">الإجمالي شامل الضريبة:</span>
+            <span className="text-gray-800 font-semibold">
+              الإجمالي شامل الضريبة:
+            </span>
             <span className="font-bold text-blue-900 flex items-center gap-1">
               {Number(netAmount).toFixed(fractions.frac)}
               <RiyalIcon color="currentColor" />
@@ -316,19 +312,24 @@ export default function InvoiceTotalsActions({
       </div>
 
       {/* زر الدفع - يظهر فقط للفواتير النقدية وليس لفواتير الشراء أو المردودات */}
-      {paymentMethod === "cash" && invoiceType !== 'purchase' && invoiceType !== 'purchase_return' && invoiceType !== 'sales_return' && (
-        <div className="mt-3 flex justify-start">
-          <Button
-            className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm"
-            onClick={() =>
-              router.push(`/dashboard/forms/invoices/invoice_payment?total=${netAmount}`)
-            }
-          >
-            <i className="bi bi-credit-card me-2"></i>
-            دفع
-          </Button>
-        </div>
-      )}
+      {paymentMethod === "cash" &&
+        invoiceType !== "purchase" &&
+        invoiceType !== "purchase_return" &&
+        invoiceType !== "sales_return" && (
+          <div className="mt-3 flex justify-start">
+            <Button
+              className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm"
+              onClick={() =>
+                router.push(
+                  `/dashboard/forms/invoices/invoice_payment?total=${netAmount}`,
+                )
+              }
+            >
+              <i className="bi bi-credit-card me-2"></i>
+              دفع
+            </Button>
+          </div>
+        )}
     </div>
   );
 }
