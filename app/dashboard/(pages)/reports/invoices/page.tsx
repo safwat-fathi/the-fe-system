@@ -1,5 +1,5 @@
 import { ArrowDownTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
-import InvoiceClientComponent from "./InvoiceClientComponent";
+import InvoiceClient from "./components/InvoiceClient";
 import invoiceService from "@/services/api/invoice.service";
 import { Suspense } from "react";
 import PrintButton from "@/components/PrintButton";
@@ -25,9 +25,14 @@ const INVOICE_STATUSES = [
 
 export const revalidate = 3600;
 
-export default async function InvoicesPage() {
-  // Fetch invoices on the server side
-  const invoices = await invoiceService.getAllInvoices();
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { page } = await searchParams;
+
+  const invoices = await invoiceService.getAllInvoices(Number(page) || 1);
 
   return (
     <div className="font-cairo space-y-4 p-4">
@@ -60,9 +65,9 @@ export default async function InvoicesPage() {
       </div>
 
       {/* Client component for interactive features */}
-      <Suspense fallback={<AppLoading />}>
-        <InvoiceClientComponent
-          initialInvoices={invoices}
+      <Suspense key={Number(page)} fallback={<AppLoading />}>
+        <InvoiceClient
+          initialInvoices={invoices?.results}
           invoiceTypes={INVOICE_TYPES}
           invoiceStatuses={INVOICE_STATUSES}
         />

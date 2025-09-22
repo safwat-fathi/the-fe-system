@@ -272,7 +272,7 @@ export default function InvoicePaymentPage() {
       
       // إعادة التوجيه
       if (inv > 0) {
-        router.push(`/dashboard/forms/invoices/sale?inv_id=${inv}`);
+        router.push(`/dashboard/forms/invoices/sale/${inv}`);
       } else {
         router.back();
       }

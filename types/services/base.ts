@@ -6,13 +6,10 @@ export interface ServiceResponse<T = any> {
 }
 
 export interface IPaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  results: T[];
+  count: number;
+  next: string | null;
+  previous: string | null;
 }
 
 export interface IParams {

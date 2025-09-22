@@ -31,17 +31,17 @@ import DataTable from "@/components/DataTable";
 import InvoiceAnalytics from "@/components/InvoiceAnalytics";
 import Link from "next/link";
 
-interface InvoiceClientComponentProps {
+interface InvoiceClientProps {
   initialInvoices: Invoice[];
   invoiceTypes: { key: string; label: string; color: string }[];
   invoiceStatuses: { key: string; label: string; color: string }[];
 }
 
-export default function InvoiceClientComponent({
+export default function InvoiceClient({
   initialInvoices,
   invoiceTypes,
   invoiceStatuses,
-}: InvoiceClientComponentProps) {
+}: InvoiceClientProps) {
   const fractions = useFractions() as { frac: number; frac2: number };
 
   // فلاتر
@@ -160,25 +160,25 @@ export default function InvoiceClientComponent({
       sortable: false,
       render: (value: any, row: Invoice) => (
         <div className="flex gap-2">
-          <Link href={`/dashboard/forms/invoices/sale?inv_id=${row.inv_id}`}>
+          <Link href={`/dashboard/forms/invoices/sale/${row.inv_id}`}>
             <Button
               isIconOnly
               size="sm"
               variant="light"
               // onPress={() =>
-              //   (window.location.href = `/dashboard/forms/invoices/sale?inv_id=${row.inv_id}`)
+              //   (window.location.href = `/dashboard/forms/invoices/sale/${row.inv_id}`)
               // }
             >
               <EyeIcon className="h-4 w-4 text-blue-500" />
             </Button>
           </Link>
-          <Link href={`/dashboard/forms/invoices/sale?inv_id=${row.inv_id}`}>
+          <Link href={`/dashboard/forms/invoices/sale/${row.inv_id}`}>
             <Button
               isIconOnly
               size="sm"
               variant="light"
               // onPress={() =>
-              //   (window.location.href = `/dashboard/forms/invoices/sale?inv_id=${row.inv_id}`)
+              //   (window.location.href = `/dashboard/forms/invoices/sale/${row.inv_id}`)
               // }
             >
               <PencilIcon className="h-4 w-4 text-yellow-500" />

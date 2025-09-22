@@ -106,7 +106,7 @@ export default async function DashboardPage() {
 
       <DashboardClient
         salesChartData={salesChartData}
-        invoices={invoicesData}
+        invoices={invoicesData?.results}
         branch={branch}
         year={year}
       />

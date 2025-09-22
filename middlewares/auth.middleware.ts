@@ -38,11 +38,11 @@ const authMiddleware: MiddlewareFactory = () => {
       // If no token, redirect to login (root path)
       if (!token) {
         // Don't redirect if we're already on the login page
-        if (pathname === "/") {
+        if (pathname === "/auth/login") {
           return NextResponse.next();
         }
 
-        const loginUrl = new URL("/", request.url);
+        const loginUrl = new URL("/auth/login", request.url);
         loginUrl.searchParams.set("redirect", pathname);
         return NextResponse.redirect(loginUrl);
       }
