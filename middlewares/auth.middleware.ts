@@ -13,7 +13,7 @@ const isPublicRoute = (pathname: string) => {
 };
 
 const authMiddleware: MiddlewareFactory = () => {
-  return async (request: NextRequest) => {
+	return async (request: NextRequest) => {
     const { pathname } = request.nextUrl;
 
     // Skip authentication for public routes
@@ -29,6 +29,11 @@ const authMiddleware: MiddlewareFactory = () => {
     try {
       // Get the authentication token
       const token = request.cookies.get(STORAGE_KEYS.AUTH_TOKEN)?.value;
+
+      // If token exists and user is on login page, redirect to dashboard
+      if (token && pathname === "/auth/login") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
 
       // If no token, redirect to login (root path)
       if (!token) {

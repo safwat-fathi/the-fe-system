@@ -39,7 +39,7 @@ export default async function InvoicesPage() {
         </div>
         <div className="flex gap-3">
           <Link
-            href="/dashboard/forms/invoices/Gold_invoice2?new=true"
+            href="/dashboard/forms/invoices/sale?new=true"
             className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700"
           >
             <PlusIcon className="h-4 w-4" />

@@ -29,6 +29,7 @@ import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
 import DataTable from "@/components/DataTable";
 import InvoiceAnalytics from "@/components/InvoiceAnalytics";
+import Link from "next/link";
 
 interface InvoiceClientComponentProps {
   initialInvoices: Invoice[];
@@ -159,26 +160,30 @@ export default function InvoiceClientComponent({
       sortable: false,
       render: (value: any, row: Invoice) => (
         <div className="flex gap-2">
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            onPress={() =>
-              (window.location.href = `/dashboard/forms/invoices/Gold_invoice2?inv_id=${row.inv_id}`)
-            }
-          >
-            <EyeIcon className="h-4 w-4 text-blue-500" />
-          </Button>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            onPress={() =>
-              (window.location.href = `/dashboard/forms/invoices/Gold_invoice2?inv_id=${row.inv_id}`)
-            }
-          >
-            <PencilIcon className="h-4 w-4 text-yellow-500" />
-          </Button>
+          <Link href={`/dashboard/forms/invoices/sale?inv_id=${row.inv_id}`}>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              // onPress={() =>
+              //   (window.location.href = `/dashboard/forms/invoices/sale?inv_id=${row.inv_id}`)
+              // }
+            >
+              <EyeIcon className="h-4 w-4 text-blue-500" />
+            </Button>
+          </Link>
+          <Link href={`/dashboard/forms/invoices/sale?inv_id=${row.inv_id}`}>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              // onPress={() =>
+              //   (window.location.href = `/dashboard/forms/invoices/sale?inv_id=${row.inv_id}`)
+              // }
+            >
+              <PencilIcon className="h-4 w-4 text-yellow-500" />
+            </Button>
+          </Link>
         </div>
       ),
     },

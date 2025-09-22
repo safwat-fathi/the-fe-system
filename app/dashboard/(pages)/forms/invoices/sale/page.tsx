@@ -1572,7 +1572,7 @@ export default function InvoicePage() {
 
     const targetInvoice = invoicesList[targetIndex];
     if (targetInvoice) {
-      router.push(`/dashboard/forms/invoices/Gold_invoice2?inv_id=${targetInvoice.inv_id}`);
+      router.push(`/dashboard/forms/invoices/sale?inv_id=${targetInvoice.inv_id}`);
     }
   };
 

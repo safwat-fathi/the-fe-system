@@ -14,15 +14,13 @@ export default function NotFound() {
           <div className="text-9xl font-bold text-primary-500 mb-4">404</div>
           <h1 className="text-3xl font-bold mb-2">الصفحة غير موجودة</h1>
           <p className="text-gray-600 mb-8">
-            عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها. قد تكون الصفحة قد تم حذفها أو نقلها.
+            عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها. قد تكون الصفحة
+            قد تم حذفها أو نقلها.
           </p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            href="/"
-            className="btn btn-primary w-full sm:w-auto"
-          >
+          <Link href="/dashboard" className="btn btn-primary w-full sm:w-auto">
             العودة إلى الصفحة الرئيسية
           </Link>
           {/* <Link

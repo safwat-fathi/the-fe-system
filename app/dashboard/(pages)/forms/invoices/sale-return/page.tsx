@@ -1042,7 +1042,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
 
     const targetInvoice = invoicesList[targetIndex];
     if (targetInvoice) {
-      router.push(`/dashboard/forms/invoices/Gold_invoice4?inv_id=${targetInvoice.inv_id}`);
+      router.push(`/dashboard/forms/invoices/sale-return?inv_id=${targetInvoice.inv_id}`);
     }
   };
 
