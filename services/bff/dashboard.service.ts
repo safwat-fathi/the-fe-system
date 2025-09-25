@@ -23,16 +23,6 @@ class DashboardService extends HttpService<any> {
 
   async getDashboardStats(): Promise<DashboardStats> {
     try {
-      // Get auth token from cookies
-      const cookieStore = await cookies();
-      const token = cookieStore.get(STORAGE_KEYS.AUTH_TOKEN)?.value;
-
-      // Set the token for authenticated requests in underlying services
-      if (token) {
-        // Note: We're not directly setting the token here since each service manages its own auth
-        // The HttpService base class handles token retrieval from cookies
-      }
-
       // Fetch all required data in parallel
       const [invoices, customers, categories, items, goldPrice] =
         await Promise.all([
@@ -42,11 +32,15 @@ class DashboardService extends HttpService<any> {
           itemService.getAllItems(),
           goldPriceService.getCurrentGoldPrice(),
         ]);
+      console.log(
+        "🚀 ~ :28 ~ DashboardService ~ getDashboardStats ~ invoices:",
+        invoices,
+      );
 
       // Calculate monthly sales
-      const monthlySales = await invoiceService.calculateMonthlySales(
-        invoices?.results as any,
-      );
+      // const monthlySales = await invoiceService.calculateMonthlySales(
+      //   invoices?.results as any,
+      // );
 
       return {
         invoiceCount: invoices?.count || 0,
@@ -54,7 +48,7 @@ class DashboardService extends HttpService<any> {
         itemCount: items.length,
         categoryCount: categories.length,
         goldPrice,
-        monthlySales,
+        // monthlySales,
       };
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);

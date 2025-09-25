@@ -38,7 +38,7 @@ export async function loginAction(
   let loginSuccess = false;
   let loginResult: LoginResult | null = null;
 
-	const requestOptions: RequestInit = {
+  const requestOptions: RequestInit = {
     signal: AbortSignal.timeout(30000), // 30 seconds
   };
 
@@ -51,19 +51,33 @@ export async function loginAction(
 
     if (response.success && response.data) {
       // Extract token and user data from response
-      const token = response.data.token;
+      const access_token = response.data.access;
+      const refresh_token = response.data.refresh;
 
-      if (!token) {
+      if (!access_token) {
         loginResult = {
           success: false,
           message: "بيانات تسجيل الدخول غير صحيحة",
         };
       } else {
-        // Set secure cookie with token
-        const expires = new Date(Date.now() + 1000 * 60 * 60); // 1 hour expiration
+        // Set secure cookie with access token
+        const accessTokenExpires = new Date(Date.now() + 1000 * 60 * 60); // 1 hour expiration
 
-        await setCookieAction(STORAGE_KEYS.AUTH_TOKEN, token, {
-          maxAge: expires.getTime() / 1000,
+        await setCookieAction(STORAGE_KEYS.ACCESS_TOKEN, access_token, {
+          maxAge: accessTokenExpires.getTime() / 1000,
+          path: "/",
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+        });
+
+        const refreshTokenExpires = new Date(
+          Date.now() + 1000 * 60 * 60 * 24 * 30,
+        ); // 30 day expiration
+
+        // Set secure cookie with refresh token
+        await setCookieAction(STORAGE_KEYS.REFRESH_TOKEN, refresh_token, {
+          maxAge: refreshTokenExpires.getTime() / 1000,
           path: "/",
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
@@ -122,9 +136,9 @@ export async function loginAction(
 }
 
 export async function onLogoutAction() {
-  (await cookies()).set(STORAGE_KEYS.AUTH_TOKEN, "", {
+  (await cookies()).set(STORAGE_KEYS.ACCESS_TOKEN, "", {
     maxAge: 0,
   });
 
-	redirect("/auth/login");
+  redirect("/auth/login");
 }

@@ -1,14 +1,24 @@
 import { HttpService } from "@/services/base";
-import { LoginRequest, LoginResponse, RegisterRequest, User } from "@/types/services/auth";
 
-class AuthService extends HttpService<User> {
+import {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+} from "@/types/services/auth";
+
+class AuthService extends HttpService {
   constructor() {
     super("");
   }
 
   async login(credentials: LoginRequest, requestOptions?: RequestInit) {
     try {
-      const response = await this.post<LoginResponse>("login/", credentials, undefined, requestOptions);
+      const response = await this.post<LoginResponse>(
+        "login/",
+        credentials,
+        undefined,
+        requestOptions,
+      );
 
       return response;
     } catch (error) {
@@ -25,15 +35,7 @@ class AuthService extends HttpService<User> {
   }
 
   async refreshToken() {
-    return this.post<LoginResponse>("/refresh", {});
-  }
-
-  async getProfile() {
-    return this.get<User>("/profile");
-  }
-
-  async updateProfile(data: Partial<User>) {
-    return this.put<User>("/profile", data);
+    return this.post<LoginResponse>("/token", {});
   }
 
   async resetPassword(token: string, password: string) {

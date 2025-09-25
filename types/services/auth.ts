@@ -4,18 +4,10 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
+  access: string;
+  refresh: string;
   success?: boolean;
   message?: string;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface RegisterRequest {

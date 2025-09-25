@@ -18,15 +18,13 @@ export default async function DashboardPage() {
   const year = cookieStore.get("selectedYear")?.value || "";
 
   const dashboardData = await dashboardService.getDashboardStats();
-
-  // Fetch invoices data for the client component
-  const invoicesData = await invoiceService.getAllInvoices();
+  console.log("🚀 ~ :21 ~ DashboardPage ~ dashboardData:", dashboardData);
 
   // Fill in missing monthly sales data with zeros
-  const monthlySales =
-    dashboardData.monthlySales.length === 12
-      ? dashboardData.monthlySales
-      : new Array(12).fill(0);
+  // const monthlySales =
+  //   dashboardData.monthlySales.length === 12
+  //     ? dashboardData.monthlySales
+  //     : new Array(12).fill(0);
 
   const salesChartData = {
     labels: [
@@ -46,7 +44,7 @@ export default async function DashboardPage() {
     datasets: [
       {
         label: "المبيعات",
-        data: monthlySales,
+        // data: monthlySales,
         fill: false,
         borderColor: "#3b82f6",
         backgroundColor: "rgba(59, 130, 246, 0.1)",
@@ -66,7 +64,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="الفواتير"
           icon="🧾"
@@ -91,25 +89,25 @@ export default async function DashboardPage() {
           value={dashboardData.categoryCount}
           href="/dashboard/basic/categories"
         />
-      </div>
+      </div> */}
 
       {/* Gold Price Card */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <StatCard
           title="سعر الذهب للجرام"
           icon="💰"
           value={dashboardData.goldPrice ? `${dashboardData.goldPrice} ﷼` : "-"}
         />
-      </div>
+      </div> */}
 
       {/* Pass data to client component for interactive charts */}
 
-      <DashboardClient
+      {/* <DashboardClient
         salesChartData={salesChartData}
         invoices={invoicesData?.results}
         branch={branch}
         year={year}
-      />
+      /> */}
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4">

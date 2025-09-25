@@ -28,7 +28,7 @@ const authMiddleware: MiddlewareFactory = () => {
 
     try {
       // Get the authentication token
-      const token = request.cookies.get(STORAGE_KEYS.AUTH_TOKEN)?.value;
+      const token = request.cookies.get(STORAGE_KEYS.ACCESS_TOKEN)?.value;
 
       // If token exists and user is on login page, redirect to dashboard
       if (token && pathname === "/auth/login") {
