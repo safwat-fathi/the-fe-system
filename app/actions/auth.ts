@@ -38,7 +38,7 @@ export async function loginAction(
   let loginSuccess = false;
   let loginResult: LoginResult | null = null;
 
-	const requestOptions: RequestInit = {
+  const requestOptions: RequestInit = {
     signal: AbortSignal.timeout(30000), // 30 seconds
   };
 
@@ -50,25 +50,36 @@ export async function loginAction(
     );
 
     if (response.success && response.data) {
-      // Extract token and user data from response
-      const token = response.data.token;
+      // Extract token information from response
+      const { access, refresh, token: legacyToken } = response.data;
+      const accessToken = access || legacyToken;
+      const refreshToken = refresh;
 
-      if (!token) {
+      if (!accessToken) {
         loginResult = {
           success: false,
           message: "بيانات تسجيل الدخول غير صحيحة",
         };
       } else {
-        // Set secure cookie with token
-        const expires = new Date(Date.now() + 1000 * 60 * 60); // 1 hour expiration
-
-        await setCookieAction(STORAGE_KEYS.AUTH_TOKEN, token, {
-          maxAge: expires.getTime() / 1000,
+        // Store the access token in an HttpOnly cookie
+        await setCookieAction(STORAGE_KEYS.AUTH_TOKEN, accessToken, {
+          maxAge: 60 * 60, // 1 hour
           path: "/",
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
         });
+
+        // Persist refresh token if it is available
+        if (refreshToken) {
+          await setCookieAction(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, {
+            maxAge: 7 * 24 * 60 * 60, // 7 days
+            path: "/",
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+          });
+        }
 
         // Mark login as successful
         loginSuccess = true;
