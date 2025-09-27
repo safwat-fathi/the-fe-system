@@ -40,21 +40,24 @@ const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
     <nav className="flex mb-4" aria-label="Breadcrumb">
       <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
         <li className="inline-flex items-center">
-          <Link 
-            href="/dashboard" 
+          <Link
+            href=""
             className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600"
           >
             Dashboard
           </Link>
         </li>
-        
+
         {breadcrumbs.map((item, index) => (
-          <li key={index} aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}>
+          <li
+            key={index}
+            aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}
+          >
             <div className="flex items-center">
               <span className="mx-2 text-gray-400">/</span>
               {item.href ? (
-                <Link 
-                  href={item.href} 
+                <Link
+                  href={item.href}
                   className="text-sm font-medium text-gray-700 hover:text-primary-600"
                 >
                   {item.name}

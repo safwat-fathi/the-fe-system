@@ -5,30 +5,30 @@ import { NextRequest, NextResponse } from "next/server";
 // Define route permissions mapping
 const ROUTE_PERMISSIONS: Record<string, string[]> = {
   // Dashboard permissions
-  "/dashboard": ["view_dashboard"],
-  
+  "": ["view_dashboard"],
+
   // User management permissions
   "/users": ["manage_users"],
   "/users/*": ["manage_users"],
-  
+
   // Admin panel permissions
   "/admin": ["admin_access"],
   "/admin/*": ["admin_access"],
-  
+
   // Invoice management permissions
   "/invoices": ["view_invoices"],
   "/invoices/*": ["view_invoices"],
   "/create-invoice": ["create_invoice"],
   "/edit-invoice/*": ["edit_invoice"],
-  
+
   // Customer management permissions
   "/customers": ["view_customers"],
   "/customers/*": ["view_customers"],
-  
+
   // Item management permissions
   "/items": ["view_items"],
   "/items/*": ["view_items"],
-  
+
   // Settings permissions
   "/settings": ["manage_settings"],
   "/settings/*": ["manage_settings"],

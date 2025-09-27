@@ -1,0 +1,38 @@
+"use client";
+
+import { PrintButton } from "@/components";
+import { ArrowDownTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
+
+const InvoicesHeader = () => {
+	return (
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800">تقارير الفواتير</h1>
+        <p className="text-gray-500 mt-1">إدارة وعرض جميع الفواتير</p>
+      </div>
+      <div className="flex gap-3">
+        <Link
+          href="/forms/invoices/sale?new=true"
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700"
+        >
+          <PlusIcon className="h-4 w-4" />
+          إضافة فاتورة
+        </Link>
+        <PrintButton />
+        <button
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700"
+          onClick={() => {
+            // Handle export
+            alert("تم تصدير البيانات بنجاح");
+          }}
+        >
+          <ArrowDownTrayIcon className="h-4 w-4" />
+          تصدير
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default InvoicesHeader;

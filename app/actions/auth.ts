@@ -129,7 +129,7 @@ export async function loginAction(
 
   // Redirect after successful login or return error result
   if (loginSuccess) {
-    redirect("/dashboard");
+    redirect("");
   } else {
     return loginResult as LoginResult;
   }

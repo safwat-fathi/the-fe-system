@@ -7,14 +7,15 @@ import {
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 
-interface GetAllInvoicesParams {
-  page?: number;
-  xcomp_id?: number;
-  xyear_id?: number;
+export interface GetAllInvoicesParams {
+  page?: string;
+  xcom_id?: string;
+  xyear_id?: string;
   xtrans_type?: TransTypes;
   xinv_id?: InvoiceTypes;
   xfrom_date?: string;
   xto_date?: string;
+  xinv_type?: InvoiceTypes;
 }
 
 class InvoiceService extends HttpService<Invoice> {
@@ -27,24 +28,21 @@ class InvoiceService extends HttpService<Invoice> {
   ): Promise<IPaginatedResponse<Invoice> | null> {
     try {
       const response = await this.get<IPaginatedResponse<Invoice>>(
-        "invoices_list",
+        "invoices_list/",
         {
           page: params?.page || 1,
-          xcomp_id: params?.xcomp_id || 0,
+          xcom_id: params?.xcom_id || 0,
           xyear_id: params?.xyear_id || 0,
           xtrans_type: params?.xtrans_type || 0,
           xinv_id: params?.xinv_id || 0,
-          xfrom_date: params?.xfrom_date || "01/01/2000",
-          xto_date: params?.xto_date || "01/01/2025",
+          xfrom_date: params?.xfrom_date || "0",
+          xto_date: params?.xto_date || "0",
+          xinv_type: params?.xinv_type || 1,
         },
         {
           cache: "force-cache",
           next: { tags: ["invoices"] },
         },
-      );
-      console.log(
-        "🚀 ~ :90 ~ InvoiceService ~ getAllInvoices ~ response:",
-        response,
       );
 
       if (response.success) {

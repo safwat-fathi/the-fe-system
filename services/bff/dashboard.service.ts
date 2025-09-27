@@ -6,9 +6,11 @@ import categoryService from "../api/category.service";
 import itemService from "../api/item.service";
 import goldPriceService from "../api/gold-price.service";
 import { HttpService } from "@/services/base";
+import { Invoice } from "@/types/models/invoice";
+import { IPaginatedResponse } from "@/types/services/base";
 
 interface DashboardStats {
-  invoiceCount: number;
+  invoices: IPaginatedResponse<Invoice> | null;
   customerCount: number;
   itemCount: number;
   categoryCount: number;
@@ -32,23 +34,19 @@ class DashboardService extends HttpService<any> {
           itemService.getAllItems(),
           goldPriceService.getCurrentGoldPrice(),
         ]);
-      console.log(
-        "🚀 ~ :28 ~ DashboardService ~ getDashboardStats ~ invoices:",
-        invoices,
-      );
 
       // Calculate monthly sales
-      // const monthlySales = await invoiceService.calculateMonthlySales(
-      //   invoices?.results as any,
-      // );
+      const monthlySales = await invoiceService.calculateMonthlySales(
+        invoices?.results as any,
+      );
 
       return {
-        invoiceCount: invoices?.count || 0,
+        invoices,
         customerCount: customers.length,
         itemCount: items.length,
         categoryCount: categories.length,
         goldPrice,
-        // monthlySales,
+        monthlySales,
       };
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
