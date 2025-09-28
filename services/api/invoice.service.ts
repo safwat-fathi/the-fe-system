@@ -27,6 +27,10 @@ class InvoiceService extends HttpService<Invoice> {
     params?: GetAllInvoicesParams,
   ): Promise<IPaginatedResponse<Invoice> | null> {
     try {
+      // Generate cache tags based on query parameters
+      const cacheTags = this.generateInvoiceCacheTags(params);
+      console.log("🚀 ~ :32 ~ InvoiceService ~ getAllInvoices ~ cacheTags:", cacheTags)
+      
       const response = await this.get<IPaginatedResponse<Invoice>>(
         "invoices_list/",
         {
@@ -41,7 +45,7 @@ class InvoiceService extends HttpService<Invoice> {
         },
         {
           cache: "force-cache",
-          next: { tags: ["invoices"] },
+          next: { tags: cacheTags },
         },
       );
 
@@ -54,6 +58,26 @@ class InvoiceService extends HttpService<Invoice> {
       console.error("Error fetching invoices:", error);
       throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
     }
+  }
+
+  private generateInvoiceCacheTags(params?: GetAllInvoicesParams): string[] {
+    const baseTags = ["invoices"];
+    
+    if (!params) return baseTags;
+    
+    const tags = [...baseTags];
+    
+    // Add tags for each parameter that is provided
+    if (params.page) tags.push(`invoices-page-${params.page}`);
+    if (params.xcom_id) tags.push(`invoices-xcom_id-${params.xcom_id}`);
+    if (params.xyear_id) tags.push(`invoices-xyear_id-${params.xyear_id}`);
+    if (params.xtrans_type) tags.push(`invoices-xtrans_type-${params.xtrans_type}`);
+    if (params.xinv_id) tags.push(`invoices-xinv_id-${params.xinv_id}`);
+    if (params.xfrom_date) tags.push(`invoices-xfrom_date-${params.xfrom_date}`);
+    if (params.xto_date) tags.push(`invoices-xto_date-${params.xto_date}`);
+    if (params.xinv_type) tags.push(`invoices-xinv_type-${params.xinv_type}`);
+    
+    return tags;
   }
 
   async getInvoiceById(

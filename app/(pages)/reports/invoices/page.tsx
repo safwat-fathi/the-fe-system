@@ -9,16 +9,17 @@ import Link from "next/link";
 import AppLoading from "@/components/AppLoading";
 import AppPagination from "../../../../components/AppPagination";
 import InvoicesHeader from "./components/InvoicesHeader";
+import { TransTypes } from "@/types/models/invoice";
 
 export const revalidate = 3600;
 
 // أنواع الفواتير
 const INVOICE_TYPES = [
-  { key: "all", label: "جميع الفواتير", color: "default" },
-  { key: "purchase", label: "فواتير الشراء", color: "primary" },
-  { key: "sales", label: "فواتير البيع", color: "success" },
-  { key: "purchase_return", label: "مردود الشراء", color: "warning" },
-  { key: "sales_return", label: "مردود البيع", color: "danger" },
+  { key: "0", label: "جميع الفواتير", color: "default" },
+  { key: TransTypes.PURCHASE, label: "فواتير الشراء", color: "primary" },
+  { key: TransTypes.SALES, label: "فواتير البيع", color: "success" },
+  { key: TransTypes.PURCHASE_RETURN, label: "مردود الشراء", color: "warning" },
+  { key: TransTypes.SALES_RETURN, label: "مردود البيع", color: "danger" },
 ];
 
 // حالات الفواتير
@@ -35,8 +36,10 @@ export default async function InvoicesPage({
   searchParams: Promise<GetAllInvoicesParams>;
 }) {
   const queryParams = await searchParams;
+  console.log("🚀 ~ :39 ~ InvoicesPage ~ queryParams:", queryParams);
 
   const invoices = await invoiceService.getAllInvoices(queryParams);
+  console.log("🚀 ~ :42 ~ InvoicesPage ~ invoices count:", invoices?.count);
 
   const count = invoices?.count || 0;
   const itemsPerPage = 20;

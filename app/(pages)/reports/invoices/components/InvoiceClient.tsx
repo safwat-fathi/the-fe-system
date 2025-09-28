@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Input,
   Pagination,
@@ -28,7 +28,8 @@ import useFractions from "@/utilities/useFractions";
 import DataTable from "@/components/DataTable";
 import InvoiceAnalytics from "@/components/InvoiceAnalytics";
 import Link from "next/link";
-import { Invoice } from "@/types/models/invoice";
+import { Invoice, InvoiceTypes, TransTypes } from "@/types/models/invoice";
+import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import { GetAllInvoicesParams } from "@/services/api/invoice.service";
 
 interface InvoiceClientProps {
@@ -43,15 +44,55 @@ export default function InvoiceClient({
   totalInvoices,
   invoiceTypes,
 }: InvoiceClientProps) {
-  const fractions = useFractions() as { frac: number; frac2: number };
-
-  const [params, setParams] = useQueryStates({
-    search: parseAsString.withDefault(""),
-    type: parseAsString.withDefault("all"),
-    start_date: parseAsString.withDefault(""),
-    end_date: parseAsString.withDefault(""),
-    page: parseAsInteger.withDefault(1),
+  const { params, setParams } = useQueryParams<{
+    xinv_id: string;
+    xfrom_date: string;
+    xto_date: string;
+    xtrans_type: string;
+  }>(["xinv_id", "xfrom_date", "xto_date", "xtrans_type"], {
+    defaultValues: {
+      xinv_id: "",
+      xfrom_date: "",
+      xto_date: "",
+      xtrans_type: "",
+    },
+    schema: {
+      xinv_id: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "",
+      },
+      xfrom_date: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "",
+      },
+      xto_date: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "",
+      },
+      xtrans_type: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "",
+      },
+    },
+    pushMode: "replace",
+    refreshOnChange: true,
+    debounce: 350, // don't navigate until user stops typing for 350ms
   });
+
+  const fractions = useFractions() as { frac: number; frac2: number };
+  const [searchQ, setSearchQ] = useState(params.xinv_id || "");
+
+  // const [params, setParams] = useQueryStates({
+  //   search: parseAsString.withDefault(""),
+  //   type: parseAsString.withDefault("all"),
+  //   start_date: parseAsString.withDefault(""),
+  //   end_date: parseAsString.withDefault(""),
+  //   page: parseAsInteger.withDefault(1),
+  // });
 
   const [activeTab, setActiveTab] = useState("table");
 
@@ -142,13 +183,18 @@ export default function InvoiceClient({
 
   const clearFilters = () => {
     setParams({
-      search: null,
-      type: null,
-      start_date: null,
-      end_date: null,
-      page: null,
+      xfrom_date: "",
+      xto_date: "",
+      xtrans_type: "0",
+      xinv_id: "0",
     });
   };
+
+  // useEffect(() => {
+  //   // if (searchQ) {
+  //   setParams({ xinv_id: searchQ });
+  //   // }
+  // }, [searchQ]);
 
   return (
     <>
@@ -158,17 +204,20 @@ export default function InvoiceClient({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Input
               placeholder="البحث بالرقم أو الاسم..."
-              value={params.search}
-              onChange={(e) => setParams({ search: e.target.value })}
+              value={searchQ}
+              onChange={(e) => {
+                setSearchQ(e.target.value);
+                setParams({ xinv_id: e.target.value });
+              }}
               startContent={<FunnelIcon className="h-4 w-4" />}
               className="input-field"
             />
 
             <Select
               placeholder="نوع الفاتورة"
-              selectedKeys={[params.type]}
+              selectedKeys={[params.xtrans_type]}
               onSelectionChange={(keys) =>
-                setParams({ type: Array.from(keys)[0] as string })
+                setParams({ xtrans_type: Array.from(keys)[0] as string })
               }
               className="input-field"
             >
@@ -182,16 +231,16 @@ export default function InvoiceClient({
             <Input
               type="date"
               placeholder="من تاريخ"
-              value={params.start_date}
-              onChange={(e) => setParams({ start_date: e.target.value })}
+              value={params.xfrom_date}
+              onChange={(e) => setParams({ xfrom_date: e.target.value })}
               className="input-field"
             />
 
             <Input
               type="date"
               placeholder="إلى تاريخ"
-              value={params.end_date}
-              onChange={(e) => setParams({ end_date: e.target.value })}
+              value={params.xto_date}
+              onChange={(e) => setParams({ xto_date: e.target.value })}
               className="input-field"
             />
 

@@ -1,15 +1,18 @@
 "use client";
 
 import { loginAction } from "@/app/actions/auth";
-import { loginUser } from "@/utilities";
 import { Form, Input, Spacer, Button } from "@heroui/react";
+import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 
 const LoginForm = () => {
   const [state, action, pending] = useActionState(loginAction, undefined);
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/dashboard"; // default redirect
 
   return (
     <Form className="flex flex-col gap-4" action={action}>
+      <input type="hidden" name="redirect" value={redirectPath} />
       <Input
         name="username"
         label="اسم المستخدم"

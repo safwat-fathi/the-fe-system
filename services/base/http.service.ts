@@ -99,6 +99,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       const authHeaders = await this._getAuthHeaders();
       const urlParams = createParams(params || {});
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
+      console.log("🚀 ~ :102 ~ HttpService ~ _request ~ fullURL:", fullURL);
 
       const requestOptions: RequestInit = {
         credentials: "include",

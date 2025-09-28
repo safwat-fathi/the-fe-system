@@ -5,14 +5,16 @@ import { loginSchema } from "@/utilities/schemas/login.schema";
 
 import { setCookieAction } from "./cookie-store";
 import { STORAGE_KEYS } from "@/constants";
-import { User } from "@/types/services/auth";
 import { redirect } from "next/navigation";
 import { authService } from "@/services/api";
 import { cookies } from "next/headers";
 interface LoginResult {
   success: boolean;
   message?: string;
-  user?: User;
+  data?: {
+    access: string;
+    refresh: string;
+  };
 }
 
 export async function loginAction(
@@ -21,6 +23,7 @@ export async function loginAction(
 ): Promise<LoginResult | void> {
   // Validate form data using Zod schema
   const result = loginSchema.safeParse(formData);
+  const redirectPath = (formData.get("redirect") as string) || "/";
 
   if (!result.success) {
     // Return validation errors
@@ -129,7 +132,7 @@ export async function loginAction(
 
   // Redirect after successful login or return error result
   if (loginSuccess) {
-    redirect("");
+    redirect(redirectPath);
   } else {
     return loginResult as LoginResult;
   }

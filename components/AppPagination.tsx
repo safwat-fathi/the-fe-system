@@ -8,11 +8,18 @@ type Props = { total: number };
 
 const AppPagination = ({ total }: Props) => {
   const { params, setParam } = useQueryParams(["page"], {
+    defaultValues: {
+      page: 1,
+    },
+    schema: {
+      page: {
+        parse: (value) => Number(value) || 1,
+        serialize: (value) => String(value),
+        default: 1,
+      },
+    },
     refreshOnChange: true,
-    defaultValues: { page: 1 },
-    pushMode: "replace",
   });
-  console.log("🚀 ~ :15 ~ AppPagination ~ params:", typeof params.page)
 
   return (
     <div className="flex items-center justify-start gap-4 mt-4">
@@ -21,7 +28,7 @@ const AppPagination = ({ total }: Props) => {
         size="sm"
         onPress={() => setParam("page", Number(params.page) - 1)}
         startContent={<ArrowRightIcon className="w-4 h-4" />}
-        disabled={Number(params.page) === 1}
+        disabled={Number(params.page) === 1 || total === 0}
       >
         الصفحة السابقة
       </Button>
@@ -30,7 +37,8 @@ const AppPagination = ({ total }: Props) => {
         page={Number(params.page) || 1}
         total={total}
         onChange={(newPage) =>
-          (Number(params.page) !== newPage || newPage >= 1) && setParam("page", newPage)
+          (Number(params.page) !== newPage || newPage >= 1) &&
+          setParam("page", newPage)
         }
         initialPage={1}
         showShadow
@@ -41,7 +49,7 @@ const AppPagination = ({ total }: Props) => {
         endContent={<ArrowLeftIcon className="w-4 h-4" />}
         onPress={() => setParam("page", Number(params.page) + 1)}
         className="responsive-btn"
-        disabled={Number(params.page) === total}
+        disabled={Number(params.page) === total || total === 0}
       >
         الصفحة التالية
       </Button>
