@@ -4,8 +4,10 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+
   access: string;
   refresh: string;
+
   success?: boolean;
   message?: string;
 }

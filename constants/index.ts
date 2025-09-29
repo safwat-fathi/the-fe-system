@@ -63,7 +63,9 @@ export const VOUCHER_TYPES = {
 
 // Local Storage Keys
 export const STORAGE_KEYS = {
+
   ACCESS_TOKEN: "auth_token",
+
   REFRESH_TOKEN: "refresh_token",
   SESSION: "session",
   USER_DATA: "user_data",
