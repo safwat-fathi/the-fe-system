@@ -20,11 +20,11 @@ export default function NotFound() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/dashboard" className="btn btn-primary w-full sm:w-auto">
+          <Link href="/" className="btn btn-primary w-full sm:w-auto">
             العودة إلى الصفحة الرئيسية
           </Link>
           {/* <Link
-            href="/dashboard"
+            href=""
             className="w-full sm:w-auto"
           >
             الذهاب إلى لوحة التحكم

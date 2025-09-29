@@ -36,41 +36,46 @@ export default function DataTable({
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Filter data based on search term
-  const filteredData = data.filter((row) => {
-    if (!searchTerm) return true;
-    return Object.values(row).some((value) =>
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+  // const filteredData = data.filter((row) => {
+  //   if (!searchTerm) return true;
+  //   return Object.values(row).some((value) =>
+  //     String(value).toLowerCase().includes(searchTerm.toLowerCase())
+  //   );
+  // });
 
   // Sort data
-  const sortedData = [...filteredData].sort((a, b) => {
-    if (!sortColumn) return 0;
-    
-    const aValue = a[sortColumn];
-    const bValue = b[sortColumn];
-    
-    if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-    if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
+  // const sortedData = [...filteredData].sort((a, b) => {
+  //   if (!sortColumn) return 0;
 
-  const handleSort = (columnKey: string) => {
-    if (sortColumn === columnKey) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(columnKey);
-      setSortDirection("asc");
-    }
-  };
+  //   const aValue = a[sortColumn];
+  //   const bValue = b[sortColumn];
+
+  //   if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+  //   if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+  //   return 0;
+  // });
+
+  // const handleSort = (columnKey: string) => {
+  //   if (sortColumn === columnKey) {
+  //     setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+  //   } else {
+  //     setSortColumn(columnKey);
+  //     setSortDirection("asc");
+  //   }
+  // };
 
   const getSortIcon = (columnKey: string) => {
-    if (sortColumn !== columnKey) return <ArrowsUpDownIcon className="h-4 w-4 text-gray-400" />;
-    return sortDirection === "asc" ? <ChevronUpIcon className="h-4 w-4 text-blue-500" /> : <ChevronDownIcon className="h-4 w-4 text-blue-500" />;
+    if (sortColumn !== columnKey)
+      return <ArrowsUpDownIcon className="h-4 w-4 text-gray-400" />;
+    return sortDirection === "asc" ? (
+      <ChevronUpIcon className="h-4 w-4 text-blue-500" />
+    ) : (
+      <ChevronDownIcon className="h-4 w-4 text-blue-500" />
+    );
   };
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`p-4 space-y-4 ${className}`}>
       {/* Header */}
       {title && (
         <div className="flex items-center justify-between">
@@ -87,12 +92,14 @@ export default function DataTable({
                 placeholder="البحث..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+                startContent={
+                  <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                }
                 className="input-field"
               />
             </div>
           )}
-          
+
           {filterable && (
             <div className="flex gap-2">
               <Button
@@ -123,7 +130,7 @@ export default function DataTable({
               <TableColumn
                 key={column.key}
                 className={`${sortable && column.sortable ? "cursor-pointer select-none" : ""}`}
-                onClick={() => sortable && column.sortable && handleSort(column.key)}
+                // onClick={() => sortable && column.sortable && handleSort(column.key)}
               >
                 <div className="flex items-center gap-2">
                   <span>{column.label}</span>
@@ -133,18 +140,23 @@ export default function DataTable({
             ))}
           </TableHeader>
           <TableBody>
-            {sortedData.length === 0 ? (
+            {data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-8 text-gray-500">
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-8 text-gray-500"
+                >
                   لا توجد بيانات متاحة
                 </TableCell>
               </TableRow>
             ) : (
-              sortedData.map((row, index) => (
+              data.map((row, index) => (
                 <TableRow key={index}>
                   {columns.map((column) => (
                     <TableCell key={column.key}>
-                      {column.render ? column.render(row[column.key], row) : row[column.key]}
+                      {column.render
+                        ? column.render(row[column.key], row)
+                        : row[column.key]}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -156,10 +168,8 @@ export default function DataTable({
 
       {/* Summary */}
       <div className="flex items-center justify-between text-sm text-gray-500">
-        <span>إجمالي النتائج: {sortedData.length}</span>
-        {searchTerm && (
-          <span>نتائج البحث عن: "{searchTerm}"</span>
-        )}
+        <span>إجمالي النتائج: {data.length}</span>
+        {searchTerm && <span>نتائج البحث عن: "{searchTerm}"</span>}
       </div>
     </div>
   );

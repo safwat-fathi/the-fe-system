@@ -1,6 +1,7 @@
 import { NextMiddleware } from "next/server";
-import authMiddleware from "./middlewares/auth.middleware";
 import { stackMiddlewares } from "./middlewares/stackHandler";
+import authMiddleware from "./middlewares/auth.middleware";
+// import rbacMiddleware from "./middlewares/rbac.middleware";
 
 export type MiddlewareFactory = (middleware: NextMiddleware) => NextMiddleware;
 

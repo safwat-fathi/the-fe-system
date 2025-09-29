@@ -44,7 +44,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
   private async _getAuthHeaders(): Promise<HeadersInit> {
     if (!this._token) {
-      this._token = await getCookieAction(STORAGE_KEYS.AUTH_TOKEN);
+      this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
     }
 
     return this._token
@@ -99,6 +99,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       const authHeaders = await this._getAuthHeaders();
       const urlParams = createParams(params || {});
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
+      console.log("🚀 ~ :102 ~ HttpService ~ _request ~ fullURL:", fullURL);
 
       const requestOptions: RequestInit = {
         credentials: "include",

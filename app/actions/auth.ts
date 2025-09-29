@@ -5,14 +5,16 @@ import { loginSchema } from "@/utilities/schemas/login.schema";
 
 import { setCookieAction } from "./cookie-store";
 import { STORAGE_KEYS } from "@/constants";
-import { User } from "@/types/services/auth";
 import { redirect } from "next/navigation";
 import { authService } from "@/services/api";
 import { cookies } from "next/headers";
 interface LoginResult {
   success: boolean;
   message?: string;
-  user?: User;
+  data?: {
+    access: string;
+    refresh: string;
+  };
 }
 
 export async function loginAction(
@@ -21,6 +23,7 @@ export async function loginAction(
 ): Promise<LoginResult | void> {
   // Validate form data using Zod schema
   const result = loginSchema.safeParse(formData);
+  const redirectPath = (formData.get("redirect") as string) || "/";
 
   if (!result.success) {
     // Return validation errors
@@ -50,20 +53,37 @@ export async function loginAction(
     );
 
     if (response.success && response.data) {
-      // Extract token information from response
-      const { access, refresh, token: legacyToken } = response.data;
-      const accessToken = access || legacyToken;
-      const refreshToken = refresh;
 
-      if (!accessToken) {
+      // Extract token and user data from response
+      const access_token = response.data.access;
+      const refresh_token = response.data.refresh;
+
+      if (!access_token) {
         loginResult = {
           success: false,
           message: "بيانات تسجيل الدخول غير صحيحة",
         };
       } else {
-        // Store the access token in an HttpOnly cookie
-        await setCookieAction(STORAGE_KEYS.AUTH_TOKEN, accessToken, {
-          maxAge: 60 * 60, // 1 hour
+
+        // Set secure cookie with access token
+        const accessTokenExpires = new Date(Date.now() + 1000 * 60 * 60); // 1 hour expiration
+
+        await setCookieAction(STORAGE_KEYS.ACCESS_TOKEN, access_token, {
+          maxAge: accessTokenExpires.getTime() / 1000,
+          path: "/",
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+        });
+
+        const refreshTokenExpires = new Date(
+          Date.now() + 1000 * 60 * 60 * 24 * 30,
+        ); // 30 day expiration
+
+        // Set secure cookie with refresh token
+        await setCookieAction(STORAGE_KEYS.REFRESH_TOKEN, refresh_token, {
+          maxAge: refreshTokenExpires.getTime() / 1000,
+
           path: "/",
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
@@ -126,16 +146,16 @@ export async function loginAction(
 
   // Redirect after successful login or return error result
   if (loginSuccess) {
-    redirect("/dashboard");
+    redirect(redirectPath);
   } else {
     return loginResult as LoginResult;
   }
 }
 
 export async function onLogoutAction() {
-  (await cookies()).set(STORAGE_KEYS.AUTH_TOKEN, "", {
+  (await cookies()).set(STORAGE_KEYS.ACCESS_TOKEN, "", {
     maxAge: 0,
   });
 
-	redirect("/auth/login");
+  redirect("/auth/login");
 }

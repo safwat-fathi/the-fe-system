@@ -1,9 +1,10 @@
 import { HttpService } from "@/services/base";
-import { API_ENDPOINTS } from "@/utilities/api";
+import { Customer } from "@/types/models/customer";
 
-interface Customer {
-  id: number;
-  // Add other customer properties as needed
+interface GetCustomerParams {
+  xcomp_id: number;
+  xcust_type?: number;
+  xcust_code?: number;
 }
 
 class CustomerService extends HttpService<Customer> {
@@ -11,13 +12,21 @@ class CustomerService extends HttpService<Customer> {
     super("");
   }
 
-  async getAllCustomers(): Promise<Customer[]> {
+  async getAllCustomers(params?: GetCustomerParams): Promise<Customer[]> {
     try {
-      const response = await this.get<Customer[]>("customers_list", undefined, {
-        cache: "force-cache",
-        next: { tags: ["customers"] },
-      });
-      
+      const response = await this.get<Customer[]>(
+        "customers_list",
+        {
+          xcomp_id: params?.xcomp_id || 0,
+          xcust_type: params?.xcust_type || 0,
+          xcust_code: params?.xcust_code || 0,
+        },
+        {
+          cache: "force-cache",
+          next: { tags: ["customers"] },
+        },
+      );
+
       if (response.success) {
         if (Array.isArray(response.data)) {
           return response.data;
@@ -25,7 +34,7 @@ class CustomerService extends HttpService<Customer> {
           return (response.data as any).results;
         }
       }
-      
+
       return [];
     } catch (error) {
       console.error("Error fetching customers:", error);
