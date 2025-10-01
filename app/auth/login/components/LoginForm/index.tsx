@@ -8,7 +8,7 @@ import { useActionState } from "react";
 const LoginForm = () => {
   const [state, action, pending] = useActionState(loginAction, undefined);
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect") || "/dashboard"; // default redirect
+  const redirectPath = searchParams.get("redirect") || "/"; // default redirect
 
   return (
     <Form className="flex flex-col gap-4" action={action}>

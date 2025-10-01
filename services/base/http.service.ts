@@ -23,7 +23,7 @@ export interface ServiceResponse<T = any> {
 }
 
 export default class HttpService<T = any> extends HttpServiceAbstract<T> {
-  private readonly _baseUrl: string;
+  private readonly _baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   private _token: string | undefined = undefined;
   private readonly _defaultOptions: RequestInit;
   private _isRefreshing = false;
@@ -31,8 +31,12 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
   constructor(url: string, timeout = 10000) {
     super();
-    // this._baseUrl = CONSTANTS.BASE_URL + url;
-    this._baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL + url;
+
+    if (!this._baseUrl) {
+      throw new Error("API_BASE_URL is not defined");
+    }
+
+    this._baseUrl += url;
 
     this._defaultOptions = {
       signal: AbortSignal.timeout(timeout),

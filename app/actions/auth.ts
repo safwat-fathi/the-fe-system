@@ -53,7 +53,6 @@ export async function loginAction(
     );
 
     if (response.success && response.data) {
-
       // Extract token and user data from response
       const access_token = response.data.access;
       const refresh_token = response.data.refresh;
@@ -64,7 +63,6 @@ export async function loginAction(
           message: "بيانات تسجيل الدخول غير صحيحة",
         };
       } else {
-
         // Set secure cookie with access token
         const accessTokenExpires = new Date(Date.now() + 1000 * 60 * 60); // 1 hour expiration
 
@@ -83,23 +81,11 @@ export async function loginAction(
         // Set secure cookie with refresh token
         await setCookieAction(STORAGE_KEYS.REFRESH_TOKEN, refresh_token, {
           maxAge: refreshTokenExpires.getTime() / 1000,
-
           path: "/",
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
         });
-
-        // Persist refresh token if it is available
-        if (refreshToken) {
-          await setCookieAction(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, {
-            maxAge: 7 * 24 * 60 * 60, // 7 days
-            path: "/",
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-          });
-        }
 
         // Mark login as successful
         loginSuccess = true;
