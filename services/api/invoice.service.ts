@@ -143,8 +143,8 @@ class InvoiceService extends HttpService<Invoice> {
       // }
 
       return {
-        // invoice,
-        // details: invoiceDetails,
+        invoice: invoiceResponse.data,
+        details: [],
       };
     } catch (error) {
       console.error("Error fetching invoice by ID:", error);
