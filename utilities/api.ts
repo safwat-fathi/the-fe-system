@@ -1,5 +1,4 @@
-export const API_BASE_URL: string =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://149.102.143.102:8000/api/";
+export const API_BASE_URL: string = "http://149.102.143.102:8000/api/";
 
 // export const GOLD_API_TOKEN: string =
 //   process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
@@ -18,17 +17,17 @@ export async function loginUser(username: string, password: string) {
       body: JSON.stringify({ username, password }),
     });
 
-    console.log('استجابة الخادم:', response.status, response.statusText);
-    
+    console.log("استجابة الخادم:", response.status, response.statusText);
+
     let data;
     try {
       data = await response.json();
-      console.log('بيانات الاستجابة:', data);
+      console.log("بيانات الاستجابة:", data);
     } catch (jsonError) {
-      console.error('خطأ في تحليل JSON:', jsonError);
-      throw new Error('استجابة غير صحيحة من الخادم');
+      console.error("خطأ في تحليل JSON:", jsonError);
+      throw new Error("استجابة غير صحيحة من الخادم");
     }
-    
+
     if (!response.ok) {
       // إذا كان هناك رسالة خطأ من الخادم، استخدمها
       if (data && data.message) {
@@ -39,48 +38,49 @@ export async function loginUser(username: string, password: string) {
     }
 
     // التحقق من أن الاستجابة تحتوي على البيانات المطلوبة
-    if (!data || typeof data !== 'object') {
-      throw new Error('استجابة غير صحيحة من الخادم');
+    if (!data || typeof data !== "object") {
+      throw new Error("استجابة غير صحيحة من الخادم");
     }
 
     return data;
   } catch (error) {
-    console.error('خطأ في تسجيل الدخول:', error);
-    
+    console.error("خطأ في تسجيل الدخول:", error);
+
     // معالجة أخطاء الشبكة
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('لا يمكن الاتصال بالخادم. تأكد من اتصال الإنترنت.');
+    if (error instanceof TypeError && error.message.includes("fetch")) {
+      throw new Error("لا يمكن الاتصال بالخادم. تأكد من اتصال الإنترنت.");
     }
-    
+
     // إعادة رمي الخطأ مع رسالة واضحة
     if (error instanceof Error) {
       throw new Error(error.message);
     } else {
-      throw new Error('حدث خطأ غير متوقع في الاتصال');
+      throw new Error("حدث خطأ غير متوقع في الاتصال");
     }
   }
 }
 
 export function getAuthToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("auth_token");
   }
   return null;
 }
 
 export function setAuthToken(token: string) {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('auth_token', token);
+  if (typeof window !== "undefined") {
+    localStorage.setItem("auth_token", token);
     // إضافة التوكن للكوكيز أيضاً للـ middleware
     document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Strict`;
   }
 }
 
 export function removeAuthToken() {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('auth_token');
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("auth_token");
     // حذف التوكن من الكوكيز
-    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie =
+      "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   }
 }
 
@@ -140,15 +140,15 @@ export async function fetchData<T>(
     console.log(`Fetching: ${url} with method: ${method}`);
     url = appendBranchParams(url);
     console.log(`Final URL: ${url}`);
-    
+
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
 
     // إضافة التوكن للطلبات إذا كان موجوداً
     const token = getAuthToken();
     if (token) {
-      headers['Authorization'] = `Token ${token}`;
+      headers["Authorization"] = `Token ${token}`;
     }
 
     const requestInit: RequestInit = {
@@ -156,25 +156,25 @@ export async function fetchData<T>(
       headers,
     };
 
-    if (body && (method === 'POST' || method === 'PUT')) {
+    if (body && (method === "POST" || method === "PUT")) {
       requestInit.body = JSON.stringify(body);
     }
-    
+
     const response = await fetch(url, requestInit);
 
     if (!response.ok) {
       const errorMessage = await response.text();
       console.error(`HTTP ${response.status} error for ${url}:`, errorMessage);
-      
+
       // إذا كان الخطأ 401 (غير مصرح)، حذف التوكن وتوجيه لصفحة تسجيل الدخول
       if (response.status === 401) {
-        removeAuthToken();
-        if (typeof window !== 'undefined') {
-          window.location.href = '/';
-        }
+        // removeAuthToken();
+        // if (typeof window !== "undefined") {
+        //   window.location.href = "/";
+        // }
       }
-      
-      throw new Error(`HTTP ${response.status} - ${errorMessage}`);
+
+      // throw new Error(`HTTP ${response.status} - ${errorMessage}`);
     }
 
     const data = await response.json();
@@ -209,7 +209,7 @@ export async function fetchFractions() {
       fractionsCache = { frac: 2, frac2: 3 };
     }
   } catch (e) {
-    console.error('failed to fetch fractions', e);
+    console.error("failed to fetch fractions", e);
     fractionsCache = { frac: 2, frac2: 3 };
   }
 
@@ -271,10 +271,8 @@ export const API_ENDPOINTS = {
   ItemStatusList: `${API_BASE_URL}getItemStatus`, // add by Moseed 31-5-2025
   INVOICE_BOX_LIST: `${API_BASE_URL}boxes_list`,
   CREATE_INVOICE_BOX: `${API_BASE_URL}api_create_box`,
-  UPDATE_INVOICE_BOX: (id: number) =>
-    `${API_BASE_URL}api_update_box/${id}`,
-  DELETE_INVOICE_BOX: (id: number) =>
-    `${API_BASE_URL}api_delete_box/${id}`,
+  UPDATE_INVOICE_BOX: (id: number) => `${API_BASE_URL}api_update_box/${id}`,
+  DELETE_INVOICE_BOX: (id: number) => `${API_BASE_URL}api_delete_box/${id}`,
 
   // روابط الصناديق من جدول العملاء (النوع = 99)
   CUSTOMER_BOXES_LIST: `${API_BASE_URL}customers_list?cust_type=99`,
@@ -293,17 +291,23 @@ export const API_ENDPOINTS = {
 
   // Voucher Details
   VOUCHERS_DTL_LIST: `${API_BASE_URL}vouchers_dtl_list`,
-  VOUCHER_DETAILS: (vouchId: number) => `${API_BASE_URL}vouchers_dtl_list?vouch_id=${vouchId}`,
+  VOUCHER_DETAILS: (vouchId: number) =>
+    `${API_BASE_URL}vouchers_dtl_list?vouch_id=${vouchId}`,
   CREATE_VOUCHER_DTL: `${API_BASE_URL}api_create_vouch_dtl`,
-  UPDATE_VOUCHER_DTL: (id: number) => `${API_BASE_URL}api_update_vouch_dtl/${id}`,
-  DELETE_VOUCHER_DTL: (id: number) => `${API_BASE_URL}api_delete_vouch_dtl/${id}`,
+  UPDATE_VOUCHER_DTL: (id: number) =>
+    `${API_BASE_URL}api_update_vouch_dtl/${id}`,
+  DELETE_VOUCHER_DTL: (id: number) =>
+    `${API_BASE_URL}api_delete_vouch_dtl/${id}`,
 
   // Voucher Box Details
   VOUCHERS_BOX_LIST: `${API_BASE_URL}vouchers_box_list`,
-  VOUCHER_BOX_DETAILS: (vouchId: number) => `${API_BASE_URL}vouchers_box_list?vouch_id=${vouchId}`,
+  VOUCHER_BOX_DETAILS: (vouchId: number) =>
+    `${API_BASE_URL}vouchers_box_list?vouch_id=${vouchId}`,
   CREATE_VOUCHER_BOX: `${API_BASE_URL}api_create_vouch_box`,
-  UPDATE_VOUCHER_BOX: (id: number) => `${API_BASE_URL}api_update_vouch_box/${id}`,
-  DELETE_VOUCHER_BOX: (id: number) => `${API_BASE_URL}api_delete_vouch_box/${id}`,
+  UPDATE_VOUCHER_BOX: (id: number) =>
+    `${API_BASE_URL}api_update_vouch_box/${id}`,
+  DELETE_VOUCHER_BOX: (id: number) =>
+    `${API_BASE_URL}api_delete_vouch_box/${id}`,
 
   // system settings
   HOME_LIST: `${API_BASE_URL}home_list`,
@@ -323,12 +327,14 @@ export const API_ENDPOINTS = {
 
   // companies
   COMPANIES_LIST: `${API_BASE_URL}companies_list`,
-  
+
   // البحث بالباركود - API جديد للمطابقة التامة
-  ITEM_BARCODE_SEARCH: (barcode: string) => `${API_BASE_URL}ItemBarcode/${encodeURIComponent(barcode)}`,
-  
+  ITEM_BARCODE_SEARCH: (barcode: string) =>
+    `${API_BASE_URL}ItemBarcode/${encodeURIComponent(barcode)}`,
+
   // البحث في الحسابات - API جديد للبحث في الحسابات
-  SEARCH_ACCOUNTS: (query: string, page: number = 1) => `${API_BASE_URL}SearchAccountsList/?q=${encodeURIComponent(query)}&page=${page}`,
+  SEARCH_ACCOUNTS: (query: string, page: number = 1) =>
+    `${API_BASE_URL}SearchAccountsList/?q=${encodeURIComponent(query)}&page=${page}`,
 };
 
 export function fetchCompanies() {
@@ -338,54 +344,57 @@ export function fetchCompanies() {
 // دالة البحث بالباركود باستخدام API الجديد
 export async function fetchItemByBarcode(barcode: string): Promise<any | null> {
   try {
-    console.log('البحث بالباركود:', barcode);
-    
+    console.log("البحث بالباركود:", barcode);
+
     const response = await fetch(API_ENDPOINTS.ITEM_BARCODE_SEARCH(barcode), {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token ${getAuthToken()}`,
+        "Content-Type": "application/json",
+        Authorization: `Token ${getAuthToken()}`,
       },
     });
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.log('لم يتم العثور على الصنف بالباركود:', barcode);
+        console.log("لم يتم العثور على الصنف بالباركود:", barcode);
         return null;
       }
       throw new Error(`خطأ في البحث: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('نتيجة البحث بالباركود:', data);
-    
+    console.log("نتيجة البحث بالباركود:", data);
+
     // API يعيد مصفوفة، نأخذ العنصر الأول
     if (Array.isArray(data) && data.length > 0) {
-      console.log('تم العثور على الصنف:', data[0]);
+      console.log("تم العثور على الصنف:", data[0]);
       return data[0];
     } else if (Array.isArray(data) && data.length === 0) {
-      console.log('لم يتم العثور على الصنف بالباركود:', barcode);
+      console.log("لم يتم العثور على الصنف بالباركود:", barcode);
       return null;
     } else {
       // إذا لم تكن مصفوفة، نعيد البيانات كما هي
       return data;
     }
   } catch (error) {
-    console.error('خطأ في البحث بالباركود:', error);
+    console.error("خطأ في البحث بالباركود:", error);
     throw error;
   }
 }
 
 // دالة البحث في الحسابات
-export async function searchAccounts(query: string, page: number = 1): Promise<any> {
+export async function searchAccounts(
+  query: string,
+  page: number = 1,
+): Promise<any> {
   try {
-    console.log('البحث في الحسابات:', query);
-    
+    console.log("البحث في الحسابات:", query);
+
     const response = await fetch(API_ENDPOINTS.SEARCH_ACCOUNTS(query, page), {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token ${getAuthToken()}`,
+        "Content-Type": "application/json",
+        Authorization: `Token ${getAuthToken()}`,
       },
     });
 
@@ -394,11 +403,11 @@ export async function searchAccounts(query: string, page: number = 1): Promise<a
     }
 
     const data = await response.json();
-    console.log('نتيجة البحث في الحسابات:', data);
-    
+    console.log("نتيجة البحث في الحسابات:", data);
+
     return data;
   } catch (error) {
-    console.error('خطأ في البحث في الحسابات:', error);
+    console.error("خطأ في البحث في الحسابات:", error);
     throw error;
   }
 }
@@ -411,25 +420,25 @@ export function apiFetch(input: string, init?: RequestInit) {
   ) {
     return fetch(input, init);
   }
-  
+
   const url = appendBranchParams(input);
-  
+
   // إضافة التوكن للطلبات إذا كان موجوداً
   const token = getAuthToken();
   if (token && init) {
     init.headers = {
       ...init.headers,
-      'Authorization': `Token ${token}`,
+      Authorization: `Token ${token}`,
     };
   } else if (token) {
     init = {
       ...init,
       headers: {
         ...init?.headers,
-        'Authorization': `Token ${token}`,
+        Authorization: `Token ${token}`,
       },
     };
   }
-  
+
   return fetch(url, init);
 }

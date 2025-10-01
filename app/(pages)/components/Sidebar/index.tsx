@@ -24,7 +24,7 @@ import { useState } from "react";
 const mainLinks = [
   {
     name: "الرئيسية",
-    href: "",
+    href: "/",
     icon: <HomeIcon className="h-5 w-5" />,
   },
 ];

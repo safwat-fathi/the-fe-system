@@ -12,7 +12,6 @@ import {
   Tab,
   CardBody,
 } from "@heroui/react";
-import { parseAsString, parseAsInteger, useQueryStates } from "nuqs";
 import Card from "@/components/Card";
 import {
   EyeIcon,
@@ -35,15 +34,26 @@ import { GetAllInvoicesParams } from "@/services/api/invoice.service";
 interface InvoiceClientProps {
   invoices: Invoice[];
   totalInvoices: number;
-  invoiceTypes: { key: string; label: string; color: string }[];
-  invoiceStatuses: { key: string; label: string; color: string }[];
 }
 
-export default function InvoiceClient({
-  invoices,
-  totalInvoices,
-  invoiceTypes,
-}: InvoiceClientProps) {
+// أنواع الفواتير
+const INVOICE_TYPES = [
+  { key: "0", label: "جميع الفواتير", color: "default" },
+  { key: TransTypes.PURCHASE, label: "فواتير الشراء", color: "primary" },
+  { key: TransTypes.SALES, label: "فواتير البيع", color: "success" },
+  { key: TransTypes.PURCHASE_RETURN, label: "مردود الشراء", color: "warning" },
+  { key: TransTypes.SALES_RETURN, label: "مردود البيع", color: "danger" },
+];
+
+// حالات الفواتير
+const INVOICE_STATUSES = [
+  { key: "all", label: "جميع الحالات", color: "default" },
+  { key: "paid", label: "مدفوع", color: "success" },
+  { key: "pending", label: "معلق", color: "warning" },
+  { key: "overdue", label: "متأخر", color: "danger" },
+];
+
+export default function InvoiceClient({ invoices, totalInvoices }: InvoiceClientProps) {
   const { params, setParams } = useQueryParams<{
     xinv_id: string;
     xfrom_date: string;
@@ -221,7 +231,7 @@ export default function InvoiceClient({
               }
               className="input-field"
             >
-              {invoiceTypes.map((type) => (
+              {INVOICE_TYPES.map((type) => (
                 <SelectItem key={type.key} value={type.key}>
                   {type.label}
                 </SelectItem>

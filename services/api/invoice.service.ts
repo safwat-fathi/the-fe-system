@@ -11,11 +11,11 @@ export interface GetAllInvoicesParams {
   page?: string;
   xcom_id?: string;
   xyear_id?: string;
-  xtrans_type?: TransTypes;
-  xinv_id?: InvoiceTypes;
+  xtrans_type?: TransTypes | "0";
+  xinv_id?: InvoiceTypes | "0";
   xfrom_date?: string;
   xto_date?: string;
-  xinv_type?: InvoiceTypes;
+  xinv_type?: InvoiceTypes | "0";
 }
 
 class InvoiceService extends HttpService<Invoice> {
@@ -27,24 +27,25 @@ class InvoiceService extends HttpService<Invoice> {
     params?: GetAllInvoicesParams,
   ): Promise<IPaginatedResponse<Invoice> | null> {
     try {
-      // Generate cache tags based on query parameters
+      const queryParams = {
+        page: params?.page || "1",
+        xcom_id: params?.xcom_id || "0",
+        xyear_id: params?.xyear_id || "0",
+        xtrans_type: params?.xtrans_type || "0",
+        xinv_id: params?.xinv_id || "0",
+        xfrom_date: params?.xfrom_date || "0",
+        xto_date: params?.xto_date || "0",
+        xinv_type: params?.xinv_type || "0",
+      };
+
       const cacheTags = this.generateInvoiceCacheTags(params);
-      console.log("🚀 ~ :32 ~ InvoiceService ~ getAllInvoices ~ cacheTags:", cacheTags)
-      
+
       const response = await this.get<IPaginatedResponse<Invoice>>(
         "invoices_list/",
+        queryParams,
         {
-          page: params?.page || 1,
-          xcom_id: params?.xcom_id || 0,
-          xyear_id: params?.xyear_id || 0,
-          xtrans_type: params?.xtrans_type || 0,
-          xinv_id: params?.xinv_id || 0,
-          xfrom_date: params?.xfrom_date || "0",
-          xto_date: params?.xto_date || "0",
-          xinv_type: params?.xinv_type || 1,
-        },
-        {
-          cache: "force-cache",
+          cache: "force-cache", // Disable cache temporarily
+          signal: AbortSignal.timeout(30000), // 30 seconds
           next: { tags: cacheTags },
         },
       );
@@ -62,21 +63,23 @@ class InvoiceService extends HttpService<Invoice> {
 
   private generateInvoiceCacheTags(params?: GetAllInvoicesParams): string[] {
     const baseTags = ["invoices"];
-    
+
     if (!params) return baseTags;
-    
+
     const tags = [...baseTags];
-    
+
     // Add tags for each parameter that is provided
     if (params.page) tags.push(`invoices-page-${params.page}`);
     if (params.xcom_id) tags.push(`invoices-xcom_id-${params.xcom_id}`);
     if (params.xyear_id) tags.push(`invoices-xyear_id-${params.xyear_id}`);
-    if (params.xtrans_type) tags.push(`invoices-xtrans_type-${params.xtrans_type}`);
+    if (params.xtrans_type)
+      tags.push(`invoices-xtrans_type-${params.xtrans_type}`);
     if (params.xinv_id) tags.push(`invoices-xinv_id-${params.xinv_id}`);
-    if (params.xfrom_date) tags.push(`invoices-xfrom_date-${params.xfrom_date}`);
+    if (params.xfrom_date)
+      tags.push(`invoices-xfrom_date-${params.xfrom_date}`);
     if (params.xto_date) tags.push(`invoices-xto_date-${params.xto_date}`);
     if (params.xinv_type) tags.push(`invoices-xinv_type-${params.xinv_type}`);
-    
+
     return tags;
   }
 
@@ -92,10 +95,6 @@ class InvoiceService extends HttpService<Invoice> {
           cache: "force-cache",
           next: { tags: [`invoice-${id}`] },
         },
-      );
-      console.log(
-        "🚀 ~ :59 ~ InvoiceService ~ getInvoiceById ~ invoiceResponse:",
-        invoiceResponse,
       );
 
       if (
@@ -154,10 +153,6 @@ class InvoiceService extends HttpService<Invoice> {
   }
 
   async calculateMonthlySales(invoices: Invoice[]): Promise<number[]> {
-    console.log(
-      "🚀 ~ :177 ~ InvoiceService ~ calculateMonthlySales ~ invoices:",
-      invoices,
-    );
     const monthlySales: number[] = new Array(12).fill(0);
 
     invoices.forEach((inv) => {

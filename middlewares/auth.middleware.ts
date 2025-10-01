@@ -4,9 +4,6 @@ import { MiddlewareFactory } from "@/middleware";
 import { NextRequest, NextResponse } from "next/server";
 
 const isPublicRoute = (pathname: string) => {
-  // The root path should be considered public (it's the login page)
-  if (pathname === "/") return true;
-  
   return ROUTE_RULES.public.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );

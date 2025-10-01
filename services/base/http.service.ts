@@ -7,9 +7,6 @@ import {
   TMethod,
 } from "@/types/services/base";
 
-
-
-
 import { getCookieAction } from "@/app/actions/cookie-store";
 import { createParams } from "@/utilities/qs";
 import { STORAGE_KEYS } from "@/constants";
@@ -103,7 +100,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       const authHeaders = await this._getAuthHeaders();
       const urlParams = createParams(params || {});
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
-      console.log("🚀 ~ :102 ~ HttpService ~ _request ~ fullURL:", fullURL);
+      console.log("🚀 ~ :103 ~ HttpService ~ _request ~ fullURL:", fullURL);
 
       const requestOptions: RequestInit = {
         credentials: "include",
