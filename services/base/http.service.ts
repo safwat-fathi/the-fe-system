@@ -29,6 +29,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   constructor(url: string, timeout = 10000) {
     super();
 
+
     if (!this._baseUrl) {
       throw new Error("API_BASE_URL is not defined");
     }
@@ -97,6 +98,14 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     retryCount = 0,
   ): Promise<ServiceResponse<R>> {
     try {
+      // Validate base URL is configured
+      if (!this._baseUrl || this._baseUrl.startsWith('undefined')) {
+        return {
+          success: false,
+          message: "API base URL is not configured. Please set NEXT_PUBLIC_API_BASE_URL in your .env.local file.",
+        };
+      }
+
       const authHeaders = await this._getAuthHeaders();
       const urlParams = createParams(params || {});
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
