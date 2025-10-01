@@ -34,7 +34,7 @@ export const API_ENDPOINTS = {
 } as const;
 
 export const ROUTE_RULES = {
-  public: ["/login", "/register", "/forgot-password"],
+  public: ["/auth/login", "/register", "/forgot-password"],
   private: [""],
   admin: ["/admin"],
 };

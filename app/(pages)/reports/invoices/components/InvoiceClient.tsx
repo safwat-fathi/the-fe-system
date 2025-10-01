@@ -12,7 +12,6 @@ import {
   Tab,
   CardBody,
 } from "@heroui/react";
-import { parseAsString, parseAsInteger, useQueryStates } from "nuqs";
 import Card from "@/components/Card";
 import {
   EyeIcon,
@@ -35,26 +34,42 @@ import { GetAllInvoicesParams } from "@/services/api/invoice.service";
 interface InvoiceClientProps {
   invoices: Invoice[];
   totalInvoices: number;
-  invoiceTypes: { key: string; label: string; color: string }[];
-  invoiceStatuses: { key: string; label: string; color: string }[];
 }
+
+// أنواع الفواتير
+const INVOICE_TYPES = [
+  { key: "0", label: "جميع الفواتير", color: "default" },
+  { key: TransTypes.PURCHASE, label: "فواتير الشراء", color: "primary" },
+  { key: TransTypes.SALES, label: "فواتير البيع", color: "success" },
+  { key: TransTypes.PURCHASE_RETURN, label: "مردود الشراء", color: "warning" },
+  { key: TransTypes.SALES_RETURN, label: "مردود البيع", color: "danger" },
+];
+
+// حالات الفواتير
+const INVOICE_STATUSES = [
+  { key: "all", label: "جميع الحالات", color: "default" },
+  { key: "paid", label: "مدفوع", color: "success" },
+  { key: "pending", label: "معلق", color: "warning" },
+  { key: "overdue", label: "متأخر", color: "danger" },
+];
 
 export default function InvoiceClient({
   invoices,
   totalInvoices,
-  invoiceTypes,
 }: InvoiceClientProps) {
   const { params, setParams } = useQueryParams<{
     xinv_id: string;
     xfrom_date: string;
     xto_date: string;
     xtrans_type: string;
-  }>(["xinv_id", "xfrom_date", "xto_date", "xtrans_type"], {
+    page: string;
+  }>(["xinv_id", "xfrom_date", "xto_date", "xtrans_type", "page"], {
     defaultValues: {
       xinv_id: "",
       xfrom_date: "",
       xto_date: "",
       xtrans_type: "",
+      page: "1",
     },
     schema: {
       xinv_id: {
@@ -76,6 +91,11 @@ export default function InvoiceClient({
         parse: (value) => value,
         serialize: (value) => value,
         default: "",
+      },
+      page: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "1",
       },
     },
     pushMode: "replace",
@@ -187,6 +207,7 @@ export default function InvoiceClient({
       xto_date: "",
       xtrans_type: "0",
       xinv_id: "0",
+      page: "1",
     });
   };
 
@@ -203,25 +224,28 @@ export default function InvoiceClient({
         <CardBody>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Input
+              className="input-field"
               placeholder="البحث بالرقم أو الاسم..."
+              startContent={<FunnelIcon className="h-4 w-4" />}
               value={searchQ}
               onChange={(e) => {
                 setSearchQ(e.target.value);
-                setParams({ xinv_id: e.target.value });
+                setParams({ xinv_id: e.target.value, page: "1" });
               }}
-              startContent={<FunnelIcon className="h-4 w-4" />}
-              className="input-field"
             />
 
             <Select
+              className="input-field"
               placeholder="نوع الفاتورة"
               selectedKeys={[params.xtrans_type]}
               onSelectionChange={(keys) =>
-                setParams({ xtrans_type: Array.from(keys)[0] as string })
+                setParams({
+                  xtrans_type: Array.from(keys)[0] as string,
+                  page: "1",
+                })
               }
-              className="input-field"
             >
-              {invoiceTypes.map((type) => (
+              {INVOICE_TYPES.map((type) => (
                 <SelectItem key={type.key} value={type.key}>
                   {type.label}
                 </SelectItem>
@@ -229,25 +253,25 @@ export default function InvoiceClient({
             </Select>
 
             <Input
-              type="date"
-              placeholder="من تاريخ"
-              value={params.xfrom_date}
-              onChange={(e) => setParams({ xfrom_date: e.target.value })}
               className="input-field"
+              placeholder="من تاريخ"
+              type="date"
+              value={params.xfrom_date}
+              onChange={(e) => setParams({ xfrom_date: e.target.value, page: "1" })}
             />
 
             <Input
-              type="date"
-              placeholder="إلى تاريخ"
-              value={params.xto_date}
-              onChange={(e) => setParams({ xto_date: e.target.value })}
               className="input-field"
+              placeholder="إلى تاريخ"
+              type="date"
+              value={params.xto_date}
+              onChange={(e) => setParams({ xto_date: e.target.value, page: "1" })}
             />
 
             <Button
+              className="btn-secondary"
               variant="bordered"
               onPress={clearFilters}
-              className="btn-secondary"
             >
               مسح الفلاتر
             </Button>
@@ -257,9 +281,9 @@ export default function InvoiceClient({
 
       {/* التبويبات */}
       <Tabs
+        className="w-full"
         selectedKey={activeTab}
         onSelectionChange={(key) => setActiveTab(key as string)}
-        className="w-full"
       >
         <Tab
           key="table"
@@ -272,12 +296,12 @@ export default function InvoiceClient({
         >
           {/* الجدول */}
           <DataTable
+            className="card"
             columns={columns}
             data={invoices}
-            title={`قائمة الفواتير (${totalInvoices} فاتورة)`}
             searchable={false}
             sortable={true}
-            className="card"
+            title={`قائمة الفواتير (${totalInvoices} فاتورة)`}
           />
         </Tab>
 

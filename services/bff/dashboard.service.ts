@@ -1,5 +1,3 @@
-import { cookies } from "next/headers";
-import { STORAGE_KEYS } from "@/constants";
 import invoiceService from "../api/invoice.service";
 import customerService from "../api/customer.service";
 import categoryService from "../api/category.service";
@@ -67,8 +65,7 @@ class DashboardService extends HttpService<any> {
         monthlySales,
       };
     } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
-      throw new Error("حدث خطأ أثناء جلب إحصائيات لوحة التحكم");
+      throw new Error("حدث خطأ أثناء  إحصائيات لوحة التحكم");
     }
   }
 }

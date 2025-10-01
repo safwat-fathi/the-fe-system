@@ -7,9 +7,6 @@ import {
   TMethod,
 } from "@/types/services/base";
 
-
-
-
 import { getCookieAction } from "@/app/actions/cookie-store";
 import { createParams } from "@/utilities/qs";
 import { STORAGE_KEYS } from "@/constants";
@@ -23,7 +20,7 @@ export interface ServiceResponse<T = any> {
 }
 
 export default class HttpService<T = any> extends HttpServiceAbstract<T> {
-  private readonly _baseUrl: string;
+  private readonly _baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   private _token: string | undefined = undefined;
   private readonly _defaultOptions: RequestInit;
   private _isRefreshing = false;
@@ -31,17 +28,13 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
   constructor(url: string, timeout = 10000) {
     super();
-    
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    
-    if (!baseUrl) {
-      console.error(
-        "❌ NEXT_PUBLIC_API_BASE_URL is not defined in environment variables.\n" +
-        "Please create a .env.local file with: NEXT_PUBLIC_API_BASE_URL=your_api_url"
-      );
+
+
+    if (!this._baseUrl) {
+      throw new Error("API_BASE_URL is not defined");
     }
-    
-    this._baseUrl = (baseUrl || "") + url;
+
+    this._baseUrl += url;
 
     this._defaultOptions = {
       signal: AbortSignal.timeout(timeout),
@@ -116,7 +109,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       const authHeaders = await this._getAuthHeaders();
       const urlParams = createParams(params || {});
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
-      console.log("🚀 ~ :102 ~ HttpService ~ _request ~ fullURL:", fullURL);
+      console.log("🚀 ~ :103 ~ HttpService ~ _request ~ fullURL:", fullURL);
 
       const requestOptions: RequestInit = {
         credentials: "include",
