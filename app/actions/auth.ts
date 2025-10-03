@@ -2,12 +2,14 @@
 
 import { z } from "zod";
 import { loginSchema } from "@/utilities/schemas/login.schema";
+import { validateCSRFToken } from "@/utilities/csrf";
 
 import { setCookieAction } from "./cookie-store";
 import { STORAGE_KEYS } from "@/constants";
 import { redirect } from "next/navigation";
 import { authService } from "@/services/api";
 import { cookies } from "next/headers";
+
 interface LoginResult {
   success: boolean;
   message?: string;
@@ -24,6 +26,16 @@ export async function loginAction(
   // Validate form data using Zod schema
   const result = loginSchema.safeParse(formData);
   const redirectPath = (formData.get("redirect") as string) || "/";
+  const csrfToken = formData.get("csrfToken") as string;
+
+  // Validate CSRF token
+  const isCSRFValid = await validateCSRFToken(csrfToken);
+  if (!isCSRFValid) {
+    return {
+      success: false,
+      message: "طلب غير مصرح به. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى.",
+    };
+  }
 
   if (!result.success) {
     // Return validation errors
