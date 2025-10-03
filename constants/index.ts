@@ -63,10 +63,9 @@ export const VOUCHER_TYPES = {
 
 // Local Storage Keys
 export const STORAGE_KEYS = {
-
-  ACCESS_TOKEN: "auth_token",
-
-  REFRESH_TOKEN: "refresh_token",
+  ACCESS_TOKEN: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "",
+  REFRESH_TOKEN: process.env.NEXT_PUBLIC_REFRESH_TOKEN || "",
+  CSRF_TOKEN: process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME || "",
   SESSION: "session",
   USER_DATA: "user_data",
   THEME: "theme",

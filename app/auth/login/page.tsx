@@ -1,9 +1,7 @@
 import LoginForm from "./components/LoginForm";
-import { generateCSRFToken } from "@/utilities/csrf";
+
 
 export default async function Login() {
-  const csrfToken = await generateCSRFToken();
-
   return (
     <div className="bg-[#f5f5f5] font-['Cairo'] min-h-screen flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8 border border-gray-200">
@@ -23,7 +21,7 @@ export default async function Login() {
           </p>
         </div>
 
-        <LoginForm csrfToken={csrfToken} />
+        <LoginForm />
       </div>
     </div>
   );

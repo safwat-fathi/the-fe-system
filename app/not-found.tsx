@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
-import NotFoundClient from './not-found-client';
+import BackButton from "../components/BackButton";
 
 export const metadata: Metadata = {
   title: 'الصفحة غير موجودة - 404',
@@ -24,7 +24,7 @@ export default function NotFound() {
           <Link href="/" className="btn btn-primary w-full sm:w-auto">
             العودة إلى الصفحة الرئيسية
           </Link>
-          <NotFoundClient />
+          <BackButton />
         </div>
       </div>
     </div>

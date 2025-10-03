@@ -2,12 +2,12 @@ import InvoiceClient from "./components/InvoiceClient";
 import invoiceService, {
   GetAllInvoicesParams,
 } from "@/services/api/invoice.service";
-import { Suspense } from "react";
-import AppLoading from "@/components/AppLoading";
+// import { Suspense } from "react";
+// import AppLoading from "@/components/AppLoading";
 import AppPagination from "@/components/AppPagination";
 import InvoicesHeader from "./components/InvoicesHeader";
 
-// export const revalidate = 3600;
+export const revalidate = 3600;
 
 export default async function InvoicesPage({
   searchParams,
