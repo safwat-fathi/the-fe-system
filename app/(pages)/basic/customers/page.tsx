@@ -26,8 +26,8 @@ import {
   Tooltip,
 } from "@heroui/react";
 
-import { fetchData, API_BASE_URL } from "@/utilities/api";
-import useCrud from "@/utilities/useCrud";
+import customerService from "@/services/api/customer.service";
+import { API_BASE_URL } from "@/utilities/api";
 import ActionButtons from "@/components/ActionButtons";
 // import { handleLanguageChange } from "@/utilities/global";
 
@@ -66,10 +66,7 @@ interface CustomerType {
   type_name: string;
 }
 
-const API_URL = `${API_BASE_URL}customers_list`;
-const CREATE_URL = `${API_BASE_URL}api_create_customer`;
-const UPDATE_URL = (id: number) => `${API_BASE_URL}api_update_customer/${id}`;
-const DELETE_URL = (id: number) => `${API_BASE_URL}api_delete_customer/${id}`;
+// URLs للبيانات المساعدة (سيتم تحديثها لاحقاً)
 const cust_type_URL = `${API_BASE_URL}cust_type_list`;
 const ACCOUNTS_URL = `${API_BASE_URL}getAccounts`;
 const BOX_TYPE_URL = `${API_BASE_URL}getBoxTypeList`;
@@ -104,33 +101,33 @@ export default function CustomersTable() {
   const router = useRouter();
   const rowsPerPage = 12;
 
-  const { loadItems, createItem, updateItem, deleteItem } = useCrud();
-
   const loadCustomers = useCallback(async () => {
-    const data = await loadItems<Customer>(API_URL);
-    setCustomers(data);
-  }, [loadItems]);
+    try {
+      const data = await customerService.getAllCustomers();
+      setCustomers(data);
+    } catch (error) {
+      console.error("فشل في جلب العملاء:", error);
+      setCustomers([]);
+    }
+  }, []);
 
   const loadMetaData = useCallback(async () => {
-    const types = await fetchData(cust_type_URL);
+    try {
+      // TODO: إنشاء خدمات منفصلة للبيانات المساعدة أو استخدام apiFetch مع التوكن
+      // const types = await fetchData(cust_type_URL);
+      // const custsResponse = await fetchData(Cust_Status_URL);
+      // const accs = await fetchData(ACCOUNTS_URL);
+      // const boxesResponse = await fetchData(BOX_TYPE_URL);
+      // const CustId = await fetchData(Max_CustID_URL);
 
-    const custsResponse = await fetchData(Cust_Status_URL);
-    const custs = Array.isArray((custsResponse as any)?.results)
-      ? (custsResponse as any).results
-      : [];
-
-    const accs = await fetchData(ACCOUNTS_URL);
-    const boxesResponse = await fetchData(BOX_TYPE_URL);
-    const boxes = Array.isArray((boxesResponse as any)?.results)
-      ? (boxesResponse as any).results
-      : [];
-    const CustId = await fetchData(Max_CustID_URL);
-
-    setCustomerTypes(types as any[]);
-    setCustomerStatus(custs);
-    setAccounts(accs as any[]);
-    setBoxTypes(boxes);
-    setMaxCustId(CustId as any);
+      // setCustomerTypes(types as any[]);
+      // setCustomerStatus(custs);
+      // setAccounts(accs as any[]);
+      // setBoxTypes(boxes);
+      // setMaxCustId(CustId as any);
+    } catch (error) {
+      console.error("فشل في جلب البيانات المساعدة:", error);
+    }
   }, []);
 
   useEffect(() => {
@@ -140,16 +137,11 @@ export default function CustomersTable() {
 
   const handleSave = async () => {
     try {
-      const url =
-        modalMode === "edit" && currentCustomer.id
-          ? UPDATE_URL(currentCustomer.id)
-          : CREATE_URL;
-
       // ✅ استخدم نسخة محلية بدلاً من setState
       let updatedCustomer = { ...currentCustomer };
 
       if (!updatedCustomer.id) {
-        updatedCustomer.cust_code = String((maxCustId as any).id__max);
+        // updatedCustomer.cust_code = String((maxCustId as any).id__max);
       }
 
       if (!updatedCustomer.cust_code) {
@@ -184,26 +176,22 @@ export default function CustomersTable() {
         return;
       }
 
-
-      const response =
+      const result =
         modalMode === "edit" && currentCustomer.id
-          ? await updateItem(url, cleanedCustomer)
-          : await createItem(url, cleanedCustomer);
+          ? await customerService.updateCustomer(currentCustomer.id, cleanedCustomer)
+          : await customerService.createCustomer(cleanedCustomer);
 
-      if (!response.ok) {
-        const err = await response.json();
-
-        console.error("❌ خطأ في الإرسال:", err);
-        throw new Error("فشل في العملية");
+      if (result) {
+        toast.success(
+          modalMode === "edit"
+            ? "✅ تم تعديل العميل بنجاح"
+            : "✅ تم إضافة العميل بنجاح",
+        );
+        setIsModalOpen(false);
+        loadCustomers();
+      } else {
+        toast.error("❌ فشل في العملية");
       }
-
-      toast.success(
-        modalMode === "edit"
-          ? "✅ تم تعديل العميل بنجاح"
-          : "✅ تم إضافة العميل بنجاح",
-      );
-      setIsModalOpen(false);
-      loadCustomers();
     } catch (error) {
       toast.error("❌ حدث خطأ أثناء الحفظ");
     }
@@ -242,11 +230,14 @@ export default function CustomersTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذا العميل؟")) return;
     try {
-      const response = await deleteItem(DELETE_URL(id));
+      const result = await customerService.deleteCustomer(id);
 
-      if (!response.ok) throw new Error();
-      toast.success("✅ تم حذف العميل بنجاح");
-      loadCustomers();
+      if (result) {
+        toast.success("✅ تم حذف العميل بنجاح");
+        loadCustomers();
+      } else {
+        toast.error("❌ فشل في حذف العميل");
+      }
     } catch (error) {
       toast.error("❌ حدث خطأ أثناء الحذف");
     }
@@ -315,6 +306,7 @@ const filteredCustomers = useMemo(() => {
           <Select
             className="w-60"
             placeholder="فرز حسب نوع العميل"
+            aria-label="اختيار نوع العميل للفرز"
             selectedKeys={
               custTypeFilter !== null ? [String(custTypeFilter)] : ["all"]
             }

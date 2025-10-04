@@ -111,7 +111,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
 
       const requestOptions: RequestInit = {
-        credentials: "include",
+        // credentials: "include", // إزالة credentials لتجنب مشكلة CORS
         ...this._defaultOptions,
         ...options,
         method,

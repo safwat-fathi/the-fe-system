@@ -20,15 +20,9 @@ import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/ou
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
-import { API_ENDPOINTS, fetchData } from "@/utilities/api";
-import useCrud from "@/utilities/useCrud";
+import costCenterService from "@/services/api/cost-center.service";
 
-const {
-  COST_CENTERS_LIST,
-  CREATE_COST_CENTER,
-  UPDATE_COST_CENTER,
-  DELETE_COST_CENTER,
-} = API_ENDPOINTS;
+// تم إزالة API_ENDPOINTS واستبدالها بـ costCenterService
 
 // Interface for cost centers
 interface CostCenter {
@@ -65,64 +59,87 @@ export default function CostCentersPage() {
 
   const rowsPerPage = 10;
 
-  const { loadItems, createItem, updateItem, deleteItem } = useCrud();
+  // تم إزالة useCrud واستبداله بـ costCenterService
 
   const loadCostCenters = useCallback(async () => {
-    const data = await loadItems<CostCenter>(COST_CENTERS_LIST);
-    setCostCenters(data);
-  }, [loadItems]);
+    try {
+      const data = await costCenterService.getAllCostCenters();
+      setCostCenters(data);
+    } catch (error) {
+      console.error("فشل في جلب مراكز التكلفة:", error);
+      setCostCenters([]);
+    }
+  }, []);
 
   const loadAccounts = useCallback(async () => {
     try {
-      const data = await fetchData(API_ENDPOINTS.ACCOUNTS_LIST);
-      setAccounts(Array.isArray(data) ? data : []);
+      const data = await costCenterService.getAccounts();
+      setAccounts(data);
     } catch (error) {
       console.error("❌ خطأ في تحميل الحسابات:", error);
+      setAccounts([]);
     }
   }, []);
 
   useEffect(() => {
-    loadCostCenters();
-    loadAccounts();
+    const loadAllData = async () => {
+      try {
+        await Promise.all([
+          loadCostCenters(),
+          loadAccounts(),
+        ]);
+      } catch (error) {
+        console.error("خطأ في تحميل البيانات:", error);
+      }
+    };
+
+    loadAllData();
   }, [loadCostCenters, loadAccounts]);
+
+  // إعادة تحميل البيانات عند العودة للصفحة
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // إعادة تحميل البيانات عند العودة للصفحة
+        loadCostCenters();
+      }
+    };
+
+    const handleFocus = () => {
+      // إعادة تحميل البيانات عند التركيز على النافذة
+      loadCostCenters();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadCostCenters]);
 
   const handleSave = async () => {
     try {
-      const url =
-        modalMode === "edit" && currentCostCenter.id
-          ? UPDATE_COST_CENTER(currentCostCenter.id)
-          : CREATE_COST_CENTER;
+      let result: CostCenter | null = null;
 
-      // Prepare cost center data
-      const costCenterData = {
-        ...currentCostCenter,
-        cost_status: currentCostCenter.cost_status || 1, // Default active status
-        cost_type: currentCostCenter.cost_type || 1, // Default cost type
-      };
-
-      const response =
-        modalMode === "edit" && currentCostCenter.id
-          ? await updateItem(url, costCenterData)
-          : await createItem(url, costCenterData);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-
-        toast.error(
-          "❌ فشل في العملية: " +
-            (errorData?.detail || JSON.stringify(errorData)),
-        );
-
-        return;
+      if (modalMode === "edit" && currentCostCenter.id) {
+        result = await costCenterService.updateCostCenter(currentCostCenter.id, currentCostCenter);
+      } else {
+        result = await costCenterService.createCostCenter(currentCostCenter as Omit<CostCenter, 'id'>);
       }
 
-      toast.success(
-        modalMode === "edit"
-          ? "✅ تم تعديل مركز التكلفة بنجاح"
-          : "✅ تم إضافة مركز التكلفة بنجاح",
-      );
-      setIsModalOpen(false);
-      loadCostCenters();
+      if (result) {
+        toast.success(
+          modalMode === "edit"
+            ? "✅ تم تعديل مركز التكلفة بنجاح"
+            : "✅ تم إضافة مركز التكلفة بنجاح",
+        );
+        setIsModalOpen(false);
+        loadCostCenters();
+      } else {
+        toast.error("❌ فشل في العملية");
+      }
     } catch (error) {
       console.error("❌ خطأ أثناء الحفظ:", error);
       toast.error("❌ حدث خطأ أثناء حفظ مركز التكلفة");
@@ -132,12 +149,16 @@ export default function CostCentersPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف مركز التكلفة هذا؟")) return;
     try {
-      const response = await deleteItem(DELETE_COST_CENTER(id));
+      const result = await costCenterService.deleteCostCenter(id);
 
-      if (!response.ok) throw new Error();
-      toast.success("✅ تم حذف مركز التكلفة بنجاح");
-      loadCostCenters();
-    } catch {
+      if (result) {
+        toast.success("✅ تم حذف مركز التكلفة بنجاح");
+        loadCostCenters();
+      } else {
+        toast.error("❌ فشل في حذف مركز التكلفة");
+      }
+    } catch (error) {
+      console.error("❌ خطأ أثناء الحذف:", error);
       toast.error("❌ حدث خطأ أثناء الحذف");
     }
   };

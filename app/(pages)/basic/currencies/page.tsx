@@ -20,14 +20,9 @@ import {
 } from "@heroui/react";
 import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import { fetchData, API_BASE_URL } from "@/utilities/api";
-import useCrud from "@/utilities/useCrud";
-import { apiFetch } from "@/utilities/api";
+import currencyService from "@/services/api/currency.service";
 
-const API_URL = `${API_BASE_URL}currencies_list/`;
-const CREATE_URL = `${API_BASE_URL}api_create_currency`;
-const UPDATE_URL = (id: number) => `${API_BASE_URL}api_update_currency/${id}`;
-const DELETE_URL = (id: number) => `${API_BASE_URL}api_delete_currency/${id}`;
+// تم إزالة URLs الثابتة واستبدالها بـ currencyService
 
 interface Currency {
   id: number;
@@ -66,48 +61,74 @@ export default function CurrenciesTable() {
 
   const rowsPerPage = 12;
 
-  const { loadItems, createItem, updateItem, deleteItem } = useCrud();
+  // تم إزالة useCrud واستبداله بـ currencyService
 
   const loadCurrencies = useCallback(async () => {
-    const data = await loadItems<Currency>(API_URL);
-    setCurrencies(data);
-  }, [loadItems]);
+    try {
+      const data = await currencyService.getAllCurrencies();
+      setCurrencies(data);
+    } catch (error) {
+      console.error("فشل في جلب العملات:", error);
+      setCurrencies([]);
+    }
+  }, []);
 
   useEffect(() => {
-    loadCurrencies();
+    const loadAllData = async () => {
+      try {
+        await loadCurrencies();
+      } catch (error) {
+        console.error("خطأ في تحميل البيانات:", error);
+      }
+    };
+
+    loadAllData();
+  }, [loadCurrencies]);
+
+  // إعادة تحميل البيانات عند العودة للصفحة
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // إعادة تحميل البيانات عند العودة للصفحة
+        loadCurrencies();
+      }
+    };
+
+    const handleFocus = () => {
+      // إعادة تحميل البيانات عند التركيز على النافذة
+      loadCurrencies();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [loadCurrencies]);
 
   const handleSave = async () => {
     try {
-      const url =
-        modalMode === "edit" && currentCurrency.id
-          ? UPDATE_URL(currentCurrency.id)
-          : CREATE_URL;
+      let result: Currency | null = null;
 
-      const response =
-        modalMode === "edit" && currentCurrency.id
-          ? await updateItem(url, currentCurrency)
-          : await createItem(url, currentCurrency);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-
-        console.error("❌ خطأ في الإرسال:", errorData);
-        toast.error(
-          "❌ فشل في العملية: " +
-            (errorData?.detail || "يرجى التحقق من البيانات المدخلة"),
-        );
-
-        return;
+      if (modalMode === "edit" && currentCurrency.id) {
+        result = await currencyService.updateCurrency(currentCurrency.id, currentCurrency);
+      } else {
+        result = await currencyService.createCurrency(currentCurrency as Omit<Currency, 'id'>);
       }
 
-      toast.success(
-        modalMode === "edit"
-          ? "✅ تم تعديل العملة بنجاح"
-          : "✅ تم إضافة العملة بنجاح",
-      );
-      setIsModalOpen(false);
-      loadCurrencies();
+      if (result) {
+        toast.success(
+          modalMode === "edit"
+            ? "✅ تم تعديل العملة بنجاح"
+            : "✅ تم إضافة العملة بنجاح",
+        );
+        setIsModalOpen(false);
+        loadCurrencies();
+      } else {
+        toast.error("❌ فشل في العملية");
+      }
     } catch (error) {
       console.error("❌ استثناء أثناء الحفظ:", error);
       toast.error("❌ حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا");
@@ -117,12 +138,16 @@ export default function CurrenciesTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذه العملة؟")) return;
     try {
-      const response = await deleteItem(DELETE_URL(id));
+      const result = await currencyService.deleteCurrency(id);
 
-      if (!response.ok) throw new Error();
-      toast.success("✅ تم حذف العملة بنجاح");
-      loadCurrencies();
-    } catch {
+      if (result) {
+        toast.success("✅ تم حذف العملة بنجاح");
+        loadCurrencies();
+      } else {
+        toast.error("❌ فشل في حذف العملة");
+      }
+    } catch (error) {
+      console.error("❌ خطأ أثناء الحذف:", error);
       toast.error("❌ حدث خطأ أثناء الحذف");
     }
   };

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Input, Button, Select, SelectItem, CardBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import toast from "react-hot-toast";
-import { API_ENDPOINTS, fetchData } from "../../../../utilities/api";
+import accountService from "@/services/api/account.service";
 import Card from "../../../../components/Card";
 import { FormModal, InfoModal } from "../../../../components/Modal";
 
@@ -72,13 +72,44 @@ export default function AccountsPage() {
 
 
   useEffect(() => {
-    fetchAccounts();
-    fetchCurrencies();
+    const loadAllData = async () => {
+      try {
+        await Promise.all([
+          fetchAccounts(),
+          fetchCurrencies(),
+        ]);
+      } catch (error) {
+        console.error("خطأ في تحميل البيانات:", error);
+      }
+    };
+
+    loadAllData();
+  }, []);
+
+  // إعادة تحميل البيانات عند العودة للصفحة
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchAccounts();
+      }
+    };
+
+    const handleFocus = () => {
+      fetchAccounts();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const fetchAccounts = async () => {
     try {
-      const allAccountsData = await fetchData<Account[]>(API_ENDPOINTS.ACCOUNTS_LIST);
+      const allAccountsData = await accountService.getAllAccounts();
       if (!allAccountsData || !Array.isArray(allAccountsData)) {
         toast.error("فشل في تحميل الحسابات");
         return;
@@ -99,7 +130,7 @@ export default function AccountsPage() {
 
   const fetchCurrencies = async () => {
     try {
-      const currenciesData = await fetchData<Currency[]>(API_ENDPOINTS.CURRENCIES_LIST);
+      const currenciesData = await accountService.getCurrencies();
       if (!currenciesData || !Array.isArray(currenciesData)) {
         toast.error("حدث خطأ أثناء جلب بيانات العملات.");
         return;
@@ -260,8 +291,8 @@ export default function AccountsPage() {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذا الحساب؟")) return;
 
     try {
-      const result = await fetchData(API_ENDPOINTS.DELETE_ACCOUNT(accountId), "DELETE");
-      if (result === null) {
+      const result = await accountService.deleteAccount(accountId);
+      if (!result) {
         toast.error("حدث خطأ أثناء حذف الحساب");
         return;
       }
@@ -298,11 +329,14 @@ export default function AccountsPage() {
         newAccount.id = selectedAccount.id;
       }
 
-      const url = isEdit ? API_ENDPOINTS.UPDATE_ACCOUNT(selectedAccount?.id!) : API_ENDPOINTS.CREATE_ACCOUNT;
-      const method = isEdit ? "PUT" : "POST";
+      let result: Account | null = null;
+      if (isEdit && selectedAccount) {
+        result = await accountService.updateAccount(selectedAccount.id, newAccount);
+      } else {
+        result = await accountService.createAccount(newAccount);
+      }
 
-      const result = await fetchData(url, method, newAccount);
-      if (result === null) {
+      if (!result) {
         toast.error("حدث خطأ أثناء حفظ الحساب");
         return;
       }

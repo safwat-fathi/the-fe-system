@@ -20,16 +20,9 @@ import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/ou
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
-import { API_ENDPOINTS, fetchData } from "@/utilities/api";
-import useCrud from "@/utilities/useCrud";
+import boxService from "@/services/api/box.service";
 
-const {
-  CUSTOMER_BOXES_LIST,
-  CREATE_CUSTOMER,
-  UPDATE_CUSTOMER,
-  DELETE_CUSTOMER,
-  BoxTypeList,
-} = API_ENDPOINTS;
+// تم إزالة API_ENDPOINTS واستبدالها بـ boxService
 
 // Interface for customer boxes (customers with cust_type = 99)
 interface CustomerBox {
@@ -83,66 +76,87 @@ export default function CustomerBoxPage() {
 
   const rowsPerPage = 10;
 
-  const { loadItems, createItem, updateItem, deleteItem } = useCrud();
+  // تم إزالة useCrud واستبداله بـ boxService
 
   const loadBoxes = useCallback(async () => {
-    const data = await loadItems<CustomerBox>(CUSTOMER_BOXES_LIST);
-    setBoxes(data);
-  }, [loadItems]);
+    try {
+      const data = await boxService.getAllBoxes();
+      setBoxes(data);
+    } catch (error) {
+      console.error("فشل في جلب الصناديق:", error);
+      setBoxes([]);
+    }
+  }, []);
 
   const loadBoxTypes = useCallback(async () => {
     try {
-      const data = await fetchData(BoxTypeList);
-      const types = Array.isArray(data?.results) ? data.results : [];
-      setBoxTypes(types);
+      const data = await boxService.getBoxTypes();
+      setBoxTypes(data);
     } catch (error) {
       console.error("❌ خطأ في تحميل أنواع الصناديق:", error);
+      setBoxTypes([]);
     }
   }, []);
 
   useEffect(() => {
-    loadBoxes();
-    loadBoxTypes();
+    const loadAllData = async () => {
+      try {
+        await Promise.all([
+          loadBoxes(),
+          loadBoxTypes(),
+        ]);
+      } catch (error) {
+        console.error("خطأ في تحميل البيانات:", error);
+      }
+    };
+
+    loadAllData();
   }, [loadBoxes, loadBoxTypes]);
+
+  // إعادة تحميل البيانات عند العودة للصفحة
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // إعادة تحميل البيانات عند العودة للصفحة
+        loadBoxes();
+      }
+    };
+
+    const handleFocus = () => {
+      // إعادة تحميل البيانات عند التركيز على النافذة
+      loadBoxes();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadBoxes]);
 
   const handleSave = async () => {
     try {
-      const url =
-        modalMode === "edit" && currentBox.id
-          ? UPDATE_CUSTOMER(currentBox.id)
-          : CREATE_CUSTOMER;
+      let result: CustomerBox | null = null;
 
-      // Prepare customer data for boxes (cust_type = 99)
-      const boxData = {
-        ...currentBox,
-        cust_type: 99, // Set customer type to 99 for boxes
-        cust_code: currentBox.cust_code || String(currentBox.id || ""),
-        cust_status: currentBox.cust_status || 1, // Default active status
-      };
-
-      const response =
-        modalMode === "edit" && currentBox.id
-          ? await updateItem(url, boxData)
-          : await createItem(url, boxData);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-
-        toast.error(
-          "❌ فشل في العملية: " +
-            (errorData?.detail || JSON.stringify(errorData)),
-        );
-
-        return;
+      if (modalMode === "edit" && currentBox.id) {
+        result = await boxService.updateBox(currentBox.id, currentBox);
+      } else {
+        result = await boxService.createBox(currentBox as Omit<CustomerBox, 'id'>);
       }
 
-      toast.success(
-        modalMode === "edit"
-          ? "✅ تم تعديل الصندوق بنجاح"
-          : "✅ تم إضافة الصندوق بنجاح",
-      );
-      setIsModalOpen(false);
-      loadBoxes();
+      if (result) {
+        toast.success(
+          modalMode === "edit"
+            ? "✅ تم تعديل الصندوق بنجاح"
+            : "✅ تم إضافة الصندوق بنجاح",
+        );
+        setIsModalOpen(false);
+        loadBoxes();
+      } else {
+        toast.error("❌ فشل في العملية");
+      }
     } catch (error) {
       console.error("❌ خطأ أثناء الحفظ:", error);
       toast.error("❌ حدث خطأ أثناء حفظ الصندوق");
@@ -152,12 +166,16 @@ export default function CustomerBoxPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف هذا الصندوق؟")) return;
     try {
-      const response = await deleteItem(DELETE_CUSTOMER(id));
+      const result = await boxService.deleteBox(id);
 
-      if (!response.ok) throw new Error();
-      toast.success("✅ تم حذف الصندوق بنجاح");
-      loadBoxes();
-    } catch {
+      if (result) {
+        toast.success("✅ تم حذف الصندوق بنجاح");
+        loadBoxes();
+      } else {
+        toast.error("❌ فشل في حذف الصندوق");
+      }
+    } catch (error) {
+      console.error("❌ خطأ أثناء الحذف:", error);
       toast.error("❌ حدث خطأ أثناء الحذف");
     }
   };

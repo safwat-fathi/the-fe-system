@@ -18,13 +18,9 @@ import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/ou
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
-import { fetchData, API_BASE_URL, apiFetch } from "@/utilities/api";
-import useCrud from "@/utilities/useCrud";
+import customerTypeService from "@/services/api/customer-type.service";
 
-const API_URL = `${API_BASE_URL}cust_type_list`;
-const CREATE_URL = `${API_BASE_URL}api_create_cust_type`;
-const UPDATE_URL = (id: number) => `${API_BASE_URL}api_update_cust_type/${id}`;
-const DELETE_URL = (id: number) => `${API_BASE_URL}api_delete_cust_type/${id}`;
+// تم إزالة API URLs واستبدالها بـ customerTypeService
 
 interface CustomerType {
   id: number;
@@ -56,48 +52,63 @@ export default function CustomerTypesTable() {
   const rowsPerPage = 12;
 
   const loadTypes = useCallback(async () => {
-    const data = await fetchData(API_URL);
-
-    if (Array.isArray(data)) setTypes(data);
+    try {
+      const data = await customerTypeService.getAllCustomerTypes();
+      setTypes(data);
+    } catch (error) {
+      console.error("فشل في جلب أنواع العملاء:", error);
+      setTypes([]);
+    }
   }, []);
 
   useEffect(() => {
     loadTypes();
   }, [loadTypes]);
 
+  // إعادة تحميل البيانات عند العودة للصفحة
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadTypes();
+      }
+    };
+
+    const handleFocus = () => {
+      loadTypes();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadTypes]);
+
   const handleSave = async () => {
     try {
-      const url =
-        modalMode === "edit" && currentType.id
-          ? UPDATE_URL(currentType.id)
-          : CREATE_URL;
-      const method = modalMode === "edit" ? "PUT" : "POST";
+      let result: CustomerType | null = null;
 
-      const response = await apiFetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentType),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-
-        toast.error(
-          "❌ فشل في العملية: " +
-            (errorData?.detail || "يرجى التحقق من البيانات"),
-        );
-
-        return;
+      if (modalMode === "edit" && currentType.id) {
+        result = await customerTypeService.updateCustomerType(currentType.id, currentType);
+      } else {
+        result = await customerTypeService.createCustomerType(currentType as Omit<CustomerType, 'id'>);
       }
 
-      toast.success(
-        modalMode === "edit"
-          ? "✅ تم تعديل النوع بنجاح"
-          : "✅ تم إضافة النوع بنجاح",
-      );
-      setIsModalOpen(false);
-      loadTypes();
-    } catch {
+      if (result) {
+        toast.success(
+          modalMode === "edit"
+            ? "✅ تم تعديل النوع بنجاح"
+            : "✅ تم إضافة النوع بنجاح",
+        );
+        setIsModalOpen(false);
+        loadTypes();
+      } else {
+        toast.error("❌ فشل في العملية");
+      }
+    } catch (error) {
+      console.error("❌ خطأ أثناء الحفظ:", error);
       toast.error("❌ حدث خطأ أثناء الحفظ");
     }
   };
@@ -105,15 +116,16 @@ export default function CustomerTypesTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد من حذف نوع العميل؟")) return;
     try {
-      const response = await apiFetch(DELETE_URL(id), {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
+      const result = await customerTypeService.deleteCustomerType(id);
 
-      if (!response.ok) throw new Error();
-      toast.success("✅ تم حذف النوع بنجاح");
-      loadTypes();
-    } catch {
+      if (result) {
+        toast.success("✅ تم حذف النوع بنجاح");
+        loadTypes();
+      } else {
+        toast.error("❌ فشل في حذف نوع العميل");
+      }
+    } catch (error) {
+      console.error("❌ خطأ أثناء الحذف:", error);
       toast.error("❌ حدث خطأ أثناء الحذف");
     }
   };
