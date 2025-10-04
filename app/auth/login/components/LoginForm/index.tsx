@@ -5,6 +5,7 @@ import { Form, Input, Spacer, Button } from "@heroui/react";
 import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 
+
 const LoginForm = () => {
   const [state, action, pending] = useActionState(loginAction, undefined);
   const searchParams = useSearchParams();
@@ -13,6 +14,7 @@ const LoginForm = () => {
   return (
     <Form className="flex flex-col gap-4" action={action}>
       <input type="hidden" name="redirect" value={redirectPath} />
+      {/* <input type="hidden" name="csrfToken" value={csrfToken} /> */}
       <Input
         name="username"
         label="اسم المستخدم"
@@ -30,7 +32,7 @@ const LoginForm = () => {
         variant="bordered"
         placeholder="••••••••"
         required
-        className="text-right"
+        // className="text-right"
       />
 
       {!state?.success && (
