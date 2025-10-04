@@ -62,7 +62,20 @@ export async function loginUser(username: string, password: string) {
 
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token");
+    // محاولة الحصول على التوكن من localStorage أولاً
+    const localToken = localStorage.getItem("auth_token");
+    if (localToken) {
+      return localToken;
+    }
+    
+    // إذا لم يوجد في localStorage، محاولة الحصول عليه من الكوكيز
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'access_token') {
+        return value;
+      }
+    }
   }
   return null;
 }

@@ -21,8 +21,9 @@ import { CardBody, CardHeader } from "@heroui/react";
 import { EyeIcon, PencilIcon, TrashIcon, PlusIcon, MagnifyingGlassIcon, FunnelIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import { fetchData, API_BASE_URL, API_ENDPOINTS, apiFetch } from "@/utilities/api";
-import useCrud from "@/utilities/useCrud";
+import itemService from "@/services/api/item.service";
+import helperService from "@/services/api/helper.service";
+import { API_BASE_URL, API_ENDPOINTS } from "@/utilities/api";
 import ReactSelect from "react-select";
 
 interface Category {
@@ -133,24 +134,62 @@ export default function CategoriesItemsPage() {
     unit: null,
   });
 
-  const { createItem, updateItem, deleteItem } = useCrud();
+  // تم إزالة useCrud واستبداله بـ itemService
 
   useEffect(() => {
-    fetchCategories();
-    fetchItemTypes();
-    fetchUnits();
-    fetchBoxes();
-    fetchCatTypes();
-    fetchCatStatuses();
-    loadMetaData();
+    const loadAllData = async () => {
+      try {
+        await Promise.all([
+          fetchCategories(),
+          fetchItemTypes(),
+          fetchUnits(),
+          fetchBoxes(),
+          fetchCatTypes(),
+          fetchCatStatuses(),
+          loadMetaData(),
+        ]);
+      } catch (error) {
+        console.error("خطأ في تحميل البيانات:", error);
+      }
+    };
+
+    loadAllData();
   }, []);
 
+  // إعادة تحميل البيانات عند العودة للصفحة
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // إعادة تحميل البيانات عند العودة للصفحة
+        fetchItems(selectedCatId, selectedTypeId);
+      }
+    };
+
+    const handleFocus = () => {
+      // إعادة تحميل البيانات عند التركيز على النافذة
+      fetchItems(selectedCatId, selectedTypeId);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [selectedCatId, selectedTypeId]);
+
   const loadMetaData = useCallback(async () => {
-    const itemsResponse = await fetchData(Item_Status_URL);
-    const item = Array.isArray((itemsResponse as any)?.results)
-      ? (itemsResponse as any).results
-      : [];
-    setItemStatus(item);
+    try {
+      // TODO: إنشاء خدمة منفصلة للبيانات المساعدة أو استخدام apiFetch مع التوكن
+      // const itemsResponse = await fetchData(Item_Status_URL);
+      // const item = Array.isArray((itemsResponse as any)?.results)
+      //   ? (itemsResponse as any).results
+      //   : [];
+      // setItemStatus(item);
+    } catch (error) {
+      console.error("فشل في جلب البيانات المساعدة:", error);
+    }
   }, []);
   
   useEffect(() => {
@@ -163,41 +202,41 @@ export default function CategoriesItemsPage() {
 
   const fetchCatTypes = async () => {
     try {
-      const res = await apiFetch(API_ENDPOINTS.CatTypeList);
-      const data = await res.json();
-      setCatTypes(Array.isArray(data.results) ? data.results : []);
+      const data = await helperService.getCatTypes();
+      setCatTypes(data);
     } catch (err) {
       console.error("فشل تحميل أنواع الفئات:", err);
+      setCatTypes([]);
     }
   };
 
   const fetchCatStatuses = async () => {
     try {
-      const res = await apiFetch(API_ENDPOINTS.CatStatusList);
-      const data = await res.json();
-      setCatStatuses(Array.isArray(data.results) ? data.results : []);
+      const data = await helperService.getCatStatuses();
+      setCatStatuses(data);
     } catch (err) {
       console.error("فشل تحميل حالة الفئات:", err);
+      setCatStatuses([]);
     }
   };
 
   const fetchBoxes = async () => {
     try {
-      const res = await apiFetch(API_ENDPOINTS.BOXES_LIST);
-      const data = await res.json();
-      setBoxes(Array.isArray(data) ? data : []);
+      const data = await helperService.getBoxes();
+      setBoxes(data);
     } catch (err) {
       console.error("فشل تحميل الصناديق:", err);
+      setBoxes([]);
     }
   };
 
   const fetchCategories = async () => {
     try {
-      const res = await apiFetch(API_ENDPOINTS.CATEGORIES_LIST);
-      const data = await res.json();
-      setCategories((data as any).results || []);
+      const data = await helperService.getCategories();
+      setCategories(data);
     } catch (err) {
       console.error("خطأ في تحميل الفئات:", err);
+      setCategories([]);
     }
   };
 
@@ -208,17 +247,20 @@ export default function CategoriesItemsPage() {
     page = 1,
   ) => {
     try {
-      const fetchUrl =
-        url ?? `${API_BASE_URL}items_list_p/${xcat}/${xtype}/?page=${page}`;
-      const res = await apiFetch(fetchUrl);
-      const data = await res.json();
+      // استخدام itemService لجلب جميع الأصناف
+      const itemsArray = await itemService.getAllItems();
+      
+      // فلترة الأصناف حسب الفئة والنوع
+      const filteredItems = itemsArray.filter((item: any) => {
+        if (xcat && xcat !== 0 && item.cat !== xcat) return false;
+        if (xtype && xtype !== 0 && item.item_type !== xtype) return false;
+        return true;
+      });
 
-      const itemsArray = Array.isArray((data as any).results) ? (data as any).results : [];
-
-      setItems(itemsArray);
-      setItemsNextUrl((data as any).next);
-      setItemsPrevUrl((data as any).previous);
-      setItemsCount((data as any).count);
+      setItems(filteredItems);
+      setItemsCount(filteredItems.length);
+      setItemsNextUrl(null);
+      setItemsPrevUrl(null);
     } catch (err) {
       console.error("خطأ في تحميل الأصناف:", err);
       setItems([]);
@@ -231,14 +273,8 @@ export default function CategoriesItemsPage() {
     page = 1,
   ) => {
     try {
-      const fetchUrl =
-        url ??
-        `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(
-          query,
-        )}&page=${page}`;
-      const res = await apiFetch(fetchUrl);
-      const data = await res.json();
-      const itemsArray = Array.isArray((data as any).results) ? (data as any).results : [];
+      // استخدام itemService للبحث في الأصناف
+      const itemsArray = await itemService.getAllItems();
       const term = query.toLowerCase();
       const filtered = itemsArray.filter((item: any) => {
         const code = (item.item_code ?? item.code ?? "").toLowerCase();
@@ -251,9 +287,9 @@ export default function CategoriesItemsPage() {
       }));
 
       setItems(mapped);
-      setItemsNextUrl((data as any).next);
-      setItemsPrevUrl((data as any).previous);
-      setItemsCount((data as any).count);
+      setItemsCount(mapped.length);
+      setItemsNextUrl(null);
+      setItemsPrevUrl(null);
     } catch (err) {
       console.error("خطأ في البحث عن الأصناف:", err);
       setItems([]);
@@ -262,21 +298,21 @@ export default function CategoriesItemsPage() {
 
   const fetchItemTypes = async () => {
     try {
-      const res = await apiFetch(API_ENDPOINTS.ITEM_TYPES_LIST);
-      const data = await res.json();
-      setItemTypes(data as ItemType[]);
+      const data = await helperService.getItemTypes();
+      setItemTypes(data);
     } catch (err) {
       console.error("خطأ في تحميل أنواع الأصناف:", err);
+      setItemTypes([]);
     }
   };
 
   const fetchUnits = async () => {
     try {
-      const res = await apiFetch(API_ENDPOINTS.UNITS_LIST);
-      const data = await res.json();
-      setUnits(data as Unit[]);
+      const data = await helperService.getUnits();
+      setUnits(data);
     } catch (err) {
       console.error("خطأ في تحميل الوحدات:", err);
+      setUnits([]);
     }
   };
 
@@ -319,19 +355,14 @@ export default function CategoriesItemsPage() {
         formData.append("item_img", newItem.item_img as unknown as File); 
       }    
 
-      const response = await createItem(
-        API_ENDPOINTS.CREATE_ITEM,
-        formData,
-        { isFormData: true },
-      );
+      const result = await itemService.createItem(newItem);
 
-      if (response.ok) {
+      if (result) {
         toast.success("✅ تمت إضافة الصنف بنجاح");
         setIsModalOpen(false);
         fetchItems(selectedCatId, selectedTypeId);
       } else {
-        const error = await response.json();
-        toast.error("❌ فشل في الإضافة:\n" + JSON.stringify(error));
+        toast.error("❌ فشل في الإضافة");
       }
     } catch (err) {
       toast.error("❌ حدث خطأ أثناء الإرسال");
@@ -380,19 +411,14 @@ export default function CategoriesItemsPage() {
         formData.append("item_img", newItem.item_img as unknown as File);
       }
 
-      const response = await updateItem(
-        `${API_BASE_URL}api_update_item/${newItem.id}`,
-        formData,
-        { method: "PATCH", isFormData: true },
-      );
+      const result = await itemService.updateItem(newItem.id, newItem);
 
-      if (response.ok) {
+      if (result) {
         toast.success("✅ تم تعديل الصنف بنجاح");
         setIsModalOpen(false);
         fetchItems(selectedCatId, selectedTypeId);
       } else {
-        const error = await response.json();
-        toast.error("❌ فشل في التعديل:\n" + JSON.stringify(error));
+        toast.error("❌ فشل في التعديل");
       }
     } catch (err) {
       toast.error("❌ خطأ أثناء التعديل");
@@ -405,12 +431,9 @@ export default function CategoriesItemsPage() {
     if (!confirmed) return;
 
     try {
-      const response = await deleteItem(`${API_BASE_URL}api_delete_item/`, {
-        method: "POST",
-        payload: { id },
-      });
+      const result = await itemService.deleteItem(id);
 
-      if (response.ok) {
+      if (result) {
         toast.success("تم حذف الصنف بنجاح ✅");
         fetchItems(selectedCatId, selectedTypeId);
       } else {
@@ -470,7 +493,7 @@ export default function CategoriesItemsPage() {
                 <TableColumn className="text-center text-xs">الإجراءات</TableColumn>
               </TableHeader>
               <TableBody>
-                {pagedCategories.map((cat) => (
+                {(pagedCategories || []).map((cat) => (
                   <TableRow key={cat.id} className="hover:bg-gray-50 transition-colors">
                     <TableCell className="font-medium max-w-md truncate text-xs">
                       {cat.cat_name}
@@ -635,9 +658,9 @@ export default function CategoriesItemsPage() {
                 <TableColumn className="text-center text-xs">الإجراءات</TableColumn>
               </TableHeader>
               <TableBody>
-                {pagedItems.map((item) => {
-                  const unitName = units.find((unit) => unit.id === item.unit);
-                  const status = ItemStatus.find((t) => t.code_id === item.item_status);
+                {(pagedItems || []).map((item) => {
+                  const unitName = (units || []).find((unit) => unit.id === item.unit);
+                  const status = (ItemStatus || []).find((t) => t.code_id === item.item_status);
                   
                   return (
                     <TableRow key={item.id} className="hover:bg-gray-50 transition-colors">
@@ -912,7 +935,7 @@ export default function CategoriesItemsPage() {
                     isDisabled={isViewMode}
                     className="input-field"
                   >
-                    {categories.map((cat) => (
+                    {(categories || []).map((cat) => (
                       <SelectItem key={cat.id}>
                         {cat.cat_name}
                       </SelectItem>
@@ -928,7 +951,7 @@ export default function CategoriesItemsPage() {
                     isDisabled={isViewMode}
                     className="input-field"
                   >
-                    {itemTypes.map((type) => (
+                    {(itemTypes || []).map((type) => (
                       <SelectItem key={type.id}>
                         {type.type_name}
                       </SelectItem>
@@ -944,7 +967,7 @@ export default function CategoriesItemsPage() {
                     isDisabled={isViewMode}
                     className="input-field"
                   >
-                    {units.map((unit) => (
+                    {(units || []).map((unit) => (
                       <SelectItem key={unit.id}>
                         {unit.unit_name}
                       </SelectItem>

@@ -24,13 +24,8 @@ import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/ou
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
-import { API_BASE_URL, apiFetch } from "@/utilities/api";
+import categoryService from "@/services/api/category.service";
 import useCrud from "@/utilities/useCrud";
-
-const API_URL = `${API_BASE_URL}categories_list/`;
-const CREATE_URL = `${API_BASE_URL}api_create_category`;
-const UPDATE_URL = (id: number) => `${API_BASE_URL}api_update_category/${id}`;
-const DELETE_URL = (id: number) => `${API_BASE_URL}api_delete_category/${id}`;
 
 const columns = [
   { name: "رقم الفئة", uid: "id" },
@@ -103,11 +98,7 @@ export default function CategoriesTable() {
 
   const loadData = useCallback(async () => {
     try {
-      const res = await apiFetch(API_URL);
-      const data = await res.json();
-      let categoriesList: any[] = Array.isArray(data)
-        ? data
-        : data.results || data.data || [];
+      const categoriesList = await categoryService.getAllCategories();
       const sanitized = categoriesList.map(sanitizeCategory);
 
       setCategories(sanitized);
@@ -123,14 +114,36 @@ export default function CategoriesTable() {
     loadData();
   }, [loadData]);
 
+  // إعادة تحميل البيانات عند العودة للصفحة
   useEffect(() => {
-    apiFetch(`${API_BASE_URL}boxes_list`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setBoxes(data);
-        else if (Array.isArray(data.results)) setBoxes(data.results);
-      })
-      .catch((err) => console.error("فشل تحميل الصناديق:", err));
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadData();
+      }
+    };
+
+    const handleFocus = () => {
+      loadData();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadData]);
+
+  useEffect(() => {
+    // TODO: إنشاء خدمة للصناديق أو استخدام apiFetch مع التوكن
+    // apiFetch(`${API_BASE_URL}boxes_list`)
+    //   .then((res) => res.json())
+    //   .then((data) => {
+    //     if (Array.isArray(data)) setBoxes(data);
+    //     else if (Array.isArray(data.results)) setBoxes(data.results);
+    //   })
+    //   .catch((err) => console.error("فشل تحميل الصناديق:", err));
   }, []);
 
   useEffect(() => {
@@ -146,13 +159,9 @@ export default function CategoriesTable() {
 
   const handleAddCategory = async () => {
     try {
-      const response = await apiFetch(CREATE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newCategory),
-      });
+      const result = await categoryService.createCategory(newCategory);
 
-      if (response.ok) {
+      if (result) {
         toast.success("تمت إضافة الفئة بنجاح ✅");
         setIsAddModalOpen(false);
         setNewCategory({
@@ -169,9 +178,7 @@ export default function CategoriesTable() {
         });
         loadData();
       } else {
-        const errorData = await response.json();
-
-        toast.error("فشل في إضافة الفئة ❌\n" + JSON.stringify(errorData));
+        toast.error("فشل في إضافة الفئة ❌");
       }
     } catch (error) {
       toast.error("حدث خطأ أثناء الاتصال بالسيرفر");
@@ -187,20 +194,14 @@ export default function CategoriesTable() {
         purity: newCategory.purity ?? "",
       };
 
-      const response = await apiFetch(UPDATE_URL(newCategory.id), {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedCategory),
-      });
+      const result = await categoryService.updateCategory(newCategory.id, updatedCategory);
 
-      if (response.ok) {
+      if (result) {
         toast.success("تم تعديل الفئة بنجاح ✅");
         setIsAddModalOpen(false);
         loadData();
       } else {
-        const errorData = await response.json();
-
-        toast.error("فشل في تعديل الفئة ❌\n" + JSON.stringify(errorData));
+        toast.error("فشل في تعديل الفئة ❌");
       }
     } catch (error) {
       toast.error("حدث خطأ أثناء الاتصال بالسيرفر");
@@ -210,18 +211,13 @@ export default function CategoriesTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف هذه الفئة؟")) return;
     try {
-      const response = await apiFetch(DELETE_URL(id), {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
+      const result = await categoryService.deleteCategory(id);
 
-      if (response.ok) {
+      if (result) {
         toast.success("تم حذف الفئة بنجاح ✅");
         loadData();
       } else {
-        const errorData = await response.json();
-
-        toast.error("فشل في الحذف ❌\n" + JSON.stringify(errorData));
+        toast.error("فشل في الحذف ❌");
       }
     } catch (error) {
       toast.error("خطأ أثناء الاتصال بالسيرفر");
@@ -307,7 +303,7 @@ export default function CategoriesTable() {
     <div className="p-4 font-cairo">
       <h1 className="text-2xl font-bold mb-6">الفئات</h1>
       <div className="flex justify-between mb-4">
-        <Button className=\"btn-primary\" onPress={openAddModal}>
+        <Button className="btn-primary" onPress={openAddModal}>
           {" "}
           <PlusIcon className="h-4 w-4" /> إضافة فئة{" "}
         </Button>

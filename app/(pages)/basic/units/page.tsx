@@ -22,13 +22,9 @@ import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/ou
 import toast from "react-hot-toast";
 
 import ActionButtons from "@/components/ActionButtons";
-import { API_BASE_URL, apiFetch } from "@/utilities/api";
-import useCrud from "@/utilities/useCrud";
+import unitService from "@/services/api/unit.service";
 
-const API_URL = `${API_BASE_URL}units_list/`;
-const CREATE_URL = `${API_BASE_URL}api_create_unit`;
-const UPDATE_URL = (id: number) => `${API_BASE_URL}api_update_unit/${id}`;
-const DELETE_URL = (id: number) => `${API_BASE_URL}api_delete_unit/${id}`;
+// تم إزالة API URLs واستبدالها بـ unitService
 
 interface Unit {
   id: number;
@@ -61,14 +57,11 @@ export default function UnitsTable() {
 
   const loadUnits = useCallback(async () => {
     try {
-      const res = await apiFetch(API_URL);
-      const data = await res.json();
-
-      if (Array.isArray(data)) setUnits(data);
-      else if (Array.isArray(data.results)) setUnits(data.results);
-      else setUnits([]);
-    } catch (err) {
-      console.error("❌ خطأ في تحميل البيانات:", err);
+      const data = await unitService.getAllUnits();
+      setUnits(data);
+    } catch (error) {
+      console.error("فشل في جلب الوحدات:", error);
+      setUnits([]);
     }
   }, []);
 
@@ -76,38 +69,48 @@ export default function UnitsTable() {
     loadUnits();
   }, [loadUnits]);
 
+  // إعادة تحميل البيانات عند العودة للصفحة
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadUnits();
+      }
+    };
+
+    const handleFocus = () => {
+      loadUnits();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadUnits]);
+
   const handleSave = async () => {
     try {
-      const url =
-        modalMode === "edit" && currentUnit.id
-          ? UPDATE_URL(currentUnit.id)
-          : CREATE_URL;
-      const method = modalMode === "edit" ? "PUT" : "POST";
+      let result: Unit | null = null;
 
-      const response = await apiFetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentUnit),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-
-        toast.error(
-          "❌ فشل في العملية: " +
-            (errorData?.detail || JSON.stringify(errorData)),
-        );
-
-        return;
+      if (modalMode === "edit" && currentUnit.id) {
+        result = await unitService.updateUnit(currentUnit.id, currentUnit);
+      } else {
+        result = await unitService.createUnit(currentUnit as Omit<Unit, 'id'>);
       }
 
-      toast.success(
-        modalMode === "edit"
-          ? "✅ تم تعديل الوحدة بنجاح"
-          : "✅ تم إضافة الوحدة بنجاح",
-      );
-      setIsModalOpen(false);
-      loadUnits();
+      if (result) {
+        toast.success(
+          modalMode === "edit"
+            ? "✅ تم تعديل الوحدة بنجاح"
+            : "✅ تم إضافة الوحدة بنجاح",
+        );
+        setIsModalOpen(false);
+        loadUnits();
+      } else {
+        toast.error("❌ فشل في العملية");
+      }
     } catch (error) {
       console.error("❌ خطأ أثناء الحفظ:", error);
       toast.error("❌ حدث خطأ أثناء حفظ الوحدة");
@@ -117,15 +120,16 @@ export default function UnitsTable() {
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف هذه الوحدة؟")) return;
     try {
-      const response = await apiFetch(DELETE_URL(id), {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
+      const result = await unitService.deleteUnit(id);
 
-      if (!response.ok) throw new Error();
-      toast.success("✅ تم حذف الوحدة بنجاح");
-      loadUnits();
-    } catch {
+      if (result) {
+        toast.success("✅ تم حذف الوحدة بنجاح");
+        loadUnits();
+      } else {
+        toast.error("❌ فشل في حذف الوحدة");
+      }
+    } catch (error) {
+      console.error("❌ خطأ أثناء الحذف:", error);
       toast.error("❌ حدث خطأ أثناء الحذف");
     }
   };
