@@ -152,6 +152,106 @@ class InvoiceService extends HttpService<Invoice> {
     }
   }
 
+  async getInvoiceDetails(invoiceId: number): Promise<InvoiceDetail[]> {
+    try {
+      const response = await this.get<InvoiceDetail[]>(
+        `invoices_dtl_list?inv=${invoiceId}`,
+        undefined,
+        {
+          cache: "force-cache",
+          next: { tags: [`invoice-details-${invoiceId}`] },
+        },
+      );
+
+      if (response.success) {
+        if (Array.isArray(response.data)) {
+          return response.data;
+        } else if (Array.isArray((response.data as any)?.results)) {
+          return (response.data as any).results;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching invoice details:", error);
+      throw new Error("حدث خطأ أثناء جلب تفاصيل الفاتورة");
+    }
+  }
+
+  async createInvoice(invoiceData: Partial<Invoice>): Promise<Invoice | null> {
+    try {
+      const response = await this.post<Invoice>(
+        "api_create_invoice",
+        invoiceData,
+      );
+
+      return response.success && response.data ? response.data : null;
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      throw new Error("حدث خطأ أثناء إنشاء الفاتورة");
+    }
+  }
+
+  async updateInvoice(
+    id: number,
+    invoiceData: Partial<Invoice>,
+  ): Promise<Invoice | null> {
+    try {
+      const response = await this.patch<Invoice>(
+        `api_update_invoice/${id}`,
+        invoiceData,
+      );
+
+      return response.success && response.data ? response.data : null;
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      throw new Error("حدث خطأ أثناء تحديث الفاتورة");
+    }
+  }
+
+  async createInvoiceDetail(
+    detailData: Partial<InvoiceDetail>,
+  ): Promise<InvoiceDetail | null> {
+    try {
+      const response = await this.post<InvoiceDetail>(
+        "api_create_invoice_dtl",
+        detailData,
+      );
+
+      return response.success && response.data ? response.data : null;
+    } catch (error) {
+      console.error("Error creating invoice detail:", error);
+      throw new Error("حدث خطأ أثناء إنشاء تفاصيل الفاتورة");
+    }
+  }
+
+  async updateInvoiceDetail(
+    id: number,
+    detailData: Partial<InvoiceDetail>,
+  ): Promise<InvoiceDetail | null> {
+    try {
+      const response = await this.patch<InvoiceDetail>(
+        `api_update_invoice_dtl/${id}`,
+        detailData,
+      );
+
+      return response.success && response.data ? response.data : null;
+    } catch (error) {
+      console.error("Error updating invoice detail:", error);
+      throw new Error("حدث خطأ أثناء تحديث تفاصيل الفاتورة");
+    }
+  }
+
+  async deleteInvoiceDetail(id: number): Promise<boolean> {
+    try {
+      const response = await this.delete(`api_delete_invoice_dtl/${id}`);
+      return response.success;
+    } catch (error) {
+      console.error("Error deleting invoice detail:", error);
+      throw new Error("حدث خطأ أثناء حذف تفاصيل الفاتورة");
+    }
+  }
+
   async calculateMonthlySales(invoices: Invoice[]): Promise<number[]> {
     const monthlySales: number[] = new Array(12).fill(0);
 
