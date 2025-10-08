@@ -20,11 +20,6 @@ const authMiddleware: MiddlewareFactory = () => {
       return NextResponse.next();
     }
 
-    // // For API routes that don't require authentication, we can skip
-    // if (pathname.startsWith("/api/auth")) {
-    //   return NextResponse.next();
-    // }
-
     try {
       // Get the authentication token
       const token = request.cookies.get(STORAGE_KEYS.ACCESS_TOKEN)?.value;
@@ -37,7 +32,7 @@ const authMiddleware: MiddlewareFactory = () => {
       // If no token, redirect to login (root path)
       if (!token) {
         // Don't redirect if we're already on the login page
-        if (pathname === "/auth/login") {
+        if (pathname === AUTH_LOGIN_URL) {
           return NextResponse.next();
         }
 

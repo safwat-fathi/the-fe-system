@@ -96,6 +96,7 @@ class InvoiceService extends HttpService<Invoice> {
           next: { tags: [`invoice-${id}`] },
         },
       );
+      console.log("🚀 ~ :99 ~ InvoiceService ~ getInvoiceById ~ invoiceResponse:", invoiceResponse)
 
       if (
         !invoiceResponse ||
@@ -152,7 +153,7 @@ class InvoiceService extends HttpService<Invoice> {
     }
   }
 
-  async getInvoiceDetails(invoiceId: number): Promise<InvoiceDetail[]> {
+  async getInvoiceDetails(invoiceId: string): Promise<InvoiceDetail[]> {
     try {
       const response = await this.get<InvoiceDetail[]>(
         `invoices_dtl_list?inv=${invoiceId}`,
