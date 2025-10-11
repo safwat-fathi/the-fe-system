@@ -280,7 +280,7 @@ export default function CustomerTypesTable() {
             <div className="col-span-2">
               <Checkbox
                 isDisabled={isViewMode}
-                isSelected={currentType.type_status || false}
+                isSelected={Boolean(currentType.type_status)}
                 onValueChange={(val) =>
                   setCurrentType({ ...currentType, type_status: val })
                 }

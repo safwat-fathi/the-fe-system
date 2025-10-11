@@ -9,3 +9,6 @@ export { default as useCrud } from './useCrud';
 
 // Global utilities
 export * from './global';
+
+// Logger utility
+export { logger } from './logger';

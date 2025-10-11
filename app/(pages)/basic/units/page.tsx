@@ -285,7 +285,7 @@ export default function UnitsTable() {
             <div className="col-span-2 flex gap-6 items-center">
               <Checkbox
                 isDisabled={isViewMode}
-                isSelected={currentUnit.unit_status || false}
+                isSelected={Boolean(currentUnit.unit_status)}
                 onValueChange={(val) =>
                   setCurrentUnit({ ...currentUnit, unit_status: val })
                 }
@@ -294,7 +294,7 @@ export default function UnitsTable() {
               </Checkbox>
               <Checkbox
                 isDisabled={isViewMode}
-                isSelected={currentUnit.unit_default || false}
+                isSelected={Boolean(currentUnit.unit_default)}
                 onValueChange={(val) =>
                   setCurrentUnit({ ...currentUnit, unit_default: val })
                 }

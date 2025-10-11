@@ -29,9 +29,10 @@ import {
 import customerService from "@/services/api/customer.service";
 import { API_BASE_URL } from "@/utilities/api";
 import ActionButtons from "@/components/ActionButtons";
+import type { Customer as CustomerModel } from "@/types/models/customer";
 // import { handleLanguageChange } from "@/utilities/global";
 
-interface Customer {
+interface CustomerFull {
   id: number;
   cust_code?: string;
   cust_name: string;
@@ -104,7 +105,7 @@ export default function CustomersTable() {
   const loadCustomers = useCallback(async () => {
     try {
       const data = await customerService.getAllCustomers();
-      setCustomers(data);
+      setCustomers(data as any);
     } catch (error) {
       console.error("فشل في جلب العملاء:", error);
       setCustomers([]);
@@ -808,7 +809,7 @@ const filteredCustomers = useMemo(() => {
             <div className="flex gap-6 items-center col-span-3">
               <Checkbox
                 isDisabled={isViewMode}
-                isSelected={currentCustomer.expt || false}
+                isSelected={Boolean(currentCustomer.expt)}
                 onValueChange={(val) =>
                   setCurrentCustomer({ ...currentCustomer, expt: val })
                 }
@@ -817,7 +818,7 @@ const filteredCustomers = useMemo(() => {
               </Checkbox>
               <Checkbox
                 isDisabled={isViewMode}
-                isSelected={currentCustomer.hide || false}
+                isSelected={Boolean(currentCustomer.hide)}
                 onValueChange={(val) =>
                   setCurrentCustomer({ ...currentCustomer, hide: val })
                 }

@@ -5,6 +5,7 @@ import { Input, Button, Checkbox, Card, CardBody, Image, Divider } from "@heroui
 import toast from "react-hot-toast";
 
 import { API_ENDPOINTS, apiFetch } from "@/utilities/api";
+import homeService from "@/services/api/home.service";
 
 interface HomeSettings {
   [key: string]: any;
@@ -85,12 +86,11 @@ export default function SettingsPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await apiFetch(API_ENDPOINTS.HOME_LIST);
-        const data = await res.json();
+        const homeSettings = await homeService.getHomeSettings();
 
-        if (Array.isArray(data) && data.length > 0) {
-          setSettings(data[0]);
-          setOriginalSettings(data[0]);
+        if (homeSettings) {
+          setSettings(homeSettings);
+          setOriginalSettings(homeSettings);
         }
       } catch (e) {
         console.error("فشل تحميل الإعدادات", e);

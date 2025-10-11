@@ -15,6 +15,7 @@ import {
   apiFetch,
   fetchItemByBarcode,
 } from "@/utilities/api";
+import homeService from "@/services/api/home.service";
 
 const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
 
@@ -281,14 +282,14 @@ export default function SalesReturnPage() {
 
   const fetchHomePurity = async () => {
     try {
-      const res = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
+      const homeSettings = await homeService.getHomeSettings();
 
-      if (Array.isArray(res) && res.length > 0) {
-        const p = parseFloat(res[0]?.purity);
-        const vatPerc = parseFloat(res[0]?.Vat_perc);
+      if (homeSettings) {
+        const p = homeSettings.purity || 0;
+        const vatPerc = homeSettings.Vat_perc || 0;
 
-        if (!isNaN(p)) setHomePurity(p);
-        if (!isNaN(vatPerc)) setDefaultTaxPrc(vatPerc);
+        if (p) setHomePurity(p);
+        if (vatPerc) setDefaultTaxPrc(vatPerc);
       }
     } catch (e) {
       console.error("failed to load home settings", e);
@@ -798,9 +799,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     // جلب بيانات المنشأة من قاعدة البيانات
-    const homeData = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
-    const home =
-      Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
+    const home = await homeService.getHomeSettings() || {};
 
     // تجهيز بيانات التقرير
     const previewCustomer = selectedCust

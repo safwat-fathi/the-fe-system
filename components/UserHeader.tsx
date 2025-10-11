@@ -11,8 +11,9 @@ import {
   DropdownItem,
   Button,
 } from "@heroui/react";
-import { UserIcon } from "@heroicons/react/24/outline";
+import { UserIcon, BeakerIcon } from "@heroicons/react/24/outline";
 import { onLogoutAction } from "@/app/actions/auth";
+import { useRouter } from "next/navigation";
 
 interface UserInfo {
   username: string;
@@ -29,8 +30,14 @@ const STATIC_USER_INFO: UserInfo = {
 };
 
 export default function UserHeader() {
+  const router = useRouter();
+  
   const handleLogout = async () => {
     await onLogoutAction();
+  };
+  
+  const handleNavigateToTest = () => {
+    router.push("/test-service");
   };
 
   return (
@@ -59,6 +66,14 @@ export default function UserHeader() {
               </Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="قائمة المستخدم">
+              <DropdownItem
+                key="test-service"
+                className="text-blue-600"
+                startContent={<BeakerIcon className="w-4 h-4" />}
+                onClick={handleNavigateToTest}
+              >
+                صفحة الاختبار
+              </DropdownItem>
               <DropdownItem
                 key="logout"
                 className="text-red-600"

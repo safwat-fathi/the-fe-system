@@ -1,4 +1,4 @@
-export const API_BASE_URL: string = "http://149.102.143.102:8000/api/";
+export const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_BASE_URL || "http://84.46.240.24:8000/api";
 
 // export const GOLD_API_TOKEN: string =
 //   process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
@@ -205,6 +205,10 @@ export async function fetchData<T>(
 
 let fractionsCache: { frac: number; frac2: number } | null = null;
 
+/**
+ * @deprecated Use homeService.getHomeList() instead
+ * This function is kept for backward compatibility
+ */
 export async function fetchFractions() {
   if (fractionsCache) return fractionsCache;
 

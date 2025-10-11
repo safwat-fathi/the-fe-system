@@ -13,6 +13,7 @@ import {
   apiFetch,
   fetchItemByBarcode,
 } from "@/utilities/api";
+import homeService from "@/services/api/home.service";
 
 import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
@@ -104,10 +105,10 @@ export default function GoldInvoice1Page() {
 
   const fetchHomePurity = async () => {
     try {
-      const res = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
-      if (Array.isArray(res) && res.length > 0) {
-        const p = parseFloat(res[0]?.purity);
-        if (!isNaN(p)) setHomePurity(p);
+      const homeSettings = await homeService.getHomeSettings();
+      if (homeSettings) {
+        const p = homeSettings.purity || 0;
+        if (p) setHomePurity(p);
       }
     } catch (e) {
       console.error("failed to load home settings", e);
