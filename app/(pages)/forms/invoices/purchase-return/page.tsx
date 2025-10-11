@@ -13,6 +13,7 @@ import {
   apiFetch,
   fetchItemByBarcode,
 } from "@/utilities/api";
+import homeService from "@/services/api/home.service";
 
 import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
@@ -104,10 +105,10 @@ export default function GoldInvoice3Page() {
 
   const fetchHomePurity = async () => {
     try {
-      const res = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
-      if (Array.isArray(res) && res.length > 0) {
-        const p = parseFloat(res[0]?.purity);
-        if (!isNaN(p)) setHomePurity(p);
+      const homeSettings = await homeService.getHomeSettings();
+      if (homeSettings) {
+        const p = homeSettings.purity || 0;
+        if (p) setHomePurity(p);
       }
     } catch (e) {
       console.error("failed to load home settings", e);
@@ -117,7 +118,7 @@ export default function GoldInvoice3Page() {
   async function fetchItems() {
     try {
       const response = await fetchData<{ results: any[] }>(
-        `${API_BASE_URL}GetItemsList/`,
+        `${API_BASE_URL}/GetItemsList/`,
       );
       if (response && Array.isArray(response.results)) {
         setItems(response.results);
@@ -129,7 +130,7 @@ export default function GoldInvoice3Page() {
   }
 
   async function fetchCustomers() {
-    const response = await fetchData<any[]>(`${API_BASE_URL}customers_list`);
+    const response = await fetchData<any[]>(`${API_BASE_URL}/customers_list`);
     if (response) {
       // تصفية العملاء والموردين بحيث لا يكون box_type = 2
       const filteredCustomers = response.filter((customer) => customer.box_type !== 2);
@@ -278,7 +279,7 @@ export default function GoldInvoice3Page() {
         } else {
           // إذا لم يجد بالباركود، جرب البحث في الكود
           const res = await fetch(
-            `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
+            `${API_BASE_URL}/SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
           );
           const json = await res.json();
           

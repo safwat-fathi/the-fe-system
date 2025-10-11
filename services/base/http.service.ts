@@ -22,7 +22,8 @@ export interface ServiceResponse<T = any> {
 export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   private readonly _baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   private _token: string | undefined = undefined;
-  private readonly _defaultOptions: RequestInit;
+  private readonly _timeout: number;
+  private readonly _defaultHeaders: HeadersInit;
   private _isRefreshing = false;
   private _refreshPromise: Promise<boolean> | null = null;
 
@@ -35,23 +36,65 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     }
 
     this._baseUrl += url;
-
-    this._defaultOptions = {
-      signal: AbortSignal.timeout(timeout),
-      headers: {
-        Accept: "application/json",
-      },
+    this._timeout = timeout;
+    this._defaultHeaders = {
+      Accept: "application/json",
     };
   }
 
   private async _getAuthHeaders(): Promise<HeadersInit> {
-    if (!this._token) {
-      this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
-    }
+    // Always get fresh token from cookies
+    this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
 
     return this._token
       ? { Authorization: `Bearer ${this._token.replace(/['"]+/g, "")}` }
       : {};
+  }
+
+  // Cache branch params to avoid repeated cookie reads
+  private static _cachedBranchParams: { params: IParams; timestamp: number } | null = null;
+  private static readonly CACHE_DURATION = 60000; // 1 minute cache
+
+  private async _addBranchParams(params: IParams): Promise<IParams> {
+    // إذا كانت المعاملات تحتوي بالفعل على com أو year، لا تستبدلها
+    // هذا يمنع القراءة المكررة للـ cookies عندما تكون المعاملات موجودة من الصفحة
+    if (params.com || params.year || params.xcom_id || params.xyear_id || params.xcomp_id) {
+      return params;
+    }
+
+    // Check cache first
+    const now = Date.now();
+    if (HttpService._cachedBranchParams && 
+        (now - HttpService._cachedBranchParams.timestamp) < HttpService.CACHE_DURATION) {
+      return {
+        ...params,
+        ...HttpService._cachedBranchParams.params,
+      };
+    }
+
+    // فقط في حالات نادرة عندما لا تكون المعاملات موجودة، نقرأ من cookies
+    // هذا التحسين يقلل عدد مرات قراءة cookies بشكل كبير
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    
+    const selectedBranch = cookieStore.get("selectedBranch")?.value || "1";
+    const selectedYear = cookieStore.get("selectedYear")?.value || new Date().getFullYear().toString();
+
+    const branchParams = {
+      com: selectedBranch,
+      year: selectedYear,
+    };
+
+    // Cache the result
+    HttpService._cachedBranchParams = {
+      params: branchParams,
+      timestamp: now,
+    };
+
+    return {
+      ...params,
+      ...branchParams,
+    };
   }
 
   // private async _handleTokenRefresh(): Promise<boolean> {
@@ -107,16 +150,21 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       }
 
       const authHeaders = await this._getAuthHeaders();
-      const urlParams = createParams(params || {});
+      
+      // إضافة معاملات com و year تلقائياً من الكوكيز
+      const mergedParams = await this._addBranchParams(params || {});
+      
+      const urlParams = createParams(mergedParams);
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
 
+      // Create a new AbortSignal for each request
       const requestOptions: RequestInit = {
         // credentials: "include", // إزالة credentials لتجنب مشكلة CORS
-        ...this._defaultOptions,
         ...options,
+        signal: options.signal || AbortSignal.timeout(this._timeout),
         method,
         headers: {
-          ...this._defaultOptions.headers,
+          ...this._defaultHeaders,
           ...authHeaders,
           ...options.headers,
         },

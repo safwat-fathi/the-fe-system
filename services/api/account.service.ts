@@ -32,8 +32,10 @@ class AccountService extends HttpService<Account> {
   async getAllAccounts(): Promise<Account[]> {
     try {
       const response = await this.get<Account[]>("accounts_list/", undefined, {
-        cache: "no-store",
-        next: { tags: ["accounts"] },
+        next: { 
+          revalidate: 300, // Cache for 5 minutes
+          tags: ["accounts", "accounts_list"] 
+        },
       });
 
       if (response.success) {
@@ -132,8 +134,10 @@ class AccountService extends HttpService<Account> {
   async getCurrencies(): Promise<Currency[]> {
     try {
       const response = await this.get<Currency[]>("currencies_list/", undefined, {
-        cache: "no-store",
-        next: { tags: ["currencies"] },
+        next: { 
+          revalidate: 600, // Cache for 10 minutes (currencies don't change often)
+          tags: ["currencies", "currencies_list"] 
+        },
       });
 
       if (response.success) {

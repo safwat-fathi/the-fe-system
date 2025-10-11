@@ -6,6 +6,7 @@ import invoiceService, {
 // import AppLoading from "@/components/AppLoading";
 import AppPagination from "@/components/AppPagination";
 import InvoicesHeader from "./components/InvoicesHeader";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 export const revalidate = 3600;
 
@@ -17,7 +18,19 @@ export default async function InvoicesPage({
   const queryParams = await searchParams;
   console.log("🚀 ~ :39 ~ InvoicesPage ~ queryParams:", queryParams);
 
-  const invoices = await invoiceService.getAllInvoices(queryParams);
+  // جلب معاملات الفرع والسنة
+  const branchParams = await getBranchParams();
+  
+  // دمج معاملات الفرع مع معاملات البحث
+  const invoiceParams: GetAllInvoicesParams = {
+    ...queryParams,
+    xcom_id: branchParams.com,
+    xyear_id: branchParams.year,
+  };
+
+  console.log("🚀 ~ InvoicesPage ~ invoiceParams:", invoiceParams);
+
+  const invoices = await invoiceService.getAllInvoices(invoiceParams);
   console.log("🚀 ~ :42 ~ InvoicesPage ~ invoices count:", invoices?.count);
 
   const count = invoices?.count || 0;

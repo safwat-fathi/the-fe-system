@@ -37,6 +37,7 @@ interface FormModalProps extends BaseModalProps {
   submitColor?: "primary" | "danger" | "success" | "warning";
   isLoading?: boolean;
   submitDisabled?: boolean;
+  shouldBlockScroll?: boolean;
 }
 
 // Info Modal Props
@@ -122,10 +123,11 @@ export function FormModal({
   isLoading = false,
   submitDisabled = false,
   size = "2xl",
+  shouldBlockScroll,
   ...baseProps
 }: FormModalProps) {
   return (
-    <HeroModal isOpen={isOpen} onClose={onClose} size={size} {...baseProps}>
+    <HeroModal isOpen={isOpen} onClose={onClose} size={size} shouldBlockScroll={shouldBlockScroll} {...baseProps}>
       <ModalContent>
         {title && <ModalHeader>{title}</ModalHeader>}
         <ModalBody>{children}</ModalBody>
