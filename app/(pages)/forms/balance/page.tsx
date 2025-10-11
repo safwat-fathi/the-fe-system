@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Voucher, VoucherDetail } from "@/types/voucher";
-import { API_ENDPOINTS, fetchData, apiFetch } from "@/utilities/api";
+import { voucherService, accountService, costCenterService } from "@/services/api";
 import { getCurrDate } from "@/utilities/getCurrDate";
 import { getNextVoucherNumber } from "@/utilities/numbering";
 import { BalanceVoucherContainer } from "./components";
@@ -72,31 +72,41 @@ export default function BalanceVoucherPage() {
     try {
       setIsLoading(true);
       
-      const accountsResponse = await fetchData(API_ENDPOINTS.ACCOUNTS_LIST);
+      // استخدام النظام الجديد من services
+      const [accountsResponse, costCentersResponse, voucherTypesResponse, voucherStagesResponse] = await Promise.all([
+        accountService.getAllAccounts(),
+        costCenterService.getAllCostCenters(),
+        voucherService.getVoucherTypes(),
+        voucherService.getVoucherStages(),
+      ]);
+
+      // معالجة الحسابات
       if (accountsResponse && Array.isArray(accountsResponse)) {
-        const level5Accounts = accountsResponse.filter(account => account.acc_level === 5);
+        const level5Accounts = accountsResponse.filter((account: any) => account.acc_level === 5);
         setAccounts(level5Accounts);
+      } else {
+        setAccounts([]);
       }
 
-      try {
-        const costCentersResponse = await fetchData(API_ENDPOINTS.COST_CENTERS_LIST);
-        if (costCentersResponse && Array.isArray(costCentersResponse)) {
-          setCostCenters(costCentersResponse);
-        } else {
-          setCostCenters([]);
-        }
-      } catch (costCenterError) {
+      // معالجة مراكز التكلفة
+      if (costCentersResponse && Array.isArray(costCentersResponse)) {
+        setCostCenters(costCentersResponse);
+      } else {
         setCostCenters([]);
       }
 
-      const voucherTypesResponse = await fetchData(API_ENDPOINTS.VoucherTypeList);
-      if (voucherTypesResponse && Array.isArray(voucherTypesResponse)) {
-        setVoucherTypes(voucherTypesResponse);
+      // معالجة أنواع السندات
+      if (voucherTypesResponse.success && voucherTypesResponse.data) {
+        setVoucherTypes(Array.isArray(voucherTypesResponse.data) ? voucherTypesResponse.data : []);
+      } else {
+        setVoucherTypes([]);
       }
 
-      const voucherStatusesResponse = await fetchData(API_ENDPOINTS.VoucherStageList);
-      if (voucherStatusesResponse && Array.isArray(voucherStatusesResponse)) {
-        setVoucherStatuses(voucherStatusesResponse);
+      // معالجة حالات السندات
+      if (voucherStagesResponse.success && voucherStagesResponse.data) {
+        setVoucherStatuses(Array.isArray(voucherStagesResponse.data) ? voucherStagesResponse.data : []);
+      } else {
+        setVoucherStatuses([]);
       }
       
     } catch (error) {
@@ -234,24 +244,21 @@ export default function BalanceVoucherPage() {
         cr_date: new Date().toISOString(),
       };
 
-      const voucherResponse = await apiFetch(API_ENDPOINTS.CREATE_VOUCHER, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(voucherData),
-      });
+      // حفظ السند الرئيسي
+      const voucherResponse = await voucherService.create(voucherData);
 
-      if (!voucherResponse.ok) {
-        const errorText = await voucherResponse.text();
-        throw new Error(`خطأ في حفظ رأس القيد: ${errorText}`);
+      if (!voucherResponse.success || !voucherResponse.data) {
+        throw new Error(voucherResponse.message || "خطأ في حفظ رأس القيد");
       }
 
-      const savedVoucher = await voucherResponse.json();
-      const masterId = savedVoucher.id;
+      const savedVoucher = voucherResponse.data;
+      const masterId = savedVoucher.vouch_id || savedVoucher.id;
 
       if (!masterId || !isFinite(masterId) || masterId <= 0) {
         throw new Error(`لم يتم الحصول على معرف القيد الصحيح من الخادم: ${masterId}`);
       }
 
+      // حفظ التفاصيل
       for (const detail of details) {
         if (!detail.acc_id || detail.acc_id === 0) {
           continue;
@@ -273,15 +280,10 @@ export default function BalanceVoucherPage() {
           cr_date: new Date().toISOString(),
         };
 
-        const detailResponse = await apiFetch(API_ENDPOINTS.CREATE_VOUCHER_DTL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(detailData),
-        });
+        const detailResponse = await voucherService.createDetail(detailData as any);
 
-        if (!detailResponse.ok) {
-          const errorText = await detailResponse.text();
-          throw new Error(`خطأ في حفظ تفصيل القيد: ${errorText}`);
+        if (!detailResponse.success) {
+          throw new Error(detailResponse.message || "خطأ في حفظ تفصيل القيد");
         }
       }
 

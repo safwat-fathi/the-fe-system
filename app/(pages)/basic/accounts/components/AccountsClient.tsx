@@ -790,6 +790,7 @@ export default function AccountsClient({ initialAccounts, initialCurrencies }: A
         title="إضافة حساب جديد"
         submitText="إضافة الحساب"
         cancelText="إلغاء"
+        shouldBlockScroll={false}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -818,6 +819,7 @@ export default function AccountsClient({ initialAccounts, initialCurrencies }: A
             selectedKeys={[formData.acc_type.toString()]}
             onSelectionChange={(keys) => setFormData(prev => ({ ...prev, acc_type: parseInt(Array.from(keys)[0] as string) }))}
             variant="bordered"
+            popoverProps={{ shouldBlockScroll: false }}
           >
             <SelectItem key="1">رئيسي</SelectItem>
             <SelectItem key="2">فرعي</SelectItem>
@@ -828,6 +830,7 @@ export default function AccountsClient({ initialAccounts, initialCurrencies }: A
             selectedKeys={[formData.acc_rep.toString()]}
             onSelectionChange={(keys) => setFormData(prev => ({ ...prev, acc_rep: parseInt(Array.from(keys)[0] as string) }))}
             variant="bordered"
+            popoverProps={{ shouldBlockScroll: false }}
           >
             <SelectItem key="1">الأرباح والخسائر</SelectItem>
             <SelectItem key="2">الميزانية العمومية</SelectItem>
@@ -838,6 +841,7 @@ export default function AccountsClient({ initialAccounts, initialCurrencies }: A
             selectedKeys={[formData.cur.toString()]}
             onSelectionChange={(keys) => setFormData(prev => ({ ...prev, cur: parseInt(Array.from(keys)[0] as string) }))}
             variant="bordered"
+            popoverProps={{ shouldBlockScroll: false }}
           >
             {currencies.map(currency => (
               <SelectItem key={currency.id.toString()}>
@@ -864,7 +868,7 @@ export default function AccountsClient({ initialAccounts, initialCurrencies }: A
       </FormModal>
 
       {/* Edit Account Modal */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} size="2xl">
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} size="2xl" shouldBlockScroll={false}>
         <ModalContent>
           <ModalHeader>تعديل الحساب</ModalHeader>
           <ModalBody>
@@ -895,6 +899,7 @@ export default function AccountsClient({ initialAccounts, initialCurrencies }: A
                 selectedKeys={[formData.acc_type.toString()]}
                 onSelectionChange={(keys) => setFormData(prev => ({ ...prev, acc_type: parseInt(Array.from(keys)[0] as string) }))}
                 variant="bordered"
+                popoverProps={{ shouldBlockScroll: false }}
               >
                 <SelectItem key="1">رئيسي</SelectItem>
                 <SelectItem key="2">فرعي</SelectItem>
@@ -905,6 +910,7 @@ export default function AccountsClient({ initialAccounts, initialCurrencies }: A
                 selectedKeys={[formData.acc_rep.toString()]}
                 onSelectionChange={(keys) => setFormData(prev => ({ ...prev, acc_rep: parseInt(Array.from(keys)[0] as string) }))}
                 variant="bordered"
+                popoverProps={{ shouldBlockScroll: false }}
               >
                 <SelectItem key="1">الأرباح والخسائر</SelectItem>
                 <SelectItem key="2">الميزانية العمومية</SelectItem>
@@ -915,6 +921,7 @@ export default function AccountsClient({ initialAccounts, initialCurrencies }: A
                 selectedKeys={[formData.cur.toString()]}
                 onSelectionChange={(keys) => setFormData(prev => ({ ...prev, cur: parseInt(Array.from(keys)[0] as string) }))}
                 variant="bordered"
+                popoverProps={{ shouldBlockScroll: false }}
               >
                 {currencies.map(currency => (
                   <SelectItem key={currency.id.toString()}>

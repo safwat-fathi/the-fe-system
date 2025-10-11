@@ -32,7 +32,7 @@ export default function VoucherDetailsTable({
   ): Promise<any[]> => {
     try {
       // استخدام API السابق accounts_list
-      const res = await fetch(`${API_BASE_URL}accounts_list`);
+      const res = await fetch(`${API_BASE_URL}/accounts_list`);
       const accountsData = await res.json();
       const term = search.toLowerCase();
 

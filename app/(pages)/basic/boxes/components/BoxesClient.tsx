@@ -303,6 +303,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       <Modal
         isOpen={isModalOpen}
         scrollBehavior="inside"
+        shouldBlockScroll={false}
         onClose={() => setIsModalOpen(false)}
       >
         <ModalContent className="font-cairo">
@@ -344,6 +345,9 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
               onSelectionChange={(keys) => {
                 const selectedKey = Array.from(keys)[0];
                 setCurrentBox({ ...currentBox, box_type: selectedKey as string });
+              }}
+              popoverProps={{
+                shouldBlockScroll: false,
               }}
             >
               {boxTypes.map((type) => (

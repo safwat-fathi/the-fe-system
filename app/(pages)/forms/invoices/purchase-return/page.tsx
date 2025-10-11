@@ -118,7 +118,7 @@ export default function GoldInvoice3Page() {
   async function fetchItems() {
     try {
       const response = await fetchData<{ results: any[] }>(
-        `${API_BASE_URL}GetItemsList/`,
+        `${API_BASE_URL}/GetItemsList/`,
       );
       if (response && Array.isArray(response.results)) {
         setItems(response.results);
@@ -130,7 +130,7 @@ export default function GoldInvoice3Page() {
   }
 
   async function fetchCustomers() {
-    const response = await fetchData<any[]>(`${API_BASE_URL}customers_list`);
+    const response = await fetchData<any[]>(`${API_BASE_URL}/customers_list`);
     if (response) {
       // تصفية العملاء والموردين بحيث لا يكون box_type = 2
       const filteredCustomers = response.filter((customer) => customer.box_type !== 2);
@@ -279,7 +279,7 @@ export default function GoldInvoice3Page() {
         } else {
           // إذا لم يجد بالباركود، جرب البحث في الكود
           const res = await fetch(
-            `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
+            `${API_BASE_URL}/SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
           );
           const json = await res.json();
           

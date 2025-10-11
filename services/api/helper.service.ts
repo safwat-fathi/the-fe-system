@@ -39,6 +39,22 @@ interface CatStatus {
   code_desc: string;
 }
 
+interface CustomerType {
+  id: number;
+  type_name: string;
+  type_name_e?: string;
+}
+
+interface CustomerStatus {
+  code_id: number;
+  code_desc: string;
+}
+
+interface BoxType {
+  code_id: string;
+  code_desc: string;
+}
+
 class HelperService extends HttpService {
   constructor() {
     super("");
@@ -178,6 +194,75 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching cat statuses:", error);
+      return [];
+    }
+  }
+
+  // جلب أنواع العملاء
+  async getCustomerTypes(): Promise<CustomerType[]> {
+    try {
+      const response = await this.get<CustomerType[]>("cust_type_list/", undefined, {
+        cache: "no-store",
+        next: { tags: ["customer-types"] },
+      });
+
+      if (response.success) {
+        if (Array.isArray(response.data)) {
+          return response.data;
+        } else if (Array.isArray((response.data as any)?.results)) {
+          return (response.data as any).results;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching customer types:", error);
+      return [];
+    }
+  }
+
+  // جلب حالات العملاء
+  async getCustomerStatuses(): Promise<CustomerStatus[]> {
+    try {
+      const response = await this.get<CustomerStatus[]>("getCustomerStatus", undefined, {
+        cache: "no-store",
+        next: { tags: ["customer-statuses"] },
+      });
+
+      if (response.success) {
+        if (Array.isArray(response.data)) {
+          return response.data;
+        } else if (Array.isArray((response.data as any)?.results)) {
+          return (response.data as any).results;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching customer statuses:", error);
+      return [];
+    }
+  }
+
+  // جلب أنواع الصناديق
+  async getBoxTypes(): Promise<BoxType[]> {
+    try {
+      const response = await this.get<BoxType[]>("getBoxTypeList", undefined, {
+        cache: "no-store",
+        next: { tags: ["box-types"] },
+      });
+
+      if (response.success) {
+        if (Array.isArray(response.data)) {
+          return response.data;
+        } else if (Array.isArray((response.data as any)?.results)) {
+          return (response.data as any).results;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching box types:", error);
       return [];
     }
   }
