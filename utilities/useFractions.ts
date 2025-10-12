@@ -10,9 +10,9 @@ export default function useFractions(fieldName?: string): Fractions | number {
   const [digits, setDigits] = useState<Fractions>({ frac: 2, frac2: 3 });
 
   useEffect(() => {
-    fetchFractions().then((res) => {
-      if (res) setDigits(res);
-    });
+    // fetchFractions().then((res) => {
+    //   if (res) setDigits(res);
+    // });
   }, []);
 
   if (!fieldName) return digits;

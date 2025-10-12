@@ -12,6 +12,7 @@ import { createParams } from "@/utilities/qs";
 import { STORAGE_KEYS } from "@/constants";
 import { onLogoutAction } from "@/app/actions/auth";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
+import { isTokenValid } from "@/utilities/token";
 
 // Enhanced response type for better type safety
 export interface ServiceResponse<T = any> {
@@ -147,6 +148,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       const authHeaders = await this._getAuthHeaders();
       const urlParams = createParams(params || {});
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
+      console.log("🚀 ~ :151 ~ HttpService ~ _request ~ fullURL:", fullURL);
 
       const requestOptions: RequestInit = {
         credentials: "include",
@@ -169,6 +171,8 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
       // Handle unauthorized - try token refresh once
       if (response.status === 401 && retryCount === 0) {
+        console.log("Authorization failed");
+
         const refreshSuccess = await this._handleTokenRefresh();
 
         if (refreshSuccess) {

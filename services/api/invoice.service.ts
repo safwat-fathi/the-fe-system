@@ -12,7 +12,7 @@ export interface GetAllInvoicesParams {
   xcom_id?: string;
   xyear_id?: string;
   xtrans_type?: TransTypes | "0";
-  xinv_id?: InvoiceTypes | "0";
+  xinv_id?: string;
   xfrom_date?: string;
   xto_date?: string;
   xinv_type?: InvoiceTypes | "0";
@@ -21,44 +21,6 @@ export interface GetAllInvoicesParams {
 class InvoiceService extends HttpService<Invoice> {
   constructor() {
     super("");
-  }
-
-  async getAllInvoices(
-    params?: GetAllInvoicesParams,
-  ): Promise<IPaginatedResponse<Invoice> | null> {
-    try {
-      const queryParams = {
-        page: params?.page || "1",
-        xcom_id: params?.xcom_id || "0",
-        xyear_id: params?.xyear_id || "0",
-        xtrans_type: params?.xtrans_type || "0",
-        xinv_id: params?.xinv_id || "0",
-        xfrom_date: params?.xfrom_date || "0",
-        xto_date: params?.xto_date || "0",
-        xinv_type: params?.xinv_type || "0",
-      };
-
-      const cacheTags = this.generateInvoiceCacheTags(params);
-
-      const response = await this.get<IPaginatedResponse<Invoice>>(
-        "invoices_list/",
-        queryParams,
-        {
-          cache: "force-cache", // Disable cache temporarily
-          signal: AbortSignal.timeout(30000), // 30 seconds
-          next: { tags: cacheTags },
-        },
-      );
-
-      if (response.success) {
-        return response.data as IPaginatedResponse<Invoice>;
-      }
-
-      return null;
-    } catch (error) {
-      console.error("Error fetching invoices:", error);
-      throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
-    }
   }
 
   private generateInvoiceCacheTags(params?: GetAllInvoicesParams): string[] {
@@ -83,28 +45,78 @@ class InvoiceService extends HttpService<Invoice> {
     return tags;
   }
 
-  async getInvoiceById(
-    id: string,
-  ): Promise<{ invoice: Invoice; details: InvoiceDetail[] } | null> {
+  async getAllInvoices(
+    params?: GetAllInvoicesParams,
+  ): Promise<IPaginatedResponse<Invoice> | null> {
     try {
-      // Fetch the invoice data
-      const invoiceResponse = await this.get<Invoice>(
-        `invoices_list?inv_id=${id}`,
-        undefined,
+      const queryParams = {
+        page: params?.page || "1",
+        xcom_id: params?.xcom_id || "1",
+        xyear_id: params?.xyear_id || "0",
+        xtrans_type: params?.xtrans_type || "0",
+        xinv_id: params?.xinv_id || "0",
+        xfrom_date: params?.xfrom_date || "0",
+        xto_date: params?.xto_date || "0",
+        xinv_type: params?.xinv_type || "0",
+      };
+
+      const cacheTags = this.generateInvoiceCacheTags(
+        queryParams as GetAllInvoicesParams,
+      );
+
+      const response = await this.get<IPaginatedResponse<Invoice>>(
+        "invoices_list",
+        queryParams,
         {
-          cache: "force-cache",
-          next: { tags: [`invoice-${id}`] },
+          cache: "force-cache", // Disable cache temporarily
+          signal: AbortSignal.timeout(30000), // 30 seconds
+          next: { tags: cacheTags },
         },
       );
-      console.log("🚀 ~ :99 ~ InvoiceService ~ getInvoiceById ~ invoiceResponse:", invoiceResponse)
 
-      if (
-        !invoiceResponse ||
-        !invoiceResponse.success ||
-        !invoiceResponse.data
-      ) {
-        return null;
+      if (response.success) {
+        return response.data as IPaginatedResponse<Invoice>;
       }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
+    }
+  }
+
+  async getInvoiceById(id: string): Promise<Invoice | null> {
+    try {
+      const queryParams = {
+        page: "1",
+        xcom_id: "1",
+        xyear_id: "0",
+        xtrans_type: "0",
+        xinv_id: id,
+        xfrom_date: "0",
+        xto_date: "0",
+        xinv_type: "0",
+      };
+
+      const cacheTags = this.generateInvoiceCacheTags(
+        queryParams as GetAllInvoicesParams,
+      );
+
+      const response = await this.get<IPaginatedResponse<Invoice>>(
+        "invoices_list",
+        queryParams,
+        {
+          cache: "force-cache", // Disable cache temporarily
+          signal: AbortSignal.timeout(30000), // 30 seconds
+          next: { tags: cacheTags },
+        },
+      );
+      console.log(
+        "🚀 ~ :114 ~ InvoiceService ~ getInvoiceById ~ response:",
+        response,
+      );
+
+      if (response.success && response.data) return response.data.results[0];
 
       // Find the specific invoice by inv_id
       // const invoice = invoiceResponse.data.results.find(
@@ -143,21 +155,27 @@ class InvoiceService extends HttpService<Invoice> {
       //   }
       // }
 
-      return {
-        invoice: invoiceResponse.data,
-        details: [],
-      };
-    } catch (error) {
-      console.error("Error fetching invoice by ID:", error);
       return null;
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
     }
   }
 
   async getInvoiceDetails(invoiceId: string): Promise<InvoiceDetail[]> {
     try {
       const response = await this.get<InvoiceDetail[]>(
-        `invoices_dtl_list?inv=${invoiceId}`,
-        undefined,
+        `invoices_dtl_list`,
+        {
+          // page: "1",
+          xcom_id: "1",
+          xyear_id: "0",
+          xtrans_type: "0",
+          xinv_id: invoiceId,
+          xfrom_date: "0",
+          xto_date: "0",
+          xinv_type: "0",
+        },
         {
           cache: "force-cache",
           next: { tags: [`invoice-details-${invoiceId}`] },

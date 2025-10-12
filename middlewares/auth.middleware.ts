@@ -1,5 +1,6 @@
 import { ROUTE_RULES, STORAGE_KEYS } from "@/constants";
 import { MiddlewareFactory } from "@/middleware";
+import { isTokenValid } from "@/utilities/token";
 
 import { NextRequest, NextResponse } from "next/server";
 
@@ -24,6 +25,18 @@ const authMiddleware: MiddlewareFactory = () => {
       // Get the authentication token
       const token = request.cookies.get(STORAGE_KEYS.ACCESS_TOKEN)?.value;
 
+			if (!isTokenValid(token)) {
+        console.log("Token is invalid");
+
+        // Delete the auth token cookie
+        await request.cookies.delete(STORAGE_KEYS.ACCESS_TOKEN);
+        await request.cookies.delete(STORAGE_KEYS.REFRESH_TOKEN);
+        await request.cookies.delete(STORAGE_KEYS.CSRF_TOKEN);
+
+        // If token is invalid, redirect to login
+        return NextResponse.redirect(new URL(AUTH_LOGIN_URL, request.url));
+      }
+			
       // If token exists and user is on login page, redirect to dashboard
       if (token && pathname === AUTH_LOGIN_URL) {
         return NextResponse.redirect(new URL("/", request.url));

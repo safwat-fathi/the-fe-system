@@ -33,7 +33,7 @@ class DashboardService extends HttpService<any> {
           goldPriceService.getCurrentGoldPrice(),
         ]);
 
-      if (!invoices || !customers || !categories || !items) return null;
+      if (!invoices) return null;
 
       // Calculate monthly sales
       const monthlySales = await invoiceService.calculateMonthlySales(

@@ -17,7 +17,7 @@ class CustomerService extends HttpService<Customer> {
       const response = await this.get<Customer[]>(
         "customers_list",
         {
-          xcomp_id: params?.xcomp_id || 0,
+          xcom_id: params?.xcomp_id || 1,
           xcust_type: params?.xcust_type || 0,
           xcust_code: params?.xcust_code || 0,
         },
