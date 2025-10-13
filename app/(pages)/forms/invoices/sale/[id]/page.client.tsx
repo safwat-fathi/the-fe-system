@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+
 import toast from "react-hot-toast";
 
 import useFractions from "@/utilities/useFractions";
@@ -17,11 +17,10 @@ import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
 
-import type { InvoiceItem } from "@/types/invoice-item";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
 
 interface InvoiceClientPageProps {
-  invoiceData: Invoice ;
+  invoiceData: Invoice;
   invoiceDetailsData: InvoiceDetail[];
   isNewInvoice: boolean;
 }
@@ -31,16 +30,13 @@ export default function InvoiceClientPage({
   invoiceDetailsData,
   isNewInvoice,
 }: InvoiceClientPageProps) {
-  const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState(
     invoiceData.cust_code,
   );
-  const [invoiceNumber, setInvoiceNumber] = useState(
-    invoiceData.inv_id,
-  );
+  const [invoiceNumber, setInvoiceNumber] = useState(invoiceData.inv_id);
   const [invoiceDate, setInvoiceDate] = useState<string>(
     invoiceData.inv_date ?? new Date().toISOString(),
   );
@@ -90,9 +86,7 @@ export default function InvoiceClientPage({
   const [referenceNumber, setReferenceNumber] = useState<string>(
     invoiceData.ref_no ?? "",
   );
-  const [vatNumber, setVatNumber] = useState<string>(
-    invoiceData.vat_no ?? "",
-  );
+  const [vatNumber, setVatNumber] = useState<string>(invoiceData.vat_no ?? "");
   const [crNo, setCrNo] = useState<string>(invoiceData.cr_no ?? "");
   const [gov, setGov] = useState<string>(invoiceData.gov ?? "");
   const [city, setCity] = useState<string>(invoiceData.city ?? "");
@@ -344,8 +338,7 @@ export default function InvoiceClientPage({
           (item) => !item.item_id && !item.item_name && item.weight === 0,
         );
 
-        const targetIndex =
-          firstEmptyRowIndex !== -1 ? firstEmptyRowIndex : 0;
+        const targetIndex = firstEmptyRowIndex !== -1 ? firstEmptyRowIndex : 0;
         const updated = [...invoiceItems];
 
         if (firstEmptyRowIndex === -1) {
@@ -431,8 +424,8 @@ export default function InvoiceClientPage({
           (payType === 1
             ? updated[targetIndex].total_a
             : payType === 2
-            ? updated[targetIndex].total_w
-            : updated[targetIndex].total_a + updated[targetIndex].total_w) -
+              ? updated[targetIndex].total_w
+              : updated[targetIndex].total_a + updated[targetIndex].total_w) -
           (updated[targetIndex].item_disc_amt ?? 0);
 
         updated[targetIndex].tax =
@@ -490,9 +483,7 @@ export default function InvoiceClientPage({
     }
   };
 
-  const navigateToInvoice = (
-    direction: "prev" | "next" | "first" | "last",
-  ) => {
+  const navigateToInvoice = (direction: "prev" | "next" | "first" | "last") => {
     const directionText = {
       prev: "السابق",
       next: "التالي",
@@ -534,7 +525,7 @@ export default function InvoiceClientPage({
         setPrint={() => {}}
         isEditing={isEditing}
         onEdit={() => setIsEditing(true)}
-        invoiceType="sale"
+        invoiceType="sales"
         autoTotalValue={autoTotalValue}
         autoTotalWages={autoTotalWages}
         manualTotalValue={manualTotalValue}

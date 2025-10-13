@@ -111,20 +111,12 @@ class InvoiceService extends HttpService<Invoice> {
           next: { tags: cacheTags },
         },
       );
-      console.log(
-        "🚀 ~ :114 ~ InvoiceService ~ getInvoiceById ~ response:",
-        response,
-      );
 
       if (response.success && response.data) return response.data.results[0];
 
       // Find the specific invoice by inv_id
       // const invoice = invoiceResponse.data.results.find(
       //   (inv: any) => String(inv.inv_id) === String(id),
-      // );
-      // console.log(
-      //   "🚀 ~ :83 ~ InvoiceService ~ getInvoiceById ~ invoice:",
-      //   invoice,
       // );
 
       // if (!invoice) {

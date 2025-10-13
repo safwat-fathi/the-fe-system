@@ -68,14 +68,9 @@ export default async function InvoiceDetailPage({
   if (!invoiceData) {
     notFound();
   }
-  console.log("🚀 ~ :22 ~ InvoiceDetailPage ~ invoiceData:", invoiceData.id);
 
   const invoiceDetailsData = await InvoiceService.getInvoiceDetails(
     invoiceData.id,
-  );
-  console.log(
-    "🚀 ~ :23 ~ InvoiceDetailPage ~ invoiceDetailsData:",
-    invoiceDetailsData,
   );
 
   return (

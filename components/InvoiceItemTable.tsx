@@ -313,7 +313,7 @@ export default function InvoiceItemTable({
   };
 
   const handleEnter = (
-    e: KeyboardEvent<HTMLInputElement>,
+    e: KeyboardEvent,
     rowIndex: number,
     colIndex: number,
   ) => {
