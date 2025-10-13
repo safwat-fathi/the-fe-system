@@ -39,6 +39,7 @@ import { Metadata } from "next";
 import InvoiceService from "@/services/api/invoice.service";
 import { Breadcrumb } from "@/components";
 import InvoiceClientPage from "./page.client";
+import { Invoice, InvoiceDetail } from "@/types/models/invoice";
 
 // Generate metadata for the page
 export async function generateMetadata({
@@ -62,23 +63,25 @@ export default async function InvoiceDetailPage({
 }) {
   const { id } = await params;
 
+  let invoiceData: Invoice | null = null;
+  let invoiceDetailsData: InvoiceDetail[] = [];
   // Fetch invoice data
-  const invoiceData = await InvoiceService.getInvoiceById(id);
+  if (id) {
+    invoiceData = await InvoiceService.getInvoiceById(id);
 
-  if (!invoiceData) {
-    notFound();
+    if (invoiceData) {
+      invoiceDetailsData = await InvoiceService.getInvoiceDetails(
+        invoiceData.id,
+      );
+    }
   }
-
-  const invoiceDetailsData = await InvoiceService.getInvoiceDetails(
-    invoiceData.id,
-  );
 
   return (
     <div className="container mx-auto p-4">
       <InvoiceClientPage
         invoiceData={invoiceData}
         invoiceDetailsData={invoiceDetailsData}
-        isNewInvoice={false}
+        isNewInvoice={id ? false : true}
       />
     </div>
   );

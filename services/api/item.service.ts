@@ -23,11 +23,11 @@ class ItemService extends HttpService<Item> {
         },
       );
 
-      if (response.success) {
-        return response.data;
+      if (!response.success || !response.data) {
+        return null;
       }
 
-      return null;
+      return response.data;
     } catch (error) {
       console.error("Error fetching items:", error);
       throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
@@ -70,7 +70,11 @@ class ItemService extends HttpService<Item> {
         },
       );
 
-      if (response.success && Array.isArray(response.data) && response.data.length > 0) {
+      if (
+        response.success &&
+        Array.isArray(response.data) &&
+        response.data.length > 0
+      ) {
         return response.data[0];
       }
       return null;
@@ -90,11 +94,11 @@ class ItemService extends HttpService<Item> {
         },
       );
 
-      if (response.success) {
-        return response.data;
+      if (!response.success || !response.data) {
+        return null;
       }
 
-      return null;
+      return response.data;
     } catch (error) {
       console.error("Error searching items:", error);
       throw new Error("حدث خطأ أثناء البحث عن الأصناف");

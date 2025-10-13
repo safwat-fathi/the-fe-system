@@ -14,7 +14,6 @@ import {
   categoryService,
   goldPriceService,
 } from "@/services/api";
-import { formatAmount } from "@/utilities/formatAmount";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -493,17 +492,16 @@ export default function InvoicePage() {
       if (response && Array.isArray(response.results)) {
         setItems(response.results as Item[]);
       } else {
-        console.warn("No items found or invalid response.");
         setItems([]);
       }
     } catch (error) {
-      console.error("Error fetching items:", error);
       setItems([]);
     }
   }
 
   async function fetchCustomers() {
     const response = await customerService.getAllCustomers();
+    console.log("🚀 ~ :504 ~ fetchCustomers ~ response:", response);
     if (response) {
       // تصفية العملاء والموردين بحيث لا يكون box_type = 2
       const filteredCustomers = response.filter(
