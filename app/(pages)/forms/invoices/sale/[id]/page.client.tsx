@@ -12,12 +12,22 @@ interface InvoiceClientPageProps {
   invoiceData: Invoice | null;
   invoiceDetailsData: InvoiceDetail[];
   isNewInvoice: boolean;
+  customers: any[];
+  items: any[];
+  categories: any[];
+  goldPrice: number | null;
+  homePurity: number;
 }
 
 export default function InvoiceClientPage({
   invoiceData,
   invoiceDetailsData,
   isNewInvoice,
+  customers: initialCustomers,
+  items: initialItems,
+  categories: initialCategories,
+  goldPrice: initialGoldPrice,
+  homePurity: initialHomePurity,
 }: InvoiceClientPageProps) {
   const {
     // lists
@@ -88,6 +98,11 @@ export default function InvoiceClientPage({
     invoiceData,
     invoiceDetailsData,
     isNewInvoice,
+    initialCustomers,
+    initialItems,
+    initialCategories,
+    initialGoldPrice,
+    initialHomePurity,
   });
 
   // join any derived totals via computeTotals (hook exposes computeTotals)

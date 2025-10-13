@@ -37,6 +37,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import InvoiceService from "@/services/api/invoice.service";
+import invoiceFormDataService from "@/services/bff/invoice-form-data.service";
 import { Breadcrumb } from "@/components";
 import InvoiceClientPage from "./page.client";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
@@ -65,6 +66,7 @@ export default async function InvoiceDetailPage({
 
   let invoiceData: Invoice | null = null;
   let invoiceDetailsData: InvoiceDetail[] = [];
+
   // Fetch invoice data
   if (id) {
     invoiceData = await InvoiceService.getInvoiceById(id);
@@ -76,12 +78,26 @@ export default async function InvoiceDetailPage({
     }
   }
 
+  // Fetch form data (customers, items, categories, gold price, home purity)
+  const formData = await invoiceFormDataService.getInvoiceFormData();
+  console.log(
+    "🚀 ~ :83 ~ InvoiceDetailPage ~ formData:",
+    formData.categories.length,
+    formData.customers.length,
+    formData.items.length,
+  );
+
   return (
     <div className="container mx-auto p-4">
       <InvoiceClientPage
         invoiceData={invoiceData}
         invoiceDetailsData={invoiceDetailsData}
         isNewInvoice={id ? false : true}
+        customers={formData.customers}
+        items={formData.items}
+        categories={formData.categories}
+        goldPrice={formData.goldPrice}
+        homePurity={formData.homePurity}
       />
     </div>
   );

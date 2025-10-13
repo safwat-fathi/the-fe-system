@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 import useFractions from "@/utilities/useFractions";
-import {
-  API_BASE_URL,
-  API_ENDPOINTS,
-  fetchData,
-  fetchGoldPrice,
-  fetchItemByBarcode,
-} from "@/utilities/api";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
 
 type InvoiceItemRow = {
@@ -77,23 +70,33 @@ export default function useInvoiceForm({
   invoiceData,
   invoiceDetailsData,
   isNewInvoice,
+  initialCustomers,
+  initialItems,
+  initialCategories,
+  initialGoldPrice,
+  initialHomePurity,
 }: {
   invoiceData: Invoice | null;
   invoiceDetailsData: InvoiceDetail[];
   isNewInvoice: boolean;
+  initialCustomers: any[];
+  initialItems: any[];
+  initialCategories: any[];
+  initialGoldPrice: number | null;
+  initialHomePurity: number;
 }) {
-  // lists
-  const [items, setItems] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
+  // lists - using initial data directly
+  const [items, setItems] = useState<any[]>(initialItems || []);
+  const [categories, setCategories] = useState<any[]>(initialCategories || []);
+  const [customers, setCustomers] = useState<any[]>(initialCustomers?.filter((c: any) => c.box_type !== 2) || []);
 
   // UI state
   const [employee, setEmployee] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(isNewInvoice);
-  const [isLoading, setIsLoading] = useState<boolean>(!isNewInvoice);
+  const [isLoading, setIsLoading] = useState<boolean>(false); // No more loading since data is provided
 
-  const [goldPrice, setGoldPrice] = useState<number | null>(null);
-  const [homePurity, setHomePurity] = useState<number>(0);
+  const [goldPrice, setGoldPrice] = useState<number | null>(initialGoldPrice);
+  const [homePurity, setHomePurity] = useState<number>(initialHomePurity);
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [handlingMethod, setHandlingMethod] = useState<string>("");
   const [mobileMethod, setMobileMethod] = useState<string>("");
@@ -190,80 +193,7 @@ export default function useInvoiceForm({
       setInvoiceItems(invoiceDetailsData as unknown as InvoiceItemRow[]);
     }
 
-    setIsLoading(false);
   }, [invoiceData, invoiceDetailsData]);
-
-  // fetch helpers
-  const getGoldPrice = useCallback(async () => {
-    try {
-      const price = await fetchGoldPrice();
-      setGoldPrice(price);
-    } catch (e) {
-      console.error("failed to fetch gold price", e);
-    }
-  }, []);
-
-  const fetchHomePurity = useCallback(async () => {
-    try {
-      const res = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
-      if (Array.isArray(res) && res.length > 0) {
-        const p = parseFloat(res[0]?.purity);
-        if (!isNaN(p)) setHomePurity(p);
-      }
-    } catch (e) {
-      console.error("failed to load home settings", e);
-    }
-  }, []);
-
-  const fetchItems = useCallback(async () => {
-    try {
-      const response = await fetchData<{ results: any[] }>(
-        `${API_BASE_URL}GetItemsList/`,
-      );
-      if (response && Array.isArray(response.results))
-        setItems(response.results);
-      else setItems([]);
-    } catch (error) {
-      console.error("Error fetching items:", error);
-      setItems([]);
-    }
-  }, []);
-
-  const fetchCustomers = useCallback(async () => {
-    try {
-      const response = await fetchData<any[]>(`${API_BASE_URL}customers_list`);
-      if (response) setCustomers(response.filter((c) => c.box_type !== 2));
-      else setCustomers([]);
-    } catch (e) {
-      console.error("failed to load customers", e);
-      setCustomers([]);
-    }
-  }, []);
-
-  const fetchCategories = useCallback(async () => {
-    try {
-      const response = await fetchData<{ results: any[] }>(
-        API_ENDPOINTS.CATEGORIES_LIST,
-      );
-      if (response && Array.isArray(response.results))
-        setCategories(response.results);
-      else setCategories([]);
-    } catch (e) {
-      console.error("failed to load categories", e);
-      setCategories([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchItems();
-    fetchCustomers();
-    fetchCategories();
-    fetchHomePurity();
-    getGoldPrice();
-
-    if (isNewInvoice) setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // totals (simple helpers returned to consumer can compute more if needed)
   const computeTotals = useCallback(
@@ -315,6 +245,7 @@ export default function useInvoiceForm({
   );
 
   // barcode search logic kept here so consumer can call it. It mutates invoiceItems and items lists.
+  // NOTE: This function needs to be updated to not make API calls, but will require more complex refactoring
   const handleBarcodeSearch = useCallback(
     async (term?: string) => {
       const searchTerm = (term ?? searchValue).trim();
@@ -330,23 +261,8 @@ export default function useInvoiceForm({
         });
 
         if (!exactMatch) {
-          const barcodeResult = await fetchItemByBarcode(searchTerm);
-          if (barcodeResult) exactMatch = barcodeResult;
-          else {
-            const res = await fetch(
-              `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
-            );
-            const json = await res.json();
-            if (Array.isArray(json.results)) {
-              exactMatch = json.results.find(
-                (item: any) =>
-                  (item.item_code ?? "").toString().trim() === searchTerm,
-              );
-            }
-          }
-        }
-
-        if (!exactMatch) {
+          // In the updated version, we should not make API calls here
+          // This would need to be refactored to use a service that can be called from the server component
           toast.error(`لم يتم العثور على صنف: ${searchTerm}`);
           setSearchValue("");
           return;
