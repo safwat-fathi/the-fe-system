@@ -23,7 +23,7 @@ import Card from "@/components/Card";
 import { CardBody, CardHeader } from "@heroui/react";
 import { MagnifyingGlassIcon, PrinterIcon, EyeIcon, PencilIcon, TrashIcon, PlusIcon, FunnelIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { Voucher } from "@/types/voucher";
-import { API_ENDPOINTS, fetchData } from "@/utilities/api";
+import { voucherService } from "@/services/api";
 import { formatAmount } from "@/utilities/formatAmount";
 import { getCurrDate } from "@/utilities/getCurrDate";
 
@@ -147,15 +147,30 @@ export default function VoucherReportsPage() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [vouchersData, typesData] = await Promise.all([
-        fetchData(API_ENDPOINTS.VOUCHERS_LIST),
-        fetchData(API_ENDPOINTS.VoucherTypeList),
+      
+      // استخدام النظام الجديد من services
+      const [vouchersResponse, typesResponse] = await Promise.all([
+        voucherService.getAll(),
+        voucherService.getVoucherTypes(),
       ]);
 
-      setVouchers(Array.isArray(vouchersData) ? vouchersData : []);
-      setVoucherTypes(Array.isArray(typesData) ? typesData : []);
+      if (vouchersResponse.success && vouchersResponse.data) {
+        setVouchers(Array.isArray(vouchersResponse.data) ? vouchersResponse.data : []);
+      } else {
+        console.error("Error loading vouchers:", vouchersResponse.message);
+        setVouchers([]);
+      }
+
+      if (typesResponse.success && typesResponse.data) {
+        setVoucherTypes(Array.isArray(typesResponse.data) ? typesResponse.data : []);
+      } else {
+        console.error("Error loading voucher types:", typesResponse.message);
+        setVoucherTypes([]);
+      }
     } catch (error) {
       console.error("Error loading data:", error);
+      setVouchers([]);
+      setVoucherTypes([]);
     } finally {
       setIsLoading(false);
     }
@@ -213,7 +228,7 @@ export default function VoucherReportsPage() {
   // Get vouchers for specific types (سند قبض، سند صرف، قيد تسوية)
   const receiptVouchers = getVouchersByType(1); // سند قبض
   const paymentVouchers = getVouchersByType(2); // سند صرف
-  const adjustmentVouchers = getVouchersByType(3); // قيد تسوية // سند قبض
+  const adjustmentVouchers = getVouchersByType(3); // قيد تسوية
 
   // Get voucher status chip
   const getStatusChip = (status?: number) => {
@@ -239,11 +254,20 @@ export default function VoucherReportsPage() {
   const handleDelete = async (voucher: Voucher) => {
     if (confirm("هل أنت متأكد من حذف هذا السند؟")) {
       try {
-        // Implement delete logic here
-        console.log("Delete voucher:", voucher.vouch_id);
-        await loadData(); // Reload data
+        if (!voucher.vouch_id) return;
+        
+        const response = await voucherService.delete(voucher.vouch_id);
+        
+        if (response.success) {
+          console.log("تم حذف السند بنجاح");
+          await loadData(); // Reload data
+        } else {
+          console.error("Error deleting voucher:", response.message);
+          alert("حدث خطأ أثناء حذف السند");
+        }
       } catch (error) {
         console.error("Error deleting voucher:", error);
+        alert("حدث خطأ أثناء حذف السند");
       }
     }
   };

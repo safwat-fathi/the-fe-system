@@ -305,6 +305,7 @@ const Sidebar = () => {
                         <Link
                           key={link.href}
                           href={link.href}
+                          prefetch={true}
                           className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                             pathname === link.href
                               ? "bg-blue-600/20 text-blue-300"
@@ -517,6 +518,7 @@ const Sidebar = () => {
                         <Link
                           key={link.href}
                           href={link.href}
+                          prefetch={true}
                           className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                             pathname === link.href
                               ? "bg-blue-600/20 text-blue-300"

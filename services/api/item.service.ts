@@ -4,7 +4,27 @@ import { IPaginatedResponse } from "@/types/services/base";
 
 interface Item {
   id: number;
-  // Add other item properties as needed
+  item_name: string;
+  item_name_e: string;
+  item_price: string;
+  item_img: string;
+  item_code: string;
+  item_barcode: string;
+  first_cost: string;
+  item_weight: string;
+  item_g_weight: string;
+  stones: string;
+  model: string;
+  k: string;
+  purity: string;
+  item_status: number;
+  cr_date: string;
+  cr_user: string;
+  upd_date: string;
+  upd_user: string;
+  cat: number | null;
+  item_type: number | null;
+  unit: number | null;
 }
 
 class ItemService extends HttpService<Item> {
@@ -14,6 +34,7 @@ class ItemService extends HttpService<Item> {
 
   async getAllItems(): Promise<IPaginatedResponse<Item> | null> {
     try {
+
       const response = await this.get<IPaginatedResponse<Item>>(
         "GetItemsList/",
         undefined,
@@ -25,6 +46,7 @@ class ItemService extends HttpService<Item> {
 
       if (!response.success || !response.data) {
         return null;
+
       }
 
       return response.data;
@@ -64,11 +86,13 @@ class ItemService extends HttpService<Item> {
     try {
       const response = await this.get<Item[]>(
         `ItemBarcode/${encodeURIComponent(barcode)}`,
+
         undefined,
         {
           cache: "no-store",
         },
       );
+
 
       if (
         response.success &&
@@ -88,11 +112,13 @@ class ItemService extends HttpService<Item> {
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
         `SearchItemsList/?q=${encodeURIComponent(query)}&page=1`,
+
         undefined,
         {
           cache: "no-store",
         },
       );
+
 
       if (!response.success || !response.data) {
         return null;
@@ -102,6 +128,7 @@ class ItemService extends HttpService<Item> {
     } catch (error) {
       console.error("Error searching items:", error);
       throw new Error("حدث خطأ أثناء البحث عن الأصناف");
+
     }
   }
 }

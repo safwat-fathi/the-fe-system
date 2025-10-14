@@ -106,6 +106,29 @@ export default function InvoiceClient({
   const fractions = useFractions() as { frac: number; frac2: number };
   const [searchQ, setSearchQ] = useState(params.xinv_id || "");
 
+  // إعادة تحميل البيانات عند العودة للصفحة
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // إعادة تحميل الصفحة لإعادة جلب البيانات من الخادم
+        window.location.reload();
+      }
+    };
+
+    const handleFocus = () => {
+      // إعادة تحميل الصفحة لإعادة جلب البيانات من الخادم
+      window.location.reload();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   // const [params, setParams] = useQueryStates({
   //   search: parseAsString.withDefault(""),
   //   type: parseAsString.withDefault("all"),

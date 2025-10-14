@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchFractions } from "@/utilities/api";
+import homeService from "@/services/api/home.service";
 
 export interface Fractions {
   frac: number;
@@ -13,6 +13,9 @@ export default function useFractions(fieldName?: string): Fractions | number {
     // fetchFractions().then((res) => {
     //   if (res) setDigits(res);
     // });
+    homeService.getFractions().then((res) => {
+      if (res) setDigits(res);
+    });
   }, []);
 
   if (!fieldName) return digits;

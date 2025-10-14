@@ -14,6 +14,7 @@ export { default as InvoiceTotalsActions } from './InvoiceTotalsActions';
 // Loading Components
 export { default as LoadingSpinner, PageLoading, SectionLoading } from './LoadingSpinner';
 export { default as Skeleton } from './Skeleton';
+export { default as LoadingSkeleton } from './LoadingSkeleton';
 
 // Utility Components
 export { default as Breadcrumb } from './Breadcrumb';

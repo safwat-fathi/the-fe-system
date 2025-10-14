@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "الرئيسية",
 };
 
+// Revalidate dashboard data every 60 seconds (1 minute)
+export const revalidate = 60;
+
 export default async function DashboardPage() {
   // Get branch and year from localStorage (now using cookies as a fallback)
   const cookieStore = await cookies();

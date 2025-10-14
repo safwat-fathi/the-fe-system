@@ -25,31 +25,29 @@ export interface ServiceResponse<T = any> {
 export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   private readonly _baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   private _token: string | undefined = undefined;
-  private readonly _defaultOptions: RequestInit;
+  private readonly _timeout: number;
+  private readonly _defaultHeaders: HeadersInit;
   private _isRefreshing = false;
   private _refreshPromise: Promise<boolean> | null = null;
 
   constructor(url: string, timeout = 10000) {
     super();
 
+
     if (!this._baseUrl) {
       throw new Error("API_BASE_URL is not defined");
     }
 
     this._baseUrl += url;
-
-    this._defaultOptions = {
-      signal: AbortSignal.timeout(timeout),
-      headers: {
-        Accept: "application/json",
-      },
+    this._timeout = timeout;
+    this._defaultHeaders = {
+      Accept: "application/json",
     };
   }
 
   private async _getAuthHeaders(): Promise<HeadersInit> {
-    if (!this._token) {
-      this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
-    }
+    // Always get fresh token from cookies
+    this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
 
     return this._token
       ? { Authorization: `Bearer ${this._token.replace(/['"]+/g, "")}` }
@@ -145,17 +143,30 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     retryCount = 0,
   ): Promise<ServiceResponse<R>> {
     try {
+      // Validate base URL is configured
+      if (!this._baseUrl || this._baseUrl.startsWith('undefined')) {
+        return {
+          success: false,
+          message: "API base URL is not configured. Please set NEXT_PUBLIC_API_BASE_URL in your .env.local file.",
+        };
+      }
+
       const authHeaders = await this._getAuthHeaders();
-      const urlParams = createParams(params || {});
+      
+      // إضافة معاملات com و year تلقائياً من الكوكيز
+      const mergedParams = await this._addBranchParams(params || {});
+      
+      const urlParams = createParams(mergedParams);
       const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
 
+      // Create a new AbortSignal for each request
       const requestOptions: RequestInit = {
-        credentials: "include",
-        ...this._defaultOptions,
+        // credentials: "include", // إزالة credentials لتجنب مشكلة CORS
         ...options,
+        signal: options.signal || AbortSignal.timeout(this._timeout),
         method,
         headers: {
-          ...this._defaultOptions.headers,
+          ...this._defaultHeaders,
           ...authHeaders,
           ...options.headers,
         },

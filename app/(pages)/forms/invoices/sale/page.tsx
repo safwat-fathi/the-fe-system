@@ -8,12 +8,14 @@ import toast from "react-hot-toast";
 import useFractions from "@/utilities/useFractions";
 import { renderInvoicePreview } from "./components/TaxInvoicePreview";
 import {
+
   invoiceService,
   itemService,
   customerService,
   categoryService,
   goldPriceService,
 } from "@/services/api";
+
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -473,13 +475,15 @@ export default function InvoicePage() {
 
   const fetchHomePurity = async () => {
     try {
+
       const res = await itemService.getHomeSettings();
       if (res.length > 0) {
         const p = parseFloat(res[0]?.purity);
         const vatPerc = parseFloat(res[0]?.Vat_perc);
 
-        if (!isNaN(p)) setHomePurity(p);
-        if (!isNaN(vatPerc)) setDefaultTaxPrc(vatPerc);
+
+        if (p) setHomePurity(p);
+        if (vatPerc) setDefaultTaxPrc(vatPerc);
       }
     } catch (e) {
       console.error("failed to load home settings", e);
@@ -488,7 +492,9 @@ export default function InvoicePage() {
 
   async function fetchItems() {
     try {
+
       const response = await itemService.getAllItems();
+
       if (response && Array.isArray(response.results)) {
         setItems(response.results as Item[]);
       } else {
@@ -500,8 +506,10 @@ export default function InvoicePage() {
   }
 
   async function fetchCustomers() {
+
     const response = await customerService.getAllCustomers();
     console.log("🚀 ~ :504 ~ fetchCustomers ~ response:", response);
+
     if (response) {
       // تصفية العملاء والموردين بحيث لا يكون box_type = 2
       const filteredCustomers = response.filter(
@@ -630,7 +638,9 @@ export default function InvoicePage() {
   });
 
   const getNextInvoiceNumber = async (): Promise<number> => {
+
     const invoices = await invoiceService.getAllInvoices();
+
 
     if (!invoices || invoices.results.length === 0) return 1;
 
@@ -716,7 +726,9 @@ export default function InvoicePage() {
     };
 
     try {
+
       const result = await invoiceService.createInvoice(invData);
+
 
       if (!result) {
         return toast.error("فشل في حفظ الفاتورة");
@@ -871,7 +883,9 @@ export default function InvoicePage() {
       );
       console.log("[updateInvoice] cleanInvData:", cleanInvData);
 
+
       const res = await invoiceService.updateInvoice(invoicePk, cleanInvData);
+
 
       if (!res) {
         return toast.error("فشل في تعديل الفاتورة");
@@ -893,6 +907,7 @@ export default function InvoicePage() {
 
         for (const itemToDelete of deletedItems) {
           try {
+
             console.log(
               `🔄 جاري حذف الصنف: ${itemToDelete.item_name} (ID: ${itemToDelete.id})`,
             );
@@ -904,6 +919,7 @@ export default function InvoicePage() {
               toast.error(
                 `فشل في حذف الصنف ${itemToDelete.item_name || itemToDelete.id}`,
               );
+
             } else {
               console.log(
                 `✅ تم حذف الصنف ${
@@ -971,10 +987,12 @@ export default function InvoicePage() {
         };
         if (originalIds.includes(row.id)) {
           // تحديث سطر موجود
+
           await invoiceService.updateInvoiceDetail(row.id, dtl);
         } else {
           // إضافة سطر جديد
           await invoiceService.createInvoiceDetail(dtl);
+
         }
       }
 
@@ -1004,9 +1022,11 @@ export default function InvoicePage() {
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     // جلب بيانات المنشأة من قاعدة البيانات
+
     const homeData = await itemService.getHomeSettings();
     const home =
       Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
+
 
     // تجهيز بيانات التقرير
     const previewCustomer = selectedCust
@@ -1089,6 +1109,7 @@ export default function InvoicePage() {
           );
         } else {
           // إذا لم يجد بالباركود، جرب البحث في الكود
+
           const searchResults = await itemService.searchItems(searchTerm);
 
           console.log("نتائج API للكود:", {
@@ -1314,7 +1335,9 @@ export default function InvoicePage() {
     setDeletedItems([]);
 
     try {
+
       const invList = await invoiceService.getAllInvoices({ xinv_id: num });
+
 
       if (!invList || invList.results.length === 0) {
         toast.error("الفاتورة غير موجودة");
@@ -1374,7 +1397,9 @@ export default function InvoicePage() {
       setIsEditing(false);
 
       // جلب التفاصيل وربطها بالـ id الأساسي
+
       const filteredDetails = await invoiceService.getInvoiceDetails(invoicePk);
+
 
       if (filteredDetails.length > 0) {
         setInvoiceItems(
@@ -1591,12 +1616,14 @@ export default function InvoicePage() {
   // تحميل قائمة الفواتير للتنقل
   const loadInvoicesList = async () => {
     try {
+
       const response = await invoiceService.getAllInvoices({
         xtrans_type: TransTypes.SALES,
       });
       if (response && response.results) {
         setInvoicesList(response.results);
         setTotalRecords(response.count);
+
 
         // تحديث currentRecord إذا كان هناك فاتورة محملة
         if (invoicePk) {

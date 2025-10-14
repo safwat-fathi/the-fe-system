@@ -4,3 +4,7 @@ export { default as customerService } from "./customer.service";
 export { default as categoryService } from "./category.service";
 export { default as itemService } from "./item.service";
 export { default as goldPriceService } from "./gold-price.service";
+export { default as genericService } from "./generic.service";
+export { default as voucherService } from "./voucher.service";
+export { default as accountService } from "./account.service";
+export { default as costCenterService } from "./cost-center.service";

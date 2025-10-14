@@ -97,7 +97,7 @@ export default function InvoiceItemTable({
   ) => {
     try {
       const res = await fetch(
-        `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
+        `${API_BASE_URL}/SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
       );
       const json = await res.json();
       const term = search.toLowerCase();

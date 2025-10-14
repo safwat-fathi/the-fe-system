@@ -23,14 +23,29 @@ class DashboardService extends HttpService<any> {
 
   async getDashboardStats(): Promise<DashboardStats | null> {
     try {
-      // Fetch all required data in parallel
+      // Fetch all required data in parallel with individual error handling
       const [invoices, customers, categories, items, goldPrice] =
         await Promise.all([
-          invoiceService.getAllInvoices(),
-          customerService.getAllCustomers(),
-          categoryService.getAllCategories(),
-          itemService.getAllItems(),
-          goldPriceService.getCurrentGoldPrice(),
+          invoiceService.getAllInvoices().catch(err => {
+            console.error("Error fetching invoices:", err);
+            return null;
+          }),
+          customerService.getAllCustomers().catch(err => {
+            console.error("Error fetching customers:", err);
+            return [];
+          }),
+          categoryService.getAllCategories().catch(err => {
+            console.error("Error fetching categories:", err);
+            return [];
+          }),
+          itemService.getAllItems().catch(err => {
+            console.error("Error fetching items:", err);
+            return [];
+          }),
+          goldPriceService.getCurrentGoldPrice().catch(err => {
+            console.error("Error fetching gold price:", err);
+            return null;
+          }),
         ]);
 
       if (!invoices) return null;
@@ -38,7 +53,10 @@ class DashboardService extends HttpService<any> {
       // Calculate monthly sales
       const monthlySales = await invoiceService.calculateMonthlySales(
         invoices?.results as any,
-      );
+      ).catch(err => {
+        console.error("Error calculating monthly sales:", err);
+        return new Array(12).fill(0);
+      });
 
       return {
         invoices,

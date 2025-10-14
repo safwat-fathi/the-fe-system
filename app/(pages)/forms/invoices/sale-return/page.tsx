@@ -15,6 +15,7 @@ import {
   apiFetch,
   fetchItemByBarcode,
 } from "@/utilities/api";
+import homeService from "@/services/api/home.service";
 
 const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
 
@@ -173,7 +174,7 @@ export default function SalesReturnPage() {
     }
     const loadInvoices = async () => {
       const res = await fetchData<any[]>(
-        `${API_BASE_URL}invoices_list?cust=${selectedCustomer}&trans_type=2`,
+        `${API_BASE_URL}/invoices_list?cust=${selectedCustomer}&trans_type=2`,
       );
 
       setCustomerInvoices(Array.isArray(res) ? res : []);
@@ -281,14 +282,14 @@ export default function SalesReturnPage() {
 
   const fetchHomePurity = async () => {
     try {
-      const res = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
+      const homeSettings = await homeService.getHomeSettings();
 
-      if (Array.isArray(res) && res.length > 0) {
-        const p = parseFloat(res[0]?.purity);
-        const vatPerc = parseFloat(res[0]?.Vat_perc);
+      if (homeSettings) {
+        const p = homeSettings.purity || 0;
+        const vatPerc = homeSettings.Vat_perc || 0;
 
-        if (!isNaN(p)) setHomePurity(p);
-        if (!isNaN(vatPerc)) setDefaultTaxPrc(vatPerc);
+        if (p) setHomePurity(p);
+        if (vatPerc) setDefaultTaxPrc(vatPerc);
       }
     } catch (e) {
       console.error("failed to load home settings", e);
@@ -298,7 +299,7 @@ export default function SalesReturnPage() {
   async function fetchItems() {
     try {
       const response = await fetchData<{ results: Item[] }>(
-        `${API_BASE_URL}GetItemsList/`,
+        `${API_BASE_URL}/GetItemsList/`,
       );
 
       if (response && Array.isArray(response.results)) {
@@ -315,7 +316,7 @@ export default function SalesReturnPage() {
 
   async function fetchCustomers() {
     const response = await fetchData<Customer[]>(
-      `${API_BASE_URL}customers_list`,
+      `${API_BASE_URL}/customers_list`,
     );
 
     if (response) {
@@ -410,7 +411,7 @@ export default function SalesReturnPage() {
 
 const getNextInvoiceNumber = async (): Promise<number> => {
   const invoices = await fetchData<any[]>(
-    `${API_BASE_URL}invoices_list?trans_type=4`,
+    `${API_BASE_URL}/invoices_list?trans_type=4`,
   );
 
   if (!Array.isArray(invoices) || invoices.length === 0) return 1;
@@ -507,7 +508,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
          try {
        console.log("🔍 [Sales Return] Invoice Data being sent:", JSON.stringify(invData, null, 2));
        
-       const res = await fetch(`${API_BASE_URL}api_create_invoice`, {
+       const res = await fetch(`${API_BASE_URL}/api_create_invoice`, {
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify(invData),
@@ -681,7 +682,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
       console.log("[updateInvoice] cleanInvData:", cleanInvData);
 
       const res = await apiFetch(
-        `${API_BASE_URL}api_update_invoice/${invoicePk}`,
+        `${API_BASE_URL}/api_update_invoice/${invoicePk}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -707,7 +708,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
       // حذف الأسطر المحذوفة
       for (const orig of originalInvoiceItems) {
         if (!currentIds.includes(orig.id)) {
-          await apiFetch(`${API_BASE_URL}api_delete_invoice_dtl/${orig.id}`, {
+          await apiFetch(`${API_BASE_URL}/api_delete_invoice_dtl/${orig.id}`, {
             method: "DELETE",
           });
         }
@@ -763,14 +764,14 @@ const getNextInvoiceNumber = async (): Promise<number> => {
 
         if (originalIds.includes(row.id)) {
           // تحديث سطر موجود
-          await apiFetch(`${API_BASE_URL}api_update_invoice_dtl/${row.id}`, {
+          await apiFetch(`${API_BASE_URL}/api_update_invoice_dtl/${row.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(dtl),
           });
         } else {
           // إضافة سطر جديد
-          await apiFetch(`${API_BASE_URL}api_create_invoice_dtl`, {
+          await apiFetch(`${API_BASE_URL}/api_create_invoice_dtl`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(dtl),
@@ -798,9 +799,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     // جلب بيانات المنشأة من قاعدة البيانات
-    const homeData = await fetchData<any[]>(API_ENDPOINTS.HOME_LIST);
-    const home =
-      Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
+    const home = await homeService.getHomeSettings() || {};
 
     // تجهيز بيانات التقرير
     const previewCustomer = selectedCust
@@ -862,7 +861,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
 
     try {
       const invList = await fetchData<any[]>(
-        `${API_BASE_URL}invoices_list?inv_id=${num}&trans_type=2`,
+        `${API_BASE_URL}/invoices_list?inv_id=${num}&trans_type=2`,
       );
 
       if (!invList || invList.length === 0) {
@@ -881,7 +880,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
 
       // جلب التفاصيل وربطها بالـ id الأساسي
       const detailsRes = await fetchData<any>(
-        `${API_BASE_URL}invoices_dtl_list`,
+        `${API_BASE_URL}/invoices_dtl_list`,
       );
 
       let detailRows: any[] = [];
@@ -1049,7 +1048,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
   // تحميل قائمة الفواتير للتنقل
   const loadInvoicesList = async () => {
     try {
-      const response = await fetchData<any[]>(`${API_BASE_URL}invoices_list?trans_type=4`);
+      const response = await fetchData<any[]>(`${API_BASE_URL}/invoices_list?trans_type=4`);
       if (Array.isArray(response)) {
         setInvoicesList(response);
         setTotalRecords(response.length);
