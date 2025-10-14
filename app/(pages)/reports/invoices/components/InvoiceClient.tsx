@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import {
   Input,
-  Pagination,
   Button,
-  Chip,
   Select,
   SelectItem,
   Tabs,
@@ -13,45 +11,20 @@ import {
   CardBody,
 } from "@heroui/react";
 import Card from "@/components/Card";
-import {
-  EyeIcon,
-  PencilIcon,
-  FunnelIcon,
-  ChartBarIcon,
-  TableCellsIcon,
-} from "@heroicons/react/24/outline";
-
-import { formatDateTime } from "@/utilities/dateUtils";
-import { formatAmount } from "@/utilities/formatAmount";
+import { FunnelIcon, ChartBarIcon, TableCellsIcon } from "@heroicons/react/24/outline";
 import useFractions from "@/utilities/useFractions";
 import DataTable from "@/components/DataTable";
 import InvoiceAnalytics from "@/components/InvoiceAnalytics";
-import Link from "next/link";
-import { Invoice, InvoiceTypes, TransTypes } from "@/types/models/invoice";
+import { Fractions } from "@/utilities/useFractions";
+import { Invoice } from "@/types/models/invoice";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
-import { GetAllInvoicesParams } from "@/services/api/invoice.service";
+import { INVOICE_TYPE_FILTERS } from "@/types/constants/invoice";
+import { createInvoiceColumns } from "@/components/invoices/invoiceColumns";
 
 interface InvoiceClientProps {
   invoices: Invoice[];
   totalInvoices: number;
 }
-
-// أنواع الفواتير
-const INVOICE_TYPES = [
-  { key: "0", label: "جميع الفواتير", color: "default" },
-  { key: TransTypes.PURCHASE, label: "فواتير الشراء", color: "primary" },
-  { key: TransTypes.SALES, label: "فواتير البيع", color: "success" },
-  { key: TransTypes.PURCHASE_RETURN, label: "مردود الشراء", color: "warning" },
-  { key: TransTypes.SALES_RETURN, label: "مردود البيع", color: "danger" },
-];
-
-// حالات الفواتير
-const INVOICE_STATUSES = [
-  { key: "all", label: "جميع الحالات", color: "default" },
-  { key: "paid", label: "مدفوع", color: "success" },
-  { key: "pending", label: "معلق", color: "warning" },
-  { key: "overdue", label: "متأخر", color: "danger" },
-];
 
 export default function InvoiceClient({
   invoices,
@@ -103,112 +76,28 @@ export default function InvoiceClient({
     debounce: 350, // don't navigate until user stops typing for 350ms
   });
 
-  const fractions = useFractions() as { frac: number; frac2: number };
+  const fractionsResult = useFractions();
+  const fractions: Fractions =
+    typeof fractionsResult === "number"
+      ? { frac: fractionsResult, frac2: fractionsResult }
+      : fractionsResult;
   const [searchQ, setSearchQ] = useState(params.xinv_id || "");
-
-  // const [params, setParams] = useQueryStates({
-  //   search: parseAsString.withDefault(""),
-  //   type: parseAsString.withDefault("all"),
-  //   start_date: parseAsString.withDefault(""),
-  //   end_date: parseAsString.withDefault(""),
-  //   page: parseAsInteger.withDefault(1),
-  // });
-
   const [activeTab, setActiveTab] = useState("table");
+  const [, startTransition] = useTransition();
 
-  const columns = [
-    { key: "inv_id", label: "رقم الفاتورة", sortable: true },
-    {
-      key: "inv_date",
-      label: "التاريخ والوقت",
-      sortable: true,
-      render: (value: string) => formatDateTime(value),
-    },
-    { key: "cust_name", label: "العميل", sortable: true },
-    {
-      key: "inv_net",
-      label: "الإجمالي",
-      sortable: true,
-      render: (value: number) => formatAmount(value, fractions.frac),
-    },
-    {
-      key: "tax",
-      label: "الضريبة",
-      sortable: true,
-      render: (value: number) => formatAmount(value, fractions.frac),
-    },
-    {
-      key: "inv_amt",
-      label: "الإجمالي شامل الضريبة",
-      sortable: true,
-      render: (value: number) => formatAmount(value, fractions.frac),
-    },
-    {
-      key: "type",
-      label: "النوع",
-      sortable: false,
-      render: (value: any, row: Invoice) => {
-        let type = "";
-        let color = "default";
-
-        switch (row.trans_type) {
-          case 1:
-            type = "شراء";
-            color = "primary";
-            break;
-          case 2:
-            type = "بيع";
-            color = "success";
-            break;
-          case 3:
-            type = "مردود شراء";
-            color = "warning";
-            break;
-          case 4:
-            type = "مردود بيع";
-            color = "danger";
-            break;
-          default:
-            type = "غير محدد";
-            color = "default";
-        }
-
-        return (
-          <Chip color={color} size="sm">
-            {type}
-          </Chip>
-        );
-      },
-    },
-    {
-      key: "actions",
-      label: "الإجراءات",
-      sortable: false,
-      render: (value: any, row: Invoice) => (
-        <div className="flex gap-2">
-          <Link href={`/forms/invoices/sale/${row.inv_id}`}>
-            <Button isIconOnly size="sm" variant="light">
-              <EyeIcon className="h-4 w-4 text-blue-500" />
-            </Button>
-          </Link>
-          <Link href={`/forms/invoices/sale/${row.inv_id}`}>
-            <Button isIconOnly size="sm" variant="light">
-              <PencilIcon className="h-4 w-4 text-yellow-500" />
-            </Button>
-          </Link>
-        </div>
-      ),
-    },
-  ];
+  const columns = useMemo(() => createInvoiceColumns(fractions), [fractions]);
 
   const clearFilters = () => {
-    setParams({
-      xfrom_date: "",
-      xto_date: "",
-      xtrans_type: "0",
-      xinv_id: "0",
-      page: "1",
-    });
+    setSearchQ("");
+    startTransition(() =>
+      setParams({
+        xfrom_date: "",
+        xto_date: "",
+        xtrans_type: "",
+        xinv_id: "",
+        page: "1",
+      }),
+    );
   };
 
   // useEffect(() => {
@@ -229,23 +118,27 @@ export default function InvoiceClient({
               startContent={<FunnelIcon className="h-4 w-4" />}
               value={searchQ}
               onChange={(e) => {
-                setSearchQ(e.target.value);
-                setParams({ xinv_id: e.target.value, page: "1" });
+                const value = e.target.value;
+                setSearchQ(value);
+                if (value === params.xinv_id) return;
+                startTransition(() => setParams({ xinv_id: value, page: "1" }));
               }}
             />
 
             <Select
               className="input-field"
               placeholder="نوع الفاتورة"
-              selectedKeys={[params.xtrans_type]}
+              selectedKeys={[params.xtrans_type || "0"]}
               onSelectionChange={(keys) =>
-                setParams({
-                  xtrans_type: Array.from(keys)[0] as string,
-                  page: "1",
-                })
+                startTransition(() =>
+                  setParams({
+                    xtrans_type: Array.from(keys)[0] as string,
+                    page: "1",
+                  }),
+                )
               }
             >
-              {INVOICE_TYPES.map((type) => (
+              {INVOICE_TYPE_FILTERS.map((type) => (
                 <SelectItem key={type.key} value={type.key}>
                   {type.label}
                 </SelectItem>
@@ -257,7 +150,11 @@ export default function InvoiceClient({
               placeholder="من تاريخ"
               type="date"
               value={params.xfrom_date}
-              onChange={(e) => setParams({ xfrom_date: e.target.value, page: "1" })}
+              onChange={(e) =>
+                startTransition(() =>
+                  setParams({ xfrom_date: e.target.value, page: "1" }),
+                )
+              }
             />
 
             <Input
@@ -265,7 +162,11 @@ export default function InvoiceClient({
               placeholder="إلى تاريخ"
               type="date"
               value={params.xto_date}
-              onChange={(e) => setParams({ xto_date: e.target.value, page: "1" })}
+              onChange={(e) =>
+                startTransition(() =>
+                  setParams({ xto_date: e.target.value, page: "1" }),
+                )
+              }
             />
 
             <Button

@@ -1,11 +1,12 @@
+import { Suspense } from "react";
+
 import InvoiceClient from "./components/InvoiceClient";
 import invoiceService, {
   GetAllInvoicesParams,
 } from "@/services/api/invoice.service";
-// import { Suspense } from "react";
-// import AppLoading from "@/components/AppLoading";
 import AppPagination from "@/components/AppPagination";
 import InvoicesHeader from "./components/InvoicesHeader";
+import AppLoading from "@/components/AppLoading";
 
 export const revalidate = 3600;
 
@@ -26,9 +27,19 @@ export default async function InvoicesPage({
     <div className="font-cairo space-y-4 p-4">
       <InvoicesHeader />
 
-      {/* <Suspense key={JSON.stringify(queryParams)} fallback={<AppLoading />}> */}
-      <InvoiceClient totalInvoices={count} invoices={invoices?.results ?? []} />
-      {/* </Suspense> */}
+      <Suspense
+        key={JSON.stringify(queryParams)}
+        fallback={
+          <div className="py-12">
+            <AppLoading />
+          </div>
+        }
+      >
+        <InvoiceClient
+          totalInvoices={count}
+          invoices={invoices?.results ?? []}
+        />
+      </Suspense>
 
       <AppPagination total={totalPages} />
     </div>
