@@ -248,11 +248,23 @@ export default function InvoiceTotalsActions({
 
           {/* حالة الفاتورة */}
           <div className="flex items-center gap-3">
-            <Checkbox isSelected={commit} isReadOnly color="success" size="sm">
+            <Checkbox
+              isSelected={commit}
+              onValueChange={setCommit}
+              isDisabled={!isEditing}
+              color="success"
+              size="sm"
+            >
               <span className="text-xs text-slate-600">حُفظ</span>
             </Checkbox>
 
-            <Checkbox isSelected={print} isReadOnly color="warning" size="sm">
+            <Checkbox
+              isSelected={print}
+              onValueChange={setPrint}
+              isDisabled={!isEditing}
+              color="warning"
+              size="sm"
+            >
               <span className="text-xs text-slate-600">طُبع</span>
             </Checkbox>
           </div>
