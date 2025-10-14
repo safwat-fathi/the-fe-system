@@ -1,9 +1,10 @@
 "use client";
 
+import { Dispatch, SetStateAction } from "react";
 import ReactSelect from "react-select";
 
 interface Customer {
-  id: number;
+  id: string;
   cust_name: string;
   cust_code?: string;
   vat_no?: string;
@@ -23,8 +24,8 @@ interface Customer {
 
 interface Props {
   customers: Customer[];
-  selectedCustomer: number | null;
-  setSelectedCustomer: (id: number | null) => void;
+  selectedCustomer: string | null;
+  setSelectedCustomer: Dispatch<SetStateAction<string | null>>;
   paymentMethod: string;
   setPaymentMethod: (value: string) => void;
   payType: number;
@@ -59,7 +60,7 @@ interface Props {
   note: string;
   setNote: (val: string) => void;
   // saleInvoices?: { inv_id: number }[];
-  saleInvoices?: { inv_id: number; cust?: number }[];
+  saleInvoices?: { inv_id: string; cust?: string }[];
   onInvoiceSelect?: (invoiceId: number) => void;
   // البحث بالباركود
   searchValue: string;

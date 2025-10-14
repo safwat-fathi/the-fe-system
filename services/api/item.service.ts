@@ -1,4 +1,6 @@
 import { HttpService } from "@/services/base";
+import { API_ENDPOINTS } from "@/utilities/api";
+import { IPaginatedResponse } from "@/types/services/base";
 
 interface Item {
   id: number;
@@ -30,22 +32,24 @@ class ItemService extends HttpService<Item> {
     super("");
   }
 
-  async getAllItems(): Promise<Item[]> {
+  async getAllItems(): Promise<IPaginatedResponse<Item> | null> {
     try {
-      const response = await this.get<Item[]>("items_list", undefined, {
-        cache: "no-store",
-        next: { tags: ["items"] },
-      });
 
-      if (response.success) {
-        if (Array.isArray(response.data)) {
-          return response.data;
-        } else if (Array.isArray((response.data as any)?.results)) {
-          return (response.data as any).results;
-        }
+      const response = await this.get<IPaginatedResponse<Item>>(
+        "GetItemsList/",
+        undefined,
+        {
+          cache: "force-cache",
+          next: { tags: ["items"] },
+        },
+      );
+
+      if (!response.success || !response.data) {
+        return null;
+
       }
 
-      return [];
+      return response.data;
     } catch (error) {
       console.error("Error fetching items:", error);
       throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
@@ -55,81 +59,76 @@ class ItemService extends HttpService<Item> {
   async getItemCount(): Promise<number> {
     try {
       const items = await this.getAllItems();
-
-      return items.length;
+      return items?.count ?? 0;
     } catch (error) {
       console.error("Error counting items:", error);
-
       return 0;
     }
   }
 
-  async createItem(item: Omit<Item, "id">): Promise<Item | null> {
+  async getHomeSettings(): Promise<any[]> {
     try {
-      const response = await this.post<Item>(
-        "api_create_item",
-        item,
-        undefined,
-        {
-          cache: "no-store",
-        },
-      );
-
-      if (response.success) {
-        return response.data as Item;
-      }
-
-      return null;
-    } catch (error) {
-      console.error("Error creating item:", error);
-      throw new Error("حدث خطأ أثناء إنشاء الصنف");
-    }
-  }
-
-  async updateItem(id: number, item: Partial<Item>): Promise<Item | null> {
-    try {
-      const response = await this.put<Item>(
-        `api_update_item/${id}`,
-        item,
-        undefined,
-        {
-          cache: "no-store",
-        },
-      );
-
-      if (response.success) {
-        return response.data as Item;
-      }
-
-      return null;
-    } catch (error) {
-      console.error("Error updating item:", error);
-      throw new Error("حدث خطأ أثناء تحديث الصنف");
-    }
-  }
-
-  async deleteItem(id: number): Promise<boolean> {
-    try {
-      const response = await this.delete(`api_delete_item/${id}`, undefined, {
-        cache: "no-store",
+      const response = await this.get<any[]>("home_list", undefined, {
+        cache: "force-cache",
+        next: { tags: ["home_settings"] },
       });
-
-      return response.success;
+      if (response.success && Array.isArray(response.data)) {
+        return response.data;
+      }
+      return [];
     } catch (error) {
-      console.error("Error deleting item:", error);
-      throw new Error("حدث خطأ أثناء حذف الصنف");
+      console.error("Error fetching home settings:", error);
+      throw new Error("حدث خطأ أثناء جلب إعدادات النظام");
     }
   }
 
-  async getItemById(id: number): Promise<Item | null> {
+  async getItemByBarcode(barcode: string): Promise<Item | null> {
     try {
-      const items = await this.getAllItems();
+      const response = await this.get<Item[]>(
+        `ItemBarcode/${encodeURIComponent(barcode)}`,
 
-      return items.find((item) => item.id === id) || null;
-    } catch (error) {
-      console.error("Error fetching item by ID:", error);
+        undefined,
+        {
+          cache: "no-store",
+        },
+      );
 
+
+      if (
+        response.success &&
+        Array.isArray(response.data) &&
+        response.data.length > 0
+      ) {
+        return response.data[0];
+      }
       return null;
+    } catch (error) {
+      console.error("Error fetching item by barcode:", error);
+      return null;
+    }
+  }
+
+  async searchItems(query: string): Promise<IPaginatedResponse<Item> | null> {
+    try {
+      const response = await this.get<IPaginatedResponse<Item>>(
+        `SearchItemsList/?q=${encodeURIComponent(query)}&page=1`,
+
+        undefined,
+        {
+          cache: "no-store",
+        },
+      );
+
+
+      if (!response.success || !response.data) {
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error searching items:", error);
+      throw new Error("حدث خطأ أثناء البحث عن الأصناف");
+
     }
   }
 }

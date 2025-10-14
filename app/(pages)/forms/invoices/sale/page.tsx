@@ -2,22 +2,20 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { Input, Button } from "@heroui/react";
 import toast from "react-hot-toast";
 
-import { renderInvoicePreview } from "./components/TaxInvoicePreview";
-
 import useFractions from "@/utilities/useFractions";
+import { renderInvoicePreview } from "./components/TaxInvoicePreview";
 import {
-  API_BASE_URL,
-  API_ENDPOINTS,
-  fetchData,
-  fetchGoldPrice,
-  apiFetch,
-  fetchItemByBarcode,
-} from "@/utilities/api";
-import homeService from "@/services/api/home.service";
 
-const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
+  invoiceService,
+  itemService,
+  customerService,
+  categoryService,
+  goldPriceService,
+} from "@/services/api";
+
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -28,6 +26,7 @@ import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
 import type { InvoiceItem } from "@/types/invoice-item";
 
 import { generateZatcaQR } from "@/utilities/zatca";
+import { TransTypes } from "@/types/models/invoice";
 
 interface Item {
   id: number;
@@ -190,7 +189,6 @@ export default function InvoicePage() {
         useManualTotals,
         timestamp: Date.now(),
       };
-
       localStorage.setItem("invoice_draft", JSON.stringify(invoiceData));
     }
   }, [
@@ -223,7 +221,6 @@ export default function InvoicePage() {
   useEffect(() => {
     if (isEditing && !isExistingInvoice) {
       const savedData = localStorage.getItem("invoice_draft");
-
       if (savedData) {
         try {
           const data = JSON.parse(savedData);
@@ -293,22 +290,21 @@ export default function InvoicePage() {
     }
   }, [isEditing, isExistingInvoice]);
 
-  useEffect(() => {
-    const invId = searchParams.get("inv_id");
-    const isNewInvoice = searchParams.get("new") === "true";
+  // useEffect(() => {
+  //   const invId = searchParams.get("inv_id");
+  //   const isNewInvoice = searchParams.get("new") === "true";
 
-    // إذا كان هناك طلب لفاتورة جديدة، قم بإعادة تعيين الحالة
-    if (isNewInvoice) {
-      resetInvoiceForm();
+  //   // إذا كان هناك طلب لفاتورة جديدة، قم بإعادة تعيين الحالة
+  //   if (isNewInvoice) {
+  //     resetInvoiceForm();
+  //     return;
+  //   }
 
-      return;
-    }
-
-    if (invId) {
-      setSearchNumber(invId);
-      handleInvoiceSearch(invId);
-    }
-  }, [searchParams]);
+  //   if (invId) {
+  //     setSearchNumber(invId);
+  //     handleInvoiceSearch(invId);
+  //   }
+  // }, [searchParams]);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
   useEffect(() => {
@@ -348,7 +344,6 @@ export default function InvoicePage() {
   useEffect(() => {
     if (!useManualTotals) {
       const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
-
       setManualTotalValue(autoTotalValue);
       setManualTotalWages(autoTotalWages);
     }
@@ -388,7 +383,6 @@ export default function InvoicePage() {
 
           // حساب الإجمالي حسب نوع الدفع
           let rowTotal = 0;
-
           if (payType === 1) {
             rowTotal = newTotalA;
           } else if (payType === 2) {
@@ -443,10 +437,8 @@ export default function InvoicePage() {
         // إذا كان الوزن المعاير تم تغييره يدوياً وكان الوزن موجود
         if (homePurity && weightVal > 0 && gWeightVal > 0) {
           const purity = (gWeightVal * homePurity) / weightVal;
-
           return { ...itm, purity: parseFloat(purity.toFixed(2)).toString() };
         }
-
         return itm;
       }),
     );
@@ -459,20 +451,17 @@ export default function InvoicePage() {
     fetchHomePurity();
     if (typeof window !== "undefined") {
       const now = new Date();
-
       setInvoiceDate(now.toISOString());
     }
     getGoldPrice();
     loadInvoicesList(); // تحميل قائمة الفواتير للتنقل
     const invId = searchParams.get("inv_id");
-
     // توليد رقم فاتورة جديد فقط إذا لم يكن هناك inv_id ولم تكن الفاتورة في وضع التعديل
     if (!invId && !isExistingInvoice) {
       setTimeout(() => {
         setInvoiceNumber((prev) => {
           if (prev && prev !== 1) return prev; // إذا تم تعيين رقم فاتورة حقيقي لا تغيّره
           getNextInvoiceNumber().then(setInvoiceNumber);
-
           return prev;
         });
       }, 0);
@@ -480,18 +469,18 @@ export default function InvoicePage() {
   }, [searchParams]);
 
   const getGoldPrice = async () => {
-    const price = await fetchGoldPrice();
-
+    const price = await goldPriceService.getCurrentGoldPrice();
     setGoldPrice(price);
   };
 
   const fetchHomePurity = async () => {
     try {
-      const homeSettings = await homeService.getHomeSettings();
 
-      if (homeSettings) {
-        const p = homeSettings.purity || 0;
-        const vatPerc = homeSettings.Vat_perc || 0;
+      const res = await itemService.getHomeSettings();
+      if (res.length > 0) {
+        const p = parseFloat(res[0]?.purity);
+        const vatPerc = parseFloat(res[0]?.Vat_perc);
+
 
         if (p) setHomePurity(p);
         if (vatPerc) setDefaultTaxPrc(vatPerc);
@@ -503,56 +492,38 @@ export default function InvoicePage() {
 
   async function fetchItems() {
     try {
-      const response = await fetchData<{ results: Item[] }>(
-        `${API_BASE_URL}/GetItemsList/`,
-      );
+
+      const response = await itemService.getAllItems();
 
       if (response && Array.isArray(response.results)) {
-        setItems(response.results);
+        setItems(response.results as Item[]);
       } else {
-        console.warn("No items found or invalid response.");
         setItems([]);
       }
     } catch (error) {
-      console.error("Error fetching items:", error);
       setItems([]);
     }
   }
 
   async function fetchCustomers() {
-    const response = await fetchData<Customer[]>(
-      `${API_BASE_URL}/customers_list`,
-    );
+
+    const response = await customerService.getAllCustomers();
+    console.log("🚀 ~ :504 ~ fetchCustomers ~ response:", response);
 
     if (response) {
       // تصفية العملاء والموردين بحيث لا يكون box_type = 2
       const filteredCustomers = response.filter(
         (customer) => customer.box_type !== 2,
       );
-
-      setCustomers(filteredCustomers);
+      setCustomers(filteredCustomers as Customer[]);
     } else {
       setCustomers([]);
     }
   }
 
   async function fetchCategories() {
-    const response = await fetchData<{ results: Category[] }>(
-      API_ENDPOINTS.CATEGORIES_LIST,
-    );
-
-    if (response && Array.isArray(response.results)) {
-      setCategories(response.results);
-    } else if (response && Array.isArray((response as any).data)) {
-      // some apis may return {data:[]}
-      // @ts-ignore
-      setCategories((response as any).data);
-    } else if (Array.isArray(response)) {
-      // if array directly
-      setCategories(response as unknown as Category[]);
-    } else {
-      setCategories([]);
-    }
+    const response = await categoryService.getAllCategories();
+    setCategories(response as Category[]);
   }
 
   // حساب الإجماليات التلقائية
@@ -631,14 +602,12 @@ export default function InvoicePage() {
   const totalValueTax = invoiceItems.reduce((sum, item) => {
     const totalA = item.weight * item.price;
     const base = totalA - (item.item_disc_amt ?? 0);
-
     return sum + base * 0.15;
   }, 0);
 
   const totalWagesTax = invoiceItems.reduce((sum, item) => {
     const totalW = item.weight * (item.price_w ?? 0);
     const base = totalW - (item.item_disc_amt ?? 0);
-
     return sum + base * 0.15;
   }, 0);
 
@@ -669,11 +638,13 @@ export default function InvoicePage() {
   });
 
   const getNextInvoiceNumber = async (): Promise<number> => {
-    const invoices = await fetchData<any[]>(`${API_BASE_URL}/invoices_list`);
 
-    if (!Array.isArray(invoices) || invoices.length === 0) return 1;
+    const invoices = await invoiceService.getAllInvoices();
 
-    const maxInvId = invoices.reduce((max, curr) => {
+
+    if (!invoices || invoices.results.length === 0) return 1;
+
+    const maxInvId = invoices.results.reduce((max, curr) => {
       return curr.inv_id > max ? curr.inv_id : max;
     }, 0);
 
@@ -696,7 +667,6 @@ export default function InvoicePage() {
     // فقط في حالة الإضافة الجديدة يتم توليد رقم جديد
     // إذا لم يكن هناك inv_id في الرابط ولم تكن الفاتورة موجودة
     const generatedInvId = await getNextInvoiceNumber();
-
     setInvoiceNumber(generatedInvId);
 
     const employeeMap: Record<string, number> = {
@@ -756,21 +726,13 @@ export default function InvoicePage() {
     };
 
     try {
-      const res = await apiFetch(`${API_BASE_URL}/api_create_invoice`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(invData),
-      });
 
-      if (!res.ok) {
-        const errorText = await res.text();
+      const result = await invoiceService.createInvoice(invData);
 
-        console.error("❌ فشل إنشاء الفاتورة:", errorText);
 
+      if (!result) {
         return toast.error("فشل في حفظ الفاتورة");
       }
-
-      const result = await res.json();
       const invPk = result.id;
 
       setInvoicePk(invPk);
@@ -827,16 +789,9 @@ export default function InvoicePage() {
           item: row.item_id,
         };
 
-        const dtlRes = await apiFetch(CREATE_INVOICE_DTL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dtl),
-        });
+        const dtlRes = await invoiceService.createInvoiceDetail(dtl);
 
-        if (!dtlRes.ok) {
-          const dtlError = await dtlRes.text();
-
-          console.error(`❌ خطأ في تفاصيل السطر ${index + 1}:`, dtlError);
+        if (!dtlRes) {
           toast.error(`فشل في حفظ تفاصيل السطر ${index + 1}`);
         }
       }
@@ -926,23 +881,13 @@ export default function InvoicePage() {
           ([_, v]) => v !== null && v !== undefined,
         ),
       );
-
       console.log("[updateInvoice] cleanInvData:", cleanInvData);
 
-      const res = await apiFetch(
-        `${API_BASE_URL}/api_update_invoice/${invoicePk}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(cleanInvData),
-        },
-      );
 
-      if (!res.ok) {
-        const errorText = await res.text();
+      const res = await invoiceService.updateInvoice(invoicePk, cleanInvData);
 
-        console.error("❌ فشل تعديل الفاتورة:", errorText);
 
+      if (!res) {
         return toast.error("فشل في تعديل الفاتورة");
       }
 
@@ -962,29 +907,24 @@ export default function InvoicePage() {
 
         for (const itemToDelete of deletedItems) {
           try {
+
             console.log(
               `🔄 جاري حذف الصنف: ${itemToDelete.item_name} (ID: ${itemToDelete.id})`,
             );
-            const deleteRes = await apiFetch(
-              `${API_BASE_URL}/api_delete_invoice_dtl/${itemToDelete.id}`,
-              {
-                method: "DELETE",
-              },
+            const deleteRes = await invoiceService.deleteInvoiceDetail(
+              itemToDelete.id,
             );
 
-            if (!deleteRes.ok) {
-              const errorText = await deleteRes.text();
-
-              console.error(
-                `❌ فشل في حذف الصنف ${itemToDelete.id}:`,
-                errorText,
-              );
+            if (!deleteRes) {
               toast.error(
                 `فشل في حذف الصنف ${itemToDelete.item_name || itemToDelete.id}`,
               );
+
             } else {
               console.log(
-                `✅ تم حذف الصنف ${itemToDelete.item_name || itemToDelete.id} بنجاح`,
+                `✅ تم حذف الصنف ${
+                  itemToDelete.item_name || itemToDelete.id
+                } بنجاح`,
               );
             }
           } catch (error) {
@@ -1045,21 +985,14 @@ export default function InvoicePage() {
           inv: invoicePk ?? invoiceNumber,
           item: row.item_id,
         };
-
         if (originalIds.includes(row.id)) {
           // تحديث سطر موجود
-          await apiFetch(`${API_BASE_URL}/api_update_invoice_dtl/${row.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(dtl),
-          });
+
+          await invoiceService.updateInvoiceDetail(row.id, dtl);
         } else {
           // إضافة سطر جديد
-          await apiFetch(`${API_BASE_URL}/api_create_invoice_dtl`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(dtl),
-          });
+          await invoiceService.createInvoiceDetail(dtl);
+
         }
       }
 
@@ -1089,7 +1022,11 @@ export default function InvoicePage() {
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     // جلب بيانات المنشأة من قاعدة البيانات
-    const home = (await homeService.getHomeSettings()) || {};
+
+    const homeData = await itemService.getHomeSettings();
+    const home =
+      Array.isArray(homeData) && homeData.length > 0 ? homeData[0] : {};
+
 
     // تجهيز بيانات التقرير
     const previewCustomer = selectedCust
@@ -1162,7 +1099,7 @@ export default function InvoicePage() {
         console.log("لم يجد في الأصناف المحملة، البحث في API...");
 
         // استخدام دالة البحث بالباركود المخصصة
-        const barcodeResult = await fetchItemByBarcode(searchTerm);
+        const barcodeResult = await itemService.getItemByBarcode(searchTerm);
 
         if (barcodeResult) {
           exactMatch = barcodeResult;
@@ -1172,20 +1109,16 @@ export default function InvoicePage() {
           );
         } else {
           // إذا لم يجد بالباركود، جرب البحث في الكود
-          const res = await fetch(
-            `${API_BASE_URL}/SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
-          );
-          const json = await res.json();
+
+          const searchResults = await itemService.searchItems(searchTerm);
 
           console.log("نتائج API للكود:", {
-            count: json.count,
-            resultsCount: json.results?.length || 0,
+            count: searchResults.results.length,
           });
 
-          if (Array.isArray(json.results)) {
-            exactMatch = json.results.find((item: any) => {
+          if (searchResults.results.length > 0) {
+            exactMatch = searchResults.results.find((item: any) => {
               const itemCode = (item.item_code ?? "").toString().trim();
-
               return itemCode === searchTerm;
             });
           }
@@ -1287,7 +1220,6 @@ export default function InvoicePage() {
           selected.cat
         ) {
           const cat = categories.find((c) => c.id === selected.cat);
-
           if (cat) {
             if (!selk || selk === "0")
               updated[targetIndex].k = (cat.gauge ?? cat.k ?? "") as string;
@@ -1385,7 +1317,6 @@ export default function InvoicePage() {
 
         toast.error(`لم يتم العثور على صنف : ${searchValue.trim()}`);
         setSearchValue("");
-
         return;
       }
     } catch (error) {
@@ -1396,7 +1327,6 @@ export default function InvoicePage() {
 
   const handleInvoiceSearch = async (searchVal?: string) => {
     const num = searchVal ?? searchNumber;
-
     if (!num || num === lastLoadedInvoiceRef.current) return;
     lastLoadedInvoiceRef.current = num;
 
@@ -1405,17 +1335,17 @@ export default function InvoicePage() {
     setDeletedItems([]);
 
     try {
-      const invList = await fetchData<any[]>(
-        `${API_BASE_URL}/invoices_list?inv_id=${num}`,
-      );
 
-      if (!invList || invList.length === 0) {
+      const invList = await invoiceService.getAllInvoices({ xinv_id: num });
+
+
+      if (!invList || invList.results.length === 0) {
         toast.error("الفاتورة غير موجودة");
 
         return;
       }
 
-      const inv = invList.find((i) => String(i.inv_id) === String(num));
+      const inv = invList.results.find((i) => String(i.inv_id) === String(num));
 
       if (!inv) {
         toast.error("الفاتورة غير موجودة");
@@ -1459,7 +1389,6 @@ export default function InvoicePage() {
 
       // تحديث currentRecord للتنقل
       const currentIndex = invoicesList.findIndex((v) => v.id === inv.id);
-
       if (currentIndex !== -1) {
         setCurrentRecord(currentIndex + 1);
       }
@@ -1468,23 +1397,9 @@ export default function InvoicePage() {
       setIsEditing(false);
 
       // جلب التفاصيل وربطها بالـ id الأساسي
-      const detailsRes = await fetchData<any>(
-        `${API_BASE_URL}/invoices_dtl_list`,
-      );
 
-      let detailRows: any[] = [];
+      const filteredDetails = await invoiceService.getInvoiceDetails(invoicePk);
 
-      if (Array.isArray(detailsRes)) {
-        detailRows = detailsRes;
-      } else if (Array.isArray(detailsRes.results)) {
-        detailRows = detailsRes.results;
-      } else if (Array.isArray(detailsRes.data)) {
-        detailRows = detailsRes.data;
-      }
-
-      const filteredDetails = detailRows.filter(
-        (row) => Number(row.inv) === invoicePk,
-      );
 
       if (filteredDetails.length > 0) {
         setInvoiceItems(
@@ -1564,7 +1479,6 @@ export default function InvoicePage() {
       // تحديث الإجماليات اليدوية بعد تحميل الفاتورة
       setTimeout(() => {
         const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
-
         setManualTotalValue(autoTotalValue);
         setManualTotalWages(autoTotalWages);
         setUseManualTotals(false);
@@ -1657,7 +1571,6 @@ export default function InvoicePage() {
     // تعيين التاريخ الحالي
     if (typeof window !== "undefined") {
       const now = new Date();
-
       setInvoiceDate(now.toISOString());
     }
 
@@ -1695,7 +1608,6 @@ export default function InvoicePage() {
     }
 
     const targetInvoice = invoicesList[targetIndex];
-
     if (targetInvoice) {
       router.push(`/forms/invoices/sale/${targetInvoice.inv_id}`);
     }
@@ -1704,18 +1616,20 @@ export default function InvoicePage() {
   // تحميل قائمة الفواتير للتنقل
   const loadInvoicesList = async () => {
     try {
-      const response = await fetchData<any[]>(
-        `${API_BASE_URL}/invoices_list?trans_type=2`,
-      );
 
-      if (Array.isArray(response)) {
-        setInvoicesList(response);
-        setTotalRecords(response.length);
+      const response = await invoiceService.getAllInvoices({
+        xtrans_type: TransTypes.SALES,
+      });
+      if (response && response.results) {
+        setInvoicesList(response.results);
+        setTotalRecords(response.count);
+
 
         // تحديث currentRecord إذا كان هناك فاتورة محملة
         if (invoicePk) {
-          const currentIndex = response.findIndex((v) => v.id === invoicePk);
-
+          const currentIndex = response.results.findIndex(
+            (v) => v.id === invoicePk,
+          );
           if (currentIndex !== -1) {
             setCurrentRecord(currentIndex + 1);
           }
@@ -1785,45 +1699,45 @@ export default function InvoicePage() {
   return (
     <>
       <InvoiceTotalsActions
-        autoTotalWages={autoTotalWages}
         commit={commitVal}
-        currentRecord={currentRecord}
         formattedDateTime={formattedDateTime}
         invoiceNumber={invoiceNumber}
         isEditing={isEditing}
-        manualTotalValue={manualTotalValue}
-        manualTotalWages={manualTotalWages}
-        navigateToInvoice={navigateToInvoice}
         netAmount={netAmount}
         previewInvoice={previewInvoice}
         print={printVal}
         saveInvoice={saveInvoice}
         setCommit={setCommitVal}
         setPrint={setPrintVal}
-        setSearchNumber={setSearchNumber}
         taxAmount={taxAmount}
         totalAmount={totalAmount}
         totalDiscount={totalDiscount}
-        totalRecords={totalRecords}
-        totalValueTax={totalValueTax}
-        totalWagesTax={totalWagesTax}
-        useManualTotals={useManualTotals}
         onEdit={() => setIsEditing(true)}
-        onManualTotalChange={handleManualTotalChange}
-        onUseManualTotalsChange={setUseManualTotals}
         invoiceType="invoice"
         // إجماليات قابلة للإدخال
         autoTotalValue={autoTotalValue}
-        // أزرار التنقل
-        totalTax={totalTax}
-        // طريقة الدفع
-        paymentMethod={paymentMethod}
-        onInvoiceSearch={() => handleInvoiceSearch()}
-        // إجماليات إضافية جديدة
-        totalGWeight={totalGWeight}
+        autoTotalWages={autoTotalWages}
+        manualTotalValue={manualTotalValue}
+        manualTotalWages={manualTotalWages}
+        useManualTotals={useManualTotals}
+        onManualTotalChange={handleManualTotalChange}
+        onUseManualTotalsChange={setUseManualTotals}
         onResetManualTotals={resetManualTotals}
         // البحث برقم الفاتورة
         searchNumber={searchNumber}
+        setSearchNumber={setSearchNumber}
+        onInvoiceSearch={() => handleInvoiceSearch()}
+        // إجماليات إضافية جديدة
+        totalGWeight={totalGWeight}
+        totalValueTax={totalValueTax}
+        totalWagesTax={totalWagesTax}
+        totalTax={totalTax}
+        // طريقة الدفع
+        paymentMethod={paymentMethod}
+        // أزرار التنقل
+        currentRecord={currentRecord}
+        totalRecords={totalRecords}
+        navigateToInvoice={navigateToInvoice}
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
           <InvoiceSelectors
@@ -1836,8 +1750,6 @@ export default function InvoicePage() {
             goldPrice={goldPrice}
             gov={gov}
             handlingMethod={handlingMethod}
-            invoiceType="sale"
-            isEditing={isEditing}
             mobileMethod={mobileMethod}
             note={note}
             payType={payType}
@@ -1860,29 +1772,28 @@ export default function InvoicePage() {
             setPostCode={setPostCode}
             setPostNo={setPostNo}
             setReferenceNumber={setReferenceNumber}
-            setSearchValue={setSearchValue}
             setSelectedCustomer={setSelectedCustomer}
             setStreet={setStreet}
             setVatNumber={setVatNumber}
             street={street}
-            onBarcodeSearch={handleBarcodeSearch}
             vatNumber={vatNumber}
             // البحث بالباركود
             searchValue={searchValue}
-            // التاريخ والوقت
-            invoiceDate={invoiceDate}
-            setInvoiceDate={setInvoiceDate}
+            setSearchValue={setSearchValue}
+            onBarcodeSearch={handleBarcodeSearch}
+            isEditing={isEditing}
+            invoiceType="sale"
           />
           <InvoiceItemTable
             categories={categories}
             goldPrice={goldPrice}
             homePurity={homePurity}
             invoiceItems={invoiceItems}
-            isEditing={isEditing}
             items={itemsForTable}
             payType={payType}
             setInvoiceItems={setInvoiceItems}
             setItems={setItems}
+            isEditing={isEditing}
             onItemRemoved={handleItemRemoved}
           />
         </div>

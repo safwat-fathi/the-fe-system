@@ -65,6 +65,7 @@ export async function loginAction(
       { username, password },
       requestOptions,
     );
+    console.log("🚀 ~ :66 ~ loginAction ~ response:", response);
 
     if (response.success && response.data) {
       // Extract token and user data from response
@@ -167,5 +168,5 @@ export async function onLogoutAction() {
     maxAge: 0,
   });
 
-  redirect("/auth/login");
+	redirect("/auth/login");
 }

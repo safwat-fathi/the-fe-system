@@ -1,0 +1,63 @@
+import { HttpService } from "@/services/base";
+import customerService from "../api/customer.service";
+import itemService from "../api/item.service";
+import goldPriceService from "../api/gold-price.service";
+import categoryService from "../api/category.service";
+
+interface InvoiceFormData {
+  customers: any[];
+  items: any[];
+  categories: any[];
+  goldPrice: number | null;
+  homePurity: number;
+}
+
+class InvoiceFormDataService extends HttpService<any> {
+  constructor() {
+    super("");
+  }
+
+  async getInvoiceFormData(): Promise<InvoiceFormData> {
+    try {
+      // Fetch all required data in parallel
+      const [customers, itemsResponse, categories, goldPrice] = await Promise.all([
+        customerService.getAllCustomers(),
+        itemService.getAllItems(),
+        categoryService.getAllCategories(),
+        goldPriceService.getCurrentGoldPrice(),
+      ]);
+
+      // Extract items from the paginated response
+      const items = itemsResponse?.results || [];
+
+      // Fetch home settings to get homePurity
+      let homePurity = 0;
+      try {
+        const homeSettings = await itemService.getHomeSettings();
+        if (homeSettings && homeSettings.length > 0) {
+          const purityValue = parseFloat(homeSettings[0]?.purity);
+          if (!isNaN(purityValue)) {
+            homePurity = purityValue;
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching home settings:", error);
+        // Use default value if home settings fetch fails
+        homePurity = 0;
+      }
+
+      return {
+        customers: customers.filter((c: any) => c.box_type !== 2), // Filter out box_type 2
+        items,
+        categories,
+        goldPrice,
+        homePurity,
+      };
+    } catch (error) {
+      console.error("Error fetching invoice form data:", error);
+      throw new Error("حدث خطأ أثناء جلب بيانات نموذج الفاتورة");
+    }
+  }
+}
+
+export default new InvoiceFormDataService();

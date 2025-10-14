@@ -17,8 +17,8 @@ export enum PaymentTypes {
 }
 
 export interface Invoice {
-  id: number;
-  inv_id: number;
+  id: string;
+  inv_id: string;
   inv_date: string;
   inv_amt?: string;
   inv_net?: string;
@@ -38,7 +38,7 @@ export interface Invoice {
   price2: string | null;
   charge: string | null;
   inv_amt_g: string | null;
-  emp_id?: number;
+  emp_id?: string;
   commit?: boolean;
   print?: boolean;
   cr_no?: string;
@@ -54,32 +54,71 @@ export interface Invoice {
   // Add other invoice properties as needed
 }
 
+// export interface InvoiceDetail {
+//   id: number;
+//   inv: number;
+//   item: number;
+//   item_code?: string;
+//   item_name?: string;
+//   qty: number;
+//   weight: number;
+//   g_weight: number;
+//   k?: string;
+//   price: number;
+//   price_w: number;
+//   total: number;
+//   total_w: number;
+//   total_a: number;
+//   tax: number;
+//   tax_prc: number;
+//   stones: string;
+//   item_disc_prc: number;
+//   item_disc_amt: number;
+//   sn: string;
+//   item_desc: string;
+//   inv_notes: string;
+//   cr_date: string;
+//   cr_user: string;
+//   upd_date: string;
+//   upd_user: string;
+//   com: number;
+// }
+/**
+ * Interface representing a single item transaction in the API response.
+ */
 export interface InvoiceDetail {
   id: number;
+  trans_type: number;
+  G875: number | null; // Assumed to be a number if not null
+  qty: string; // '0.00' - Treat as string to preserve decimal precision/format
+  price: string; // '17.0000...' - Treat as string to preserve decimal precision/format
+  price_w: string; // '17.0000...'
+  weight: string; // '51.4400...'
+  g_weight: string; // '51.4400...'
+  total: string; // '1005.6520...'
+  total_w: string; // '874.4800...'
+  total_a: string; // '874.4800...'
+  inv_notes: string | null; // Assumed to be a string if not null
+  diff: number | null; // Assumed to be a number if not null
+  tax: string; // '131.1720...'
+  tax_prc: string; // '15.00'
+  stones: number | null; // Assumed to be a number if not null
+  item_disc_prc: string; // '0.00'
+  item_disc_amt: string; // '0.0000...'
+  sn: string; // ''
+  item_desc: string; // ''
+  price2: string | null;
+  price2_w: string | null;
+  total_a2: string | null;
+  total2: string | null;
+  total_w2: string | null;
+  tax2: string | null;
+  cr_date: string; // '2025-06-22T16:57:31.254849Z' - ISO date string
+  cr_user: string; // ''
+  upd_date: string; // '2025-06-22T16:56:53.153000Z' - ISO date string
+  upd_user: string; // ''
+  com: number;
   inv: number;
   item: number;
-  item_code?: string;
-  item_name?: string;
-  qty: number;
-  weight: number;
-  g_weight: number;
-  k?: string;
-  price: number;
-  price_w: number;
-  total: number;
-  total_w: number;
-  total_a: number;
-  tax: number;
-  tax_prc: number;
-  stones: string;
-  item_disc_prc: number;
-  item_disc_amt: number;
-  sn: string;
-  item_desc: string;
-  inv_notes: string;
-  cr_date: string;
-  cr_user: string;
-  upd_date: string;
-  upd_user: string;
-  com: number;
+  box: number | null; // Assumed to be a number if not null
 }

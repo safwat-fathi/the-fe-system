@@ -133,7 +133,7 @@ const goldFormLinks = [
   },
   {
     name: "فواتير البيع",
-    href: "/forms/invoices/sale?new=true",
+    href: "/forms/invoices/sale/new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {

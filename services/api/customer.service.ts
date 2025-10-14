@@ -2,9 +2,9 @@ import { HttpService } from "@/services/base";
 import { Customer } from "@/types/models/customer";
 
 interface GetCustomerParams {
-  xcom_id?: string | number;
-  xcust_type?: string | number;
-  xcust_code?: string | number;
+  xcomp_id: number;
+  xcust_type?: number;
+  xcust_code?: number;
 }
 
 class CustomerService extends HttpService<Customer> {
@@ -15,14 +15,14 @@ class CustomerService extends HttpService<Customer> {
   async getAllCustomers(params?: GetCustomerParams): Promise<Customer[]> {
     try {
       const response = await this.get<Customer[]>(
-        "customers_list",
+        "customers_list/",
         {
-          xcom_id: params?.xcom_id || "1",
-          xcust_type: params?.xcust_type || "0",
-          xcust_code: params?.xcust_code || "0",
+          xcom_id: params?.xcomp_id || 1,
+          xcust_type: params?.xcust_type || 0,
+          xcust_code: params?.xcust_code || 0,
         },
         {
-          cache: "no-store",
+          cache: "force-cache",
           next: { tags: ["customers"] },
         },
       );
@@ -45,18 +45,14 @@ class CustomerService extends HttpService<Customer> {
   async getCustomerCount(): Promise<number> {
     try {
       const customers = await this.getAllCustomers();
-
       return customers.length;
     } catch (error) {
       console.error("Error counting customers:", error);
-
       return 0;
     }
   }
 
-  async createCustomer(
-    customer: Omit<Customer, "id">,
-  ): Promise<Customer | null> {
+  async createCustomer(customer: Omit<Customer, 'id'>): Promise<Customer | null> {
     try {
       const response = await this.post<Customer>(
         "api_create_customer",
@@ -78,10 +74,7 @@ class CustomerService extends HttpService<Customer> {
     }
   }
 
-  async updateCustomer(
-    id: number,
-    customer: Partial<Customer>,
-  ): Promise<Customer | null> {
+  async updateCustomer(id: number, customer: Partial<Customer>): Promise<Customer | null> {
     try {
       const response = await this.put<Customer>(
         `api_update_customer/${id}`,
@@ -123,11 +116,9 @@ class CustomerService extends HttpService<Customer> {
   async getCustomerById(id: number): Promise<Customer | null> {
     try {
       const customers = await this.getAllCustomers();
-
-      return customers.find((customer) => customer.id === id) || null;
+      return customers.find(customer => customer.id === id) || null;
     } catch (error) {
       console.error("Error fetching customer by ID:", error);
-
       return null;
     }
   }

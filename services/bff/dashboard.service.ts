@@ -22,7 +22,7 @@ class DashboardService extends HttpService<any> {
     super("");
   }
 
-  async getDashboardStats(): Promise<DashboardStats> {
+  async getDashboardStats(): Promise<DashboardStats | null> {
     try {
       // Fetch all required data in parallel with individual error handling
       const [invoices, customers, categories, items, goldPrice] =
@@ -54,6 +54,8 @@ class DashboardService extends HttpService<any> {
           }),
         ]);
 
+      if (!invoices) return null;
+
       // Calculate monthly sales
       const invoicesList = Array.isArray(invoices?.results) 
         ? invoices.results 
@@ -70,7 +72,7 @@ class DashboardService extends HttpService<any> {
       return {
         invoices,
         customerCount: customers.length,
-        itemCount: items.length,
+        itemCount: items?.count || 0,
         categoryCount: categories.length,
         goldPrice,
         monthlySales,
