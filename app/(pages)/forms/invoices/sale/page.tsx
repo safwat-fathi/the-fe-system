@@ -288,21 +288,21 @@ export default function InvoicePage() {
     }
   }, [isEditing, isExistingInvoice]);
 
-  useEffect(() => {
-    const invId = searchParams.get("inv_id");
-    const isNewInvoice = searchParams.get("new") === "true";
+  // useEffect(() => {
+  //   const invId = searchParams.get("inv_id");
+  //   const isNewInvoice = searchParams.get("new") === "true";
 
-    // إذا كان هناك طلب لفاتورة جديدة، قم بإعادة تعيين الحالة
-    if (isNewInvoice) {
-      resetInvoiceForm();
-      return;
-    }
+  //   // إذا كان هناك طلب لفاتورة جديدة، قم بإعادة تعيين الحالة
+  //   if (isNewInvoice) {
+  //     resetInvoiceForm();
+  //     return;
+  //   }
 
-    if (invId) {
-      setSearchNumber(invId);
-      handleInvoiceSearch(invId);
-    }
-  }, [searchParams]);
+  //   if (invId) {
+  //     setSearchNumber(invId);
+  //     handleInvoiceSearch(invId);
+  //   }
+  // }, [searchParams]);
   const selectedCust = customers.find((c) => c.id === selectedCustomer);
 
   useEffect(() => {

@@ -191,7 +191,7 @@ export default function InvoiceTotalsActions({
 
             <Button
               className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-              onClick={() => router.push("/forms/invoices/sale?new=true")}
+              onClick={() => router.push("/forms/invoices/sale/new")}
             >
               {/* <i className="bi bi-plus-circle me-1"></i> */}
               <PlusCircleIcon className="w-4 h-4 " />

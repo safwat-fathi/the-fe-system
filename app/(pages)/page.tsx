@@ -115,7 +115,7 @@ export default async function DashboardPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4">
-        <Link href="/forms/invoices/sale?new=true" className="btn-primary">
+        <Link href="/forms/invoices/sale/new" className="btn-primary">
           فاتورة جديدة
         </Link>
         <Link href="/reports/invoices" className="btn-secondary">
