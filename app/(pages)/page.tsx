@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { StatCard } from "@/components/Card";
-
-
-import invoiceService from "@/services/api/invoice.service";
 import { Metadata } from "next";
 import dashboardService from "@/services/bff/dashboard.service";
 import DashboardClient from "./components/DashboardClient";
+import { notFound, redirect } from "next/navigation";
+import { STORAGE_KEYS } from "@/constants";
 
 // meta data
 export const metadata: Metadata = {
@@ -19,17 +18,20 @@ export const revalidate = 60;
 export default async function DashboardPage() {
   // Get branch and year from localStorage (now using cookies as a fallback)
   const cookieStore = await cookies();
+
   const branch = cookieStore.get("selectedBranch")?.value || "";
   const year = cookieStore.get("selectedYear")?.value || "";
 
   const dashboardData = await dashboardService.getDashboardStats();
-  
+  // console.log("🚀 ~ :23 ~ DashboardPage ~ dashboardData:", dashboardData);
+
+  // if (!dashboardData) throw new Error("حدث خطأ في جلب البيانات");
 
   // Fill in missing monthly sales data with zeros
-  const monthlySales =
-    dashboardData.monthlySales.length === 12
-      ? dashboardData.monthlySales
-      : new Array(12).fill(0);
+  // const monthlySales =
+  //   dashboardData.monthlySales.length === 12
+  //     ? dashboardData.monthlySales
+  //     : new Array(12).fill(0);
 
   const salesChartData = {
     labels: [
@@ -69,7 +71,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="الفواتير"
           icon="🧾"
@@ -94,7 +96,7 @@ export default async function DashboardPage() {
           value={dashboardData.categoryCount}
           href="/basic/categories"
         />
-      </div> 
+      </div>
 
       {/* Gold Price Card */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -116,10 +118,7 @@ export default async function DashboardPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4">
-        <Link
-          href="/forms/invoices/sale?new=true"
-          className="btn-primary"
-        >
+        <Link href="/forms/invoices/sale/new" className="btn-primary">
           فاتورة جديدة
         </Link>
         <Link href="/reports/invoices" className="btn-secondary">

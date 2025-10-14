@@ -7,9 +7,12 @@ import {
   TMethod,
 } from "@/types/services/base";
 
-import { getCookieAction } from "@/app/actions/cookie-store";
+import { getCookieAction, setCookieAction } from "@/app/actions/cookie-store";
 import { createParams } from "@/utilities/qs";
 import { STORAGE_KEYS } from "@/constants";
+import { onLogoutAction } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
+import { isTokenValid } from "@/utilities/token";
 
 // Enhanced response type for better type safety
 export interface ServiceResponse<T = any> {
@@ -51,87 +54,86 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       : {};
   }
 
-  // Cache branch params to avoid repeated cookie reads
-  private static _cachedBranchParams: { params: IParams; timestamp: number } | null = null;
-  private static readonly CACHE_DURATION = 60000; // 1 minute cache
-
-  private async _addBranchParams(params: IParams): Promise<IParams> {
-    // إذا كانت المعاملات تحتوي بالفعل على com أو year، لا تستبدلها
-    // هذا يمنع القراءة المكررة للـ cookies عندما تكون المعاملات موجودة من الصفحة
-    if (params.com || params.year || params.xcom_id || params.xyear_id || params.xcomp_id) {
-      return params;
+  private async _handleTokenRefresh(): Promise<boolean> {
+    if (this._isRefreshing && this._refreshPromise) {
+      return this._refreshPromise;
     }
 
-    // Check cache first
-    const now = Date.now();
-    if (HttpService._cachedBranchParams && 
-        (now - HttpService._cachedBranchParams.timestamp) < HttpService.CACHE_DURATION) {
-      return {
-        ...params,
-        ...HttpService._cachedBranchParams.params,
-      };
+    this._isRefreshing = true;
+    this._refreshPromise = this._performTokenRefresh();
+
+    try {
+      const result = await this._refreshPromise;
+      return result;
+    } finally {
+      this._isRefreshing = false;
+      this._refreshPromise = null;
     }
-
-    // فقط في حالات نادرة عندما لا تكون المعاملات موجودة، نقرأ من cookies
-    // هذا التحسين يقلل عدد مرات قراءة cookies بشكل كبير
-    const { cookies } = await import("next/headers");
-    const cookieStore = await cookies();
-    
-    const selectedBranch = cookieStore.get("selectedBranch")?.value || "1";
-    const selectedYear = cookieStore.get("selectedYear")?.value || new Date().getFullYear().toString();
-
-    const branchParams = {
-      com: selectedBranch,
-      year: selectedYear,
-    };
-
-    // Cache the result
-    HttpService._cachedBranchParams = {
-      params: branchParams,
-      timestamp: now,
-    };
-
-    return {
-      ...params,
-      ...branchParams,
-    };
   }
 
-  // private async _handleTokenRefresh(): Promise<boolean> {
-  //   if (this._isRefreshing && this._refreshPromise) {
-  //     return this._refreshPromise;
-  //   }
+  private async _performTokenRefresh(): Promise<boolean> {
+    try {
+      // Get refresh token
+      const refreshToken = await getCookieAction(STORAGE_KEYS.REFRESH_TOKEN);
 
-  //   this._isRefreshing = true;
-  //   this._refreshPromise = this._performTokenRefresh();
+      if (!refreshToken) {
+        // No refresh token available, redirect to login
+        // await this._clearTokens();
 
-  //   try {
-  //     const result = await this._refreshPromise;
-  //     return result;
-  //   } finally {
-  //     this._isRefreshing = false;
-  //     this._refreshPromise = null;
-  //   }
-  // }
+        throw new AuthenticationError("Session expired");
+      }
 
-  // private async _performTokenRefresh(): Promise<boolean> {
-  //   try {
-  //     const refreshTokenRes = await authService.refreshToken();
+      // Make request to refresh token endpoint
+      const refreshResponse = await fetch(`${this._baseUrl}/auth/refresh/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refresh: refreshToken }),
+        credentials: "include",
+      });
+      console.log(
+        "🚀 ~ :100 ~ HttpService ~ _performTokenRefresh ~ refreshResponse:",
+        refreshResponse,
+      );
 
-  //     if (refreshTokenRes?.success) {
-  //       this._token = refreshTokenRes.data?.token;
-  //       // await onLoginAction(refreshTokenRes.data, true);
-  //       return true;
-  //     }
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
 
-  //     // If refresh fails, redirect to login
-  //     await onLogoutAction();
-  //     await appRedirect("/login");
-  //     return false;
-  //   } catch (error) {
-  //     return false;
-  //   }
-  // }
+        // Update tokens in cookies
+        if (refreshData.access) {
+          // Update the token in memory
+          this._token = refreshData.access;
+
+          // Save new access token to cookies
+
+          await setCookieAction(STORAGE_KEYS.ACCESS_TOKEN, refreshData.access);
+
+          return true;
+        }
+      }
+
+      // If refresh token request fails, clear all tokens
+      throw new AuthenticationError("Session expired");
+
+      return false;
+    } catch (error) {
+      await this._clearTokens();
+      throw error;
+    }
+  }
+
+  private async _clearTokens(): Promise<void> {
+    try {
+      // await onLogoutAction();
+    } catch (error) {
+      if (error instanceof AuthenticationError) {
+        throw error;
+      }
+      console.error("Error during logout:", error);
+      throw new AuthenticationError("Authentication failed");
+    }
+  }
 
   private async _request<R = T>(
     route: string,
@@ -179,17 +181,17 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
       // Handle unauthorized - try token refresh once
       if (response.status === 401 && retryCount === 0) {
-        // const refreshSuccess = await this._handleTokenRefresh();
+        console.log("Authorization failed");
 
-        // if (refreshSuccess) {
-        //   // Retry the original request with new token
-        //   return this._request(route, method, options, params, retryCount + 1);
-        // }
+        const refreshSuccess = await this._handleTokenRefresh();
 
-        return {
-          success: false,
-          message: "Authentication failed - please login again",
-        };
+        if (refreshSuccess) {
+          // Retry the original request with new token
+          return this._request(route, method, options, params, retryCount + 1);
+        }
+
+        // If refresh failed, return unauthorized response
+        throw new AuthenticationError("Session expired - please login again");
       }
 
       // Parse response

@@ -13,7 +13,7 @@ const InvoicesHeader = () => {
       </div>
       <div className="flex gap-3">
         <Link
-          href="/forms/invoices/sale?new=true"
+          href="/forms/invoices/sale/new"
           className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700"
         >
           <PlusIcon className="h-4 w-4" />

@@ -2,8 +2,6 @@
 
 import { cookies } from "next/headers";
 import { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
-import { revalidateTag } from "next/cache";
-import { redirect } from "next/navigation";
 
 export async function getCookieAction(name: string) {
   return (await cookies()).get(name)?.value;
@@ -35,10 +33,3 @@ export async function deleteCookieAction(name: string) {
   (await cookies()).delete(name);
 }
 
-export async function appRedirect(route: string) {
-  redirect(route);
-}
-
-export async function revalidate(key: string) {
-  revalidateTag(key);
-}

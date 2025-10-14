@@ -1,15 +1,28 @@
 "use client";
 
-import { Button, Checkbox, Input } from "@heroui/react";
+import { Button, Calendar, Checkbox, Input } from "@heroui/react";
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { RiyalIcon } from "./RiyalIcon";
 
 import useFractions from "@/utilities/useFractions";
+import {
+  CalendarIcon,
+  CheckCircleIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CreditCardIcon,
+  PencilIcon,
+  PlusCircleIcon,
+  PrinterIcon,
+} from "@heroicons/react/24/outline";
+import { SearchIcon } from "./icons";
 
 interface Props {
-  invoiceNumber: number;
+  invoiceNumber: string;
   formattedDateTime: string;
   saveInvoice: () => void;
   previewInvoice: () => void;
@@ -25,14 +38,14 @@ interface Props {
   onEdit: () => void;
   children: ReactNode;
   // نوع الفاتورة
-  invoiceType?: 'invoice' | 'sales_return' | 'purchase' | 'purchase_return';
+  invoiceType?: "sales" | "sales_return" | "purchase" | "purchase_return";
   // إجماليات قابلة للإدخال
   autoTotalValue: number;
   autoTotalWages: number;
   manualTotalValue: number;
   manualTotalWages: number;
   useManualTotals: boolean;
-  onManualTotalChange: (type: 'value' | 'wages', value: number) => void;
+  onManualTotalChange: (type: "value" | "wages", value: number) => void;
   onUseManualTotalsChange: (use: boolean) => void;
   onResetManualTotals: () => void;
   // البحث برقم الفاتورة
@@ -49,7 +62,7 @@ interface Props {
   // أزرار التنقل
   currentRecord?: number;
   totalRecords?: number;
-  navigateToInvoice?: (direction: 'first' | 'prev' | 'next' | 'last') => void;
+  navigateToInvoice?: (direction: "first" | "prev" | "next" | "last") => void;
 }
 
 export default function InvoiceTotalsActions({
@@ -69,7 +82,7 @@ export default function InvoiceTotalsActions({
   onEdit,
   children,
   // نوع الفاتورة
-  invoiceType = 'invoice',
+  invoiceType = "sales",
   // إجماليات قابلة للإدخال
   autoTotalValue,
   autoTotalWages,
@@ -101,14 +114,14 @@ export default function InvoiceTotalsActions({
   // دالة لتحديد عنوان الفاتورة
   const getInvoiceTitle = () => {
     switch (invoiceType) {
-      case 'sales_return':
-        return 'مردود بيع';
-      case 'purchase':
-        return 'شراء';
-      case 'purchase_return':
-        return 'مردود شراء';
+      case "sales_return":
+        return "مردود بيع";
+      case "purchase":
+        return "شراء";
+      case "purchase_return":
+        return "مردود شراء";
       default:
-        return 'بيع';
+        return "بيع";
     }
   };
 
@@ -128,7 +141,7 @@ export default function InvoiceTotalsActions({
                   #{invoiceNumber}
                 </span>
                 <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
-                  <i className="bi bi-calendar3 text-slate-500"></i>
+                  <CalendarIcon className="w-4 h-4 text-slate-500" />
                   {formattedDateTime}
                 </span>
               </h1>
@@ -149,7 +162,7 @@ export default function InvoiceTotalsActions({
               className="h-7 px-2 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
               onPress={onInvoiceSearch}
             >
-              <i className="bi bi-search text-xs"></i>
+              <SearchIcon className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -162,7 +175,7 @@ export default function InvoiceTotalsActions({
               className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
               onClick={saveInvoice}
             >
-              <i className="bi bi-check-circle me-1"></i>
+              <CheckCircleIcon className="w-4 h-4 " />
               حفظ
             </Button>
 
@@ -171,16 +184,17 @@ export default function InvoiceTotalsActions({
                 className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
                 onClick={onEdit}
               >
-                <i className="bi bi-pencil-square me-1"></i>
+                <PencilIcon className="w-4 h-4 text-slate-500" />
                 تعديل
               </Button>
             )}
 
             <Button
               className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-              onClick={() => router.push("/forms/invoices/sale?new=true")}
+              onClick={() => router.push("/forms/invoices/sale/new")}
             >
-              <i className="bi bi-plus-circle me-1"></i>
+              {/* <i className="bi bi-plus-circle me-1"></i> */}
+              <PlusCircleIcon className="w-4 h-4 " />
               جديد
             </Button>
 
@@ -188,7 +202,8 @@ export default function InvoiceTotalsActions({
               className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
               onClick={previewInvoice}
             >
-              <i className="bi bi-printer me-1"></i>
+              {/* <i className="bi bi-printer me-1"></i> */}
+              <PrinterIcon className="w-4 h-4 " />
               طباعة
             </Button>
 
@@ -200,14 +215,15 @@ export default function InvoiceTotalsActions({
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
                   onClick={() => navigateToInvoice("first")}
                 >
-                  <i className="bi bi-chevron-double-right text-xs"></i>
+                  {/* <i className="bi bi-chevron-double-right text-xs"></i> */}
+                  <ChevronDoubleRightIcon className="w-4 h-4 " />
                 </Button>
                 <Button
                   size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
                   onClick={() => navigateToInvoice("prev")}
                 >
-                  <i className="bi bi-chevron-right text-xs"></i>
+                  <ChevronRightIcon className="w-4 h-4 " />
                 </Button>
                 <span className="text-xs text-slate-600 px-2 font-medium">
                   {currentRecord} من {totalRecords}
@@ -217,14 +233,14 @@ export default function InvoiceTotalsActions({
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
                   onClick={() => navigateToInvoice("next")}
                 >
-                  <i className="bi bi-chevron-left text-xs"></i>
+                  <ChevronLeftIcon className="w-4 h-4 " />
                 </Button>
                 <Button
                   size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
                   onClick={() => navigateToInvoice("last")}
                 >
-                  <i className="bi bi-chevron-double-left text-xs"></i>
+                  <ChevronDoubleLeftIcon className="w-4 h-4 " />
                 </Button>
               </div>
             )}
@@ -232,11 +248,23 @@ export default function InvoiceTotalsActions({
 
           {/* حالة الفاتورة */}
           <div className="flex items-center gap-3">
-            <Checkbox isSelected={commit} isReadOnly color="success" size="sm">
+            <Checkbox
+              isSelected={commit}
+              onValueChange={setCommit}
+              isDisabled={!isEditing}
+              color="success"
+              size="sm"
+            >
               <span className="text-xs text-slate-600">حُفظ</span>
             </Checkbox>
 
-            <Checkbox isSelected={print} isReadOnly color="warning" size="sm">
+            <Checkbox
+              isSelected={print}
+              onValueChange={setPrint}
+              isDisabled={!isEditing}
+              color="warning"
+              size="sm"
+            >
               <span className="text-xs text-slate-600">طُبع</span>
             </Checkbox>
           </div>
@@ -323,7 +351,7 @@ export default function InvoiceTotalsActions({
                 )
               }
             >
-              <i className="bi bi-credit-card me-2"></i>
+              <CreditCardIcon className="w-4 h-4 me-2" />
               دفع
             </Button>
           </div>

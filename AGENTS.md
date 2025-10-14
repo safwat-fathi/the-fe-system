@@ -4,7 +4,7 @@ This file provides guidelines for AI agents and coding assistants when working w
 
 ## Project overview
 
-This project is an ERP solution for gold vendors and gold dealers to manage their business. 
+NafeesWeb Gold System is a business management application that provides end-to-end solutions for gold trading businesses. The system includes modules for managing customers, items, invoices, accounting, and comprehensive reporting with analytics.
 
 ## Project structure
 
@@ -21,6 +21,7 @@ This project is an ERP solution for gold vendors and gold dealers to manage thei
 	- `services/api` contains API services
 	- `services/base` contains main HTTPService logic
 	- `services/bff` contains BFF services (composed API services in a single service)
+- `app/components/(pages)/Sidebar` contains app sidebar
 
 ## Commands
 
@@ -106,6 +107,9 @@ export default async function InvoicesPage({
 - Use the same as `reports/invoices` page
 - Do not fetch data on client side
 - Build a dedicated service as in `services/api/invoice.service.ts` and always use it to fetch data
+- All API services should be defined in `services/api` directory
+- All API services should be inherited from `services/base/HTTPService`
+- `access_token` and `refresh_token` stored in Cookies can be read in server-side only
 - Define models for API responses
 - For complex and composed queries use the same as `services/bff/dashboard.service.ts`
 - Cache API responses on the server side for better performance
@@ -162,3 +166,15 @@ export const STORAGE_KEYS = {
 - For any feature that requires using 3rd party code or building a custom one check React available ready-to-use code first. For example instead of building a custom useDebounce hook you can use `useDeferredValue` React hook.
 - This is an ERP application do not focus on SEO optimization methodologies 
 - Shared types, global models (`User`, `Invoice`, `Customer`, etc…) should be defined in types die
+
+## Allowed Without Prompt
+
+- read and list files
+- read and list directories
+
+## Ask Before 
+
+- package installs and dependencies updates
+- git push, pull, merge
+- deleting files, chmod
+- running full build
