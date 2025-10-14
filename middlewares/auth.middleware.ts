@@ -1,7 +1,7 @@
+import { NextRequest, NextResponse } from "next/server";
+
 import { ROUTE_RULES, STORAGE_KEYS } from "@/constants";
 import { MiddlewareFactory } from "@/middleware";
-
-import { NextRequest, NextResponse } from "next/server";
 
 const isPublicRoute = (pathname: string) => {
   return ROUTE_RULES.public.some(
@@ -42,7 +42,9 @@ const authMiddleware: MiddlewareFactory = () => {
         }
 
         const loginUrl = new URL(AUTH_LOGIN_URL, request.url);
+
         loginUrl.searchParams.set("redirect", pathname);
+
         return NextResponse.redirect(loginUrl);
       }
 
@@ -59,7 +61,9 @@ const authMiddleware: MiddlewareFactory = () => {
       }
 
       const loginUrl = new URL(AUTH_LOGIN_URL, request.url);
+
       loginUrl.searchParams.set("redirect", pathname);
+
       return NextResponse.redirect(loginUrl);
     }
   };

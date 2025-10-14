@@ -11,15 +11,17 @@ export async function revalidateTableData(tableName: string) {
   try {
     // Revalidate the specific table cache
     revalidateTag(tableName);
-    
+
     // Also revalidate branch-specific cache
     const cookieStore = await cookies();
     const selectedBranch = cookieStore.get("selectedBranch")?.value || "1";
+
     revalidateTag(`branch-${selectedBranch}`);
-    
+
     return { success: true };
   } catch (error) {
     console.error("Error revalidating cache:", error);
+
     return { success: false, error };
   }
 }
@@ -31,9 +33,11 @@ export async function revalidateTableData(tableName: string) {
 export async function revalidatePagePath(path: string) {
   try {
     revalidatePath(path);
+
     return { success: true };
   } catch (error) {
     console.error("Error revalidating path:", error);
+
     return { success: false, error };
   }
 }
@@ -45,27 +49,29 @@ export async function revalidatePagePath(path: string) {
 export async function revalidateAllBasicData() {
   try {
     const tables = [
-      'accounts_list',
-      'cost_centers_list',
-      'boxes_list',
-      'currencies_list',
-      'customers_list',
-      'items_list',
-      'categories_list',
-      'cust_type_list',
-      'units_list',
+      "accounts_list",
+      "cost_centers_list",
+      "boxes_list",
+      "currencies_list",
+      "customers_list",
+      "items_list",
+      "categories_list",
+      "cust_type_list",
+      "units_list",
     ];
-    
-    tables.forEach(table => revalidateTag(table));
-    
+
+    tables.forEach((table) => revalidateTag(table));
+
     // Revalidate branch cache
     const cookieStore = await cookies();
     const selectedBranch = cookieStore.get("selectedBranch")?.value || "1";
+
     revalidateTag(`branch-${selectedBranch}`);
-    
+
     return { success: true };
   } catch (error) {
     console.error("Error revalidating all basic data:", error);
+
     return { success: false, error };
   }
 }
@@ -75,12 +81,13 @@ export async function revalidateAllBasicData() {
  */
 export async function revalidateDashboard() {
   try {
-    revalidatePath('/');
-    revalidateTag('dashboard');
+    revalidatePath("/");
+    revalidateTag("dashboard");
+
     return { success: true };
   } catch (error) {
     console.error("Error revalidating dashboard:", error);
+
     return { success: false, error };
   }
 }
-

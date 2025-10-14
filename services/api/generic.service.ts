@@ -13,23 +13,23 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
   home_list: {
     endpoint: "home_list",
   },
-  
-  // Customers
+
+  // Customers (قوائم أساسية - بدون year)
   customers_list: {
-    endpoint: "customers_list/",
+    endpoint: "customers_list",
     paramTransform: (params) => ({
       xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
       xcust_type: params.xcust_type || "0",
       xcust_code: params.xcust_code || "0",
     }),
   },
-  
-  // Invoices
+
+  // Invoices (حركات - تحتاج year)
   invoices_list: {
-    endpoint: "invoices_list/",
+    endpoint: "invoices_list",
     paramTransform: (params) => ({
       xcom_id: "1",
-      xyear_id: "0",  // 0 = كل السنوات
+      xyear_id: params.xyear_id || "0", // 0 = كل السنوات
       xtrans_type: "0",
       xinv_id: "1",
       xfrom_date: "0",
@@ -38,84 +38,69 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
       page: "1",
     }),
   },
-  
-  // Items
-  items_list: {
-    endpoint: "items_list/",
+
+  // Vouchers (حركات - تحتاج year)
+  vouchers_list: {
+    endpoint: "vouchers_list",
     paramTransform: (params) => ({
       xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
-      xyear_id: "0",  // 0 = كل السنوات
+      xyear_id: params.xyear_id || "0", // 0 = كل السنوات
+      xvouch_type: params.xvouch_type || params.vouch_type || "0", // ✅ xvouch_type
+      xvouch_id: params.xvouch_id || "0", // ✅ إضافة
+      xfrom_date: params.xfrom_date || "0", // ✅ إضافة
+      xto_date: params.xto_date || "0", // ✅ إضافة
+      page: params.page || "1", // pagination
+    }),
+  },
+
+  // Items (قوائم أساسية - بدون year)
+  items_list: {
+    endpoint: "items_list",
+    paramTransform: (params) => ({
+      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
       xitem_code: params.xitem_code || "0",
       xcat_id: params.xcat_id || "0",
     }),
   },
-  
-  // Accounts (no extra params - uses default branch params from HttpService)
+
+  // Accounts (قوائم أساسية - بدون year)
   accounts_list: {
-    endpoint: "accounts_list/",
+    endpoint: "accounts_list",
   },
-  
-  // Boxes (without trailing slash as per helper.service.ts)
+
+  // Boxes (قوائم أساسية - بدون year)
   boxes_list: {
     endpoint: "boxes_list",
-    paramTransform: (params) => ({
-      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
-      xyear_id: "0",  // 0 = كل السنوات
-    }),
   },
-  
-  // Categories
+
+  // Categories (قوائم أساسية - بدون year)
   categories_list: {
-    endpoint: "categories_list/",
-    paramTransform: (params) => ({
-      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
-      xyear_id: "0",  // 0 = كل السنوات
-    }),
+    endpoint: "categories_list",
   },
-  
-  // Cost Centers (without trailing slash as per cost-center.service.ts)
+
+  // Cost Centers (قوائم أساسية - بدون year)
   cost_centers_list: {
     endpoint: "cost_centers_list",
-    paramTransform: (params) => ({
-      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
-      xyear_id: "0",  // 0 = كل السنوات
-    }),
   },
-  
-  // Currencies
+
+  // Currencies (قوائم أساسية - بدون year)
   currencies_list: {
-    endpoint: "currencies_list/",
-    paramTransform: (params) => ({
-      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
-      xyear_id: "0",  // 0 = كل السنوات
-    }),
+    endpoint: "currencies_list",
   },
-  
-  // Customer Types
+
+  // Customer Types (قوائم أساسية - بدون year)
   cust_type_list: {
-    endpoint: "cust_type_list/",
-    paramTransform: (params) => ({
-      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
-      xyear_id: "0",  // 0 = كل السنوات
-    }),
+    endpoint: "cust_type_list",
   },
-  
-  // Units
+
+  // Units (قوائم أساسية - بدون year)
   units_list: {
-    endpoint: "units_list/",
-    paramTransform: (params) => ({
-      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
-      xyear_id: "0",  // 0 = كل السنوات
-    }),
+    endpoint: "units_list",
   },
-  
-  // Users
+
+  // Users (قوائم أساسية - بدون year)
   users_list: {
-    endpoint: "users_list/",
-    paramTransform: (params) => ({
-      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
-      xyear_id: "0",  // 0 = كل السنوات
-    }),
+    endpoint: "users_list",
   },
 };
 
@@ -132,17 +117,17 @@ class GenericService extends HttpService<any> {
    */
   async getTableData(
     tableName: string,
-    params?: Record<string, any>
+    params?: Record<string, any>,
   ): Promise<ServiceResponse<any[]>> {
     try {
       // Get table configuration or use tableName as is
       const config = TABLE_CONFIGS[tableName];
       const endpoint = config?.endpoint || tableName;
-      
+
       // For tables without config, send empty params to let HttpService add branch params
       // For tables with config, use the transform function
       let finalParams: Record<string, any> | undefined;
-      
+
       if (config?.paramTransform) {
         // Use transformed params
         finalParams = config.paramTransform(params || {});
@@ -163,11 +148,20 @@ class GenericService extends HttpService<any> {
 
       // Optimize caching based on table type
       let cacheTime = 300; // Default 5 minutes
-      
+
       // Tables that change less frequently get longer cache
-      const longCacheTables = ['currencies_list', 'units_list', 'cust_type_list', 'categories_list'];
-      const mediumCacheTables = ['accounts_list', 'cost_centers_list', 'boxes_list'];
-      
+      const longCacheTables = [
+        "currencies_list",
+        "units_list",
+        "cust_type_list",
+        "categories_list",
+      ];
+      const mediumCacheTables = [
+        "accounts_list",
+        "cost_centers_list",
+        "boxes_list",
+      ];
+
       if (longCacheTables.includes(tableName)) {
         cacheTime = 600; // 10 minutes
       } else if (mediumCacheTables.includes(tableName)) {
@@ -179,11 +173,15 @@ class GenericService extends HttpService<any> {
       const response = await this.get<any[]>(endpoint, finalParams, {
         next: {
           revalidate: cacheTime,
-          tags: [tableName, params?.com ? `branch-${params.com}` : 'default-branch'],
-        }
+          tags: [
+            tableName,
+            params?.com ? `branch-${params.com}` : "default-branch",
+          ],
+        },
       });
 
       const endTime = Date.now();
+
       logger.debug(`⏱️ Request took: ${endTime - startTime}ms`);
       logger.debug("✅ GenericService Response:", {
         success: response.success,
@@ -192,9 +190,14 @@ class GenericService extends HttpService<any> {
       });
 
       // Check if response data is HTML (404 error) - BEFORE any other checks
-      const responseDataStr = String(response.data || '');
-      if (responseDataStr.includes('<!doctype html>') || responseDataStr.includes('<html')) {
+      const responseDataStr = String(response.data || "");
+
+      if (
+        responseDataStr.includes("<!doctype html>") ||
+        responseDataStr.includes("<html")
+      ) {
         logger.error("❌ Received HTML response (404 Not Found)");
+
         return {
           success: false,
           data: [],
@@ -202,35 +205,47 @@ class GenericService extends HttpService<any> {
         };
       }
 
-      logger.debug("📊 Has results?:", response.data && typeof response.data === 'object' && 'results' in response.data);
+      logger.debug(
+        "📊 Has results?:",
+        response.data &&
+          typeof response.data === "object" &&
+          "results" in response.data,
+      );
 
       if (response.success) {
         // Handle different response structures
-        
+
         // Case 1: Direct array
         if (Array.isArray(response.data)) {
           logger.debug("✅ Handling as direct array");
+
           return {
             success: true,
             data: response.data,
             message: `تم جلب ${response.data.length} سجل بنجاح`,
           };
-        } 
-        
+        }
+
         // Case 2: Paginated response with results array
-        else if (response.data && typeof response.data === "object" && Array.isArray((response.data as any).results)) {
+        else if (
+          response.data &&
+          typeof response.data === "object" &&
+          Array.isArray((response.data as any).results)
+        ) {
           logger.debug("✅ Handling as paginated response (results)");
           const results = (response.data as any).results;
+
           return {
             success: true,
             data: results,
             message: `تم جلب ${results.length} سجل بنجاح (من أصل ${(response.data as any).count || results.length})`,
           };
-        } 
-        
+        }
+
         // Case 3: Single object
         else if (response.data && typeof response.data === "object") {
           logger.debug("✅ Handling as single object");
+
           return {
             success: true,
             data: [response.data],
@@ -246,17 +261,15 @@ class GenericService extends HttpService<any> {
       };
     } catch (error) {
       logger.error("❌ Error fetching table data:", error);
+
       return {
         success: false,
         data: [],
         message:
-          error instanceof Error
-            ? error.message
-            : "حدث خطأ أثناء جلب البيانات",
+          error instanceof Error ? error.message : "حدث خطأ أثناء جلب البيانات",
       };
     }
   }
 }
 
 export default new GenericService();
-

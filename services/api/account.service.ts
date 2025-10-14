@@ -31,10 +31,10 @@ class AccountService extends HttpService<Account> {
 
   async getAllAccounts(): Promise<Account[]> {
     try {
-      const response = await this.get<Account[]>("accounts_list/", undefined, {
-        next: { 
+      const response = await this.get<Account[]>("accounts_list", undefined, {
+        next: {
           revalidate: 300, // Cache for 5 minutes
-          tags: ["accounts", "accounts_list"] 
+          tags: ["accounts", "accounts_list"],
         },
       });
 
@@ -53,7 +53,7 @@ class AccountService extends HttpService<Account> {
     }
   }
 
-  async createAccount(account: Omit<Account, 'id'>): Promise<Account | null> {
+  async createAccount(account: Omit<Account, "id">): Promise<Account | null> {
     try {
       const accountData = {
         ...account,
@@ -69,9 +69,11 @@ class AccountService extends HttpService<Account> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as Account; 
+
+      if (response.success) {
+        return response.data as Account;
       }
+
       return null;
     } catch (error) {
       console.error("Error creating account:", error);
@@ -79,7 +81,10 @@ class AccountService extends HttpService<Account> {
     }
   }
 
-  async updateAccount(id: number, account: Partial<Account>): Promise<Account | null> {
+  async updateAccount(
+    id: number,
+    account: Partial<Account>,
+  ): Promise<Account | null> {
     try {
       const accountData = {
         ...account,
@@ -95,9 +100,11 @@ class AccountService extends HttpService<Account> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as Account; 
+
+      if (response.success) {
+        return response.data as Account;
       }
+
       return null;
     } catch (error) {
       console.error("Error updating account:", error);
@@ -114,6 +121,7 @@ class AccountService extends HttpService<Account> {
           cache: "no-store",
         },
       );
+
       return response.success;
     } catch (error) {
       console.error("Error deleting account:", error);
@@ -124,21 +132,27 @@ class AccountService extends HttpService<Account> {
   async getAccountById(id: number): Promise<Account | null> {
     try {
       const accounts = await this.getAllAccounts();
-      return accounts.find(account => account.id === id) || null;
+
+      return accounts.find((account) => account.id === id) || null;
     } catch (error) {
       console.error("Error fetching account by ID:", error);
+
       return null;
     }
   }
 
   async getCurrencies(): Promise<Currency[]> {
     try {
-      const response = await this.get<Currency[]>("currencies_list/", undefined, {
-        next: { 
-          revalidate: 600, // Cache for 10 minutes (currencies don't change often)
-          tags: ["currencies", "currencies_list"] 
+      const response = await this.get<Currency[]>(
+        "currencies_list",
+        undefined,
+        {
+          next: {
+            revalidate: 600, // Cache for 10 minutes (currencies don't change often)
+            tags: ["currencies", "currencies_list"],
+          },
         },
-      });
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {
@@ -151,6 +165,7 @@ class AccountService extends HttpService<Account> {
       return [];
     } catch (error) {
       console.error("Error fetching currencies:", error);
+
       return [];
     }
   }

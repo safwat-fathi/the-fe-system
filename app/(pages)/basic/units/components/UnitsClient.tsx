@@ -18,7 +18,12 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import unitService from "@/services/api/unit.service";
@@ -59,6 +64,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
   const loadUnits = async () => {
     try {
       const data = await unitService.getAllUnits();
+
       setUnits(data);
     } catch (error) {
       console.error("فشل في جلب الوحدات:", error);
@@ -73,7 +79,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
       if (modalMode === "edit" && currentUnit.id) {
         result = await unitService.updateUnit(currentUnit.id, currentUnit);
       } else {
-        result = await unitService.createUnit(currentUnit as Omit<Unit, 'id'>);
+        result = await unitService.createUnit(currentUnit as Omit<Unit, "id">);
       }
 
       if (result) {
@@ -153,9 +159,9 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
       </Button>
       <Button
         isIconOnly
+        color="danger"
         size="sm"
         variant="light"
-        color="danger"
         onPress={() => handleDelete(unit.id)}
       >
         <TrashIcon className="h-4 w-4" />
@@ -197,9 +203,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
                 <TableCell>
                   <Checkbox isReadOnly isSelected={!!unit.unit_default} />
                 </TableCell>
-                <TableCell>
-                  {renderActions(unit)}
-                </TableCell>
+                <TableCell>{renderActions(unit)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -217,6 +221,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
       </div>
 
       <Modal
+        isDismissable={false}
         isOpen={isModalOpen}
         scrollBehavior="inside"
         onClose={() => setIsModalOpen(false)}
@@ -294,4 +299,3 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
     </div>
   );
 }
-

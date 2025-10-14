@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 import {
   Modal,
   ModalContent,
@@ -14,54 +14,50 @@ interface ResponsiveModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full';
-  scrollBehavior?: 'inside' | 'outside';
-  backdrop?: 'transparent' | 'blur' | 'opaque';
+  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "full";
+  scrollBehavior?: "inside" | "outside";
+  backdrop?: "transparent" | "blur" | "opaque";
   isDismissable?: boolean;
   className?: string;
 }
 
-export default function ResponsiveModal({ 
-  children, 
-  isOpen, 
+export default function ResponsiveModal({
+  children,
+  isOpen,
   onClose,
   title,
-  size = '2xl',
-  scrollBehavior = 'inside',
-  backdrop = 'opaque',
+  size = "2xl",
+  scrollBehavior = "inside",
+  backdrop = "opaque",
   isDismissable = true,
-  className = ""
+  className = "",
 }: ResponsiveModalProps) {
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size={size}
-      scrollBehavior={scrollBehavior}
       backdrop={backdrop}
-      isDismissable={isDismissable}
       className={`responsive-modal ${className}`}
+      isDismissable={isDismissable}
+      isOpen={isOpen}
+      scrollBehavior={scrollBehavior}
+      size={size}
+      onClose={onClose}
     >
       <ModalContent className="font-cairo">
         {title && (
-          <ModalHeader className="responsive-text-lg">
-            {title}
-          </ModalHeader>
+          <ModalHeader className="responsive-text-lg">{title}</ModalHeader>
         )}
-        <ModalBody className="responsive-p">
-          {children}
-        </ModalBody>
+        <ModalBody className="responsive-p">{children}</ModalBody>
       </ModalContent>
     </Modal>
   );
 }
 
 // Helper components for modal sections
-export function ModalSection({ 
-  children, 
+export function ModalSection({
+  children,
   title,
-  className = ""
-}: { 
+  className = "",
+}: {
   children: React.ReactNode;
   title?: string;
   className?: string;
@@ -78,10 +74,10 @@ export function ModalSection({
   );
 }
 
-export function ModalActions({ 
-  children, 
-  className = ""
-}: { 
+export function ModalActions({
+  children,
+  className = "",
+}: {
   children: React.ReactNode;
   className?: string;
 }) {

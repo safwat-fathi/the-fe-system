@@ -54,13 +54,6 @@ export const TRANSACTION_TYPES = {
   SALES_RETURN: 4,
 } as const;
 
-// Voucher Types
-export const VOUCHER_TYPES = {
-  SETTLEMENT: 1,
-  RECEIPT: 2,
-  PAYMENT: 3,
-} as const;
-
 // Local Storage Keys
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "access_token",
@@ -88,18 +81,19 @@ export const UI_CONSTANTS = {
 
 // Error Messages
 export const ERROR_MESSAGES = {
-  NETWORK_ERROR: 'خطأ في الاتصال بالخادم',
-  UNAUTHORIZED: 'غير مصرح لك بالوصول',
-  VALIDATION_ERROR: 'بيانات غير صحيحة',
-  SERVER_ERROR: 'خطأ في الخادم',
+  NETWORK_ERROR: "خطأ في الاتصال بالخادم",
+  UNAUTHORIZED: "غير مصرح لك بالوصول",
+  VALIDATION_ERROR: "بيانات غير صحيحة",
+  SERVER_ERROR: "خطأ في الخادم",
 } as const;
 
 // Success Messages
 export const SUCCESS_MESSAGES = {
-  SAVE_SUCCESS: 'تم الحفظ بنجاح',
-  DELETE_SUCCESS: 'تم الحذف بنجاح',
-  UPDATE_SUCCESS: 'تم التحديث بنجاح',
+  SAVE_SUCCESS: "تم الحفظ بنجاح",
+  DELETE_SUCCESS: "تم الحذف بنجاح",
+  UPDATE_SUCCESS: "تم التحديث بنجاح",
 } as const;
 
 // Export Invoice Types
-export * from './invoice-types';
+export * from "./invoice-types";
+export * from "./voucher-types";

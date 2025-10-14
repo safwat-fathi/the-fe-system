@@ -1,8 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Input, Button, Chip } from "@heroui/react";
-import { MagnifyingGlassIcon, FunnelIcon, ArrowsUpDownIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Input,
+  Button,
+} from "@heroui/react";
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowsUpDownIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
 
 interface Column {
   key: string;
@@ -29,7 +44,7 @@ export default function DataTable({
   searchable = true,
   filterable = true,
   sortable = true,
-  className = ""
+  className = "",
 }: DataTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -67,6 +82,7 @@ export default function DataTable({
   const getSortIcon = (columnKey: string) => {
     if (sortColumn !== columnKey)
       return <ArrowsUpDownIcon className="h-4 w-4 text-gray-400" />;
+
     return sortDirection === "asc" ? (
       <ChevronUpIcon className="h-4 w-4 text-blue-500" />
     ) : (
@@ -89,13 +105,13 @@ export default function DataTable({
           {searchable && (
             <div className="relative flex-1 max-w-md">
               <Input
+                className="input-field"
                 placeholder="البحث..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
                 startContent={
                   <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
                 }
-                className="input-field"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           )}
@@ -103,9 +119,9 @@ export default function DataTable({
           {filterable && (
             <div className="flex gap-2">
               <Button
-                variant="bordered"
-                startContent={<FunnelIcon className="h-4 w-4" />}
                 className="btn-secondary"
+                startContent={<FunnelIcon className="h-4 w-4" />}
+                variant="bordered"
               >
                 تصفية
               </Button>
@@ -143,8 +159,8 @@ export default function DataTable({
             {data.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
                   className="text-center py-8 text-gray-500"
+                  colSpan={columns.length}
                 >
                   لا توجد بيانات متاحة
                 </TableCell>

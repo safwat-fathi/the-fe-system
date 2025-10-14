@@ -1,6 +1,8 @@
 import { Suspense } from "react";
-import UserHeader from "@/components/UserHeader";
+
 import Sidebar from "./components/Sidebar";
+
+import UserHeader from "@/components/UserHeader";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 export default function DashboardLayout({
@@ -15,9 +17,7 @@ export default function DashboardLayout({
       <main className="flex-1 w-full min-h-screen overflow-auto">
         <UserHeader />
         <div className="p-8">
-          <Suspense fallback={<LoadingSkeleton />}>
-            {children}
-          </Suspense>
+          <Suspense fallback={<LoadingSkeleton />}>{children}</Suspense>
         </div>
       </main>
     </div>

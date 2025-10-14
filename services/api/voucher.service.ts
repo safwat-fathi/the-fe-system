@@ -1,5 +1,5 @@
 import { HttpService } from "@/services/base";
-import { IParams } from "@/types/services/base";
+import { IParams, IPaginatedResponse } from "@/types/services/base";
 
 export interface Voucher {
   vouch_id?: number;
@@ -44,44 +44,76 @@ export interface VoucherBox {
 
 class VoucherService extends HttpService<Voucher> {
   constructor() {
-    super(""); // Base URL من environment
+    super("");
   }
 
   /**
-   * الحصول على جميع السندات
+   * الحصول على جميع السندات (مع pagination)
    */
   async getAll(params?: IParams) {
-    return this.getList<Voucher[]>("vouchers_list", params);
-  }
+    const queryParams: any = {
+      xcom_id: "1", // الفرع ثابت = 1
+      xyear_id: "0", // 0 = جميع السنوات (للقراءة)
+      xvouch_type: params?.xvouch_type || params?.vouch_type || "0", // ✅ xvouch_type
+      xvouch_id: params?.xvouch_id || "0", // ✅ إضافة
+      xfrom_date: params?.xfrom_date || "0", // ✅ إضافة
+      xto_date: params?.xto_date || "0", // ✅ إضافة
+      page: params?.page || "1", // pagination
+    };
 
-  /**
-   * الحصول على سند معين
-   */
-  async getById(id: number) {
-    return this.get<Voucher>(`vouchers_list`, { vouch_id: id });
+    const response = await this.get<IPaginatedResponse<Voucher>>(
+      "vouchers_list",
+      queryParams,
+    );
+
+    // معالجة الاستجابة المُقسّمة (pagination)
+    if (response.success && response.data) {
+      const data = response.data as any;
+
+      // إذا كانت الاستجابة تحتوي على results (pagination)
+      if (data.results && Array.isArray(data.results)) {
+        return {
+          success: true,
+          data: data.results,
+          message: response.message,
+        };
+      }
+
+      // إذا كانت array مباشرة
+      if (Array.isArray(data)) {
+        return {
+          success: true,
+          data: data,
+          message: response.message,
+        };
+      }
+    }
+
+    return {
+      success: false,
+      data: [],
+      message: response.message || "لم يتم العثور على قيود",
+    };
   }
 
   /**
    * الحصول على السندات حسب النوع
    */
   async getByType(voucherType: number, params?: IParams) {
-    return this.getList<Voucher[]>("vouchers_list", {
-      ...params,
-      vouch_type: voucherType,
-    });
+    return this.getAll({ ...params, xvouch_type: voucherType });
   }
 
   /**
    * إنشاء سند جديد
    */
-  async create(voucher: Voucher) {
+  async create(voucher: any) {
     return this.post<Voucher>("api_create_vouch", voucher);
   }
 
   /**
    * تحديث سند موجود
    */
-  async update(id: number, voucher: Partial<Voucher>) {
+  async update(id: number, voucher: any) {
     return this.put<Voucher>(`api_update_vouch/${id}`, voucher);
   }
 
@@ -92,35 +124,32 @@ class VoucherService extends HttpService<Voucher> {
     return this.delete<void>(`api_delete_vouch/${id}`);
   }
 
-  // ====== تفاصيل السند (Voucher Details) ======
+  // ====== تفاصيل السند ======
 
   /**
    * الحصول على تفاصيل سند معين
    */
-  async getDetails(vouchId: number) {
-    return this.getList<VoucherDetail[]>("vouchers_dtl_list", {
+  async getDetails(vouchId: number, params?: IParams) {
+    const queryParams = {
       vouch_id: vouchId,
-    });
-  }
+      xcom_id: "1",
+      xyear_id: "0", // 0 = جميع السنوات (للقراءة)
+    };
 
-  /**
-   * الحصول على جميع تفاصيل السندات
-   */
-  async getAllDetails(params?: IParams) {
-    return this.getList<VoucherDetail[]>("vouchers_dtl_list", params);
+    return this.getList<VoucherDetail[]>("vouchers_dtl_list", queryParams);
   }
 
   /**
    * إنشاء تفصيل سند جديد
    */
-  async createDetail(detail: VoucherDetail) {
+  async createDetail(detail: any) {
     return this.post<VoucherDetail>("api_create_vouch_dtl", detail);
   }
 
   /**
    * تحديث تفصيل سند
    */
-  async updateDetail(id: number, detail: Partial<VoucherDetail>) {
+  async updateDetail(id: number, detail: any) {
     return this.put<VoucherDetail>(`api_update_vouch_dtl/${id}`, detail);
   }
 
@@ -131,7 +160,7 @@ class VoucherService extends HttpService<Voucher> {
     return this.delete<void>(`api_delete_vouch_dtl/${id}`);
   }
 
-  // ====== صناديق السند (Voucher Boxes) ======
+  // ====== صناديق السند ======
 
   /**
    * الحصول على صناديق سند معين
@@ -140,13 +169,6 @@ class VoucherService extends HttpService<Voucher> {
     return this.getList<VoucherBox[]>("vouchers_box_list", {
       vouch_id: vouchId,
     });
-  }
-
-  /**
-   * الحصول على جميع صناديق السندات
-   */
-  async getAllBoxes(params?: IParams) {
-    return this.getList<VoucherBox[]>("vouchers_box_list", params);
   }
 
   /**
@@ -170,7 +192,7 @@ class VoucherService extends HttpService<Voucher> {
     return this.delete<void>(`api_delete_vouch_box/${id}`);
   }
 
-  // ====== القوائم المساعدة (Helper Lists) ======
+  // ====== القوائم المساعدة ======
 
   /**
    * الحصول على أنواع السندات
@@ -186,96 +208,70 @@ class VoucherService extends HttpService<Voucher> {
     return this.getList<any[]>("getVoucherStageList");
   }
 
-  // ====== دوال مساعدة ======
-
   /**
-   * الحصول على رقم السند التالي
+   * الحصول على رقم السند التالي لنوع معين
    */
-  async getNextNumber(voucherType?: number) {
-    const params: IParams = {};
-    if (voucherType) {
-      params.vouch_type = voucherType;
-    }
-    
-    const response = await this.getAll(params);
-    
-    if (!response.success || !response.data || response.data.length === 0) {
-      return 1;
-    }
-
-    const vouchers = response.data.filter((v: Voucher) => {
-      const isValidType = !voucherType || v.vouch_type === voucherType;
-      const hasValidId = v.vouch_id && v.vouch_id > 0;
-      return isValidType && hasValidId;
-    });
-
-    if (vouchers.length === 0) {
-      return 1;
-    }
-
-    const maxId = vouchers.reduce((max: number, curr: Voucher) => {
-      return curr.vouch_id && curr.vouch_id > max ? curr.vouch_id : max;
-    }, 0);
-
-    return maxId + 1;
-  }
-
-  /**
-   * حفظ سند كامل (السند + التفاصيل + الصناديق)
-   */
-  async saveComplete(
-    voucher: Voucher,
-    details: VoucherDetail[],
-    boxes?: VoucherBox[]
-  ) {
+  async getNextNumber(voucherType: number = 3) {
     try {
-      // 1. حفظ السند الرئيسي
-      const voucherResponse = voucher.vouch_id
-        ? await this.update(voucher.vouch_id, voucher)
-        : await this.create(voucher);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("🔢 طلب رقم قيد جديد - النوع:", voucherType);
 
-      if (!voucherResponse.success || !voucherResponse.data) {
-        return voucherResponse;
+      // جلب جميع السندات
+      const response = await this.getAll();
+
+      if (!response.success || !response.data || response.data.length === 0) {
+        console.log("⚠️ لا توجد قيود، البدء من 1");
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        return 1;
       }
 
-      const savedVoucher = voucherResponse.data;
-      const vouchId = savedVoucher.vouch_id!;
+      console.log("📥 إجمالي القيود المُستلمة:", response.data.length);
 
-      // 2. حفظ التفاصيل
-      const detailPromises = details.map((detail) => {
-        const detailWithVouchId = { ...detail, vouch_id: vouchId };
-        return detail.dtl_id
-          ? this.updateDetail(detail.dtl_id, detailWithVouchId)
-          : this.createDetail(detailWithVouchId);
-      });
+      // فلترة السندات حسب النوع
+      const vouchers = response.data.filter(
+        (v: any) =>
+          Number(v.vouch_type) === Number(voucherType) &&
+          v.vouch_id &&
+          v.vouch_id > 0 &&
+          isFinite(v.vouch_id),
+      );
 
-      await Promise.all(detailPromises);
+      console.log(`🔍 عدد القيود من النوع ${voucherType}:`, vouchers.length);
 
-      // 3. حفظ الصناديق (إذا وجدت)
-      if (boxes && boxes.length > 0) {
-        const boxPromises = boxes.map((box) => {
-          const boxWithVouchId = { ...box, vouch_id: vouchId };
-          return box.box_id
-            ? this.updateBox(box.box_id, boxWithVouchId)
-            : this.createBox(boxWithVouchId);
-        });
-
-        await Promise.all(boxPromises);
+      if (vouchers.length > 0) {
+        console.log(
+          "📋 القيود المفلترة:",
+          vouchers.map((v: any) => ({
+            id: v.id,
+            vouch_id: v.vouch_id,
+            vouch_type: v.vouch_type,
+          })),
+        );
       }
 
-      return {
-        success: true,
-        data: savedVoucher,
-        message: "تم حفظ السند بنجاح",
-      };
+      if (vouchers.length === 0) {
+        console.log(`⚠️ لا توجد قيود من النوع ${voucherType}، البدء من 1`);
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        return 1;
+      }
+
+      // الحصول على أكبر رقم
+      const maxId = vouchers.reduce((max: number, curr: any) => {
+        return curr.vouch_id > max ? curr.vouch_id : max;
+      }, 0);
+
+      const nextId = maxId + 1;
+
+      console.log("📊 أكبر vouch_id من النوع", voucherType, "=", maxId);
+      console.log("✅ الرقم التالي =", nextId);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      return nextId;
     } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : "حدث خطأ أثناء الحفظ",
-      };
+      console.error("❌ خطأ في الحصول على رقم القيد:", error);
+      return 1;
     }
   }
 }
 
 export default new VoucherService();
-

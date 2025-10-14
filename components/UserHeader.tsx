@@ -12,8 +12,9 @@ import {
   Button,
 } from "@heroui/react";
 import { UserIcon, BeakerIcon } from "@heroicons/react/24/outline";
-import { onLogoutAction } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
+
+import { onLogoutAction } from "@/app/actions/auth";
 
 interface UserInfo {
   username: string;
@@ -31,11 +32,11 @@ const STATIC_USER_INFO: UserInfo = {
 
 export default function UserHeader() {
   const router = useRouter();
-  
+
   const handleLogout = async () => {
     await onLogoutAction();
   };
-  
+
   const handleNavigateToTest = () => {
     router.push("/test-service");
   };
@@ -47,13 +48,13 @@ export default function UserHeader() {
         <NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <Button variant="light" className="flex items-center gap-2 px-2">
+              <Button className="flex items-center gap-2 px-2" variant="light">
                 <Avatar
+                  className="bg-blue-100 text-blue-600"
                   name={
                     STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username
                   }
                   size="sm"
-                  className="bg-blue-100 text-blue-600"
                 />
                 <div className="hidden md:flex flex-col items-start">
                   <span className="text-sm font-medium text-gray-900">

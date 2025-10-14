@@ -1,4 +1,4 @@
-declare module 'written-number' {
+declare module "written-number" {
   interface WrittenNumber {
     (num: number): string;
     defaults: { lang: string };
@@ -7,7 +7,7 @@ declare module 'written-number' {
   export default writtenNumber;
 }
 
-declare module 'html2pdf.js' {
+declare module "html2pdf.js" {
   const html2pdf: any;
   export default html2pdf;
 }

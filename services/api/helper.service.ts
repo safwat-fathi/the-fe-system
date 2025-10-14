@@ -63,10 +63,14 @@ class HelperService extends HttpService {
   // جلب الفئات
   async getCategories(): Promise<Category[]> {
     try {
-      const response = await this.get<Category[]>("categories_list/", undefined, {
-        cache: "no-store",
-        next: { tags: ["categories"] },
-      });
+      const response = await this.get<Category[]>(
+        "categories_list",
+        undefined,
+        {
+          cache: "no-store",
+          next: { tags: ["categories"] },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {
@@ -79,6 +83,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching categories:", error);
+
       return [];
     }
   }
@@ -102,6 +107,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching item types:", error);
+
       return [];
     }
   }
@@ -109,7 +115,7 @@ class HelperService extends HttpService {
   // جلب الوحدات
   async getUnits(): Promise<Unit[]> {
     try {
-      const response = await this.get<Unit[]>("units_list/", undefined, {
+      const response = await this.get<Unit[]>("units_list", undefined, {
         cache: "no-store",
         next: { tags: ["units"] },
       });
@@ -125,6 +131,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching units:", error);
+
       return [];
     }
   }
@@ -148,6 +155,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching boxes:", error);
+
       return [];
     }
   }
@@ -171,6 +179,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching cat types:", error);
+
       return [];
     }
   }
@@ -178,10 +187,14 @@ class HelperService extends HttpService {
   // جلب حالات الفئات
   async getCatStatuses(): Promise<CatStatus[]> {
     try {
-      const response = await this.get<CatStatus[]>("getCatStatusList", undefined, {
-        cache: "no-store",
-        next: { tags: ["cat-statuses"] },
-      });
+      const response = await this.get<CatStatus[]>(
+        "getCatStatusList",
+        undefined,
+        {
+          cache: "no-store",
+          next: { tags: ["cat-statuses"] },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {
@@ -194,6 +207,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching cat statuses:", error);
+
       return [];
     }
   }
@@ -201,10 +215,14 @@ class HelperService extends HttpService {
   // جلب أنواع العملاء
   async getCustomerTypes(): Promise<CustomerType[]> {
     try {
-      const response = await this.get<CustomerType[]>("cust_type_list/", undefined, {
-        cache: "no-store",
-        next: { tags: ["customer-types"] },
-      });
+      const response = await this.get<CustomerType[]>(
+        "cust_type_list",
+        undefined,
+        {
+          cache: "no-store",
+          next: { tags: ["customer-types"] },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {
@@ -217,6 +235,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching customer types:", error);
+
       return [];
     }
   }
@@ -224,10 +243,14 @@ class HelperService extends HttpService {
   // جلب حالات العملاء
   async getCustomerStatuses(): Promise<CustomerStatus[]> {
     try {
-      const response = await this.get<CustomerStatus[]>("getCustomerStatus", undefined, {
-        cache: "no-store",
-        next: { tags: ["customer-statuses"] },
-      });
+      const response = await this.get<CustomerStatus[]>(
+        "getCustomerStatus",
+        undefined,
+        {
+          cache: "no-store",
+          next: { tags: ["customer-statuses"] },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {
@@ -240,6 +263,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching customer statuses:", error);
+
       return [];
     }
   }
@@ -263,6 +287,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching box types:", error);
+
       return [];
     }
   }

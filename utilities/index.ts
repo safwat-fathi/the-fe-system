@@ -1,11 +1,11 @@
 // API utilities
-export * from './api';
+export * from "./api";
 
 // Responsive design utilities
-export * from './responsive';
+export * from "./responsive";
 
 // Global utilities
-export * from './global';
+export * from "./global";
 
 // Logger utility
-export { logger } from './logger';
+export { logger } from "./logger";

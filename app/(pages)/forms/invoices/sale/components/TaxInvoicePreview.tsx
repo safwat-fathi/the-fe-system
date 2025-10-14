@@ -1,7 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import QRCode from "react-qr-code";
 import writtenNumber from "written-number";
-import html2pdf from "html2pdf.js";
 
 interface Item {
   item_name: string;
@@ -39,12 +38,13 @@ interface InvoicePreviewProps {
   frac2: number;
 }
 
-writtenNumber.defaults.lang = 'ar';
+writtenNumber.defaults.lang = "ar";
 
 function formatAmountInWords(amount: number): string {
   const integer = Math.floor(amount);
   const fraction = Math.round((amount - integer) * 100);
   const words = `${writtenNumber(integer)} ريال${fraction > 0 ? ` و ${writtenNumber(fraction)} هللة` : ""} فقط لا غير`;
+
   return words;
 }
 
@@ -77,6 +77,7 @@ export function renderInvoicePreview(data: InvoicePreviewProps) {
   const rowsHtml = items
     .map((item, index) => {
       let rowTotal = 0;
+
       if (payType === 1) rowTotal = item.weight * item.price;
       else if (payType === 2) rowTotal = item.qty * (item.price_w ?? 0);
       else rowTotal = item.weight * item.price + item.qty * (item.price_w ?? 0);

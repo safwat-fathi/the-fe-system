@@ -1,8 +1,11 @@
 import { Metadata } from "next";
+
+import CustomersClient from "./components/CustomersClient";
+
 import customerService from "@/services/api/customer.service";
 import helperService from "@/services/api/helper.service";
 import accountService from "@/services/api/account.service";
-import CustomersClient from "./components/CustomersClient";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 export const metadata: Metadata = {
   title: "العملاء - NafeesWeb",
@@ -10,9 +13,18 @@ export const metadata: Metadata = {
 };
 
 export default async function CustomersPage() {
+  // جلب معاملات الفرع
+  const branchParams = await getBranchParams();
+
   // جلب البيانات بالتوازي للأداء الأفضل
-  const [customersData, customerTypesData, customerStatusData, accountsData, boxTypesData] = await Promise.all([
-    customerService.getAllCustomers().catch(() => []),
+  const [
+    customersData,
+    customerTypesData,
+    customerStatusData,
+    accountsData,
+    boxTypesData,
+  ] = await Promise.all([
+    customerService.getAllCustomers({ xcom_id: branchParams.com }).catch(() => []),
     helperService.getCustomerTypes().catch(() => []),
     helperService.getCustomerStatuses().catch(() => []),
     accountService.getAllAccounts().catch(() => []),
@@ -23,12 +35,12 @@ export default async function CustomersPage() {
     <div className="responsive-container font-cairo">
       <h1 className="responsive-text-xl font-bold mb-6">العملاء</h1>
 
-      <CustomersClient 
-        initialCustomers={customersData as any}
-        initialCustomerTypes={customerTypesData as any}
-        initialCustomerStatus={customerStatusData as any}
+      <CustomersClient
         initialAccounts={accountsData as any}
         initialBoxTypes={boxTypesData as any}
+        initialCustomerStatus={customerStatusData as any}
+        initialCustomerTypes={customerTypesData as any}
+        initialCustomers={customersData as any}
       />
     </div>
   );

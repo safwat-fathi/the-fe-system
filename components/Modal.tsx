@@ -1,7 +1,14 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Modal as HeroModal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@heroui/react";
+import {
+  Modal as HeroModal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+} from "@heroui/react";
 
 // Base Modal Props
 interface BaseModalProps {
@@ -58,17 +65,18 @@ export function BaseModal({
   className = "",
   showCloseButton = true,
   closeOnOverlayClick = true,
-  closeOnEscape = true
+  closeOnEscape = true,
 }: BaseModalProps) {
   return (
     <HeroModal
-      isOpen={isOpen}
-      onClose={onClose}
-      size={size}
-      showCloseButton={showCloseButton}
-      closeOnOverlayClick={closeOnOverlayClick}
-      closeOnEscape={closeOnEscape}
       className={className}
+      closeOnEscape={closeOnEscape}
+      closeOnOverlayClick={closeOnOverlayClick}
+      isDismissable={false}
+      isOpen={isOpen}
+      showCloseButton={showCloseButton}
+      size={size}
+      onClose={onClose}
     >
       <ModalContent>
         {title && <ModalHeader>{title}</ModalHeader>}
@@ -88,10 +96,15 @@ export function ConfirmationModal({
   confirmText = "تأكيد",
   cancelText = "إلغاء",
   confirmColor = "primary",
-  size = "md"
+  size = "md",
 }: ConfirmationModalProps) {
   return (
-    <HeroModal isOpen={isOpen} onClose={onClose} size={size}>
+    <HeroModal
+      isDismissable={false}
+      isOpen={isOpen}
+      size={size}
+      onClose={onClose}
+    >
       <ModalContent>
         <ModalHeader>{title}</ModalHeader>
         <ModalBody>
@@ -127,7 +140,14 @@ export function FormModal({
   ...baseProps
 }: FormModalProps) {
   return (
-    <HeroModal isOpen={isOpen} onClose={onClose} size={size} shouldBlockScroll={shouldBlockScroll} {...baseProps}>
+    <HeroModal
+      isDismissable={false}
+      isOpen={isOpen}
+      shouldBlockScroll={shouldBlockScroll}
+      size={size}
+      onClose={onClose}
+      {...baseProps}
+    >
       <ModalContent>
         {title && <ModalHeader>{title}</ModalHeader>}
         <ModalBody>{children}</ModalBody>
@@ -135,11 +155,11 @@ export function FormModal({
           <Button color="danger" variant="flat" onPress={onClose}>
             {cancelText}
           </Button>
-          <Button 
-            color={submitColor} 
-            onPress={onSubmit}
-            isLoading={isLoading}
+          <Button
+            color={submitColor}
             isDisabled={submitDisabled}
+            isLoading={isLoading}
+            onPress={onSubmit}
           >
             {submitText}
           </Button>
@@ -163,7 +183,13 @@ export function InfoModal({
   ...baseProps
 }: InfoModalProps) {
   return (
-    <HeroModal isOpen={isOpen} onClose={onClose} size={size} {...baseProps}>
+    <HeroModal
+      isDismissable={false}
+      isOpen={isOpen}
+      size={size}
+      onClose={onClose}
+      {...baseProps}
+    >
       <ModalContent>
         {title && <ModalHeader>{title}</ModalHeader>}
         <ModalBody>
@@ -184,13 +210,19 @@ export function InfoModal({
 }
 
 // Unified Modal Component with type detection
-export function UnifiedModal(props: BaseModalProps | ConfirmationModalProps | FormModalProps | InfoModalProps) {
+export function UnifiedModal(
+  props:
+    | BaseModalProps
+    | ConfirmationModalProps
+    | FormModalProps
+    | InfoModalProps,
+) {
   // Detect modal type based on props
-  if ('onConfirm' in props && 'message' in props) {
+  if ("onConfirm" in props && "message" in props) {
     return <ConfirmationModal {...(props as ConfirmationModalProps)} />;
-  } else if ('onSubmit' in props) {
+  } else if ("onSubmit" in props) {
     return <FormModal {...(props as FormModalProps)} />;
-  } else if ('message' in props || 'icon' in props) {
+  } else if ("message" in props || "icon" in props) {
     return <InfoModal {...(props as InfoModalProps)} />;
   } else {
     return <BaseModal {...(props as BaseModalProps)} />;
@@ -198,6 +230,10 @@ export function UnifiedModal(props: BaseModalProps | ConfirmationModalProps | Fo
 }
 
 // Export HeroModal for direct use
-export { Modal as HeroModal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
-
-
+export {
+  Modal as HeroModal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/react";

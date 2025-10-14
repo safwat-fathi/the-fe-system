@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Input, Button, Checkbox, Card, CardBody, Image, Divider } from "@heroui/react";
+import {
+  Input,
+  Button,
+  Checkbox,
+  Card,
+  CardBody,
+  Image,
+  Divider,
+} from "@heroui/react";
 import toast from "react-hot-toast";
 
 import { API_ENDPOINTS, apiFetch } from "@/utilities/api";
@@ -12,9 +20,24 @@ interface HomeSettings {
 }
 
 const SECTIONS = [
-  { id: "general", label: "الإعدادات العامة", icon: "🏢", description: "معلومات الشركة والشعار والعلامة التجارية" },
-  { id: "accounts", label: "إعدادات الحسابات", icon: "💰", description: "السنة المالية والحسابات والضرائب" },
-  { id: "zatca", label: "ربط هيئة الزكاة", icon: "🔗", description: "إعدادات الربط الإلكتروني" },
+  {
+    id: "general",
+    label: "الإعدادات العامة",
+    icon: "🏢",
+    description: "معلومات الشركة والشعار والعلامة التجارية",
+  },
+  {
+    id: "accounts",
+    label: "إعدادات الحسابات",
+    icon: "💰",
+    description: "السنة المالية والحسابات والضرائب",
+  },
+  {
+    id: "zatca",
+    label: "ربط هيئة الزكاة",
+    icon: "🔗",
+    description: "إعدادات الربط الإلكتروني",
+  },
 ];
 
 const GENERAL_FIELDS = [
@@ -108,16 +131,20 @@ export default function SettingsPage() {
     if (!file) return;
 
     // التحقق من نوع الملف
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
     if (!allowedTypes.includes(file.type)) {
       toast.error("يرجى اختيار ملف صورة صالح (JPG, PNG, GIF, WebP)");
+
       return;
     }
 
     // التحقق من حجم الملف (5MB كحد أقصى)
     const maxSize = 5 * 1024 * 1024; // 5MB
+
     if (file.size > maxSize) {
       toast.error("حجم الملف يجب أن يكون أقل من 5 ميجابايت");
+
       return;
     }
 
@@ -125,23 +152,25 @@ export default function SettingsPage() {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', key);
 
-      const response = await apiFetch('/api/upload-logo', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("type", key);
+
+      const response = await apiFetch("/api/upload-logo", {
+        method: "POST",
         body: formData,
       });
 
       if (response.ok) {
         const result = await response.json();
+
         handleChange(key, result.url);
         toast.success("تم رفع الصورة بنجاح");
       } else {
-        throw new Error('فشل رفع الملف');
+        throw new Error("فشل رفع الملف");
       }
     } catch (error) {
-      console.error('خطأ في رفع الملف:', error);
+      console.error("خطأ في رفع الملف:", error);
       toast.error("فشل رفع الملف");
     } finally {
       setUploading(null);
@@ -166,6 +195,7 @@ export default function SettingsPage() {
       if (typeof window !== "undefined") {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const api = require("@/utilities/api");
+
         if (api && api.fractionsCache !== undefined) {
           api.fractionsCache = null;
         }
@@ -183,7 +213,8 @@ export default function SettingsPage() {
     toast.success("تم إعادة تعيين الإعدادات");
   };
 
-  const hasChanges = JSON.stringify(settings) !== JSON.stringify(originalSettings);
+  const hasChanges =
+    JSON.stringify(settings) !== JSON.stringify(originalSettings);
 
   const renderImageField = (field: { key: string; label: string }) => (
     <div key={field.key} className="space-y-3">
@@ -195,9 +226,9 @@ export default function SettingsPage() {
           {settings[field.key] ? (
             <div className="relative group">
               <Image
-                src={settings[field.key]}
                 alt={field.label}
                 className="w-32 h-32 object-contain rounded-lg border-2 border-gray-200 cursor-pointer hover:border-blue-500 transition-colors bg-gray-50"
+                src={settings[field.key]}
                 onClick={() => handleImageClick(field.key)}
               />
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
@@ -212,8 +243,18 @@ export default function SettingsPage() {
               onClick={() => handleImageClick(field.key)}
             >
               <div className="text-center">
-                <svg className="mx-auto h-10 w-10 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  className="mx-auto h-10 w-10 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 48 48"
+                >
+                  <path
+                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
                 </svg>
                 <p className="mt-2 text-sm text-gray-500">إضافة صورة</p>
               </div>
@@ -221,7 +262,7 @@ export default function SettingsPage() {
           )}
           {uploading === field.key && (
             <div className="absolute inset-0 bg-white bg-opacity-75 rounded-lg flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
             </div>
           )}
         </div>
@@ -230,11 +271,12 @@ export default function SettingsPage() {
             ref={(el) => {
               fileInputRefs.current[field.key] = el;
             }}
-            type="file"
             accept="image/*"
             className="hidden"
+            type="file"
             onChange={(e) => {
               const file = e.target.files?.[0];
+
               if (file) {
                 handleFileUpload(field.key, file);
               }
@@ -242,17 +284,17 @@ export default function SettingsPage() {
           />
           <div className="flex gap-2">
             <Button
+              disabled={uploading === field.key}
               size="sm"
               variant="bordered"
               onPress={() => handleImageClick(field.key)}
-              disabled={uploading === field.key}
             >
               {uploading === field.key ? "جاري الرفع..." : "اختيار ملف"}
             </Button>
             {settings[field.key] && (
               <Button
-                size="sm"
                 color="danger"
+                size="sm"
                 variant="light"
                 onPress={() => handleChange(field.key, "")}
               >
@@ -276,23 +318,23 @@ export default function SettingsPage() {
       <div className="flex items-center space-x-3 space-x-reverse">
         <div className="relative">
           <input
+            className="w-14 h-12 border border-gray-300 rounded-lg cursor-pointer"
             type="color"
             value={settings[field.key] || "#000000"}
             onChange={(e) => handleChange(field.key, e.target.value)}
-            className="w-14 h-12 border border-gray-300 rounded-lg cursor-pointer"
           />
-          <div 
+          <div
             className="absolute inset-0 rounded-lg border-2 border-gray-200 pointer-events-none"
             style={{ backgroundColor: settings[field.key] || "#000000" }}
           />
         </div>
         <Input
+          className="flex-1"
+          placeholder="#000000"
           value={settings[field.key] || ""}
           onChange={(e) => handleChange(field.key, e.target.value)}
-          placeholder="#000000"
-          className="flex-1"
         />
-        <div 
+        <div
           className="w-8 h-8 rounded border border-gray-300"
           style={{ backgroundColor: settings[field.key] || "#000000" }}
         />
@@ -306,11 +348,11 @@ export default function SettingsPage() {
         {field.label}
       </label>
       <textarea
-        value={settings[field.key] || ""}
-        onChange={(e) => handleChange(field.key, e.target.value)}
-        rows={4}
         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
         placeholder={`أدخل ${field.label.toLowerCase()}`}
+        rows={4}
+        value={settings[field.key] || ""}
+        onChange={(e) => handleChange(field.key, e.target.value)}
       />
     </div>
   );
@@ -357,7 +399,9 @@ export default function SettingsPage() {
     return (
       <Card className="mt-6">
         <CardBody>
-          <h3 className="text-lg font-semibold mb-4">معاينة العلامة التجارية</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            معاينة العلامة التجارية
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* معاينة الشعار */}
             <div className="space-y-3">
@@ -366,12 +410,15 @@ export default function SettingsPage() {
                 {settings.company_logo ? (
                   <div className="flex items-center space-x-3 space-x-reverse">
                     <Image
-                      src={settings.company_logo}
                       alt="شعار الشركة"
                       className="w-16 h-16 object-contain"
+                      src={settings.company_logo}
                     />
                     <div>
-                      <h5 className="font-semibold" style={{ color: settings.primary_color || "#000" }}>
+                      <h5
+                        className="font-semibold"
+                        style={{ color: settings.primary_color || "#000" }}
+                      >
                         {settings.comp_a_name || "اسم الشركة"}
                       </h5>
                       <p className="text-sm text-gray-600">
@@ -381,8 +428,18 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <div className="text-center text-gray-500 py-8">
-                    <svg className="mx-auto h-12 w-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <svg
+                      className="mx-auto h-12 w-12 mb-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                      />
                     </svg>
                     <p>لم يتم اختيار شعار بعد</p>
                   </div>
@@ -396,18 +453,26 @@ export default function SettingsPage() {
               <div className="p-4 border border-gray-200 rounded-lg bg-white">
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3 space-x-reverse">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded border border-gray-300"
-                      style={{ backgroundColor: settings.primary_color || "#000000" }}
+                      style={{
+                        backgroundColor: settings.primary_color || "#000000",
+                      }}
                     />
-                    <span className="text-sm">اللون الأساسي: {settings.primary_color || "#000000"}</span>
+                    <span className="text-sm">
+                      اللون الأساسي: {settings.primary_color || "#000000"}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-3 space-x-reverse">
-                    <div 
+                    <div
                       className="w-8 h-8 rounded border border-gray-300"
-                      style={{ backgroundColor: settings.secondary_color || "#666666" }}
+                      style={{
+                        backgroundColor: settings.secondary_color || "#666666",
+                      }}
                     />
-                    <span className="text-sm">اللون الثانوي: {settings.secondary_color || "#666666"}</span>
+                    <span className="text-sm">
+                      اللون الثانوي: {settings.secondary_color || "#666666"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -447,12 +512,12 @@ export default function SettingsPage() {
         {SECTIONS.map((section) => (
           <Card
             key={section.id}
+            isPressable
             className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-              activeSection === section.id 
-                ? "ring-2 ring-blue-500 bg-blue-50" 
+              activeSection === section.id
+                ? "ring-2 ring-blue-500 bg-blue-50"
                 : "hover:bg-gray-50"
             }`}
-            isPressable
             onPress={() => setActiveSection(section.id)}
           >
             <CardBody className="text-center p-6">
@@ -469,10 +534,10 @@ export default function SettingsPage() {
         <CardBody>
           <div className="mb-6">
             <h2 className="text-xl font-bold mb-2">
-              {SECTIONS.find(s => s.id === activeSection)?.label}
+              {SECTIONS.find((s) => s.id === activeSection)?.label}
             </h2>
             <p className="text-gray-600">
-              {SECTIONS.find(s => s.id === activeSection)?.description}
+              {SECTIONS.find((s) => s.id === activeSection)?.description}
             </p>
           </div>
           {renderFields(getCurrentFields())}
@@ -486,19 +551,19 @@ export default function SettingsPage() {
 
       {/* أزرار الحفظ */}
       <div className="flex gap-4 justify-end">
-        <Button 
-          variant="bordered" 
-          size="lg"
-          onPress={handleReset}
+        <Button
           disabled={!hasChanges}
+          size="lg"
+          variant="bordered"
+          onPress={handleReset}
         >
           إعادة تعيين
         </Button>
-        <Button 
-          color="success" 
+        <Button
+          color="success"
+          disabled={!hasChanges}
           size="lg"
           onPress={handleSave}
-          disabled={!hasChanges}
         >
           {hasChanges ? "💾 حفظ الإعدادات" : "✅ محفوظ"}
         </Button>

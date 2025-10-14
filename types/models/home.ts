@@ -17,4 +17,3 @@ export interface HomeSettings {
   Vat_perc?: number;
   [key: string]: any; // Allow additional properties from API
 }
-

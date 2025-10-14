@@ -1,7 +1,9 @@
 import { Metadata } from "next";
+
+import CostCentersClient from "./components/CostCentersClient";
+
 import genericService from "@/services/api/generic.service";
 import { getBranchParams } from "@/app/actions/branch-params";
-import CostCentersClient from "./components/CostCentersClient";
 
 export const metadata: Metadata = {
   title: "مراكز التكلفة - NafeesWeb",
@@ -23,30 +25,44 @@ interface CostCenter {
   parent: number | null;
 }
 
+interface Account {
+  id: number;
+  acc_name: string;
+  acc_name_e?: string;
+}
+
 export default async function CostCentersPage() {
   // جلب معاملات الفرع والسنة
   const branchParams = await getBranchParams();
 
-  // جلب بيانات مراكز التكلفة باستخدام GenericService
-  let costCentersData: CostCenter[] = [];
-  let error = null;
+  // جلب بيانات مراكز التكلفة والحسابات بالتوازي
+  const [costCentersResponse, accountsResponse] = await Promise.all([
+    genericService.getTableData("cost_centers_list", branchParams).catch(() => ({
+      success: false,
+      message: "فشل في جلب مراكز التكلفة",
+      data: [],
+    })),
+    genericService.getTableData("accounts_list", branchParams).catch(() => ({
+      success: false,
+      message: "فشل في جلب الحسابات",
+      data: [],
+    })),
+  ]);
 
-  try {
-    const response = await genericService.getTableData("cost_centers_list", branchParams);
-    if (response.success) {
-      costCentersData = response.data || [];
-    } else {
-      error = response.message || "فشل في جلب البيانات";
-    }
-  } catch (err) {
-    error = err instanceof Error ? err.message : "حدث خطأ غير معروف";
-    costCentersData = [];
-  }
+  const costCentersData: CostCenter[] = costCentersResponse.success
+    ? costCentersResponse.data || []
+    : [];
+  const accountsData: Account[] = accountsResponse.success
+    ? accountsResponse.data || []
+    : [];
+  const error = !costCentersResponse.success
+    ? costCentersResponse.message || "فشل في جلب البيانات"
+    : null;
 
   return (
     <div className="responsive-container font-cairo">
       <h1 className="responsive-text-xl font-bold mb-6">مراكز التكلفة</h1>
-      
+
       {/* عرض حالة الطلب */}
       {error && (
         <div className="mb-4">
@@ -57,9 +73,10 @@ export default async function CostCentersPage() {
       )}
 
       {/* Client Component للتفاعل */}
-      <CostCentersClient 
-        initialData={costCentersData} 
+      <CostCentersClient
         error={error}
+        initialAccounts={accountsData}
+        initialData={costCentersData}
       />
     </div>
   );

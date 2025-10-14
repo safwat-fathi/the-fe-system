@@ -3,7 +3,12 @@
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import ReactSelect from "react-select";
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import {
   Table,
@@ -105,6 +110,7 @@ export default function CustomersClient({
   const loadCustomers = async () => {
     try {
       const data = await customerService.getAllCustomers();
+
       setCustomers(data as any);
     } catch (error) {
       console.error("فشل في جلب العملاء:", error);
@@ -114,7 +120,7 @@ export default function CustomersClient({
 
   const handleSave = async () => {
     try {
-      let updatedCustomer = { ...currentCustomer };
+      const updatedCustomer = { ...currentCustomer };
 
       if (!updatedCustomer.cust_code) {
         updatedCustomer.cust_code = updatedCustomer.id
@@ -137,12 +143,16 @@ export default function CustomersClient({
 
       if (!cleanedCustomer.cust_type) {
         toast.error("⚠️ يرجى إدخال نوع العميل");
+
         return;
       }
 
       const result =
         modalMode === "edit" && currentCustomer.id
-          ? await customerService.updateCustomer(currentCustomer.id, cleanedCustomer)
+          ? await customerService.updateCustomer(
+              currentCustomer.id,
+              cleanedCustomer,
+            )
           : await customerService.createCustomer(cleanedCustomer);
 
       if (result) {
@@ -212,6 +222,7 @@ export default function CustomersClient({
 
   const paginatedCustomers = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
+
     return filteredCustomers.slice(start, start + rowsPerPage);
   }, [filteredCustomers, page]);
 
@@ -244,9 +255,9 @@ export default function CustomersClient({
       </Button>
       <Button
         isIconOnly
+        color="danger"
         size="sm"
         variant="light"
-        color="danger"
         onPress={() => handleDelete(cust.id)}
       >
         <TrashIcon className="h-4 w-4" />
@@ -264,14 +275,15 @@ export default function CustomersClient({
         </Button>
         <div className="responsive-search-group">
           <Select
+            aria-label="اختيار نوع العميل للفرز"
             className="w-60"
             placeholder="فرز حسب نوع العميل"
-            aria-label="اختيار نوع العميل للفرز"
             selectedKeys={
               custTypeFilter !== null ? [String(custTypeFilter)] : ["all"]
             }
             onSelectionChange={(keys) => {
               const key = Array.from(keys)[0];
+
               setCustTypeFilter(key === "all" ? null : Number(key));
             }}
           >
@@ -563,6 +575,7 @@ export default function CustomersClient({
                         const selectedAcc = accounts.find(
                           (acc) => acc.id === currentCustomer.acc,
                         );
+
                         return selectedAcc
                           ? {
                               value: selectedAcc.id,
@@ -579,6 +592,7 @@ export default function CustomersClient({
                   const accObj = accounts.find(
                     (acc) => acc.id === selectedOption?.value,
                   );
+
                   if (accObj) {
                     setCurrentCustomer({
                       ...currentCustomer,
@@ -668,7 +682,7 @@ export default function CustomersClient({
                 onChange={(selectedOption) => {
                   setCurrentCustomer({
                     ...currentCustomer,
-                    cust_type: selectedOption?.value as number || undefined,
+                    cust_type: (selectedOption?.value as number) || undefined,
                   });
                 }}
               />
@@ -750,7 +764,7 @@ export default function CustomersClient({
                 onChange={(selectedOption) => {
                   setCurrentCustomer({
                     ...currentCustomer,
-                    cust_status: selectedOption?.value as number || 0,
+                    cust_status: (selectedOption?.value as number) || 0,
                   });
                 }}
               />
@@ -793,4 +807,3 @@ export default function CustomersClient({
     </div>
   );
 }
-

@@ -1,12 +1,12 @@
 "use client";
 
 import type { InvoiceItem } from "@/types/invoice-item";
-import { formatAmount } from "@/utilities/formatAmount";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 
+import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
 import { API_BASE_URL, API_ENDPOINTS, fetchData } from "@/utilities/api";
 
@@ -78,15 +78,19 @@ export default function InvoiceItemTable({
     const loadTaxRates = async () => {
       try {
         const response = await fetchData<any[]>(API_ENDPOINTS.TaxPrcList);
+
         if (Array.isArray(response) && response.length > 0) {
-          const rates = response.map(item => parseFloat(item.tax_prc || item.value || 0));
-          setTaxRates([0, ...rates.filter(rate => rate > 0)]);
+          const rates = response.map((item) =>
+            parseFloat(item.tax_prc || item.value || 0),
+          );
+
+          setTaxRates([0, ...rates.filter((rate) => rate > 0)]);
         }
       } catch (error) {
         console.error("فشل في تحميل قائمة الضرائب:", error);
       }
     };
-    
+
     loadTaxRates();
   }, []);
 
@@ -180,6 +184,7 @@ export default function InvoiceItemTable({
       ].includes(field)
     ) {
       const num = parseFloat(value);
+
       (updated[index] as any)[field] = isNaN(num) ? 0 : num;
     } else {
       (updated[index] as any)[field] = value;
@@ -203,32 +208,37 @@ export default function InvoiceItemTable({
 
       if (homePurity && weightVal > 0) {
         const purity = (gWeightVal * homePurity) / weightVal;
+
         updated[index].purity = String(parseFloat(purity.toFixed(2)));
-        
+
         // إعادة حساب الإجماليات بعد تغيير الوزن المعاير
-        const wCalc = weightVal < 1 && gWeightVal > weightVal ? weightVal * 1000 : weightVal;
-        
+        const wCalc =
+          weightVal < 1 && gWeightVal > weightVal
+            ? weightVal * 1000
+            : weightVal;
+
         // total_a depends on invoice type
         updated[index].total_a =
           payType === 2
             ? 0
             : payType === 1
-            ? wCalc * updated[index].price
-            : wCalc * updated[index].price;
+              ? wCalc * updated[index].price
+              : wCalc * updated[index].price;
 
         // total_w depends on invoice type
         updated[index].total_w =
           payType === 1
             ? 0
             : payType === 2
-            ? gWeightVal * updated[index].price_w
-            : gWeightVal * updated[index].price_w;
+              ? gWeightVal * updated[index].price_w
+              : gWeightVal * updated[index].price_w;
 
         // total is the sum of total_a and total_w
         updated[index].total = updated[index].total_a + updated[index].total_w;
 
         // calculate tax
         const base = updated[index].total - (updated[index].item_disc_amt || 0);
+
         updated[index].tax = base * ((updated[index].tax_prc || 15) / 100);
       }
     }
@@ -244,22 +254,23 @@ export default function InvoiceItemTable({
       payType === 2
         ? 0
         : payType === 1
-        ? updated[index].weight * updated[index].price
-        : updated[index].weight * updated[index].price;
+          ? updated[index].weight * updated[index].price
+          : updated[index].weight * updated[index].price;
 
     // total_w depends on invoice type
     updated[index].total_w =
       payType === 1
         ? 0
         : payType === 2
-        ? updated[index].g_weight * updated[index].price_w
-        : updated[index].g_weight * updated[index].price_w;
+          ? updated[index].g_weight * updated[index].price_w
+          : updated[index].g_weight * updated[index].price_w;
 
     // total is the sum of total_a and total_w
     updated[index].total = updated[index].total_a + updated[index].total_w;
 
     // calculate tax
     const base = updated[index].total - (updated[index].item_disc_amt || 0);
+
     updated[index].tax = base * ((updated[index].tax_prc || 15) / 100);
 
     setInvoiceItems(updated);
@@ -274,8 +285,8 @@ export default function InvoiceItemTable({
     // إذا كان هناك سجل واحد فقط، لا نحذفه بل نفرغ محتوياته
     if (invoiceItems.length === 1) {
       const updated = [...invoiceItems];
-      const index = updated.findIndex(item => item.id === id);
-      
+      const index = updated.findIndex((item) => item.id === id);
+
       if (index !== -1) {
         // تفريغ محتويات السجل إلى القيم الافتراضية
         // هذا يضمن وجود سجل واحد على الأقل في الفاتورة
@@ -303,19 +314,22 @@ export default function InvoiceItemTable({
           stones: "",
           sn: "",
         };
-        
+
         setInvoiceItems(updated);
+
         return;
       }
     }
-    
+
     // إذا كان هناك أكثر من سجل، احذف السجل المحدد
-    const itemToRemove = invoiceItems.find(item => item.id === id);
+    const itemToRemove = invoiceItems.find((item) => item.id === id);
+
     if (itemToRemove && onItemRemoved) {
       onItemRemoved(itemToRemove);
     }
-    
-    const updated = invoiceItems.filter(item => item.id !== id);
+
+    const updated = invoiceItems.filter((item) => item.id !== id);
+
     setInvoiceItems(updated);
   };
 
@@ -368,6 +382,7 @@ export default function InvoiceItemTable({
 
       if (nextRow < invoiceItems.length) {
         const nextInput = inputRefs.current[nextRow]?.[nextCol];
+
         if (nextInput) {
           nextInput.focus();
         }
@@ -375,6 +390,7 @@ export default function InvoiceItemTable({
         addRow();
         setTimeout(() => {
           const newRowInput = inputRefs.current[nextRow]?.[nextCol];
+
           if (newRowInput) {
             newRowInput.focus();
           }
@@ -386,14 +402,14 @@ export default function InvoiceItemTable({
   const handleTotalChange = (index: number, value: any) => {
     const num = parseFloat(value) || 0;
     const updated = [...invoiceItems];
-    
+
     if (updated[index]) {
       // حساب الإجمالي بدون ضريبة
       const taxRate = (updated[index].tax_prc ?? 15) / 100;
       const totalWithoutTax = num / (1 + taxRate);
-      
+
       updated[index].total = num;
-      
+
       // تحديث الأسعار بناءً على الإجمالي الجديد
       if (payType === 1) {
         // Gold only - تحديث سعر الجرام
@@ -414,25 +430,29 @@ export default function InvoiceItemTable({
         const totalA = updated[index].total_a || 0;
         const totalW = updated[index].total_w || 0;
         const total = totalA + totalW;
-        
+
         if (total > 0) {
           const newTotalA = (totalA / total) * totalWithoutTax;
           const newTotalW = (totalW / total) * totalWithoutTax;
-          
+
           if (updated[index].weight > 0) {
             updated[index].price = newTotalA / updated[index].weight;
             updated[index].price_w = newTotalW / updated[index].weight;
           }
-          
+
           updated[index].total_a = newTotalA;
           updated[index].total_w = newTotalW;
         }
       }
-      
+
       // إعادة حساب الضريبة
-      const base = (updated[index].total_a || 0) + (updated[index].total_w || 0) - (updated[index].item_disc_amt ?? 0);
+      const base =
+        (updated[index].total_a || 0) +
+        (updated[index].total_w || 0) -
+        (updated[index].item_disc_amt ?? 0);
+
       updated[index].tax = base * taxRate;
-      
+
       setInvoiceItems(updated);
     }
   };
@@ -440,22 +460,27 @@ export default function InvoiceItemTable({
   const handleTotalAChange = (index: number, value: any) => {
     const num = parseFloat(value) || 0;
     const updated = [...invoiceItems];
-    
+
     if (updated[index]) {
       updated[index].total_a = num;
-      
+
       // إعادة حساب سعر الجرام بناءً على الإجمالي الجديد
       if (updated[index].weight && updated[index].weight > 0) {
         updated[index].price = num / updated[index].weight;
       }
-      
+
       // إعادة حساب الإجمالي الكلي
-      updated[index].total = (updated[index].total_a || 0) + (updated[index].total_w || 0);
-      
+      updated[index].total =
+        (updated[index].total_a || 0) + (updated[index].total_w || 0);
+
       // إعادة حساب الضريبة
-      const base = (updated[index].total_a || 0) + (updated[index].total_w || 0) - (updated[index].item_disc_amt ?? 0);
+      const base =
+        (updated[index].total_a || 0) +
+        (updated[index].total_w || 0) -
+        (updated[index].item_disc_amt ?? 0);
+
       updated[index].tax = base * ((updated[index].tax_prc ?? 15) / 100);
-      
+
       setInvoiceItems(updated);
     }
   };
@@ -463,22 +488,27 @@ export default function InvoiceItemTable({
   const handleTotalWChange = (index: number, value: any) => {
     const num = parseFloat(value) || 0;
     const updated = [...invoiceItems];
-    
+
     if (updated[index]) {
       updated[index].total_w = num;
-      
+
       // إعادة حساب سعر الأجور بناءً على الإجمالي الجديد
       if (updated[index].weight && updated[index].weight > 0) {
         updated[index].price_w = num / updated[index].weight;
       }
-      
+
       // إعادة حساب الإجمالي الكلي
-      updated[index].total = (updated[index].total_a || 0) + (updated[index].total_w || 0);
-      
+      updated[index].total =
+        (updated[index].total_a || 0) + (updated[index].total_w || 0);
+
       // إعادة حساب الضريبة
-      const base = (updated[index].total_a || 0) + (updated[index].total_w || 0) - (updated[index].item_disc_amt ?? 0);
+      const base =
+        (updated[index].total_a || 0) +
+        (updated[index].total_w || 0) -
+        (updated[index].item_disc_amt ?? 0);
+
       updated[index].tax = base * ((updated[index].tax_prc ?? 15) / 100);
-      
+
       setInvoiceItems(updated);
     }
   };
@@ -492,11 +522,8 @@ export default function InvoiceItemTable({
 
   // البحث بالباركود - البحث عن الصنف بالكود المطابق تماماً
 
-
   return (
     <div className="w-full overflow-x-auto mb-6 max-w-full">
-
-      
       <table className="min-w-[1000px] border text-sm text-center table-fixed">
         <thead className="bg-gray-100 text-xs font-semibold">
           <tr>
@@ -521,14 +548,14 @@ export default function InvoiceItemTable({
             <th className="w-[100px]">الخصم</th>
             <th className="w-[80px]">نسبة الضريبة</th>
             <th className="w-[100px]">الضريبة</th>
-                         <th className="w-[120px]">الاجمالي شامل الضريبة</th>
-             <th className="w-[200px]">البيان</th>
-             <th className="w-[60px]">حذف</th>
+            <th className="w-[120px]">الاجمالي شامل الضريبة</th>
+            <th className="w-[200px]">البيان</th>
+            <th className="w-[60px]">حذف</th>
           </tr>
         </thead>
         <tbody>
           {invoiceItems.map((item, index) => {
-            let colIndex = 0;
+            const colIndex = 0;
             const totalA = item.weight * item.price;
             const totalW = item.weight * item.price_w; // wagePrice
             let rowTotal = 0;
@@ -554,7 +581,6 @@ export default function InvoiceItemTable({
                     }}
                     isClearable
                     isSearchable
-                    isDisabled={!isEditing}
                     additional={{ page: 1 }}
                     className="text-xs"
                     classNamePrefix="select"
@@ -563,6 +589,7 @@ export default function InvoiceItemTable({
                       `إضافة صنف جديد: "${inputValue}"`
                     }
                     instanceId={`item-select-${index}`}
+                    isDisabled={!isEditing}
                     loadOptions={loadItemOptions}
                     menuPortalTarget={
                       typeof window !== "undefined" ? document.body : null
@@ -602,10 +629,10 @@ export default function InvoiceItemTable({
 
                       const updated = [...invoiceItems];
 
-                                             updated[index].item_id = selected.id ?? null;
-                       updated[index].item_code = selected.item_code ?? "";
-                       updated[index].item_name = selected.item_name ?? "";
-                       updated[index].item_desc = selected.item_name ?? ""; // تخزين اسم الصنف في item_desc
+                      updated[index].item_id = selected.id ?? null;
+                      updated[index].item_code = selected.item_code ?? "";
+                      updated[index].item_name = selected.item_name ?? "";
+                      updated[index].item_desc = selected.item_name ?? ""; // تخزين اسم الصنف في item_desc
                       const selk = selected.k ?? "";
                       const selPurity = selected.purity ?? "";
 
@@ -658,9 +685,13 @@ export default function InvoiceItemTable({
                             updated[index].purity = cat.purity ?? "";
                         }
                       }
-                      
+
                       // إذا كانت المعايرة لا تزال فارغة، استخدم القيمة من إعدادات النظام
-                      if (!updated[index].purity || updated[index].purity === "0" || updated[index].purity === "") {
+                      if (
+                        !updated[index].purity ||
+                        updated[index].purity === "0" ||
+                        updated[index].purity === ""
+                      ) {
                         updated[index].purity = homePurity.toString();
                       }
                       // total_a varies by invoice type
@@ -746,10 +777,10 @@ export default function InvoiceItemTable({
                   <input
                     ref={(el) => setRef(index, ++col, el)}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    disabled={!isEditing}
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
                     value={parseFloat(item.qty?.toFixed(0) || "0")}
-                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "qty", e.target.value)
                     }
@@ -762,11 +793,13 @@ export default function InvoiceItemTable({
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    disabled={!isEditing}
                     step="any"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={parseFloat(item.weight?.toFixed(weightDigits) || "0")}
-                    disabled={!isEditing}
+                    value={parseFloat(
+                      item.weight?.toFixed(weightDigits) || "0",
+                    )}
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
                     }
@@ -779,9 +812,9 @@ export default function InvoiceItemTable({
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    disabled={!isEditing}
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.purity}
-                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "purity", e.target.value)
                     }
@@ -794,11 +827,13 @@ export default function InvoiceItemTable({
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    disabled={!isEditing}
                     step="any"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={parseFloat(item.g_weight?.toFixed(gWeightDigits) || "0")}
-                    disabled={!isEditing}
+                    value={parseFloat(
+                      item.g_weight?.toFixed(gWeightDigits) || "0",
+                    )}
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
                     }
@@ -811,9 +846,9 @@ export default function InvoiceItemTable({
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    disabled={!isEditing}
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.stones}
-                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "stones", e.target.value)
                     }
@@ -827,11 +862,13 @@ export default function InvoiceItemTable({
                         inputRefs.current[index][++col] = el;
                       }}
                       className="border w-full p-1 text-xs text-center appearance-none"
+                      disabled={!isEditing}
                       step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={parseFloat(item.price?.toFixed(priceDigits) || "0")}
-                      disabled={!isEditing}
+                      value={parseFloat(
+                        item.price?.toFixed(priceDigits) || "0",
+                      )}
                       onChange={(e) =>
                         handleFieldChange(index, "price", e.target.value)
                       }
@@ -846,11 +883,13 @@ export default function InvoiceItemTable({
                         inputRefs.current[index][++col] = el;
                       }}
                       className="border w-full p-1 text-xs text-center appearance-none"
+                      disabled={!isEditing}
                       step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={parseFloat(item.price_w?.toFixed(priceWDigits) || "0")}
-                      disabled={!isEditing}
+                      value={parseFloat(
+                        item.price_w?.toFixed(priceWDigits) || "0",
+                      )}
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
                       }
@@ -865,11 +904,13 @@ export default function InvoiceItemTable({
                         inputRefs.current[index][++col] = el;
                       }}
                       className="border w-full p-1 text-xs text-center appearance-none"
+                      disabled={!isEditing}
                       step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={parseFloat((item.weight * item.price).toFixed(totalADigits))}
-                      disabled={!isEditing}
+                      value={parseFloat(
+                        (item.weight * item.price).toFixed(totalADigits),
+                      )}
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
                       }
@@ -884,11 +925,15 @@ export default function InvoiceItemTable({
                         inputRefs.current[index][++col] = el;
                       }}
                       className="border w-full p-1 text-xs text-center appearance-none"
+                      disabled={!isEditing}
                       step="any"
                       style={{ minWidth: 0, maxWidth: "100%" }}
                       type="number"
-                      value={parseFloat((item.weight * (item.price_w || 0)).toFixed(totalWDigits))}
-                      disabled={!isEditing}
+                      value={parseFloat(
+                        (item.weight * (item.price_w || 0)).toFixed(
+                          totalWDigits,
+                        ),
+                      )}
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
                       }
@@ -902,11 +947,13 @@ export default function InvoiceItemTable({
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    disabled={!isEditing}
                     step="any"
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     type="number"
-                    value={parseFloat(item.item_disc_amt?.toFixed(itemDiscDigits) || "0")}
-                    disabled={!isEditing}
+                    value={parseFloat(
+                      item.item_disc_amt?.toFixed(itemDiscDigits) || "0",
+                    )}
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
                     }
@@ -919,15 +966,17 @@ export default function InvoiceItemTable({
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
-                    value={parseFloat(item.tax_prc?.toFixed(2) || "15")}
                     disabled={!isEditing}
+                    value={parseFloat(item.tax_prc?.toFixed(2) || "15")}
                     onChange={(e) =>
                       handleFieldChange(index, "tax_prc", e.target.value)
                     }
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   >
-                    {taxRates.map(rate => (
-                      <option key={rate} value={rate}>{rate}%</option>
+                    {taxRates.map((rate) => (
+                      <option key={rate} value={rate}>
+                        {rate}%
+                      </option>
                     ))}
                   </select>
                 </td>
@@ -938,13 +987,13 @@ export default function InvoiceItemTable({
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    disabled={!isEditing}
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={
                       tempTotals[item.id] !== undefined
                         ? tempTotals[item.id]
                         : formatAmount(total + tax, totalDigits)
                     }
-                    disabled={!isEditing}
                     onBlur={(e) => {
                       setTempTotals((prev) => {
                         const { [item.id]: removed, ...rest } = prev;
@@ -962,16 +1011,16 @@ export default function InvoiceItemTable({
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
                 </td>
-                
+
                 <td>
                   <input
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
                     className="border w-full p-1 text-xs text-center appearance-none"
+                    disabled={!isEditing}
                     style={{ minWidth: 0, maxWidth: "100%" }}
                     value={item.note}
-                    disabled={!isEditing}
                     onChange={(e) =>
                       handleFieldChange(index, "note", e.target.value)
                     }
@@ -981,9 +1030,9 @@ export default function InvoiceItemTable({
                 <td>
                   <button
                     className="text-red-600 font-bold"
+                    disabled={!isEditing}
                     tabIndex={-1}
                     onClick={() => removeRow(item.id)}
-                    disabled={!isEditing}
                   >
                     ×
                   </button>

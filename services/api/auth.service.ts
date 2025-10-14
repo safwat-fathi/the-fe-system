@@ -1,5 +1,4 @@
 import { HttpService } from "@/services/base";
-
 import {
   LoginRequest,
   LoginResponse,
@@ -14,7 +13,7 @@ class AuthService extends HttpService {
   async login(credentials: LoginRequest, requestOptions?: RequestInit) {
     try {
       const response = await this.post<LoginResponse>(
-        "login/",
+        "login",
         credentials,
         undefined,
         requestOptions,
@@ -27,19 +26,19 @@ class AuthService extends HttpService {
   }
 
   async register(userData: RegisterRequest) {
-    return this.post<LoginResponse>("/register", userData);
+    return this.post<LoginResponse>("register", userData);
   }
 
   async logout() {
-    return this.post("/logout", {});
+    return this.post("logout", {});
   }
 
   async refreshToken() {
-    return this.post<LoginResponse>("/token", {});
+    return this.post<LoginResponse>("token", {});
   }
 
   async resetPassword(token: string, password: string) {
-    return this.post("/reset-password", { token, password });
+    return this.post("reset-password", { token, password });
   }
 }
 

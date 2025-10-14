@@ -8,6 +8,7 @@ import {
   TableRow,
   TableCell,
 } from "@heroui/react";
+
 import { HomeSettings } from "@/types/models/home";
 
 interface HomeDataTableProps {
@@ -56,4 +57,3 @@ const HomeDataTable = ({ data }: HomeDataTableProps) => {
 };
 
 export default HomeDataTable;
-

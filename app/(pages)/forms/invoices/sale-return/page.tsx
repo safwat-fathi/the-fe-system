@@ -2,18 +2,17 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Input, Button } from "@heroui/react";
 import toast from "react-hot-toast";
 
-import useFractions from "@/utilities/useFractions";
 import { renderInvoicePreview } from "./components/TaxInvoicePreview";
+
+import useFractions from "@/utilities/useFractions";
 import {
   API_BASE_URL,
   API_ENDPOINTS,
   fetchData,
   fetchGoldPrice,
   apiFetch,
-  fetchItemByBarcode,
 } from "@/utilities/api";
 import homeService from "@/services/api/home.service";
 
@@ -240,8 +239,10 @@ export default function SalesReturnPage() {
         // إذا كان الوزن المعاير تم تغييره يدوياً وكان الوزن موجود
         if (homePurity && weightVal > 0 && gWeightVal > 0) {
           const purity = (gWeightVal * homePurity) / weightVal;
+
           return { ...itm, purity: parseFloat(purity.toFixed(2)).toString() };
         }
+
         return itm;
       }),
     );
@@ -321,7 +322,10 @@ export default function SalesReturnPage() {
 
     if (response) {
       // تصفية العملاء والموردين بحيث لا يكون box_type = 2
-      const filteredCustomers = response.filter((customer) => customer.box_type !== 2);
+      const filteredCustomers = response.filter(
+        (customer) => customer.box_type !== 2,
+      );
+
       setCustomers(filteredCustomers);
     } else {
       setCustomers([]);
@@ -393,13 +397,15 @@ export default function SalesReturnPage() {
   const totalValueTax = invoiceItems.reduce((sum, item) => {
     const totalA = item.weight * item.price;
     const base = totalA - (item.item_disc_amt ?? 0);
-    return sum + (base * 0.15);
+
+    return sum + base * 0.15;
   }, 0);
 
   const totalWagesTax = invoiceItems.reduce((sum, item) => {
     const totalW = item.weight * (item.price_w ?? 0);
     const base = totalW - (item.item_disc_amt ?? 0);
-    return sum + (base * 0.15);
+
+    return sum + base * 0.15;
   }, 0);
 
   const totalTax = totalValueTax + totalWagesTax;
@@ -409,24 +415,24 @@ export default function SalesReturnPage() {
     timeStyle: "short",
   });
 
-const getNextInvoiceNumber = async (): Promise<number> => {
-  const invoices = await fetchData<any[]>(
-    `${API_BASE_URL}/invoices_list?trans_type=4`,
-  );
+  const getNextInvoiceNumber = async (): Promise<number> => {
+    const invoices = await fetchData<any[]>(
+      `${API_BASE_URL}/invoices_list?trans_type=4`,
+    );
 
-  if (!Array.isArray(invoices) || invoices.length === 0) return 1;
+    if (!Array.isArray(invoices) || invoices.length === 0) return 1;
 
-  // فلترة محلية للتأكد من أن الفواتير فقط trans_type === 4 (مردود البيع)
-  const filtered = invoices.filter((inv) => inv.trans_type === 4);
+    // فلترة محلية للتأكد من أن الفواتير فقط trans_type === 4 (مردود البيع)
+    const filtered = invoices.filter((inv) => inv.trans_type === 4);
 
-  if (filtered.length === 0) return 1;
+    if (filtered.length === 0) return 1;
 
-  const maxInvId = filtered.reduce((max, curr) => {
-    return curr.inv_id > max ? curr.inv_id : max;
-  }, 0);
+    const maxInvId = filtered.reduce((max, curr) => {
+      return curr.inv_id > max ? curr.inv_id : max;
+    }, 0);
 
-  return maxInvId + 1;
-};
+    return maxInvId + 1;
+  };
 
   const saveInvoice = async () => {
     if (isExistingInvoice) {
@@ -505,14 +511,17 @@ const getNextInvoiceNumber = async (): Promise<number> => {
       inv_QR: invQR,
     };
 
-         try {
-       console.log("🔍 [Sales Return] Invoice Data being sent:", JSON.stringify(invData, null, 2));
-       
-       const res = await fetch(`${API_BASE_URL}/api_create_invoice`, {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify(invData),
-       });
+    try {
+      console.log(
+        "🔍 [Sales Return] Invoice Data being sent:",
+        JSON.stringify(invData, null, 2),
+      );
+
+      const res = await apiFetch(`${API_BASE_URL}/api_create_invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(invData),
+      });
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -579,13 +588,16 @@ const getNextInvoiceNumber = async (): Promise<number> => {
           item: row.item_id,
         };
 
-                 console.log(`🔍 [Sales Return] Detail ${index + 1} being sent:`, JSON.stringify(dtl, null, 2));
-         
-         const dtlRes = await apiFetch(CREATE_INVOICE_DTL, {
-           method: "POST",
-           headers: { "Content-Type": "application/json" },
-           body: JSON.stringify(dtl),
-         });
+        console.log(
+          `🔍 [Sales Return] Detail ${index + 1} being sent:`,
+          JSON.stringify(dtl, null, 2),
+        );
+
+        const dtlRes = await apiFetch(CREATE_INVOICE_DTL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dtl),
+        });
 
         if (!dtlRes.ok) {
           const dtlError = await dtlRes.text();
@@ -799,7 +811,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     // جلب بيانات المنشأة من قاعدة البيانات
-    const home = await homeService.getHomeSettings() || {};
+    const home = (await homeService.getHomeSettings()) || {};
 
     // تجهيز بيانات التقرير
     const previewCustomer = selectedCust
@@ -812,7 +824,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
       : undefined;
 
     const html = renderInvoicePreview({
-      items: invoiceItems.map(item => ({
+      items: invoiceItems.map((item) => ({
         item_name: item.item_name || "",
         qty: item.qty || 0,
         weight: item.weight || 0,
@@ -850,7 +862,10 @@ const getNextInvoiceNumber = async (): Promise<number> => {
   };
 
   // تعديل: عند اختيار فاتورة مرجعية، يتم فقط إنزال تفاصيل الفاتورة (جدول الأصناف) دون رأس الفاتورة
-  const handleInvoiceSearch = async (searchVal?: string, onlyDetails = false) => {
+  const handleInvoiceSearch = async (
+    searchVal?: string,
+    onlyDetails = false,
+  ) => {
     const num = searchVal ?? searchNumber;
 
     if (!num || num === lastLoadedInvoiceRef.current) return; // منع التكرار الفوري
@@ -866,16 +881,20 @@ const getNextInvoiceNumber = async (): Promise<number> => {
 
       if (!invList || invList.length === 0) {
         toast.error("الفاتورة غير موجودة");
+
         return;
       }
 
       const inv = invList.find((i) => String(i.inv_id) === String(num));
+
       if (!inv) {
         toast.error("الفاتورة غير موجودة");
+
         return;
       }
 
       const invoicePk = inv.id;
+
       setInvoicePk(invoicePk);
 
       // جلب التفاصيل وربطها بالـ id الأساسي
@@ -884,6 +903,7 @@ const getNextInvoiceNumber = async (): Promise<number> => {
       );
 
       let detailRows: any[] = [];
+
       if (Array.isArray(detailsRes)) {
         detailRows = detailsRes;
       } else if (Array.isArray(detailsRes.results)) {
@@ -1000,7 +1020,8 @@ const getNextInvoiceNumber = async (): Promise<number> => {
         if (inv.post_code) setPostCode(inv.post_code);
 
         // تحديث currentRecord للتنقل
-        const currentIndex = invoicesList.findIndex(v => v.id === inv.id);
+        const currentIndex = invoicesList.findIndex((v) => v.id === inv.id);
+
         if (currentIndex !== -1) {
           setCurrentRecord(currentIndex + 1);
         }
@@ -1018,28 +1039,32 @@ const getNextInvoiceNumber = async (): Promise<number> => {
     }
   };
 
-  const navigateToInvoice = (direction: 'first' | 'prev' | 'next' | 'last') => {
+  const navigateToInvoice = (direction: "first" | "prev" | "next" | "last") => {
     if (invoicesList.length === 0) return;
 
     let targetIndex = 0;
-    const currentIndex = invoicesList.findIndex(v => v.id === invoicePk);
+    const currentIndex = invoicesList.findIndex((v) => v.id === invoicePk);
 
     switch (direction) {
-      case 'first':
+      case "first":
         targetIndex = 0;
         break;
-      case 'prev':
+      case "prev":
         targetIndex = currentIndex > 0 ? currentIndex - 1 : 0;
         break;
-      case 'next':
-        targetIndex = currentIndex < invoicesList.length - 1 ? currentIndex + 1 : invoicesList.length - 1;
+      case "next":
+        targetIndex =
+          currentIndex < invoicesList.length - 1
+            ? currentIndex + 1
+            : invoicesList.length - 1;
         break;
-      case 'last':
+      case "last":
         targetIndex = invoicesList.length - 1;
         break;
     }
 
     const targetInvoice = invoicesList[targetIndex];
+
     if (targetInvoice) {
       router.push(`/forms/invoices/sale-return?inv_id=${targetInvoice.inv_id}`);
     }
@@ -1048,14 +1073,18 @@ const getNextInvoiceNumber = async (): Promise<number> => {
   // تحميل قائمة الفواتير للتنقل
   const loadInvoicesList = async () => {
     try {
-      const response = await fetchData<any[]>(`${API_BASE_URL}/invoices_list?trans_type=4`);
+      const response = await fetchData<any[]>(
+        `${API_BASE_URL}/invoices_list?trans_type=4`,
+      );
+
       if (Array.isArray(response)) {
         setInvoicesList(response);
         setTotalRecords(response.length);
-        
+
         // تحديث currentRecord إذا كان هناك فاتورة محملة
         if (invoicePk) {
-          const currentIndex = response.findIndex(v => v.id === invoicePk);
+          const currentIndex = response.findIndex((v) => v.id === invoicePk);
+
           if (currentIndex !== -1) {
             setCurrentRecord(currentIndex + 1);
           }
@@ -1110,45 +1139,45 @@ const getNextInvoiceNumber = async (): Promise<number> => {
   return (
     <>
       <InvoiceTotalsActions
+        autoTotalWages={0}
         commit={commitVal}
+        currentRecord={currentRecord}
         formattedDateTime={formattedDateTime}
         invoiceNumber={invoiceNumber}
         isEditing={isEditing}
+        manualTotalValue={0}
+        manualTotalWages={0}
+        navigateToInvoice={navigateToInvoice}
         netAmount={netAmount}
         previewInvoice={previewInvoice}
         print={printVal}
         saveInvoice={saveInvoice}
         setCommit={setCommitVal}
         setPrint={setPrintVal}
+        setSearchNumber={setSearchNumber}
         taxAmount={taxAmount}
         totalAmount={totalAmount}
         totalDiscount={totalDiscount}
+        totalRecords={totalRecords}
+        totalValueTax={totalValueTax}
+        totalWagesTax={totalWagesTax}
+        useManualTotals={false}
         onEdit={() => setIsEditing(true)}
+        onManualTotalChange={() => {}}
+        onUseManualTotalsChange={() => {}}
         invoiceType="sales_return"
         // إجماليات قابلة للإدخال
         autoTotalValue={0}
-        autoTotalWages={0}
-        manualTotalValue={0}
-        manualTotalWages={0}
-        useManualTotals={false}
-        onManualTotalChange={() => {}}
-        onUseManualTotalsChange={() => {}}
-        onResetManualTotals={() => {}}
-        // البحث برقم الفاتورة
-        searchNumber={searchNumber}
-        setSearchNumber={setSearchNumber}
-        onInvoiceSearch={() => handleInvoiceSearch()}
-        // إجماليات إضافية جديدة
-        totalGWeight={totalGWeight}
-        totalValueTax={totalValueTax}
-        totalWagesTax={totalWagesTax}
+        // أزرار التنقل
         totalTax={totalTax}
         // طريقة الدفع
         paymentMethod={paymentMethod}
-        // أزرار التنقل
-        currentRecord={currentRecord}
-        totalRecords={totalRecords}
-        navigateToInvoice={navigateToInvoice}
+        onInvoiceSearch={() => handleInvoiceSearch()}
+        // إجماليات إضافية جديدة
+        totalGWeight={totalGWeight}
+        onResetManualTotals={() => {}}
+        // البحث برقم الفاتورة
+        searchNumber={searchNumber}
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
           <InvoiceSelectors
@@ -1161,6 +1190,8 @@ const getNextInvoiceNumber = async (): Promise<number> => {
             goldPrice={goldPrice}
             gov={gov}
             handlingMethod={handlingMethod}
+            invoiceType="sale_return"
+            isEditing={isEditing}
             mobileMethod={mobileMethod}
             note={note}
             payType={payType}
@@ -1169,8 +1200,8 @@ const getNextInvoiceNumber = async (): Promise<number> => {
             postNo={postNo}
             referenceNumber={referenceNumber}
             saleInvoices={customerInvoices}
+            searchValue=""
             selectedCustomer={selectedCustomer}
-            onInvoiceSelect={(id) => handleInvoiceSearch(String(id), true)}
             setArea={setArea}
             setBuildNo={setBuildNo}
             setCity={setCity}
@@ -1185,40 +1216,53 @@ const getNextInvoiceNumber = async (): Promise<number> => {
             setPostCode={setPostCode}
             setPostNo={setPostNo}
             setReferenceNumber={setReferenceNumber}
+            setSearchValue={() => {}}
             setSelectedCustomer={setSelectedCustomer}
             setStreet={setStreet}
             setVatNumber={setVatNumber}
             street={street}
             vatNumber={vatNumber}
-            searchValue=""
-            setSearchValue={() => {}}
             onBarcodeSearch={() => {}}
-            isEditing={isEditing}
-            invoiceType="sale_return"
+            onInvoiceSelect={(id) => handleInvoiceSearch(String(id), true)}
+            // التاريخ والوقت
+            invoiceDate={invoiceDate}
+            setInvoiceDate={setInvoiceDate}
           />
-                      <InvoiceItemTable
-              categories={categories}
-              goldPrice={goldPrice}
-              homePurity={homePurity}
-              invoiceItems={invoiceItems}
-              isEditing={isEditing}
-              items={itemsForTable.map(item => ({
-                id: item.id,
-                item_code: item.item_code || "",
-                item_name: item.item_name || "",
-                item_price: typeof item.item_price === 'string' ? parseFloat(item.item_price) || 0 : item.item_price || 0,
-                k: item.k || "",
-                item_weight: typeof item.item_weight === 'string' ? parseFloat(item.item_weight) || 0 : item.item_weight || 0,
-                item_g_weight: typeof item.item_g_weight === 'string' ? parseFloat(item.item_g_weight) || 0 : item.item_g_weight || 0,
-                stones: item.stones || "",
-                purity: item.purity || "",
-                work_price: typeof item.work_price === 'string' ? parseFloat(item.work_price) || 0 : item.work_price || 0,
-                cat: item.cat || 0,
-              }))}
-              payType={payType}
-              setInvoiceItems={setInvoiceItems}
-              setItems={setItems}
-            />
+          <InvoiceItemTable
+            categories={categories}
+            goldPrice={goldPrice}
+            homePurity={homePurity}
+            invoiceItems={invoiceItems}
+            isEditing={isEditing}
+            items={itemsForTable.map((item) => ({
+              id: item.id,
+              item_code: item.item_code || "",
+              item_name: item.item_name || "",
+              item_price:
+                typeof item.item_price === "string"
+                  ? parseFloat(item.item_price) || 0
+                  : item.item_price || 0,
+              k: item.k || "",
+              item_weight:
+                typeof item.item_weight === "string"
+                  ? parseFloat(item.item_weight) || 0
+                  : item.item_weight || 0,
+              item_g_weight:
+                typeof item.item_g_weight === "string"
+                  ? parseFloat(item.item_g_weight) || 0
+                  : item.item_g_weight || 0,
+              stones: item.stones || "",
+              purity: item.purity || "",
+              work_price:
+                typeof item.work_price === "string"
+                  ? parseFloat(item.work_price) || 0
+                  : item.work_price || 0,
+              cat: item.cat || 0,
+            }))}
+            payType={payType}
+            setInvoiceItems={setInvoiceItems}
+            setItems={setItems}
+          />
         </div>
       </InvoiceTotalsActions>
     </>

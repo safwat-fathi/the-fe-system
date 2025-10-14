@@ -20,10 +20,14 @@ class CurrencyService extends HttpService<Currency> {
 
   async getAllCurrencies(): Promise<Currency[]> {
     try {
-      const response = await this.get<Currency[]>("currencies_list/", undefined, {
-        cache: "no-store",
-        next: { tags: ["currencies"] },
-      });
+      const response = await this.get<Currency[]>(
+        "currencies_list",
+        undefined,
+        {
+          cache: "no-store",
+          next: { tags: ["currencies"] },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {
@@ -40,7 +44,9 @@ class CurrencyService extends HttpService<Currency> {
     }
   }
 
-  async createCurrency(currency: Omit<Currency, 'id'>): Promise<Currency | null> {
+  async createCurrency(
+    currency: Omit<Currency, "id">,
+  ): Promise<Currency | null> {
     try {
       const response = await this.post<Currency>(
         "api_create_currency",
@@ -50,9 +56,11 @@ class CurrencyService extends HttpService<Currency> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as Currency; 
+
+      if (response.success) {
+        return response.data as Currency;
       }
+
       return null;
     } catch (error) {
       console.error("Error creating currency:", error);
@@ -60,7 +68,10 @@ class CurrencyService extends HttpService<Currency> {
     }
   }
 
-  async updateCurrency(id: number, currency: Partial<Currency>): Promise<Currency | null> {
+  async updateCurrency(
+    id: number,
+    currency: Partial<Currency>,
+  ): Promise<Currency | null> {
     try {
       const response = await this.put<Currency>(
         `api_update_currency/${id}`,
@@ -70,9 +81,11 @@ class CurrencyService extends HttpService<Currency> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as Currency; 
+
+      if (response.success) {
+        return response.data as Currency;
       }
+
       return null;
     } catch (error) {
       console.error("Error updating currency:", error);
@@ -89,6 +102,7 @@ class CurrencyService extends HttpService<Currency> {
           cache: "no-store",
         },
       );
+
       return response.success;
     } catch (error) {
       console.error("Error deleting currency:", error);
@@ -99,9 +113,11 @@ class CurrencyService extends HttpService<Currency> {
   async getCurrencyById(id: number): Promise<Currency | null> {
     try {
       const currencies = await this.getAllCurrencies();
-      return currencies.find(currency => currency.id === id) || null;
+
+      return currencies.find((currency) => currency.id === id) || null;
     } catch (error) {
       console.error("Error fetching currency by ID:", error);
+
       return null;
     }
   }

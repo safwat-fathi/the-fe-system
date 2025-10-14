@@ -1,7 +1,9 @@
 import { Metadata } from "next";
+
+import CurrenciesClient from "./components/CurrenciesClient";
+
 import genericService from "@/services/api/generic.service";
 import { getBranchParams } from "@/app/actions/branch-params";
-import CurrenciesClient from "./components/CurrenciesClient";
 
 export const metadata: Metadata = {
   title: "العملات - NafeesWeb",
@@ -30,7 +32,11 @@ export default async function CurrenciesPage() {
   let error = null;
 
   try {
-    const response = await genericService.getTableData("currencies_list", branchParams);
+    const response = await genericService.getTableData(
+      "currencies_list",
+      branchParams,
+    );
+
     if (response.success) {
       currenciesData = response.data || [];
     } else {
@@ -44,7 +50,7 @@ export default async function CurrenciesPage() {
   return (
     <div className="responsive-container font-cairo">
       <h1 className="responsive-text-xl font-bold mb-6">العملات</h1>
-      
+
       {/* عرض حالة الطلب */}
       {error && (
         <div className="mb-4">
@@ -55,10 +61,7 @@ export default async function CurrenciesPage() {
       )}
 
       {/* Client Component للتفاعل */}
-      <CurrenciesClient 
-        initialData={currenciesData} 
-        error={error}
-      />
+      <CurrenciesClient error={error} initialData={currenciesData} />
     </div>
   );
 }

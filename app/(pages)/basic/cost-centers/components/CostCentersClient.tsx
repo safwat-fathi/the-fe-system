@@ -14,10 +14,20 @@ import {
   Pagination,
   Select,
   SelectItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
 } from "@heroui/react";
-import { HeroModal as Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/Modal";
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+
 import costCenterService from "@/services/api/cost-center.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
 
@@ -36,8 +46,15 @@ interface CostCenter {
   parent: number | null;
 }
 
+interface Account {
+  id: number;
+  acc_name: string;
+  acc_name_e?: string;
+}
+
 interface CostCentersClientProps {
   initialData: CostCenter[];
+  initialAccounts: Account[];
   error: string | null;
 }
 
@@ -46,18 +63,37 @@ const columns = [
   { name: "اسم مركز التكلفة", uid: "cost_name" },
   { name: "الاسم بالإنجليزي", uid: "cost_name_e" },
   { name: "نوع المركز", uid: "cost_type" },
+  { name: "الحساب المرتبط", uid: "acc" },
+  { name: "المركز الأب", uid: "parent" },
   { name: "الحالة", uid: "cost_status" },
   { name: "", uid: "actions" },
 ];
 
-export default function CostCentersClient({ initialData, error }: CostCentersClientProps) {
+// Helper function to get cost center type label
+const getCostCenterTypeLabel = (type: number): string => {
+  const types: Record<number, string> = {
+    1: "مركز تكلفة رئيسي",
+    2: "مركز تكلفة فرعي",
+    3: "مركز تكلفة نشاط",
+  };
+
+  return types[type] || `نوع ${type}`;
+};
+
+export default function CostCentersClient({
+  initialData,
+  initialAccounts,
+  error,
+}: CostCentersClientProps) {
   const [costCenters, setCostCenters] = useState<CostCenter[]>(initialData);
+  const [accounts] = useState<Account[]>(initialAccounts);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
-  const [currentCostCenter, setCurrentCostCenter] = useState<Partial<CostCenter>>({});
-  const [accounts, setAccounts] = useState<any[]>([]);
+  const [currentCostCenter, setCurrentCostCenter] = useState<
+    Partial<CostCenter>
+  >({});
 
   const rowsPerPage = 10;
 
@@ -65,6 +101,7 @@ export default function CostCentersClient({ initialData, error }: CostCentersCli
   const loadCostCenters = async () => {
     try {
       const data = await costCenterService.getAllCostCenters();
+
       setCostCenters(data);
     } catch (error) {
       toast.error("فشل في جلب مراكز التكلفة");
@@ -72,45 +109,38 @@ export default function CostCentersClient({ initialData, error }: CostCentersCli
     }
   };
 
-  const loadAccounts = async () => {
-    try {
-      const data = await costCenterService.getAccounts();
-      setAccounts(data);
-    } catch (error) {
-      toast.error("خطأ في تحميل الحسابات");
-      setAccounts([]);
-    }
-  };
-
-  // تحميل البيانات عند فتح المودال
-  React.useEffect(() => {
-    if (isModalOpen) {
-      loadAccounts();
-    }
-  }, [isModalOpen]);
-
   const handleSave = async () => {
-    const previousCostCenters = [...costCenters];
-    
-    try {
-      let result: CostCenter | null = null;
+    setCostCenters((prevCenters) => {
+      const previousCostCenters = [...prevCenters];
 
       // Optimistic update for create
       if (modalMode === "add") {
         const optimisticId = Date.now();
-        const optimisticCostCenter = { 
-          ...currentCostCenter, 
+        const optimisticCostCenter = {
+          ...currentCostCenter,
           id: optimisticId,
           cr_date: new Date().toISOString(),
-          cost_status: 1 
+          cost_status: 1,
         } as CostCenter;
-        setCostCenters([...costCenters, optimisticCostCenter]);
+
+        return [...prevCenters, optimisticCostCenter];
       }
 
+      return prevCenters;
+    });
+
+    try {
+      let result: CostCenter | null = null;
+
       if (modalMode === "edit" && currentCostCenter.id) {
-        result = await costCenterService.updateCostCenter(currentCostCenter.id, currentCostCenter);
+        result = await costCenterService.updateCostCenter(
+          currentCostCenter.id,
+          currentCostCenter,
+        );
       } else {
-        result = await costCenterService.createCostCenter(currentCostCenter as Omit<CostCenter, 'id'>);
+        result = await costCenterService.createCostCenter(
+          currentCostCenter as Omit<CostCenter, "id">,
+        );
       }
 
       if (result) {
@@ -119,64 +149,83 @@ export default function CostCentersClient({ initialData, error }: CostCentersCli
             ? "✅ تم تعديل مركز التكلفة بنجاح"
             : "✅ تم إضافة مركز التكلفة بنجاح",
         );
-        
+
         // Revalidate cache
-        await revalidateTableData('cost_centers_list');
-        
+        await revalidateTableData("cost_centers_list");
+
         setIsModalOpen(false);
         loadCostCenters();
       } else {
-        // Rollback on failure
-        setCostCenters(previousCostCenters);
         toast.error("❌ فشل في العملية");
+        loadCostCenters();
       }
     } catch (error) {
-      // Rollback on error
-      setCostCenters(previousCostCenters);
       toast.error("❌ حدث خطأ أثناء حفظ مركز التكلفة");
+      loadCostCenters();
     }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف مركز التكلفة هذا؟")) return;
-    
+
     // Optimistic delete
-    const previousCostCenters = [...costCenters];
-    setCostCenters(costCenters.filter(cc => cc.id !== id));
-    
+    setCostCenters((prevCenters) => prevCenters.filter((cc) => cc.id !== id));
+
     try {
       const result = await costCenterService.deleteCostCenter(id);
 
       if (result) {
         toast.success("✅ تم حذف مركز التكلفة بنجاح");
-        
+
         // Revalidate cache
-        await revalidateTableData('cost_centers_list');
-        
+        await revalidateTableData("cost_centers_list");
+
         loadCostCenters();
       } else {
-        // Rollback on failure
-        setCostCenters(previousCostCenters);
         toast.error("❌ فشل في حذف مركز التكلفة");
+        loadCostCenters();
       }
     } catch (error) {
-      // Rollback on error
-      setCostCenters(previousCostCenters);
       toast.error("❌ حدث خطأ أثناء الحذف");
+      loadCostCenters();
     }
   };
 
   const filtered = useMemo(() => {
-    return costCenters.filter((cc) =>
-      cc.cost_name?.toLowerCase().includes(search.toLowerCase()) ||
-      cc.cost_name_e?.toLowerCase().includes(search.toLowerCase()),
+    return costCenters.filter(
+      (cc) =>
+        cc.cost_name?.toLowerCase().includes(search.toLowerCase()) ||
+        cc.cost_name_e?.toLowerCase().includes(search.toLowerCase()),
     );
   }, [costCenters, search]);
 
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
+
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
+
+  // دالة مساعدة للحصول على اسم الحساب - في useMemo بدلاً من useCallback
+  const accountsMap = useMemo(() => {
+    return new Map(accounts.map((acc) => [acc.id, acc.acc_name]));
+  }, [accounts]);
+
+  // دالة مساعدة للحصول على اسم المركز الأب - في useMemo بدلاً من useCallback
+  const costCentersMap = useMemo(() => {
+    return new Map(costCenters.map((cc) => [cc.id, cc.cost_name]));
+  }, [costCenters]);
+
+  const getAccountName = (accId: number | null): string => {
+    if (!accId) return "-";
+
+    return accountsMap.get(accId) || `${accId}`;
+  };
+
+  const getParentName = (parentId: number | null): string => {
+    if (!parentId) return "-";
+
+    return costCentersMap.get(parentId) || `${parentId}`;
+  };
 
   const openModal = (
     mode: "add" | "edit" | "view",
@@ -209,9 +258,9 @@ export default function CostCentersClient({ initialData, error }: CostCentersCli
       </Button>
       <Button
         isIconOnly
+        color="danger"
         size="sm"
         variant="light"
-        color="danger"
         onPress={() => handleDelete(costCenter.id)}
       >
         <TrashIcon className="h-4 w-4" />
@@ -223,7 +272,7 @@ export default function CostCentersClient({ initialData, error }: CostCentersCli
     return (
       <div className="text-center py-8">
         <p className="text-red-500 mb-4">لا يمكن تحميل البيانات: {error}</p>
-        <Button onClick={loadCostCenters} color="primary">
+        <Button color="primary" onClick={loadCostCenters}>
           إعادة المحاولة
         </Button>
       </div>
@@ -256,13 +305,13 @@ export default function CostCentersClient({ initialData, error }: CostCentersCli
               <TableCell>{costCenter.id}</TableCell>
               <TableCell>{costCenter.cost_name}</TableCell>
               <TableCell>{costCenter.cost_name_e}</TableCell>
-              <TableCell>{costCenter.cost_type}</TableCell>
+              <TableCell>{getCostCenterTypeLabel(costCenter.cost_type)}</TableCell>
+              <TableCell>{getAccountName(costCenter.acc)}</TableCell>
+              <TableCell>{getParentName(costCenter.parent)}</TableCell>
               <TableCell>
                 <Checkbox isReadOnly isSelected={!!costCenter.cost_status} />
               </TableCell>
-              <TableCell>
-                {renderActions(costCenter)}
-              </TableCell>
+              <TableCell>{renderActions(costCenter)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -281,8 +330,11 @@ export default function CostCentersClient({ initialData, error }: CostCentersCli
       </div>
 
       <Modal
+        isDismissable={false}
         isOpen={isModalOpen}
         scrollBehavior="inside"
+        shouldBlockScroll={false}
+        size="2xl"
         onClose={() => setIsModalOpen(false)}
       >
         <ModalContent className="font-cairo">
@@ -298,7 +350,10 @@ export default function CostCentersClient({ initialData, error }: CostCentersCli
               label="اسم مركز التكلفة"
               value={currentCostCenter.cost_name || ""}
               onChange={(e) =>
-                setCurrentCostCenter({ ...currentCostCenter, cost_name: e.target.value })
+                setCurrentCostCenter({
+                  ...currentCostCenter,
+                  cost_name: e.target.value,
+                })
               }
             />
             <Input
@@ -306,61 +361,121 @@ export default function CostCentersClient({ initialData, error }: CostCentersCli
               label="الاسم بالإنجليزي"
               value={currentCostCenter.cost_name_e || ""}
               onChange={(e) =>
-                setCurrentCostCenter({ ...currentCostCenter, cost_name_e: e.target.value })
+                setCurrentCostCenter({
+                  ...currentCostCenter,
+                  cost_name_e: e.target.value,
+                })
               }
             />
             <Select
               isDisabled={isViewMode}
               label="نوع مركز التكلفة"
-              selectedKeys={currentCostCenter.cost_type ? [currentCostCenter.cost_type.toString()] : []}
+              placeholder="اختر نوع المركز"
+              popoverProps={{ shouldBlockScroll: false }}
+              selectedKeys={
+                currentCostCenter.cost_type
+                  ? [currentCostCenter.cost_type.toString()]
+                  : []
+              }
               onSelectionChange={(keys) => {
                 const selectedKey = Array.from(keys)[0];
-                setCurrentCostCenter({ 
-                  ...currentCostCenter, 
-                  cost_type: selectedKey ? parseInt(selectedKey as string) : 1 
+
+                setCurrentCostCenter({
+                  ...currentCostCenter,
+                  cost_type: selectedKey ? parseInt(selectedKey as string) : 1,
                 });
               }}
             >
-              <SelectItem key="1" textValue="نوع 1">
-                نوع 1
+              <SelectItem key="1" textValue="مركز تكلفة رئيسي">
+                مركز تكلفة رئيسي
               </SelectItem>
-              <SelectItem key="2" textValue="نوع 2">
-                نوع 2
+              <SelectItem key="2" textValue="مركز تكلفة فرعي">
+                مركز تكلفة فرعي
               </SelectItem>
-              <SelectItem key="3" textValue="نوع 3">
-                نوع 3
+              <SelectItem key="3" textValue="مركز تكلفة نشاط">
+                مركز تكلفة نشاط
               </SelectItem>
             </Select>
-            <Input
+            <Select
               isDisabled={isViewMode}
-              label="الحساب المرتبط (رقم الحساب)"
-              type="number"
-              value={currentCostCenter.acc?.toString() || ""}
-              onChange={(e) =>
-                setCurrentCostCenter({ 
-                  ...currentCostCenter, 
-                  acc: e.target.value ? parseInt(e.target.value) : null 
-                })
+              label="الحساب المرتبط"
+              placeholder={
+                accounts.length > 0
+                  ? "اختر الحساب (اختياري)"
+                  : "لا توجد حسابات متاحة"
               }
-            />
-            <Input
+              popoverProps={{ shouldBlockScroll: false }}
+              selectedKeys={
+                currentCostCenter.acc
+                  ? [currentCostCenter.acc.toString()]
+                  : []
+              }
+              onSelectionChange={(keys) => {
+                const selectedKey = Array.from(keys)[0];
+
+                setCurrentCostCenter({
+                  ...currentCostCenter,
+                  acc: selectedKey ? parseInt(selectedKey as string) : null,
+                });
+              }}
+            >
+              {accounts.length > 0 ? (
+                accounts.map((account) => (
+                  <SelectItem
+                    key={account.id.toString()}
+                    textValue={`${account.acc_name} - ${account.id}`}
+                  >
+                    {account.acc_name} - {account.id}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem key="no-data" textValue="لا توجد حسابات">
+                  لا توجد حسابات
+                </SelectItem>
+              )}
+            </Select>
+            <Select
               isDisabled={isViewMode}
-              label="المركز الأب (رقم المركز)"
-              type="number"
-              value={currentCostCenter.parent?.toString() || ""}
-              onChange={(e) =>
-                setCurrentCostCenter({ 
-                  ...currentCostCenter, 
-                  parent: e.target.value ? parseInt(e.target.value) : null 
-                })
+              label="المركز الأب"
+              placeholder="اختر المركز الأب (اختياري)"
+              popoverProps={{ shouldBlockScroll: false }}
+              selectedKeys={
+                currentCostCenter.parent
+                  ? [currentCostCenter.parent.toString()]
+                  : []
               }
-            />
+              onSelectionChange={(keys) => {
+                const selectedKey = Array.from(keys)[0];
+
+                setCurrentCostCenter({
+                  ...currentCostCenter,
+                  parent: selectedKey ? parseInt(selectedKey as string) : null,
+                });
+              }}
+            >
+              {costCenters
+                .filter(
+                  (cc) =>
+                    !currentCostCenter.id || cc.id !== currentCostCenter.id,
+                )
+                .map((cc) => (
+                  <SelectItem
+                    key={cc.id.toString()}
+                    textValue={`${cc.cost_name} - ${cc.id}`}
+                  >
+                    {cc.cost_name} - {cc.id}
+                  </SelectItem>
+                ))}
+            </Select>
             <div className="col-span-2 flex gap-6 items-center">
               <Checkbox
                 isDisabled={isViewMode}
                 isSelected={!!currentCostCenter.cost_status}
                 onValueChange={(val) =>
-                  setCurrentCostCenter({ ...currentCostCenter, cost_status: val ? 1 : 0 })
+                  setCurrentCostCenter({
+                    ...currentCostCenter,
+                    cost_status: val ? 1 : 0,
+                  })
                 }
               >
                 مفعل

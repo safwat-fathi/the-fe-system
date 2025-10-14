@@ -1,6 +1,8 @@
 import { Metadata } from "next";
-import accountService from "@/services/api/account.service";
+
 import AccountsClient from "./components/AccountsClient";
+
+import accountService from "@/services/api/account.service";
 
 export const metadata: Metadata = {
   title: "دليل الحسابات - NafeesWeb",
@@ -43,8 +45,8 @@ export default async function AccountsPage() {
       <h1 className="responsive-text-xl font-bold mb-6">دليل الحسابات</h1>
 
       {/* Client Component للتفاعل */}
-      <AccountsClient 
-        initialAccounts={accountsData} 
+      <AccountsClient
+        initialAccounts={accountsData}
         initialCurrencies={currenciesData}
       />
     </div>

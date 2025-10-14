@@ -7,7 +7,8 @@ export interface ZatcaQRInput {
 }
 
 function encodeTLV(tag: number, value: string): Buffer {
-  const valBuf = Buffer.from(value, 'utf8');
+  const valBuf = Buffer.from(value, "utf8");
+
   return Buffer.concat([
     Buffer.from([tag]) as any,
     Buffer.from([valBuf.length]) as any,
@@ -24,5 +25,6 @@ export function generateZatcaQR(data: ZatcaQRInput): string {
     encodeTLV(4, String(totalWithVat)),
     encodeTLV(5, String(vatTotal)),
   ];
-  return Buffer.concat(sections as any).toString('base64');
+
+  return Buffer.concat(sections as any).toString("base64");
 }

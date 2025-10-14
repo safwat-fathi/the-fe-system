@@ -12,8 +12,8 @@ export enum InvoiceTypes {
 }
 
 export enum PaymentTypes {
-	CASH = 1,
-	CREDIT = 2,
+  CASH = 1,
+  CREDIT = 2,
 }
 
 export interface Invoice {

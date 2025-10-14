@@ -3,8 +3,8 @@ let toastContainer: HTMLDivElement | null = null;
 
 function createToastContainer() {
   if (toastContainer) return toastContainer;
-  
-  toastContainer = document.createElement('div');
+
+  toastContainer = document.createElement("div");
   toastContainer.style.cssText = `
     position: fixed;
     top: 20px;
@@ -13,17 +13,28 @@ function createToastContainer() {
     font-family: 'Cairo', sans-serif;
   `;
   document.body.appendChild(toastContainer);
+
   return toastContainer;
 }
 
-function showToast(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') {
+function showToast(
+  message: string,
+  type: "success" | "error" | "warning" | "info" = "info",
+) {
   const container = createToastContainer();
-  
-  const toast = document.createElement('div');
+
+  const toast = document.createElement("div");
+
   toast.style.cssText = `
-    background: ${type === 'success' ? '#10b981' : 
-                 type === 'error' ? '#ef4444' : 
-                 type === 'warning' ? '#f59e0b' : '#3b82f6'};
+    background: ${
+      type === "success"
+        ? "#10b981"
+        : type === "error"
+          ? "#ef4444"
+          : type === "warning"
+            ? "#f59e0b"
+            : "#3b82f6"
+    };
     color: white;
     padding: 12px 20px;
     border-radius: 8px;
@@ -34,18 +45,18 @@ function showToast(message: string, type: 'success' | 'error' | 'warning' | 'inf
     max-width: 300px;
     word-wrap: break-word;
   `;
-  
+
   toast.textContent = message;
   container.appendChild(toast);
-  
+
   // إظهار Toast
   setTimeout(() => {
-    toast.style.transform = 'translateX(0)';
+    toast.style.transform = "translateX(0)";
   }, 100);
-  
+
   // إخفاء Toast بعد 3 ثوان
   setTimeout(() => {
-    toast.style.transform = 'translateX(100%)';
+    toast.style.transform = "translateX(100%)";
     setTimeout(() => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
@@ -55,8 +66,8 @@ function showToast(message: string, type: 'success' | 'error' | 'warning' | 'inf
 }
 
 export const toast = {
-  success: (message: string) => showToast(message, 'success'),
-  error: (message: string) => showToast(message, 'error'),
-  warning: (message: string) => showToast(message, 'warning'),
-  info: (message: string) => showToast(message, 'info'),
-}; 
+  success: (message: string) => showToast(message, "success"),
+  error: (message: string) => showToast(message, "error"),
+  warning: (message: string) => showToast(message, "warning"),
+  info: (message: string) => showToast(message, "info"),
+};

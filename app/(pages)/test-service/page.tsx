@@ -1,11 +1,13 @@
 import { Metadata } from "next";
+
+import TokenDisplay from "./components/TokenDisplay";
+import DynamicDataTable from "./components/DynamicDataTable";
+import TableSelector from "./components/TableSelector";
+
 import genericService from "@/services/api/generic.service";
 import { getCookieAction } from "@/app/actions/cookie-store";
 import { getBranchParams } from "@/app/actions/branch-params";
 import { STORAGE_KEYS } from "@/constants";
-import TokenDisplay from "./components/TokenDisplay";
-import DynamicDataTable from "./components/DynamicDataTable";
-import TableSelector from "./components/TableSelector";
 
 export const metadata: Metadata = {
   title: "اختبار HttpService - NafeesWeb",
@@ -36,6 +38,7 @@ export default async function TestServicePage({
 
   try {
     const response = await genericService.getTableData(tableName, branchParams);
+
     tableData = response.data || [];
     responseDebug = response;
 
@@ -63,8 +66,12 @@ export default async function TestServicePage({
       <div className="mb-4 p-4 bg-blue-50 rounded-lg">
         <h3 className="font-bold mb-2">📊 معاملات الطلب (Request Params):</h3>
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div><strong>Branch (com):</strong> {branchParams.com}</div>
-          <div><strong>Year:</strong> {branchParams.year}</div>
+          <div>
+            <strong>Branch (com):</strong> {branchParams.com}
+          </div>
+          <div>
+            <strong>Year:</strong> {branchParams.year}
+          </div>
         </div>
       </div>
 
@@ -82,27 +89,49 @@ export default async function TestServicePage({
             <strong>نجح!</strong> تم جلب {tableData.length} سجل
           </div>
         )}
-        
+
         {/* Debug info */}
         {responseDebug && (
           <div className="mt-4 p-4 bg-gray-100 rounded-lg">
             <h3 className="font-bold mb-2">🔍 Debug Info:</h3>
             <div className="space-y-2 text-sm">
-              <div><strong>Success:</strong> {responseDebug.success ? "✅ نعم" : "❌ لا"}</div>
-              <div><strong>Message:</strong> {responseDebug.message || "لا توجد رسالة"}</div>
-              <div><strong>Data Count:</strong> {responseDebug.data?.length || 0}</div>
-              <div><strong>Data Type:</strong> {Array.isArray(responseDebug.data) ? "Array" : typeof responseDebug.data}</div>
-              <div><strong>API Base URL:</strong> {process.env.NEXT_PUBLIC_API_BASE_URL || "غير محدد"}</div>
-              <div><strong>Table Name:</strong> {tableName}</div>
+              <div>
+                <strong>Success:</strong>{" "}
+                {responseDebug.success ? "✅ نعم" : "❌ لا"}
+              </div>
+              <div>
+                <strong>Message:</strong>{" "}
+                {responseDebug.message || "لا توجد رسالة"}
+              </div>
+              <div>
+                <strong>Data Count:</strong> {responseDebug.data?.length || 0}
+              </div>
+              <div>
+                <strong>Data Type:</strong>{" "}
+                {Array.isArray(responseDebug.data)
+                  ? "Array"
+                  : typeof responseDebug.data}
+              </div>
+              <div>
+                <strong>API Base URL:</strong>{" "}
+                {process.env.NEXT_PUBLIC_API_BASE_URL || "غير محدد"}
+              </div>
+              <div>
+                <strong>Table Name:</strong> {tableName}
+              </div>
             </div>
             <details className="mt-2">
-              <summary className="cursor-pointer font-bold">عرض الاستجابة الكاملة</summary>
+              <summary className="cursor-pointer font-bold">
+                عرض الاستجابة الكاملة
+              </summary>
               <pre className="text-xs overflow-x-auto mt-2 bg-white p-2 rounded">
                 {JSON.stringify(responseDebug, null, 2)}
               </pre>
             </details>
             <details className="mt-2">
-              <summary className="cursor-pointer font-bold">عرض المعاملات المرسلة</summary>
+              <summary className="cursor-pointer font-bold">
+                عرض المعاملات المرسلة
+              </summary>
               <pre className="text-xs overflow-x-auto mt-2 bg-white p-2 rounded">
                 {JSON.stringify(branchParams, null, 2)}
               </pre>
@@ -118,13 +147,22 @@ export default async function TestServicePage({
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <h3 className="font-bold mb-2">📋 ملاحظات:</h3>
         <ul className="list-disc list-inside space-y-1 text-sm">
-          <li>تم استخدام <code className="bg-gray-200 px-1 rounded">HttpService</code> الجديد بدلاً من <code className="bg-gray-200 px-1 rounded">fetchData</code> القديم</li>
+          <li>
+            تم استخدام{" "}
+            <code className="bg-gray-200 px-1 rounded">HttpService</code> الجديد
+            بدلاً من <code className="bg-gray-200 px-1 rounded">fetchData</code>{" "}
+            القديم
+          </li>
           <li>الـ Tokens مخزنة في Cookies وآمنة (httpOnly)</li>
           <li>البيانات يتم جلبها من server-side component</li>
-          <li>ServiceResponse يوفر <code className="bg-gray-200 px-1 rounded">success</code> و <code className="bg-gray-200 px-1 rounded">data</code> و <code className="bg-gray-200 px-1 rounded">message</code></li>
+          <li>
+            ServiceResponse يوفر{" "}
+            <code className="bg-gray-200 px-1 rounded">success</code> و{" "}
+            <code className="bg-gray-200 px-1 rounded">data</code> و{" "}
+            <code className="bg-gray-200 px-1 rounded">message</code>
+          </li>
         </ul>
       </div>
     </div>
   );
 }
-

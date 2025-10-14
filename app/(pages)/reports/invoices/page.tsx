@@ -1,11 +1,12 @@
 import InvoiceClient from "./components/InvoiceClient";
+import InvoicesHeader from "./components/InvoicesHeader";
+
 import invoiceService, {
   GetAllInvoicesParams,
 } from "@/services/api/invoice.service";
 // import { Suspense } from "react";
 // import AppLoading from "@/components/AppLoading";
 import AppPagination from "@/components/AppPagination";
-import InvoicesHeader from "./components/InvoicesHeader";
 import { getBranchParams } from "@/app/actions/branch-params";
 
 export const revalidate = 3600;
@@ -16,11 +17,12 @@ export default async function InvoicesPage({
   searchParams: Promise<GetAllInvoicesParams>;
 }) {
   const queryParams = await searchParams;
+
   console.log("🚀 ~ :39 ~ InvoicesPage ~ queryParams:", queryParams);
 
   // جلب معاملات الفرع والسنة
   const branchParams = await getBranchParams();
-  
+
   // دمج معاملات الفرع مع معاملات البحث
   const invoiceParams: GetAllInvoicesParams = {
     ...queryParams,
@@ -31,6 +33,7 @@ export default async function InvoicesPage({
   console.log("🚀 ~ InvoicesPage ~ invoiceParams:", invoiceParams);
 
   const invoices = await invoiceService.getAllInvoices(invoiceParams);
+
   console.log("🚀 ~ :42 ~ InvoicesPage ~ invoices count:", invoices?.count);
 
   const count = invoices?.count || 0;
@@ -42,7 +45,7 @@ export default async function InvoicesPage({
       <InvoicesHeader />
 
       {/* <Suspense key={JSON.stringify(queryParams)} fallback={<AppLoading />}> */}
-      <InvoiceClient totalInvoices={count} invoices={invoices?.results ?? []} />
+      <InvoiceClient invoices={invoices?.results ?? []} totalInvoices={count} />
       {/* </Suspense> */}
 
       <AppPagination total={totalPages} />

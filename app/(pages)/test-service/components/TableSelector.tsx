@@ -32,6 +32,7 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
 
   const handleApply = () => {
     const tableToUse = useCustom && customTable ? customTable : selectedTable;
+
     if (tableToUse) {
       router.push(`/test-service?table=${encodeURIComponent(tableToUse)}`);
     }
@@ -46,9 +47,7 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
 
   return (
     <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">
-        🔍 اختيار الجدول
-      </h2>
+      <h2 className="text-xl font-bold mb-4 text-gray-800">🔍 اختيار الجدول</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Dropdown for common tables */}
@@ -57,11 +56,11 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
             اختر من القائمة:
           </label>
           <Select
+            aria-label="اختر جدول من القائمة"
+            className="max-w-full"
+            placeholder="اختر جدول"
             selectedKeys={[selectedTable]}
             onChange={(e) => handleSelectChange(e.target.value)}
-            placeholder="اختر جدول"
-            className="max-w-full"
-            aria-label="اختر جدول من القائمة"
           >
             {COMMON_TABLES.map((table) => (
               <SelectItem key={table.value} value={table.value}>
@@ -77,14 +76,14 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
             أو اكتب اسم الجدول:
           </label>
           <Input
+            aria-label="اكتب اسم الجدول يدوياً"
+            className="max-w-full"
+            placeholder="مثال: home_list"
             value={customTable}
             onChange={(e) => {
               setCustomTable(e.target.value);
               setUseCustom(true);
             }}
-            placeholder="مثال: home_list"
-            className="max-w-full"
-            aria-label="اكتب اسم الجدول يدوياً"
           />
         </div>
       </div>
@@ -93,10 +92,10 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
       {useCustom && customTable && (
         <div className="flex items-center justify-between">
           <Button
+            className="font-bold px-8"
             color="primary"
             size="lg"
             onClick={handleApply}
-            className="font-bold px-8"
           >
             🔄 تحديث الجدول
           </Button>
@@ -112,7 +111,9 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
       {(!useCustom || !customTable) && (
         <div className="text-sm text-gray-600 text-center bg-white/50 p-3 rounded-lg">
           📋 الجدول الحالي:{" "}
-          <span className="font-bold text-blue-600 text-base">{currentTable}</span>
+          <span className="font-bold text-blue-600 text-base">
+            {currentTable}
+          </span>
           <span className="block text-xs mt-1 text-gray-500">
             * يتم التحديث تلقائياً عند اختيار جدول من القائمة
           </span>
@@ -123,4 +124,3 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
 };
 
 export default TableSelector;
-

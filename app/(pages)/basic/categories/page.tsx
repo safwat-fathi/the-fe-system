@@ -1,7 +1,9 @@
 import { Metadata } from "next";
+
+import CategoriesClient from "./components/CategoriesClient";
+
 import categoryService from "@/services/api/category.service";
 import helperService from "@/services/api/helper.service";
-import CategoriesClient from "./components/CategoriesClient";
 
 export const metadata: Metadata = {
   title: "الفئات - NafeesWeb",
@@ -19,9 +21,9 @@ export default async function CategoriesPage() {
     <div className="responsive-container font-cairo">
       <h1 className="responsive-text-xl font-bold mb-6">الفئات</h1>
 
-      <CategoriesClient 
-        initialCategories={categoriesData as any}
+      <CategoriesClient
         initialBoxes={boxesData as any}
+        initialCategories={categoriesData as any}
       />
     </div>
   );

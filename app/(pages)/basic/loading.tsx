@@ -13,7 +13,7 @@ export default function BasicDataLoading() {
         <Skeleton className="rounded-lg">
           <div className="h-12 w-full bg-gray-200" />
         </Skeleton>
-        
+
         <Skeleton className="rounded-lg">
           <div className="h-96 w-full bg-gray-200" />
         </Skeleton>
@@ -21,4 +21,3 @@ export default function BasicDataLoading() {
     </div>
   );
 }
-

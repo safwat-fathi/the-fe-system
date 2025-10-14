@@ -41,7 +41,7 @@ class InvoiceService extends HttpService<Invoice> {
       const cacheTags = this.generateInvoiceCacheTags(params);
 
       const response = await this.get<IPaginatedResponse<Invoice>>(
-        "invoices_list/",
+        "invoices_list",
         queryParams,
         {
           cache: "force-cache", // Disable cache temporarily
@@ -148,16 +148,25 @@ class InvoiceService extends HttpService<Invoice> {
       };
     } catch (error) {
       console.error("Error fetching invoice by ID:", error);
+
       return null;
     }
   }
 
-  async calculateMonthlySales(invoices: Invoice[]): Promise<number[]> {
+  async calculateMonthlySales(invoices: Invoice[] | undefined | null): Promise<number[]> {
     const monthlySales: number[] = new Array(12).fill(0);
 
+    // التحقق من وجود invoices قبل استخدام forEach
+    if (!invoices || !Array.isArray(invoices)) {
+      return monthlySales;
+    }
+
     invoices.forEach((inv) => {
+      if (!inv || !inv.inv_date) return;
+      
       const date = new Date(inv.inv_date);
       const month = date.getMonth();
+
       monthlySales[month] += parseFloat(inv.inv_amt ?? inv.inv_net ?? "0");
     });
 

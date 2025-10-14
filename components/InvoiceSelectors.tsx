@@ -67,6 +67,9 @@ interface Props {
   onBarcodeSearch: () => void;
   isEditing: boolean;
   invoiceType?: "purchase" | "sale" | "purchase_return" | "sale_return";
+  // التاريخ والوقت
+  invoiceDate?: string;
+  setInvoiceDate?: (val: string) => void;
 }
 
 export default function InvoiceSelectors({
@@ -114,6 +117,9 @@ export default function InvoiceSelectors({
   onBarcodeSearch,
   isEditing,
   invoiceType = "sale",
+  // التاريخ والوقت
+  invoiceDate,
+  setInvoiceDate,
 }: Props) {
   return (
     <div className="mb-4">
@@ -124,6 +130,25 @@ export default function InvoiceSelectors({
             📋 معلومات الفاتورة
           </h3>
           <div className="grid grid-cols-1 gap-1 text-xs">
+            {/* تاريخ ووقت الفاتورة */}
+            {invoiceDate !== undefined && setInvoiceDate && (
+              <div>
+                <label
+                  className="block mb-1 font-medium text-gray-700 text-xs"
+                  htmlFor="invoice-date"
+                >
+                  تاريخ ووقت الفاتورة:
+                </label>
+                <input
+                  id="invoice-date"
+                  type="datetime-local"
+                  className="w-full h-[32px] border px-2 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  value={invoiceDate ? new Date(invoiceDate).toISOString().slice(0, 16) : ""}
+                  onChange={(e) => setInvoiceDate(e.target.value)}
+                />
+              </div>
+            )}
+            
             <div>
               <label
                 className="block mb-1 font-medium text-gray-700 text-xs"
@@ -333,11 +358,13 @@ export default function InvoiceSelectors({
                     }
                     onChange={(opt) => {
                       const val = opt?.value ? String(opt.value) : "";
+
                       setReferenceNumber(val);
                       if (opt?.value && onInvoiceSelect) {
                         const confirmLoad = window.confirm(
                           "هل تريد تنزيل أصناف الفاتورة المختارة؟",
                         );
+
                         if (confirmLoad) onInvoiceSelect(opt.value);
                       }
                     }}
@@ -595,13 +622,13 @@ export default function InvoiceSelectors({
           <div className="mt-4 pt-4 border-t border-gray-200">
             <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <svg
+                height="24"
+                id="mdi-barcode-scan"
+                version="1.1"
+                viewBox="0 0 24 24"
+                width="24"
                 xmlns="http://www.w3.org/2000/svg"
                 xmlnsXlink="http://www.w3.org/1999/xlink"
-                version="1.1"
-                id="mdi-barcode-scan"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
               >
                 <path d="M4,6H6V18H4V6M7,6H8V18H7V6M9,6H12V18H9V6M13,6H14V18H13V6M16,6H18V18H16V6M19,6H20V18H19V6M2,4V8H0V4A2,2 0 0,1 2,2H6V4H2M22,2A2,2 0 0,1 24,4V8H22V4H18V2H22M2,16V20H6V22H2A2,2 0 0,1 0,20V16H2M22,20V16H24V20A2,2 0 0,1 22,22H18V20H22Z" />
               </svg>
@@ -609,8 +636,10 @@ export default function InvoiceSelectors({
             </h4>
             <div className="flex items-center gap-3">
               <input
-                type="text"
+                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                disabled={!isEditing}
                 placeholder="أدخل كود الصنف"
+                type="text"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -619,13 +648,11 @@ export default function InvoiceSelectors({
                     onBarcodeSearch();
                   }
                 }}
-                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                disabled={!isEditing}
               />
               <button
-                onClick={onBarcodeSearch}
-                disabled={!isEditing || !searchValue.trim()}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={!isEditing || !searchValue.trim()}
+                onClick={onBarcodeSearch}
               >
                 بحث
               </button>

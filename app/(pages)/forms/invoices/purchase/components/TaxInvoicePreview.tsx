@@ -1,7 +1,6 @@
 "use client";
 
 import { formatAmount } from "@/utilities/formatAmount";
-import { RiyalIcon } from "@/components/RiyalIcon";
 
 interface InvoicePreviewProps {
   invoiceNumber: number;
@@ -63,6 +62,7 @@ export function renderInvoicePreview(props: InvoicePreviewProps) {
   } = props;
 
   const newWindow = window.open("", "_blank", "width=800,height=600");
+
   if (!newWindow) return;
 
   const getPayTypeText = (type: number) => {
@@ -252,7 +252,7 @@ export function renderInvoicePreview(props: InvoicePreviewProps) {
                             <td>${item.item_disc_amt || 0}</td>
                             <td>${item.total_a || 0}</td>
                         </tr>
-                    `
+                    `,
                       )
                       .join("")}
                 </tbody>

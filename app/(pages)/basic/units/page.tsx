@@ -1,6 +1,8 @@
 import { Metadata } from "next";
-import unitService from "@/services/api/unit.service";
+
 import UnitsClient from "./components/UnitsClient";
+
+import unitService from "@/services/api/unit.service";
 
 export const metadata: Metadata = {
   title: "الوحدات - NafeesWeb",

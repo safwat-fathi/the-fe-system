@@ -1,7 +1,9 @@
 import { Metadata } from "next";
+
+import BoxesClient from "./components/BoxesClient";
+
 import genericService from "@/services/api/generic.service";
 import { getBranchParams } from "@/app/actions/branch-params";
-import BoxesClient from "./components/BoxesClient";
 
 export const metadata: Metadata = {
   title: "الصناديق - NafeesWeb",
@@ -48,7 +50,11 @@ export default async function BoxesPage() {
   let error = null;
 
   try {
-    const response = await genericService.getTableData("boxes_list", branchParams);
+    const response = await genericService.getTableData(
+      "boxes_list",
+      branchParams,
+    );
+
     if (response.success) {
       boxesData = response.data || [];
     } else {
@@ -62,21 +68,18 @@ export default async function BoxesPage() {
   return (
     <div className="responsive-container font-cairo">
       <h1 className="responsive-text-xl font-bold mb-6">الصناديق</h1>
-      
+
       {/* عرض حالة الطلب */}
       {error && (
         <div className="mb-4">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             <strong>خطأ:</strong> {error}
-      </div>
-      </div>
+          </div>
+        </div>
       )}
 
       {/* Client Component للتفاعل */}
-      <BoxesClient 
-        initialData={boxesData} 
-        error={error}
-      />
+      <BoxesClient error={error} initialData={boxesData} />
     </div>
   );
 }

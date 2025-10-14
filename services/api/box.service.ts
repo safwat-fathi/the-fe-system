@@ -62,7 +62,7 @@ class BoxService extends HttpService<Box> {
     }
   }
 
-  async createBox(box: Omit<Box, 'id'>): Promise<Box | null> {
+  async createBox(box: Omit<Box, "id">): Promise<Box | null> {
     try {
       const boxData = {
         ...box,
@@ -79,9 +79,11 @@ class BoxService extends HttpService<Box> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as Box; 
+
+      if (response.success) {
+        return response.data as Box;
       }
+
       return null;
     } catch (error) {
       console.error("Error creating box:", error);
@@ -106,9 +108,11 @@ class BoxService extends HttpService<Box> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as Box; 
+
+      if (response.success) {
+        return response.data as Box;
       }
+
       return null;
     } catch (error) {
       console.error("Error updating box:", error);
@@ -118,13 +122,10 @@ class BoxService extends HttpService<Box> {
 
   async deleteBox(id: number): Promise<boolean> {
     try {
-      const response = await this.delete(
-        `api_delete_box/${id}`,
-        undefined,
-        {
-          cache: "no-store",
-        },
-      );
+      const response = await this.delete(`api_delete_box/${id}`, undefined, {
+        cache: "no-store",
+      });
+
       return response.success;
     } catch (error) {
       console.error("Error deleting box:", error);
@@ -135,9 +136,11 @@ class BoxService extends HttpService<Box> {
   async getBoxById(id: number): Promise<Box | null> {
     try {
       const boxes = await this.getAllBoxes();
-      return boxes.find(box => box.id === id) || null;
+
+      return boxes.find((box) => box.id === id) || null;
     } catch (error) {
       console.error("Error fetching box by ID:", error);
+
       return null;
     }
   }
@@ -160,6 +163,7 @@ class BoxService extends HttpService<Box> {
       return [];
     } catch (error) {
       console.error("Error fetching box types:", error);
+
       return [];
     }
   }

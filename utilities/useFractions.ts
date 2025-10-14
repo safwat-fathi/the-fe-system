@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import homeService from "@/services/api/home.service";
 
 export interface Fractions {

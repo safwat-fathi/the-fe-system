@@ -1,5 +1,4 @@
 import { HttpService } from "@/services/base";
-import { API_ENDPOINTS } from "@/utilities/api";
 
 interface Item {
   id: number;
@@ -33,11 +32,11 @@ class ItemService extends HttpService<Item> {
 
   async getAllItems(): Promise<Item[]> {
     try {
-      const response = await this.get<Item[]>("items_list/", undefined, {
+      const response = await this.get<Item[]>("items_list", undefined, {
         cache: "no-store",
         next: { tags: ["items"] },
       });
-      
+
       if (response.success) {
         if (Array.isArray(response.data)) {
           return response.data;
@@ -45,7 +44,7 @@ class ItemService extends HttpService<Item> {
           return (response.data as any).results;
         }
       }
-      
+
       return [];
     } catch (error) {
       console.error("Error fetching items:", error);
@@ -56,14 +55,16 @@ class ItemService extends HttpService<Item> {
   async getItemCount(): Promise<number> {
     try {
       const items = await this.getAllItems();
+
       return items.length;
     } catch (error) {
       console.error("Error counting items:", error);
+
       return 0;
     }
   }
 
-  async createItem(item: Omit<Item, 'id'>): Promise<Item | null> {
+  async createItem(item: Omit<Item, "id">): Promise<Item | null> {
     try {
       const response = await this.post<Item>(
         "api_create_item",
@@ -109,13 +110,9 @@ class ItemService extends HttpService<Item> {
 
   async deleteItem(id: number): Promise<boolean> {
     try {
-      const response = await this.delete(
-        `api_delete_item/${id}`,
-        undefined,
-        {
-          cache: "no-store",
-        },
-      );
+      const response = await this.delete(`api_delete_item/${id}`, undefined, {
+        cache: "no-store",
+      });
 
       return response.success;
     } catch (error) {
@@ -127,9 +124,11 @@ class ItemService extends HttpService<Item> {
   async getItemById(id: number): Promise<Item | null> {
     try {
       const items = await this.getAllItems();
-      return items.find(item => item.id === id) || null;
+
+      return items.find((item) => item.id === id) || null;
     } catch (error) {
       console.error("Error fetching item by ID:", error);
+
       return null;
     }
   }

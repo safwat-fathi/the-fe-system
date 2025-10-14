@@ -45,6 +45,7 @@ const DynamicDataTable = ({ data, tableName }: DynamicDataTableProps) => {
     if (typeof value === "object") {
       return JSON.stringify(value);
     }
+
     return String(value);
   };
 
@@ -82,4 +83,3 @@ const DynamicDataTable = ({ data, tableName }: DynamicDataTableProps) => {
 };
 
 export default DynamicDataTable;
-

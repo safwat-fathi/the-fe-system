@@ -15,9 +15,21 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { HeroModal as Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/Modal";
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+
+import {
+  HeroModal as Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@/components/Modal";
 import boxService from "@/services/api/box.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
 
@@ -82,6 +94,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   const loadBoxes = async () => {
     try {
       const data = await boxService.getAllBoxes();
+
       setBoxes(data);
     } catch (error) {
       toast.error("فشل في جلب الصناديق");
@@ -92,6 +105,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   const loadBoxTypes = async () => {
     try {
       const data = await boxService.getBoxTypes();
+
       setBoxTypes(data);
     } catch (error) {
       toast.error("خطأ في تحميل أنواع الصناديق");
@@ -108,25 +122,28 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
   const handleSave = async () => {
     const previousBoxes = [...boxes];
-    
+
     try {
       let result: CustomerBox | null = null;
 
       // Optimistic update for create
       if (modalMode === "add") {
         const optimisticId = Date.now();
-        const optimisticBox = { 
-          ...currentBox, 
+        const optimisticBox = {
+          ...currentBox,
           id: optimisticId,
-          cust_status: 1 
+          cust_status: 1,
         } as CustomerBox;
+
         setBoxes([...boxes, optimisticBox]);
       }
 
       if (modalMode === "edit" && currentBox.id) {
         result = await boxService.updateBox(currentBox.id, currentBox);
       } else {
-        result = await boxService.createBox(currentBox as Omit<CustomerBox, 'id'>);
+        result = await boxService.createBox(
+          currentBox as Omit<CustomerBox, "id">,
+        );
       }
 
       if (result) {
@@ -135,10 +152,10 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
             ? "✅ تم تعديل الصندوق بنجاح"
             : "✅ تم إضافة الصندوق بنجاح",
         );
-        
+
         // Revalidate cache
-        await revalidateTableData('boxes_list');
-        
+        await revalidateTableData("boxes_list");
+
         setIsModalOpen(false);
         loadBoxes();
       } else {
@@ -155,20 +172,21 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
   const handleDelete = async (id: number) => {
     if (!confirm("هل تريد حذف هذا الصندوق؟")) return;
-    
+
     // Optimistic delete
     const previousBoxes = [...boxes];
-    setBoxes(boxes.filter(box => box.id !== id));
-    
+
+    setBoxes(boxes.filter((box) => box.id !== id));
+
     try {
       const result = await boxService.deleteBox(id);
 
       if (result) {
         toast.success("✅ تم حذف الصندوق بنجاح");
-        
+
         // Revalidate cache
-        await revalidateTableData('boxes_list');
-        
+        await revalidateTableData("boxes_list");
+
         loadBoxes();
       } else {
         // Rollback on failure
@@ -183,15 +201,17 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   };
 
   const filtered = useMemo(() => {
-    return boxes.filter((b) =>
-      b.cust_name?.toLowerCase().includes(search.toLowerCase()) ||
-      b.cust_code?.toLowerCase().includes(search.toLowerCase()) ||
-      b.cust_name_e?.toLowerCase().includes(search.toLowerCase()),
+    return boxes.filter(
+      (b) =>
+        b.cust_name?.toLowerCase().includes(search.toLowerCase()) ||
+        b.cust_code?.toString().toLowerCase().includes(search.toLowerCase()) ||
+        b.cust_name_e?.toLowerCase().includes(search.toLowerCase()),
     );
   }, [boxes, search]);
 
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
+
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
@@ -226,9 +246,9 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       </Button>
       <Button
         isIconOnly
+        color="danger"
         size="sm"
         variant="light"
-        color="danger"
         onPress={() => handleDelete(box.id)}
       >
         <TrashIcon className="h-4 w-4" />
@@ -240,7 +260,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
     return (
       <div className="text-center py-8">
         <p className="text-red-500 mb-4">لا يمكن تحميل البيانات: {error}</p>
-        <Button onClick={loadBoxes} color="primary">
+        <Button color="primary" onClick={loadBoxes}>
           إعادة المحاولة
         </Button>
       </div>
@@ -275,14 +295,15 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
               <TableCell>{box.cust_name}</TableCell>
               <TableCell>{box.cust_name_e}</TableCell>
               <TableCell>
-                {boxTypes.find(type => type.code_id === box.box_type)?.code_desc || box.box_type || "-"}
+                {boxTypes.find((type) => type.code_id === box.box_type)
+                  ?.code_desc ||
+                  box.box_type ||
+                  "-"}
               </TableCell>
               <TableCell>
                 <Checkbox isReadOnly isSelected={!!box.cust_status} />
               </TableCell>
-              <TableCell>
-                {renderActions(box)}
-              </TableCell>
+              <TableCell>{renderActions(box)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -341,13 +362,17 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
             <Select
               isDisabled={isViewMode}
               label="نوع الصندوق"
+              popoverProps={{
+                shouldBlockScroll: false,
+              }}
               selectedKeys={currentBox.box_type ? [currentBox.box_type] : []}
               onSelectionChange={(keys) => {
                 const selectedKey = Array.from(keys)[0];
-                setCurrentBox({ ...currentBox, box_type: selectedKey as string });
-              }}
-              popoverProps={{
-                shouldBlockScroll: false,
+
+                setCurrentBox({
+                  ...currentBox,
+                  box_type: selectedKey as string,
+                });
               }}
             >
               {boxTypes.map((type) => (

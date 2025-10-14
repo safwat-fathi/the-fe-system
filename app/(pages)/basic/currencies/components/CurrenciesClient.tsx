@@ -18,8 +18,14 @@ import {
   ModalBody,
   ModalFooter,
 } from "@heroui/react";
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+
 import currencyService from "@/services/api/currency.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
 
@@ -55,7 +61,10 @@ interface CurrenciesClientProps {
   error?: string | null;
 }
 
-export default function CurrenciesClient({ initialData, error }: CurrenciesClientProps) {
+export default function CurrenciesClient({
+  initialData,
+  error,
+}: CurrenciesClientProps) {
   const [currencies, setCurrencies] = useState<Currency[]>(initialData);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -73,6 +82,7 @@ export default function CurrenciesClient({ initialData, error }: CurrenciesClien
   const loadCurrencies = useCallback(async () => {
     try {
       const data = await currencyService.getAllCurrencies();
+
       setCurrencies(data);
     } catch (error) {
       toast.error("فشل في جلب العملات");
@@ -92,37 +102,43 @@ export default function CurrenciesClient({ initialData, error }: CurrenciesClien
       loadCurrencies();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [loadCurrencies]);
 
   const handleSave = async () => {
     const previousCurrencies = [...currencies];
-    
+
     try {
       let result: Currency | null = null;
 
       // Optimistic update for create
       if (modalMode === "add") {
         const optimisticId = Date.now();
-        const optimisticCurrency = { 
-          ...currentCurrency, 
+        const optimisticCurrency = {
+          ...currentCurrency,
           id: optimisticId,
           cr_date: new Date().toISOString(),
-          cur_status: true 
+          cur_status: true,
         } as Currency;
+
         setCurrencies([...currencies, optimisticCurrency]);
       }
 
       if (modalMode === "edit" && currentCurrency.id) {
-        result = await currencyService.updateCurrency(currentCurrency.id, currentCurrency);
+        result = await currencyService.updateCurrency(
+          currentCurrency.id,
+          currentCurrency,
+        );
       } else {
-        result = await currencyService.createCurrency(currentCurrency as Omit<Currency, 'id'>);
+        result = await currencyService.createCurrency(
+          currentCurrency as Omit<Currency, "id">,
+        );
       }
 
       if (result) {
@@ -131,10 +147,10 @@ export default function CurrenciesClient({ initialData, error }: CurrenciesClien
             ? "✅ تم تعديل العملة بنجاح"
             : "✅ تم إضافة العملة بنجاح",
         );
-        
+
         // Revalidate cache
-        await revalidateTableData('currencies_list');
-        
+        await revalidateTableData("currencies_list");
+
         setIsModalOpen(false);
         loadCurrencies();
       } else {
@@ -151,20 +167,21 @@ export default function CurrenciesClient({ initialData, error }: CurrenciesClien
 
   const handleDelete = async (id: number) => {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذه العملة؟")) return;
-    
+
     // Optimistic delete
     const previousCurrencies = [...currencies];
-    setCurrencies(currencies.filter(cur => cur.id !== id));
-    
+
+    setCurrencies(currencies.filter((cur) => cur.id !== id));
+
     try {
       const result = await currencyService.deleteCurrency(id);
 
       if (result) {
         toast.success("✅ تم حذف العملة بنجاح");
-        
+
         // Revalidate cache
-        await revalidateTableData('currencies_list');
-        
+        await revalidateTableData("currencies_list");
+
         loadCurrencies();
       } else {
         // Rollback on failure
@@ -198,9 +215,9 @@ export default function CurrenciesClient({ initialData, error }: CurrenciesClien
       </Button>
       <Button
         isIconOnly
+        color="danger"
         size="sm"
         variant="light"
-        color="danger"
         onPress={() => handleDelete(cur.id)}
       >
         <TrashIcon className="h-4 w-4" />
@@ -218,6 +235,7 @@ export default function CurrenciesClient({ initialData, error }: CurrenciesClien
 
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
+
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
@@ -284,6 +302,7 @@ export default function CurrenciesClient({ initialData, error }: CurrenciesClien
       </div>
 
       <Modal
+        isDismissable={false}
         isOpen={isModalOpen}
         scrollBehavior="inside"
         size="5xl"
@@ -298,9 +317,9 @@ export default function CurrenciesClient({ initialData, error }: CurrenciesClien
 
           <ModalBody className="grid grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto pr-2">
             <Input
+              required
               isDisabled={isViewMode}
               label="اسم العملة"
-              required
               value={currentCurrency.cur_name || ""}
               onChange={(e) =>
                 setCurrentCurrency({
@@ -354,9 +373,9 @@ export default function CurrenciesClient({ initialData, error }: CurrenciesClien
               }
             />
             <Input
+              required
               isDisabled={isViewMode}
               label="السعر"
-              required
               value={currentCurrency.cur_price || ""}
               onChange={(e) =>
                 setCurrentCurrency({

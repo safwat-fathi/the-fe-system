@@ -16,7 +16,7 @@ class UnitService extends HttpService<Unit> {
 
   async getAllUnits(): Promise<Unit[]> {
     try {
-      const response = await this.get<Unit[]>("units_list/", undefined, {
+      const response = await this.get<Unit[]>("units_list", undefined, {
         cache: "no-store",
         next: { tags: ["units"] },
       });
@@ -36,7 +36,7 @@ class UnitService extends HttpService<Unit> {
     }
   }
 
-  async createUnit(unit: Omit<Unit, 'id'>): Promise<Unit | null> {
+  async createUnit(unit: Omit<Unit, "id">): Promise<Unit | null> {
     try {
       const response = await this.post<Unit>(
         "api_create_unit",
@@ -46,9 +46,11 @@ class UnitService extends HttpService<Unit> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as Unit; 
+
+      if (response.success) {
+        return response.data as Unit;
       }
+
       return null;
     } catch (error) {
       console.error("Error creating unit:", error);
@@ -66,9 +68,11 @@ class UnitService extends HttpService<Unit> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as Unit; 
+
+      if (response.success) {
+        return response.data as Unit;
       }
+
       return null;
     } catch (error) {
       console.error("Error updating unit:", error);
@@ -78,13 +82,10 @@ class UnitService extends HttpService<Unit> {
 
   async deleteUnit(id: number): Promise<boolean> {
     try {
-      const response = await this.delete(
-        `api_delete_unit/${id}`,
-        undefined,
-        {
-          cache: "no-store",
-        },
-      );
+      const response = await this.delete(`api_delete_unit/${id}`, undefined, {
+        cache: "no-store",
+      });
+
       return response.success;
     } catch (error) {
       console.error("Error deleting unit:", error);
@@ -95,9 +96,11 @@ class UnitService extends HttpService<Unit> {
   async getUnitById(id: number): Promise<Unit | null> {
     try {
       const units = await this.getAllUnits();
-      return units.find(unit => unit.id === id) || null;
+
+      return units.find((unit) => unit.id === id) || null;
     } catch (error) {
       console.error("Error fetching unit by ID:", error);
+
       return null;
     }
   }

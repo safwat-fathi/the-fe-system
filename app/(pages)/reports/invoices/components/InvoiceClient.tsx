@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import {
   Input,
-  Pagination,
   Button,
   Chip,
   Select,
@@ -12,7 +11,6 @@ import {
   Tab,
   CardBody,
 } from "@heroui/react";
-import Card from "@/components/Card";
 import {
   EyeIcon,
   PencilIcon,
@@ -20,16 +18,16 @@ import {
   ChartBarIcon,
   TableCellsIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
 
+import Card from "@/components/Card";
 import { formatDateTime } from "@/utilities/dateUtils";
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
 import DataTable from "@/components/DataTable";
 import InvoiceAnalytics from "@/components/InvoiceAnalytics";
-import Link from "next/link";
-import { Invoice, InvoiceTypes, TransTypes } from "@/types/models/invoice";
+import { Invoice, TransTypes } from "@/types/models/invoice";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
-import { GetAllInvoicesParams } from "@/services/api/invoice.service";
 
 interface InvoiceClientProps {
   invoices: Invoice[];
@@ -120,12 +118,12 @@ export default function InvoiceClient({
       window.location.reload();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
 
@@ -280,7 +278,9 @@ export default function InvoiceClient({
               placeholder="من تاريخ"
               type="date"
               value={params.xfrom_date}
-              onChange={(e) => setParams({ xfrom_date: e.target.value, page: "1" })}
+              onChange={(e) =>
+                setParams({ xfrom_date: e.target.value, page: "1" })
+              }
             />
 
             <Input
@@ -288,7 +288,9 @@ export default function InvoiceClient({
               placeholder="إلى تاريخ"
               type="date"
               value={params.xto_date}
-              onChange={(e) => setParams({ xto_date: e.target.value, page: "1" })}
+              onChange={(e) =>
+                setParams({ xto_date: e.target.value, page: "1" })
+              }
             />
 
             <Button

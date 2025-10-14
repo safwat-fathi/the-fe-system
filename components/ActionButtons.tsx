@@ -16,10 +16,14 @@ interface ActionButtonsProps {
   className?: string;
 }
 
-export default function ActionButtons({ buttons, className = "" }: ActionButtonsProps) {
+export default function ActionButtons({
+  buttons,
+  className = "",
+}: ActionButtonsProps) {
   const getButtonClasses = (color: string, variant: string) => {
-    const baseClasses = "font-medium px-4 py-2.5 rounded-lg transition-all duration-200";
-    
+    const baseClasses =
+      "font-medium px-4 py-2.5 rounded-lg transition-all duration-200";
+
     switch (color) {
       case "primary":
         return `${baseClasses} bg-primary-600 hover:bg-primary-700 text-white shadow-soft hover:shadow-medium`;
@@ -42,11 +46,14 @@ export default function ActionButtons({ buttons, className = "" }: ActionButtons
         <Button
           key={index}
           as={Link}
-          href={button.href}
+          className={getButtonClasses(
+            button.color || "primary",
+            button.variant || "solid",
+          )}
           color={button.color || "primary"}
-          variant={button.variant || "solid"}
-          className={getButtonClasses(button.color || "primary", button.variant || "solid")}
+          href={button.href}
           startContent={button.icon}
+          variant={button.variant || "solid"}
         >
           {button.label}
         </Button>

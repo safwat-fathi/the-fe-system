@@ -1,17 +1,18 @@
 /**
  * @deprecated هذا الملف قديم ويجب عدم استخدامه في كود جديد
  * استخدم services/ بدلاً من ذلك لأسباب أمنية وأفضلية في الأداء
- * 
+ *
  * المشاكل في هذا الملف:
  * 1. يستخدم localStorage لتخزين التوكن (غير آمن - عرضة لـ XSS)
  * 2. معالجة أخطاء غير صحيحة
  * 3. لا يدعم Type Safety بشكل كامل
  * 4. لا يوجد Token Refresh
- * 
+ *
  * راجع SERVICES_MIGRATION.md للمزيد من المعلومات
  */
 
-export const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_BASE_URL || "http://84.46.240.24:8000/api";
+export const API_BASE_URL: string =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://84.46.240.24:8000/api";
 
 // export const GOLD_API_TOKEN: string =
 //   process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
@@ -22,10 +23,10 @@ export const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_BASE_URL || "htt
  */
 export async function loginUser(username: string, password: string) {
   try {
-    console.log("محاولة تسجيل الدخول إلى:", `${API_BASE_URL}/login/`);
+    console.log("محاولة تسجيل الدخول إلى:", `${API_BASE_URL}/login`);
     console.log("بيانات تسجيل الدخول:", { username, password: "***" });
 
-    const response = await fetch(`${API_BASE_URL}/login/`, {
+    const response = await fetch(`${API_BASE_URL}/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -36,6 +37,7 @@ export async function loginUser(username: string, password: string) {
     console.log("استجابة الخادم:", response.status, response.statusText);
 
     let data;
+
     try {
       data = await response.json();
       console.log("بيانات الاستجابة:", data);
@@ -78,31 +80,43 @@ export async function loginUser(username: string, password: string) {
 
 /**
  * @deprecated غير آمن - يستخدم localStorage
- * النظام الجديد يستخدم HttpOnly Cookies تلقائياً
+ * ⚠️ لا تستخدم في كود جديد!
+ * 
+ * استخدم بدلاً من ذلك:
+ * - في Server Components: HttpService يقرأ من cookies تلقائياً
+ * - في Client Components: استخدم Server Actions
+ * 
+ * هذه الدالة موجودة فقط للتوافق مع الكود القديم وسيتم حذفها قريباً
  */
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
-    // محاولة الحصول على التوكن من localStorage أولاً
-    const localToken = localStorage.getItem("auth_token");
-    if (localToken) {
-      return localToken;
-    }
-    
-    // إذا لم يوجد في localStorage، محاولة الحصول عليه من الكوكيز
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'access_token') {
+    // محاولة الحصول على التوكن من الكوكيز (access_token من النظام الجديد)
+    const cookies = document.cookie.split(";");
+
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split("=");
+
+      if (name === "access_token") {
         return value;
       }
     }
+
+    // Fallback: محاولة الحصول من localStorage للتوافق مع الكود القديم
+    const localToken = localStorage.getItem("auth_token");
+
+    if (localToken) {
+      return localToken;
+    }
   }
+
   return null;
 }
 
 /**
  * @deprecated غير آمن - يستخدم localStorage
- * النظام الجديد يستخدم HttpOnly Cookies تلقائياً
+ * ⚠️ لا تستخدم إطلاقاً! استخدم setCookieAction من app/actions
+ * 
+ * هذه الدالة موجودة فقط للتوافق مع الكود القديم وسيتم حذفها قريباً
  */
 export function setAuthToken(token: string) {
   if (typeof window !== "undefined") {
@@ -113,7 +127,8 @@ export function setAuthToken(token: string) {
 }
 
 /**
- * @deprecated استخدم server actions للـ logout بدلاً من ذلك
+ * @deprecated استخدم onLogoutAction من app/actions/auth.ts بدلاً من ذلك
+ * ⚠️ لا تستخدم في كود جديد!
  */
 export function removeAuthToken() {
   if (typeof window !== "undefined") {
@@ -125,7 +140,8 @@ export function removeAuthToken() {
 }
 
 /**
- * @deprecated استخدم server-side authentication check بدلاً من ذلك
+ * @deprecated استخدم middleware للمصادقة بدلاً من ذلك
+ * ⚠️ لا تستخدم - لدينا auth.middleware.ts
  */
 export function isAuthenticated(): boolean {
   return getAuthToken() !== null;
@@ -181,7 +197,7 @@ export function appendBranchParams(url: string): string {
 /**
  * @deprecated استخدم الـ service المناسب من services/api بدلاً من ذلك
  * مثال: voucherService.getAll(), accountService.getAllAccounts(), etc.
- * 
+ *
  * المشاكل:
  * - معالجة أخطاء غير صحيحة (السطور 183-193)
  * - يحاول قراءة JSON حتى مع الأخطاء
@@ -203,6 +219,7 @@ export async function fetchData<T>(
 
     // إضافة التوكن للطلبات إذا كان موجوداً
     const token = getAuthToken();
+
     if (token) {
       headers["Authorization"] = `Token ${token}`;
     }
@@ -220,6 +237,7 @@ export async function fetchData<T>(
 
     if (!response.ok) {
       const errorMessage = await response.text();
+
       console.error(`HTTP ${response.status} error for ${url}:`, errorMessage);
 
       // إذا كان الخطأ 401 (غير مصرح)، حذف التوكن وتوجيه لصفحة تسجيل الدخول
@@ -234,7 +252,9 @@ export async function fetchData<T>(
     }
 
     const data = await response.json();
+
     console.log(`Success response from ${url}:`, data);
+
     return data;
   } catch (error) {
     const errorMessage =
@@ -261,6 +281,7 @@ export async function fetchFractions() {
     if (Array.isArray(res) && res.length > 0) {
       const frac = parseInt(res[0].frac);
       const frac2 = parseInt(res[0].frac2);
+
       fractionsCache = {
         frac: isNaN(frac) ? 2 : frac,
         frac2: isNaN(frac2) ? 3 : frac2,
@@ -278,14 +299,14 @@ export async function fetchFractions() {
 
 /**
  * @deprecated استخدم الـ services بدلاً من هذه الـ endpoints مباشرة
- * 
+ *
  * أمثلة:
  * - بدلاً من fetchData(API_ENDPOINTS.VOUCHERS_LIST)
  *   استخدم voucherService.getAll()
- * 
+ *
  * - بدلاً من fetchData(API_ENDPOINTS.ACCOUNTS_LIST)
  *   استخدم accountService.getAllAccounts()
- * 
+ *
  * راجع SERVICES_MIGRATION.md للمزيد من الأمثلة
  */
 export const API_ENDPOINTS = {
@@ -303,21 +324,21 @@ export const API_ENDPOINTS = {
   DELETE_ACCOUNT: (id: number) => `${API_BASE_URL}/api_delete_account/${id}`,
 
   //العملات
-  CURRENCIES_LIST: `${API_BASE_URL}/currencies_list/`,
+  CURRENCIES_LIST: `${API_BASE_URL}/currencies_list`,
   CREATE_CURRENCY: `${API_BASE_URL}/api_create_currency`,
   UPDATE_CURRENCY: (id: number) => `${API_BASE_URL}/api_update_currency/${id}`,
   DELETE_CURRENCY: (id: number) => `${API_BASE_URL}/api_delete_currency/${id}`,
 
   // روابط الفئات والأصناف
-  CATEGORIES_LIST: `${API_BASE_URL}/categories_list/`,
-  ITEMS_LIST: `${API_BASE_URL}/items_list/`,
+  CATEGORIES_LIST: `${API_BASE_URL}/categories_list`,
+  ITEMS_LIST: `${API_BASE_URL}/items_list`,
   CREATE_ITEM: `${API_BASE_URL}/api_create_item`,
   UPDATE_ITEM: (id: number) => `${API_BASE_URL}/api_update_item/${id}`,
-  DELETE_ITEM: `${API_BASE_URL}/api_delete_item/`,
+  DELETE_ITEM: `${API_BASE_URL}/api_delete_item`,
   ITEM_TYPES_LIST: `${API_BASE_URL}/item_type_list`,
-  UNITS_LIST: `${API_BASE_URL}/units_list/`,
-  CAT_ITEMS_LIST: `${API_BASE_URL}/cat_items_list/`,
-  GET_ITEMS_LIST: `${API_BASE_URL}/GetItemsList/`,
+  UNITS_LIST: `${API_BASE_URL}/units_list`,
+  CAT_ITEMS_LIST: `${API_BASE_URL}/cat_items_list`,
+  GET_ITEMS_LIST: `${API_BASE_URL}/GetItemsList`,
   BOXES_LIST: `${API_BASE_URL}/boxes_list`,
   CREATE_BOX: `${API_BASE_URL}/api_create_box`,
   UPDATE_BOX: (id: number) => `${API_BASE_URL}/api_update_box/${id}`,
@@ -434,20 +455,24 @@ export async function fetchItemByBarcode(barcode: string): Promise<any | null> {
     if (!response.ok) {
       if (response.status === 404) {
         console.log("لم يتم العثور على الصنف بالباركود:", barcode);
+
         return null;
       }
       throw new Error(`خطأ في البحث: ${response.status}`);
     }
 
     const data = await response.json();
+
     console.log("نتيجة البحث بالباركود:", data);
 
     // API يعيد مصفوفة، نأخذ العنصر الأول
     if (Array.isArray(data) && data.length > 0) {
       console.log("تم العثور على الصنف:", data[0]);
+
       return data[0];
     } else if (Array.isArray(data) && data.length === 0) {
       console.log("لم يتم العثور على الصنف بالباركود:", barcode);
+
       return null;
     } else {
       // إذا لم تكن مصفوفة، نعيد البيانات كما هي
@@ -482,6 +507,7 @@ export async function searchAccounts(
     }
 
     const data = await response.json();
+
     console.log("نتيجة البحث في الحسابات:", data);
 
     return data;
@@ -492,8 +518,18 @@ export async function searchAccounts(
 }
 
 /**
- * @deprecated استخدم الـ service المناسب من services/api
- * النظام الجديد يتعامل مع fetch تلقائياً
+ * @deprecated استخدم Server Actions للطلبات من Client Components
+ * ⚠️ هذه الدالة موجودة مؤقتاً فقط لدعم صفحات الفواتير القديمة
+ * 
+ * استخدم بدلاً منها:
+ * - Server Actions: app/actions/*.action.ts
+ * - Services: services/api/*.service.ts (من Server Components فقط)
+ * 
+ * أمثلة:
+ * - getAccountsAction() للحصول على الحسابات
+ * - createInvoiceAction() لإنشاء فاتورة
+ * 
+ * سيتم حذف هذه الدالة بعد ترحيل صفحات الفواتير
  */
 export function apiFetch(input: string, init?: RequestInit) {
   // لا تضف معاملات com و year إذا كان الرابط لتحديث الفاتورة أو تفاصيلها
@@ -508,6 +544,7 @@ export function apiFetch(input: string, init?: RequestInit) {
 
   // إضافة التوكن للطلبات إذا كان موجوداً
   const token = getAuthToken();
+
   if (token && init) {
     init.headers = {
       ...init.headers,

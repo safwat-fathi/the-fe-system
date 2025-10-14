@@ -20,7 +20,12 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import categoryService from "@/services/api/category.service";
@@ -59,7 +64,10 @@ interface CategoriesClientProps {
   initialBoxes: { id: number; box_name: string }[];
 }
 
-export default function CategoriesClient({ initialCategories, initialBoxes }: CategoriesClientProps) {
+export default function CategoriesClient({
+  initialCategories,
+  initialBoxes,
+}: CategoriesClientProps) {
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -70,7 +78,8 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
   });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("add");
-  const [boxes, setBoxes] = useState<{ id: number; box_name: string }[]>(initialBoxes);
+  const [boxes, setBoxes] =
+    useState<{ id: number; box_name: string }[]>(initialBoxes);
 
   const [newCategory, setNewCategory] = useState<Category>({
     id: 0,
@@ -112,6 +121,7 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
 
   const filteredCategories = useMemo(() => {
     if (!searchQuery) return categories;
+
     return categories.filter((cat) =>
       Object.values(cat).some((val) =>
         val?.toString().toLowerCase().includes(searchQuery.toLowerCase()),
@@ -156,7 +166,10 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
         purity: newCategory.purity ?? "",
       };
 
-      const result = await categoryService.updateCategory(newCategory.id, updatedCategory);
+      const result = await categoryService.updateCategory(
+        newCategory.id,
+        updatedCategory,
+      );
 
       if (result) {
         toast.success("تم تعديل الفئة بنجاح ✅");
@@ -219,7 +232,12 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
     return [...filteredCategories].sort((a, b) => {
       const first = a[sortDescriptor.column as keyof Category];
       const second = b[sortDescriptor.column as keyof Category];
-      const cmp = (first || "") < (second || "") ? -1 : (first || "") > (second || "") ? 1 : 0;
+      const cmp =
+        (first || "") < (second || "")
+          ? -1
+          : (first || "") > (second || "")
+            ? 1
+            : 0;
 
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
     });
@@ -251,9 +269,9 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
       </Button>
       <Button
         isIconOnly
+        color="danger"
         size="sm"
         variant="light"
-        color="danger"
         onPress={() => handleDelete(cat.id)}
       >
         <TrashIcon className="h-4 w-4" />
@@ -301,9 +319,7 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
                 <TableCell>
                   <Checkbox isReadOnly isSelected={cat.cat_status} />
                 </TableCell>
-                <TableCell>
-                  {renderActions(cat)}
-                </TableCell>
+                <TableCell>{renderActions(cat)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -320,7 +336,12 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
         />
       </div>
 
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} shouldBlockScroll={false}>
+      <Modal
+        isDismissable={false}
+        isOpen={isAddModalOpen}
+        shouldBlockScroll={false}
+        onClose={() => setIsAddModalOpen(false)}
+      >
         <ModalContent className="font-cairo">
           <ModalHeader>
             {modalMode === "add" && "إضافة فئة جديدة"}
@@ -363,6 +384,7 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
             <Select
               isDisabled={modalMode === "view"}
               label="الصندوق"
+              popoverProps={{ shouldBlockScroll: false }}
               selectedKeys={
                 newCategory.box !== null ? [String(newCategory.box)] : []
               }
@@ -371,7 +393,6 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
 
                 setNewCategory({ ...newCategory, box: id });
               }}
-              popoverProps={{ shouldBlockScroll: false }}
             >
               {boxes.map((b) => (
                 <SelectItem key={b.id} textValue={b.box_name}>
@@ -442,4 +463,3 @@ export default function CategoriesClient({ initialCategories, initialBoxes }: Ca
     </div>
   );
 }
-

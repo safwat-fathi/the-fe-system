@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Voucher, VoucherDetail } from "@/types/voucher";
-import { voucherService, accountService, costCenterService } from "@/services/api";
-import { getCurrDate } from "@/utilities/getCurrDate";
-import { getNextVoucherNumber } from "@/utilities/numbering";
+
 import { BalanceVoucherContainer } from "./components";
+
+import { Voucher, VoucherDetail } from "@/types/voucher";
+import {
+  voucherService,
+  accountService,
+  costCenterService,
+} from "@/services/api";
+import { getNextVoucherNumber } from "@/utilities/numbering";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -47,18 +52,22 @@ export default function BalanceVoucherPage() {
   useEffect(() => {
     if (!isClient) return;
     const interval = setInterval(updateCurrentTime, 60000);
+
     return () => clearInterval(interval);
   }, [isClient]);
 
   // Helper Functions
   const updateCurrentTime = () => {
     const now = new Date();
-    setCurrentTime(now.toLocaleTimeString("ar-SA", {
-      hour12: true,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    }));
+
+    setCurrentTime(
+      now.toLocaleTimeString("ar-SA", {
+        hour12: true,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+    );
   };
 
   // دالة تحديث الحسابات المحملة عند اختيار حساب جديد
@@ -71,9 +80,14 @@ export default function BalanceVoucherPage() {
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      
+
       // استخدام النظام الجديد من services
-      const [accountsResponse, costCentersResponse, voucherTypesResponse, voucherStagesResponse] = await Promise.all([
+      const [
+        accountsResponse,
+        costCentersResponse,
+        voucherTypesResponse,
+        voucherStagesResponse,
+      ] = await Promise.all([
         accountService.getAllAccounts(),
         costCenterService.getAllCostCenters(),
         voucherService.getVoucherTypes(),
@@ -82,7 +96,10 @@ export default function BalanceVoucherPage() {
 
       // معالجة الحسابات
       if (accountsResponse && Array.isArray(accountsResponse)) {
-        const level5Accounts = accountsResponse.filter((account: any) => account.acc_level === 5);
+        const level5Accounts = accountsResponse.filter(
+          (account: any) => account.acc_level === 5,
+        );
+
         setAccounts(level5Accounts);
       } else {
         setAccounts([]);
@@ -97,18 +114,25 @@ export default function BalanceVoucherPage() {
 
       // معالجة أنواع السندات
       if (voucherTypesResponse.success && voucherTypesResponse.data) {
-        setVoucherTypes(Array.isArray(voucherTypesResponse.data) ? voucherTypesResponse.data : []);
+        setVoucherTypes(
+          Array.isArray(voucherTypesResponse.data)
+            ? voucherTypesResponse.data
+            : [],
+        );
       } else {
         setVoucherTypes([]);
       }
 
       // معالجة حالات السندات
       if (voucherStagesResponse.success && voucherStagesResponse.data) {
-        setVoucherStatuses(Array.isArray(voucherStagesResponse.data) ? voucherStagesResponse.data : []);
+        setVoucherStatuses(
+          Array.isArray(voucherStagesResponse.data)
+            ? voucherStagesResponse.data
+            : [],
+        );
       } else {
         setVoucherStatuses([]);
       }
-      
     } catch (error) {
       console.error("خطأ في تحميل البيانات الأولية:", error);
     } finally {
@@ -119,19 +143,20 @@ export default function BalanceVoucherPage() {
   const generateNextVoucherNumber = async () => {
     try {
       const nextId = await getNextVoucherNumber(voucher.vouch_type);
-      setVoucher(prev => ({ 
-        ...prev, 
+
+      setVoucher((prev) => ({
+        ...prev,
         vouch_id: nextId,
         vouch_date: new Date().toISOString(),
-        cr_date: new Date().toISOString()
+        cr_date: new Date().toISOString(),
       }));
     } catch (error) {
       console.error("خطأ في الحصول على رقم القيد التالي:", error);
-      setVoucher(prev => ({ 
-        ...prev, 
+      setVoucher((prev) => ({
+        ...prev,
         vouch_id: 1,
         vouch_date: new Date().toISOString(),
-        cr_date: new Date().toISOString()
+        cr_date: new Date().toISOString(),
       }));
     }
   };
@@ -155,56 +180,65 @@ export default function BalanceVoucherPage() {
       vat_no: 0,
       cr_date: new Date().toISOString(),
     };
-    setDetails(prev => [...prev, newDetail]);
+
+    setDetails((prev) => [...prev, newDetail]);
   };
 
   const removeDetailRow = (index: number) => {
-    setDetails(prev => prev.filter((_, i) => i !== index));
+    setDetails((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateDetail = (index: number, field: keyof VoucherDetail, value: any) => {
+  const updateDetail = (
+    index: number,
+    field: keyof VoucherDetail,
+    value: any,
+  ) => {
     console.log(`تحديث الصف ${index}, الحقل ${field}, القيمة:`, value);
-    
-    setDetails(prev => {
+
+    setDetails((prev) => {
       const updated = prev.map((detail, i) =>
-        i === index ? { ...detail, [field]: value } : detail
+        i === index ? { ...detail, [field]: value } : detail,
       );
-      
+
       console.log(`الصف ${index} بعد التحديث:`, updated[index]);
+
       return updated;
     });
   };
 
   const updateVoucherType = async (newType: number) => {
-    setVoucher(prev => ({ ...prev, vouch_type: newType }));
+    setVoucher((prev) => ({ ...prev, vouch_type: newType }));
     await generateNextVoucherNumber();
   };
 
   const calculateTotals = useCallback(() => {
-    const totals = details.reduce((totals, detail) => {
-      const debit = parseFloat(String(detail.debit || 0)) || 0;
-      const credit = parseFloat(String(detail.credit || 0)) || 0;
-      const debitG = parseFloat(String(detail.debit_g || 0)) || 0;
-      const creditG = parseFloat(String(detail.credit_g || 0)) || 0;
-      const tax = parseFloat(String(detail.tax || 0)) || 0;
-      const taxPrc = parseFloat(String(detail.tax_prc || 0)) || 0;
-      
-      return {
-        totalDebit: totals.totalDebit + debit,
-        totalCredit: totals.totalCredit + credit,
-        totalDebitG: totals.totalDebitG + debitG,
-        totalCreditG: totals.totalCreditG + creditG,
-        totalTax: totals.totalTax + tax,
-        totalTaxPrc: totals.totalTaxPrc + taxPrc,
-      };
-    }, {
-      totalDebit: 0,
-      totalCredit: 0,
-      totalDebitG: 0,
-      totalCreditG: 0,
-      totalTax: 0,
-      totalTaxPrc: 0,
-    });
+    const totals = details.reduce(
+      (totals, detail) => {
+        const debit = parseFloat(String(detail.debit || 0)) || 0;
+        const credit = parseFloat(String(detail.credit || 0)) || 0;
+        const debitG = parseFloat(String(detail.debit_g || 0)) || 0;
+        const creditG = parseFloat(String(detail.credit_g || 0)) || 0;
+        const tax = parseFloat(String(detail.tax || 0)) || 0;
+        const taxPrc = parseFloat(String(detail.tax_prc || 0)) || 0;
+
+        return {
+          totalDebit: totals.totalDebit + debit,
+          totalCredit: totals.totalCredit + credit,
+          totalDebitG: totals.totalDebitG + debitG,
+          totalCreditG: totals.totalCreditG + creditG,
+          totalTax: totals.totalTax + tax,
+          totalTaxPrc: totals.totalTaxPrc + taxPrc,
+        };
+      },
+      {
+        totalDebit: 0,
+        totalCredit: 0,
+        totalDebitG: 0,
+        totalCreditG: 0,
+        totalTax: 0,
+        totalTaxPrc: 0,
+      },
+    );
 
     return totals;
   }, [details]);
@@ -216,17 +250,24 @@ export default function BalanceVoucherPage() {
   const saveVoucher = async () => {
     if (!isBalanced) {
       alert("يجب أن يكون إجمالي المدين مساوي لإجمالي الدائن");
+
       return;
     }
 
     if (details.length === 0) {
       alert("يجب إضافة تفاصيل للقيد");
+
       return;
     }
 
-    if (!voucher.vouch_id || voucher.vouch_id <= 0 || !isFinite(voucher.vouch_id)) {
+    if (
+      !voucher.vouch_id ||
+      voucher.vouch_id <= 0 ||
+      !isFinite(voucher.vouch_id)
+    ) {
       console.error("Invalid voucher ID:", voucher.vouch_id);
       alert("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
+
       return;
     }
 
@@ -255,7 +296,9 @@ export default function BalanceVoucherPage() {
       const masterId = savedVoucher.vouch_id || savedVoucher.id;
 
       if (!masterId || !isFinite(masterId) || masterId <= 0) {
-        throw new Error(`لم يتم الحصول على معرف القيد الصحيح من الخادم: ${masterId}`);
+        throw new Error(
+          `لم يتم الحصول على معرف القيد الصحيح من الخادم: ${masterId}`,
+        );
       }
 
       // حفظ التفاصيل
@@ -263,7 +306,7 @@ export default function BalanceVoucherPage() {
         if (!detail.acc_id || detail.acc_id === 0) {
           continue;
         }
-        
+
         const detailData = {
           vouch: masterId,
           acc: detail.acc_id,
@@ -280,18 +323,22 @@ export default function BalanceVoucherPage() {
           cr_date: new Date().toISOString(),
         };
 
-        const detailResponse = await voucherService.createDetail(detailData as any);
+        const detailResponse = await voucherService.createDetail(
+          detailData as any,
+        );
 
         if (!detailResponse.success) {
           throw new Error(detailResponse.message || "خطأ في حفظ تفصيل القيد");
         }
       }
 
-      setVoucher(prev => ({ ...prev, commit: true, id: masterId }));
-      
+      setVoucher((prev) => ({ ...prev, commit: true, id: masterId }));
+
       alert("تم حفظ القيد الافتتاحي بنجاح");
     } catch (error) {
-      alert(`حدث خطأ أثناء حفظ القيد: ${error instanceof Error ? error.message : "خطأ غير معروف"}`);
+      alert(
+        `حدث خطأ أثناء حفظ القيد: ${error instanceof Error ? error.message : "خطأ غير معروف"}`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -300,7 +347,8 @@ export default function BalanceVoucherPage() {
   const printVoucher = async () => {
     setIsPrinting(true);
     try {
-      const printWindow = window.open('', '_blank');
+      const printWindow = window.open("", "_blank");
+
       if (printWindow) {
         printWindow.document.write(`
           <html dir="rtl">
@@ -320,7 +368,7 @@ export default function BalanceVoucherPage() {
                 <h1>قيد افتتاحي</h1>
                 <p>رقم القيد: ${voucher.vouch_id}</p>
                 <p>التاريخ: ${voucher.vouch_date}</p>
-                <p>البيان: ${voucher.vouch_notes || ''}</p>
+                <p>البيان: ${voucher.vouch_notes || ""}</p>
               </div>
               <table>
                 <thead>
@@ -336,21 +384,26 @@ export default function BalanceVoucherPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  ${details.map(detail => {
-                    const account = accounts.find(acc => acc.id === detail.acc_id);
-                    return `
+                  ${details
+                    .map((detail) => {
+                      const account = accounts.find(
+                        (acc) => acc.id === detail.acc_id,
+                      );
+
+                      return `
                       <tr>
-                        <td>${account?.acc_code || ''}</td>
-                        <td>${account?.acc_name || ''}</td>
+                        <td>${account?.acc_code || ""}</td>
+                        <td>${account?.acc_name || ""}</td>
                         <td>${detail.debit || 0}</td>
                         <td>${detail.credit || 0}</td>
                         <td>${detail.debit_g || 0}</td>
                         <td>${detail.credit_g || 0}</td>
                         <td>${detail.gauge || 875}</td>
-                        <td>${detail.vouch_notes || ''}</td>
+                        <td>${detail.vouch_notes || ""}</td>
                       </tr>
                     `;
-                  }).join('')}
+                    })
+                    .join("")}
                   <tr class="totals">
                     <td colspan="2">الإجمالي</td>
                     <td>${totals.totalDebit}</td>
@@ -367,39 +420,47 @@ export default function BalanceVoucherPage() {
         `);
         printWindow.document.close();
         printWindow.print();
-        
-        setVoucher(prev => ({ ...prev, print: true }));
+
+        setVoucher((prev) => ({ ...prev, print: true }));
       }
     } catch (error) {
-      alert(`حدث خطأ أثناء الطباعة: ${error instanceof Error ? error.message : "خطأ غير معروف"}`);
+      alert(
+        `حدث خطأ أثناء الطباعة: ${error instanceof Error ? error.message : "خطأ غير معروف"}`,
+      );
     } finally {
       setIsPrinting(false);
     }
   };
 
   if (!isClient) {
-    return <div className="flex justify-center items-center h-screen">جاري التحميل...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        جاري التحميل...
+      </div>
+    );
   }
 
   return (
     <BalanceVoucherContainer
-      voucher={voucher}
-      details={details}
-      currentTime={currentTime}
-      isLoading={isLoading}
-      isPrinting={isPrinting}
-      isBalanced={isBalanced}
       accounts={accounts}
       costCenters={costCenters}
-      voucherTypes={voucherTypes}
+      currentTime={currentTime}
+      details={details}
+      isBalanced={isBalanced}
+      isLoading={isLoading}
+      isPrinting={isPrinting}
+      voucher={voucher}
       voucherStatuses={voucherStatuses}
-      onVoucherChange={(field, value) => setVoucher(prev => ({ ...prev, [field]: value }))}
-      onUpdateDetail={updateDetail}
+      voucherTypes={voucherTypes}
       onAddRow={addDetailRow}
+      onPrint={printVoucher}
       onRemoveRow={removeDetailRow}
       onSave={saveVoucher}
-      onPrint={printVoucher}
       onUpdateAccountsList={updateAccountsList}
+      onUpdateDetail={updateDetail}
+      onVoucherChange={(field, value) =>
+        setVoucher((prev) => ({ ...prev, [field]: value }))
+      }
     />
   );
 }

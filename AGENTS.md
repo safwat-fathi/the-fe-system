@@ -4,7 +4,38 @@ This file provides guidelines for AI agents and coding assistants when working w
 
 ## Project overview
 
-This project is an ERP solution for gold vendors and gold dealers to manage their business. 
+This project is an ERP solution for gold vendors and gold dealers to manage their business.
+
+## Voucher Types (أنواع القيود والسندات)
+
+The system uses different voucher types identified by `vouch_type`:
+
+- **0** = قيد افتتاحي (Opening Entry)
+- **1** = سند قبض (Receipt Voucher)
+- **2** = سند صرف (Payment Voucher)
+- **3** = قيد تسوية (Adjustment/Journal Entry)
+
+**Important Notes:**
+- Each voucher type has its own numbering sequence
+- When generating a new voucher number, always filter by `vouch_type` to get the correct sequence
+- Example: For adjustment vouchers (type 3), find max `vouch_id` where `vouch_type === 3`, then add 1
+
+**System Parameters:**
+- Company/Branch (`com`) = **1** (fixed)
+- Year for reading (`xyear_id` in query params) = **0** (all years)
+- Year for writing (`year` in request body) = **1** (fixed)
+
+**Vouchers API Parameters:**
+```
+GET /api/vouchers_list?xcom_id=1&xyear_id=0&xvouch_type=0&xvouch_id=0&xfrom_date=0&xto_date=0&page=1
+```
+- `xcom_id`: Company/Branch (1 = fixed)
+- `xyear_id`: Year (0 = all years)
+- `xvouch_type`: Voucher type (0 = all, 1 = receipt, 2 = payment, 3 = adjustment)
+- `xvouch_id`: Specific voucher ID (0 = all)
+- `xfrom_date`: From date (0 = all)
+- `xto_date`: To date (0 = all)
+- `page`: Page number for pagination 
 
 ## Project structure
 
@@ -111,6 +142,77 @@ export default async function InvoicesPage({
 - Cache API responses on the server side for better performance
 - For paginated responses use the same as `services/api/invoice.service.ts` service and `reports/invoices` page that depends on query params updates
 - For single page responses use the same as `reports/invoices/[id]` page and return `notFound()` if fetch fails
+
+### API Endpoints Standards
+
+**Important Rules for API Endpoints:**
+
+1. **No Trailing Slash**: All API endpoints should be defined **WITHOUT** a trailing slash `/`
+   ```typescript
+   ✅ CORRECT: "customers_list"
+   ✅ CORRECT: "invoices_list"
+   ✅ CORRECT: "categories_list"
+   
+   ❌ WRONG: "customers_list/"
+   ❌ WRONG: "invoices_list/"
+   ❌ WRONG: "categories_list/"
+   ```
+
+2. **Year Parameter Usage**: The `xyear_id` parameter should **ONLY** be used for transaction screens (حركات), not for master data lists (قوائم أساسية)
+
+   **Screens that REQUIRE `xyear_id`** (Transaction Screens):
+   - `invoices_list` - Invoices
+   - `vouchers_list` - Vouchers/Journal Entries
+   - `receipts_list` - Receipt Vouchers
+   - `payments_list` - Payment Vouchers
+   - Any other transaction-based screens
+
+   **Screens that should NOT include `xyear_id`** (Master Data Lists):
+   - `customers_list` - Customers
+   - `items_list` - Items
+   - `categories_list` - Categories
+   - `units_list` - Units
+   - `boxes_list` - Boxes
+   - `accounts_list` - Accounts
+   - `cost_centers_list` - Cost Centers
+   - `currencies_list` - Currencies
+   - `cust_type_list` - Customer Types
+   - `users_list` - Users
+   - Any other master data screens
+
+   **Example Configuration in `generic.service.ts`:**
+   ```typescript
+   // ✅ Master Data (NO year parameter)
+   customers_list: {
+     endpoint: "customers_list",
+     paramTransform: (params) => ({
+       xcom_id: params.com || "1",
+       xcust_type: params.xcust_type || "0",
+     }),
+   },
+   
+   // ✅ Transaction Data (WITH year parameter)
+   invoices_list: {
+     endpoint: "invoices_list",
+     paramTransform: (params) => ({
+       xcom_id: "1",
+       xyear_id: params.xyear_id || "0",  // Required for transactions
+       xinv_type: "0",
+     }),
+   },
+   ```
+
+3. **Service Implementation**: When creating new services in `services/api/`, ensure endpoints follow these standards
+   ```typescript
+   // Example in helper.service.ts
+   async getCategories(): Promise<Category[]> {
+     // ✅ Correct: no trailing slash
+     const response = await this.get<Category[]>("categories_list", undefined, {
+       cache: "no-store",
+       next: { tags: ["categories"] },
+     });
+   }
+   ```
 
 ### Auth
 

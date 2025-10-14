@@ -13,10 +13,21 @@ import {
   Checkbox,
   Pagination,
 } from "@heroui/react";
-import { HeroModal as Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@/components/Modal";
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
+import {
+  HeroModal as Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@/components/Modal";
 import customerTypeService from "@/services/api/customer-type.service";
 
 interface CustomerType {
@@ -42,7 +53,9 @@ const columns = [
   { name: "", uid: "actions" },
 ];
 
-export default function CustomerTypesClient({ initialTypes }: CustomerTypesClientProps) {
+export default function CustomerTypesClient({
+  initialTypes,
+}: CustomerTypesClientProps) {
   const [types, setTypes] = useState<CustomerType[]>(initialTypes);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -55,6 +68,7 @@ export default function CustomerTypesClient({ initialTypes }: CustomerTypesClien
   const loadTypes = async () => {
     try {
       const data = await customerTypeService.getAllCustomerTypes();
+
       setTypes(data);
     } catch (error) {
       console.error("فشل في جلب أنواع العملاء:", error);
@@ -67,9 +81,14 @@ export default function CustomerTypesClient({ initialTypes }: CustomerTypesClien
       let result: CustomerType | null = null;
 
       if (modalMode === "edit" && currentType.id) {
-        result = await customerTypeService.updateCustomerType(currentType.id, currentType);
+        result = await customerTypeService.updateCustomerType(
+          currentType.id,
+          currentType,
+        );
       } else {
-        result = await customerTypeService.createCustomerType(currentType as Omit<CustomerType, 'id'>);
+        result = await customerTypeService.createCustomerType(
+          currentType as Omit<CustomerType, "id">,
+        );
       }
 
       if (result) {
@@ -126,9 +145,9 @@ export default function CustomerTypesClient({ initialTypes }: CustomerTypesClien
       </Button>
       <Button
         isIconOnly
+        color="danger"
         size="sm"
         variant="light"
-        color="danger"
         onPress={() => handleDelete(type.id)}
       >
         <TrashIcon className="h-4 w-4" />
@@ -281,4 +300,3 @@ export default function CustomerTypesClient({ initialTypes }: CustomerTypesClien
     </div>
   );
 }
-

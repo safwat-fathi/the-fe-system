@@ -1,7 +1,9 @@
 import { Metadata } from "next";
+
+import ItemsClient from "./components/ItemsClient";
+
 import itemService from "@/services/api/item.service";
 import helperService from "@/services/api/helper.service";
-import ItemsClient from "./components/ItemsClient";
 
 export const metadata: Metadata = {
   title: "الأصناف - NafeesWeb",
@@ -32,14 +34,14 @@ export default async function ItemsPage() {
     <div className="responsive-container font-cairo">
       <h1 className="responsive-text-xl font-bold mb-6">الأصناف</h1>
 
-      <ItemsClient 
-        initialItems={itemsData as any}
+      <ItemsClient
+        initialBoxes={boxesData as any}
+        initialCatStatuses={catStatusesData as any}
+        initialCatTypes={catTypesData as any}
         initialCategories={categoriesData as any}
         initialItemTypes={itemTypesData as any}
+        initialItems={itemsData as any}
         initialUnits={unitsData as any}
-        initialBoxes={boxesData as any}
-        initialCatTypes={catTypesData as any}
-        initialCatStatuses={catStatusesData as any}
       />
     </div>
   );

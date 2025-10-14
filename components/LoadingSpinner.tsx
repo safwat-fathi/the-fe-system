@@ -8,18 +8,24 @@ interface LoadingSpinnerProps {
   className?: string;
 }
 
-export function LoadingSpinner({ size = "md", label, className }: LoadingSpinnerProps) {
+export function LoadingSpinner({
+  size = "md",
+  label,
+  className,
+}: LoadingSpinnerProps) {
   return (
-    <div className={`flex flex-col items-center justify-center py-4 ${className || ""}`}>
-      <Spinner 
-        size={size}
-        color="primary"
-        label={label}
+    <div
+      className={`flex flex-col items-center justify-center py-4 ${className || ""}`}
+    >
+      <Spinner
         classNames={{
           circle1: "border-b-blue-600",
           circle2: "border-b-blue-600/50",
-          label: "text-primary font-medium mt-2"
+          label: "text-primary font-medium mt-2",
         }}
+        color="primary"
+        label={label}
+        size={size}
       />
     </div>
   );
@@ -30,27 +36,26 @@ interface PageLoadingProps {
   message?: string;
 }
 
-export function PageLoading({ title = "جاري التحميل", message = "يرجى الانتظار بينما نجهز المحتوى لك" }: PageLoadingProps) {
+export function PageLoading({
+  title = "جاري التحميل",
+  message = "يرجى الانتظار بينما نجهز المحتوى لك",
+}: PageLoadingProps) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
           <div className="flex flex-col items-center justify-center space-y-4">
-            <Spinner 
-              size="lg"
-              color="primary"
+            <Spinner
               classNames={{
                 circle1: "border-b-blue-600",
                 circle2: "border-b-blue-600/50",
               }}
+              color="primary"
+              size="lg"
             />
             <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-800">
-                {title}
-              </h2>
-              <p className="mt-2 text-gray-600">
-                {message}
-              </p>
+              <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
+              <p className="mt-2 text-gray-600">{message}</p>
             </div>
           </div>
         </div>

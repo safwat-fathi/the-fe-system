@@ -9,13 +9,9 @@ class HomeService extends HttpService<HomeSettings> {
 
   async getHomeList(): Promise<HomeSettings[]> {
     try {
-      const response = await this.get<HomeSettings[]>(
-        "home_list",
-        undefined,
-        {
-          cache: "no-store",
-        },
-      );
+      const response = await this.get<HomeSettings[]>("home_list", undefined, {
+        cache: "no-store",
+      });
 
       if (response.success) {
         if (Array.isArray(response.data)) {
@@ -32,10 +28,14 @@ class HomeService extends HttpService<HomeSettings> {
     }
   }
 
-  async getHomeListWithDebug(params?: { com?: string; year?: string }): Promise<ServiceResponse<HomeSettings[]>> {
+  async getHomeListWithDebug(params?: {
+    com?: string;
+    year?: string;
+  }): Promise<ServiceResponse<HomeSettings[]>> {
     try {
       // Build query params
       const queryParams: any = {};
+
       if (params?.com) queryParams.com = params.com;
       if (params?.year) queryParams.year = params.year;
 
@@ -55,36 +55,41 @@ class HomeService extends HttpService<HomeSettings> {
       );
 
       const endTime = Date.now();
+
       console.log(`⏱️ Request took: ${endTime - startTime}ms`);
       console.log("✅ HomeService Response:", response);
 
       if (response.success) {
         if (Array.isArray(response.data)) {
-          return { 
-            success: true, 
+          return {
+            success: true,
             data: response.data,
-            message: `تم جلب ${response.data.length} سجل بنجاح`
+            message: `تم جلب ${response.data.length} سجل بنجاح`,
           };
         } else if (Array.isArray((response.data as any)?.results)) {
-          return { 
-            success: true, 
+          return {
+            success: true,
             data: (response.data as any).results,
-            message: `تم جلب ${(response.data as any).results.length} سجل بنجاح`
+            message: `تم جلب ${(response.data as any).results.length} سجل بنجاح`,
           };
         }
       }
 
-      return { 
-        success: false, 
-        data: [], 
-        message: response.message || "No data returned from API" 
-      };
-    } catch (error) {
-      console.error("❌ Error fetching home list:", error);
       return {
         success: false,
         data: [],
-        message: error instanceof Error ? error.message : "حدث خطأ أثناء جلب بيانات النظام",
+        message: response.message || "No data returned from API",
+      };
+    } catch (error) {
+      console.error("❌ Error fetching home list:", error);
+
+      return {
+        success: false,
+        data: [],
+        message:
+          error instanceof Error
+            ? error.message
+            : "حدث خطأ أثناء جلب بيانات النظام",
       };
     }
   }
@@ -96,17 +101,18 @@ class HomeService extends HttpService<HomeSettings> {
   async getFractions(): Promise<{ frac: number; frac2: number }> {
     try {
       const homeList = await this.getHomeList();
-      
+
       if (homeList.length > 0) {
         const frac = homeList[0].frac || 2;
         const frac2 = homeList[0].frac2 || 3;
-        
+
         return { frac, frac2 };
       }
 
       return { frac: 2, frac2: 3 };
     } catch (error) {
       console.error("Error fetching fractions:", error);
+
       return { frac: 2, frac2: 3 };
     }
   }
@@ -117,13 +123,14 @@ class HomeService extends HttpService<HomeSettings> {
   async getHomeSettings(): Promise<HomeSettings | null> {
     try {
       const homeList = await this.getHomeList();
+
       return homeList.length > 0 ? homeList[0] : null;
     } catch (error) {
       console.error("Error fetching home settings:", error);
+
       return null;
     }
   }
 }
 
 export default new HomeService();
-

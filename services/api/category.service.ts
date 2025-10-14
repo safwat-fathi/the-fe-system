@@ -21,14 +21,14 @@ class CategoryService extends HttpService<Category> {
   async getAllCategories(): Promise<Category[]> {
     try {
       const response = await this.get<Category[]>(
-        "categories_list/",
+        "categories_list",
         undefined,
         {
           cache: "force-cache",
           next: { tags: ["categories"] },
         },
       );
-      
+
       if (response.success) {
         if (Array.isArray(response.data)) {
           return response.data;
@@ -36,7 +36,7 @@ class CategoryService extends HttpService<Category> {
           return (response.data as any).results;
         }
       }
-      
+
       return [];
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -47,14 +47,18 @@ class CategoryService extends HttpService<Category> {
   async getCategoryCount(): Promise<number> {
     try {
       const categories = await this.getAllCategories();
+
       return categories.length;
     } catch (error) {
       console.error("Error counting categories:", error);
+
       return 0;
     }
   }
 
-  async createCategory(category: Omit<Category, 'id'>): Promise<Category | null> {
+  async createCategory(
+    category: Omit<Category, "id">,
+  ): Promise<Category | null> {
     try {
       const response = await this.post<Category>(
         "api_create_category",
@@ -76,7 +80,10 @@ class CategoryService extends HttpService<Category> {
     }
   }
 
-  async updateCategory(id: number, category: Partial<Category>): Promise<Category | null> {
+  async updateCategory(
+    id: number,
+    category: Partial<Category>,
+  ): Promise<Category | null> {
     try {
       const response = await this.put<Category>(
         `api_update_category/${id}`,
@@ -118,9 +125,11 @@ class CategoryService extends HttpService<Category> {
   async getCategoryById(id: number): Promise<Category | null> {
     try {
       const categories = await this.getAllCategories();
-      return categories.find(cat => cat.id === id) || null;
+
+      return categories.find((cat) => cat.id === id) || null;
     } catch (error) {
       console.error("Error fetching category by ID:", error);
+
       return null;
     }
   }

@@ -5,6 +5,7 @@ import BalanceVoucherActions from "./BalanceVoucherActions";
 import BalanceVoucherForm from "./BalanceVoucherForm";
 import BalanceVoucherDetailsTable from "./BalanceVoucherDetailsTable";
 import BalanceVoucherTotals from "./BalanceVoucherTotals";
+
 import { Voucher, VoucherDetail } from "@/types/voucher";
 
 interface BalanceVoucherContainerProps {
@@ -19,7 +20,11 @@ interface BalanceVoucherContainerProps {
   isPrinting: boolean;
   isBalanced: boolean;
   onVoucherChange: (field: keyof Voucher, value: any) => void;
-  onUpdateDetail: (index: number, field: keyof VoucherDetail, value: any) => void;
+  onUpdateDetail: (
+    index: number,
+    field: keyof VoucherDetail,
+    value: any,
+  ) => void;
   onAddRow: () => void;
   onRemoveRow: (index: number) => void;
   onSave: () => void;
@@ -44,15 +49,15 @@ export default function BalanceVoucherContainer({
   onRemoveRow,
   onSave,
   onPrint,
-  onUpdateAccountsList
+  onUpdateAccountsList,
 }: BalanceVoucherContainerProps) {
   return (
     <div className="p-3 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* رأس القيد */}
       <BalanceVoucherHeader
+        currentTime={currentTime}
         voucher={voucher}
         voucherTypes={voucherTypes}
-        currentTime={currentTime}
       />
 
       {/* شريط الأزرار */}
@@ -60,12 +65,12 @@ export default function BalanceVoucherContainer({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BalanceVoucherActions
-              voucher={voucher}
+              isBalanced={isBalanced}
               isLoading={isLoading}
               isPrinting={isPrinting}
-              isBalanced={isBalanced}
-              onSave={onSave}
+              voucher={voucher}
               onPrint={onPrint}
+              onSave={onSave}
             />
           </div>
         </div>
@@ -73,32 +78,50 @@ export default function BalanceVoucherContainer({
 
       {/* نموذج بيانات القيد */}
       <BalanceVoucherForm
-        voucher={voucher}
         currentTime={currentTime}
+        voucher={voucher}
         onVoucherChange={onVoucherChange}
       />
 
       {/* جدول تفاصيل القيد */}
       <BalanceVoucherDetailsTable
-        details={details}
         accounts={accounts}
         costCenters={costCenters}
+        details={details}
         isBalanced={isBalanced}
         onAddRow={onAddRow}
         onRemoveRow={onRemoveRow}
-        onUpdateDetail={onUpdateDetail}
         onUpdateAccountsList={onUpdateAccountsList}
+        onUpdateDetail={onUpdateDetail}
       />
 
       {/* شريط الإجماليات */}
       <BalanceVoucherTotals
         totals={{
-          totalDebit: details.reduce((sum, d) => sum + (parseFloat(String(d.debit || 0)) || 0), 0),
-          totalCredit: details.reduce((sum, d) => sum + (parseFloat(String(d.credit || 0)) || 0), 0),
-          totalDebitG: details.reduce((sum, d) => sum + (parseFloat(String(d.debit_g || 0)) || 0), 0),
-          totalCreditG: details.reduce((sum, d) => sum + (parseFloat(String(d.credit_g || 0)) || 0), 0),
-          totalTax: details.reduce((sum, d) => sum + (parseFloat(String(d.tax || 0)) || 0), 0),
-          totalTaxPrc: details.reduce((sum, d) => sum + (parseFloat(String(d.tax_prc || 0)) || 0), 0),
+          totalDebit: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.debit || 0)) || 0),
+            0,
+          ),
+          totalCredit: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.credit || 0)) || 0),
+            0,
+          ),
+          totalDebitG: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.debit_g || 0)) || 0),
+            0,
+          ),
+          totalCreditG: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.credit_g || 0)) || 0),
+            0,
+          ),
+          totalTax: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.tax || 0)) || 0),
+            0,
+          ),
+          totalTaxPrc: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.tax_prc || 0)) || 0),
+            0,
+          ),
         }}
       />
     </div>

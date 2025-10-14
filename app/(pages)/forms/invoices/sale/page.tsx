@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Input, Button } from "@heroui/react";
 import toast from "react-hot-toast";
 
-import useFractions from "@/utilities/useFractions";
 import { renderInvoicePreview } from "./components/TaxInvoicePreview";
+
+import useFractions from "@/utilities/useFractions";
 import {
   API_BASE_URL,
   API_ENDPOINTS,
@@ -15,7 +15,6 @@ import {
   apiFetch,
   fetchItemByBarcode,
 } from "@/utilities/api";
-import { formatAmount } from "@/utilities/formatAmount";
 import homeService from "@/services/api/home.service";
 
 const { CREATE_INVOICE_DTL } = API_ENDPOINTS;
@@ -140,17 +139,17 @@ export default function InvoicePage() {
   const [invoicePk, setInvoicePk] = useState<number | null>(null);
   const [homePurity, setHomePurity] = useState<number>(1000);
   const [defaultTaxPrc, setDefaultTaxPrc] = useState<number>(15);
-  
+
   // إجماليات قابلة للإدخال
   const [manualTotalValue, setManualTotalValue] = useState<number>(0);
   const [manualTotalWages, setManualTotalWages] = useState<number>(0);
   const [useManualTotals, setUseManualTotals] = useState<boolean>(false);
-  
+
   // متغيرات التنقل
   const [currentRecord, setCurrentRecord] = useState<number>(1);
   const [totalRecords, setTotalRecords] = useState<number>(0);
   const [invoicesList, setInvoicesList] = useState<any[]>([]);
-  
+
   // معالجة إرجاع useFractions (قد يرجع رقم أو كائن)
   const fractions = useFractions();
   const frac = typeof fractions === "object" ? fractions.frac : 2;
@@ -158,7 +157,9 @@ export default function InvoicePage() {
   const searchParams = useSearchParams();
 
   // منع تكرار استدعاء نفس الفاتورة
-  const [lastLoadedInvoice, setLastLoadedInvoice] = useState<string | null>(null);
+  const [lastLoadedInvoice, setLastLoadedInvoice] = useState<string | null>(
+    null,
+  );
   // منع تكرار استدعاء نفس الفاتورة بشكل فوري
   const lastLoadedInvoiceRef = useRef<string | null>(null);
 
@@ -187,59 +188,84 @@ export default function InvoicePage() {
         manualTotalValue,
         manualTotalWages,
         useManualTotals,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-      localStorage.setItem('invoice_draft', JSON.stringify(invoiceData));
+
+      localStorage.setItem("invoice_draft", JSON.stringify(invoiceData));
     }
   }, [
-    isEditing, isExistingInvoice, selectedCustomer, invoiceItems, paymentMethod,
-    employee, note, handlingMethod, mobileMethod, referenceNumber, vatNumber,
-    payType, crNo, gov, city, area, street, buildNo, postNo, postCode,
-    manualTotalValue, manualTotalWages, useManualTotals
+    isEditing,
+    isExistingInvoice,
+    selectedCustomer,
+    invoiceItems,
+    paymentMethod,
+    employee,
+    note,
+    handlingMethod,
+    mobileMethod,
+    referenceNumber,
+    vatNumber,
+    payType,
+    crNo,
+    gov,
+    city,
+    area,
+    street,
+    buildNo,
+    postNo,
+    postCode,
+    manualTotalValue,
+    manualTotalWages,
+    useManualTotals,
   ]);
 
   // استعادة البيانات من localStorage
   useEffect(() => {
     if (isEditing && !isExistingInvoice) {
-      const savedData = localStorage.getItem('invoice_draft');
+      const savedData = localStorage.getItem("invoice_draft");
+
       if (savedData) {
         try {
           const data = JSON.parse(savedData);
           const isRecent = Date.now() - data.timestamp < 30 * 60 * 1000; // 30 دقيقة
-          
+
           if (isRecent) {
             setSelectedCustomer(data.selectedCustomer);
-            setInvoiceItems(data.invoiceItems || [{
-              id: Date.now(),
-              item_id: null,
-              item_code: "",
-              qty: 1,
-              weight: 0,
-              g_weight: 0,
-              k: "",
-              price: 0,
-              price_w: 0,
-              note: "",
-              trans_type: 2,
-              purity: "",
-              total: 0,
-              total_w: 0,
-              total_a: 0,
-              tax: 0,
-              tax_prc: 15,
-              stones: "",
-              item_disc_prc: 0,
-              item_disc_amt: 0,
-              sn: "",
-              item_desc: "",
-              cr_date: "",
-              cr_user: "",
-              upd_date: "",
-              upd_user: "",
-              com: 0,
-              inv: 0,
-              item: 0,
-            }]);
+            setInvoiceItems(
+              data.invoiceItems || [
+                {
+                  id: Date.now(),
+                  item_id: null,
+                  item_code: "",
+                  qty: 1,
+                  weight: 0,
+                  g_weight: 0,
+                  k: "",
+                  price: 0,
+                  price_w: 0,
+                  note: "",
+                  trans_type: 2,
+                  purity: "",
+                  total: 0,
+                  total_w: 0,
+                  total_a: 0,
+                  tax: 0,
+                  tax_prc: 15,
+                  stones: "",
+                  item_disc_prc: 0,
+                  item_disc_amt: 0,
+                  sn: "",
+                  item_desc: "",
+                  cr_date: "",
+                  cr_user: "",
+                  upd_date: "",
+                  upd_user: "",
+                  com: 0,
+                  inv: 0,
+                  item: 0,
+                },
+              ],
+            );
             setPaymentMethod(data.paymentMethod || "cash");
             setEmployee(data.employee || "");
             setNote(data.note || "");
@@ -274,6 +300,7 @@ export default function InvoicePage() {
     // إذا كان هناك طلب لفاتورة جديدة، قم بإعادة تعيين الحالة
     if (isNewInvoice) {
       resetInvoiceForm();
+
       return;
     }
 
@@ -321,6 +348,7 @@ export default function InvoicePage() {
   useEffect(() => {
     if (!useManualTotals) {
       const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
+
       setManualTotalValue(autoTotalValue);
       setManualTotalWages(autoTotalWages);
     }
@@ -330,26 +358,37 @@ export default function InvoicePage() {
   useEffect(() => {
     if (useManualTotals && invoiceItems.length > 0) {
       const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
-      
+
       setInvoiceItems((items) =>
         items.map((item) => {
           // الحفاظ على السعر الأصلي كما هو
           const originalPrice = item.price;
           const originalPriceW = item.price_w;
-          
+
           const totalA = item.weight * originalPrice;
           const totalW = item.weight * (originalPriceW ?? 0);
-          
+
           // حساب النسب المئوية للتوزيع مع تجنب تقسيم الصفر
-          const valueRatio = autoTotalValue > 0 ? totalA / autoTotalValue : (invoiceItems.length > 0 ? 1 / invoiceItems.length : 1);
-          const wagesRatio = autoTotalWages > 0 ? totalW / autoTotalWages : (invoiceItems.length > 0 ? 1 / invoiceItems.length : 1);
-          
+          const valueRatio =
+            autoTotalValue > 0
+              ? totalA / autoTotalValue
+              : invoiceItems.length > 0
+                ? 1 / invoiceItems.length
+                : 1;
+          const wagesRatio =
+            autoTotalWages > 0
+              ? totalW / autoTotalWages
+              : invoiceItems.length > 0
+                ? 1 / invoiceItems.length
+                : 1;
+
           // تطبيق الإجماليات اليدوية
           const newTotalA = manualTotalValue * valueRatio;
           const newTotalW = manualTotalWages * wagesRatio;
-          
+
           // حساب الإجمالي حسب نوع الدفع
           let rowTotal = 0;
+
           if (payType === 1) {
             rowTotal = newTotalA;
           } else if (payType === 2) {
@@ -357,7 +396,7 @@ export default function InvoicePage() {
           } else {
             rowTotal = newTotalA + newTotalW;
           }
-          
+
           return {
             ...item,
             // الحفاظ على الأسعار الأصلية
@@ -367,12 +406,18 @@ export default function InvoicePage() {
             total: newTotalA,
             total_w: newTotalW,
             total_a: rowTotal,
-            tax: (rowTotal - (item.item_disc_amt ?? 0)) * (item.tax_prc / 100)
+            tax: (rowTotal - (item.item_disc_amt ?? 0)) * (item.tax_prc / 100),
           };
-        })
+        }),
       );
     }
-  }, [manualTotalValue, manualTotalWages, useManualTotals, invoiceItems.length, payType]);
+  }, [
+    manualTotalValue,
+    manualTotalWages,
+    useManualTotals,
+    invoiceItems.length,
+    payType,
+  ]);
 
   useEffect(() => {
     setInvoiceItems((items) =>
@@ -398,8 +443,10 @@ export default function InvoicePage() {
         // إذا كان الوزن المعاير تم تغييره يدوياً وكان الوزن موجود
         if (homePurity && weightVal > 0 && gWeightVal > 0) {
           const purity = (gWeightVal * homePurity) / weightVal;
+
           return { ...itm, purity: parseFloat(purity.toFixed(2)).toString() };
         }
+
         return itm;
       }),
     );
@@ -412,17 +459,20 @@ export default function InvoicePage() {
     fetchHomePurity();
     if (typeof window !== "undefined") {
       const now = new Date();
+
       setInvoiceDate(now.toISOString());
     }
     getGoldPrice();
     loadInvoicesList(); // تحميل قائمة الفواتير للتنقل
     const invId = searchParams.get("inv_id");
+
     // توليد رقم فاتورة جديد فقط إذا لم يكن هناك inv_id ولم تكن الفاتورة في وضع التعديل
     if (!invId && !isExistingInvoice) {
       setTimeout(() => {
         setInvoiceNumber((prev) => {
           if (prev && prev !== 1) return prev; // إذا تم تعيين رقم فاتورة حقيقي لا تغيّره
           getNextInvoiceNumber().then(setInvoiceNumber);
+
           return prev;
         });
       }, 0);
@@ -476,7 +526,10 @@ export default function InvoicePage() {
 
     if (response) {
       // تصفية العملاء والموردين بحيث لا يكون box_type = 2
-      const filteredCustomers = response.filter((customer) => customer.box_type !== 2);
+      const filteredCustomers = response.filter(
+        (customer) => customer.box_type !== 2,
+      );
+
       setCustomers(filteredCustomers);
     } else {
       setCustomers([]);
@@ -505,25 +558,36 @@ export default function InvoicePage() {
   // حساب الإجماليات التلقائية
   const calculateAutoTotals = () => {
     const autoTotalValue = invoiceItems.reduce((sum, item) => {
-      return sum + (item.weight * item.price);
+      return sum + item.weight * item.price;
     }, 0);
-    
+
     const autoTotalWages = invoiceItems.reduce((sum, item) => {
-      return sum + (item.weight * (item.price_w ?? 0));
+      return sum + item.weight * (item.price_w ?? 0);
     }, 0);
-    
+
     return { autoTotalValue, autoTotalWages };
   };
 
   const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
 
   // استخدام الإجماليات اليدوية أو التلقائية
-  const effectiveTotalValue = useManualTotals ? manualTotalValue : autoTotalValue;
-  const effectiveTotalWages = useManualTotals ? manualTotalWages : autoTotalWages;
+  const effectiveTotalValue = useManualTotals
+    ? manualTotalValue
+    : autoTotalValue;
+  const effectiveTotalWages = useManualTotals
+    ? manualTotalWages
+    : autoTotalWages;
 
   const totalAmount = invoiceItems.reduce((sum, item) => {
-    const totalA = effectiveTotalValue > 0 ? (item.weight * item.price * effectiveTotalValue / autoTotalValue) : (item.weight * item.price);
-    const totalW = effectiveTotalWages > 0 ? (item.weight * (item.price_w ?? 0) * effectiveTotalWages / autoTotalWages) : (item.weight * (item.price_w ?? 0));
+    const totalA =
+      effectiveTotalValue > 0
+        ? (item.weight * item.price * effectiveTotalValue) / autoTotalValue
+        : item.weight * item.price;
+    const totalW =
+      effectiveTotalWages > 0
+        ? (item.weight * (item.price_w ?? 0) * effectiveTotalWages) /
+          autoTotalWages
+        : item.weight * (item.price_w ?? 0);
     let rowTotal = 0;
 
     // 1=gold only, 2=wage only, 3=both
@@ -567,20 +631,25 @@ export default function InvoicePage() {
   const totalValueTax = invoiceItems.reduce((sum, item) => {
     const totalA = item.weight * item.price;
     const base = totalA - (item.item_disc_amt ?? 0);
-    return sum + (base * 0.15);
+
+    return sum + base * 0.15;
   }, 0);
 
   const totalWagesTax = invoiceItems.reduce((sum, item) => {
     const totalW = item.weight * (item.price_w ?? 0);
     const base = totalW - (item.item_disc_amt ?? 0);
-    return sum + (base * 0.15);
+
+    return sum + base * 0.15;
   }, 0);
 
   const totalTax = totalValueTax + totalWagesTax;
 
   // تحديث الإجماليات اليدوية عند تغييرها
-  const handleManualTotalChange = (type: 'value' | 'wages', newValue: number) => {
-    if (type === 'value') {
+  const handleManualTotalChange = (
+    type: "value" | "wages",
+    newValue: number,
+  ) => {
+    if (type === "value") {
       setManualTotalValue(newValue);
     } else {
       setManualTotalWages(newValue);
@@ -627,6 +696,7 @@ export default function InvoicePage() {
     // فقط في حالة الإضافة الجديدة يتم توليد رقم جديد
     // إذا لم يكن هناك inv_id في الرابط ولم تكن الفاتورة موجودة
     const generatedInvId = await getNextInvoiceNumber();
+
     setInvoiceNumber(generatedInvId);
 
     const employeeMap: Record<string, number> = {
@@ -686,7 +756,7 @@ export default function InvoicePage() {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api_create_invoice`, {
+      const res = await apiFetch(`${API_BASE_URL}/api_create_invoice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(invData),
@@ -714,37 +784,37 @@ export default function InvoicePage() {
             ? (row.total_w ?? row.weight * row.price_w)
             : (row.total_a ?? row.weight * row.price);
 
-                 const dtl = {
-           id: row.id,
-           trans_type: row.trans_type ?? 2,
-           G875: row.purity ? parseFloat(row.purity) : null,
-           k: row.k ?? "",
-           qty: row.qty,
-           stones: row.stones ?? "",
-           price: dtlPrice,
-           price_w: row.price_w,
-           weight: row.weight,
-           g_weight: row.g_weight ?? 0,
-           // totals stored with the row (total includes tax)
-           total:
-             row.total ??
-             row.weight * row.price +
-               row.weight * row.price_w -
-               (row.item_disc_amt ?? 0),
-           total_w: row.total_w ?? row.weight * row.price_w,
-           total_a: dtlTotalA,
-           tax:
-             row.tax ??
-             (row.weight * row.price +
-               row.weight * row.price_w -
-               (row.item_disc_amt ?? 0)) *
-               ((row.tax_prc ?? 15) / 100),
-           tax_prc: row.tax_prc ?? 15,
-           item_disc_prc: row.item_disc_prc ?? 0,
-           item_disc_amt: row.item_disc_amt ?? 0,
-           sn: row.sn ?? "",
-           item_desc: row.item_desc || row.item_name || "",
-           inv_notes: row.note || "",
+        const dtl = {
+          id: row.id,
+          trans_type: row.trans_type ?? 2,
+          G875: row.purity ? parseFloat(row.purity) : null,
+          k: row.k ?? "",
+          qty: row.qty,
+          stones: row.stones ?? "",
+          price: dtlPrice,
+          price_w: row.price_w,
+          weight: row.weight,
+          g_weight: row.g_weight ?? 0,
+          // totals stored with the row (total includes tax)
+          total:
+            row.total ??
+            row.weight * row.price +
+              row.weight * row.price_w -
+              (row.item_disc_amt ?? 0),
+          total_w: row.total_w ?? row.weight * row.price_w,
+          total_a: dtlTotalA,
+          tax:
+            row.tax ??
+            (row.weight * row.price +
+              row.weight * row.price_w -
+              (row.item_disc_amt ?? 0)) *
+              ((row.tax_prc ?? 15) / 100),
+          tax_prc: row.tax_prc ?? 15,
+          item_disc_prc: row.item_disc_prc ?? 0,
+          item_disc_amt: row.item_disc_amt ?? 0,
+          sn: row.sn ?? "",
+          item_desc: row.item_desc || row.item_name || "",
+          inv_notes: row.note || "",
           cr_date: invoiceDate,
           cr_user: row.cr_user ?? "",
           upd_date: row.upd_date || new Date().toISOString(),
@@ -775,9 +845,9 @@ export default function InvoicePage() {
       setCommitVal(true);
       setIsExistingInvoice(true);
       setIsEditing(false);
-      
+
       // مسح البيانات المحفوظة بعد الحفظ الناجح
-      localStorage.removeItem('invoice_draft');
+      localStorage.removeItem("invoice_draft");
     } catch (err) {
       console.error("❌ خطأ أثناء الحفظ:", err);
       toast.error("حدث خطأ أثناء حفظ الفاتورة");
@@ -852,15 +922,21 @@ export default function InvoicePage() {
 
       // تنظيف الحقول ذات القيمة null أو undefined
       const cleanInvData = Object.fromEntries(
-        Object.entries(invData).filter(([_, v]) => v !== null && v !== undefined)
+        Object.entries(invData).filter(
+          ([_, v]) => v !== null && v !== undefined,
+        ),
       );
+
       console.log("[updateInvoice] cleanInvData:", cleanInvData);
 
-      const res = await apiFetch(`${API_BASE_URL}/api_update_invoice/${invoicePk}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cleanInvData),
-      });
+      const res = await apiFetch(
+        `${API_BASE_URL}/api_update_invoice/${invoicePk}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cleanInvData),
+        },
+      );
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -879,25 +955,43 @@ export default function InvoicePage() {
 
       // حذف الأسطر المحذوفة من قاعدة البيانات
       if (deletedItems.length > 0) {
-        console.log(`🔴 سيتم حذف ${deletedItems.length} صنف من قاعدة البيانات:`, deletedItems.map(item => `${item.item_name} (ID: ${item.id})`));
-        
+        console.log(
+          `🔴 سيتم حذف ${deletedItems.length} صنف من قاعدة البيانات:`,
+          deletedItems.map((item) => `${item.item_name} (ID: ${item.id})`),
+        );
+
         for (const itemToDelete of deletedItems) {
           try {
-            console.log(`🔄 جاري حذف الصنف: ${itemToDelete.item_name} (ID: ${itemToDelete.id})`);
-            const deleteRes = await apiFetch(`${API_BASE_URL}/api_delete_invoice_dtl/${itemToDelete.id}`, { 
-              method: "DELETE" 
-            });
-            
+            console.log(
+              `🔄 جاري حذف الصنف: ${itemToDelete.item_name} (ID: ${itemToDelete.id})`,
+            );
+            const deleteRes = await apiFetch(
+              `${API_BASE_URL}/api_delete_invoice_dtl/${itemToDelete.id}`,
+              {
+                method: "DELETE",
+              },
+            );
+
             if (!deleteRes.ok) {
               const errorText = await deleteRes.text();
-              console.error(`❌ فشل في حذف الصنف ${itemToDelete.id}:`, errorText);
-              toast.error(`فشل في حذف الصنف ${itemToDelete.item_name || itemToDelete.id}`);
+
+              console.error(
+                `❌ فشل في حذف الصنف ${itemToDelete.id}:`,
+                errorText,
+              );
+              toast.error(
+                `فشل في حذف الصنف ${itemToDelete.item_name || itemToDelete.id}`,
+              );
             } else {
-              console.log(`✅ تم حذف الصنف ${itemToDelete.item_name || itemToDelete.id} بنجاح`);
+              console.log(
+                `✅ تم حذف الصنف ${itemToDelete.item_name || itemToDelete.id} بنجاح`,
+              );
             }
           } catch (error) {
             console.error(`❌ خطأ في حذف الصنف ${itemToDelete.id}:`, error);
-            toast.error(`خطأ في حذف الصنف ${itemToDelete.item_name || itemToDelete.id}`);
+            toast.error(
+              `خطأ في حذف الصنف ${itemToDelete.item_name || itemToDelete.id}`,
+            );
           }
         }
       } else {
@@ -912,36 +1006,36 @@ export default function InvoicePage() {
           payType === 2
             ? (row.total_w ?? row.weight * row.price_w)
             : (row.total_a ?? row.weight * row.price);
-                 const dtl = {
-           id: row.id,
-           trans_type: row.trans_type ?? 2,
-           G875: row.purity ? parseFloat(row.purity) : null,
-           k: row.k ?? "",
-           qty: row.qty,
-           stones: row.stones ?? "",
-           price: dtlPrice,
-           price_w: row.price_w,
-           weight: row.weight,
-           g_weight: row.g_weight ?? 0,
-           total:
-             row.total ??
-             row.weight * row.price +
-               row.weight * row.price_w -
-               (row.item_disc_amt ?? 0),
-           total_w: row.total_w ?? row.weight * row.price_w,
-           total_a: dtlTotalA,
-           tax:
-             row.tax ??
-             (row.weight * row.price +
-               row.weight * row.price_w -
-               (row.item_disc_amt ?? 0)) *
-               ((row.tax_prc ?? 15) / 100),
-           tax_prc: row.tax_prc ?? 15,
-           item_disc_prc: row.item_disc_prc ?? 0,
-           item_disc_amt: row.item_disc_amt ?? 0,
-           sn: row.sn ?? "",
-           item_desc: row.item_desc || row.item_name || "",
-           inv_notes: row.note || "",
+        const dtl = {
+          id: row.id,
+          trans_type: row.trans_type ?? 2,
+          G875: row.purity ? parseFloat(row.purity) : null,
+          k: row.k ?? "",
+          qty: row.qty,
+          stones: row.stones ?? "",
+          price: dtlPrice,
+          price_w: row.price_w,
+          weight: row.weight,
+          g_weight: row.g_weight ?? 0,
+          total:
+            row.total ??
+            row.weight * row.price +
+              row.weight * row.price_w -
+              (row.item_disc_amt ?? 0),
+          total_w: row.total_w ?? row.weight * row.price_w,
+          total_a: dtlTotalA,
+          tax:
+            row.tax ??
+            (row.weight * row.price +
+              row.weight * row.price_w -
+              (row.item_disc_amt ?? 0)) *
+              ((row.tax_prc ?? 15) / 100),
+          tax_prc: row.tax_prc ?? 15,
+          item_disc_prc: row.item_disc_prc ?? 0,
+          item_disc_amt: row.item_disc_amt ?? 0,
+          sn: row.sn ?? "",
+          item_desc: row.item_desc || row.item_name || "",
+          inv_notes: row.note || "",
           cr_date: row.cr_date || invoiceDate,
           upd_date: new Date().toISOString(),
           com:
@@ -951,6 +1045,7 @@ export default function InvoicePage() {
           inv: invoicePk ?? invoiceNumber,
           item: row.item_id,
         };
+
         if (originalIds.includes(row.id)) {
           // تحديث سطر موجود
           await apiFetch(`${API_BASE_URL}/api_update_invoice_dtl/${row.id}`, {
@@ -971,7 +1066,7 @@ export default function InvoicePage() {
       toast.success("تم تعديل الفاتورة بنجاح ✅");
       setCommitVal(true);
       setIsEditing(false);
-      
+
       // تحديث originalInvoiceItems ليعكس التغييرات الحالية
       setOriginalInvoiceItems([...invoiceItems]);
       // مسح قائمة العناصر المحذوفة بعد الحفظ الناجح
@@ -994,7 +1089,7 @@ export default function InvoicePage() {
     if (!previewWindow) return toast.error("تعذر فتح نافذة المعاينة");
 
     // جلب بيانات المنشأة من قاعدة البيانات
-    const home = await homeService.getHomeSettings() || {};
+    const home = (await homeService.getHomeSettings()) || {};
 
     // تجهيز بيانات التقرير
     const previewCustomer = selectedCust
@@ -1007,7 +1102,7 @@ export default function InvoicePage() {
       : undefined;
 
     const html = renderInvoicePreview({
-      items: invoiceItems.map(item => ({
+      items: invoiceItems.map((item) => ({
         item_name: item.item_name || "",
         qty: item.qty,
         weight: item.weight,
@@ -1049,62 +1144,208 @@ export default function InvoicePage() {
 
     try {
       console.log("البحث بالباركود:", searchValue.trim());
-      
+
       const searchTerm = searchValue.trim();
       let exactMatch = null;
-      
+
       // البحث في الأصناف المحملة أولاً
       console.log("البحث في الأصناف المحملة:", items.length, "صنف");
       exactMatch = items.find((item: any) => {
         const itemBarcode = (item.item_barcode ?? "").toString().trim();
         const itemCode = (item.item_code ?? "").toString().trim();
-        
+
         // البحث في الباركود أولاً، ثم في الكود
         return itemBarcode === searchTerm || itemCode === searchTerm;
       });
-      
+
       if (!exactMatch) {
         console.log("لم يجد في الأصناف المحملة، البحث في API...");
-        
+
         // استخدام دالة البحث بالباركود المخصصة
         const barcodeResult = await fetchItemByBarcode(searchTerm);
-        
+
         if (barcodeResult) {
           exactMatch = barcodeResult;
-          console.log("✅ وجد تطابق في API بالباركود:", exactMatch.item_barcode);
+          console.log(
+            "✅ وجد تطابق في API بالباركود:",
+            exactMatch.item_barcode,
+          );
         } else {
           // إذا لم يجد بالباركود، جرب البحث في الكود
           const res = await fetch(
             `${API_BASE_URL}/SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
           );
           const json = await res.json();
-          
+
           console.log("نتائج API للكود:", {
             count: json.count,
-            resultsCount: json.results?.length || 0
+            resultsCount: json.results?.length || 0,
           });
-          
+
           if (Array.isArray(json.results)) {
             exactMatch = json.results.find((item: any) => {
               const itemCode = (item.item_code ?? "").toString().trim();
+
               return itemCode === searchTerm;
             });
           }
         }
       } else {
-        console.log("✅ وجد تطابق في الأصناف المحملة:", exactMatch.item_barcode || exactMatch.item_code);
+        console.log(
+          "✅ وجد تطابق في الأصناف المحملة:",
+          exactMatch.item_barcode || exactMatch.item_code,
+        );
       }
 
-              if (exactMatch) {
-          const firstEmptyRowIndex = invoiceItems.findIndex(
-            (item) => !item.item_id && !item.item_name && item.weight === 0
+      if (exactMatch) {
+        const firstEmptyRowIndex = invoiceItems.findIndex(
+          (item) => !item.item_id && !item.item_name && item.weight === 0,
+        );
+
+        const targetIndex = firstEmptyRowIndex !== -1 ? firstEmptyRowIndex : 0;
+        const updated = [...invoiceItems];
+
+        if (firstEmptyRowIndex === -1) {
+          updated.unshift({
+            id: Date.now(),
+            item_id: null,
+            item_code: "",
+            qty: 1,
+            g_weight: 0,
+            weight: 0,
+            k: "",
+            price: goldPrice ?? 0,
+            price_w: goldPrice ?? 0,
+            note: "",
+            trans_type: 2,
+            purity: "",
+            total: 0,
+            total_w: 0,
+            total_a: 0,
+            item_desc: "",
+            tax: 0,
+            tax_prc: 15,
+            stones: "",
+            item_disc_prc: 0,
+            item_disc_amt: 0,
+            sn: "",
+            cr_date: "",
+            cr_user: "",
+            upd_date: "",
+            upd_user: "",
+            com: 0,
+            inv: 0,
+            item: 0,
+          });
+        }
+
+        const selected = exactMatch;
+
+        if (!items.find((i) => i.id === selected.id)) {
+          setItems([...items, selected]);
+        }
+
+        updated[targetIndex].item_id = selected.id ?? null;
+        updated[targetIndex].item_code = selected.item_code ?? "";
+        updated[targetIndex].item_name = selected.item_name ?? "";
+        updated[targetIndex].item_desc = selected.item_name ?? "";
+
+        const selk = selected.k ?? "";
+        const selPurity = selected.purity ?? "";
+
+        updated[targetIndex].k = selected.k ?? "";
+        updated[targetIndex].price =
+          goldPrice ?? Number(selected.item_price ?? 0);
+        updated[targetIndex].price_w = Number(selected.work_price ?? 0);
+        updated[targetIndex].purity = selected.purity ?? "";
+        updated[targetIndex].stones = selected.stones ?? "";
+
+        if (
+          selected.item_weight !== undefined &&
+          selected.item_weight !== null &&
+          selected.item_weight !== ""
+        ) {
+          updated[targetIndex].weight = Number(selected.item_weight ?? 0);
+          updated[targetIndex].g_weight = Number(
+            selected.item_g_weight ?? selected.item_weight ?? 0,
           );
+        }
 
-          const targetIndex = firstEmptyRowIndex !== -1 ? firstEmptyRowIndex : 0;
-          const updated = [...invoiceItems];
+        if (
+          selected.item_g_weight !== undefined &&
+          selected.item_g_weight !== null &&
+          selected.item_g_weight !== ""
+        ) {
+          updated[targetIndex].g_weight = Number(selected.item_g_weight);
+        }
 
-          if (firstEmptyRowIndex === -1) {
-            updated.unshift({
+        if (
+          (selk === "" ||
+            selk === "0" ||
+            selPurity === "" ||
+            selPurity === "0") &&
+          selected.cat
+        ) {
+          const cat = categories.find((c) => c.id === selected.cat);
+
+          if (cat) {
+            if (!selk || selk === "0")
+              updated[targetIndex].k = (cat.gauge ?? cat.k ?? "") as string;
+            if (!selPurity || selPurity === "0")
+              updated[targetIndex].purity = cat.purity ?? "";
+          }
+        }
+
+        if (
+          !updated[targetIndex].purity ||
+          updated[targetIndex].purity === "0" ||
+          updated[targetIndex].purity === ""
+        ) {
+          updated[targetIndex].purity = homePurity.toString();
+        }
+
+        const wCalc =
+          updated[targetIndex].weight < 1 &&
+          updated[targetIndex].g_weight > updated[targetIndex].weight
+            ? updated[targetIndex].weight * 1000
+            : updated[targetIndex].weight;
+
+        updated[targetIndex].total_a =
+          payType === 2
+            ? wCalc * updated[targetIndex].price_w
+            : wCalc * updated[targetIndex].price;
+        updated[targetIndex].total_w = wCalc * updated[targetIndex].price_w;
+
+        const base =
+          (payType === 1
+            ? updated[targetIndex].total_a
+            : payType === 2
+              ? updated[targetIndex].total_w
+              : updated[targetIndex].total_a + updated[targetIndex].total_w) -
+          (updated[targetIndex].item_disc_amt ?? 0);
+
+        updated[targetIndex].tax =
+          (base * (updated[targetIndex].tax_prc ?? 15)) / 100;
+        updated[targetIndex].total = base + updated[targetIndex].tax;
+
+        setInvoiceItems(updated);
+
+        setSearchValue("");
+
+        toast.success(
+          `✅ تم إضافة الصنف: ${selected.item_name || selected.item_code} (${selected.item_code})`,
+        );
+
+        const isLastRow = targetIndex === updated.length - 1;
+        const isRowFilled =
+          updated[targetIndex].item_id ||
+          updated[targetIndex].item_name ||
+          updated[targetIndex].weight > 0;
+
+        if (isLastRow && isRowFilled) {
+          setInvoiceItems([
+            ...updated,
+            {
               id: Date.now(),
               item_id: null,
               item_code: "",
@@ -1134,145 +1375,19 @@ export default function InvoicePage() {
               com: 0,
               inv: 0,
               item: 0,
-            });
-          }
-
-          const selected = exactMatch;
-
-          if (!items.find((i) => i.id === selected.id)) {
-            setItems([...items, selected]);
-          }
-
-          updated[targetIndex].item_id = selected.id ?? null;
-          updated[targetIndex].item_code = selected.item_code ?? "";
-          updated[targetIndex].item_name = selected.item_name ?? "";
-          updated[targetIndex].item_desc = selected.item_name ?? "";
-
-          const selk = selected.k ?? "";
-          const selPurity = selected.purity ?? "";
-
-          updated[targetIndex].k = selected.k ?? "";
-          updated[targetIndex].price = goldPrice ?? Number(selected.item_price ?? 0);
-          updated[targetIndex].price_w = Number(selected.work_price ?? 0);
-          updated[targetIndex].purity = selected.purity ?? "";
-          updated[targetIndex].stones = selected.stones ?? "";
-
-          if (
-            selected.item_weight !== undefined &&
-            selected.item_weight !== null &&
-            selected.item_weight !== ""
-          ) {
-            updated[targetIndex].weight = Number(selected.item_weight ?? 0);
-            updated[targetIndex].g_weight = Number(
-              selected.item_g_weight ?? selected.item_weight ?? 0
-            );
-          }
-
-          if (
-            selected.item_g_weight !== undefined &&
-            selected.item_g_weight !== null &&
-            selected.item_g_weight !== ""
-          ) {
-            updated[targetIndex].g_weight = Number(selected.item_g_weight);
-          }
-
-          if (
-            (selk === "" || selk === "0" || selPurity === "" || selPurity === "0") &&
-            selected.cat
-          ) {
-            const cat = categories.find((c) => c.id === selected.cat);
-            if (cat) {
-              if (!selk || selk === "0")
-                updated[targetIndex].k = (cat.gauge ?? cat.k ?? "") as string;
-              if (!selPurity || selPurity === "0")
-                updated[targetIndex].purity = cat.purity ?? "";
-            }
-          }
-
-          if (!updated[targetIndex].purity || updated[targetIndex].purity === "0" || updated[targetIndex].purity === "") {
-            updated[targetIndex].purity = homePurity.toString();
-          }
-
-          const wCalc =
-            updated[targetIndex].weight < 1 &&
-            updated[targetIndex].g_weight > updated[targetIndex].weight
-              ? updated[targetIndex].weight * 1000
-              : updated[targetIndex].weight;
-
-          updated[targetIndex].total_a =
-            payType === 2
-              ? wCalc * updated[targetIndex].price_w
-              : wCalc * updated[targetIndex].price;
-          updated[targetIndex].total_w = wCalc * updated[targetIndex].price_w;
-
-          const base =
-            (payType === 1
-              ? updated[targetIndex].total_a
-              : payType === 2
-                ? updated[targetIndex].total_w
-                : updated[targetIndex].total_a + updated[targetIndex].total_w) -
-            (updated[targetIndex].item_disc_amt ?? 0);
-
-          updated[targetIndex].tax = (base * (updated[targetIndex].tax_prc ?? 15)) / 100;
-          updated[targetIndex].total = base + updated[targetIndex].tax;
-
-          setInvoiceItems(updated);
-
-                      setSearchValue("");
-
-            toast.success(`✅ تم إضافة الصنف: ${selected.item_name || selected.item_code} (${selected.item_code})`);
-
-            const isLastRow = targetIndex === updated.length - 1;
-          const isRowFilled =
-            updated[targetIndex].item_id ||
-            updated[targetIndex].item_name ||
-            updated[targetIndex].weight > 0;
-
-          if (isLastRow && isRowFilled) {
-            setInvoiceItems([
-              ...updated,
-              {
-                id: Date.now(),
-                item_id: null,
-                item_code: "",
-                qty: 1,
-                g_weight: 0,
-                weight: 0,
-                k: "",
-                price: goldPrice ?? 0,
-                price_w: goldPrice ?? 0,
-                note: "",
-                trans_type: 2,
-                purity: "",
-                total: 0,
-                total_w: 0,
-                total_a: 0,
-                item_desc: "",
-                tax: 0,
-                tax_prc: 15,
-                stones: "",
-                item_disc_prc: 0,
-                item_disc_amt: 0,
-                sn: "",
-                cr_date: "",
-                cr_user: "",
-                upd_date: "",
-                upd_user: "",
-                com: 0,
-                inv: 0,
-                item: 0,
-              },
-            ]);
-          }
-        } else {
-          // إذا لم يجد تطابق دقيق، لا تعرض أي شيء
-          console.log("❌ لم يجد تطابق دقيق للكود:", searchValue.trim());
-          console.log("تم البحث في الأصناف المحملة و API");
-          
-          toast.error(`لم يتم العثور على صنف : ${searchValue.trim()}`);
-          setSearchValue("");
-          return;
+            },
+          ]);
         }
+      } else {
+        // إذا لم يجد تطابق دقيق، لا تعرض أي شيء
+        console.log("❌ لم يجد تطابق دقيق للكود:", searchValue.trim());
+        console.log("تم البحث في الأصناف المحملة و API");
+
+        toast.error(`لم يتم العثور على صنف : ${searchValue.trim()}`);
+        setSearchValue("");
+
+        return;
+      }
     } catch (error) {
       console.error("خطأ في البحث بالباركود:", error);
       toast.error("حدث خطأ أثناء البحث بالباركود");
@@ -1281,10 +1396,10 @@ export default function InvoicePage() {
 
   const handleInvoiceSearch = async (searchVal?: string) => {
     const num = searchVal ?? searchNumber;
-    if (!num || num === lastLoadedInvoiceRef.current) return; 
+
+    if (!num || num === lastLoadedInvoiceRef.current) return;
     lastLoadedInvoiceRef.current = num;
 
-    
     if (lastLoadedInvoice === searchVal) return;
 
     setDeletedItems([]);
@@ -1343,7 +1458,8 @@ export default function InvoicePage() {
       if (inv.post_code) setPostCode(inv.post_code);
 
       // تحديث currentRecord للتنقل
-      const currentIndex = invoicesList.findIndex(v => v.id === inv.id);
+      const currentIndex = invoicesList.findIndex((v) => v.id === inv.id);
+
       if (currentIndex !== -1) {
         setCurrentRecord(currentIndex + 1);
       }
@@ -1371,7 +1487,7 @@ export default function InvoicePage() {
       );
 
       if (filteredDetails.length > 0) {
-                         setInvoiceItems(
+        setInvoiceItems(
           filteredDetails.map((row) => ({
             id: row.id,
             item_id: row.item ?? row.item_id ?? null,
@@ -1387,15 +1503,15 @@ export default function InvoicePage() {
             trans_type: row.trans_type ?? 2,
             purity: row.G875 ?? "",
             total: parseFloat(row.total) || 0,
-             total_w: parseFloat(row.total_w) || 0,
-             total_a: parseFloat(row.total_a) || 0,
-             tax: parseFloat(row.tax) || 0,
-             tax_prc: parseFloat(row.tax_prc) || 0,
-             stones: row.stones ?? "",
-             item_disc_prc: parseFloat(row.item_disc_prc) || 0,
-             item_disc_amt: parseFloat(row.item_disc_amt) || 0,
-             sn: row.sn ?? "",
-             item_desc: row.item_desc ?? "",
+            total_w: parseFloat(row.total_w) || 0,
+            total_a: parseFloat(row.total_a) || 0,
+            tax: parseFloat(row.tax) || 0,
+            tax_prc: parseFloat(row.tax_prc) || 0,
+            stones: row.stones ?? "",
+            item_disc_prc: parseFloat(row.item_disc_prc) || 0,
+            item_disc_amt: parseFloat(row.item_disc_amt) || 0,
+            sn: row.sn ?? "",
+            item_desc: row.item_desc ?? "",
             cr_date: row.cr_date ?? "",
             cr_user: row.cr_user ?? "",
             upd_date: row.upd_date ?? "",
@@ -1405,31 +1521,31 @@ export default function InvoicePage() {
             item: row.item ?? 0,
           })),
         );
-                 setOriginalInvoiceItems(
-           filteredDetails.map((row) => ({
-             id: row.id,
-             item_id: row.item ?? row.item_id ?? null,
-             item_code: row.item_code ?? "",
-             item_name: row.item_name ?? row.item_desc ?? "",
-             qty: parseFloat(row.qty) || 0,
-             weight: parseFloat(row.weight) || 0,
-             g_weight: parseFloat(row.g_weight) || 0,
-             k: row.k ?? "",
-             price: parseFloat(row.price) || 0,
-             price_w: parseFloat(row.price_w) || 0,
-             note: row.inv_notes ?? "",
-             trans_type: row.trans_type ?? 2,
-             purity: row.G875 ?? "",
-             total: parseFloat(row.total) || 0,
-             total_w: parseFloat(row.total_w) || 0,
-             total_a: parseFloat(row.total_a) || 0,
-             tax: parseFloat(row.tax) || 0,
-             tax_prc: parseFloat(row.tax_prc) || 0,
-             stones: row.stones ?? "",
-             item_disc_prc: parseFloat(row.item_disc_prc) || 0,
-             item_disc_amt: parseFloat(row.item_disc_amt) || 0,
-             sn: row.sn ?? "",
-             item_desc: row.item_desc ?? "",
+        setOriginalInvoiceItems(
+          filteredDetails.map((row) => ({
+            id: row.id,
+            item_id: row.item ?? row.item_id ?? null,
+            item_code: row.item_code ?? "",
+            item_name: row.item_name ?? row.item_desc ?? "",
+            qty: parseFloat(row.qty) || 0,
+            weight: parseFloat(row.weight) || 0,
+            g_weight: parseFloat(row.g_weight) || 0,
+            k: row.k ?? "",
+            price: parseFloat(row.price) || 0,
+            price_w: parseFloat(row.price_w) || 0,
+            note: row.inv_notes ?? "",
+            trans_type: row.trans_type ?? 2,
+            purity: row.G875 ?? "",
+            total: parseFloat(row.total) || 0,
+            total_w: parseFloat(row.total_w) || 0,
+            total_a: parseFloat(row.total_a) || 0,
+            tax: parseFloat(row.tax) || 0,
+            tax_prc: parseFloat(row.tax_prc) || 0,
+            stones: row.stones ?? "",
+            item_disc_prc: parseFloat(row.item_disc_prc) || 0,
+            item_disc_amt: parseFloat(row.item_disc_amt) || 0,
+            sn: row.sn ?? "",
+            item_desc: row.item_desc ?? "",
             cr_date: row.cr_date ?? "",
             cr_user: row.cr_user ?? "",
             upd_date: row.upd_date ?? "",
@@ -1448,6 +1564,7 @@ export default function InvoicePage() {
       // تحديث الإجماليات اليدوية بعد تحميل الفاتورة
       setTimeout(() => {
         const { autoTotalValue, autoTotalWages } = calculateAutoTotals();
+
         setManualTotalValue(autoTotalValue);
         setManualTotalWages(autoTotalWages);
         setUseManualTotals(false);
@@ -1461,45 +1578,49 @@ export default function InvoicePage() {
   };
 
   // قائمة تفاصيل الفاتورة الأصلية عند تحميل الفاتورة (للمقارنة عند التعديل)
-  const [originalInvoiceItems, setOriginalInvoiceItems] = useState<InvoiceItem[]>([]);
+  const [originalInvoiceItems, setOriginalInvoiceItems] = useState<
+    InvoiceItem[]
+  >([]);
   // قائمة العناصر المحذوفة (للتأكد من حذفها من قاعدة البيانات)
   const [deletedItems, setDeletedItems] = useState<InvoiceItem[]>([]);
 
-    // دالة لإعادة تعيين حالة الفاتورة لفاتورة جديدة
+  // دالة لإعادة تعيين حالة الفاتورة لفاتورة جديدة
   const resetInvoiceForm = () => {
     // إعادة تعيين جميع الحقول
     setSelectedCustomer(null);
-    setInvoiceItems([{
-      id: Date.now(),
-      item_id: null,
-      item_code: "",
-      qty: 1,
-      weight: 0,
-      g_weight: 0,
-      k: "",
-      price: 0,
-      price_w: 0,
-      note: "",
-      trans_type: 2,
-      purity: "",
-      total: 0,
-      total_w: 0,
-      total_a: 0,
-      tax: 0,
-      tax_prc: 15,
-      stones: "",
-      item_disc_prc: 0,
-      item_disc_amt: 0,
-      sn: "",
-      item_desc: "",
-      cr_date: "",
-      cr_user: "",
-      upd_date: "",
-      upd_user: "",
-      com: 0,
-      inv: 0,
-      item: 0,
-    }]);
+    setInvoiceItems([
+      {
+        id: Date.now(),
+        item_id: null,
+        item_code: "",
+        qty: 1,
+        weight: 0,
+        g_weight: 0,
+        k: "",
+        price: 0,
+        price_w: 0,
+        note: "",
+        trans_type: 2,
+        purity: "",
+        total: 0,
+        total_w: 0,
+        total_a: 0,
+        tax: 0,
+        tax_prc: 15,
+        stones: "",
+        item_disc_prc: 0,
+        item_disc_amt: 0,
+        sn: "",
+        item_desc: "",
+        cr_date: "",
+        cr_user: "",
+        upd_date: "",
+        upd_user: "",
+        com: 0,
+        inv: 0,
+        item: 0,
+      },
+    ]);
     setPaymentMethod("cash");
     setEmployee("");
     setNote("");
@@ -1527,49 +1648,54 @@ export default function InvoicePage() {
     setDeletedItems([]);
     setLastLoadedInvoice(null);
     lastLoadedInvoiceRef.current = null;
-    
+
     // إعادة تعيين الإجماليات اليدوية
     setManualTotalValue(0);
     setManualTotalWages(0);
     setUseManualTotals(false);
-    
+
     // تعيين التاريخ الحالي
     if (typeof window !== "undefined") {
       const now = new Date();
+
       setInvoiceDate(now.toISOString());
     }
-    
+
     // توليد رقم فاتورة جديد
     getNextInvoiceNumber().then(setInvoiceNumber);
-    
+
     // مسح البيانات المحفوظة
-    localStorage.removeItem('invoice_draft');
-    
+    localStorage.removeItem("invoice_draft");
+
     console.log("تم إعادة تعيين الفاتورة لفاتورة جديدة");
   };
 
-  const navigateToInvoice = (direction: 'first' | 'prev' | 'next' | 'last') => {
+  const navigateToInvoice = (direction: "first" | "prev" | "next" | "last") => {
     if (invoicesList.length === 0) return;
 
     let targetIndex = 0;
-    const currentIndex = invoicesList.findIndex(v => v.id === invoicePk);
+    const currentIndex = invoicesList.findIndex((v) => v.id === invoicePk);
 
     switch (direction) {
-      case 'first':
+      case "first":
         targetIndex = 0;
         break;
-      case 'prev':
+      case "prev":
         targetIndex = currentIndex > 0 ? currentIndex - 1 : 0;
         break;
-      case 'next':
-        targetIndex = currentIndex < invoicesList.length - 1 ? currentIndex + 1 : invoicesList.length - 1;
+      case "next":
+        targetIndex =
+          currentIndex < invoicesList.length - 1
+            ? currentIndex + 1
+            : invoicesList.length - 1;
         break;
-      case 'last':
+      case "last":
         targetIndex = invoicesList.length - 1;
         break;
     }
 
     const targetInvoice = invoicesList[targetIndex];
+
     if (targetInvoice) {
       router.push(`/forms/invoices/sale/${targetInvoice.inv_id}`);
     }
@@ -1578,14 +1704,18 @@ export default function InvoicePage() {
   // تحميل قائمة الفواتير للتنقل
   const loadInvoicesList = async () => {
     try {
-      const response = await fetchData<any[]>(`${API_BASE_URL}/invoices_list?trans_type=2`);
+      const response = await fetchData<any[]>(
+        `${API_BASE_URL}/invoices_list?trans_type=2`,
+      );
+
       if (Array.isArray(response)) {
         setInvoicesList(response);
         setTotalRecords(response.length);
-        
+
         // تحديث currentRecord إذا كان هناك فاتورة محملة
         if (invoicePk) {
-          const currentIndex = response.findIndex(v => v.id === invoicePk);
+          const currentIndex = response.findIndex((v) => v.id === invoicePk);
+
           if (currentIndex !== -1) {
             setCurrentRecord(currentIndex + 1);
           }
@@ -1599,14 +1729,20 @@ export default function InvoicePage() {
   // دالة لتحديث قائمة العناصر المحذوفة عند حذف صنف
   const handleItemRemoved = (removedItem: InvoiceItem) => {
     // التحقق من أن العنصر المحذوف موجود في originalInvoiceItems (أي أنه عنصر موجود في قاعدة البيانات)
-    const isOriginalItem = originalInvoiceItems.some(item => item.id === removedItem.id);
+    const isOriginalItem = originalInvoiceItems.some(
+      (item) => item.id === removedItem.id,
+    );
 
     if (isOriginalItem) {
       // إضافة العنصر إلى قائمة العناصر المحذوفة بدلاً من حذفه من originalInvoiceItems
-      setDeletedItems(prev => [...prev, removedItem]);
-      console.log(`🗑️ تم إضافة الصنف "${removedItem.item_name}" (ID: ${removedItem.id}) إلى قائمة العناصر المحذوفة`);
+      setDeletedItems((prev) => [...prev, removedItem]);
+      console.log(
+        `🗑️ تم إضافة الصنف "${removedItem.item_name}" (ID: ${removedItem.id}) إلى قائمة العناصر المحذوفة`,
+      );
     } else {
-      console.log(`ℹ️ الصنف "${removedItem.item_name}" (ID: ${removedItem.id}) ليس عنصراً أصلياً، لن يتم حذفه من قاعدة البيانات`);
+      console.log(
+        `ℹ️ الصنف "${removedItem.item_name}" (ID: ${removedItem.id}) ليس عنصراً أصلياً، لن يتم حذفه من قاعدة البيانات`,
+      );
     }
   };
 
@@ -1614,59 +1750,80 @@ export default function InvoicePage() {
   const itemsForTable: Item[] = invoiceItems.map((itm) => ({
     id: itm.id,
     item_code: itm.item_code || "",
-    item_name: typeof itm.item_name === "string" ? itm.item_name : (itm.item_name ? String(itm.item_name) : ""),
-    item_price: typeof itm.price === "number" ? itm.price : Number(itm.price) || 0,
-    item_weight: typeof itm.weight === "number" ? itm.weight : Number(itm.weight) || 0,
-    item_g_weight: typeof itm.g_weight === "number" ? itm.g_weight : Number(itm.g_weight) || 0,
-    work_price: typeof itm.price_w === "number" ? itm.price_w : Number(itm.price_w) || 0,
-    stones: typeof itm.stones === "string" ? itm.stones : (itm.stones ? String(itm.stones) : ""),
-    k: typeof itm.k === "string" ? itm.k : (itm.k ? String(itm.k) : ""),
-    purity: typeof itm.purity === "string" ? itm.purity : (itm.purity ? String(itm.purity) : ""),
+    item_name:
+      typeof itm.item_name === "string"
+        ? itm.item_name
+        : itm.item_name
+          ? String(itm.item_name)
+          : "",
+    item_price:
+      typeof itm.price === "number" ? itm.price : Number(itm.price) || 0,
+    item_weight:
+      typeof itm.weight === "number" ? itm.weight : Number(itm.weight) || 0,
+    item_g_weight:
+      typeof itm.g_weight === "number"
+        ? itm.g_weight
+        : Number(itm.g_weight) || 0,
+    work_price:
+      typeof itm.price_w === "number" ? itm.price_w : Number(itm.price_w) || 0,
+    stones:
+      typeof itm.stones === "string"
+        ? itm.stones
+        : itm.stones
+          ? String(itm.stones)
+          : "",
+    k: typeof itm.k === "string" ? itm.k : itm.k ? String(itm.k) : "",
+    purity:
+      typeof itm.purity === "string"
+        ? itm.purity
+        : itm.purity
+          ? String(itm.purity)
+          : "",
     cat: undefined,
   }));
 
   return (
     <>
       <InvoiceTotalsActions
+        autoTotalWages={autoTotalWages}
         commit={commitVal}
+        currentRecord={currentRecord}
         formattedDateTime={formattedDateTime}
         invoiceNumber={invoiceNumber}
         isEditing={isEditing}
+        manualTotalValue={manualTotalValue}
+        manualTotalWages={manualTotalWages}
+        navigateToInvoice={navigateToInvoice}
         netAmount={netAmount}
         previewInvoice={previewInvoice}
         print={printVal}
         saveInvoice={saveInvoice}
         setCommit={setCommitVal}
         setPrint={setPrintVal}
+        setSearchNumber={setSearchNumber}
         taxAmount={taxAmount}
         totalAmount={totalAmount}
         totalDiscount={totalDiscount}
+        totalRecords={totalRecords}
+        totalValueTax={totalValueTax}
+        totalWagesTax={totalWagesTax}
+        useManualTotals={useManualTotals}
         onEdit={() => setIsEditing(true)}
+        onManualTotalChange={handleManualTotalChange}
+        onUseManualTotalsChange={setUseManualTotals}
         invoiceType="invoice"
         // إجماليات قابلة للإدخال
         autoTotalValue={autoTotalValue}
-        autoTotalWages={autoTotalWages}
-        manualTotalValue={manualTotalValue}
-        manualTotalWages={manualTotalWages}
-        useManualTotals={useManualTotals}
-        onManualTotalChange={handleManualTotalChange}
-        onUseManualTotalsChange={setUseManualTotals}
-        onResetManualTotals={resetManualTotals}
-        // البحث برقم الفاتورة
-        searchNumber={searchNumber}
-        setSearchNumber={setSearchNumber}
-        onInvoiceSearch={() => handleInvoiceSearch()}
-        // إجماليات إضافية جديدة
-        totalGWeight={totalGWeight}
-        totalValueTax={totalValueTax}
-        totalWagesTax={totalWagesTax}
+        // أزرار التنقل
         totalTax={totalTax}
         // طريقة الدفع
         paymentMethod={paymentMethod}
-        // أزرار التنقل
-        currentRecord={currentRecord}
-        totalRecords={totalRecords}
-        navigateToInvoice={navigateToInvoice}
+        onInvoiceSearch={() => handleInvoiceSearch()}
+        // إجماليات إضافية جديدة
+        totalGWeight={totalGWeight}
+        onResetManualTotals={resetManualTotals}
+        // البحث برقم الفاتورة
+        searchNumber={searchNumber}
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
           <InvoiceSelectors
@@ -1679,6 +1836,8 @@ export default function InvoicePage() {
             goldPrice={goldPrice}
             gov={gov}
             handlingMethod={handlingMethod}
+            invoiceType="sale"
+            isEditing={isEditing}
             mobileMethod={mobileMethod}
             note={note}
             payType={payType}
@@ -1701,28 +1860,29 @@ export default function InvoicePage() {
             setPostCode={setPostCode}
             setPostNo={setPostNo}
             setReferenceNumber={setReferenceNumber}
+            setSearchValue={setSearchValue}
             setSelectedCustomer={setSelectedCustomer}
             setStreet={setStreet}
             setVatNumber={setVatNumber}
             street={street}
+            onBarcodeSearch={handleBarcodeSearch}
             vatNumber={vatNumber}
             // البحث بالباركود
             searchValue={searchValue}
-            setSearchValue={setSearchValue}
-            onBarcodeSearch={handleBarcodeSearch}
-            isEditing={isEditing}
-            invoiceType="sale"
+            // التاريخ والوقت
+            invoiceDate={invoiceDate}
+            setInvoiceDate={setInvoiceDate}
           />
           <InvoiceItemTable
             categories={categories}
             goldPrice={goldPrice}
             homePurity={homePurity}
             invoiceItems={invoiceItems}
+            isEditing={isEditing}
             items={itemsForTable}
             payType={payType}
             setInvoiceItems={setInvoiceItems}
             setItems={setItems}
-            isEditing={isEditing}
             onItemRemoved={handleItemRemoved}
           />
         </div>

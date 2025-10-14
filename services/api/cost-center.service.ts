@@ -27,10 +27,14 @@ class CostCenterService extends HttpService<CostCenter> {
 
   async getAllCostCenters(): Promise<CostCenter[]> {
     try {
-      const response = await this.get<CostCenter[]>("cost_centers_list/", undefined, {
-        cache: "no-store",
-        next: { tags: ["cost-centers"] },
-      });
+      const response = await this.get<CostCenter[]>(
+        "cost_centers_list",
+        undefined,
+        {
+          cache: "no-store",
+          next: { tags: ["cost-centers"] },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {
@@ -47,7 +51,9 @@ class CostCenterService extends HttpService<CostCenter> {
     }
   }
 
-  async createCostCenter(costCenter: Omit<CostCenter, 'id'>): Promise<CostCenter | null> {
+  async createCostCenter(
+    costCenter: Omit<CostCenter, "id">,
+  ): Promise<CostCenter | null> {
     try {
       const costCenterData = {
         ...costCenter,
@@ -63,9 +69,11 @@ class CostCenterService extends HttpService<CostCenter> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as CostCenter; 
+
+      if (response.success) {
+        return response.data as CostCenter;
       }
+
       return null;
     } catch (error) {
       console.error("Error creating cost center:", error);
@@ -73,7 +81,10 @@ class CostCenterService extends HttpService<CostCenter> {
     }
   }
 
-  async updateCostCenter(id: number, costCenter: Partial<CostCenter>): Promise<CostCenter | null> {
+  async updateCostCenter(
+    id: number,
+    costCenter: Partial<CostCenter>,
+  ): Promise<CostCenter | null> {
     try {
       const costCenterData = {
         ...costCenter,
@@ -89,9 +100,11 @@ class CostCenterService extends HttpService<CostCenter> {
           cache: "no-store",
         },
       );
-      if (response.success) { 
-        return response.data as CostCenter; 
+
+      if (response.success) {
+        return response.data as CostCenter;
       }
+
       return null;
     } catch (error) {
       console.error("Error updating cost center:", error);
@@ -108,6 +121,7 @@ class CostCenterService extends HttpService<CostCenter> {
           cache: "no-store",
         },
       );
+
       return response.success;
     } catch (error) {
       console.error("Error deleting cost center:", error);
@@ -118,16 +132,18 @@ class CostCenterService extends HttpService<CostCenter> {
   async getCostCenterById(id: number): Promise<CostCenter | null> {
     try {
       const costCenters = await this.getAllCostCenters();
-      return costCenters.find(costCenter => costCenter.id === id) || null;
+
+      return costCenters.find((costCenter) => costCenter.id === id) || null;
     } catch (error) {
       console.error("Error fetching cost center by ID:", error);
+
       return null;
     }
   }
 
   async getAccounts(): Promise<Account[]> {
     try {
-      const response = await this.get<Account[]>("accounts_list/", undefined, {
+      const response = await this.get<Account[]>("accounts_list", undefined, {
         cache: "no-store",
         next: { tags: ["accounts"] },
       });
@@ -143,6 +159,7 @@ class CostCenterService extends HttpService<CostCenter> {
       return [];
     } catch (error) {
       console.error("Error fetching accounts:", error);
+
       return [];
     }
   }

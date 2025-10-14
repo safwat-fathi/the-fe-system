@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState , useCallback} from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Input,
@@ -13,14 +13,25 @@ import {
   Chip,
   Select,
   SelectItem,
-  Divider,
 } from "@heroui/react";
-import { HeroModal as Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@/components/Modal";
-import Card from "@/components/Card";
 import { CardBody, CardHeader } from "@heroui/react";
-import { EyeIcon, PencilIcon, TrashIcon, PlusIcon, MagnifyingGlassIcon, FunnelIcon } from "@heroicons/react/24/outline";
+import {
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
+import Card from "@/components/Card";
+import {
+  HeroModal as Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@/components/Modal";
 import itemService from "@/services/api/item.service";
 
 interface Category {
@@ -115,9 +126,12 @@ export default function ItemsClient({
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [search, setSearch] = useState("");
 
-  const [boxes, setBoxes] = useState<{ id: number; box_name: string }[]>(initialBoxes);
-  const [catTypes, setCatTypes] = useState<{ code_id: number; code_desc: string }[]>(initialCatTypes);
-  const [catStatuses, setCatStatuses] = useState<{ code_id: number; code_desc: string }[]>(initialCatStatuses);
+  const [boxes, setBoxes] =
+    useState<{ id: number; box_name: string }[]>(initialBoxes);
+  const [catTypes, setCatTypes] =
+    useState<{ code_id: number; code_desc: string }[]>(initialCatTypes);
+  const [catStatuses, setCatStatuses] =
+    useState<{ code_id: number; code_desc: string }[]>(initialCatStatuses);
 
   const [newItem, setNewItem] = useState<Item>({
     id: 0,
@@ -127,13 +141,13 @@ export default function ItemsClient({
     item_img: "/default.png",
     item_code: "0000000000000",
     item_barcode: " ",
-    first_cost:  "0.00",
-    item_weight:  "0.00",
-    item_g_weight:  "0.00",
+    first_cost: "0.00",
+    item_weight: "0.00",
+    item_g_weight: "0.00",
     stones: "0.00",
     model: "",
-    k:  "0.00",
-    purity:  "0.00",
+    k: "0.00",
+    purity: "0.00",
     item_status: 1,
     cr_date: "",
     cr_user: "",
@@ -160,10 +174,11 @@ export default function ItemsClient({
   ) => {
     try {
       const itemsArray = await itemService.getAllItems();
-      
+
       const filteredItems = itemsArray.filter((item: any) => {
         if (xcat && xcat !== 0 && item.cat !== xcat) return false;
         if (xtype && xtype !== 0 && item.item_type !== xtype) return false;
+
         return true;
       });
 
@@ -177,17 +192,14 @@ export default function ItemsClient({
     }
   };
 
-  const searchItems = async (
-    query: string,
-    url?: string,
-    page = 1,
-  ) => {
+  const searchItems = async (query: string, url?: string, page = 1) => {
     try {
       const itemsArray = await itemService.getAllItems();
       const term = query.toLowerCase();
       const filtered = itemsArray.filter((item: any) => {
         const code = (item.item_code ?? item.code ?? "").toLowerCase();
         const name = (item.item_name ?? item.text ?? "").toLowerCase();
+
         return code.includes(term) || name.includes(term);
       });
       const mapped = filtered.map((item: any) => ({
@@ -208,6 +220,7 @@ export default function ItemsClient({
   const filteredItems = search.trim()
     ? items.filter((item) => {
         const term = search.toLowerCase();
+
         return (
           (item.item_name ?? "").toLowerCase().includes(term) ||
           (item.item_code ?? "").toLowerCase().includes(term)
@@ -215,8 +228,11 @@ export default function ItemsClient({
       })
     : items;
 
-  const pagedItems = filteredItems.slice((itemsPage - 1) * itemsPerPage, itemsPage * itemsPerPage);
-  
+  const pagedItems = filteredItems.slice(
+    (itemsPage - 1) * itemsPerPage,
+    itemsPage * itemsPerPage,
+  );
+
   const [file, setFile] = useState(null);
 
   const handleAddItem = async () => {
@@ -288,7 +304,7 @@ export default function ItemsClient({
   return (
     <div className="font-cairo p-1 bg-gray-50 h-screen overflow-hidden flex flex-col">
       {/* قسم الفئات */}
-      <Card className="card mb-1 flex-shrink-0" style={{ maxHeight: '35vh' }}>
+      <Card className="card mb-1 flex-shrink-0" style={{ maxHeight: "35vh" }}>
         <CardHeader className="flex justify-between items-center py-1">
           <div>
             <h2 className="text-lg font-bold text-gray-800">الفئات</h2>
@@ -296,18 +312,20 @@ export default function ItemsClient({
           </div>
           <div className="flex items-center gap-2">
             <Input
-              placeholder="البحث في الفئات..."
               className="w-48"
+              placeholder="البحث في الفئات..."
               size="sm"
-              startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+              startContent={
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              }
             />
             <Button
               color="primary"
               size="sm"
+              startContent={<PlusIcon className="h-4 w-4" />}
               onPress={() => {
                 toast.info("سيتم إضافة هذه الميزة قريباً");
               }}
-              startContent={<PlusIcon className="h-4 w-4" />}
             >
               إضافة فئة
             </Button>
@@ -315,25 +333,46 @@ export default function ItemsClient({
         </CardHeader>
         <CardBody className="py-1">
           <div className="table-container">
-            <Table aria-label="جدول الفئات" className="min-h-[80px] table-no-scrollbar" size="sm">
+            <Table
+              aria-label="جدول الفئات"
+              className="min-h-[80px] table-no-scrollbar"
+              size="sm"
+            >
               <TableHeader>
-                <TableColumn className="text-right text-xs">اسم الفئة</TableColumn>
-                <TableColumn className="text-center text-xs">العيار</TableColumn>
-                <TableColumn className="text-center text-xs">المعايرة</TableColumn>
-                <TableColumn className="text-center text-xs">الصندوق</TableColumn>
-                <TableColumn className="text-center text-xs">الضريبة</TableColumn>
+                <TableColumn className="text-right text-xs">
+                  اسم الفئة
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  العيار
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  المعايرة
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  الصندوق
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  الضريبة
+                </TableColumn>
                 <TableColumn className="text-center text-xs">النوع</TableColumn>
-                <TableColumn className="text-center text-xs">الحالة</TableColumn>
-                <TableColumn className="text-center text-xs">الإجراءات</TableColumn>
+                <TableColumn className="text-center text-xs">
+                  الحالة
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  الإجراءات
+                </TableColumn>
               </TableHeader>
               <TableBody>
                 {(pagedCategories || []).map((cat) => (
-                  <TableRow key={cat.id} className="hover:bg-gray-50 transition-colors">
+                  <TableRow
+                    key={cat.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
                     <TableCell className="font-medium max-w-md truncate text-xs">
                       {cat.cat_name}
                     </TableCell>
                     <TableCell className="text-center text-xs">
-                      <Chip color="primary" variant="flat" size="sm">
+                      <Chip color="primary" size="sm" variant="flat">
                         {cat.gauge}
                       </Chip>
                     </TableCell>
@@ -344,53 +383,55 @@ export default function ItemsClient({
                       {boxes.find((b) => b.id === cat.box)?.box_name || "-"}
                     </TableCell>
                     <TableCell className="text-center text-xs">
-                      <Chip color="success" variant="flat" size="sm">
+                      <Chip color="success" size="sm" variant="flat">
                         {cat.tax}%
                       </Chip>
                     </TableCell>
                     <TableCell className="text-center text-xs">
-                      {catTypes.find((t) => t.code_id === cat.cat_type)?.code_desc || "-"}
+                      {catTypes.find((t) => t.code_id === cat.cat_type)
+                        ?.code_desc || "-"}
                     </TableCell>
                     <TableCell className="text-center text-xs">
-                      <Chip 
-                        color={cat.cat_status === 1 ? "success" : "warning"} 
-                        variant="flat" 
+                      <Chip
+                        color={cat.cat_status === 1 ? "success" : "warning"}
                         size="sm"
+                        variant="flat"
                       >
-                        {catStatuses.find((s) => s.code_id === cat.cat_status)?.code_desc || "-"}
+                        {catStatuses.find((s) => s.code_id === cat.cat_status)
+                          ?.code_desc || "-"}
                       </Chip>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-1">
                         <Button
                           isIconOnly
+                          className="text-blue-500 hover:bg-blue-50 text-xs"
                           size="sm"
                           variant="light"
                           onPress={() => {
                             setSelectedCatId(cat.id);
                           }}
-                          className="text-blue-500 hover:bg-blue-50 text-xs"
                         >
                           <EyeIcon className="h-4 w-4" />
                         </Button>
                         <Button
                           isIconOnly
+                          className="text-yellow-500 hover:bg-yellow-50 text-xs"
                           size="sm"
                           variant="light"
                           onPress={() => {
                             setSelectedCatId(cat.id);
                           }}
-                          className="text-yellow-500 hover:bg-yellow-50 text-xs"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </Button>
                         <Button
                           isIconOnly
+                          className="hover:bg-red-50 text-xs"
+                          color="danger"
                           size="sm"
                           variant="light"
-                          color="danger"
                           onPress={() => {}}
-                          className="hover:bg-red-50 text-xs"
                         >
                           <TrashIcon className="h-4 w-4" />
                         </Button>
@@ -401,19 +442,19 @@ export default function ItemsClient({
               </TableBody>
             </Table>
           </div>
-          
+
           <div className="flex justify-between items-center mt-1 pt-1 border-t">
             <span className="text-xs text-gray-500">
               عدد الفئات: {categories.length}
             </span>
             <Pagination
-              color="primary"
-              size="sm"
-              page={catPage}
-              total={totalCatPages}
-              onChange={setCatPage}
               showControls
               showShadow
+              color="primary"
+              page={catPage}
+              size="sm"
+              total={totalCatPages}
+              onChange={setCatPage}
             />
           </div>
         </CardBody>
@@ -428,16 +469,19 @@ export default function ItemsClient({
           </div>
           <div className="flex items-center gap-2">
             <Input
+              className="w-48"
               placeholder="البحث في الأصناف..."
+              size="sm"
+              startContent={
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-48"
-              size="sm"
-              startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
             />
             <Button
               color="primary"
               size="sm"
+              startContent={<PlusIcon className="h-4 w-4" />}
               onPress={() => {
                 setModalMode("add");
                 setNewItem({
@@ -466,7 +510,6 @@ export default function ItemsClient({
                 });
                 setIsModalOpen(true);
               }}
-              startContent={<PlusIcon className="h-4 w-4" />}
             >
               إضافة صنف
             </Button>
@@ -474,26 +517,50 @@ export default function ItemsClient({
         </CardHeader>
         <CardBody className="py-1 flex-1 flex flex-col">
           <div className="table-container flex-1">
-            <Table aria-label="جدول الأصناف" className="h-full table-no-scrollbar" size="sm" style={{ minHeight: '200px' }}>
+            <Table
+              aria-label="جدول الأصناف"
+              className="h-full table-no-scrollbar"
+              size="sm"
+              style={{ minHeight: "200px" }}
+            >
               <TableHeader>
                 <TableColumn className="text-right text-xs">الكود</TableColumn>
                 <TableColumn className="text-right text-xs">الاسم</TableColumn>
                 <TableColumn className="text-center text-xs">السعر</TableColumn>
                 <TableColumn className="text-center text-xs">الوزن</TableColumn>
-                <TableColumn className="text-center text-xs">العيار</TableColumn>
-                <TableColumn className="text-center text-xs">المعايرة</TableColumn>
-                <TableColumn className="text-center text-xs">التكلفة</TableColumn>
-                <TableColumn className="text-center text-xs">الوحدة</TableColumn>
-                <TableColumn className="text-center text-xs">الحالة</TableColumn>
-                <TableColumn className="text-center text-xs">الإجراءات</TableColumn>
+                <TableColumn className="text-center text-xs">
+                  العيار
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  المعايرة
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  التكلفة
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  الوحدة
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  الحالة
+                </TableColumn>
+                <TableColumn className="text-center text-xs">
+                  الإجراءات
+                </TableColumn>
               </TableHeader>
               <TableBody>
                 {(pagedItems || []).map((item) => {
-                  const unitName = (units || []).find((unit) => unit.id === item.unit);
-                  const status = (ItemStatus || []).find((t) => t.code_id === item.item_status);
-                  
+                  const unitName = (units || []).find(
+                    (unit) => unit.id === item.unit,
+                  );
+                  const status = (ItemStatus || []).find(
+                    (t) => t.code_id === item.item_status,
+                  );
+
                   return (
-                    <TableRow key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <TableRow
+                      key={item.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                       <TableCell className="font-mono text-xs">
                         {item.item_code || "-"}
                       </TableCell>
@@ -501,7 +568,7 @@ export default function ItemsClient({
                         {item.item_name}
                       </TableCell>
                       <TableCell className="text-center text-xs">
-                        <Chip color="success" variant="flat" size="sm">
+                        <Chip color="success" size="sm" variant="flat">
                           {item.item_price || "-"} ﷼
                         </Chip>
                       </TableCell>
@@ -509,7 +576,7 @@ export default function ItemsClient({
                         {item.item_weight || "-"}
                       </TableCell>
                       <TableCell className="text-center text-xs">
-                        <Chip color="primary" variant="flat" size="sm">
+                        <Chip color="primary" size="sm" variant="flat">
                           {item.k || "-"}
                         </Chip>
                       </TableCell>
@@ -523,10 +590,10 @@ export default function ItemsClient({
                         {unitName?.unit_name || "-"}
                       </TableCell>
                       <TableCell className="text-center text-xs">
-                        <Chip 
-                          color={item.item_status === 1 ? "success" : "warning"} 
-                          variant="flat" 
+                        <Chip
+                          color={item.item_status === 1 ? "success" : "warning"}
                           size="sm"
+                          variant="flat"
                         >
                           {status?.code_desc || "-"}
                         </Chip>
@@ -535,29 +602,29 @@ export default function ItemsClient({
                         <div className="flex justify-center gap-1">
                           <Button
                             isIconOnly
+                            className="text-blue-500 hover:bg-blue-50 text-xs"
                             size="sm"
                             variant="light"
                             onPress={() => handleViewItem(item)}
-                            className="text-blue-500 hover:bg-blue-50 text-xs"
                           >
                             <EyeIcon className="h-4 w-4" />
                           </Button>
                           <Button
                             isIconOnly
+                            className="text-yellow-500 hover:bg-yellow-50 text-xs"
                             size="sm"
                             variant="light"
                             onPress={() => handleEditItem(item)}
-                            className="text-yellow-500 hover:bg-yellow-50 text-xs"
                           >
                             <PencilIcon className="h-4 w-4" />
                           </Button>
                           <Button
                             isIconOnly
+                            className="hover:bg-red-50 text-xs"
+                            color="danger"
                             size="sm"
                             variant="light"
-                            color="danger"
                             onPress={() => handleDeleteItem(item.id)}
-                            className="hover:bg-red-50 text-xs"
                           >
                             <TrashIcon className="h-4 w-4" />
                           </Button>
@@ -569,15 +636,17 @@ export default function ItemsClient({
               </TableBody>
             </Table>
           </div>
-          
+
           <div className="flex justify-between items-center mt-1 pt-1 border-t flex-shrink-0">
             <span className="text-xs text-gray-500">
               عدد الأصناف: {itemsCount}
             </span>
             <Pagination
+              showControls
+              showShadow
               color="primary"
-              size="sm"
               page={itemsPage}
+              size="sm"
               total={Math.ceil(itemsCount / itemsPerPage) || 1}
               onChange={(p) => {
                 setItemsPage(p);
@@ -587,8 +656,6 @@ export default function ItemsClient({
                   fetchItems(selectedCatId, selectedTypeId, undefined, p);
                 }
               }}
-              showControls
-              showShadow
             />
           </div>
         </CardBody>
@@ -621,65 +688,67 @@ export default function ItemsClient({
             {/* البيانات الأساسية */}
             <Card className="card">
               <CardHeader>
-                <h4 className="text-lg font-semibold text-gray-800">البيانات الأساسية</h4>
+                <h4 className="text-lg font-semibold text-gray-800">
+                  البيانات الأساسية
+                </h4>
               </CardHeader>
               <CardBody>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="اسم الصنف"
                     value={newItem.item_name}
                     onChange={(e) =>
                       setNewItem({ ...newItem, item_name: e.target.value })
                     }
-                    className="input-field"
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="اسم الصنف بالإنجليزية"
                     value={newItem.item_name_e}
                     onChange={(e) =>
                       setNewItem({ ...newItem, item_name_e: e.target.value })
                     }
-                    className="input-field"
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="السعر"
+                    startContent={<span className="text-gray-400">﷼</span>}
                     value={newItem.item_price ?? ""}
                     onChange={(e) =>
                       setNewItem({ ...newItem, item_price: e.target.value })
                     }
-                    className="input-field"
-                    startContent={<span className="text-gray-400">﷼</span>}
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="سعر التكلفة"
+                    startContent={<span className="text-gray-400">﷼</span>}
                     value={newItem.first_cost ?? ""}
                     onChange={(e) =>
                       setNewItem({ ...newItem, first_cost: e.target.value })
                     }
-                    className="input-field"
-                    startContent={<span className="text-gray-400">﷼</span>}
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="كود الصنف"
                     value={newItem.item_code}
                     onChange={(e) =>
                       setNewItem({ ...newItem, item_code: e.target.value })
                     }
-                    className="input-field"
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="باركود الصنف"
                     value={newItem.item_barcode ?? ""}
                     onChange={(e) =>
                       setNewItem({ ...newItem, item_barcode: e.target.value })
                     }
-                    className="input-field"
                   />
                 </div>
               </CardBody>
@@ -688,61 +757,65 @@ export default function ItemsClient({
             {/* البيانات الفنية */}
             <Card className="card">
               <CardHeader>
-                <h4 className="text-lg font-semibold text-gray-800">البيانات الفنية</h4>
+                <h4 className="text-lg font-semibold text-gray-800">
+                  البيانات الفنية
+                </h4>
               </CardHeader>
               <CardBody>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="الوزن"
                     value={newItem.item_weight ?? ""}
                     onChange={(e) =>
                       setNewItem({ ...newItem, item_weight: e.target.value })
                     }
-                    className="input-field"
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="الوزن بالجرام"
                     value={newItem.item_g_weight ?? ""}
                     onChange={(e) =>
                       setNewItem({ ...newItem, item_g_weight: e.target.value })
                     }
-                    className="input-field"
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="الحجر"
                     value={newItem.stones ?? ""}
                     onChange={(e) =>
                       setNewItem({ ...newItem, stones: e.target.value })
                     }
-                    className="input-field"
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="الموديل"
                     value={newItem.model ?? ""}
                     onChange={(e) =>
                       setNewItem({ ...newItem, model: e.target.value })
                     }
-                    className="input-field"
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="العيار (K)"
                     value={newItem.k ?? ""}
-                    onChange={(e) => setNewItem({ ...newItem, k: e.target.value })}
-                    className="input-field"
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, k: e.target.value })
+                    }
                   />
                   <Input
+                    className="input-field"
                     isDisabled={isViewMode}
                     label="المعايرة"
                     value={newItem.purity ?? ""}
                     onChange={(e) =>
                       setNewItem({ ...newItem, purity: e.target.value })
                     }
-                    className="input-field"
                   />
                 </div>
               </CardBody>
@@ -751,56 +824,60 @@ export default function ItemsClient({
             {/* التصنيفات */}
             <Card className="card">
               <CardHeader>
-                <h4 className="text-lg font-semibold text-gray-800">التصنيفات</h4>
+                <h4 className="text-lg font-semibold text-gray-800">
+                  التصنيفات
+                </h4>
               </CardHeader>
               <CardBody>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <Select
+                    className="input-field"
+                    isDisabled={isViewMode}
                     label="الفئة"
                     selectedKeys={newItem.cat ? [newItem.cat.toString()] : []}
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
+
                       setNewItem({ ...newItem, cat: Number(selectedKey) });
                     }}
-                    isDisabled={isViewMode}
-                    className="input-field"
                   >
                     {(categories || []).map((cat) => (
-                      <SelectItem key={cat.id}>
-                        {cat.cat_name}
-                      </SelectItem>
+                      <SelectItem key={cat.id}>{cat.cat_name}</SelectItem>
                     ))}
                   </Select>
                   <Select
+                    className="input-field"
+                    isDisabled={isViewMode}
                     label="نوع الصنف"
-                    selectedKeys={newItem.item_type ? [newItem.item_type.toString()] : []}
+                    selectedKeys={
+                      newItem.item_type ? [newItem.item_type.toString()] : []
+                    }
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
-                      setNewItem({ ...newItem, item_type: Number(selectedKey) });
+
+                      setNewItem({
+                        ...newItem,
+                        item_type: Number(selectedKey),
+                      });
                     }}
-                    isDisabled={isViewMode}
-                    className="input-field"
                   >
                     {(itemTypes || []).map((type) => (
-                      <SelectItem key={type.id}>
-                        {type.type_name}
-                      </SelectItem>
+                      <SelectItem key={type.id}>{type.type_name}</SelectItem>
                     ))}
                   </Select>
                   <Select
+                    className="input-field"
+                    isDisabled={isViewMode}
                     label="الوحدة"
                     selectedKeys={newItem.unit ? [newItem.unit.toString()] : []}
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
+
                       setNewItem({ ...newItem, unit: Number(selectedKey) });
                     }}
-                    isDisabled={isViewMode}
-                    className="input-field"
                   >
                     {(units || []).map((unit) => (
-                      <SelectItem key={unit.id}>
-                        {unit.unit_name}
-                      </SelectItem>
+                      <SelectItem key={unit.id}>{unit.unit_name}</SelectItem>
                     ))}
                   </Select>
                 </div>
@@ -810,17 +887,20 @@ export default function ItemsClient({
             {/* صورة الصنف */}
             <Card className="card">
               <CardHeader>
-                <h4 className="text-lg font-semibold text-gray-800">صورة الصنف</h4>
+                <h4 className="text-lg font-semibold text-gray-800">
+                  صورة الصنف
+                </h4>
               </CardHeader>
               <CardBody>
                 <div className="flex items-center gap-4">
                   <input
                     accept="image/*"
                     className="input-field flex-1"
-                    type="file"
                     disabled={isViewMode}
+                    type="file"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
+
                       if (file) {
                         setNewItem({ ...newItem, item_img: file as any });
                       }
@@ -840,18 +920,20 @@ export default function ItemsClient({
 
           {modalMode !== "view" && (
             <ModalFooter className="flex justify-end gap-3">
-              <Button 
-                color="danger" 
+              <Button
+                className="btn-secondary"
+                color="danger"
                 variant="bordered"
                 onPress={() => setIsModalOpen(false)}
-                className="btn-secondary"
               >
                 إلغاء
               </Button>
               <Button
-                color="success"
-                onPress={modalMode === "edit" ? handleUpdateItem : handleAddItem}
                 className="btn-primary"
+                color="success"
+                onPress={
+                  modalMode === "edit" ? handleUpdateItem : handleAddItem
+                }
               >
                 {modalMode === "edit" ? "تحديث" : "حفظ"}
               </Button>
@@ -862,4 +944,3 @@ export default function ItemsClient({
     </div>
   );
 }
-

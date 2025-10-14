@@ -10,27 +10,30 @@ export class GoldPriceService {
       // Check if the gold price API endpoint is configured
       if (!API_ENDPOINTS.GOLD_PRICE) {
         console.warn("⚠️ Gold price API endpoint not configured");
+
         return null;
       }
 
-			const response = await fetch(API_ENDPOINTS.GOLD_PRICE, {
+      const response = await fetch(API_ENDPOINTS.GOLD_PRICE, {
         method: "GET",
         next: { revalidate: 3600, tags: ["gold-price"] },
       });
-      
+
       if (!response.ok) {
         throw new Error(`Network response was not ok: ${response.status}`);
       }
-      
+
       const data = await response.json();
       const pricePerOunce = data?.items?.[0]?.xauPrice;
-      
+
       if (!pricePerOunce) return null;
-      
+
       const pricePerGram = pricePerOunce / TROY_OUNCE_TO_GRAM;
+
       return parseFloat(pricePerGram.toFixed(2));
     } catch (error) {
       console.error("❌ فشل جلب سعر الذهب:", error);
+
       return null;
     }
   }

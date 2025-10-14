@@ -1,5 +1,7 @@
 "use client";
 
+import type { InvoiceItem } from "@/types/invoice-item";
+
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -10,16 +12,12 @@ import {
   API_ENDPOINTS,
   fetchData,
   fetchGoldPrice,
-  apiFetch,
   fetchItemByBarcode,
 } from "@/utilities/api";
 import homeService from "@/services/api/home.service";
-
 import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
-
-import type { InvoiceItem } from "@/types/invoice-item";
 
 export default function GoldInvoice3Page() {
   const router = useRouter();
@@ -94,20 +92,24 @@ export default function GoldInvoice3Page() {
     getGoldPrice();
     if (typeof window !== "undefined") {
       const now = new Date();
+
       setInvoiceDate(now.toISOString());
     }
   }, []);
 
   const getGoldPrice = async () => {
     const price = await fetchGoldPrice();
+
     setGoldPrice(price);
   };
 
   const fetchHomePurity = async () => {
     try {
       const homeSettings = await homeService.getHomeSettings();
+
       if (homeSettings) {
         const p = homeSettings.purity || 0;
+
         if (p) setHomePurity(p);
       }
     } catch (e) {
@@ -120,6 +122,7 @@ export default function GoldInvoice3Page() {
       const response = await fetchData<{ results: any[] }>(
         `${API_BASE_URL}/GetItemsList/`,
       );
+
       if (response && Array.isArray(response.results)) {
         setItems(response.results);
       }
@@ -131,15 +134,22 @@ export default function GoldInvoice3Page() {
 
   async function fetchCustomers() {
     const response = await fetchData<any[]>(`${API_BASE_URL}/customers_list`);
+
     if (response) {
       // تصفية العملاء والموردين بحيث لا يكون box_type = 2
-      const filteredCustomers = response.filter((customer) => customer.box_type !== 2);
+      const filteredCustomers = response.filter(
+        (customer) => customer.box_type !== 2,
+      );
+
       setCustomers(filteredCustomers);
     }
   }
 
   async function fetchCategories() {
-    const response = await fetchData<{ results: any[] }>(API_ENDPOINTS.CATEGORIES_LIST);
+    const response = await fetchData<{ results: any[] }>(
+      API_ENDPOINTS.CATEGORIES_LIST,
+    );
+
     if (response && Array.isArray(response.results)) {
       setCategories(response.results);
     }
@@ -191,13 +201,15 @@ export default function GoldInvoice3Page() {
   const totalValueTax = invoiceItems.reduce((sum, item) => {
     const totalA = item.weight * item.price;
     const base = totalA - (item.item_disc_amt ?? 0);
-    return sum + (base * 0.15);
+
+    return sum + base * 0.15;
   }, 0);
 
   const totalWagesTax = invoiceItems.reduce((sum, item) => {
     const totalW = item.weight * (item.price_w ?? 0);
     const base = totalW - (item.item_disc_amt ?? 0);
-    return sum + (base * 0.15);
+
+    return sum + base * 0.15;
   }, 0);
 
   const totalTax = totalValueTax + totalWagesTax;
@@ -206,6 +218,7 @@ export default function GoldInvoice3Page() {
     if (!selectedCustomer) return toast.error("يرجى اختيار المورد");
 
     const validItems = invoiceItems.filter((itm) => itm.item_id);
+
     if (validItems.length === 0) {
       return toast.error("يرجى إدخال تفاصيل الفاتورة");
     }
@@ -216,12 +229,15 @@ export default function GoldInvoice3Page() {
   const previewInvoice = () => {
     if (!selectedCustomer) {
       toast.error("يرجى اختيار المورد");
+
       return;
     }
 
     const validItems = invoiceItems.filter((itm) => itm.item_id);
+
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
+
       return;
     }
 
@@ -229,8 +245,8 @@ export default function GoldInvoice3Page() {
   };
 
   // دوال الإجماليات اليدوية
-  const handleManualTotalChange = (type: 'value' | 'wages', value: number) => {
-    if (type === 'value') {
+  const handleManualTotalChange = (type: "value" | "wages", value: number) => {
+    if (type === "value") {
       setManualTotalValue(value);
     } else {
       setManualTotalWages(value);
@@ -253,50 +269,57 @@ export default function GoldInvoice3Page() {
 
     try {
       console.log("البحث بالباركود:", searchValue.trim());
-      
+
       const searchTerm = searchValue.trim();
       let exactMatch = null;
-      
+
       // البحث في الأصناف المحملة أولاً
       console.log("البحث في الأصناف المحملة:", items.length, "صنف");
       exactMatch = items.find((item: any) => {
         const itemBarcode = (item.item_barcode ?? "").toString().trim();
         const itemCode = (item.item_code ?? "").toString().trim();
-        
+
         // البحث في الباركود أولاً، ثم في الكود
         return itemBarcode === searchTerm || itemCode === searchTerm;
       });
-      
+
       if (!exactMatch) {
         console.log("لم يجد في الأصناف المحملة، البحث في API...");
-        
+
         // استخدام دالة البحث بالباركود المخصصة
         const barcodeResult = await fetchItemByBarcode(searchTerm);
-        
+
         if (barcodeResult) {
           exactMatch = barcodeResult;
-          console.log("✅ وجد تطابق في API بالباركود:", exactMatch.item_barcode);
+          console.log(
+            "✅ وجد تطابق في API بالباركود:",
+            exactMatch.item_barcode,
+          );
         } else {
           // إذا لم يجد بالباركود، جرب البحث في الكود
           const res = await fetch(
             `${API_BASE_URL}/SearchItemsList/?q=${encodeURIComponent(searchTerm)}&page=1`,
           );
           const json = await res.json();
-          
+
           if (Array.isArray(json.results)) {
             exactMatch = json.results.find((item: any) => {
               const itemCode = (item.item_code ?? "").toString().trim();
+
               return itemCode === searchTerm;
             });
           }
         }
       } else {
-        console.log("✅ وجد تطابق في الأصناف المحملة:", exactMatch.item_barcode || exactMatch.item_code);
+        console.log(
+          "✅ وجد تطابق في الأصناف المحملة:",
+          exactMatch.item_barcode || exactMatch.item_code,
+        );
       }
 
       if (exactMatch) {
         const firstEmptyRowIndex = invoiceItems.findIndex(
-          (item) => !item.item_id && !item.item_name && item.weight === 0
+          (item) => !item.item_id && !item.item_name && item.weight === 0,
         );
 
         const targetIndex = firstEmptyRowIndex !== -1 ? firstEmptyRowIndex : 0;
@@ -337,48 +360,74 @@ export default function GoldInvoice3Page() {
         updated[targetIndex].item_name = selected.item_name ?? "";
 
         updated[targetIndex].k = selected.k ?? "";
-        updated[targetIndex].price = goldPrice ?? Number(selected.item_price ?? 0);
+        updated[targetIndex].price =
+          goldPrice ?? Number(selected.item_price ?? 0);
         updated[targetIndex].price_w = Number(selected.work_price ?? 0);
         updated[targetIndex].purity = selected.purity ?? "";
         updated[targetIndex].stones = selected.stones ?? "";
 
-        if (selected.item_weight !== undefined && selected.item_weight !== null && selected.item_weight !== "") {
+        if (
+          selected.item_weight !== undefined &&
+          selected.item_weight !== null &&
+          selected.item_weight !== ""
+        ) {
           updated[targetIndex].weight = Number(selected.item_weight ?? 0);
-          updated[targetIndex].g_weight = Number(selected.item_g_weight ?? selected.item_weight ?? 0);
+          updated[targetIndex].g_weight = Number(
+            selected.item_g_weight ?? selected.item_weight ?? 0,
+          );
         }
 
-        if (selected.item_g_weight !== undefined && selected.item_g_weight !== null && selected.item_g_weight !== "") {
+        if (
+          selected.item_g_weight !== undefined &&
+          selected.item_g_weight !== null &&
+          selected.item_g_weight !== ""
+        ) {
           updated[targetIndex].g_weight = Number(selected.item_g_weight);
         }
 
-        if (!updated[targetIndex].purity || updated[targetIndex].purity === "0" || updated[targetIndex].purity === "") {
+        if (
+          !updated[targetIndex].purity ||
+          updated[targetIndex].purity === "0" ||
+          updated[targetIndex].purity === ""
+        ) {
           updated[targetIndex].purity = homePurity.toString();
         }
 
-        const wCalc = updated[targetIndex].weight < 1 && updated[targetIndex].g_weight > updated[targetIndex].weight
-          ? updated[targetIndex].weight * 1000
-          : updated[targetIndex].weight;
+        const wCalc =
+          updated[targetIndex].weight < 1 &&
+          updated[targetIndex].g_weight > updated[targetIndex].weight
+            ? updated[targetIndex].weight * 1000
+            : updated[targetIndex].weight;
 
-        updated[targetIndex].total_a = payType === 2
-          ? wCalc * updated[targetIndex].price_w
-          : wCalc * updated[targetIndex].price;
+        updated[targetIndex].total_a =
+          payType === 2
+            ? wCalc * updated[targetIndex].price_w
+            : wCalc * updated[targetIndex].price;
         updated[targetIndex].total_w = wCalc * updated[targetIndex].price_w;
 
-        const base = (payType === 1
-          ? updated[targetIndex].total_a
-          : payType === 2
-            ? updated[targetIndex].total_w
-            : updated[targetIndex].total_a + updated[targetIndex].total_w) - (updated[targetIndex].item_disc_amt ?? 0);
+        const base =
+          (payType === 1
+            ? updated[targetIndex].total_a
+            : payType === 2
+              ? updated[targetIndex].total_w
+              : updated[targetIndex].total_a + updated[targetIndex].total_w) -
+          (updated[targetIndex].item_disc_amt ?? 0);
 
-        updated[targetIndex].tax = (base * (updated[targetIndex].tax_prc ?? 15)) / 100;
+        updated[targetIndex].tax =
+          (base * (updated[targetIndex].tax_prc ?? 15)) / 100;
         updated[targetIndex].total = base + updated[targetIndex].tax;
 
         setInvoiceItems(updated);
         setSearchValue("");
-        toast.success(`✅ تم إضافة الصنف: ${selected.item_name || selected.item_code} (${selected.item_code})`);
+        toast.success(
+          `✅ تم إضافة الصنف: ${selected.item_name || selected.item_code} (${selected.item_code})`,
+        );
 
         const isLastRow = targetIndex === updated.length - 1;
-        const isRowFilled = updated[targetIndex].item_id || updated[targetIndex].item_name || updated[targetIndex].weight > 0;
+        const isRowFilled =
+          updated[targetIndex].item_id ||
+          updated[targetIndex].item_name ||
+          updated[targetIndex].weight > 0;
 
         if (isLastRow && isRowFilled) {
           setInvoiceItems([
@@ -410,6 +459,7 @@ export default function GoldInvoice3Page() {
         console.log("❌ لم يجد تطابق للكود:", searchValue.trim());
         toast.error(`لم يتم العثور على صنف: ${searchValue.trim()}`);
         setSearchValue("");
+
         return;
       }
     } catch (error) {
@@ -418,13 +468,14 @@ export default function GoldInvoice3Page() {
     }
   };
 
-  const navigateToInvoice = (direction: 'prev' | 'next' | 'first' | 'last') => {
+  const navigateToInvoice = (direction: "prev" | "next" | "first" | "last") => {
     const directionText = {
-      'prev': 'السابق',
-      'next': 'التالي',
-      'first': 'الأول',
-      'last': 'الأخير'
+      prev: "السابق",
+      next: "التالي",
+      first: "الأول",
+      last: "الأخير",
     };
+
     toast.success(`التنقل إلى ${directionText[direction]}`);
   };
 
@@ -432,105 +483,108 @@ export default function GoldInvoice3Page() {
     console.log("تم حذف العنصر:", removedItem);
   };
 
-           return (
-      <>
-        <InvoiceTotalsActions
-           invoiceNumber={invoiceNumber}
-           formattedDateTime={new Date(invoiceDate).toLocaleString("ar-EG")}
-           saveInvoice={saveInvoice}
-           previewInvoice={previewInvoice}
-           totalAmount={totalAmount}
-           taxAmount={taxAmount}
-           netAmount={netAmount}
-           totalDiscount={totalDiscount}
-           commit={false}
-           setCommit={() => {}}
-           print={false}
-           setPrint={() => {}}
-           isEditing={isEditing}
-           onEdit={() => setIsEditing(true)}
-           invoiceType="purchase_return"
-           autoTotalValue={autoTotalValue}
-           autoTotalWages={autoTotalWages}
-           manualTotalValue={manualTotalValue}
-           manualTotalWages={manualTotalWages}
-           useManualTotals={useManualTotals}
-           onManualTotalChange={handleManualTotalChange}
-           onUseManualTotalsChange={setUseManualTotals}
-           onResetManualTotals={resetManualTotals}
-           searchNumber={searchNumber}
-           setSearchNumber={setSearchNumber}
-           onInvoiceSearch={handleInvoiceSearch}
-           totalGWeight={totalGWeight}
-           totalValueTax={totalValueTax}
-           totalWagesTax={totalWagesTax}
-           totalTax={totalTax}
-           paymentMethod={paymentMethod}
-           currentRecord={currentRecord}
-           totalRecords={totalRecords}
-           navigateToInvoice={navigateToInvoice}
-         >
-           <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
-             <InvoiceSelectors
-               area={area}
-               buildNo={buildNo}
-               city={city}
-               crNo={crNo}
-               customers={customers}
-               employee={employee}
-               goldPrice={goldPrice}
-               gov={gov}
-               handlingMethod={handlingMethod}
-               mobileMethod={mobileMethod}
-               note={note}
-               payType={payType}
-               paymentMethod={paymentMethod}
-               postCode={postCode}
-               postNo={postNo}
-               referenceNumber={referenceNumber}
-               saleInvoices={[]}
-               selectedCustomer={selectedCustomer}
-               onInvoiceSelect={() => {}}
-               setArea={setArea}
-               setBuildNo={setBuildNo}
-               setCity={setCity}
-               setCrNo={setCrNo}
-               setEmployee={setEmployee}
-               setGov={setGov}
-               setHandlingMethod={setHandlingMethod}
-               setMobileMethod={setMobileMethod}
-               setNote={setNote}
-               setPayType={setPayType}
-               setPaymentMethod={setPaymentMethod}
-               setPostCode={setPostCode}
-               setPostNo={setPostNo}
-               setReferenceNumber={setReferenceNumber}
-               setSelectedCustomer={setSelectedCustomer}
-               setStreet={setStreet}
-               setVatNumber={setVatNumber}
-               street={street}
-               vatNumber={vatNumber}
-               searchValue={searchValue}
-               setSearchValue={setSearchValue}
-               onBarcodeSearch={handleBarcodeSearch}
-               isEditing={isEditing}
-               invoiceType="purchase_return"
-             />
+  return (
+    <>
+      <InvoiceTotalsActions
+        autoTotalValue={autoTotalValue}
+        autoTotalWages={autoTotalWages}
+        commit={false}
+        currentRecord={currentRecord}
+        formattedDateTime={new Date(invoiceDate).toLocaleString("ar-EG")}
+        invoiceNumber={invoiceNumber}
+        invoiceType="purchase_return"
+        isEditing={isEditing}
+        manualTotalValue={manualTotalValue}
+        manualTotalWages={manualTotalWages}
+        navigateToInvoice={navigateToInvoice}
+        netAmount={netAmount}
+        paymentMethod={paymentMethod}
+        previewInvoice={previewInvoice}
+        print={false}
+        saveInvoice={saveInvoice}
+        searchNumber={searchNumber}
+        setCommit={() => {}}
+        setPrint={() => {}}
+        setSearchNumber={setSearchNumber}
+        taxAmount={taxAmount}
+        totalAmount={totalAmount}
+        totalDiscount={totalDiscount}
+        totalGWeight={totalGWeight}
+        totalRecords={totalRecords}
+        totalTax={totalTax}
+        totalValueTax={totalValueTax}
+        totalWagesTax={totalWagesTax}
+        useManualTotals={useManualTotals}
+        onEdit={() => setIsEditing(true)}
+        onInvoiceSearch={handleInvoiceSearch}
+        onManualTotalChange={handleManualTotalChange}
+        onResetManualTotals={resetManualTotals}
+        onUseManualTotalsChange={setUseManualTotals}
+      >
+        <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
+          <InvoiceSelectors
+            area={area}
+            buildNo={buildNo}
+            city={city}
+            crNo={crNo}
+            customers={customers}
+            employee={employee}
+            goldPrice={goldPrice}
+            gov={gov}
+            handlingMethod={handlingMethod}
+            invoiceType="purchase_return"
+            isEditing={isEditing}
+            mobileMethod={mobileMethod}
+            note={note}
+            payType={payType}
+            paymentMethod={paymentMethod}
+            postCode={postCode}
+            postNo={postNo}
+            referenceNumber={referenceNumber}
+            saleInvoices={[]}
+            searchValue={searchValue}
+            selectedCustomer={selectedCustomer}
+            setArea={setArea}
+            setBuildNo={setBuildNo}
+            setCity={setCity}
+            setCrNo={setCrNo}
+            setEmployee={setEmployee}
+            setGov={setGov}
+            setHandlingMethod={setHandlingMethod}
+            setMobileMethod={setMobileMethod}
+            setNote={setNote}
+            setPayType={setPayType}
+            setPaymentMethod={setPaymentMethod}
+            setPostCode={setPostCode}
+            setPostNo={setPostNo}
+            setReferenceNumber={setReferenceNumber}
+            setSearchValue={setSearchValue}
+            setSelectedCustomer={setSelectedCustomer}
+            setStreet={setStreet}
+            setVatNumber={setVatNumber}
+            street={street}
+            vatNumber={vatNumber}
+            onBarcodeSearch={handleBarcodeSearch}
+            onInvoiceSelect={() => {}}
+            // التاريخ والوقت
+            invoiceDate={invoiceDate}
+            setInvoiceDate={setInvoiceDate}
+          />
 
-             <InvoiceItemTable
-               categories={categories}
-               goldPrice={goldPrice}
-               homePurity={homePurity}
-               invoiceItems={invoiceItems}
-               isEditing={isEditing}
-               items={items}
-               payType={payType}
-               setInvoiceItems={setInvoiceItems}
-               setItems={setItems}
-               onItemRemoved={handleItemRemoved}
-             />
-           </div>
-                   </InvoiceTotalsActions>
-      </>
-    );
-  }
+          <InvoiceItemTable
+            categories={categories}
+            goldPrice={goldPrice}
+            homePurity={homePurity}
+            invoiceItems={invoiceItems}
+            isEditing={isEditing}
+            items={items}
+            payType={payType}
+            setInvoiceItems={setInvoiceItems}
+            setItems={setItems}
+            onItemRemoved={handleItemRemoved}
+          />
+        </div>
+      </InvoiceTotalsActions>
+    </>
+  );
+}
