@@ -15,10 +15,8 @@ export default async function InvoicesPage({
   searchParams: Promise<GetAllInvoicesParams>;
 }) {
   const queryParams = await searchParams;
-  console.log("🚀 ~ :39 ~ InvoicesPage ~ queryParams:", queryParams);
 
   const invoices = await invoiceService.getAllInvoices(queryParams);
-  console.log("🚀 ~ :42 ~ InvoicesPage ~ invoices count:", invoices?.count);
 
   const count = invoices?.count || 0;
   const itemsPerPage = 20;
