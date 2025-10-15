@@ -1,5 +1,4 @@
-"use client";
-
+import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import Link from "next/link";
 import { Button, Chip } from "@heroui/react";
 import { EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
@@ -10,63 +9,69 @@ import { Invoice } from "@/types/models/invoice";
 import { TRANS_TYPE_META } from "@/types/constants/invoice";
 import { Fractions } from "@/utilities/useFractions";
 
-export const createInvoiceColumns = (fractions: Fractions) => [
-  { key: "inv_id", label: "رقم الفاتورة", sortable: true },
-  {
-    key: "inv_date",
-    label: "التاريخ والوقت",
-    sortable: true,
-    render: (value: string) => formatDateTime(value),
-  },
-  { key: "cust_name", label: "العميل", sortable: true },
-  {
-    key: "inv_net",
-    label: "الإجمالي",
-    sortable: true,
-    render: (value: number) => formatAmount(value, fractions.frac),
-  },
-  {
-    key: "tax",
-    label: "الضريبة",
-    sortable: true,
-    render: (value: number) => formatAmount(value, fractions.frac),
-  },
-  {
-    key: "inv_amt",
-    label: "الإجمالي شامل الضريبة",
-    sortable: true,
-    render: (value: number) => formatAmount(value, fractions.frac),
-  },
-  {
-    key: "type",
-    label: "النوع",
-    sortable: false,
-    render: (_value: unknown, row: Invoice) => {
-      const typeMeta = TRANS_TYPE_META[row.trans_type];
+const columnHelper = createColumnHelper<Invoice>();
+
+export const createInvoiceColumns = (
+  fractions: Fractions,
+): ColumnDef<Invoice>[] => [
+  columnHelper.accessor("inv_id", {
+    header: () => "رقم الفاتورة",
+    cell: (info) => info.getValue(),
+    enableSorting: true,
+  }),
+  columnHelper.accessor("inv_date", {
+    header: () => "التاريخ والوقت",
+    cell: (info) => formatDateTime(info.getValue()),
+    enableSorting: true,
+  }),
+  columnHelper.accessor("cust_name", {
+    header: () => "العميل",
+    cell: (info) => info.getValue(),
+    enableSorting: true,
+  }),
+  columnHelper.accessor("inv_net", {
+    header: () => "الإجمالي",
+    cell: (info) => formatAmount(Number(info.getValue() || 0), fractions.frac),
+    enableSorting: true,
+  }),
+  columnHelper.accessor("tax", {
+    header: () => "الضريبة",
+    cell: (info) => formatAmount(Number(info.getValue() || 0), fractions.frac),
+    enableSorting: true,
+  }),
+  columnHelper.accessor("inv_amt", {
+    header: () => "الإجمالي شامل الضريبة",
+    cell: (info) => formatAmount(Number(info.getValue() || 0), fractions.frac),
+    enableSorting: true,
+  }),
+  columnHelper.display({
+    id: "type",
+    header: () => "النوع",
+    cell: ({ row }) => {
+      const typeMeta = TRANS_TYPE_META[row.original.trans_type];
       return (
         <Chip color={typeMeta?.color ?? "default"} size="sm">
           {typeMeta?.label ?? "غير محدد"}
         </Chip>
       );
     },
-  },
-  {
-    key: "actions",
-    label: "الإجراءات",
-    sortable: false,
-    render: (_value: unknown, row: Invoice) => (
+  }),
+  columnHelper.display({
+    id: "actions",
+    header: () => "الإجراءات",
+    cell: ({ row }) => (
       <div className="flex gap-2">
-        <Link href={`/forms/invoices/sale/${row.inv_id}`}>
+        <Link href={`/forms/invoices/sale/${row.original.inv_id}`}>
           <Button isIconOnly size="sm" variant="light">
             <EyeIcon className="h-4 w-4 text-blue-500" />
           </Button>
         </Link>
-        <Link href={`/forms/invoices/sale/${row.inv_id}`}>
+        <Link href={`/forms/invoices/sale/${row.original.inv_id}`}>
           <Button isIconOnly size="sm" variant="light">
             <PencilIcon className="h-4 w-4 text-yellow-500" />
           </Button>
         </Link>
       </div>
     ),
-  },
+  }),
 ];

@@ -13,7 +13,7 @@ import {
 import Card from "@/components/Card";
 import { FunnelIcon, ChartBarIcon, TableCellsIcon } from "@heroicons/react/24/outline";
 import useFractions from "@/utilities/useFractions";
-import DataTable from "@/components/DataTable";
+import AppDataTable from "@/components/AppDataTable";
 import InvoiceAnalytics from "@/components/InvoiceAnalytics";
 import { Fractions } from "@/utilities/useFractions";
 import { Invoice } from "@/types/models/invoice";
@@ -195,13 +195,11 @@ export default function InvoiceClient({
             </div>
           }
         >
-          {/* الجدول */}
-          <DataTable
+          <AppDataTable
             className="card"
             columns={columns}
             data={invoices}
             searchable={false}
-            sortable={true}
             title={`قائمة الفواتير (${totalInvoices} فاتورة)`}
           />
         </Tab>
