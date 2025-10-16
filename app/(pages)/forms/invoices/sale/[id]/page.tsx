@@ -34,11 +34,9 @@
 //   );
 
 // }
-import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import InvoiceService from "@/services/api/invoice.service";
 import invoiceFormDataService from "@/services/bff/invoice-form-data.service";
-import { Breadcrumb } from "@/components";
 import InvoiceClientPage from "./page.client";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
 
@@ -59,10 +57,19 @@ export async function generateMetadata({
 // Server component to fetch and display invoice details
 export default async function InvoiceDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { id } = await params;
+  const [{ id }, resolvedSearchParams] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+
+  const rawEdit = resolvedSearchParams.edit;
+  const editParam = Array.isArray(rawEdit) ? rawEdit[0] : rawEdit;
+  const isEditMode = editParam === "true";
 
   let invoiceData: Invoice | null = null;
   let invoiceDetailsData: InvoiceDetail[] = [];
@@ -93,6 +100,7 @@ export default async function InvoiceDetailPage({
         invoiceData={invoiceData}
         invoiceDetailsData={invoiceDetailsData}
         isNewInvoice={id ? false : true}
+        startInEditMode={isEditMode}
         customers={formData.customers}
         items={formData.items}
         categories={formData.categories}

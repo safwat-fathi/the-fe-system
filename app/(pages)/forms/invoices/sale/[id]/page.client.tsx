@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
@@ -17,6 +17,7 @@ interface InvoiceClientPageProps {
   categories: any[];
   goldPrice: number | null;
   homePurity: number;
+  startInEditMode?: boolean;
 }
 
 export default function InvoiceClientPage({
@@ -28,6 +29,7 @@ export default function InvoiceClientPage({
   categories: initialCategories,
   goldPrice: initialGoldPrice,
   homePurity: initialHomePurity,
+  startInEditMode = false,
 }: InvoiceClientPageProps) {
   const {
     // lists
@@ -104,6 +106,12 @@ export default function InvoiceClientPage({
     initialGoldPrice,
     initialHomePurity,
   });
+
+  useEffect(() => {
+    if (startInEditMode) {
+      setIsEditing(true);
+    }
+  }, [setIsEditing, startInEditMode]);
 
   // join any derived totals via computeTotals (hook exposes computeTotals)
   const totals = useMemo(() => {

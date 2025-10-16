@@ -5,8 +5,9 @@ import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
-import { API_BASE_URL, API_ENDPOINTS, fetchData } from "@/utilities/api";
+import { API_ENDPOINTS, fetchData } from "@/utilities/api";
 import type { InvoiceDetail } from "@/types/models/invoice";
+import itemService from "@/services/api/item.service";
 
 const AsyncCreatableSelect = withAsyncPaginate(CreatableSelect);
 
@@ -95,48 +96,54 @@ export default function InvoiceItemTable({
     _loaded: any,
     { page }: { page: number },
   ) => {
+    const trimmed = search.trim();
+
+    if (!trimmed) {
+      return {
+        options: [],
+        hasMore: false,
+        additional: { page: 1 },
+      };
+    }
+
     try {
-      const res = await fetch(
-        `${API_BASE_URL}SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
-      );
-      const json = await res.json();
-      const term = search.toLowerCase();
+      const response = await itemService.searchItems(trimmed, page);
+      const results = response?.results ?? [];
+      const term = trimmed.toLowerCase();
 
-      const options = Array.isArray(json.results)
-        ? json.results
-            .map((it: any) => {
-              const itemCode = (it.item_code ?? it.code ?? "").toLowerCase();
-              const itemName = (it.item_name ?? it.name ?? "").toLowerCase();
-              const codeMatch = itemCode.indexOf(term);
-              const nameMatch = itemName.indexOf(term);
+      const options = results
+        .map((it: any) => {
+          const itemCode = (it.item_code ?? it.code ?? "").toLowerCase();
+          const itemName = (it.item_name ?? it.name ?? "").toLowerCase();
+          const codeMatch = itemCode.indexOf(term);
+          const nameMatch = itemName.indexOf(term);
 
-              return {
-                value: it.id,
-                label: `${it.item_code ?? it.code ?? "غير معروف"} - ${it.item_name ?? it.name ?? ""}`,
-                item: it,
-                codeMatch,
-                nameMatch,
-              };
-            })
-            .filter((opt: any) => opt.codeMatch !== -1 || opt.nameMatch !== -1)
-            .sort((a: any, b: any) => {
-              const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
-              const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
-              if (aCode !== bCode) return aCode - bCode;
-              const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
-              const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
-              return aName - bName;
-            })
-            .map(({ value, label, item }: any) => ({ value, label, item }))
-        : [];
+          return {
+            value: it.id,
+            label: `${it.item_code ?? it.code ?? "غير معروف"} - ${it.item_name ?? it.name ?? ""}`,
+            item: it,
+            codeMatch,
+            nameMatch,
+          };
+        })
+        .filter((opt: any) => opt.codeMatch !== -1 || opt.nameMatch !== -1)
+        .sort((a: any, b: any) => {
+          const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
+          const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+          if (aCode !== bCode) return aCode - bCode;
+          const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
+          const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+          return aName - bName;
+        })
+        .map(({ value, label, item }: any) => ({ value, label, item }));
 
       return {
         options,
-        hasMore: !!json.next,
+        hasMore: Boolean(response?.next),
         additional: { page: page + 1 },
       };
-    } catch (e) {
-      console.error("failed to load items", e);
+    } catch (error) {
+      console.error("فشل تحميل الأصناف:", error);
       return { options: [], hasMore: false, additional: { page } };
     }
   };

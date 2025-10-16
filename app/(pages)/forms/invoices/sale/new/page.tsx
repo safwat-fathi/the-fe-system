@@ -12,8 +12,20 @@ export const metadata: Metadata = {
   description: "إنشاء فاتورة بيع جديدة",
 };
 
-export default async function NewInvoicePage() {
+export default async function NewSaleInvoicePage() {
   const formData = await loadInvoiceFormData();
+  console.log(
+    "🚀 ~ :17 ~ NewSaleInvoicePage ~ formData - customers:",
+    formData.customers.length,
+  );
+  console.log(
+    "🚀 ~ :17 ~ NewSaleInvoicePage ~ formData - categories:",
+    formData.categories.length,
+  );
+  console.log(
+    "🚀 ~ :17 ~ NewSaleInvoicePage ~ formData - items:",
+    formData.items,
+  );
 
   return (
     <div className="container mx-auto p-4">

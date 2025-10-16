@@ -1,29 +1,45 @@
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
-import useFractions from "@/utilities/useFractions";
+import useFractions, { type Fractions } from "@/utilities/useFractions";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
+import invoiceService from "@/services/api/invoice.service";
+import { generateZatcaQR } from "@/utilities/zatca";
+
+type NumericValue = number | string;
 
 type InvoiceItemRow = {
   id: number;
   item_id: number | null;
+  item?: number | null;
   item_code: string;
   item_name?: string;
-  qty: number;
-  weight: number;
-  g_weight: number;
+  qty: NumericValue;
+  weight: NumericValue;
+  g_weight: NumericValue;
   k: string;
-  price: number;
-  price_w: number;
+  price: NumericValue;
+  price_w: NumericValue;
   note: string;
   trans_type: number;
   purity: string;
-  total: number;
-  total_w: number;
-  total_a: number;
-  tax: number;
-  tax_prc: number;
-  stones: string;
-  item_disc_amt: number;
+  total: NumericValue;
+  total_w: NumericValue;
+  total_a: NumericValue;
+  tax: NumericValue;
+  tax_prc: NumericValue;
+  stones: NumericValue | null;
+  item_disc_amt: NumericValue;
+  item_disc_prc?: NumericValue;
+  sn?: string;
+  item_desc?: string;
+  inv_notes?: string | null;
+  cr_date?: string;
+  cr_user?: string;
+  upd_date?: string;
+  upd_user?: string;
+  com?: number;
+  inv?: number;
+  box?: number | null;
 };
 
 type FormState = {
@@ -52,6 +68,81 @@ type FormAction =
   | { type: "RESET"; payload: FormState };
 
 const defaultInvoiceDate = new Date().toISOString();
+
+const PAYMENT_METHOD_INV_TYPES = {
+  cash: 1,
+  credit: 2,
+} as const;
+
+const EMPLOYEE_CODE_MAP: Record<string, number> = {
+  hashem: 1,
+  othman: 2,
+};
+
+const parseNumber = (value: unknown): number => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+
+  if (typeof value === "string") {
+    const cleaned = value.replace(/,/g, "").trim();
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  const numeric = Number(value ?? 0);
+  return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const formatNumber = (value: number, digits: number): number =>
+  Number.parseFloat(value.toFixed(digits));
+
+const mapDetailToRow = (detail: InvoiceDetail): InvoiceItemRow => {
+  const itemId = Number(detail.item);
+  return {
+    id: Number(detail.id),
+    item_id: Number.isFinite(itemId) ? itemId : null,
+    item: Number.isFinite(itemId) ? itemId : null,
+    item_code: detail.sn ?? "",
+    item_name: detail.item_desc ?? "",
+    qty: detail.qty ?? "0",
+    weight: detail.weight ?? "0",
+    g_weight: detail.g_weight ?? "0",
+    k: "",
+    price: detail.price ?? "0",
+    price_w: detail.price_w ?? "0",
+    note: detail.inv_notes ?? "",
+    trans_type: detail.trans_type ?? 2,
+    purity: detail.G875 ? String(detail.G875) : "",
+    total: detail.total ?? "0",
+    total_w: detail.total_w ?? "0",
+    total_a: detail.total_a ?? "0",
+    tax: detail.tax ?? "0",
+    tax_prc: detail.tax_prc ?? "15",
+    stones: detail.stones ?? null,
+    item_disc_amt: detail.item_disc_amt ?? "0",
+    item_disc_prc: detail.item_disc_prc ?? "0",
+    sn: detail.sn ?? "",
+    item_desc: detail.item_desc ?? "",
+    inv_notes: detail.inv_notes ?? "",
+    cr_date: detail.cr_date ?? "",
+    cr_user: detail.cr_user ?? "",
+    upd_date: detail.upd_date ?? "",
+    upd_user: detail.upd_user ?? "",
+    com: detail.com ?? undefined,
+    inv: detail.inv ?? undefined,
+    box: detail.box ?? null,
+  };
+};
+
+const getItemIdFromRow = (row: InvoiceItemRow): number | null => {
+  const candidate =
+    row.item_id ??
+    (typeof row.item === "number"
+      ? row.item
+      : parseNumber((row.item as unknown) ?? 0));
+
+  const parsed = parseNumber(candidate);
+  return parsed > 0 ? parsed : null;
+};
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
@@ -105,7 +196,17 @@ export default function useInvoiceForm({
   const [currentRecord, setCurrentRecord] = useState<number>(1);
   const [totalRecords, setTotalRecords] = useState<number>(1);
 
-  const frac = useFractions("frac") as number;
+  const fractions = useFractions() as Fractions;
+  const frac = fractions?.frac ?? 2;
+  const frac2 = fractions?.frac2 ?? 3;
+  const [invoicePk, setInvoicePk] = useState<number | null>(
+    invoiceData?.id ? Number(invoiceData.id) : null,
+  );
+  const [originalInvoiceItems, setOriginalInvoiceItems] = useState<InvoiceItemRow[]>(
+    invoiceDetailsData?.length ? invoiceDetailsData.map(mapDetailToRow) : [],
+  );
+  const [deletedItemIds, setDeletedItemIds] = useState<number[]>([]);
+  const [defaultTaxPrc, setDefaultTaxPrc] = useState<number>(15);
 
   // form reducer
   const initialFormState: FormState = {
@@ -135,37 +236,126 @@ export default function useInvoiceForm({
     (): InvoiceItemRow => ({
       id: Date.now(),
       item_id: null,
+      item: null,
       item_code: "",
-      qty: 1,
-      weight: 0,
-      g_weight: 0,
+      qty: 1 as number,
+      weight: 0 as number,
+      g_weight: 0 as number,
       k: "",
-      price: 0,
-      price_w: 0,
+      price: 0 as number,
+      price_w: 0 as number,
       note: "",
       trans_type: 2,
       purity: "",
-      total: 0,
-      total_w: 0,
-      total_a: 0,
-      tax: 0,
-      tax_prc: 15,
-      stones: "",
-      item_disc_amt: 0,
+      total: 0 as number,
+      total_w: 0 as number,
+      total_a: 0 as number,
+      tax: 0 as number,
+      tax_prc: 15 as number,
+      stones: null,
+      item_disc_amt: 0 as number,
+      item_disc_prc: 0 as number,
+      sn: "",
+      item_desc: "",
+      inv_notes: "",
+      cr_date: new Date().toISOString(),
+      upd_date: new Date().toISOString(),
     }),
     [],
   );
 
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItemRow[]>(
-    invoiceDetailsData && invoiceDetailsData.length > 0
-      ? (invoiceDetailsData as unknown as InvoiceItemRow[])
-      : [makeEmptyRow()],
+    originalInvoiceItems.length > 0 ? originalInvoiceItems : [makeEmptyRow()],
+  );
+
+  const selectedCustomer = useMemo(
+    () =>
+      customers.find(
+        (customer) => String(customer.id) === String(form.cust_code ?? ""),
+      ) ?? null,
+    [customers, form.cust_code],
+  );
+
+  const mapRowToApiPayload = useCallback(
+    (row: InvoiceItemRow, invoicePrimaryKey: number) => {
+      const itemId = getItemIdFromRow(row);
+      if (!itemId) return null;
+
+      const qty = parseNumber(row.qty);
+      const weight = parseNumber(row.weight);
+      const gWeight = parseNumber(row.g_weight);
+      const price = parseNumber(row.price);
+      const priceW = parseNumber(row.price_w);
+      const itemDiscountAmount = parseNumber(row.item_disc_amt ?? 0);
+      const taxRate =
+        row.tax_prc !== undefined
+          ? parseNumber(row.tax_prc)
+          : defaultTaxPrc ?? 15;
+
+      const computedTotalW =
+        row.total_w !== undefined
+          ? parseNumber(row.total_w)
+          : weight * priceW;
+
+      const computedTotalA =
+        row.total_a !== undefined
+          ? parseNumber(row.total_a)
+          : weight * (form.pay_type === 2 ? priceW : price);
+
+      const combinedTotal =
+        row.total !== undefined
+          ? parseNumber(row.total)
+          : weight * price + weight * priceW - itemDiscountAmount;
+
+      const taxValue =
+        row.tax !== undefined
+          ? parseNumber(row.tax)
+          : (combinedTotal - itemDiscountAmount) * (taxRate / 100);
+
+      return {
+        id: row.id,
+        trans_type: row.trans_type ?? 2,
+        G875: row.purity ? parseNumber(row.purity) : null,
+        k: row.k ?? "",
+        qty: formatNumber(qty, frac),
+        stones:
+          row.stones === null || row.stones === ""
+            ? null
+            : parseNumber(row.stones),
+        price: formatNumber(price, frac),
+        price_w: formatNumber(priceW, frac),
+        weight: formatNumber(weight, frac2),
+        g_weight: formatNumber(gWeight, frac2),
+        total: formatNumber(combinedTotal, frac),
+        total_w: formatNumber(computedTotalW, frac),
+        total_a: formatNumber(computedTotalA, frac),
+        tax: formatNumber(taxValue, frac),
+        tax_prc: formatNumber(taxRate, frac),
+        item_disc_prc: formatNumber(
+          parseNumber(row.item_disc_prc ?? 0),
+          frac,
+        ),
+        item_disc_amt: formatNumber(itemDiscountAmount, frac),
+        sn: row.sn ?? "",
+        item_desc: row.item_desc ?? row.item_name ?? "",
+        inv_notes: row.note ?? row.inv_notes ?? "",
+        cr_date: row.cr_date ?? new Date().toISOString(),
+        cr_user: row.cr_user ?? "",
+        upd_date: new Date().toISOString(),
+        upd_user: row.upd_user ?? "",
+        com: row.com,
+        inv: invoicePrimaryKey,
+        item: itemId,
+      };
+    },
+    [defaultTaxPrc, frac, frac2, form.pay_type],
   );
 
   // sync incoming invoiceData/details
   useEffect(() => {
     if (!invoiceData) return;
 
+    setInvoicePk(invoiceData.id ? Number(invoiceData.id) : null);
     dispatchForm({
       type: "SET_ALL",
       payload: {
@@ -189,49 +379,65 @@ export default function useInvoiceForm({
       },
     });
 
-    if (invoiceDetailsData && invoiceDetailsData.length > 0) {
-      setInvoiceItems(invoiceDetailsData as unknown as InvoiceItemRow[]);
+    if (invoiceData.inv_type) {
+      setPaymentMethod(
+        invoiceData.inv_type === PAYMENT_METHOD_INV_TYPES.credit
+          ? "credit"
+          : "cash",
+      );
     }
 
+    if (invoiceDetailsData && invoiceDetailsData.length > 0) {
+      const mappedDetails = invoiceDetailsData.map(mapDetailToRow);
+      setInvoiceItems(mappedDetails);
+      setOriginalInvoiceItems(mappedDetails);
+      setDeletedItemIds([]);
+    }
   }, [invoiceData, invoiceDetailsData]);
 
   // totals (simple helpers returned to consumer can compute more if needed)
   const computeTotals = useCallback(
     (payType: number, rows: InvoiceItemRow[]) => {
       const totalAmount = rows.reduce((sum, item) => {
-        const totalA = (item.weight || 0) * (item.price || 0);
-        const totalW = (item.weight || 0) * (item.price_w || 0);
-        let rowTotal = 0;
+        const weight = parseNumber(item.weight);
+        const price = parseNumber(item.price);
+        const priceW = parseNumber(item.price_w);
+        const discount = parseNumber(item.item_disc_amt);
 
-        if (payType === 1) rowTotal = totalA;
-        else if (payType === 2) rowTotal = totalW;
-        else rowTotal = totalA + totalW;
+        const totalA = weight * price;
+        const totalW = weight * priceW;
 
-        return sum + rowTotal - (item.item_disc_amt ?? 0);
+        const rowTotal =
+          payType === 1 ? totalA : payType === 2 ? totalW : totalA + totalW;
+
+        return sum + rowTotal - discount;
       }, 0);
 
       const taxAmount = rows.reduce((sum, item) => {
-        const totalA = (item.weight || 0) * (item.price || 0);
-        const totalW = (item.weight || 0) * (item.price_w || 0);
-        let rowTotal = 0;
+        const weight = parseNumber(item.weight);
+        const price = parseNumber(item.price);
+        const priceW = parseNumber(item.price_w);
+        const discount = parseNumber(item.item_disc_amt);
+        const taxRate =
+          parseNumber(item.tax_prc ?? defaultTaxPrc ?? 15) / 100;
 
-        if (payType === 1) rowTotal = totalA;
-        else if (payType === 2) rowTotal = totalW;
-        else rowTotal = totalA + totalW;
-
-        const base = rowTotal - (item.item_disc_amt ?? 0);
-        return sum + base * 0.15;
+        const totalA = weight * price;
+        const totalW = weight * priceW;
+        const rowTotal =
+          payType === 1 ? totalA : payType === 2 ? totalW : totalA + totalW;
+        const base = rowTotal - discount;
+        return sum + base * taxRate;
       }, 0);
 
-      const totalDiscount = rows.reduce(
-        (sum, item) => sum + (parseFloat(String(item.item_disc_amt)) || 0),
-        0,
-      );
+      const totalDiscount = rows.reduce((sum, item) => {
+        const discount = parseNumber(item.item_disc_amt);
+        return sum + discount;
+      }, 0);
 
-      const totalGWeight = rows.reduce(
-        (sum, item) => sum + (item.g_weight || 0),
-        0,
-      );
+      const totalGWeight = rows.reduce((sum, item) => {
+        const gWeight = parseNumber(item.g_weight);
+        return sum + gWeight;
+      }, 0);
 
       return {
         totalAmount,
@@ -241,7 +447,7 @@ export default function useInvoiceForm({
         netAmount: totalAmount + taxAmount,
       };
     },
-    [],
+    [defaultTaxPrc],
   );
 
   // barcode search logic kept here so consumer can call it. It mutates invoiceItems and items lists.
@@ -287,8 +493,10 @@ export default function useInvoiceForm({
         const row = {
           ...updated[targetIndex],
           item_id: selected.id ?? null,
+          item: selected.id ?? null,
           item_code: selected.item_code ?? "",
           item_name: selected.item_name ?? "",
+          item_desc: selected.item_name ?? updated[targetIndex].item_desc ?? "",
           k: selected.k ?? "",
           price: goldPrice ?? priceFromSelected,
           price_w: workPriceFromSelected,
@@ -371,34 +579,279 @@ export default function useInvoiceForm({
     ],
   );
 
-  const saveInvoice = useCallback(async () => {
-    if (!form.cust_code) return toast.error("يرجى اختيار العميل");
+  const getNextInvoiceNumber = useCallback(async () => {
+    try {
+      const invoicesResponse = await invoiceService.getAllInvoices();
+      if (!invoicesResponse || !invoicesResponse.results?.length) return 1;
 
-    const validItems = invoiceItems.filter((itm) => itm.item_id);
-    if (validItems.length === 0)
-      return toast.error("يرجى إدخال تفاصيل الفاتورة");
+      const maxInvId = invoicesResponse.results.reduce((max, invoice) => {
+        const current = parseNumber(invoice.inv_id);
+        return current > max ? current : max;
+      }, 0);
+
+      return maxInvId + 1;
+    } catch (error) {
+      console.error("فشل في جلب أرقام الفواتير:", error);
+      return 1;
+    }
+  }, []);
+
+  const saveInvoice = useCallback(async () => {
+    if (!selectedCustomer) {
+      toast.error("يرجى اختيار العميل");
+      return;
+    }
+
+    const validItems = invoiceItems.filter(
+      (item) => getItemIdFromRow(item) !== null,
+    );
+
+    if (validItems.length === 0) {
+      toast.error("يرجى إدخال تفاصيل الفاتورة");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
-      setIsLoading(true);
-      if (isNewInvoice) toast.success("تم حفظ الفاتورة بنجاح");
-      else toast.success("تم تحديث الفاتورة بنجاح");
+      const totals = computeTotals(form.pay_type, validItems);
+      const invoiceNumber =
+        !isNewInvoice && form.inv_id
+          ? parseNumber(form.inv_id)
+          : await getNextInvoiceNumber();
+
+      const invoiceQr = generateZatcaQR({
+        sellerName: "شركة ثمار الصفاء المتميزة التجارية",
+        vatNumber: "311452959900003",
+        timestamp: form.inv_date,
+        totalWithVat: formatNumber(totals.netAmount, frac),
+        vatTotal: formatNumber(totals.taxAmount, frac),
+      });
+
+      const invoicePayload: Record<string, unknown> = {
+        inv_id: invoiceNumber,
+        inv_date: form.inv_date,
+        cust: parseNumber(selectedCustomer.id),
+        cust_name: selectedCustomer.cust_name ?? "",
+        cust_code:
+          selectedCustomer.cust_code ?? String(selectedCustomer.id ?? ""),
+        inv_amt: formatNumber(totals.netAmount, frac2),
+        inv_net: formatNumber(totals.totalAmount, frac2),
+        tax: formatNumber(totals.taxAmount, frac),
+        tax_prc: formatNumber(defaultTaxPrc ?? 15, frac),
+        inv_status: 1,
+        trans_type: 2,
+        cr_date: form.inv_date,
+        inv_type:
+          PAYMENT_METHOD_INV_TYPES[
+            (paymentMethod ?? "cash") as keyof typeof PAYMENT_METHOD_INV_TYPES
+          ] ?? 1,
+        emp_id: EMPLOYEE_CODE_MAP[employee] ?? null,
+        inv_notes: form.inv_notes || null,
+        handling: handlingMethod || null,
+        mobile: mobileMethod || null,
+        ref_no: form.ref_no || null,
+        print: form.print ?? false,
+        commit: true,
+        is_done: false,
+        is_ok: false,
+        suspend: false,
+        post: false,
+        tx: false,
+        dist: false,
+        gauge_diff: false,
+        pay_chick: false,
+        vat_no: form.vat_no ?? "",
+        pay_type: form.pay_type,
+        gold_price: goldPrice ?? 0,
+        cr_no: form.cr_no || null,
+        gov: form.gov || null,
+        city: form.city || null,
+        area: form.area || null,
+        street: form.street || null,
+        build_no: form.build_no || null,
+        post_no: form.post_no || null,
+        post_code: form.post_code || null,
+        inv_QR: invoiceQr,
+      };
+
+      let savedInvoice: Invoice | null = null;
+
+      if (isNewInvoice) {
+        savedInvoice = await invoiceService.createInvoice(
+          invoicePayload as Partial<Invoice>,
+        );
+      } else {
+        if (!invoicePk) {
+          throw new Error("invoice primary key is missing");
+        }
+        savedInvoice = await invoiceService.updateInvoice(
+          invoicePk,
+          invoicePayload as Partial<Invoice>,
+        );
+      }
+
+      if (!savedInvoice) {
+        throw new Error(
+          isNewInvoice ? "create-invoice-failed" : "update-invoice-failed",
+        );
+      }
+
+      let resolvedInvoicePk = savedInvoice.id
+        ? parseNumber(savedInvoice.id)
+        : invoicePk;
+
+      if (!resolvedInvoicePk || resolvedInvoicePk <= 0) {
+        const fetchedInvoice = await invoiceService.getInvoiceById(
+          String(invoiceNumber),
+        );
+        resolvedInvoicePk = fetchedInvoice?.id
+          ? parseNumber(fetchedInvoice.id)
+          : null;
+      }
+
+      if (!resolvedInvoicePk || resolvedInvoicePk <= 0) {
+        throw new Error("invoice primary key could not be resolved");
+      }
+
+      setInvoicePk(resolvedInvoicePk);
+      dispatchForm({
+        type: "SET_FIELD",
+        field: "inv_id",
+        value: invoiceNumber,
+      });
+
+      const currentValidIds = new Set(
+        validItems
+          .map((item) => Number(item.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      );
+
+      const derivedDeletedIds = originalInvoiceItems
+        .filter((item) => !currentValidIds.has(item.id))
+        .map((item) => item.id);
+
+      const deletions = Array.from(
+        new Set([
+          ...deletedItemIds,
+          ...derivedDeletedIds.filter(
+            (id) => Number.isFinite(id) && id > 0,
+          ),
+        ]),
+      );
+
+      for (const detailId of deletions) {
+        if (!detailId || detailId <= 0) continue;
+        try {
+          await invoiceService.deleteInvoiceDetail(detailId);
+        } catch (deleteError) {
+          console.error(`فشل حذف السطر ${detailId}:`, deleteError);
+        }
+      }
+
+      for (const row of validItems) {
+        const detailPayload = mapRowToApiPayload(row, resolvedInvoicePk);
+        if (!detailPayload) continue;
+
+        const isExistingRow = originalInvoiceItems.some(
+          (item) => item.id === row.id && item.id > 0,
+        );
+
+        if (isExistingRow) {
+          try {
+            await invoiceService.updateInvoiceDetail(
+              Number(row.id),
+              detailPayload,
+            );
+          } catch (updateError) {
+            console.error(
+              `خطأ أثناء تحديث تفاصيل السطر ${row.id}:`,
+              updateError,
+            );
+          }
+        } else {
+          try {
+            const { id, ...creationPayload } = detailPayload;
+            await invoiceService.createInvoiceDetail(creationPayload);
+          } catch (createError) {
+            console.error("خطأ أثناء إنشاء تفاصيل السطر:", createError);
+          }
+        }
+      }
+
+      const refreshedDetails =
+        await invoiceService.getInvoiceDetails(String(resolvedInvoicePk));
+      const mappedDetails = refreshedDetails.map(mapDetailToRow);
+
+      setInvoiceItems(
+        mappedDetails.length > 0 ? mappedDetails : [makeEmptyRow()],
+      );
+      setOriginalInvoiceItems(mappedDetails);
+      setDeletedItemIds([]);
+      setIsEditing(false);
+
+      toast.success(
+        isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
+      );
     } catch (error) {
       console.error("خطأ في حفظ الفاتورة:", error);
       toast.error("حدث خطأ أثناء حفظ الفاتورة");
     } finally {
       setIsLoading(false);
     }
-  }, [form.cust_code, invoiceItems, isNewInvoice]);
+  }, [
+    computeTotals,
+    deletedItemIds,
+    employee,
+    form.commit,
+    form.cr_no,
+    form.gov,
+    form.inv_date,
+    form.inv_id,
+    form.inv_notes,
+    form.pay_type,
+    form.post_code,
+    form.post_no,
+    form.print,
+    form.ref_no,
+    form.street,
+    form.vat_no,
+    form.area,
+    form.city,
+    form.build_no,
+    frac,
+    frac2,
+    defaultTaxPrc,
+    getNextInvoiceNumber,
+    goldPrice,
+    handlingMethod,
+    invoiceItems,
+    invoicePk,
+    isNewInvoice,
+    mapRowToApiPayload,
+    mobileMethod,
+    originalInvoiceItems,
+    paymentMethod,
+    selectedCustomer,
+  ]);
 
   const previewInvoice = useCallback(() => {
-    if (!form.cust_code) return toast.error("يرجى اختيار العميل");
+    if (!selectedCustomer) {
+      toast.error("يرجى اختيار العميل");
+      return;
+    }
 
-    const validItems = invoiceItems.filter((itm) => itm.item_id);
-    if (validItems.length === 0)
-      return toast.error("يرجى إدخال تفاصيل الفاتورة");
+    const validItems = invoiceItems.filter(
+      (item) => getItemIdFromRow(item) !== null,
+    );
+
+    if (validItems.length === 0) {
+      toast.error("يرجى إدخال تفاصيل الفاتورة");
+      return;
+    }
 
     toast.success("معاينة الفاتورة");
-  }, [form.cust_code, invoiceItems]);
+  }, [invoiceItems, selectedCustomer]);
 
   // manual totals state
   const [autoTotalValue, setAutoTotalValue] = useState<number>(0);
@@ -438,9 +891,21 @@ export default function useInvoiceForm({
     [],
   );
 
-  const handleItemRemoved = useCallback((removedItem: any) => {
-    console.log("تم حذف العنصر:", removedItem);
-  }, []);
+  const handleItemRemoved = useCallback(
+    (removedItem: InvoiceDetail) => {
+      const removedId = parseNumber(removedItem?.id);
+      const existsOriginally = originalInvoiceItems.some(
+        (item) => item.id === removedId,
+      );
+
+      if (!existsOriginally || !removedId || removedId <= 0) return;
+
+      setDeletedItemIds((prev) =>
+        prev.includes(removedId) ? prev : [...prev, removedId],
+      );
+    },
+    [originalInvoiceItems],
+  );
 
   return {
     // lists

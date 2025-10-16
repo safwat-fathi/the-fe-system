@@ -84,11 +84,17 @@ class ItemService extends HttpService<Item> {
     }
   }
 
-  async searchItems(query: string): Promise<IPaginatedResponse<Item> | null> {
+  async searchItems(
+    query: string,
+    page = 1,
+  ): Promise<IPaginatedResponse<Item> | null> {
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
-        `SearchItemsList/?q=${encodeURIComponent(query)}&page=1`,
-        undefined,
+        "SearchItemsList",
+        {
+          q: query,
+          page,
+        },
         {
           cache: "no-store",
         },

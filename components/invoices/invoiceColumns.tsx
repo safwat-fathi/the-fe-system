@@ -66,7 +66,7 @@ export const createInvoiceColumns = (
             <EyeIcon className="h-4 w-4 text-blue-500" />
           </Button>
         </Link>
-        <Link href={`/forms/invoices/sale/${row.original.inv_id}`}>
+        <Link href={`/forms/invoices/sale/${row.original.inv_id}?edit=true`}>
           <Button isIconOnly size="sm" variant="light">
             <PencilIcon className="h-4 w-4 text-yellow-500" />
           </Button>
