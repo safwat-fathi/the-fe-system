@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 import useFractions, { type Fractions } from "@/utilities/useFractions";
-import { Invoice, InvoiceDetail } from "@/types/models/invoice";
+import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
 import invoiceService from "@/services/api/invoice.service";
 import { generateZatcaQR } from "@/utilities/zatca";
 
@@ -79,6 +79,38 @@ const EMPLOYEE_CODE_MAP: Record<string, number> = {
   othman: 2,
 };
 
+type InvoiceFormContext = "sale" | "purchase" | "sale_return" | "purchase_return";
+
+const INVOICE_FORM_CONFIG: Record<
+  InvoiceFormContext,
+  {
+    transType: TransTypes;
+    contactLabel: string;
+    customerFilter?: (customer: any) => boolean;
+  }
+> = {
+  sale: {
+    transType: TransTypes.SALES,
+    contactLabel: "العميل",
+    customerFilter: (customer) => customer.box_type !== 2,
+  },
+  purchase: {
+    transType: TransTypes.PURCHASE,
+    contactLabel: "المورد",
+    customerFilter: (customer) => customer.box_type !== 2,
+  },
+  sale_return: {
+    transType: TransTypes.SALES_RETURN,
+    contactLabel: "العميل",
+    customerFilter: (customer) => customer.box_type !== 2,
+  },
+  purchase_return: {
+    transType: TransTypes.PURCHASE_RETURN,
+    contactLabel: "المورد",
+    customerFilter: (customer) => customer.box_type !== 2,
+  },
+};
+
 const parseNumber = (value: unknown): number => {
   if (typeof value === "number" && Number.isFinite(value)) return value;
 
@@ -95,7 +127,10 @@ const parseNumber = (value: unknown): number => {
 const formatNumber = (value: number, digits: number): number =>
   Number.parseFloat(value.toFixed(digits));
 
-const mapDetailToRow = (detail: InvoiceDetail): InvoiceItemRow => {
+const mapDetailToRow = (
+  detail: InvoiceDetail,
+  fallbackTransType: number,
+): InvoiceItemRow => {
   const itemId = Number(detail.item);
   return {
     id: Number(detail.id),
@@ -110,7 +145,7 @@ const mapDetailToRow = (detail: InvoiceDetail): InvoiceItemRow => {
     price: detail.price ?? "0",
     price_w: detail.price_w ?? "0",
     note: detail.inv_notes ?? "",
-    trans_type: detail.trans_type ?? 2,
+    trans_type: detail.trans_type ?? fallbackTransType,
     purity: detail.G875 ? String(detail.G875) : "",
     total: detail.total ?? "0",
     total_w: detail.total_w ?? "0",
@@ -166,6 +201,7 @@ export default function useInvoiceForm({
   initialCategories,
   initialGoldPrice,
   initialHomePurity,
+  context = "sale",
 }: {
   invoiceData: Invoice | null;
   invoiceDetailsData: InvoiceDetail[];
@@ -175,11 +211,20 @@ export default function useInvoiceForm({
   initialCategories: any[];
   initialGoldPrice: number | null;
   initialHomePurity: number;
+  context?: InvoiceFormContext;
 }) {
+  const invoiceConfig = INVOICE_FORM_CONFIG[context];
+  const defaultTransType = invoiceConfig.transType;
+  const contactLabel = invoiceConfig.contactLabel;
+
   // lists - using initial data directly
   const [items, setItems] = useState<any[]>(initialItems || []);
   const [categories, setCategories] = useState<any[]>(initialCategories || []);
-  const [customers, setCustomers] = useState<any[]>(initialCustomers?.filter((c: any) => c.box_type !== 2) || []);
+  const filterCustomers =
+    invoiceConfig.customerFilter ?? (() => true);
+  const [customers, setCustomers] = useState<any[]>(
+    initialCustomers?.filter((c: any) => filterCustomers(c)) || [],
+  );
 
   // UI state
   const [employee, setEmployee] = useState<string>("");
@@ -202,8 +247,14 @@ export default function useInvoiceForm({
   const [invoicePk, setInvoicePk] = useState<number | null>(
     invoiceData?.id ? Number(invoiceData.id) : null,
   );
-  const [originalInvoiceItems, setOriginalInvoiceItems] = useState<InvoiceItemRow[]>(
-    invoiceDetailsData?.length ? invoiceDetailsData.map(mapDetailToRow) : [],
+  const [originalInvoiceItems, setOriginalInvoiceItems] = useState<
+    InvoiceItemRow[]
+  >(
+    invoiceDetailsData?.length
+      ? invoiceDetailsData.map((detail) =>
+          mapDetailToRow(detail, defaultTransType),
+        )
+      : [],
   );
   const [deletedItemIds, setDeletedItemIds] = useState<number[]>([]);
   const [defaultTaxPrc, setDefaultTaxPrc] = useState<number>(15);
@@ -245,7 +296,7 @@ export default function useInvoiceForm({
       price: 0 as number,
       price_w: 0 as number,
       note: "",
-      trans_type: 2,
+      trans_type: defaultTransType,
       purity: "",
       total: 0 as number,
       total_w: 0 as number,
@@ -261,7 +312,7 @@ export default function useInvoiceForm({
       cr_date: new Date().toISOString(),
       upd_date: new Date().toISOString(),
     }),
-    [],
+    [defaultTransType],
   );
 
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItemRow[]>(
@@ -314,7 +365,7 @@ export default function useInvoiceForm({
 
       return {
         id: row.id,
-        trans_type: row.trans_type ?? 2,
+        trans_type: row.trans_type ?? defaultTransType,
         G875: row.purity ? parseNumber(row.purity) : null,
         k: row.k ?? "",
         qty: formatNumber(qty, frac),
@@ -348,7 +399,7 @@ export default function useInvoiceForm({
         item: itemId,
       };
     },
-    [defaultTaxPrc, frac, frac2, form.pay_type],
+    [defaultTaxPrc, defaultTransType, frac, frac2, form.pay_type],
   );
 
   // sync incoming invoiceData/details
@@ -388,12 +439,14 @@ export default function useInvoiceForm({
     }
 
     if (invoiceDetailsData && invoiceDetailsData.length > 0) {
-      const mappedDetails = invoiceDetailsData.map(mapDetailToRow);
+      const mappedDetails = invoiceDetailsData.map((detail) =>
+        mapDetailToRow(detail, defaultTransType),
+      );
       setInvoiceItems(mappedDetails);
       setOriginalInvoiceItems(mappedDetails);
       setDeletedItemIds([]);
     }
-  }, [invoiceData, invoiceDetailsData]);
+  }, [invoiceData, invoiceDetailsData, defaultTransType]);
 
   // totals (simple helpers returned to consumer can compute more if needed)
   const computeTotals = useCallback(
@@ -581,7 +634,9 @@ export default function useInvoiceForm({
 
   const getNextInvoiceNumber = useCallback(async () => {
     try {
-      const invoicesResponse = await invoiceService.getAllInvoices();
+      const invoicesResponse = await invoiceService.getAllInvoices({
+        xtrans_type: String(defaultTransType),
+      });
       if (!invoicesResponse || !invoicesResponse.results?.length) return 1;
 
       const maxInvId = invoicesResponse.results.reduce((max, invoice) => {
@@ -594,11 +649,11 @@ export default function useInvoiceForm({
       console.error("فشل في جلب أرقام الفواتير:", error);
       return 1;
     }
-  }, []);
+  }, [defaultTransType]);
 
   const saveInvoice = useCallback(async () => {
     if (!selectedCustomer) {
-      toast.error("يرجى اختيار العميل");
+      toast.error(`يرجى اختيار ${contactLabel}`);
       return;
     }
 
@@ -640,7 +695,7 @@ export default function useInvoiceForm({
         tax: formatNumber(totals.taxAmount, frac),
         tax_prc: formatNumber(defaultTaxPrc ?? 15, frac),
         inv_status: 1,
-        trans_type: 2,
+        trans_type: defaultTransType,
         cr_date: form.inv_date,
         inv_type:
           PAYMENT_METHOD_INV_TYPES[
@@ -781,7 +836,9 @@ export default function useInvoiceForm({
 
       const refreshedDetails =
         await invoiceService.getInvoiceDetails(String(resolvedInvoicePk));
-      const mappedDetails = refreshedDetails.map(mapDetailToRow);
+      const mappedDetails = refreshedDetails.map((detail) =>
+        mapDetailToRow(detail, defaultTransType),
+      );
 
       setInvoiceItems(
         mappedDetails.length > 0 ? mappedDetails : [makeEmptyRow()],
@@ -800,7 +857,9 @@ export default function useInvoiceForm({
       setIsLoading(false);
     }
   }, [
+    contactLabel,
     computeTotals,
+    defaultTransType,
     deletedItemIds,
     employee,
     form.commit,
@@ -837,7 +896,7 @@ export default function useInvoiceForm({
 
   const previewInvoice = useCallback(() => {
     if (!selectedCustomer) {
-      toast.error("يرجى اختيار العميل");
+      toast.error(`يرجى اختيار ${contactLabel}`);
       return;
     }
 
@@ -851,7 +910,7 @@ export default function useInvoiceForm({
     }
 
     toast.success("معاينة الفاتورة");
-  }, [invoiceItems, selectedCustomer]);
+  }, [contactLabel, invoiceItems, selectedCustomer]);
 
   // manual totals state
   const [autoTotalValue, setAutoTotalValue] = useState<number>(0);

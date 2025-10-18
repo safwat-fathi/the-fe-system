@@ -29,7 +29,7 @@ class DashboardService extends HttpService<any> {
           invoiceService.getAllInvoices(),
           customerService.getAllCustomers(),
           categoryService.getAllCategories(),
-          itemService.getAllItems(),
+          itemService.searchItems({ query: "", page: 1 }),
           goldPriceService.getCurrentGoldPrice(),
         ]);
 

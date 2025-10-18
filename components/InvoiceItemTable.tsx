@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 import { formatAmount } from "@/utilities/formatAmount";
@@ -34,7 +40,7 @@ interface Category {
 
 interface Props {
   items: Item[];
-  setItems: (items: Item[]) => void;
+  setItems: React.Dispatch<React.SetStateAction<Item[]>>;
   invoiceItems: InvoiceDetail[];
   setInvoiceItems: (items: InvoiceDetail[]) => void;
   goldPrice: number | null;
@@ -91,6 +97,23 @@ export default function InvoiceItemTable({
     loadTaxRates();
   }, []);
 
+  const buildOption = (item: Item) => {
+    const code = item.item_code ?? String(item.id);
+    const name = item.item_name ?? "";
+    const label = name ? `${code} - ${name}` : code;
+
+    return {
+      value: item.id,
+      label,
+      item,
+    };
+  };
+
+  const staticItemOptions = useMemo(
+    () => items.map((it) => buildOption(it)),
+    [items],
+  );
+
   const loadItemOptions = async (
     search: string,
     _loaded: any,
@@ -100,42 +123,63 @@ export default function InvoiceItemTable({
 
     if (!trimmed) {
       return {
-        options: [],
+        options: staticItemOptions,
         hasMore: false,
         additional: { page: 1 },
       };
     }
 
     try {
-      const response = await itemService.searchItems(trimmed, page);
-      const results = response?.results ?? [];
+      const response = await itemService.searchItems({
+        query: trimmed,
+        page,
+      });
+      const normalizeItem = (input: any): Item => ({
+        id: Number(input.id ?? 0),
+        item_code: input.item_code ?? input.code ?? String(input.id ?? ""),
+        item_name: input.item_name ?? input.name ?? "",
+        item_price: input.item_price ?? input.price ?? 0,
+        item_weight: input.item_weight ?? input.weight ?? 0,
+        item_g_weight:
+          input.item_g_weight ?? input.g_weight ?? input.item_weight ?? 0,
+        work_price: input.work_price ?? input.price_w ?? 0,
+        purity: input.purity ?? input.k ?? "",
+        stones: input.stones ?? input.stone ?? null,
+        cat: input.cat ?? undefined,
+        k: input.k ?? undefined,
+      });
+      const normalizedResults = (response?.results ?? []).map(normalizeItem);
       const term = trimmed.toLowerCase();
 
-      const options = results
-        .map((it: any) => {
-          const itemCode = (it.item_code ?? it.code ?? "").toLowerCase();
-          const itemName = (it.item_name ?? it.name ?? "").toLowerCase();
-          const codeMatch = itemCode.indexOf(term);
-          const nameMatch = itemName.indexOf(term);
+      setItems((prev) => {
+        const existingIds = new Set(prev.map((item) => item.id));
+        const additions = normalizedResults.filter(
+          (remoteItem) => !existingIds.has(remoteItem.id),
+        );
+        return additions.length > 0 ? [...prev, ...additions] : prev;
+      });
 
+      const decorated = normalizedResults
+        .map((it) => {
+          const itemCode = (it.item_code ?? "").toLowerCase();
+          const itemName = (it.item_name ?? "").toLowerCase();
           return {
-            value: it.id,
-            label: `${it.item_code ?? it.code ?? "غير معروف"} - ${it.item_name ?? it.name ?? ""}`,
-            item: it,
-            codeMatch,
-            nameMatch,
+            option: buildOption(it),
+            codeMatch: itemCode.indexOf(term),
+            nameMatch: itemName.indexOf(term),
           };
         })
-        .filter((opt: any) => opt.codeMatch !== -1 || opt.nameMatch !== -1)
-        .sort((a: any, b: any) => {
+        .filter((entry) => entry.codeMatch !== -1 || entry.nameMatch !== -1)
+        .sort((a, b) => {
           const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
           const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
           if (aCode !== bCode) return aCode - bCode;
           const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
           const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
           return aName - bName;
-        })
-        .map(({ value, label, item }: any) => ({ value, label, item }));
+        });
+
+      const options = decorated.map(({ option }) => option);
 
       return {
         options,
@@ -520,6 +564,7 @@ export default function InvoiceItemTable({
                     isSearchable
                     isDisabled={!isEditing}
                     additional={{ page: 1 }}
+                    defaultOptions={staticItemOptions}
                     className="text-xs"
                     classNamePrefix="select"
                     components={{ IndicatorSeparator: () => null }}
@@ -541,21 +586,33 @@ export default function InvoiceItemTable({
                       }),
                       menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                     }}
-                    value={
-                      item.item && item.item > 0
-                        ? {
-                            value: item.item,
-                            label: item.item_desc ?? `${item.item}`,
-                          }
-                        : null
-                    }
+                    value={(() => {
+                      const rawId = item.item ?? (item as any).item_id;
+                      const itemId = Number(rawId ?? 0);
+
+                      if (!Number.isFinite(itemId) || itemId <= 0) return null;
+
+                      const existing = items.find((it) => it.id === itemId);
+                      if (existing) return buildOption(existing);
+
+                      return buildOption({
+                        id: itemId,
+                        item_code: item.item_code ?? String(itemId),
+                        item_name:
+                          item.item_desc ?? item.item_code ?? String(itemId),
+                      });
+                    })()}
                     onChange={(opt: any) => {
                       const selected =
                         opt?.item || items.find((it) => it.id === opt?.value);
                       if (!selected) return;
                       // cache option if missing
-                      if (!items.find((i) => i.id === selected.id))
-                        setItems([...items, selected]);
+                      setItems((prev) => {
+                        if (prev.some((i) => i.id === selected.id)) {
+                          return prev;
+                        }
+                        return [...prev, selected];
+                      });
 
                       const updated = [...invoiceItems];
                       updated[index] = {
@@ -609,7 +666,7 @@ export default function InvoiceItemTable({
                         item_g_weight: 0,
                         work_price: 0,
                       } as Item;
-                      setItems([...items, newItem]);
+                      setItems((prev) => [...prev, newItem]);
                       const updated = [...invoiceItems];
                       updated[index] = {
                         ...updated[index],

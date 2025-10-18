@@ -122,22 +122,22 @@ const goldBasicLinks = [
 const goldFormLinks = [
   {
     name: "فواتير الشراء",
-    href: "/forms/invoices/purchase?new=true",
+    href: "/forms/invoices?type=purchase&mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {
     name: "فواتير مردود الشراء",
-    href: "/forms/invoices/purchase-return?new=true",
+    href: "/forms/invoices?type=purchase-return&mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {
     name: "فواتير البيع",
-    href: "/forms/invoices/sale/new",
+    href: "/forms/invoices?type=sale&mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {
     name: "فواتير مردود البيع",
-    href: "/forms/invoices/sale-return",
+    href: "/forms/invoices?type=sale-return&mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
 ];

@@ -8,6 +8,42 @@ import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
 import useInvoiceForm from "@/hooks/useInvoiceForm";
 
+type InvoicePageType =
+  | "sale"
+  | "purchase"
+  | "sale-return"
+  | "purchase-return";
+
+const FORM_CONTEXT_MAP: Record<
+  InvoicePageType,
+  "sale" | "purchase" | "sale_return" | "purchase_return"
+> = {
+  sale: "sale",
+  purchase: "purchase",
+  "sale-return": "sale_return",
+  "purchase-return": "purchase_return",
+};
+
+const SELECTOR_TYPE_MAP: Record<
+  InvoicePageType,
+  "sale" | "purchase" | "sale_return" | "purchase_return"
+> = {
+  sale: "sale",
+  purchase: "purchase",
+  "sale-return": "sale_return",
+  "purchase-return": "purchase_return",
+};
+
+const TOTALS_TYPE_MAP: Record<
+  InvoicePageType,
+  "sales" | "purchase" | "sales_return" | "purchase_return"
+> = {
+  sale: "sales",
+  purchase: "purchase",
+  "sale-return": "sales_return",
+  "purchase-return": "purchase_return",
+};
+
 interface InvoiceClientPageProps {
   invoiceData: Invoice | null;
   invoiceDetailsData: InvoiceDetail[];
@@ -18,6 +54,9 @@ interface InvoiceClientPageProps {
   goldPrice: number | null;
   homePurity: number;
   startInEditMode?: boolean;
+  invoiceType?: InvoicePageType;
+  formMode?: "new" | "edit";
+  newInvoiceHref?: string;
 }
 
 export default function InvoiceClientPage({
@@ -30,6 +69,9 @@ export default function InvoiceClientPage({
   goldPrice: initialGoldPrice,
   homePurity: initialHomePurity,
   startInEditMode = false,
+  invoiceType = "sale",
+  formMode = "new",
+  newInvoiceHref,
 }: InvoiceClientPageProps) {
   const {
     // lists
@@ -105,13 +147,20 @@ export default function InvoiceClientPage({
     initialCategories,
     initialGoldPrice,
     initialHomePurity,
+    context: FORM_CONTEXT_MAP[invoiceType],
   });
 
   useEffect(() => {
-    if (startInEditMode) {
+    if (startInEditMode || formMode === "edit") {
       setIsEditing(true);
     }
-  }, [setIsEditing, startInEditMode]);
+  }, [formMode, setIsEditing, startInEditMode]);
+
+  const selectorsInvoiceType = SELECTOR_TYPE_MAP[invoiceType];
+  const totalsInvoiceType = TOTALS_TYPE_MAP[invoiceType];
+  const resolvedNewInvoiceHref =
+    newInvoiceHref ??
+    `/forms/invoices?type=${encodeURIComponent(invoiceType)}&mode=new`;
 
   // join any derived totals via computeTotals (hook exposes computeTotals)
   const totals = useMemo(() => {
@@ -150,7 +199,7 @@ export default function InvoiceClientPage({
         }
         isEditing={isEditing}
         onEdit={() => setIsEditing(true)}
-        invoiceType="sales"
+        invoiceType={totalsInvoiceType}
         autoTotalValue={autoTotalValue}
         autoTotalWages={autoTotalWages}
         manualTotalValue={manualTotalValue}
@@ -170,6 +219,7 @@ export default function InvoiceClientPage({
         currentRecord={currentRecord}
         totalRecords={totalRecords}
         navigateToInvoice={navigateToInvoice}
+        newInvoiceHref={resolvedNewInvoiceHref}
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
           <InvoiceSelectors
@@ -226,34 +276,30 @@ export default function InvoiceClientPage({
             setReferenceNumber={(v) =>
               dispatchForm({ type: "SET_FIELD", field: "ref_no", value: v })
             }
+            setSearchValue={setSearchValue}
             setSelectedCustomer={(v) =>
               dispatchForm({ type: "SET_FIELD", field: "cust_code", value: v })
-            }
-            setStreet={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "street", value: v })
             }
             setVatNumber={(v) =>
               dispatchForm({ type: "SET_FIELD", field: "vat_no", value: v })
             }
-            street={form.street}
-            vatNumber={form.vat_no}
+            goldPriceValue={goldPrice ?? maybeGoldPrice}
             searchValue={searchValue}
-            setSearchValue={setSearchValue}
             onBarcodeSearch={() => handleBarcodeSearch()}
             isEditing={isEditing}
-            invoiceType="sale"
+            invoiceType={selectorsInvoiceType}
           />
 
           <InvoiceItemTable
-            categories={categories}
-            goldPrice={goldPrice}
-            homePurity={homePurity}
-            invoiceItems={invoiceItems}
-            isEditing={isEditing}
             items={items}
-            payType={form.pay_type}
-            setInvoiceItems={setInvoiceItems}
             setItems={setItems}
+            invoiceItems={invoiceItems}
+            setInvoiceItems={setInvoiceItems}
+            goldPrice={goldPrice ?? maybeGoldPrice ?? null}
+            payType={form.pay_type}
+            categories={categories}
+            homePurity={homePurity}
+            isEditing={isEditing}
             onItemRemoved={handleItemRemoved}
           />
         </div>
