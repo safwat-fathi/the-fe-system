@@ -252,6 +252,8 @@ export default function useInvoiceForm({
   const [searchValue, setSearchValue] = useState<string>("");
   const [currentRecord, setCurrentRecord] = useState<number>(1);
   const [totalRecords, setTotalRecords] = useState<number>(1);
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
 
   const fractions = useFractions() as Fractions;
   const frac = fractions?.frac ?? 2;
@@ -270,6 +272,42 @@ export default function useInvoiceForm({
   );
   const [deletedItemIds, setDeletedItemIds] = useState<number[]>([]);
   const [defaultTaxPrc, setDefaultTaxPrc] = useState<number>(15);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const readNumericValue = (key: string): number | null => {
+      const localValue = window.localStorage.getItem(key);
+      const cookieValue = document.cookie
+        .split(";")
+        .map((entry) => entry.trim())
+        .find((entry) => entry.startsWith(`${key}=`))
+        ?.split("=")[1];
+
+      const rawValue = localValue ?? cookieValue;
+      if (!rawValue || rawValue === "undefined" || rawValue === "null") {
+        return null;
+      }
+
+      const parsed = Number(rawValue);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const resolvedBranch =
+      readNumericValue("selectedBranch") ??
+      (invoiceData && (invoiceData as any)?.com !== undefined
+        ? parseNumber((invoiceData as any)?.com)
+        : null);
+
+    const resolvedYear =
+      readNumericValue("selectedYear") ??
+      (invoiceData && (invoiceData as any)?.year !== undefined
+        ? parseNumber((invoiceData as any)?.year)
+        : null);
+
+    setSelectedBranchId(resolvedBranch);
+    setSelectedYearId(resolvedYear);
+  }, [invoiceData]);
 
   // form reducer
   const initialFormState: FormState = {
@@ -368,6 +406,15 @@ export default function useInvoiceForm({
           ? parseNumber(row.total)
           : weight * price + weight * priceW - itemDiscountAmount;
 
+      const resolvedCompanyIdCandidate =
+        row.com !== undefined && row.com !== null
+          ? parseNumber(row.com)
+          : selectedBranchId ?? null;
+      const resolvedCompanyId =
+        resolvedCompanyIdCandidate && resolvedCompanyIdCandidate > 0
+          ? resolvedCompanyIdCandidate
+          : null;
+
       const taxValue =
         row.tax !== undefined
           ? parseNumber(row.tax)
@@ -401,12 +448,14 @@ export default function useInvoiceForm({
         cr_user: row.cr_user ?? "",
         upd_date: new Date().toISOString(),
         upd_user: row.upd_user ?? "",
-        com: row.com,
+        ...(resolvedCompanyId !== null
+          ? { com: resolvedCompanyId }
+          : {}),
         inv: invoicePrimaryKey,
         item: itemId,
       };
     },
-    [defaultTaxPrc, defaultTransType, frac, frac2, form.pay_type],
+    [defaultTaxPrc, defaultTransType, frac, frac2, form.pay_type, selectedBranchId],
   );
 
   // sync incoming invoiceData/details
@@ -689,6 +738,29 @@ export default function useInvoiceForm({
         vatTotal: formatNumber(totals.taxAmount, frac),
       });
 
+      const existingCompanyId =
+        invoiceData && (invoiceData as any)?.com !== undefined
+          ? parseNumber((invoiceData as any)?.com)
+          : null;
+      const existingYearId =
+        invoiceData && (invoiceData as any)?.year !== undefined
+          ? parseNumber((invoiceData as any)?.year)
+          : null;
+
+      const resolvedCompanyIdCandidate =
+        selectedBranchId ?? existingCompanyId ?? null;
+      const resolvedCompanyId =
+        resolvedCompanyIdCandidate && resolvedCompanyIdCandidate > 0
+          ? resolvedCompanyIdCandidate
+          : null;
+
+      const resolvedYearIdCandidate =
+        selectedYearId ?? existingYearId ?? null;
+      const resolvedYearId =
+        resolvedYearIdCandidate && resolvedYearIdCandidate > 0
+          ? resolvedYearIdCandidate
+          : null;
+
       const invoicePayload: Record<string, unknown> = {
         inv_id: invoiceNumber,
         inv_date: form.inv_date,
@@ -734,8 +806,8 @@ export default function useInvoiceForm({
         post_no: form.post_no || null,
         post_code: form.post_code || null,
         inv_QR: invoiceQr,
-        com: 1,
-        year: 0,
+        ...(resolvedCompanyId !== null ? { com: resolvedCompanyId } : {}),
+        ...(resolvedYearId !== null ? { year: resolvedYearId } : {}),
       };
 
       console.log("🧾 Saving invoice with payload:", invoicePayload);
@@ -928,6 +1000,9 @@ export default function useInvoiceForm({
     mobileMethod,
     originalInvoiceItems,
     paymentMethod,
+    invoiceData,
+    selectedBranchId,
+    selectedYearId,
     selectedCustomer,
   ]);
 
