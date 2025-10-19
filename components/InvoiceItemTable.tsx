@@ -11,9 +11,9 @@ import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
-import { API_ENDPOINTS, fetchData } from "@/utilities/api";
 import type { InvoiceDetail } from "@/types/models/invoice";
 import itemService from "@/services/api/item.service";
+import taxRateService from "@/services/api/tax-rate.service";
 
 const AsyncCreatableSelect = withAsyncPaginate(CreatableSelect);
 
@@ -82,12 +82,9 @@ export default function InvoiceItemTable({
   useEffect(() => {
     const loadTaxRates = async () => {
       try {
-        const response = await fetchData<any[]>(API_ENDPOINTS.TaxPrcList);
-        if (Array.isArray(response) && response.length > 0) {
-          const rates = response.map((item) =>
-            parseFloat(item.tax_prc ?? item.value ?? 0),
-          );
-          setTaxRates([0, ...rates.filter((r) => r > 0)]);
+        const rates = await taxRateService.getTaxRates();
+        if (Array.isArray(rates) && rates.length > 0) {
+          setTaxRates(rates);
         }
       } catch (error) {
         console.error("فشل في تحميل قائمة الضرائب:", error);

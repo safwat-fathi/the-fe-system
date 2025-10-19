@@ -12,37 +12,37 @@ class ItemService extends HttpService<Item> {
     super("");
   }
 
-  async getAllItems(): Promise<IPaginatedResponse<Item> | null> {
-    try {
-      const response = await this.get<IPaginatedResponse<Item>>(
-        "GetItemsList/",
-        undefined,
-        {
-          cache: "force-cache",
-          next: { tags: ["items"] },
-        },
-      );
+  // async getAllItems(): Promise<IPaginatedResponse<Item> | null> {
+  //   try {
+  //     const response = await this.get<IPaginatedResponse<Item>>(
+  //       "GetItemsList/",
+  //       undefined,
+  //       {
+  //         cache: "force-cache",
+  //         next: { tags: ["items"] },
+  //       },
+  //     );
 
-      if (!response.success || !response.data) {
-        return null;
-      }
+  //     if (!response.success || !response.data) {
+  //       return null;
+  //     }
 
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching items:", error);
-      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
-    }
-  }
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error("Error fetching items:", error);
+  //     throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
+  //   }
+  // }
 
-  async getItemCount(): Promise<number> {
-    try {
-      const items = await this.getAllItems();
-      return items?.count ?? 0;
-    } catch (error) {
-      console.error("Error counting items:", error);
-      return 0;
-    }
-  }
+  // async getItemCount(): Promise<number> {
+  //   try {
+  //     const items = await this.getAllItems();
+  //     return items?.count ?? 0;
+  //   } catch (error) {
+  //     console.error("Error counting items:", error);
+  //     return 0;
+  //   }
+  // }
 
   async getHomeSettings(): Promise<any[]> {
     try {
@@ -66,7 +66,8 @@ class ItemService extends HttpService<Item> {
         `ItemBarcode/${encodeURIComponent(barcode)}`,
         undefined,
         {
-          cache: "no-store",
+          cache: "force-cache",
+          next: { tags: [`item-by-barcode-${barcode}`] },
         },
       );
 
@@ -100,7 +101,8 @@ class ItemService extends HttpService<Item> {
           page,
         },
         {
-          cache: "no-store",
+          cache: "force-cache",
+          next: { tags: [`items-search-${query}-${page}`] },
         },
       );
 

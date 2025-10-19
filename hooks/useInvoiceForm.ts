@@ -2,7 +2,16 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 import useFractions, { type Fractions } from "@/utilities/useFractions";
 import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
-import invoiceService from "@/services/api/invoice.service";
+import {
+  createInvoiceAction,
+  updateInvoiceAction,
+  createInvoiceDetailAction,
+  updateInvoiceDetailAction,
+  deleteInvoiceDetailAction,
+  getAllInvoicesAction,
+  getInvoiceByIdAction,
+  getInvoiceDetailsAction,
+} from "@/app/actions/invoice";
 import { generateZatcaQR } from "@/utilities/zatca";
 
 type NumericValue = number | string;
@@ -79,7 +88,11 @@ const EMPLOYEE_CODE_MAP: Record<string, number> = {
   othman: 2,
 };
 
-type InvoiceFormContext = "sale" | "purchase" | "sale_return" | "purchase_return";
+type InvoiceFormContext =
+  | "sale"
+  | "purchase"
+  | "sale_return"
+  | "purchase_return";
 
 const INVOICE_FORM_CONFIG: Record<
   InvoiceFormContext,
@@ -220,8 +233,7 @@ export default function useInvoiceForm({
   // lists - using initial data directly
   const [items, setItems] = useState<any[]>(initialItems || []);
   const [categories, setCategories] = useState<any[]>(initialCategories || []);
-  const filterCustomers =
-    invoiceConfig.customerFilter ?? (() => true);
+  const filterCustomers = invoiceConfig.customerFilter ?? (() => true);
   const [customers, setCustomers] = useState<any[]>(
     initialCustomers?.filter((c: any) => filterCustomers(c)) || [],
   );
@@ -341,12 +353,10 @@ export default function useInvoiceForm({
       const taxRate =
         row.tax_prc !== undefined
           ? parseNumber(row.tax_prc)
-          : defaultTaxPrc ?? 15;
+          : (defaultTaxPrc ?? 15);
 
       const computedTotalW =
-        row.total_w !== undefined
-          ? parseNumber(row.total_w)
-          : weight * priceW;
+        row.total_w !== undefined ? parseNumber(row.total_w) : weight * priceW;
 
       const computedTotalA =
         row.total_a !== undefined
@@ -382,10 +392,7 @@ export default function useInvoiceForm({
         total_a: formatNumber(computedTotalA, frac),
         tax: formatNumber(taxValue, frac),
         tax_prc: formatNumber(taxRate, frac),
-        item_disc_prc: formatNumber(
-          parseNumber(row.item_disc_prc ?? 0),
-          frac,
-        ),
+        item_disc_prc: formatNumber(parseNumber(row.item_disc_prc ?? 0), frac),
         item_disc_amt: formatNumber(itemDiscountAmount, frac),
         sn: row.sn ?? "",
         item_desc: row.item_desc ?? row.item_name ?? "",
@@ -471,8 +478,7 @@ export default function useInvoiceForm({
         const price = parseNumber(item.price);
         const priceW = parseNumber(item.price_w);
         const discount = parseNumber(item.item_disc_amt);
-        const taxRate =
-          parseNumber(item.tax_prc ?? defaultTaxPrc ?? 15) / 100;
+        const taxRate = parseNumber(item.tax_prc ?? defaultTaxPrc ?? 15) / 100;
 
         const totalA = weight * price;
         const totalW = weight * priceW;
@@ -634,7 +640,7 @@ export default function useInvoiceForm({
 
   const getNextInvoiceNumber = useCallback(async () => {
     try {
-      const invoicesResponse = await invoiceService.getAllInvoices({
+      const invoicesResponse = await getAllInvoicesAction({
         xtrans_type: String(defaultTransType),
       });
       if (!invoicesResponse || !invoicesResponse.results?.length) return 1;
@@ -728,22 +734,44 @@ export default function useInvoiceForm({
         post_no: form.post_no || null,
         post_code: form.post_code || null,
         inv_QR: invoiceQr,
+        com: 1,
+        year: 0,
       };
+
+      console.log("🧾 Saving invoice with payload:", invoicePayload);
 
       let savedInvoice: Invoice | null = null;
 
       if (isNewInvoice) {
-        savedInvoice = await invoiceService.createInvoice(
-          invoicePayload as Partial<Invoice>,
-        );
+        try {
+          savedInvoice = await createInvoiceAction(
+            invoicePayload as Partial<Invoice>,
+          );
+          console.log(
+            "🧾 createInvoiceAction response:",
+            savedInvoice ?? "⛔️ null response",
+          );
+        } catch (actionError) {
+          console.error("🧾 createInvoiceAction threw:", actionError);
+          throw actionError;
+        }
       } else {
         if (!invoicePk) {
           throw new Error("invoice primary key is missing");
         }
-        savedInvoice = await invoiceService.updateInvoice(
-          invoicePk,
-          invoicePayload as Partial<Invoice>,
-        );
+        try {
+          savedInvoice = await updateInvoiceAction(
+            invoicePk,
+            invoicePayload as Partial<Invoice>,
+          );
+          console.log(
+            "🧾 updateInvoiceAction response:",
+            savedInvoice ?? "⛔️ null response",
+          );
+        } catch (actionError) {
+          console.error("🧾 updateInvoiceAction threw:", actionError);
+          throw actionError;
+        }
       }
 
       if (!savedInvoice) {
@@ -757,7 +785,7 @@ export default function useInvoiceForm({
         : invoicePk;
 
       if (!resolvedInvoicePk || resolvedInvoicePk <= 0) {
-        const fetchedInvoice = await invoiceService.getInvoiceById(
+        const fetchedInvoice = await getInvoiceByIdAction(
           String(invoiceNumber),
         );
         resolvedInvoicePk = fetchedInvoice?.id
@@ -789,16 +817,14 @@ export default function useInvoiceForm({
       const deletions = Array.from(
         new Set([
           ...deletedItemIds,
-          ...derivedDeletedIds.filter(
-            (id) => Number.isFinite(id) && id > 0,
-          ),
+          ...derivedDeletedIds.filter((id) => Number.isFinite(id) && id > 0),
         ]),
       );
 
       for (const detailId of deletions) {
         if (!detailId || detailId <= 0) continue;
         try {
-          await invoiceService.deleteInvoiceDetail(detailId);
+          await deleteInvoiceDetailAction(detailId);
         } catch (deleteError) {
           console.error(`فشل حذف السطر ${detailId}:`, deleteError);
         }
@@ -814,10 +840,7 @@ export default function useInvoiceForm({
 
         if (isExistingRow) {
           try {
-            await invoiceService.updateInvoiceDetail(
-              Number(row.id),
-              detailPayload,
-            );
+            await updateInvoiceDetailAction(Number(row.id), detailPayload);
           } catch (updateError) {
             console.error(
               `خطأ أثناء تحديث تفاصيل السطر ${row.id}:`,
@@ -827,15 +850,16 @@ export default function useInvoiceForm({
         } else {
           try {
             const { id, ...creationPayload } = detailPayload;
-            await invoiceService.createInvoiceDetail(creationPayload);
+            await createInvoiceDetailAction(creationPayload);
           } catch (createError) {
             console.error("خطأ أثناء إنشاء تفاصيل السطر:", createError);
           }
         }
       }
 
-      const refreshedDetails =
-        await invoiceService.getInvoiceDetails(String(resolvedInvoicePk));
+      const refreshedDetails = await getInvoiceDetailsAction(
+        String(resolvedInvoicePk),
+      );
       const mappedDetails = refreshedDetails.map((detail) =>
         mapDetailToRow(detail, defaultTransType),
       );
@@ -851,8 +875,21 @@ export default function useInvoiceForm({
         isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
       );
     } catch (error) {
-      console.error("خطأ في حفظ الفاتورة:", error);
-      toast.error("حدث خطأ أثناء حفظ الفاتورة");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "حدث خطأ غير متوقع أثناء حفظ الفاتورة";
+
+      console.error("خطأ في حفظ الفاتورة:", errorMessage, error);
+      if (error instanceof Error) {
+        console.error("تفاصيل الخطأ:", {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        });
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

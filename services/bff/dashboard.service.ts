@@ -33,6 +33,10 @@ class DashboardService extends HttpService<any> {
           goldPriceService.getCurrentGoldPrice(),
         ]);
 
+      // console.log(
+      //   "🚀 ~ :28 ~ DashboardService ~ getDashboardStats ~  items:",
+      //   items,
+      // );
       if (!invoices) return null;
 
       // Calculate monthly sales

@@ -147,7 +147,10 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     try {
       const authHeaders = await this._getAuthHeaders();
       const urlParams = createParams(params || {});
-      const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
+      const searchParams = urlParams.toString();
+      const fullURL = searchParams
+        ? `${this._baseUrl}/${route}?${searchParams}`
+        : `${this._baseUrl}/${route}`;
 
       const requestOptions: RequestInit = {
         credentials: "include",
@@ -162,10 +165,34 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       };
 
       const response = await fetch(fullURL, requestOptions);
+      const responseClone = response.clone();
 
       // Handle no content
       if (response.status === 204) {
         return { success: true };
+      }
+
+      if (!response.ok) {
+        let errorBody: string | undefined;
+        try {
+          errorBody = await responseClone.text();
+        } catch (readError) {
+          errorBody = `<<failed to read body: ${String(readError)}>>`;
+        }
+
+        console.error(
+          `HTTP error for ${method} ${fullURL}`,
+          JSON.stringify(
+            {
+              status: response.status,
+              statusText: response.statusText,
+              headers: Object.fromEntries(response.headers.entries()),
+              body: errorBody,
+            },
+            null,
+            2,
+          ),
+        );
       }
 
       // Handle unauthorized - try token refresh once

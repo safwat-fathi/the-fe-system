@@ -194,9 +194,36 @@ class InvoiceService extends HttpService<Invoice> {
       const response = await this.post<Invoice>(
         "api_create_invoice",
         invoiceData,
+        undefined,
+        {
+          signal: AbortSignal.timeout(60000),
+        },
+      );
+      console.log(
+        "🚀 ~ :202 ~ InvoiceService ~ createInvoice ~ response:",
+        response,
       );
 
-      return response.success && response.data ? response.data : null;
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("createInvoice failed:", errorInfo);
+        throw new Error(
+          `فشل إنشاء الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error("createInvoice returned without data:", response);
+        throw new Error("فشل إنشاء الفاتورة: لم يتم إرجاع بيانات من الخادم");
+      }
+
+      return response.data;
     } catch (error) {
       console.error("Error creating invoice:", error);
       throw new Error("حدث خطأ أثناء إنشاء الفاتورة");
@@ -213,7 +240,26 @@ class InvoiceService extends HttpService<Invoice> {
         invoiceData,
       );
 
-      return response.success && response.data ? response.data : null;
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("updateInvoice failed:", errorInfo);
+        throw new Error(
+          `فشل تحديث الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error("updateInvoice returned without data:", response);
+        throw new Error("فشل تحديث الفاتورة: لم يتم إرجاع بيانات من الخادم");
+      }
+
+      return response.data;
     } catch (error) {
       console.error("Error updating invoice:", error);
       throw new Error("حدث خطأ أثناء تحديث الفاتورة");
@@ -229,7 +275,28 @@ class InvoiceService extends HttpService<Invoice> {
         detailData,
       );
 
-      return response.success && response.data ? response.data : null;
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("createInvoiceDetail failed:", errorInfo);
+        throw new Error(
+          `فشل إنشاء سطر الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error("createInvoiceDetail returned without data:", response);
+        throw new Error(
+          "فشل إنشاء سطر الفاتورة: لم يتم إرجاع بيانات من الخادم",
+        );
+      }
+
+      return response.data;
     } catch (error) {
       console.error("Error creating invoice detail:", error);
       throw new Error("حدث خطأ أثناء إنشاء تفاصيل الفاتورة");
@@ -246,7 +313,28 @@ class InvoiceService extends HttpService<Invoice> {
         detailData,
       );
 
-      return response.success && response.data ? response.data : null;
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("updateInvoiceDetail failed:", errorInfo);
+        throw new Error(
+          `فشل تحديث سطر الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error("updateInvoiceDetail returned without data:", response);
+        throw new Error(
+          "فشل تحديث سطر الفاتورة: لم يتم إرجاع بيانات من الخادم",
+        );
+      }
+
+      return response.data;
     } catch (error) {
       console.error("Error updating invoice detail:", error);
       throw new Error("حدث خطأ أثناء تحديث تفاصيل الفاتورة");

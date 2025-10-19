@@ -348,9 +348,7 @@ export default function InvoiceTotalsActions({
             <Button
               className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm"
               onClick={() =>
-                router.push(
-                  `/forms/invoices/invoice_payment?total=${netAmount}`,
-                )
+                router.push(`/forms/invoices/payment?total=${netAmount}`)
               }
             >
               <CreditCardIcon className="w-4 h-4 me-2" />
