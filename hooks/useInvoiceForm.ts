@@ -47,6 +47,7 @@ type InvoiceItemRow = {
   upd_date?: string;
   upd_user?: string;
   com?: number;
+  year?: number | null;
   inv?: number;
   box?: number | null;
 };
@@ -158,6 +159,11 @@ const parseNumber = (value: unknown): number => {
 const ensurePositiveNumber = (value: unknown): number | null => {
   const numeric = parseNumber(value);
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+};
+
+const formatDecimalString = (value: number, digits: number): string => {
+  const normalized = Number.isFinite(value) ? value : 0;
+  return normalized.toFixed(digits);
 };
 
 const formatNumber = (value: number, digits: number): number =>
@@ -401,9 +407,23 @@ export default function useInvoiceForm({
   );
 
   const mapRowToApiPayload = useCallback(
-    (row: InvoiceItemRow, invoicePrimaryKey: number) => {
+    (
+      row: InvoiceItemRow,
+      invoicePrimaryKey: number,
+      companyId: number,
+      yearId: number,
+    ) => {
       const itemId = getItemIdFromRow(row);
       if (!itemId) return null;
+
+      const resolvedCompanyId =
+        ensurePositiveNumber(row.com) ?? ensurePositiveNumber(companyId);
+      const resolvedYearId =
+        ensurePositiveNumber(row.year) ?? ensurePositiveNumber(yearId);
+
+      if (!resolvedCompanyId || !resolvedYearId) {
+        throw new Error("تعذر تحديد بيانات الفرع أو السنة لسطر الفاتورة");
+      }
 
       const qty = parseNumber(row.qty);
       const weight = parseNumber(row.weight);
@@ -429,56 +449,68 @@ export default function useInvoiceForm({
           ? parseNumber(row.total)
           : weight * price + weight * priceW - itemDiscountAmount;
 
-      const resolvedCompanyIdCandidate =
-        row.com !== undefined && row.com !== null
-          ? parseNumber(row.com)
-          : selectedBranchId ?? null;
-      const resolvedCompanyId =
-        resolvedCompanyIdCandidate && resolvedCompanyIdCandidate > 0
-          ? resolvedCompanyIdCandidate
-          : null;
-
       const taxValue =
         row.tax !== undefined
           ? parseNumber(row.tax)
           : (combinedTotal - itemDiscountAmount) * (taxRate / 100);
 
+      const stonesValue =
+        row.stones === null || row.stones === ""
+          ? null
+          : formatDecimalString(parseNumber(row.stones), frac);
+
+      const resolvedNote = row.note ?? row.inv_notes ?? "";
+      const normalizedNote =
+        typeof resolvedNote === "string" && resolvedNote.trim().length === 0
+          ? null
+          : resolvedNote;
+
       return {
         id: row.id,
         trans_type: row.trans_type ?? defaultTransType,
         G875: row.purity ? parseNumber(row.purity) : null,
-        k: row.k ?? "",
-        qty: formatNumber(qty, frac),
-        stones:
-          row.stones === null || row.stones === ""
-            ? null
-            : parseNumber(row.stones),
-        price: formatNumber(price, frac),
-        price_w: formatNumber(priceW, frac),
-        weight: formatNumber(weight, frac2),
-        g_weight: formatNumber(gWeight, frac2),
-        total: formatNumber(combinedTotal, frac),
-        total_w: formatNumber(computedTotalW, frac),
-        total_a: formatNumber(computedTotalA, frac),
-        tax: formatNumber(taxValue, frac),
-        tax_prc: formatNumber(taxRate, frac),
-        item_disc_prc: formatNumber(parseNumber(row.item_disc_prc ?? 0), frac),
-        item_disc_amt: formatNumber(itemDiscountAmount, frac),
+        k:
+          row.k !== undefined && row.k !== null && row.k !== ""
+            ? parseNumber(row.k)
+            : null,
+        qty: formatDecimalString(qty, frac),
+        price: formatDecimalString(price, frac),
+        price_w: formatDecimalString(priceW, frac),
+        weight: formatDecimalString(weight, frac2),
+        g_weight: formatDecimalString(gWeight, frac2),
+        total: formatDecimalString(combinedTotal, frac),
+        total_w: formatDecimalString(computedTotalW, frac),
+        total_a: formatDecimalString(computedTotalA, frac),
+        tax: formatDecimalString(taxValue, frac),
+        tax_prc: formatDecimalString(taxRate, frac),
+        stones: stonesValue,
+        item_disc_prc: formatDecimalString(
+          parseNumber(row.item_disc_prc ?? 0),
+          frac,
+        ),
+        item_disc_amt: formatDecimalString(itemDiscountAmount, frac),
         sn: row.sn ?? "",
         item_desc: row.item_desc ?? row.item_name ?? "",
-        inv_notes: row.note ?? row.inv_notes ?? "",
+        item_code: row.item_code ?? "",
+        inv_notes: normalizedNote,
         cr_date: row.cr_date ?? new Date().toISOString(),
         cr_user: row.cr_user ?? "",
         upd_date: new Date().toISOString(),
         upd_user: row.upd_user ?? "",
-        ...(resolvedCompanyId !== null
-          ? { com: resolvedCompanyId }
-          : {}),
+        com: resolvedCompanyId,
+        year: resolvedYearId,
         inv: invoicePrimaryKey,
         item: itemId,
+        box: row.box ?? null,
       };
     },
-    [defaultTaxPrc, defaultTransType, frac, frac2, form.pay_type, selectedBranchId],
+    [
+      defaultTaxPrc,
+      defaultTransType,
+      frac,
+      frac2,
+      form.pay_type,
+    ],
   );
 
   // sync incoming invoiceData/details
@@ -780,10 +812,10 @@ export default function useInvoiceForm({
         cust_name: selectedCustomer.cust_name ?? "",
         cust_code:
           selectedCustomer.cust_code ?? String(selectedCustomer.id ?? ""),
-        inv_amt: formatNumber(totals.totalAmount, frac2),
-        inv_net: formatNumber(totals.netAmount, frac2),
-        tax: formatNumber(totals.taxAmount, frac),
-        tax_prc: formatNumber(defaultTaxPrc ?? 15, frac),
+        inv_amt: formatDecimalString(totals.totalAmount, frac2),
+        inv_net: formatDecimalString(totals.netAmount, frac2),
+        tax: formatDecimalString(totals.taxAmount, frac),
+        tax_prc: formatDecimalString(defaultTaxPrc ?? 15, frac),
         inv_status: 1,
         trans_type: defaultTransType,
         cr_date: form.inv_date,
@@ -792,7 +824,10 @@ export default function useInvoiceForm({
             (paymentMethod ?? "cash") as keyof typeof PAYMENT_METHOD_INV_TYPES
           ] ?? 1,
         emp_id: EMPLOYEE_CODE_MAP[employee] ?? null,
-        inv_notes: form.inv_notes || null,
+        inv_notes:
+          form.inv_notes && form.inv_notes.trim().length > 0
+            ? form.inv_notes
+            : null,
         handling: handlingMethod || null,
         mobile: mobileMethod || null,
         ref_no: form.ref_no || null,
@@ -810,7 +845,7 @@ export default function useInvoiceForm({
         pay_type: form.pay_type,
         gold_price:
           goldPrice !== null && goldPrice !== undefined
-            ? formatNumber(goldPrice, frac).toString()
+            ? formatDecimalString(goldPrice, frac)
             : null,
         cr_no: form.cr_no || null,
         gov: form.gov || null,
@@ -918,7 +953,12 @@ export default function useInvoiceForm({
       }
 
       for (const row of validItems) {
-        const detailPayload = mapRowToApiPayload(row, resolvedInvoicePk);
+        const detailPayload = mapRowToApiPayload(
+          row,
+          resolvedInvoicePk,
+          resolvedCompanyId,
+          resolvedYearId,
+        );
         if (!detailPayload) continue;
 
         const isExistingRow = originalInvoiceItems.some(

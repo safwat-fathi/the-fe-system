@@ -344,9 +344,42 @@ class InvoiceService extends HttpService<Invoice> {
     detailData: Partial<InvoiceDetail>,
   ): Promise<InvoiceDetail | null> {
     try {
+      const companyId = Number(detailData?.com);
+      const invoicePk = Number(detailData?.inv);
+      const maybeYear =
+        detailData?.year !== undefined && detailData?.year !== null
+          ? Number(detailData.year)
+          : null;
+
+      if (!Number.isFinite(companyId) || companyId <= 0) {
+        throw new Error("رمز الفرع مطلوب قبل إنشاء تفاصيل الفاتورة");
+      }
+
+      if (!Number.isFinite(invoicePk) || invoicePk <= 0) {
+        throw new Error("رمز الفاتورة غير صالح لإنشاء التفاصيل");
+      }
+
+      if (
+        maybeYear !== null &&
+        (!Number.isFinite(maybeYear) || maybeYear <= 0)
+      ) {
+        throw new Error("رمز السنة غير صالح لإنشاء تفاصيل الفاتورة");
+      }
+
+      const preparedPayload = {
+        ...detailData,
+        com: companyId,
+        inv: invoicePk,
+        ...(maybeYear !== null ? { year: maybeYear } : {}),
+      };
+
       const response = await this.post<InvoiceDetail>(
         "api_create_invoice_dtl",
-        detailData,
+        preparedPayload,
+        undefined,
+        {
+          signal: AbortSignal.timeout(60000),
+        },
       );
 
       if (!response.success) {

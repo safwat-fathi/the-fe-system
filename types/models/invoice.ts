@@ -151,4 +151,5 @@ export interface InvoiceDetail {
   inv: number;
   item: number;
   box: number | null; // Assumed to be a number if not null
+  year?: number | null;
 }
