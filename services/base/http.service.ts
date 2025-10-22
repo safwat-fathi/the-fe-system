@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from "@/constants";
 import { onLogoutAction } from "@/app/actions/auth";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
 import { isTokenValid } from "@/utilities/token";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 // Enhanced response type for better type safety
 export interface ServiceResponse<T = any> {
@@ -52,6 +53,23 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     return this._token
       ? { Authorization: `Bearer ${this._token.replace(/['"]+/g, "")}` }
       : {};
+  }
+
+  private async _addBranchParams(params: IParams): Promise<IParams> {
+    try {
+      const branchParams = await getBranchParams();
+      return {
+        ...params,
+        ...branchParams,
+      };
+    } catch (error) {
+      console.warn("Failed to get branch parameters, using defaults:", error);
+      return {
+        ...params,
+        com: "1",
+        year: new Date().getFullYear().toString(),
+      };
+    }
   }
 
   private async _handleTokenRefresh(): Promise<boolean> {
