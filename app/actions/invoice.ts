@@ -21,6 +21,20 @@ export async function getInvoiceDetailsAction(invoiceId: string) {
   return invoiceService.getInvoiceDetails(invoiceId);
 }
 
+export async function getNextInvoiceIdAction(
+  transType: number,
+) {
+  try {
+    console.log("🔢 getNextInvoiceIdAction transType:", transType);
+    const result = await invoiceService.getNextInvoiceId(transType);
+    console.log("🔢 getNextInvoiceIdAction result:", result);
+    return result;
+  } catch (error) {
+    console.error("🔢 getNextInvoiceIdAction error:", error);
+    throw error;
+  }
+}
+
 export async function createInvoiceAction(
   payload: Partial<Invoice>,
 ) {

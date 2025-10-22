@@ -20,10 +20,6 @@ export default async function DashboardPage() {
   const year = cookieStore.get("selectedYear")?.value || "";
 
   const dashboardData = await dashboardService.getDashboardStats();
-  console.log(
-    "🚀 ~ :23 ~ DashboardPage ~ dashboardData itemCount:",
-    dashboardData?.itemCount,
-  );
 
   if (!dashboardData) throw new Error("حدث خطأ في جلب البيانات");
 

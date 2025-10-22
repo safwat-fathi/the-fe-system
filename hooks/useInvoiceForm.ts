@@ -8,9 +8,9 @@ import {
   createInvoiceDetailAction,
   updateInvoiceDetailAction,
   deleteInvoiceDetailAction,
-  getAllInvoicesAction,
   getInvoiceByIdAction,
   getInvoiceDetailsAction,
+  getNextInvoiceIdAction,
 } from "@/app/actions/invoice";
 import { generateZatcaQR } from "@/utilities/zatca";
 
@@ -88,6 +88,24 @@ const EMPLOYEE_CODE_MAP: Record<string, number> = {
   othman: 2,
 };
 
+const parseDefaultIdentifier = (
+  value: string | undefined,
+  fallback: number,
+): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const DEFAULT_COMPANY_ID = parseDefaultIdentifier(
+  process.env.NEXT_PUBLIC_DEFAULT_COMPANY_ID,
+  1,
+);
+
+const DEFAULT_YEAR_ID = parseDefaultIdentifier(
+  process.env.NEXT_PUBLIC_DEFAULT_YEAR_ID,
+  1,
+);
+
 type InvoiceFormContext =
   | "sale"
   | "purchase"
@@ -135,6 +153,11 @@ const parseNumber = (value: unknown): number => {
 
   const numeric = Number(value ?? 0);
   return Number.isFinite(numeric) ? numeric : 0;
+};
+
+const ensurePositiveNumber = (value: unknown): number | null => {
+  const numeric = parseNumber(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
 const formatNumber = (value: number, digits: number): number =>
@@ -295,14 +318,14 @@ export default function useInvoiceForm({
 
     const resolvedBranch =
       readNumericValue("selectedBranch") ??
-      (invoiceData && (invoiceData as any)?.com !== undefined
-        ? parseNumber((invoiceData as any)?.com)
+      (invoiceData?.com !== undefined
+        ? parseNumber(invoiceData.com)
         : null);
 
     const resolvedYear =
       readNumericValue("selectedYear") ??
-      (invoiceData && (invoiceData as any)?.year !== undefined
-        ? parseNumber((invoiceData as any)?.year)
+      (invoiceData?.year !== undefined
+        ? parseNumber(invoiceData.year)
         : null);
 
     setSelectedBranchId(resolvedBranch);
@@ -689,20 +712,18 @@ export default function useInvoiceForm({
 
   const getNextInvoiceNumber = useCallback(async () => {
     try {
-      const invoicesResponse = await getAllInvoicesAction({
-        xtrans_type: String(defaultTransType),
-      });
-      if (!invoicesResponse || !invoicesResponse.results?.length) return 1;
+      const nextInvoiceId = await getNextInvoiceIdAction(
+        Number(defaultTransType),
+      );
 
-      const maxInvId = invoicesResponse.results.reduce((max, invoice) => {
-        const current = parseNumber(invoice.inv_id);
-        return current > max ? current : max;
-      }, 0);
+      if (!Number.isFinite(nextInvoiceId) || nextInvoiceId <= 0) {
+        throw new Error("invalid-next-invoice-id");
+      }
 
-      return maxInvId + 1;
+      return nextInvoiceId;
     } catch (error) {
-      console.error("فشل في جلب أرقام الفواتير:", error);
-      return 1;
+      console.error("فشل في جلب رقم الفاتورة التالي:", error);
+      throw new Error("تعذر الحصول على رقم فاتورة جديد");
     }
   }, [defaultTransType]);
 
@@ -738,28 +759,19 @@ export default function useInvoiceForm({
         vatTotal: formatNumber(totals.taxAmount, frac),
       });
 
-      const existingCompanyId =
-        invoiceData && (invoiceData as any)?.com !== undefined
-          ? parseNumber((invoiceData as any)?.com)
-          : null;
-      const existingYearId =
-        invoiceData && (invoiceData as any)?.year !== undefined
-          ? parseNumber((invoiceData as any)?.year)
-          : null;
-
-      const resolvedCompanyIdCandidate =
-        selectedBranchId ?? existingCompanyId ?? null;
       const resolvedCompanyId =
-        resolvedCompanyIdCandidate && resolvedCompanyIdCandidate > 0
-          ? resolvedCompanyIdCandidate
-          : null;
-
-      const resolvedYearIdCandidate =
-        selectedYearId ?? existingYearId ?? null;
+        ensurePositiveNumber(selectedBranchId) ??
+        ensurePositiveNumber(invoiceData?.com) ??
+        ensurePositiveNumber(DEFAULT_COMPANY_ID);
       const resolvedYearId =
-        resolvedYearIdCandidate && resolvedYearIdCandidate > 0
-          ? resolvedYearIdCandidate
-          : null;
+        ensurePositiveNumber(selectedYearId) ??
+        ensurePositiveNumber(invoiceData?.year) ??
+        ensurePositiveNumber(DEFAULT_YEAR_ID);
+
+      if (!resolvedCompanyId || !resolvedYearId) {
+        toast.error("يرجى اختيار الفرع والسنة قبل إنشاء الفاتورة");
+        throw new Error("missing-company-or-year");
+      }
 
       const invoicePayload: Record<string, unknown> = {
         inv_id: invoiceNumber,
@@ -768,8 +780,8 @@ export default function useInvoiceForm({
         cust_name: selectedCustomer.cust_name ?? "",
         cust_code:
           selectedCustomer.cust_code ?? String(selectedCustomer.id ?? ""),
-        inv_amt: formatNumber(totals.netAmount, frac2),
-        inv_net: formatNumber(totals.totalAmount, frac2),
+        inv_amt: formatNumber(totals.totalAmount, frac2),
+        inv_net: formatNumber(totals.netAmount, frac2),
         tax: formatNumber(totals.taxAmount, frac),
         tax_prc: formatNumber(defaultTaxPrc ?? 15, frac),
         inv_status: 1,
@@ -796,7 +808,10 @@ export default function useInvoiceForm({
         pay_chick: false,
         vat_no: form.vat_no ?? "",
         pay_type: form.pay_type,
-        gold_price: goldPrice ?? 0,
+        gold_price:
+          goldPrice !== null && goldPrice !== undefined
+            ? formatNumber(goldPrice, frac).toString()
+            : null,
         cr_no: form.cr_no || null,
         gov: form.gov || null,
         city: form.city || null,
@@ -806,8 +821,8 @@ export default function useInvoiceForm({
         post_no: form.post_no || null,
         post_code: form.post_code || null,
         inv_QR: invoiceQr,
-        ...(resolvedCompanyId !== null ? { com: resolvedCompanyId } : {}),
-        ...(resolvedYearId !== null ? { year: resolvedYearId } : {}),
+        com: resolvedCompanyId,
+        year: resolvedYearId,
       };
 
       console.log("🧾 Saving invoice with payload:", invoicePayload);
