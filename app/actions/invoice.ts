@@ -50,7 +50,7 @@ export async function createInvoiceAction(
 }
 
 export async function updateInvoiceAction(
-  id: number,
+  id: number | string,
   payload: Partial<Invoice>,
 ) {
   try {

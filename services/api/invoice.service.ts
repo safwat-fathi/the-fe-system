@@ -308,10 +308,27 @@ class InvoiceService extends HttpService<Invoice> {
     id: number,
     invoiceData: Partial<Invoice>,
   ): Promise<Invoice | null> {
+    return this.updateInvoiceByRecordId(id, invoiceData);
+  }
+
+  async updateInvoiceByRecordId(
+    recordId: number | string,
+    invoiceData: Partial<Invoice>,
+  ): Promise<Invoice | null> {
+    const parsedId = Number(recordId);
+
+    if (!Number.isFinite(parsedId) || parsedId <= 0) {
+      throw new Error("معرف الفاتورة غير صالح للتحديث");
+    }
+
     try {
       const response = await this.patch<Invoice>(
-        `api_update_invoice/${id}`,
+        `api_update_invoice/${parsedId}`,
         invoiceData,
+        undefined,
+        {
+          signal: AbortSignal.timeout(60000),
+        },
       );
 
       if (!response.success) {
@@ -320,7 +337,7 @@ class InvoiceService extends HttpService<Invoice> {
           errors: response.errors,
           data: response.data,
         };
-        console.error("updateInvoice failed:", errorInfo);
+        console.error("updateInvoiceByRecordId failed:", errorInfo);
         throw new Error(
           `فشل تحديث الفاتورة: ${
             response.message ?? "استجابة غير متوقعة من الخادم"
@@ -329,7 +346,10 @@ class InvoiceService extends HttpService<Invoice> {
       }
 
       if (!response.data) {
-        console.error("updateInvoice returned without data:", response);
+        console.error(
+          "updateInvoiceByRecordId returned without data:",
+          response,
+        );
         throw new Error("فشل تحديث الفاتورة: لم يتم إرجاع بيانات من الخادم");
       }
 

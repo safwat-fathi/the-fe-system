@@ -90,6 +90,7 @@ export default async function InvoicePage({
   const invoiceType = resolveInvoiceType(toSingleValue(params.type));
   const mode = resolveFormMode(toSingleValue(params.mode));
   const editId = toSingleValue(params.id);
+  const recordId = toSingleValue(params.recordId);
   const startInEdit = toSingleValue(params.edit) === "true";
 
   if (mode === "edit" && !editId) {
@@ -115,7 +116,28 @@ export default async function InvoicePage({
       notFound();
     }
 
-    invoiceDetails = await invoiceService.getInvoiceDetails(invoiceData.id);
+    const detailKeys = Array.from(
+      new Set(
+        [
+          invoiceData?.inv_id,
+          editId,
+          recordId,
+          invoiceData?.id ? String(invoiceData.id) : null,
+        ]
+          .filter((key): key is string => Boolean(key && `${key}`.trim().length))
+          .map((key) => String(key).trim()),
+      ),
+    );
+
+    for (const key of detailKeys) {
+      const fetchedDetails =
+        (await invoiceService.getInvoiceDetails(key)) ?? [];
+
+      if (fetchedDetails.length > 0) {
+        invoiceDetails = fetchedDetails;
+        break;
+      }
+    }
   }
 
   const formData = await getInvoiceFormData();
@@ -133,6 +155,7 @@ export default async function InvoicePage({
         invoiceDetailsData={invoiceDetails}
         isNewInvoice={mode === "new"}
         startInEditMode={startInEdit || mode === "edit"}
+        invoiceRecordId={invoiceData?.id ?? recordId ?? null}
         customers={formData.customers}
         items={formData.items}
         categories={formData.categories}

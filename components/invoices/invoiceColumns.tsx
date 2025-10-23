@@ -5,11 +5,21 @@ import { EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 
 import { formatDateTime } from "@/utilities/dateUtils";
 import { formatAmount } from "@/utilities/formatAmount";
-import { Invoice } from "@/types/models/invoice";
+import { Invoice, TransTypes } from "@/types/models/invoice";
 import { TRANS_TYPE_META } from "@/types/constants/invoice";
 import { Fractions } from "@/utilities/useFractions";
 
 const columnHelper = createColumnHelper<Invoice>();
+
+const TRANS_TYPE_TO_FORM_TYPE: Record<
+  TransTypes,
+  "sale" | "purchase" | "sale-return" | "purchase-return"
+> = {
+  [TransTypes.SALES]: "sale",
+  [TransTypes.PURCHASE]: "purchase",
+  [TransTypes.SALES_RETURN]: "sale-return",
+  [TransTypes.PURCHASE_RETURN]: "purchase-return",
+};
 
 export const createInvoiceColumns = (
   fractions: Fractions,
@@ -59,19 +69,27 @@ export const createInvoiceColumns = (
   columnHelper.display({
     id: "actions",
     header: () => "الإجراءات",
-    cell: ({ row }) => (
-      <div className="flex gap-2">
-        <Link href={`/forms/invoices/sale/${row.original.inv_id}`}>
-          <Button isIconOnly size="sm" variant="light">
-            <EyeIcon className="h-4 w-4 text-blue-500" />
-          </Button>
-        </Link>
-        <Link href={`/forms/invoices/sale/${row.original.inv_id}?edit=true`}>
-          <Button isIconOnly size="sm" variant="light">
-            <PencilIcon className="h-4 w-4 text-yellow-500" />
-          </Button>
-        </Link>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const formType =
+        TRANS_TYPE_TO_FORM_TYPE[row.original.trans_type] ?? "sale";
+      const invoiceId = encodeURIComponent(String(row.original.inv_id ?? ""));
+      const baseHref = `/forms/invoices?type=${formType}&mode=edit&id=${invoiceId}`;
+      const editHref = `${baseHref}&edit=true`;
+
+      return (
+        <div className="flex gap-2">
+          <Link href={baseHref}>
+            <Button isIconOnly size="sm" variant="light">
+              <EyeIcon className="h-4 w-4 text-blue-500" />
+            </Button>
+          </Link>
+          <Link href={editHref}>
+            <Button isIconOnly size="sm" variant="light">
+              <PencilIcon className="h-4 w-4 text-yellow-500" />
+            </Button>
+          </Link>
+        </div>
+      );
+    },
   }),
 ];

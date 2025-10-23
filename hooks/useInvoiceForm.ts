@@ -243,6 +243,7 @@ export default function useInvoiceForm({
   initialCategories,
   initialGoldPrice,
   initialHomePurity,
+  invoiceRecordId = null,
   context = "sale",
 }: {
   invoiceData: Invoice | null;
@@ -253,6 +254,7 @@ export default function useInvoiceForm({
   initialCategories: any[];
   initialGoldPrice: number | null;
   initialHomePurity: number;
+  invoiceRecordId?: number | string | null;
   context?: InvoiceFormContext;
 }) {
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
@@ -288,7 +290,11 @@ export default function useInvoiceForm({
   const frac = fractions?.frac ?? 2;
   const frac2 = fractions?.frac2 ?? 3;
   const [invoicePk, setInvoicePk] = useState<number | null>(
-    invoiceData?.id ? Number(invoiceData.id) : null,
+    invoiceData?.id
+      ? Number(invoiceData.id)
+      : invoiceRecordId !== null && invoiceRecordId !== undefined
+        ? Number(invoiceRecordId)
+        : null,
   );
   const [originalInvoiceItems, setOriginalInvoiceItems] = useState<
     InvoiceItemRow[]
@@ -301,6 +307,21 @@ export default function useInvoiceForm({
   );
   const [deletedItemIds, setDeletedItemIds] = useState<number[]>([]);
   const [defaultTaxPrc, setDefaultTaxPrc] = useState<number>(15);
+
+  useEffect(() => {
+    const candidate =
+      invoiceData?.id ??
+      (invoiceRecordId !== null && invoiceRecordId !== undefined
+        ? invoiceRecordId
+        : null);
+
+    if (candidate === null || candidate === undefined || candidate === "") {
+      return;
+    }
+
+    const parsed = Number(candidate);
+    setInvoicePk(Number.isFinite(parsed) && parsed > 0 ? parsed : null);
+  }, [invoiceData?.id, invoiceRecordId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
