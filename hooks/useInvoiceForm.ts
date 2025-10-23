@@ -54,6 +54,7 @@ type InvoiceItemRow = {
 
 type FormState = {
   cust_code: any | null;
+  cust_name: string;
   inv_id: number | string | null;
   inv_date: string;
   pay_type: number;
@@ -260,6 +261,12 @@ export default function useInvoiceForm({
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
   const defaultTransType = invoiceConfig.transType;
   const contactLabel = invoiceConfig.contactLabel;
+  const resolvedInvoiceCustomerCode =
+    invoiceData?.cust_code !== undefined && invoiceData?.cust_code !== null
+      ? String(invoiceData.cust_code)
+      : invoiceData?.cust !== undefined && invoiceData?.cust !== null
+        ? String(invoiceData.cust)
+        : null;
 
   // lists - using initial data directly
   const [items, setItems] = useState<any[]>(initialItems || []);
@@ -361,7 +368,8 @@ export default function useInvoiceForm({
 
   // form reducer
   const initialFormState: FormState = {
-    cust_code: invoiceData?.cust_code ?? null,
+    cust_code: resolvedInvoiceCustomerCode,
+    cust_name: invoiceData?.cust_name ?? "",
     inv_id: invoiceData?.inv_id ?? null,
     inv_date: invoiceData?.inv_date ?? defaultInvoiceDate,
     pay_type: invoiceData?.pay_type ?? 3,
@@ -419,13 +427,70 @@ export default function useInvoiceForm({
     originalInvoiceItems.length > 0 ? originalInvoiceItems : [makeEmptyRow()],
   );
 
-  const selectedCustomer = useMemo(
-    () =>
+  const selectedCustomer = useMemo(() => {
+    const rawCode = form.cust_code;
+    const normalizedCode =
+      rawCode !== null && rawCode !== undefined
+        ? String(rawCode)
+        : invoiceData?.cust_code !== undefined &&
+            invoiceData?.cust_code !== null
+          ? String(invoiceData.cust_code)
+          : "";
+
+    if (!normalizedCode) {
+      return null;
+    }
+
+    const matchByCode =
+      customers.find((customer: any) => {
+        if (
+          customer.cust_code !== undefined &&
+          customer.cust_code !== null &&
+          `${customer.cust_code}`.trim().length > 0
+        ) {
+          return String(customer.cust_code) === normalizedCode;
+        }
+        return false;
+      }) ?? null;
+
+    if (matchByCode) {
+      return matchByCode;
+    }
+
+    const matchById =
       customers.find(
-        (customer) => String(customer.id) === String(form.cust_code ?? ""),
-      ) ?? null,
-    [customers, form.cust_code],
-  );
+        (customer: any) => String(customer.id ?? "") === normalizedCode,
+      ) ?? null;
+
+    if (matchById) {
+      return matchById;
+    }
+
+    if (invoiceData) {
+      return {
+        id:
+          invoiceData.cust ??
+          (Number.isFinite(Number(normalizedCode))
+            ? Number(normalizedCode)
+            : normalizedCode),
+        cust_code: invoiceData.cust_code ?? normalizedCode,
+        cust_name: invoiceData.cust_name ?? form.cust_name ?? "",
+        vat_no: invoiceData.vat_no ?? "",
+        mobile: invoiceData.mobile ?? "",
+        handling: invoiceData.handling ?? "",
+        cr_no: invoiceData.cr_no ?? "",
+        gov: invoiceData.gov ?? "",
+        city: invoiceData.city ?? "",
+        area: invoiceData.area ?? "",
+        street: invoiceData.street ?? "",
+        build_no: invoiceData.build_no ?? "",
+        post_no: invoiceData.post_no ?? "",
+        post_code: invoiceData.post_code ?? "",
+      } as any;
+    }
+
+    return null;
+  }, [customers, form.cust_code, form.cust_name, invoiceData]);
 
   const mapRowToApiPayload = useCallback(
     (
@@ -542,7 +607,13 @@ export default function useInvoiceForm({
     dispatchForm({
       type: "SET_ALL",
       payload: {
-        cust_code: invoiceData.cust_code ?? null,
+        cust_code:
+          invoiceData.cust_code !== undefined && invoiceData.cust_code !== null
+            ? String(invoiceData.cust_code)
+            : invoiceData.cust !== undefined && invoiceData.cust !== null
+              ? String(invoiceData.cust)
+              : null,
+        cust_name: invoiceData.cust_name ?? "",
         inv_id: invoiceData.inv_id ?? null,
         inv_date: invoiceData.inv_date ?? defaultInvoiceDate,
         pay_type: invoiceData.pay_type ?? 3,

@@ -244,6 +244,7 @@ export default function InvoiceClientPage({
             referenceNumber={form.ref_no}
             saleInvoices={[]}
             selectedCustomer={form.cust_code}
+            selectedCustomerName={form.cust_name}
             street={form.street}
             onInvoiceSelect={() => {}}
             setArea={(v) =>
@@ -282,7 +283,19 @@ export default function InvoiceClientPage({
             }
             setSearchValue={setSearchValue}
             setSelectedCustomer={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "cust_code", value: v })
+              dispatchForm({
+                type: "SET_FIELD",
+                field: "cust_code",
+                value:
+                  v !== null && v !== undefined ? String(v) : null,
+              })
+            }
+            setSelectedCustomerName={(value) =>
+              dispatchForm({
+                type: "SET_FIELD",
+                field: "cust_name",
+                value,
+              })
             }
             setStreet={(v) =>
               dispatchForm({ type: "SET_FIELD", field: "street", value: v })

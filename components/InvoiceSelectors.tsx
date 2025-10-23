@@ -25,7 +25,9 @@ interface Customer {
 interface Props {
   customers: Customer[];
   selectedCustomer: string | null;
+  selectedCustomerName: string;
   setSelectedCustomer: Dispatch<SetStateAction<string | null>>;
+  setSelectedCustomerName: (val: string) => void;
   paymentMethod: string;
   setPaymentMethod: (value: string) => void;
   payType: number;
@@ -73,7 +75,9 @@ interface Props {
 export default function InvoiceSelectors({
   customers,
   selectedCustomer,
+  selectedCustomerName,
   setSelectedCustomer,
+  setSelectedCustomerName,
   paymentMethod,
   setPaymentMethod,
   payType,
@@ -116,6 +120,67 @@ export default function InvoiceSelectors({
   isEditing,
   invoiceType = "sale",
 }: Props) {
+  const resolveCustomerValue = (cust: Customer) =>
+    String(cust.cust_code ?? cust.id ?? "");
+
+  const findCustomerByValue = (value: string | null): Customer | null => {
+    if (!value) return null;
+    const normalized = String(value);
+
+    const matchByCode = customers.find(
+      (cust) =>
+        cust.cust_code !== undefined &&
+        cust.cust_code !== null &&
+        String(cust.cust_code) === normalized,
+    );
+
+    if (matchByCode) return matchByCode;
+
+    const matchById = customers.find(
+      (cust) => String(cust.id ?? "") === normalized,
+    );
+    if (matchById) return matchById;
+
+    return null;
+  };
+
+  const filteredCustomers = customers.filter((cust) =>
+    paymentMethod === "cash" ? cust.cust_type === 99 : cust.cust_type !== 99,
+  );
+
+  const mapCustomerToOption = (cust: Customer) => {
+    const value = resolveCustomerValue(cust);
+    const codeToShow =
+      cust.cust_code !== undefined && cust.cust_code !== null
+        ? String(cust.cust_code)
+        : String(cust.id ?? "");
+    const displayName =
+      cust.cust_name && cust.cust_name.trim().length > 0
+        ? cust.cust_name
+        : `عميل ${codeToShow}`;
+
+    return {
+      value,
+      label: `${displayName} - ${codeToShow}`,
+    };
+  };
+
+  const selectOptions = filteredCustomers.map(mapCustomerToOption);
+
+  const currentCustomer = findCustomerByValue(selectedCustomer);
+  const selectedOption =
+    selectedCustomer !== null && selectedCustomer !== undefined
+      ? currentCustomer
+        ? mapCustomerToOption(currentCustomer)
+        : {
+            value: String(selectedCustomer),
+            label:
+              selectedCustomerName && selectedCustomerName.trim().length > 0
+                ? `${selectedCustomerName} - ${selectedCustomer}`
+                : String(selectedCustomer),
+          }
+      : null;
+
   return (
     <div className="mb-4">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -144,16 +209,7 @@ export default function InvoiceSelectors({
                   typeof window !== "undefined" ? document.body : null
                 }
                 menuPosition="fixed"
-                options={customers
-                  .filter((cust) =>
-                    paymentMethod === "cash"
-                      ? cust.cust_type === 99
-                      : cust.cust_type !== 99,
-                  )
-                  .map((cust) => ({
-                    value: cust.id,
-                    label: `${cust.cust_code ?? cust.id} - ${cust.cust_name}`,
-                  }))}
+                options={selectOptions}
                 placeholder={
                   invoiceType === "purchase" ||
                   invoiceType === "purchase_return"
@@ -172,30 +228,16 @@ export default function InvoiceSelectors({
                   placeholder: (base) => ({ ...base, fontSize: "12px" }),
                   singleValue: (base) => ({ ...base, fontSize: "12px" }),
                 }}
-                value={
-                  selectedCustomer
-                    ? {
-                        value: selectedCustomer,
-                        label: `${
-                          customers.find((c) => c.id === selectedCustomer)
-                            ?.cust_code ?? selectedCustomer
-                        } - ${
-                          customers.find((c) => c.id === selectedCustomer)
-                            ?.cust_name ||
-                          `${invoiceType === "purchase" || invoiceType === "purchase_return" ? "مورد" : "عميل"} رقم ${selectedCustomer}`
-                        }`,
-                      }
-                    : null
-                }
+                value={selectedOption}
                 onChange={(selectedOption) => {
-                  setSelectedCustomer(selectedOption?.value ?? null);
+                  const nextValue = selectedOption?.value ?? null;
+                  setSelectedCustomer(nextValue);
                   setReferenceNumber("");
 
-                  const selectedCust = customers.find(
-                    (c) => c.id === selectedOption?.value,
-                  );
+                  const selectedCust = findCustomerByValue(nextValue);
 
                   if (selectedCust) {
+                    setSelectedCustomerName(selectedCust.cust_name ?? "");
                     setMobileMethod(selectedCust.mobile ?? "");
                     setHandlingMethod(selectedCust.handling?.toString() ?? "");
                     setVatNumber(selectedCust.vat_no ?? "");
@@ -208,6 +250,7 @@ export default function InvoiceSelectors({
                     setPostNo(selectedCust.post_no ?? "");
                     setPostCode(selectedCust.post_code ?? "");
                   } else {
+                    setSelectedCustomerName("");
                     setMobileMethod("");
                     setHandlingMethod("");
                     setVatNumber("");
@@ -239,6 +282,7 @@ export default function InvoiceSelectors({
                       onChange={(e) => {
                         setPaymentMethod(e.target.value);
                         setSelectedCustomer(null);
+                        setSelectedCustomerName("");
                       }}
                     />
                     نقداً
@@ -252,6 +296,7 @@ export default function InvoiceSelectors({
                       onChange={(e) => {
                         setPaymentMethod(e.target.value);
                         setSelectedCustomer(null);
+                        setSelectedCustomerName("");
                       }}
                     />
                     أجل
@@ -305,7 +350,10 @@ export default function InvoiceSelectors({
                     menuPosition="fixed"
                     options={(saleInvoices || [])
                       .filter((inv) =>
-                        selectedCustomer ? inv.cust === selectedCustomer : true,
+                        selectedCustomer
+                          ? String(inv.cust ?? "") ===
+                            String(selectedCustomer ?? "")
+                          : true,
                       )
                       .map((inv) => ({
                         value: inv.inv_id,
