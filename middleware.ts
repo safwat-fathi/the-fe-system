@@ -1,4 +1,5 @@
 import { NextMiddleware } from "next/server";
+
 import { stackMiddlewares } from "./middlewares/stackHandler";
 import authMiddleware from "./middlewares/auth.middleware";
 // import rbacMiddleware from "./middlewares/rbac.middleware";

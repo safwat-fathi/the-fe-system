@@ -1,6 +1,5 @@
 "use client";
 
-import LogoutButton from "@/components/LogoutButton";
 import {
   Bars3Icon,
   ChevronUpIcon,
@@ -20,6 +19,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+
+import LogoutButton from "@/components/LogoutButton";
 
 const mainLinks = [
   {
@@ -194,10 +195,10 @@ const Sidebar = () => {
           </h2>
         )}
         <Button
+          className="text-white hover:bg-gray-700"
           size="sm"
           variant="light"
           onPress={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="text-white hover:bg-gray-700"
         >
           <Bars3Icon className="h-5 w-5" />
         </Button>
@@ -209,7 +210,6 @@ const Sidebar = () => {
         {mainLinks.map((link) => (
           <Link
             key={link.href}
-            href={link.href}
             className={clsx(
               "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group",
               {
@@ -217,6 +217,7 @@ const Sidebar = () => {
                 "hover:bg-gray-700 hover:shadow-md": pathname !== link.href,
               },
             )}
+            href={link.href}
           >
             <div
               className={clsx("text-lg", {
@@ -304,12 +305,13 @@ const Sidebar = () => {
                       {accountingBasicLinks.map((link) => (
                         <Link
                           key={link.href}
-                          href={link.href}
                           className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                             pathname === link.href
                               ? "bg-blue-600/20 text-blue-300"
                               : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                           }`}
+                          href={link.href}
+                          prefetch={true}
                           style={{
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
@@ -362,12 +364,12 @@ const Sidebar = () => {
                           {accountingFormLinks.map((link) => (
                             <Link
                               key={link.href}
-                              href={link.href}
                               className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                                 pathname === link.href
                                   ? "bg-blue-600/20 text-blue-300"
                                   : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                               }`}
+                              href={link.href}
                               style={{
                                 paddingLeft: isSidebarOpen
                                   ? "2.5rem"
@@ -424,12 +426,12 @@ const Sidebar = () => {
                           {accountingReportLinks.map((link) => (
                             <Link
                               key={link.href}
-                              href={link.href}
                               className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                                 pathname === link.href
                                   ? "bg-blue-600/20 text-blue-300"
                                   : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                               }`}
+                              href={link.href}
                               style={{
                                 paddingLeft: isSidebarOpen
                                   ? "2.5rem"
@@ -516,12 +518,13 @@ const Sidebar = () => {
                       {goldBasicLinks.map((link) => (
                         <Link
                           key={link.href}
-                          href={link.href}
                           className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                             pathname === link.href
                               ? "bg-blue-600/20 text-blue-300"
                               : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                           }`}
+                          href={link.href}
+                          prefetch={true}
                           style={{
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
@@ -571,12 +574,12 @@ const Sidebar = () => {
                       {goldFormLinks.map((link) => (
                         <Link
                           key={link.href}
-                          href={link.href}
                           className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                             pathname === link.href
                               ? "bg-blue-600/20 text-blue-300"
                               : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                           }`}
+                          href={link.href}
                           style={{
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
@@ -625,12 +628,12 @@ const Sidebar = () => {
                       {goldReportLinks.map((link) => (
                         <Link
                           key={link.href}
-                          href={link.href}
                           className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
                             pathname === link.href
                               ? "bg-blue-600/20 text-blue-300"
                               : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
                           }`}
+                          href={link.href}
                           style={{
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
@@ -684,12 +687,12 @@ const Sidebar = () => {
                 {settingsLinks.map((link) => (
                   <Link
                     key={link.href}
-                    href={link.href}
                     className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
                       pathname === link.href
                         ? "bg-blue-600 shadow-lg"
                         : "hover:bg-gray-700 hover:shadow-md"
                     }`}
+                    href={link.href}
                   >
                     <div
                       className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}

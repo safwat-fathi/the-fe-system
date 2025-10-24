@@ -1,6 +1,7 @@
-import { MiddlewareFactory } from "@/middleware";
 import { createI18nMiddleware } from "next-international/middleware";
 import { NextRequest } from "next/server";
+
+import { MiddlewareFactory } from "@/middleware";
 
 const LOCALES = ["ar", "en"];
 const DEFAULT_LOCALE = "ar";

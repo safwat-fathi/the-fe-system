@@ -3,6 +3,7 @@ import customerService from "../api/customer.service";
 import categoryService from "../api/category.service";
 import itemService from "../api/item.service";
 import goldPriceService from "../api/gold-price.service";
+
 import { HttpService } from "@/services/base";
 import { Invoice } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
@@ -23,7 +24,7 @@ class DashboardService extends HttpService<any> {
 
   async getDashboardStats(): Promise<DashboardStats | null> {
     try {
-      // Fetch all required data in parallel
+      // Fetch all required data in parallel with individual error handling
       const [invoices, customers, categories, items, goldPrice] =
         await Promise.all([
           invoiceService.getAllInvoices(),
@@ -40,9 +41,17 @@ class DashboardService extends HttpService<any> {
       if (!invoices) return null;
 
       // Calculate monthly sales
-      const monthlySales = await invoiceService.calculateMonthlySales(
-        invoices?.results as any,
-      );
+      const invoicesList = Array.isArray(invoices?.results) 
+        ? invoices.results 
+        : [];
+      
+      const monthlySales = await invoiceService
+        .calculateMonthlySales(invoicesList)
+        .catch((err) => {
+          console.error("Error calculating monthly sales:", err);
+
+          return new Array(12).fill(0);
+        });
 
       return {
         invoices,

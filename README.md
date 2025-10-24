@@ -1,6 +1,40 @@
 # NafeesWeb Gold System
 
-A comprehensive gold management system built with Next.js, designed to handle gold trading operations, inventory management, invoicing, and reporting.
+## التكوين والإعداد
+
+### متغيرات البيئة المطلوبة
+
+قبل تشغيل النظام، يجب إنشاء ملف `.env.local` في المجلد الرئيسي للمشروع مع المتغيرات التالية:
+
+```env
+# API Configuration (مطلوب)
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
+
+# Gold Price API (اختياري)
+NEXT_PUBLIC_API_GOLD_PRICE=
+```
+
+#### شرح المتغيرات:
+
+1. **NEXT_PUBLIC_API_BASE_URL** (مطلوب):
+   - عنوان URL الأساسي لـ API الخاص بالنظام
+   - مثال: `http://localhost:8000/api` أو `https://api.yourserver.com`
+
+2. **NEXT_PUBLIC_API_GOLD_PRICE** (اختياري):
+   - رابط API للحصول على سعر الذهب الحالي
+   - يمكن استخدام خدمات مثل:
+     - goldapi.io
+     - metalpriceapi.com
+   - مثال: `https://api.metalpriceapi.com/v1/latest?api_key=YOUR_KEY&base=XAU&currencies=SAR`
+   - إذا لم يتم تعيينه، سيعرض النظام "-" بدلاً من سعر الذهب
+
+### خطوات التشغيل
+
+1. انسخ ملف `.env.example` إلى `.env.local` (أو أنشئ ملف `.env.local` جديد)
+2. قم بتعديل القيم حسب إعداداتك
+3. شغّل الأمر `npm run dev` لتشغيل النظام في بيئة التطوير
+
+## التحديثات الأخيرة
 
 ## Overview
 

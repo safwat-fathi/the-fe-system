@@ -8,6 +8,7 @@ import VoucherForm from "./VoucherForm";
 import VoucherDetailsTable from "./VoucherDetailsTable";
 import VoucherTotals from "./VoucherTotals";
 import PreviousVouchersModal from "./PreviousVouchersModal";
+
 import { Voucher, VoucherDetail } from "@/types/voucher";
 
 interface VoucherContainerProps {
@@ -28,7 +29,11 @@ interface VoucherContainerProps {
   vouchersList: any[];
   onVoucherChange: (field: keyof Voucher, value: any) => void;
   onVoucherTypeChange: (newType: number) => void;
-  onUpdateDetail: (index: number, field: keyof VoucherDetail, value: any) => void;
+  onUpdateDetail: (
+    index: number,
+    field: keyof VoucherDetail,
+    value: any,
+  ) => void;
   onAddRow: () => void;
   onRemoveRow: (index: number) => void;
   onSave: () => void;
@@ -36,7 +41,7 @@ interface VoucherContainerProps {
   onNew: () => void;
   onPrint: () => void;
   onCreateFromPrevious: () => void;
-  onNavigate: (direction: 'first' | 'prev' | 'next' | 'last') => void;
+  onNavigate: (direction: "first" | "prev" | "next" | "last") => void;
   onSearchChange: (value: string) => void;
   onSearch: () => void;
   onModalClose: () => void;
@@ -75,17 +80,17 @@ export default function VoucherContainer({
   onSearch,
   onModalClose,
   onSelectVoucher,
-  onUpdateAccountsList
+  onUpdateAccountsList,
 }: VoucherContainerProps) {
   return (
     <div className="p-3 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* رأس القيد */}
       <VoucherHeader
+        searchTerm={searchTerm}
         voucher={voucher}
         voucherTypes={voucherTypes}
-        searchTerm={searchTerm}
-        onSearchChange={onSearchChange}
         onSearch={onSearch}
+        onSearchChange={onSearchChange}
       />
 
       {/* شريط الأزرار والتنقل */}
@@ -93,16 +98,16 @@ export default function VoucherContainer({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <VoucherActions
-              voucher={voucher}
               isLoading={isLoading}
               isPrinting={isPrinting}
-              onSave={onSave}
+              voucher={voucher}
+              onCreateFromPrevious={onCreateFromPrevious}
               onEdit={onEdit}
               onNew={onNew}
               onPrint={onPrint}
-              onCreateFromPrevious={onCreateFromPrevious}
+              onSave={onSave}
             />
-            
+
             <VoucherNavigation
               currentRecord={currentRecord}
               totalRecords={totalRecords}
@@ -116,46 +121,64 @@ export default function VoucherContainer({
 
       {/* نموذج بيانات القيد */}
       <VoucherForm
-        voucher={voucher}
         currentTime={currentTime}
-        voucherTypes={voucherTypes}
+        voucher={voucher}
         voucherStatuses={voucherStatuses}
+        voucherTypes={voucherTypes}
         onVoucherChange={onVoucherChange}
         onVoucherTypeChange={onVoucherTypeChange}
       />
 
       {/* جدول تفاصيل القيد */}
       <VoucherDetailsTable
-        details={details}
         accounts={accounts}
         costCenters={costCenters}
+        details={details}
         isBalanced={isBalanced}
         onAddRow={onAddRow}
         onRemoveRow={onRemoveRow}
-        onUpdateDetail={onUpdateDetail}
         onUpdateAccountsList={onUpdateAccountsList}
+        onUpdateDetail={onUpdateDetail}
       />
 
       {/* شريط الإجماليات */}
       <VoucherTotals
         totals={{
-          totalDebit: details.reduce((sum, d) => sum + (parseFloat(String(d.debit || 0)) || 0), 0),
-          totalCredit: details.reduce((sum, d) => sum + (parseFloat(String(d.credit || 0)) || 0), 0),
-          totalDebitG: details.reduce((sum, d) => sum + (parseFloat(String(d.debit_g || 0)) || 0), 0),
-          totalCreditG: details.reduce((sum, d) => sum + (parseFloat(String(d.credit_g || 0)) || 0), 0),
-          totalTax: details.reduce((sum, d) => sum + (parseFloat(String(d.tax || 0)) || 0), 0),
-          totalTaxPrc: details.reduce((sum, d) => sum + (parseFloat(String(d.tax_prc || 0)) || 0), 0),
+          totalDebit: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.debit || 0)) || 0),
+            0,
+          ),
+          totalCredit: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.credit || 0)) || 0),
+            0,
+          ),
+          totalDebitG: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.debit_g || 0)) || 0),
+            0,
+          ),
+          totalCreditG: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.credit_g || 0)) || 0),
+            0,
+          ),
+          totalTax: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.tax || 0)) || 0),
+            0,
+          ),
+          totalTaxPrc: details.reduce(
+            (sum, d) => sum + (parseFloat(String(d.tax_prc || 0)) || 0),
+            0,
+          ),
         }}
       />
 
       {/* نافذة القيود السابقة */}
       <PreviousVouchersModal
         isOpen={isModalOpen}
-        onClose={onModalClose}
-        vouchersList={vouchersList}
-        voucherTypes={voucherTypes}
-        voucherStatuses={voucherStatuses}
         searchTerm={searchTerm}
+        voucherStatuses={voucherStatuses}
+        voucherTypes={voucherTypes}
+        vouchersList={vouchersList}
+        onClose={onModalClose}
         onSearchChange={onSearchChange}
         onSelectVoucher={onSelectVoucher}
       />

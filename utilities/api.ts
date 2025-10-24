@@ -1,15 +1,32 @@
-export const API_BASE_URL: string = "http://149.102.143.102:8000/api/";
+/**
+ * @deprecated هذا الملف قديم ويجب عدم استخدامه في كود جديد
+ * استخدم services/ بدلاً من ذلك لأسباب أمنية وأفضلية في الأداء
+ *
+ * المشاكل في هذا الملف:
+ * 1. يستخدم localStorage لتخزين التوكن (غير آمن - عرضة لـ XSS)
+ * 2. معالجة أخطاء غير صحيحة
+ * 3. لا يدعم Type Safety بشكل كامل
+ * 4. لا يوجد Token Refresh
+ *
+ * راجع SERVICES_MIGRATION.md للمزيد من المعلومات
+ */
+
+export const API_BASE_URL: string =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://84.46.240.24:8000/api";
 
 // export const GOLD_API_TOKEN: string =
 //   process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
 
 // وظائف المصادقة
+/**
+ * @deprecated استخدم authService.login() من services/api بدلاً من ذلك
+ */
 export async function loginUser(username: string, password: string) {
   try {
-    console.log("محاولة تسجيل الدخول إلى:", `${API_BASE_URL}/login/`);
+    console.log("محاولة تسجيل الدخول إلى:", `${API_BASE_URL}/login`);
     console.log("بيانات تسجيل الدخول:", { username, password: "***" });
 
-    const response = await fetch(`${API_BASE_URL}/login/`, {
+    const response = await fetch(`${API_BASE_URL}/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -20,6 +37,7 @@ export async function loginUser(username: string, password: string) {
     console.log("استجابة الخادم:", response.status, response.statusText);
 
     let data;
+
     try {
       data = await response.json();
       console.log("بيانات الاستجابة:", data);
@@ -60,13 +78,46 @@ export async function loginUser(username: string, password: string) {
   }
 }
 
+/**
+ * @deprecated غير آمن - يستخدم localStorage
+ * ⚠️ لا تستخدم في كود جديد!
+ * 
+ * استخدم بدلاً من ذلك:
+ * - في Server Components: HttpService يقرأ من cookies تلقائياً
+ * - في Client Components: استخدم Server Actions
+ * 
+ * هذه الدالة موجودة فقط للتوافق مع الكود القديم وسيتم حذفها قريباً
+ */
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token");
+    // محاولة الحصول على التوكن من الكوكيز (access_token من النظام الجديد)
+    const cookies = document.cookie.split(";");
+
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split("=");
+
+      if (name === "access_token") {
+        return value;
+      }
+    }
+
+    // Fallback: محاولة الحصول من localStorage للتوافق مع الكود القديم
+    const localToken = localStorage.getItem("auth_token");
+
+    if (localToken) {
+      return localToken;
+    }
   }
+
   return null;
 }
 
+/**
+ * @deprecated غير آمن - يستخدم localStorage
+ * ⚠️ لا تستخدم إطلاقاً! استخدم setCookieAction من app/actions
+ * 
+ * هذه الدالة موجودة فقط للتوافق مع الكود القديم وسيتم حذفها قريباً
+ */
 export function setAuthToken(token: string) {
   if (typeof window !== "undefined") {
     localStorage.setItem("auth_token", token);
@@ -75,6 +126,10 @@ export function setAuthToken(token: string) {
   }
 }
 
+/**
+ * @deprecated استخدم onLogoutAction من app/actions/auth.ts بدلاً من ذلك
+ * ⚠️ لا تستخدم في كود جديد!
+ */
 export function removeAuthToken() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("auth_token");
@@ -84,6 +139,10 @@ export function removeAuthToken() {
   }
 }
 
+/**
+ * @deprecated استخدم middleware للمصادقة بدلاً من ذلك
+ * ⚠️ لا تستخدم - لدينا auth.middleware.ts
+ */
 export function isAuthenticated(): boolean {
   return getAuthToken() !== null;
 }
@@ -113,6 +172,10 @@ export async function fetchGoldPrice(): Promise<number | null> {
   }
 }
 
+/**
+ * @deprecated النظام الجديد يضيف Branch Params تلقائياً
+ * استخدم services/ بدلاً من ذلك
+ */
 export function appendBranchParams(url: string): string {
   if (typeof window !== "undefined") {
     const com = localStorage.getItem("selectedBranch");
@@ -131,6 +194,15 @@ export function appendBranchParams(url: string): string {
   return url;
 }
 
+/**
+ * @deprecated استخدم الـ service المناسب من services/api بدلاً من ذلك
+ * مثال: voucherService.getAll(), accountService.getAllAccounts(), etc.
+ *
+ * المشاكل:
+ * - معالجة أخطاء غير صحيحة (السطور 183-193)
+ * - يحاول قراءة JSON حتى مع الأخطاء
+ * - لا يوجد type safety
+ */
 export async function fetchData<T>(
   url: string,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
@@ -147,6 +219,7 @@ export async function fetchData<T>(
 
     // إضافة التوكن للطلبات إذا كان موجوداً
     const token = getAuthToken();
+
     if (token) {
       headers["Authorization"] = `Token ${token}`;
     }
@@ -164,6 +237,7 @@ export async function fetchData<T>(
 
     if (!response.ok) {
       const errorMessage = await response.text();
+
       console.error(`HTTP ${response.status} error for ${url}:`, errorMessage);
 
       // إذا كان الخطأ 401 (غير مصرح)، حذف التوكن وتوجيه لصفحة تسجيل الدخول
@@ -178,7 +252,9 @@ export async function fetchData<T>(
     }
 
     const data = await response.json();
+
     console.log(`Success response from ${url}:`, data);
+
     return data;
   } catch (error) {
     const errorMessage =
@@ -192,6 +268,10 @@ export async function fetchData<T>(
 
 let fractionsCache: { frac: number; frac2: number } | null = null;
 
+/**
+ * @deprecated Use homeService.getHomeList() instead
+ * This function is kept for backward compatibility
+ */
 export async function fetchFractions() {
   if (fractionsCache) return fractionsCache;
 
@@ -201,6 +281,7 @@ export async function fetchFractions() {
     if (Array.isArray(res) && res.length > 0) {
       const frac = parseInt(res[0].frac);
       const frac2 = parseInt(res[0].frac2);
+
       fractionsCache = {
         frac: isNaN(frac) ? 2 : frac,
         frac2: isNaN(frac2) ? 3 : frac2,
@@ -216,132 +297,149 @@ export async function fetchFractions() {
   return fractionsCache;
 }
 
+/**
+ * @deprecated استخدم الـ services بدلاً من هذه الـ endpoints مباشرة
+ *
+ * أمثلة:
+ * - بدلاً من fetchData(API_ENDPOINTS.VOUCHERS_LIST)
+ *   استخدم voucherService.getAll()
+ *
+ * - بدلاً من fetchData(API_ENDPOINTS.ACCOUNTS_LIST)
+ *   استخدم accountService.getAllAccounts()
+ *
+ * راجع SERVICES_MIGRATION.md للمزيد من الأمثلة
+ */
 export const API_ENDPOINTS = {
   // روابط العملاء
-  CUSTOMERS_LIST: `${API_BASE_URL}customers_list`,
-  CREATE_CUSTOMER: `${API_BASE_URL}api_create_customer`,
-  UPDATE_CUSTOMER: (id: number) => `${API_BASE_URL}api_update_customer/${id}`,
-  DELETE_CUSTOMER: (id: number) => `${API_BASE_URL}api_delete_customer/${id}`,
-  CUSTOMER_TYPES: `${API_BASE_URL}cust_type_list`,
+  CUSTOMERS_LIST: `${API_BASE_URL}/customers_list`,
+  CREATE_CUSTOMER: `${API_BASE_URL}/api_create_customer`,
+  UPDATE_CUSTOMER: (id: number) => `${API_BASE_URL}/api_update_customer/${id}`,
+  DELETE_CUSTOMER: (id: number) => `${API_BASE_URL}/api_delete_customer/${id}`,
+  CUSTOMER_TYPES: `${API_BASE_URL}/cust_type_list`,
 
   // الحسابات
-  ACCOUNTS_LIST: `${API_BASE_URL}accounts_list`,
-  CREATE_ACCOUNT: `${API_BASE_URL}api_create_account`,
-  UPDATE_ACCOUNT: (id: number) => `${API_BASE_URL}api_update_account/${id}`,
-  DELETE_ACCOUNT: (id: number) => `${API_BASE_URL}api_delete_account/${id}`,
+  ACCOUNTS_LIST: `${API_BASE_URL}/accounts_list`,
+  CREATE_ACCOUNT: `${API_BASE_URL}/api_create_account`,
+  UPDATE_ACCOUNT: (id: number) => `${API_BASE_URL}/api_update_account/${id}`,
+  DELETE_ACCOUNT: (id: number) => `${API_BASE_URL}/api_delete_account/${id}`,
 
   //العملات
-  CURRENCIES_LIST: `${API_BASE_URL}currencies_list/`,
-  CREATE_CURRENCY: `${API_BASE_URL}api_create_currency`,
-  UPDATE_CURRENCY: (id: number) => `${API_BASE_URL}api_update_currency/${id}`,
-  DELETE_CURRENCY: (id: number) => `${API_BASE_URL}api_delete_currency/${id}`,
+  CURRENCIES_LIST: `${API_BASE_URL}/currencies_list`,
+  CREATE_CURRENCY: `${API_BASE_URL}/api_create_currency`,
+  UPDATE_CURRENCY: (id: number) => `${API_BASE_URL}/api_update_currency/${id}`,
+  DELETE_CURRENCY: (id: number) => `${API_BASE_URL}/api_delete_currency/${id}`,
 
   // روابط الفئات والأصناف
-  CATEGORIES_LIST: `${API_BASE_URL}categories_list/`,
-  ITEMS_LIST: `${API_BASE_URL}items_list/`,
-  CREATE_ITEM: `${API_BASE_URL}api_create_item`,
-  UPDATE_ITEM: (id: number) => `${API_BASE_URL}api_update_item/${id}`,
-  DELETE_ITEM: `${API_BASE_URL}api_delete_item/`,
-  ITEM_TYPES_LIST: `${API_BASE_URL}item_type_list`,
-  UNITS_LIST: `${API_BASE_URL}units_list/`,
-  CAT_ITEMS_LIST: `${API_BASE_URL}cat_items_list/`,
-  GET_ITEMS_LIST: `${API_BASE_URL}GetItemsList/`,
-  BOXES_LIST: `${API_BASE_URL}boxes_list`,
-  CREATE_BOX: `${API_BASE_URL}api_create_box`,
-  UPDATE_BOX: (id: number) => `${API_BASE_URL}api_update_box/${id}`,
-  DELETE_BOX: (id: number) => `${API_BASE_URL}api_delete_box/${id}`,
+  CATEGORIES_LIST: `${API_BASE_URL}/categories_list`,
+  ITEMS_LIST: `${API_BASE_URL}/items_list`,
+  CREATE_ITEM: `${API_BASE_URL}/api_create_item`,
+  UPDATE_ITEM: (id: number) => `${API_BASE_URL}/api_update_item/${id}`,
+  DELETE_ITEM: `${API_BASE_URL}/api_delete_item`,
+  ITEM_TYPES_LIST: `${API_BASE_URL}/item_type_list`,
+  UNITS_LIST: `${API_BASE_URL}/units_list`,
+  CAT_ITEMS_LIST: `${API_BASE_URL}/cat_items_list`,
+  GET_ITEMS_LIST: `${API_BASE_URL}/GetItemsList`,
+  BOXES_LIST: `${API_BASE_URL}/boxes_list`,
+  CREATE_BOX: `${API_BASE_URL}/api_create_box`,
+  UPDATE_BOX: (id: number) => `${API_BASE_URL}/api_update_box/${id}`,
+  DELETE_BOX: (id: number) => `${API_BASE_URL}/api_delete_box/${id}`,
 
   //codec api's
-  Companies_List: `${API_BASE_URL}getCompaniesList`,
-  CaratTypeList: `${API_BASE_URL}getCaratTypeList`,
-  CatTypeList: `${API_BASE_URL}getCatTypeList`,
-  CatStatusList: `${API_BASE_URL}getCatStatusList`,
-  CitiesList: `${API_BASE_URL}getCitiesList`,
-  ProductStageList: `${API_BASE_URL}getProductStageList`,
-  WasteTypeList: `${API_BASE_URL}getWasteTypeList`,
-  OperationTypeList: `${API_BASE_URL}getOperationTypeList`,
-  AccountsCategoryList: `${API_BASE_URL}getAccountsCategoryList`,
-  VoucherStageList: `${API_BASE_URL}getVoucherStageList`,
-  TaxPrcList: `${API_BASE_URL}getTaxPrcList`,
-  AccTypeList: `${API_BASE_URL}getAccTypeList`,
-  AccKindList: `${API_BASE_URL}getAccKindList`,
-  BoxTypeList: `${API_BASE_URL}getBoxTypeList`,
-  VoucherTypeList: `${API_BASE_URL}getVoucherTypeList`,
-  PayTypeList: `${API_BASE_URL}getPayTypeList`,
-  ItemStatusList: `${API_BASE_URL}getItemStatus`, // add by Moseed 31-5-2025
-  INVOICE_BOX_LIST: `${API_BASE_URL}boxes_list`,
-  CREATE_INVOICE_BOX: `${API_BASE_URL}api_create_box`,
-  UPDATE_INVOICE_BOX: (id: number) => `${API_BASE_URL}api_update_box/${id}`,
-  DELETE_INVOICE_BOX: (id: number) => `${API_BASE_URL}api_delete_box/${id}`,
+  Companies_List: `${API_BASE_URL}/getCompaniesList`,
+  CaratTypeList: `${API_BASE_URL}/getCaratTypeList`,
+  CatTypeList: `${API_BASE_URL}/getCatTypeList`,
+  CatStatusList: `${API_BASE_URL}/getCatStatusList`,
+  CitiesList: `${API_BASE_URL}/getCitiesList`,
+  ProductStageList: `${API_BASE_URL}/getProductStageList`,
+  WasteTypeList: `${API_BASE_URL}/getWasteTypeList`,
+  OperationTypeList: `${API_BASE_URL}/getOperationTypeList`,
+  AccountsCategoryList: `${API_BASE_URL}/getAccountsCategoryList`,
+  VoucherStageList: `${API_BASE_URL}/getVoucherStageList`,
+  TaxPrcList: `${API_BASE_URL}/getTaxPrcList`,
+  AccTypeList: `${API_BASE_URL}/getAccTypeList`,
+  AccKindList: `${API_BASE_URL}/getAccKindList`,
+  BoxTypeList: `${API_BASE_URL}/getBoxTypeList`,
+  VoucherTypeList: `${API_BASE_URL}/getVoucherTypeList`,
+  PayTypeList: `${API_BASE_URL}/getPayTypeList`,
+  ItemStatusList: `${API_BASE_URL}/getItemStatus`, // add by Moseed 31-5-2025
+  INVOICE_BOX_LIST: `${API_BASE_URL}/boxes_list`,
+  CREATE_INVOICE_BOX: `${API_BASE_URL}/api_create_box`,
+  UPDATE_INVOICE_BOX: (id: number) => `${API_BASE_URL}/api_update_box/${id}`,
+  DELETE_INVOICE_BOX: (id: number) => `${API_BASE_URL}/api_delete_box/${id}`,
 
   // روابط الصناديق من جدول العملاء (النوع = 99)
-  CUSTOMER_BOXES_LIST: `${API_BASE_URL}customers_list?cust_type=99`,
+  CUSTOMER_BOXES_LIST: `${API_BASE_URL}/customers_list?cust_type=99`,
 
   // Vouchers
-  VOUCHERS_LIST: `${API_BASE_URL}vouchers_list`,
-  CREATE_VOUCHER: `${API_BASE_URL}api_create_vouch`,
-  UPDATE_VOUCHER: (id: number) => `${API_BASE_URL}api_update_vouch/${id}`,
-  DELETE_VOUCHER: (id: number) => `${API_BASE_URL}api_delete_vouch/${id}`,
+  VOUCHERS_LIST: `${API_BASE_URL}/vouchers_list`,
+  CREATE_VOUCHER: `${API_BASE_URL}/api_create_vouch`,
+  UPDATE_VOUCHER: (id: number) => `${API_BASE_URL}/api_update_vouch/${id}`,
+  DELETE_VOUCHER: (id: number) => `${API_BASE_URL}/api_delete_vouch/${id}`,
 
   // Cost Centers
-  COST_CENTERS_LIST: `${API_BASE_URL}cost_centers_list`,
-  CREATE_COST_CENTER: `${API_BASE_URL}api_create_cost`,
-  UPDATE_COST_CENTER: (id: number) => `${API_BASE_URL}api_updatecost/${id}`,
-  DELETE_COST_CENTER: (id: number) => `${API_BASE_URL}api_delete_cost/${id}`,
+  COST_CENTERS_LIST: `${API_BASE_URL}/cost_centers_list`,
+  CREATE_COST_CENTER: `${API_BASE_URL}/api_create_cost`,
+  UPDATE_COST_CENTER: (id: number) => `${API_BASE_URL}/api_updatecost/${id}`,
+  DELETE_COST_CENTER: (id: number) => `${API_BASE_URL}/api_delete_cost/${id}`,
 
   // Voucher Details
-  VOUCHERS_DTL_LIST: `${API_BASE_URL}vouchers_dtl_list`,
+  VOUCHERS_DTL_LIST: `${API_BASE_URL}/vouchers_dtl_list`,
   VOUCHER_DETAILS: (vouchId: number) =>
-    `${API_BASE_URL}vouchers_dtl_list?vouch_id=${vouchId}`,
-  CREATE_VOUCHER_DTL: `${API_BASE_URL}api_create_vouch_dtl`,
+    `${API_BASE_URL}/vouchers_dtl_list?vouch_id=${vouchId}`,
+  CREATE_VOUCHER_DTL: `${API_BASE_URL}/api_create_vouch_dtl`,
   UPDATE_VOUCHER_DTL: (id: number) =>
-    `${API_BASE_URL}api_update_vouch_dtl/${id}`,
+    `${API_BASE_URL}/api_update_vouch_dtl/${id}`,
   DELETE_VOUCHER_DTL: (id: number) =>
-    `${API_BASE_URL}api_delete_vouch_dtl/${id}`,
+    `${API_BASE_URL}/api_delete_vouch_dtl/${id}`,
 
   // Voucher Box Details
-  VOUCHERS_BOX_LIST: `${API_BASE_URL}vouchers_box_list`,
+  VOUCHERS_BOX_LIST: `${API_BASE_URL}/vouchers_box_list`,
   VOUCHER_BOX_DETAILS: (vouchId: number) =>
-    `${API_BASE_URL}vouchers_box_list?vouch_id=${vouchId}`,
-  CREATE_VOUCHER_BOX: `${API_BASE_URL}api_create_vouch_box`,
+    `${API_BASE_URL}/vouchers_box_list?vouch_id=${vouchId}`,
+  CREATE_VOUCHER_BOX: `${API_BASE_URL}/api_create_vouch_box`,
   UPDATE_VOUCHER_BOX: (id: number) =>
-    `${API_BASE_URL}api_update_vouch_box/${id}`,
+    `${API_BASE_URL}/api_update_vouch_box/${id}`,
   DELETE_VOUCHER_BOX: (id: number) =>
-    `${API_BASE_URL}api_delete_vouch_box/${id}`,
+    `${API_BASE_URL}/api_delete_vouch_box/${id}`,
 
   // system settings
-  HOME_LIST: `${API_BASE_URL}home_list`,
-  UPDATE_HOME: (id: number) => `${API_BASE_URL}api_update_home/${id}`,
+  HOME_LIST: `${API_BASE_URL}/home_list`,
+  UPDATE_HOME: (id: number) => `${API_BASE_URL}/api_update_home/${id}`,
 
   // قوائم الفواتير
-  INVOICES_LIST: `${API_BASE_URL}invoices_list`,
-  DELETE_INVOICE: (id: number) => `${API_BASE_URL}api_delete_invoice/${id}`,
+  INVOICES_LIST: `${API_BASE_URL}/invoices_list`,
+  DELETE_INVOICE: (id: number) => `${API_BASE_URL}/api_delete_invoice/${id}`,
 
   // تفاصيل الفواتير
-  INVOICES_DTL_LIST: `${API_BASE_URL}invoices_dtl_list`,
-  CREATE_INVOICE_DTL: `${API_BASE_URL}api_create_invoice_dtl`,
+  INVOICES_DTL_LIST: `${API_BASE_URL}/invoices_dtl_list`,
+  CREATE_INVOICE_DTL: `${API_BASE_URL}/api_create_invoice_dtl`,
   UPDATE_INVOICE_DTL: (id: number) =>
-    `${API_BASE_URL}api_update_invoice_dtl/${id}`,
+    `${API_BASE_URL}/api_update_invoice_dtl/${id}`,
   DELETE_INVOICE_DTL: (id: number) =>
-    `${API_BASE_URL}api_delete_invoice_dtl/${id}`,
+    `${API_BASE_URL}/api_delete_invoice_dtl/${id}`,
 
   // companies
-  COMPANIES_LIST: `${API_BASE_URL}companies_list`,
+  COMPANIES_LIST: `${API_BASE_URL}/companies_list`,
 
   // البحث بالباركود - API جديد للمطابقة التامة
   ITEM_BARCODE_SEARCH: (barcode: string) =>
-    `${API_BASE_URL}ItemBarcode/${encodeURIComponent(barcode)}`,
+    `${API_BASE_URL}/ItemBarcode/${encodeURIComponent(barcode)}`,
 
   // البحث في الحسابات - API جديد للبحث في الحسابات
   SEARCH_ACCOUNTS: (query: string, page: number = 1) =>
-    `${API_BASE_URL}SearchAccountsList/?q=${encodeURIComponent(query)}&page=${page}`,
+    `${API_BASE_URL}/SearchAccountsList/?q=${encodeURIComponent(query)}&page=${page}`,
 };
 
+/**
+ * @deprecated استخدم genericService بدلاً من ذلك
+ */
 export function fetchCompanies() {
   return fetchData<any[]>(API_ENDPOINTS.COMPANIES_LIST);
 }
 
-// دالة البحث بالباركود باستخدام API الجديد
+/**
+ * @deprecated استخدم itemService.searchByBarcode() بدلاً من ذلك
+ */
 export async function fetchItemByBarcode(barcode: string): Promise<any | null> {
   try {
     console.log("البحث بالباركود:", barcode);
@@ -357,20 +455,24 @@ export async function fetchItemByBarcode(barcode: string): Promise<any | null> {
     if (!response.ok) {
       if (response.status === 404) {
         console.log("لم يتم العثور على الصنف بالباركود:", barcode);
+
         return null;
       }
       throw new Error(`خطأ في البحث: ${response.status}`);
     }
 
     const data = await response.json();
+
     console.log("نتيجة البحث بالباركود:", data);
 
     // API يعيد مصفوفة، نأخذ العنصر الأول
     if (Array.isArray(data) && data.length > 0) {
       console.log("تم العثور على الصنف:", data[0]);
+
       return data[0];
     } else if (Array.isArray(data) && data.length === 0) {
       console.log("لم يتم العثور على الصنف بالباركود:", barcode);
+
       return null;
     } else {
       // إذا لم تكن مصفوفة، نعيد البيانات كما هي
@@ -382,7 +484,9 @@ export async function fetchItemByBarcode(barcode: string): Promise<any | null> {
   }
 }
 
-// دالة البحث في الحسابات
+/**
+ * @deprecated استخدم accountService مع البحث المناسب
+ */
 export async function searchAccounts(
   query: string,
   page: number = 1,
@@ -403,6 +507,7 @@ export async function searchAccounts(
     }
 
     const data = await response.json();
+
     console.log("نتيجة البحث في الحسابات:", data);
 
     return data;
@@ -412,6 +517,20 @@ export async function searchAccounts(
   }
 }
 
+/**
+ * @deprecated استخدم Server Actions للطلبات من Client Components
+ * ⚠️ هذه الدالة موجودة مؤقتاً فقط لدعم صفحات الفواتير القديمة
+ * 
+ * استخدم بدلاً منها:
+ * - Server Actions: app/actions/*.action.ts
+ * - Services: services/api/*.service.ts (من Server Components فقط)
+ * 
+ * أمثلة:
+ * - getAccountsAction() للحصول على الحسابات
+ * - createInvoiceAction() لإنشاء فاتورة
+ * 
+ * سيتم حذف هذه الدالة بعد ترحيل صفحات الفواتير
+ */
 export function apiFetch(input: string, init?: RequestInit) {
   // لا تضف معاملات com و year إذا كان الرابط لتحديث الفاتورة أو تفاصيلها
   if (
@@ -425,6 +544,7 @@ export function apiFetch(input: string, init?: RequestInit) {
 
   // إضافة التوكن للطلبات إذا كان موجوداً
   const token = getAuthToken();
+
   if (token && init) {
     init.headers = {
       ...init.headers,

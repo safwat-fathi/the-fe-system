@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 
 import InvoiceClient from "./components/InvoiceClient";
+import InvoicesHeader from "./components/InvoicesHeader";
+
 import invoiceService, {
   GetAllInvoicesParams,
 } from "@/services/api/invoice.service";
 import AppPagination from "@/components/AppPagination";
-import InvoicesHeader from "./components/InvoicesHeader";
 import AppLoading from "@/components/AppLoading";
 
 export const revalidate = 3600;

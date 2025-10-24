@@ -1,13 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { loginSchema } from "@/app/auth/login/components/LoginForm/login.schema";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { setCookieAction } from "./cookie-store";
+
+import { loginSchema } from "@/app/auth/login/components/LoginForm/login.schema";
 import { STORAGE_KEYS } from "@/constants";
-import { redirect } from "next/navigation";
 import { authService } from "@/services/api";
-import { cookies } from "next/headers";
 import { generateCSRFToken } from "@/utilities/csrf";
 
 interface LoginResult {
@@ -40,6 +41,7 @@ export async function loginAction(
   if (!result.success) {
     // Return validation errors
     const errors = z.treeifyError(result.error);
+
     return {
       success: false,
       message:
@@ -81,7 +83,7 @@ export async function loginAction(
         await setCookieAction(STORAGE_KEYS.ACCESS_TOKEN, access_token, {
           maxAge: accessTokenExpires.getTime() / 1000,
           path: "/",
-          httpOnly: true,
+          httpOnly: true, // آمن - Server Actions تتعامل مع الطلبات
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
         });

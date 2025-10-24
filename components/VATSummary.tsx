@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Card, CardBody } from "@heroui/react";
+
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
 
@@ -46,14 +47,16 @@ export default function VATSummary({
         </CardBody>
       </Card>
 
-      <Card className={`bg-gradient-to-r ${netVAT >= 0 ? 'from-red-500 to-red-600' : 'from-green-500 to-green-600'} text-white`}>
+      <Card
+        className={`bg-gradient-to-r ${netVAT >= 0 ? "from-red-500 to-red-600" : "from-green-500 to-green-600"} text-white`}
+      >
         <CardBody className="p-4">
           <div className="text-center">
             <div className="text-2xl font-bold">
               {formatAmount(Math.abs(netVAT), fractions.frac)}
             </div>
             <div className="text-sm opacity-90">
-              {netVAT >= 0 ? 'الضريبة المستحقة' : 'الضريبة المستردة'}
+              {netVAT >= 0 ? "الضريبة المستحقة" : "الضريبة المستردة"}
             </div>
           </div>
         </CardBody>

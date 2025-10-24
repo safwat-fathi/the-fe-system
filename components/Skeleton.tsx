@@ -9,18 +9,17 @@ interface SkeletonProps {
   children?: React.ReactNode;
 }
 
-export function Skeleton({ className, isLoaded = false, children }: SkeletonProps) {
+export function Skeleton({
+  className,
+  isLoaded = false,
+  children,
+}: SkeletonProps) {
   if (isLoaded) {
     return <>{children}</>;
   }
 
   return (
-    <HeroUISkeleton 
-      className={clsx(
-        "rounded-lg bg-gray-200",
-        className
-      )}
-    />
+    <HeroUISkeleton className={clsx("rounded-lg bg-gray-200", className)} />
   );
 }
 

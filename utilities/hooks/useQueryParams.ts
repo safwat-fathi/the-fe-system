@@ -34,13 +34,16 @@ export function useQueryParams<TSchema extends Record<string, any>>(
   // parse current params
   const params = useMemo(() => {
     const parsed: any = {};
+
     keys.forEach((key) => {
       const parser = schema[key];
       const raw = searchParams?.get(key as string) ?? null;
+
       parsed[key] = raw
         ? parser.parse(raw)
         : (defaultValues[key] ?? parser.default);
     });
+
     return parsed as TSchema;
   }, [searchParams, keys, schema, defaultValues]);
 

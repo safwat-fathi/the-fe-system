@@ -1,7 +1,12 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Card as HeroCard, CardHeader, CardBody, CardFooter } from "@heroui/react";
+import {
+  Card as HeroCard,
+  CardHeader,
+  CardBody,
+  CardFooter,
+} from "@heroui/react";
 
 // Re-export HeroUI components for convenience
 export { CardHeader, CardBody, CardFooter };
@@ -25,7 +30,7 @@ export default function Card({
   className = "",
   headerActions,
   variant = "default",
-  shadow = "sm"
+  shadow = "sm",
 }: CardProps) {
   const getVariantClasses = () => {
     switch (variant) {
@@ -39,31 +44,29 @@ export default function Card({
   };
 
   return (
-    <HeroCard className={`bg-white rounded-xl transition-all duration-200 ${getVariantClasses()} ${className}`}>
+    <HeroCard
+      className={`bg-white rounded-xl transition-all duration-200 ${getVariantClasses()} ${className}`}
+    >
       {(title || subtitle || headerActions) && (
         <CardHeader className="pb-4 border-b border-gray-100">
           <div className="flex items-center justify-between w-full">
             <div className="flex-1">
               {title && (
-                <h3 className="text-lg font-semibold text-gray-800 mb-1">{title}</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                  {title}
+                </h3>
               )}
-              {subtitle && (
-                <p className="text-sm text-gray-500">{subtitle}</p>
-              )}
+              {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
             </div>
             {headerActions && (
-              <div className="flex items-center gap-2">
-                {headerActions}
-              </div>
+              <div className="flex items-center gap-2">{headerActions}</div>
             )}
           </div>
         </CardHeader>
       )}
-      
-      <CardBody className="p-6">
-        {children}
-      </CardBody>
-      
+
+      <CardBody className="p-6">{children}</CardBody>
+
       {footer && (
         <CardFooter className="pt-4 border-t border-gray-100 bg-gray-50">
           {footer}
@@ -74,7 +77,13 @@ export default function Card({
 }
 
 // Specialized card components
-export function InfoCard({ title, value, icon, trend, className = "" }: {
+export function InfoCard({
+  title,
+  value,
+  icon,
+  trend,
+  className = "",
+}: {
   title: string;
   value: string | number;
   icon?: ReactNode;
@@ -89,24 +98,30 @@ export function InfoCard({ title, value, icon, trend, className = "" }: {
           <p className="text-2xl font-bold text-gray-800">{value}</p>
           {trend && (
             <div className="flex items-center gap-1 mt-2">
-              <span className={`text-sm font-medium ${trend.isPositive ? 'text-success-600' : 'text-danger-600'}`}>
-                {trend.isPositive ? '+' : ''}{trend.value}%
+              <span
+                className={`text-sm font-medium ${trend.isPositive ? "text-success-600" : "text-danger-600"}`}
+              >
+                {trend.isPositive ? "+" : ""}
+                {trend.value}%
               </span>
               <span className="text-xs text-gray-500">من الشهر السابق</span>
             </div>
           )}
         </div>
-        {icon && (
-          <div className="text-3xl text-gray-300">
-            {icon}
-          </div>
-        )}
+        {icon && <div className="text-3xl text-gray-300">{icon}</div>}
       </div>
     </Card>
   );
 }
 
-export function MetricCard({ title, value, description, icon, color = "blue", className = "" }: {
+export function MetricCard({
+  title,
+  value,
+  description,
+  icon,
+  color = "blue",
+  className = "",
+}: {
   title: string;
   value: string | number;
   description?: string;
@@ -143,4 +158,4 @@ export function MetricCard({ title, value, description, icon, color = "blue", cl
 }
 
 // Re-export StatCard for convenience
-export { default as StatCard } from './StatCard';
+export { default as StatCard } from "./StatCard";
