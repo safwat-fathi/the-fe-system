@@ -1,6 +1,5 @@
 import LoginForm from "./components/LoginForm";
 
-
 export default async function Login() {
   return (
     <div className="bg-[#f5f5f5] font-['Cairo'] min-h-screen flex items-center justify-center p-4">

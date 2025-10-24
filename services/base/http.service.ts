@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from "@/constants";
 import { onLogoutAction } from "@/app/actions/auth";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
 import { isTokenValid } from "@/utilities/token";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 // Enhanced response type for better type safety
 export interface ServiceResponse<T = any> {
@@ -25,35 +26,50 @@ export interface ServiceResponse<T = any> {
 export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   private readonly _baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
   private _token: string | undefined = undefined;
-  private readonly _defaultOptions: RequestInit;
+  private readonly _timeout: number;
+  private readonly _defaultHeaders: HeadersInit;
   private _isRefreshing = false;
   private _refreshPromise: Promise<boolean> | null = null;
 
   constructor(url: string, timeout = 10000) {
     super();
 
+
     if (!this._baseUrl) {
       throw new Error("API_BASE_URL is not defined");
     }
 
     this._baseUrl += url;
-
-    this._defaultOptions = {
-      signal: AbortSignal.timeout(timeout),
-      headers: {
-        Accept: "application/json",
-      },
+    this._timeout = timeout;
+    this._defaultHeaders = {
+      Accept: "application/json",
     };
   }
 
   private async _getAuthHeaders(): Promise<HeadersInit> {
-    if (!this._token) {
-      this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
-    }
+    // Always get fresh token from cookies
+    this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
 
     return this._token
       ? { Authorization: `Bearer ${this._token.replace(/['"]+/g, "")}` }
       : {};
+  }
+
+  private async _addBranchParams(params: IParams): Promise<IParams> {
+    try {
+      const branchParams = await getBranchParams();
+      return {
+        ...params,
+        ...branchParams,
+      };
+    } catch (error) {
+      console.warn("Failed to get branch parameters, using defaults:", error);
+      return {
+        ...params,
+        com: "1",
+        year: new Date().getFullYear().toString(),
+      };
+    }
   }
 
   private async _handleTokenRefresh(): Promise<boolean> {
@@ -145,6 +161,14 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     retryCount = 0,
   ): Promise<ServiceResponse<R>> {
     try {
+      // Validate base URL is configured
+      if (!this._baseUrl || this._baseUrl.startsWith('undefined')) {
+        return {
+          success: false,
+          message: "API base URL is not configured. Please set NEXT_PUBLIC_API_BASE_URL in your .env.local file.",
+        };
+      }
+
       const authHeaders = await this._getAuthHeaders();
       const urlParams = createParams(params || {});
       const searchParams = urlParams.toString();
@@ -152,13 +176,14 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
         ? `${this._baseUrl}/${route}?${searchParams}`
         : `${this._baseUrl}/${route}`;
 
+      // Create a new AbortSignal for each request
       const requestOptions: RequestInit = {
-        credentials: "include",
-        ...this._defaultOptions,
+        // credentials: "include", // إزالة credentials لتجنب مشكلة CORS
         ...options,
+        signal: options.signal || AbortSignal.timeout(this._timeout),
         method,
         headers: {
-          ...this._defaultOptions.headers,
+          ...this._defaultHeaders,
           ...authHeaders,
           ...options.headers,
         },

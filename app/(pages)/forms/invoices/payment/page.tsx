@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Input, Select, SelectItem, Divider } from "@heroui/react";
-import Card from "@/components/Card";
 import { motion } from "framer-motion";
+
+import Card from "@/components/Card";
 import { API_ENDPOINTS } from "@/utilities/api";
 import useFractions from "@/utilities/useFractions";
 import { toast } from "@/utilities/toast";
@@ -24,7 +25,7 @@ const KEYPAD_BUTTONS = [
   ["7", "8", "9", "+100"],
   ["4", "5", "6", "+500"],
   ["1", "2", "3", "+1000"],
-  ["C", "0", ".", "⌫"]
+  ["C", "0", ".", "⌫"],
 ];
 
 interface PaymentRow {
@@ -61,8 +62,8 @@ export default function InvoicePaymentPage() {
       boxId: null,
       amount: "",
       paymentMethod: "cash",
-      notes: ""
-    }
+      notes: "",
+    },
   ]);
   const [selectedRowIndex, setSelectedRowIndex] = useState<number>(0);
 
@@ -72,16 +73,18 @@ export default function InvoicePaymentPage() {
     const invNumber = searchParams.get("inv_number") || "";
     const customer = searchParams.get("customer") || "";
     const inv = searchParams.get("inv") || "";
-    
+
     if (!Number.isNaN(total)) {
       setInvoiceTotal(total);
       // تعيين المبلغ الأول تلقائياً
-      setPaymentRows(prev => [{
-        ...prev[0],
-        amount: total.toString()
-      }]);
+      setPaymentRows((prev) => [
+        {
+          ...prev[0],
+          amount: total.toString(),
+        },
+      ]);
     }
-    
+
     setInvoiceNumber(invNumber || inv);
     setCustomerName(customer);
   }, [searchParams]);
@@ -92,14 +95,19 @@ export default function InvoicePaymentPage() {
       setIsLoading(true);
       try {
         const response = await fetch(INVOICE_BOX_LIST);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        if (!response.ok)
+          throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
+
         setBoxes(data);
         if (data.length > 0) {
-          setPaymentRows(prev => [{
-            ...prev[0],
-            boxId: data[0].id
-          }]);
+          setPaymentRows((prev) => [
+            {
+              ...prev[0],
+              boxId: data[0].id,
+            },
+          ]);
         }
       } catch (error) {
         console.error("خطأ في جلب الصناديق:", error);
@@ -108,7 +116,7 @@ export default function InvoicePaymentPage() {
         setIsLoading(false);
       }
     };
-    
+
     fetchBoxes();
   }, []);
 
@@ -122,23 +130,29 @@ export default function InvoicePaymentPage() {
   const isFullyPaid = Math.abs(remainingAmount) < 0.01;
 
   // تحديث صف الدفع
-  const updatePaymentRow = (index: number, field: keyof PaymentRow, value: any) => {
-    setPaymentRows(prev => {
+  const updatePaymentRow = (
+    index: number,
+    field: keyof PaymentRow,
+    value: any,
+  ) => {
+    setPaymentRows((prev) => {
       const updated = [...prev];
+
       (updated[index] as any)[field] = value;
-      
+
       // إذا كان هذا الصف الأول، تحديث المبلغ تلقائياً
       if (index === 0 && field === "amount") {
         const otherRowsTotal = updated.slice(1).reduce((sum, row) => {
           return sum + parseFloat(row.amount || "0");
         }, 0);
-        
+
         const newFirstAmount = (invoiceTotal - otherRowsTotal).toString();
+
         if (Math.abs(parseFloat(value) - parseFloat(newFirstAmount)) > 0.01) {
           updated[0].amount = newFirstAmount;
         }
       }
-      
+
       return updated;
     });
   };
@@ -150,16 +164,17 @@ export default function InvoicePaymentPage() {
       boxId: null,
       amount: "",
       paymentMethod: "cash",
-      notes: ""
+      notes: "",
     };
-    setPaymentRows(prev => [...prev, newRow]);
+
+    setPaymentRows((prev) => [...prev, newRow]);
     setSelectedRowIndex(paymentRows.length);
   };
 
   // حذف صف دفع
   const removePaymentRow = (index: number) => {
     if (index === 0) return; // لا يمكن حذف الصف الأول
-    setPaymentRows(prev => prev.filter((_, i) => i !== index));
+    setPaymentRows((prev) => prev.filter((_, i) => i !== index));
     if (selectedRowIndex >= index) {
       setSelectedRowIndex(Math.max(0, selectedRowIndex - 1));
     }
@@ -168,16 +183,20 @@ export default function InvoicePaymentPage() {
   // معالجة الكيباد
   const handleKeypadInput = (value: string) => {
     if (selectedRowIndex === null) return;
-    
+
     const currentRow = paymentRows[selectedRowIndex];
     const currentAmount = currentRow.amount || "0";
-    
+
     switch (value) {
       case "C":
         updatePaymentRow(selectedRowIndex, "amount", "0");
         break;
       case "⌫":
-        updatePaymentRow(selectedRowIndex, "amount", currentAmount.slice(0, -1) || "0");
+        updatePaymentRow(
+          selectedRowIndex,
+          "amount",
+          currentAmount.slice(0, -1) || "0",
+        );
         break;
       case ".":
         if (!currentAmount.includes(".")) {
@@ -189,7 +208,12 @@ export default function InvoicePaymentPage() {
       case "+1000":
         const currentNum = parseFloat(currentAmount) || 0;
         const quickAmount = parseInt(value.replace("+", ""));
-        updatePaymentRow(selectedRowIndex, "amount", (currentNum + quickAmount).toString());
+
+        updatePaymentRow(
+          selectedRowIndex,
+          "amount",
+          (currentNum + quickAmount).toString(),
+        );
         break;
       default:
         if (currentAmount === "0") {
@@ -205,53 +229,63 @@ export default function InvoicePaymentPage() {
   const handleSave = async () => {
     if (paymentRows.length === 0) {
       toast.error("يرجى إدخال بيانات الدفع");
+
       return;
     }
 
-    const invalidRows = paymentRows.filter(row => 
-      !row.boxId || !row.amount || parseFloat(row.amount) <= 0
+    const invalidRows = paymentRows.filter(
+      (row) => !row.boxId || !row.amount || parseFloat(row.amount) <= 0,
     );
 
     if (invalidRows.length > 0) {
       toast.error("يرجى التأكد من ملء جميع الحقول بشكل صحيح");
+
       return;
     }
 
     if (isOverpaid) {
       toast.error("المبلغ المدفوع أكبر من قيمة الفاتورة");
+
       return;
     }
 
     setIsSaving(true);
-    
+
     try {
       const inv = parseInt(searchParams.get("inv") || "0");
       const com = 1;
       const trans_type = 1;
       const cr_date = new Date().toISOString();
-      
+
       let successCount = 0;
-      
+
       for (const row of paymentRows) {
         if (!row.boxId || !row.amount) continue;
-        
+
         const amtNum = Number(row.amount);
+
         if (isNaN(amtNum) || amtNum === 0) continue;
-        
+
         const body = {
           id: successCount + 1,
           trans_type,
           amt: amtNum.toFixed(frac),
           acc_change: amtNum.toFixed(frac),
-          notes: `${row.paymentMethod === "cash" ? "نقداً" : 
-                  row.paymentMethod === "card" ? "بطاقة ائتمان" :
-                  row.paymentMethod === "bank" ? "تحويل بنكي" : "شيك"} - ${row.notes || ""}`,
+          notes: `${
+            row.paymentMethod === "cash"
+              ? "نقداً"
+              : row.paymentMethod === "card"
+                ? "بطاقة ائتمان"
+                : row.paymentMethod === "bank"
+                  ? "تحويل بنكي"
+                  : "شيك"
+          } - ${row.notes || ""}`,
           cr_date,
           cr_user: null,
           upd_date: null,
           upd_user: null,
           com,
-          inv: (!isNaN(inv) && inv > 0) ? inv : undefined,
+          inv: !isNaN(inv) && inv > 0 ? inv : undefined,
           box: row.boxId,
         };
 
@@ -264,19 +298,18 @@ export default function InvoicePaymentPage() {
         if (!response.ok) {
           throw new Error(`فشل في حفظ الدفع للصندوق ${row.boxId}`);
         }
-        
+
         successCount++;
       }
 
       toast.success("تم حفظ الدفع بنجاح");
-      
+
       // إعادة التوجيه
       if (inv > 0) {
         router.push(`/forms/invoices/sale/${inv}`);
       } else {
         router.back();
       }
-      
     } catch (error) {
       console.error("خطأ في حفظ الدفع:", error);
       toast.error("فشل في حفظ الدفع");
@@ -287,13 +320,15 @@ export default function InvoicePaymentPage() {
 
   // تصفير الكل
   const clearAll = () => {
-    setPaymentRows([{
-      id: "1",
-      boxId: boxes.length > 0 ? boxes[0].id : null,
-      amount: invoiceTotal.toString(),
-      paymentMethod: "cash",
-      notes: ""
-    }]);
+    setPaymentRows([
+      {
+        id: "1",
+        boxId: boxes.length > 0 ? boxes[0].id : null,
+        amount: invoiceTotal.toString(),
+        paymentMethod: "cash",
+        notes: "",
+      },
+    ]);
     setSelectedRowIndex(0);
   };
 
@@ -313,18 +348,18 @@ export default function InvoicePaymentPage() {
             <div className="flex gap-2">
               <Button
                 color="default"
-                variant="bordered"
                 size="sm"
+                variant="bordered"
                 onClick={() => router.back()}
               >
                 العودة
               </Button>
               <Button
                 color="primary"
+                disabled={isOverpaid || !isFullyPaid || isLoading}
+                isLoading={isSaving}
                 size="sm"
                 onClick={handleSave}
-                isLoading={isSaving}
-                disabled={isOverpaid || !isFullyPaid || isLoading}
               >
                 {isSaving ? "جاري الحفظ..." : "حفظ الدفع"}
               </Button>
@@ -338,8 +373,10 @@ export default function InvoicePaymentPage() {
           <div className="lg:col-span-1 space-y-4">
             {/* ملخص الدفع */}
             <Card className="p-4 h-fit">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">ملخص الدفع</h3>
-              
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                ملخص الدفع
+              </h3>
+
               <div className="space-y-3">
                 <div className="bg-green-50 rounded-lg p-3 text-center">
                   <p className="text-sm text-green-600">قيمة الفاتورة</p>
@@ -347,49 +384,55 @@ export default function InvoicePaymentPage() {
                     {invoiceTotal.toFixed(frac)} ريال
                   </p>
                 </div>
-                
+
                 <div className="bg-blue-50 rounded-lg p-3 text-center">
                   <p className="text-sm text-blue-600">المبلغ المدفوع</p>
                   <p className="text-xl font-bold text-blue-700">
                     {paidAmount.toFixed(frac)} ريال
                   </p>
                 </div>
-                
-                <div className={`rounded-lg p-3 text-center ${
-                  remainingAmount > 0 ? "bg-red-50" : "bg-emerald-50"
-                }`}>
-                  <p className={`text-sm ${
-                    remainingAmount > 0 ? "text-red-600" : "text-emerald-600"
-                  }`}>
+
+                <div
+                  className={`rounded-lg p-3 text-center ${
+                    remainingAmount > 0 ? "bg-red-50" : "bg-emerald-50"
+                  }`}
+                >
+                  <p
+                    className={`text-sm ${
+                      remainingAmount > 0 ? "text-red-600" : "text-emerald-600"
+                    }`}
+                  >
                     {remainingAmount > 0 ? "المتبقي" : "المدفوع بالكامل"}
                   </p>
-                  <p className={`text-xl font-bold ${
-                    remainingAmount > 0 ? "text-red-700" : "text-emerald-700"
-                  }`}>
+                  <p
+                    className={`text-xl font-bold ${
+                      remainingAmount > 0 ? "text-red-700" : "text-emerald-700"
+                    }`}
+                  >
                     {Math.abs(remainingAmount).toFixed(frac)} ريال
                   </p>
                 </div>
               </div>
 
               <Divider className="my-3" />
-              
+
               <div className="space-y-2">
                 <Button
-                  color="success"
-                  variant="bordered"
-                  size="sm"
-                  onClick={addPaymentRow}
                   className="w-full"
+                  color="success"
+                  size="sm"
+                  variant="bordered"
+                  onClick={addPaymentRow}
                 >
                   + إضافة صندوق
                 </Button>
-                
+
                 <Button
-                  color="warning"
-                  variant="bordered"
-                  size="sm"
-                  onClick={clearAll}
                   className="w-full"
+                  color="warning"
+                  size="sm"
+                  variant="bordered"
+                  onClick={clearAll}
                 >
                   تصفير الكل
                 </Button>
@@ -404,7 +447,7 @@ export default function InvoicePaymentPage() {
                 </p>
               </div>
             )}
-            
+
             {isFullyPaid && !isOverpaid && (
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-green-700 text-center font-semibold text-sm">
@@ -424,39 +467,44 @@ export default function InvoicePaymentPage() {
                   (اضغط على الصف لتحديده)
                 </span>
               </h3>
-              
+
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {paymentRows.map((row, index) => (
                   <motion.div
                     key={row.id}
-                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
                     className={`p-3 rounded-lg border-2 transition-all duration-300 cursor-pointer ${
-                      selectedRowIndex === index 
-                        ? "border-blue-500 bg-blue-50" 
+                      selectedRowIndex === index
+                        ? "border-blue-500 bg-blue-50"
                         : "border-gray-200 bg-white hover:border-gray-300"
                     } ${parseFloat(row.amount || "0") > invoiceTotal ? "border-red-300 bg-red-50" : ""}`}
+                    exit={{ opacity: 0, y: -20 }}
+                    initial={{ opacity: 0, y: 20 }}
                     onClick={() => setSelectedRowIndex(index)}
                   >
                     <div className="grid grid-cols-12 gap-3 items-center">
                       {/* الصندوق */}
                       <div className="col-span-3">
                         <Select
+                          isDisabled={isLoading}
                           label="الصندوق"
-                          placeholder={isLoading ? "جاري التحميل..." : "اختر الصندوق"}
+                          placeholder={
+                            isLoading ? "جاري التحميل..." : "اختر الصندوق"
+                          }
                           selectedKeys={row.boxId ? [row.boxId.toString()] : []}
+                          size="sm"
                           onSelectionChange={(keys) => {
                             const selected = Array.from(keys)[0] as string;
-                            updatePaymentRow(index, "boxId", selected ? parseInt(selected) : null);
+
+                            updatePaymentRow(
+                              index,
+                              "boxId",
+                              selected ? parseInt(selected) : null,
+                            );
                           }}
-                          isDisabled={isLoading}
-                          size="sm"
                         >
                           {boxes.map((box) => (
-                            <SelectItem key={box.id}>
-                              {box.box_name}
-                            </SelectItem>
+                            <SelectItem key={box.id}>{box.box_name}</SelectItem>
                           ))}
                         </Select>
                       </div>
@@ -465,15 +513,19 @@ export default function InvoicePaymentPage() {
                       <div className="col-span-2">
                         <Input
                           label="المبلغ"
-                          type="number"
                           placeholder="0"
-                          value={row.amount}
-                          onChange={(e) => updatePaymentRow(index, "amount", e.target.value)}
                           size="sm"
                           startContent={
                             <div className="pointer-events-none flex items-center">
-                              <span className="text-default-400 text-small">ريال</span>
+                              <span className="text-default-400 text-small">
+                                ريال
+                              </span>
                             </div>
+                          }
+                          type="number"
+                          value={row.amount}
+                          onChange={(e) =>
+                            updatePaymentRow(index, "amount", e.target.value)
                           }
                         />
                       </div>
@@ -483,11 +535,12 @@ export default function InvoicePaymentPage() {
                         <Select
                           label="طريقة الدفع"
                           selectedKeys={[row.paymentMethod]}
+                          size="sm"
                           onSelectionChange={(keys) => {
                             const selected = Array.from(keys)[0] as string;
+
                             updatePaymentRow(index, "paymentMethod", selected);
                           }}
-                          size="sm"
                         >
                           {PAYMENT_METHODS.map((method) => (
                             <SelectItem key={method.key}>
@@ -505,24 +558,26 @@ export default function InvoicePaymentPage() {
                         <Input
                           label="البيان"
                           placeholder="ملاحظات الدفع"
-                          value={row.notes}
-                          onChange={(e) => updatePaymentRow(index, "notes", e.target.value)}
                           size="sm"
+                          value={row.notes}
+                          onChange={(e) =>
+                            updatePaymentRow(index, "notes", e.target.value)
+                          }
                         />
                       </div>
 
                       {/* حذف */}
                       <div className="col-span-2 flex justify-center">
                         <Button
+                          isIconOnly
                           color="danger"
-                          variant="light"
+                          disabled={index === 0}
                           size="sm"
+                          variant="light"
                           onClick={(e) => {
                             e.stopPropagation();
                             removePaymentRow(index);
                           }}
-                          disabled={index === 0}
-                          isIconOnly
                         >
                           🗑️
                         </Button>
@@ -543,27 +598,27 @@ export default function InvoicePaymentPage() {
                   </span>
                 )}
               </h3>
-              
+
               <div className="grid grid-cols-4 gap-2">
                 {KEYPAD_BUTTONS.flat().map((button, index) => (
                   <motion.button
                     key={index}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleKeypadInput(button)}
-                    disabled={selectedRowIndex === null}
                     className={`p-3 rounded-lg text-lg font-semibold transition-all duration-200 ${
                       button === "C" || button === "⌫"
                         ? "bg-gray-100 border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-200 text-gray-700"
                         : button.startsWith("+")
-                        ? "bg-blue-100 border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-200 text-blue-700"
-                        : "bg-white border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50"
+                          ? "bg-blue-100 border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-200 text-blue-700"
+                          : "bg-white border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50"
                     } ${selectedRowIndex === null ? "opacity-50 cursor-not-allowed" : ""}`}
+                    disabled={selectedRowIndex === null}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleKeypadInput(button)}
                   >
                     {button}
                   </motion.button>
                 ))}
               </div>
-              
+
               {selectedRowIndex === null && (
                 <p className="text-center text-gray-500 mt-3 text-sm">
                   اختر صف الدفع لاستخدام لوحة المفاتيح

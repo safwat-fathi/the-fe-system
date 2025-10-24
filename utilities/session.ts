@@ -3,9 +3,10 @@ import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 // import { SessionPayload } from "@/app/lib/definitions";
 import { cookies } from "next/headers";
-import { STORAGE_KEYS } from "@/constants";
 import { cache } from "react";
 import { redirect } from "next/navigation";
+
+import { STORAGE_KEYS } from "@/constants";
 
 const secretKey = process.env.SESSION_SECRET;
 const encodedKey = new TextEncoder().encode(secretKey);
@@ -25,7 +26,7 @@ export async function createSession(userId: string) {
 }
 
 export async function updateSession() {
-	// it can be run in middleware to update the session on every request by passing session cookie from the request
+  // it can be run in middleware to update the session on every request by passing session cookie from the request
   const session = (await cookies()).get(STORAGE_KEYS.SESSION)?.value;
   const payload = await decrypt(session);
 
@@ -36,6 +37,7 @@ export async function updateSession() {
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   const cookieStore = await cookies();
+
   cookieStore.set(STORAGE_KEYS.SESSION, session, {
     httpOnly: true,
     secure: true,
@@ -56,7 +58,6 @@ export const verifySession = cache(async () => {
   return { isAuth: true, userId: session.userId };
 });
 
-
 export async function encrypt(payload: { userId: string; expiresAt: Date }) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
@@ -70,6 +71,7 @@ export async function decrypt(session: string | undefined = "") {
     const { payload } = await jwtVerify(session, encodedKey, {
       algorithms: ["HS256"],
     });
+
     return payload;
   } catch (error) {
     console.log("Failed to verify session");

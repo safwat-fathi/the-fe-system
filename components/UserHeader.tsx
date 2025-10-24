@@ -11,7 +11,9 @@ import {
   DropdownItem,
   Button,
 } from "@heroui/react";
-import { UserIcon } from "@heroicons/react/24/outline";
+import { UserIcon, BeakerIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/navigation";
+
 import { onLogoutAction } from "@/app/actions/auth";
 
 interface UserInfo {
@@ -29,8 +31,14 @@ const STATIC_USER_INFO: UserInfo = {
 };
 
 export default function UserHeader() {
+  const router = useRouter();
+
   const handleLogout = async () => {
     await onLogoutAction();
+  };
+
+  const handleNavigateToTest = () => {
+    router.push("/test-service");
   };
 
   return (
@@ -40,13 +48,13 @@ export default function UserHeader() {
         <NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <Button variant="light" className="flex items-center gap-2 px-2">
+              <Button className="flex items-center gap-2 px-2" variant="light">
                 <Avatar
+                  className="bg-blue-100 text-blue-600"
                   name={
                     STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username
                   }
                   size="sm"
-                  className="bg-blue-100 text-blue-600"
                 />
                 <div className="hidden md:flex flex-col items-start">
                   <span className="text-sm font-medium text-gray-900">
@@ -59,6 +67,14 @@ export default function UserHeader() {
               </Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="قائمة المستخدم">
+              <DropdownItem
+                key="test-service"
+                className="text-blue-600"
+                startContent={<BeakerIcon className="w-4 h-4" />}
+                onClick={handleNavigateToTest}
+              >
+                صفحة الاختبار
+              </DropdownItem>
               <DropdownItem
                 key="logout"
                 className="text-red-600"

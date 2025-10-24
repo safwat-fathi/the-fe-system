@@ -7,6 +7,12 @@ const TROY_OUNCE_TO_GRAM = 31.1035;
 class GoldPriceService {
   async getCurrentGoldPrice(): Promise<number | null> {
     try {
+      // Check if the gold price API endpoint is configured
+      if (!API_ENDPOINTS.GOLD_PRICE) {
+        console.warn("⚠️ Gold price API endpoint not configured");
+        return null;
+      }
+
       const response = await fetch(API_ENDPOINTS.GOLD_PRICE, {
         method: "GET",
         next: { revalidate: 3600, tags: ["gold-price"] },

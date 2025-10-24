@@ -3,7 +3,12 @@
 import Link from "next/link";
 import CountUp from "react-countup";
 
-export default function StatCard({ title, icon, value, href }: {
+export default function StatCard({
+  title,
+  icon,
+  value,
+  href,
+}: {
   title: string;
   icon?: React.ReactNode;
   value: string | number;
@@ -17,8 +22,8 @@ export default function StatCard({ title, icon, value, href }: {
       <div className="flex-1 min-w-0">
         <h3 className="text-sm font-medium text-gray-500 mb-1">{title}</h3>
         <p className="text-xl font-bold text-gray-800 truncate">
-          {typeof value === 'number' ? (
-            <CountUp end={value} duration={1.5} separator="," />
+          {typeof value === "number" ? (
+            <CountUp duration={1.5} end={value} separator="," />
           ) : (
             value
           )}
@@ -28,8 +33,10 @@ export default function StatCard({ title, icon, value, href }: {
   );
 
   return href ? (
-    <Link href={href} className="block no-underline">
+    <Link className="block no-underline" href={href}>
       {content}
     </Link>
-  ) : content;
+  ) : (
+    content
+  );
 }

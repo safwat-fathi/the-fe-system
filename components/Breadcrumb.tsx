@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface BreadcrumbItem {
   name: string;
@@ -14,20 +14,20 @@ interface BreadcrumbProps {
 
 const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
   const pathname = usePathname();
-  
+
   // Generate breadcrumbs from the current pathname if no items are provided
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     if (items.length > 0) return items;
-    
-    const pathSegments = pathname.split('/').filter(segment => segment);
-    
+
+    const pathSegments = pathname.split("/").filter((segment) => segment);
+
     return pathSegments.map((segment, index) => {
-      const href = '/' + pathSegments.slice(0, index + 1).join('/');
+      const href = "/" + pathSegments.slice(0, index + 1).join("/");
       const name = segment.charAt(0).toUpperCase() + segment.slice(1);
-      
+
       return {
         name,
-        href: index < pathSegments.length - 1 ? href : undefined // No link for current page
+        href: index < pathSegments.length - 1 ? href : undefined, // No link for current page
       };
     });
   };
@@ -37,12 +37,12 @@ const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
   if (breadcrumbs.length === 0) return null;
 
   return (
-    <nav className="flex mb-4" aria-label="Breadcrumb">
+    <nav aria-label="Breadcrumb" className="flex mb-4">
       <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
         <li className="inline-flex items-center">
           <Link
-            href=""
             className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600"
+            href=""
           >
             Dashboard
           </Link>
@@ -57,8 +57,8 @@ const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
               <span className="mx-2 text-gray-400">/</span>
               {item.href ? (
                 <Link
-                  href={item.href}
                   className="text-sm font-medium text-gray-700 hover:text-primary-600"
+                  href={item.href}
                 >
                   {item.name}
                 </Link>

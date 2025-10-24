@@ -14,4 +14,3 @@ export interface InvoiceBox {
   upd_user?: string | null;
   acc?: number | null;
 }
-

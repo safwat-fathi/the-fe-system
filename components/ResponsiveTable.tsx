@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 import {
   Table,
   TableHeader,
@@ -18,23 +18,25 @@ interface ResponsiveTableProps {
   scrollable?: boolean;
 }
 
-export default function ResponsiveTable({ 
-  children, 
-  className = "", 
+export default function ResponsiveTable({
+  children,
+  className = "",
   ariaLabel = "جدول متجاوب",
   compact = false,
-  scrollable = true
+  scrollable = true,
 }: ResponsiveTableProps) {
   return (
-    <div className={`
-      ${scrollable ? 'responsive-table' : ''}
-      ${compact ? 'text-sm' : ''}
+    <div
+      className={`
+      ${scrollable ? "responsive-table" : ""}
+      ${compact ? "text-sm" : ""}
       ${className}
-    `}>
+    `}
+    >
       <div className="responsive-table-wrapper">
-        <Table 
+        <Table
           aria-label={ariaLabel}
-          className={compact ? 'text-xs sm:text-sm' : ''}
+          className={compact ? "text-xs sm:text-sm" : ""}
         >
           {children}
         </Table>

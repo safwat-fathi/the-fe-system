@@ -27,8 +27,8 @@ export type InvoiceMaxIdPayload =
   | InvoiceMaxIdRecord
   | InvoiceMaxIdRecord[];
 export enum PaymentTypes {
-	CASH = 1,
-	CREDIT = 2,
+  CASH = 1,
+  CREDIT = 2,
 }
 
 export interface Invoice {

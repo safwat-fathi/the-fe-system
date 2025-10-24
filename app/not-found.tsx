@@ -1,10 +1,11 @@
-import Link from 'next/link';
-import { Metadata } from 'next';
+import Link from "next/link";
+import { Metadata } from "next";
+
 import BackButton from "../components/BackButton";
 
 export const metadata: Metadata = {
-  title: 'الصفحة غير موجودة - 404',
-  description: 'عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها.',
+  title: "الصفحة غير موجودة - 404",
+  description: "عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها.",
 };
 
 export default function NotFound() {
@@ -21,7 +22,7 @@ export default function NotFound() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/" className="btn btn-primary w-full sm:w-auto">
+          <Link className="btn btn-primary w-full sm:w-auto" href="/">
             العودة إلى الصفحة الرئيسية
           </Link>
           <BackButton />

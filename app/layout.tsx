@@ -1,10 +1,12 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
+import { Toaster } from "react-hot-toast";
+
 import { Providers } from "./providers";
+
 import { siteConfig } from "@/config/site";
 // import { fontSans } from "@/config/fonts";
-import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: {
@@ -30,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html suppressHydrationWarning lang="ar" dir="rtl">
+    <html suppressHydrationWarning dir="rtl" lang="ar">
       <head />
       <body
         className={clsx(
@@ -38,8 +40,13 @@ export default function RootLayout({
           // fontSans.variable,
         )}
       >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "light", enableSystem: false }}>
-
+        <Providers
+          themeProps={{
+            attribute: "class",
+            defaultTheme: "light",
+            enableSystem: false,
+          }}
+        >
           <div className="relative flex flex-col min-h-screen">
             <Toaster position="top-center" />
             <div className="flex-grow">{children}</div>

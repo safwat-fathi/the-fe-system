@@ -1,5 +1,7 @@
 "use client";
 
+import type { Invoice } from "@/types/invoice";
+
 import { useMemo } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/react";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
@@ -15,7 +17,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import type { Invoice } from "@/types/invoice";
+
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
 
@@ -28,12 +30,11 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
 interface InvoiceAnalyticsProps {
   invoices: Invoice[];
-  
 }
 
 export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
@@ -59,16 +60,20 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
     // حسب الشهر
     const byMonth = new Array(12).fill(0);
     const byMonthAmount = new Array(12).fill(0);
+
     invoices.forEach((inv) => {
       const month = new Date(inv.inv_date).getMonth();
+
       byMonth[month]++;
       byMonthAmount[month] += inv.inv_amt || 0;
     });
 
     // حسب اليوم
     const byDay = new Array(7).fill(0);
+
     invoices.forEach((inv) => {
       const day = new Date(inv.inv_date).getDay();
+
       byDay[day]++;
     });
 

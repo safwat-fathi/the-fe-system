@@ -7,11 +7,11 @@ export default function NotFoundClient() {
 
   return (
     <button
+      className="btn btn-secondary w-full sm:w-auto"
       type="button"
       onClick={() => router.back()}
-      className="btn btn-secondary w-full sm:w-auto"
     >
-			رجوع
+      رجوع
     </button>
   );
 }
