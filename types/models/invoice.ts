@@ -11,6 +11,21 @@ export enum InvoiceTypes {
   BOTH = 3,
 }
 
+
+export type InvoiceMaxIdPrimitive = number | string | null | undefined;
+
+export type InvoiceMaxIdRecord = {
+  max_inv_id?: InvoiceMaxIdPrimitive;
+  maxInvId?: InvoiceMaxIdPrimitive;
+  inv_id?: InvoiceMaxIdPrimitive;
+  data?: unknown;
+  results?: unknown;
+};
+
+export type InvoiceMaxIdPayload =
+  | InvoiceMaxIdPrimitive
+  | InvoiceMaxIdRecord
+  | InvoiceMaxIdRecord[];
 export enum PaymentTypes {
   CASH = 1,
   CREDIT = 2,
@@ -22,7 +37,10 @@ export interface Invoice {
   inv_date: string;
   inv_amt?: string;
   inv_net?: string;
-  gold_price?: string;
+  gold_price?: string | null;
+  com?: number;
+  year?: number;
+  cust?: number;
   inv_type: InvoiceTypes;
   trans_type: TransTypes;
   pay_type: PaymentTypes;
@@ -51,6 +69,18 @@ export interface Invoice {
   post_code?: string;
   inv_notes?: string;
   handling?: string;
+  inv_status?: number;
+  is_done?: boolean;
+  is_ok?: boolean;
+  suspend?: boolean;
+  post?: boolean;
+  tx?: boolean;
+  dist?: boolean;
+  gauge_diff?: boolean;
+  pay_chick?: boolean;
+  inv_QR?: string | null;
+  store?: string | null;
+  gold_box?: string | null;
   // Add other invoice properties as needed
 }
 
@@ -121,4 +151,5 @@ export interface InvoiceDetail {
   inv: number;
   item: number;
   box: number | null; // Assumed to be a number if not null
+  year?: number | null;
 }

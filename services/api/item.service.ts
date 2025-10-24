@@ -32,39 +32,37 @@ class ItemService extends HttpService<Item> {
     super("");
   }
 
-  async getAllItems(): Promise<IPaginatedResponse<Item> | null> {
-    try {
+  // async getAllItems(): Promise<IPaginatedResponse<Item> | null> {
+  //   try {
+  //     const response = await this.get<IPaginatedResponse<Item>>(
+  //       "GetItemsList/",
+  //       undefined,
+  //       {
+  //         cache: "force-cache",
+  //         next: { tags: ["items"] },
+  //       },
+  //     );
 
-      const response = await this.get<IPaginatedResponse<Item>>(
-        "GetItemsList/",
-        undefined,
-        {
-          cache: "force-cache",
-          next: { tags: ["items"] },
-        },
-      );
+  //     if (!response.success || !response.data) {
+  //       return null;
+  //     }
 
-      if (!response.success || !response.data) {
-        return null;
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error("Error fetching items:", error);
+  //     throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
+  //   }
+  // }
 
-      }
-
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching items:", error);
-      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
-    }
-  }
-
-  async getItemCount(): Promise<number> {
-    try {
-      const items = await this.getAllItems();
-      return items?.count ?? 0;
-    } catch (error) {
-      console.error("Error counting items:", error);
-      return 0;
-    }
-  }
+  // async getItemCount(): Promise<number> {
+  //   try {
+  //     const items = await this.getAllItems();
+  //     return items?.count ?? 0;
+  //   } catch (error) {
+  //     console.error("Error counting items:", error);
+  //     return 0;
+  //   }
+  // }
 
   async getHomeSettings(): Promise<any[]> {
     try {
@@ -89,7 +87,8 @@ class ItemService extends HttpService<Item> {
 
         undefined,
         {
-          cache: "no-store",
+          cache: "force-cache",
+          next: { tags: [`item-by-barcode-${barcode}`] },
         },
       );
 
@@ -108,14 +107,24 @@ class ItemService extends HttpService<Item> {
     }
   }
 
-  async searchItems(query: string): Promise<IPaginatedResponse<Item> | null> {
+  async searchItems({
+    query,
+    page = 1,
+  }: {
+    query?: string;
+    page?: number;
+  }): Promise<IPaginatedResponse<Item> | null> {
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
-        `SearchItemsList/?q=${encodeURIComponent(query)}&page=1`,
-
-        undefined,
+        "SearchItemsList",
         {
-          cache: "no-store",
+          xcom_id: 1,
+          q: query,
+          page,
+        },
+        {
+          cache: "force-cache",
+          next: { tags: [`items-search-${query}-${page}`] },
         },
       );
 

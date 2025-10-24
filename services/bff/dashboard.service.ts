@@ -27,33 +27,17 @@ class DashboardService extends HttpService<any> {
       // Fetch all required data in parallel with individual error handling
       const [invoices, customers, categories, items, goldPrice] =
         await Promise.all([
-          invoiceService.getAllInvoices().catch((err) => {
-            console.error("Error fetching invoices:", err);
-
-            return null;
-          }),
-          customerService.getAllCustomers().catch((err) => {
-            console.error("Error fetching customers:", err);
-
-            return [];
-          }),
-          categoryService.getAllCategories().catch((err) => {
-            console.error("Error fetching categories:", err);
-
-            return [];
-          }),
-          itemService.getAllItems().catch((err) => {
-            console.error("Error fetching items:", err);
-
-            return [];
-          }),
-          goldPriceService.getCurrentGoldPrice().catch((err) => {
-            console.error("Error fetching gold price:", err);
-
-            return null;
-          }),
+          invoiceService.getAllInvoices(),
+          customerService.getAllCustomers(),
+          categoryService.getAllCategories(),
+          itemService.searchItems({ query: "", page: 1 }),
+          goldPriceService.getCurrentGoldPrice(),
         ]);
 
+      // console.log(
+      //   "🚀 ~ :28 ~ DashboardService ~ getDashboardStats ~  items:",
+      //   items,
+      // );
       if (!invoices) return null;
 
       // Calculate monthly sales

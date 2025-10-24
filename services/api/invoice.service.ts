@@ -4,6 +4,9 @@ import {
   InvoiceDetail,
   InvoiceTypes,
   TransTypes,
+  InvoiceMaxIdPayload,
+  InvoiceMaxIdRecord,
+  InvoiceMaxIdPrimitive,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 
@@ -189,14 +192,112 @@ class InvoiceService extends HttpService<Invoice> {
     }
   }
 
-  async createInvoice(invoiceData: Partial<Invoice>): Promise<Invoice | null> {
+  async getNextInvoiceId(transType: TransTypes | number): Promise<number> {
     try {
-      const response = await this.post<Invoice>(
-        "api_create_invoice",
-        invoiceData,
+      const resolvedTransType = Number(
+        transType ?? TransTypes.SALES,
       );
 
-      return response.success && response.data ? response.data : null;
+      const response = await this.get<InvoiceMaxIdPayload>(
+        "api_max_inv_id",
+        {
+          xcom_id: "1",
+          xtrans_type: String(
+            Number.isFinite(resolvedTransType)
+              ? resolvedTransType
+              : TransTypes.SALES,
+          ),
+        },
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(15000),
+        },
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("getNextInvoiceId failed:", errorInfo);
+        throw new Error(
+          `فشل تحديد رقم الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      const rawValue = extractMaxInvoiceId(response.data);
+      const maxNumber =
+        rawValue !== null && rawValue !== undefined
+          ? Number(rawValue)
+          : Number.NaN;
+
+      if (!Number.isFinite(maxNumber)) {
+        console.error("getNextInvoiceId received invalid payload:", response.data);
+        throw new Error("قيمة رقم الفاتورة غير صالحة");
+      }
+
+      return maxNumber + 1;
+    } catch (error) {
+      console.error("Error fetching next invoice id:", error);
+      throw new Error("حدث خطأ أثناء تحديد رقم الفاتورة التالي");
+    }
+  }
+
+  async createInvoice(invoiceData: Partial<Invoice>): Promise<Invoice | null> {
+    try {
+      const companyId = Number(invoiceData?.com);
+      const yearId = Number(invoiceData?.year);
+
+      if (!Number.isFinite(companyId) || companyId <= 0) {
+        throw new Error("رمز الفرع مطلوب قبل إنشاء الفاتورة");
+      }
+
+      if (!Number.isFinite(yearId) || yearId <= 0) {
+        throw new Error("رمز السنة مطلوب قبل إنشاء الفاتورة");
+      }
+
+      const preparedPayload = {
+        ...invoiceData,
+        com: companyId,
+        year: yearId,
+      };
+
+      const response = await this.post<Invoice>(
+        "api_create_invoice",
+        preparedPayload,
+        undefined,
+        {
+          signal: AbortSignal.timeout(60000),
+        },
+      );
+      console.log(
+        "🚀 ~ :202 ~ InvoiceService ~ createInvoice ~ response:",
+        response,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("createInvoice failed:", errorInfo);
+        throw new Error(
+          `فشل إنشاء الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error("createInvoice returned without data:", response);
+        throw new Error("فشل إنشاء الفاتورة: لم يتم إرجاع بيانات من الخادم");
+      }
+
+      return response.data;
     } catch (error) {
       console.error("Error creating invoice:", error);
       throw new Error("حدث خطأ أثناء إنشاء الفاتورة");
@@ -207,13 +308,52 @@ class InvoiceService extends HttpService<Invoice> {
     id: number,
     invoiceData: Partial<Invoice>,
   ): Promise<Invoice | null> {
+    return this.updateInvoiceByRecordId(id, invoiceData);
+  }
+
+  async updateInvoiceByRecordId(
+    recordId: number | string,
+    invoiceData: Partial<Invoice>,
+  ): Promise<Invoice | null> {
+    const parsedId = Number(recordId);
+
+    if (!Number.isFinite(parsedId) || parsedId <= 0) {
+      throw new Error("معرف الفاتورة غير صالح للتحديث");
+    }
+
     try {
       const response = await this.patch<Invoice>(
-        `api_update_invoice/${id}`,
+        `api_update_invoice/${parsedId}`,
         invoiceData,
+        undefined,
+        {
+          signal: AbortSignal.timeout(60000),
+        },
       );
 
-      return response.success && response.data ? response.data : null;
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("updateInvoiceByRecordId failed:", errorInfo);
+        throw new Error(
+          `فشل تحديث الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error(
+          "updateInvoiceByRecordId returned without data:",
+          response,
+        );
+        throw new Error("فشل تحديث الفاتورة: لم يتم إرجاع بيانات من الخادم");
+      }
+
+      return response.data;
     } catch (error) {
       console.error("Error updating invoice:", error);
       throw new Error("حدث خطأ أثناء تحديث الفاتورة");
@@ -224,12 +364,66 @@ class InvoiceService extends HttpService<Invoice> {
     detailData: Partial<InvoiceDetail>,
   ): Promise<InvoiceDetail | null> {
     try {
+      const companyId = Number(detailData?.com);
+      const invoicePk = Number(detailData?.inv);
+      const maybeYear =
+        detailData?.year !== undefined && detailData?.year !== null
+          ? Number(detailData.year)
+          : null;
+
+      if (!Number.isFinite(companyId) || companyId <= 0) {
+        throw new Error("رمز الفرع مطلوب قبل إنشاء تفاصيل الفاتورة");
+      }
+
+      if (!Number.isFinite(invoicePk) || invoicePk <= 0) {
+        throw new Error("رمز الفاتورة غير صالح لإنشاء التفاصيل");
+      }
+
+      if (
+        maybeYear !== null &&
+        (!Number.isFinite(maybeYear) || maybeYear <= 0)
+      ) {
+        throw new Error("رمز السنة غير صالح لإنشاء تفاصيل الفاتورة");
+      }
+
+      const preparedPayload = {
+        ...detailData,
+        com: companyId,
+        inv: invoicePk,
+        ...(maybeYear !== null ? { year: maybeYear } : {}),
+      };
+
       const response = await this.post<InvoiceDetail>(
         "api_create_invoice_dtl",
-        detailData,
+        preparedPayload,
+        undefined,
+        {
+          signal: AbortSignal.timeout(60000),
+        },
       );
 
-      return response.success && response.data ? response.data : null;
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("createInvoiceDetail failed:", errorInfo);
+        throw new Error(
+          `فشل إنشاء سطر الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error("createInvoiceDetail returned without data:", response);
+        throw new Error(
+          "فشل إنشاء سطر الفاتورة: لم يتم إرجاع بيانات من الخادم",
+        );
+      }
+
+      return response.data;
     } catch (error) {
       console.error("Error creating invoice detail:", error);
       throw new Error("حدث خطأ أثناء إنشاء تفاصيل الفاتورة");
@@ -246,7 +440,28 @@ class InvoiceService extends HttpService<Invoice> {
         detailData,
       );
 
-      return response.success && response.data ? response.data : null;
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("updateInvoiceDetail failed:", errorInfo);
+        throw new Error(
+          `فشل تحديث سطر الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error("updateInvoiceDetail returned without data:", response);
+        throw new Error(
+          "فشل تحديث سطر الفاتورة: لم يتم إرجاع بيانات من الخادم",
+        );
+      }
+
+      return response.data;
     } catch (error) {
       console.error("Error updating invoice detail:", error);
       throw new Error("حدث خطأ أثناء تحديث تفاصيل الفاتورة");
@@ -274,6 +489,65 @@ class InvoiceService extends HttpService<Invoice> {
 
     return monthlySales;
   }
+}
+
+function extractMaxInvoiceId(
+  payload: InvoiceMaxIdPayload | undefined,
+): InvoiceMaxIdPrimitive | null {
+  if (payload === null || payload === undefined) {
+    return null;
+  }
+
+  if (typeof payload === "number" || typeof payload === "string") {
+    return payload;
+  }
+
+  if (Array.isArray(payload)) {
+    for (const entry of payload) {
+      const candidate = extractMaxInvoiceId(entry as InvoiceMaxIdPayload);
+      if (candidate !== null && candidate !== undefined) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  if (typeof payload === "object") {
+    const record = payload as InvoiceMaxIdRecord;
+
+    const directCandidates: Array<InvoiceMaxIdPrimitive> = [
+      record.max_inv_id,
+      record.maxInvId,
+      record.inv_id,
+    ];
+
+    for (const candidate of directCandidates) {
+      if (candidate !== null && candidate !== undefined) {
+        return candidate;
+      }
+    }
+
+    if (record.data !== undefined) {
+      const nested = extractMaxInvoiceId(
+        record.data as InvoiceMaxIdPayload,
+      );
+      if (nested !== null && nested !== undefined) {
+        return nested;
+      }
+    }
+
+    if (record.results !== undefined) {
+      const nested = extractMaxInvoiceId(
+        record.results as InvoiceMaxIdPayload,
+      );
+      if (nested !== null && nested !== undefined) {
+        return nested;
+      }
+    }
+  }
+
+  return null;
 }
 
 export default new InvoiceService();

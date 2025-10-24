@@ -23,9 +23,8 @@ export default async function DashboardPage() {
   const year = cookieStore.get("selectedYear")?.value || "";
 
   const dashboardData = await dashboardService.getDashboardStats();
-  // console.log("🚀 ~ :23 ~ DashboardPage ~ dashboardData:", dashboardData);
 
-  // if (!dashboardData) throw new Error("حدث خطأ في جلب البيانات");
+  if (!dashboardData) throw new Error("حدث خطأ في جلب البيانات");
 
   // Fill in missing monthly sales data with zeros
   // const monthlySales =
@@ -118,7 +117,7 @@ export default async function DashboardPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-4">
-        <Link href="/forms/invoices/sale/new" className="btn-primary">
+        <Link href="/forms/invoices?type=sale&mode=new" className="btn-primary">
           فاتورة جديدة
         </Link>
         <Link href="/reports/invoices" className="btn-secondary">

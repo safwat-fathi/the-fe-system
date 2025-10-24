@@ -20,12 +20,13 @@ class InvoiceFormDataService extends HttpService<any> {
   async getInvoiceFormData(): Promise<InvoiceFormData> {
     try {
       // Fetch all required data in parallel
-      const [customers, itemsResponse, categories, goldPrice] = await Promise.all([
-        customerService.getAllCustomers(),
-        itemService.getAllItems(),
-        categoryService.getAllCategories(),
-        goldPriceService.getCurrentGoldPrice(),
-      ]);
+      const [customers, itemsResponse, categories, goldPrice] =
+        await Promise.all([
+          customerService.getAllCustomers(),
+          itemService.searchItems({ query: "", page: 1 }),
+          categoryService.getAllCategories(),
+          goldPriceService.getCurrentGoldPrice(),
+        ]);
 
       // Extract items from the paginated response
       const items = itemsResponse?.results || [];

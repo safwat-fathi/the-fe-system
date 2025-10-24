@@ -1,12 +1,19 @@
 "use client";
 
-import React, { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
-import { API_BASE_URL, API_ENDPOINTS, fetchData } from "@/utilities/api";
 import type { InvoiceDetail } from "@/types/models/invoice";
+import itemService from "@/services/api/item.service";
+import taxRateService from "@/services/api/tax-rate.service";
 
 const AsyncCreatableSelect = withAsyncPaginate(CreatableSelect);
 
@@ -33,7 +40,7 @@ interface Category {
 
 interface Props {
   items: Item[];
-  setItems: (items: Item[]) => void;
+  setItems: React.Dispatch<React.SetStateAction<Item[]>>;
   invoiceItems: InvoiceDetail[];
   setInvoiceItems: (items: InvoiceDetail[]) => void;
   goldPrice: number | null;
@@ -75,12 +82,9 @@ export default function InvoiceItemTable({
   useEffect(() => {
     const loadTaxRates = async () => {
       try {
-        const response = await fetchData<any[]>(API_ENDPOINTS.TaxPrcList);
-        if (Array.isArray(response) && response.length > 0) {
-          const rates = response.map((item) =>
-            parseFloat(item.tax_prc ?? item.value ?? 0),
-          );
-          setTaxRates([0, ...rates.filter((r) => r > 0)]);
+        const rates = await taxRateService.getTaxRates();
+        if (Array.isArray(rates) && rates.length > 0) {
+          setTaxRates(rates);
         }
       } catch (error) {
         console.error("فشل في تحميل قائمة الضرائب:", error);
@@ -90,53 +94,97 @@ export default function InvoiceItemTable({
     loadTaxRates();
   }, []);
 
+  const buildOption = (item: Item) => {
+    const code = item.item_code ?? String(item.id);
+    const name = item.item_name ?? "";
+    const label = name ? `${code} - ${name}` : code;
+
+    return {
+      value: item.id,
+      label,
+      item,
+    };
+  };
+
+  const staticItemOptions = useMemo(
+    () => items.map((it) => buildOption(it)),
+    [items],
+  );
+
   const loadItemOptions = async (
     search: string,
     _loaded: any,
     { page }: { page: number },
   ) => {
+    const trimmed = search.trim();
+
+    if (!trimmed) {
+      return {
+        options: staticItemOptions,
+        hasMore: false,
+        additional: { page: 1 },
+      };
+    }
+
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/SearchItemsList/?q=${encodeURIComponent(search)}&page=${page}`,
-      );
-      const json = await res.json();
-      const term = search.toLowerCase();
+      const response = await itemService.searchItems({
+        query: trimmed,
+        page,
+      });
+      const normalizeItem = (input: any): Item => ({
+        id: Number(input.id ?? 0),
+        item_code: input.item_code ?? input.code ?? String(input.id ?? ""),
+        item_name: input.item_name ?? input.name ?? "",
+        item_price: input.item_price ?? input.price ?? 0,
+        item_weight: input.item_weight ?? input.weight ?? 0,
+        item_g_weight:
+          input.item_g_weight ?? input.g_weight ?? input.item_weight ?? 0,
+        work_price: input.work_price ?? input.price_w ?? 0,
+        purity: input.purity ?? input.k ?? "",
+        stones: input.stones ?? input.stone ?? null,
+        cat: input.cat ?? undefined,
+        k: input.k ?? undefined,
+      });
+      const normalizedResults = (response?.results ?? []).map(normalizeItem);
+      const term = trimmed.toLowerCase();
 
-      const options = Array.isArray(json.results)
-        ? json.results
-            .map((it: any) => {
-              const itemCode = (it.item_code ?? it.code ?? "").toLowerCase();
-              const itemName = (it.item_name ?? it.name ?? "").toLowerCase();
-              const codeMatch = itemCode.indexOf(term);
-              const nameMatch = itemName.indexOf(term);
+      setItems((prev) => {
+        const existingIds = new Set(prev.map((item) => item.id));
+        const additions = normalizedResults.filter(
+          (remoteItem) => !existingIds.has(remoteItem.id),
+        );
+        return additions.length > 0 ? [...prev, ...additions] : prev;
+      });
 
-              return {
-                value: it.id,
-                label: `${it.item_code ?? it.code ?? "غير معروف"} - ${it.item_name ?? it.name ?? ""}`,
-                item: it,
-                codeMatch,
-                nameMatch,
-              };
-            })
-            .filter((opt: any) => opt.codeMatch !== -1 || opt.nameMatch !== -1)
-            .sort((a: any, b: any) => {
-              const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
-              const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
-              if (aCode !== bCode) return aCode - bCode;
-              const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
-              const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
-              return aName - bName;
-            })
-            .map(({ value, label, item }: any) => ({ value, label, item }))
-        : [];
+      const decorated = normalizedResults
+        .map((it) => {
+          const itemCode = (it.item_code ?? "").toLowerCase();
+          const itemName = (it.item_name ?? "").toLowerCase();
+          return {
+            option: buildOption(it),
+            codeMatch: itemCode.indexOf(term),
+            nameMatch: itemName.indexOf(term),
+          };
+        })
+        .filter((entry) => entry.codeMatch !== -1 || entry.nameMatch !== -1)
+        .sort((a, b) => {
+          const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
+          const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+          if (aCode !== bCode) return aCode - bCode;
+          const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
+          const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+          return aName - bName;
+        });
+
+      const options = decorated.map(({ option }) => option);
 
       return {
         options,
-        hasMore: !!json.next,
+        hasMore: Boolean(response?.next),
         additional: { page: page + 1 },
       };
-    } catch (e) {
-      console.error("failed to load items", e);
+    } catch (error) {
+      console.error("فشل تحميل الأصناف:", error);
       return { options: [], hasMore: false, additional: { page } };
     }
   };
@@ -513,6 +561,7 @@ export default function InvoiceItemTable({
                     isSearchable
                     isDisabled={!isEditing}
                     additional={{ page: 1 }}
+                    defaultOptions={staticItemOptions}
                     className="text-xs"
                     classNamePrefix="select"
                     components={{ IndicatorSeparator: () => null }}
@@ -534,21 +583,33 @@ export default function InvoiceItemTable({
                       }),
                       menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                     }}
-                    value={
-                      item.item && item.item > 0
-                        ? {
-                            value: item.item,
-                            label: item.item_desc ?? `${item.item}`,
-                          }
-                        : null
-                    }
+                    value={(() => {
+                      const rawId = item.item ?? (item as any).item_id;
+                      const itemId = Number(rawId ?? 0);
+
+                      if (!Number.isFinite(itemId) || itemId <= 0) return null;
+
+                      const existing = items.find((it) => it.id === itemId);
+                      if (existing) return buildOption(existing);
+
+                      return buildOption({
+                        id: itemId,
+                        item_code: item.item_code ?? String(itemId),
+                        item_name:
+                          item.item_desc ?? item.item_code ?? String(itemId),
+                      });
+                    })()}
                     onChange={(opt: any) => {
                       const selected =
                         opt?.item || items.find((it) => it.id === opt?.value);
                       if (!selected) return;
                       // cache option if missing
-                      if (!items.find((i) => i.id === selected.id))
-                        setItems([...items, selected]);
+                      setItems((prev) => {
+                        if (prev.some((i) => i.id === selected.id)) {
+                          return prev;
+                        }
+                        return [...prev, selected];
+                      });
 
                       const updated = [...invoiceItems];
                       updated[index] = {
@@ -602,7 +663,7 @@ export default function InvoiceItemTable({
                         item_g_weight: 0,
                         work_price: 0,
                       } as Item;
-                      setItems([...items, newItem]);
+                      setItems((prev) => [...prev, newItem]);
                       const updated = [...invoiceItems];
                       updated[index] = {
                         ...updated[index],

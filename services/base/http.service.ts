@@ -170,12 +170,11 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       }
 
       const authHeaders = await this._getAuthHeaders();
-      
-      // إضافة معاملات com و year تلقائياً من الكوكيز
-      const mergedParams = await this._addBranchParams(params || {});
-      
-      const urlParams = createParams(mergedParams);
-      const fullURL = `${this._baseUrl}/${route}?${urlParams.toString()}`;
+      const urlParams = createParams(params || {});
+      const searchParams = urlParams.toString();
+      const fullURL = searchParams
+        ? `${this._baseUrl}/${route}?${searchParams}`
+        : `${this._baseUrl}/${route}`;
 
       // Create a new AbortSignal for each request
       const requestOptions: RequestInit = {
@@ -191,10 +190,34 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       };
 
       const response = await fetch(fullURL, requestOptions);
+      const responseClone = response.clone();
 
       // Handle no content
       if (response.status === 204) {
         return { success: true };
+      }
+
+      if (!response.ok) {
+        let errorBody: string | undefined;
+        try {
+          errorBody = await responseClone.text();
+        } catch (readError) {
+          errorBody = `<<failed to read body: ${String(readError)}>>`;
+        }
+
+        console.error(
+          `HTTP error for ${method} ${fullURL}`,
+          JSON.stringify(
+            {
+              status: response.status,
+              statusText: response.statusText,
+              headers: Object.fromEntries(response.headers.entries()),
+              body: errorBody,
+            },
+            null,
+            2,
+          ),
+        );
       }
 
       // Handle unauthorized - try token refresh once

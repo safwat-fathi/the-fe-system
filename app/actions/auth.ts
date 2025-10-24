@@ -65,7 +65,6 @@ export async function loginAction(
       { username, password },
       requestOptions,
     );
-    console.log("🚀 ~ :66 ~ loginAction ~ response:", response);
 
     if (response.success && response.data) {
       // Extract token and user data from response

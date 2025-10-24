@@ -46,6 +46,12 @@ NafeesWeb Gold System is a business management application that provides end-to-
 
 No testing framework is used in this project.
 
+## Before any changes
+
+- Propose a plan for the changes and get approval
+- Ensure that the changes don't break existing functionality
+- Ensure that the changes don't introduce new bugs
+
 ## Patterns and best practices
 
 ### Building React components

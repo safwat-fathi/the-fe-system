@@ -63,6 +63,7 @@ interface Props {
   currentRecord?: number;
   totalRecords?: number;
   navigateToInvoice?: (direction: "first" | "prev" | "next" | "last") => void;
+  newInvoiceHref?: string;
 }
 
 export default function InvoiceTotalsActions({
@@ -107,6 +108,7 @@ export default function InvoiceTotalsActions({
   currentRecord = 1,
   totalRecords = 1,
   navigateToInvoice,
+  newInvoiceHref = "/forms/invoices?type=sale&mode=new",
 }: Props) {
   const fractions = useFractions() as { frac: number; frac2: number };
   const router = useRouter();
@@ -191,7 +193,7 @@ export default function InvoiceTotalsActions({
 
             <Button
               className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-              onClick={() => router.push("/forms/invoices/sale/new")}
+              onClick={() => router.push(newInvoiceHref)}
             >
               {/* <i className="bi bi-plus-circle me-1"></i> */}
               <PlusCircleIcon className="w-4 h-4 " />
@@ -346,9 +348,7 @@ export default function InvoiceTotalsActions({
             <Button
               className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm"
               onClick={() =>
-                router.push(
-                  `/forms/invoices/invoice_payment?total=${netAmount}`,
-                )
+                router.push(`/forms/invoices/payment?total=${netAmount}`)
               }
             >
               <CreditCardIcon className="w-4 h-4 me-2" />
