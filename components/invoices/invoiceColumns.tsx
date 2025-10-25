@@ -73,12 +73,12 @@ export const createInvoiceColumns = (
       const formType =
         TRANS_TYPE_TO_FORM_TYPE[row.original.trans_type] ?? "sale";
       const invoiceId = encodeURIComponent(String(row.original.inv_id ?? ""));
-      const baseHref = `/forms/invoices?type=${formType}&mode=edit&id=${invoiceId}`;
-      const editHref = `${baseHref}&edit=true`;
+      const previewHref = `/forms/invoices?type=${formType}&mode=preview&id=${invoiceId}`;
+      const editHref = `/forms/invoices?type=${formType}&mode=edit&id=${invoiceId}&edit=true`;
 
       return (
         <div className="flex gap-2">
-          <Link href={baseHref}>
+          <Link href={previewHref}>
             <Button isIconOnly size="sm" variant="light">
               <EyeIcon className="h-4 w-4 text-blue-500" />
             </Button>

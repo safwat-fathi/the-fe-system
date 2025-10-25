@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import toast from "react-hot-toast";
 import useFractions, { type Fractions } from "@/utilities/useFractions";
-import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
+import {
+  Invoice,
+  InvoiceDetail,
+  InvoicePayType,
+  INVOICE_PAY_TYPES,
+  TransTypes,
+} from "@/types/models/invoice";
 import {
   createInvoiceAction,
   updateInvoiceAction,
@@ -57,7 +63,7 @@ type FormState = {
   cust_name: string;
   inv_id: number | string | null;
   inv_date: string;
-  pay_type: number;
+  pay_type: InvoicePayType;
   inv_notes: string;
   ref_no: string;
   vat_no: string;
@@ -84,6 +90,17 @@ const PAYMENT_METHOD_INV_TYPES = {
   cash: 1,
   credit: 2,
 } as const;
+
+const PAY_TYPE_VALUES = Object.values(
+  INVOICE_PAY_TYPES,
+) as InvoicePayType[];
+
+const normalizePayType = (value: unknown): InvoicePayType => {
+  const numeric = Number(value);
+  return PAY_TYPE_VALUES.includes(numeric as InvoicePayType)
+    ? (numeric as InvoicePayType)
+    : INVOICE_PAY_TYPES.VALUE_AND_WAGES;
+};
 
 const EMPLOYEE_CODE_MAP: Record<string, number> = {
   hashem: 1,
@@ -372,7 +389,7 @@ export default function useInvoiceForm({
     cust_name: invoiceData?.cust_name ?? "",
     inv_id: invoiceData?.inv_id ?? null,
     inv_date: invoiceData?.inv_date ?? defaultInvoiceDate,
-    pay_type: invoiceData?.pay_type ?? 3,
+    pay_type: normalizePayType(invoiceData?.pay_type),
     inv_notes: invoiceData?.inv_notes ?? "",
     ref_no: invoiceData?.ref_no ?? "",
     vat_no: invoiceData?.vat_no ?? "",
@@ -528,7 +545,8 @@ export default function useInvoiceForm({
       const computedTotalA =
         row.total_a !== undefined
           ? parseNumber(row.total_a)
-          : weight * (form.pay_type === 2 ? priceW : price);
+          : weight *
+              (form.pay_type === INVOICE_PAY_TYPES.WAGES ? priceW : price);
 
       const combinedTotal =
         row.total !== undefined
@@ -616,7 +634,7 @@ export default function useInvoiceForm({
         cust_name: invoiceData.cust_name ?? "",
         inv_id: invoiceData.inv_id ?? null,
         inv_date: invoiceData.inv_date ?? defaultInvoiceDate,
-        pay_type: invoiceData.pay_type ?? 3,
+        pay_type: normalizePayType(invoiceData.pay_type),
         inv_notes: invoiceData.inv_notes ?? "",
         ref_no: invoiceData.ref_no ?? "",
         vat_no: invoiceData.vat_no ?? "",
@@ -653,7 +671,7 @@ export default function useInvoiceForm({
 
   // totals (simple helpers returned to consumer can compute more if needed)
   const computeTotals = useCallback(
-    (payType: number, rows: InvoiceItemRow[]) => {
+    (payType: InvoicePayType, rows: InvoiceItemRow[]) => {
       const totalAmount = rows.reduce((sum, item) => {
         const weight = parseNumber(item.weight);
         const price = parseNumber(item.price);
@@ -664,7 +682,11 @@ export default function useInvoiceForm({
         const totalW = weight * priceW;
 
         const rowTotal =
-          payType === 1 ? totalA : payType === 2 ? totalW : totalA + totalW;
+          payType === INVOICE_PAY_TYPES.VALUE
+            ? totalA
+            : payType === INVOICE_PAY_TYPES.WAGES
+              ? totalW
+              : totalA + totalW;
 
         return sum + rowTotal - discount;
       }, 0);
@@ -679,7 +701,11 @@ export default function useInvoiceForm({
         const totalA = weight * price;
         const totalW = weight * priceW;
         const rowTotal =
-          payType === 1 ? totalA : payType === 2 ? totalW : totalA + totalW;
+          payType === INVOICE_PAY_TYPES.VALUE
+            ? totalA
+            : payType === INVOICE_PAY_TYPES.WAGES
+              ? totalW
+              : totalA + totalW;
         const base = rowTotal - discount;
         return sum + base * taxRate;
       }, 0);
@@ -785,15 +811,15 @@ export default function useInvoiceForm({
             : row.weight;
 
         row.total_a =
-          form.pay_type === 2
+          form.pay_type === INVOICE_PAY_TYPES.WAGES
             ? wCalc * (row.price_w ?? 0)
             : wCalc * (row.price ?? 0);
         row.total_w = wCalc * (row.price_w ?? 0);
 
         const base =
-          (form.pay_type === 1
+          (form.pay_type === INVOICE_PAY_TYPES.VALUE
             ? row.total_a
-            : form.pay_type === 2
+            : form.pay_type === INVOICE_PAY_TYPES.WAGES
               ? row.total_w
               : (row.total_a || 0) + (row.total_w || 0)) -
           (row.item_disc_amt ?? 0);

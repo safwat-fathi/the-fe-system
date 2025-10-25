@@ -8,7 +8,7 @@ import invoiceService from "@/services/api/invoice.service";
 import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
-type InvoiceFormMode = "new" | "edit";
+type InvoiceFormMode = "new" | "edit" | "preview";
 
 const getInvoiceFormData = cache(() =>
   invoiceFormDataService.getInvoiceFormData(),
@@ -62,7 +62,9 @@ const resolveInvoiceType = (rawType: string | undefined): InvoicePageType => {
 const resolveFormMode = (rawMode: string | undefined): InvoiceFormMode => {
   if (!rawMode) return "new";
   const mode = rawMode.toLowerCase();
-  return mode === "edit" ? "edit" : "new";
+  if (mode === "edit") return "edit";
+  if (mode === "preview") return "preview";
+  return "new";
 };
 
 export async function generateMetadata({
@@ -93,7 +95,7 @@ export default async function InvoicePage({
   const recordId = toSingleValue(params.recordId);
   const startInEdit = toSingleValue(params.edit) === "true";
 
-  if (mode === "edit" && !editId) {
+  if ((mode === "edit" || mode === "preview") && !editId) {
     notFound();
   }
 
@@ -102,7 +104,7 @@ export default async function InvoicePage({
   let invoiceData: Invoice | null = null;
   let invoiceDetails: InvoiceDetail[] = [];
 
-  if (mode === "edit" && editId) {
+  if ((mode === "edit" || mode === "preview") && editId) {
     invoiceData = await invoiceService.getInvoiceById(editId);
 
     if (!invoiceData) {

@@ -21,12 +21,9 @@ class TaxRateService extends HttpService<RawTaxRate> {
       });
 			
       if (!response.success || !response.data) {
-				console.log("default tax rates");
-				
-				return DEFAULT_TAX_RATES;
+        return DEFAULT_TAX_RATES;
       }
-			console.log("🚀 ~ :21 ~ TaxRateService ~ getTaxRates ~ response:", response)
-
+			
       const records = Array.isArray(response.data)
         ? response.data
         : Array.isArray((response.data as any)?.results)
