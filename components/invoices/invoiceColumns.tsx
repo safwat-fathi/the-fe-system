@@ -58,11 +58,13 @@ export const createInvoiceColumns = (
     id: "type",
     header: () => "النوع",
     cell: ({ row }) => {
-      const typeMeta = TRANS_TYPE_META[row.original.trans_type];
+      const transType = Number(row.original.trans_type) as TransTypes;
+      const typeMeta = TRANS_TYPE_META[transType];
+      			
       return (
-        <Chip color={typeMeta?.color ?? "default"} size="sm">
+        <span  >
           {typeMeta?.label ?? "غير محدد"}
-        </Chip>
+        </span>
       );
     },
   }),
@@ -70,11 +72,32 @@ export const createInvoiceColumns = (
     id: "actions",
     header: () => "الإجراءات",
     cell: ({ row }) => {
-      const formType =
-        TRANS_TYPE_TO_FORM_TYPE[row.original.trans_type] ?? "sale";
-      const invoiceId = encodeURIComponent(String(row.original.inv_id ?? ""));
-      const previewHref = `/forms/invoices?type=${formType}&mode=preview&id=${invoiceId}`;
-      const editHref = `/forms/invoices?type=${formType}&mode=edit&id=${invoiceId}&edit=true`;
+      const transType = Number(row.original.trans_type) as TransTypes;
+      const formType = TRANS_TYPE_TO_FORM_TYPE[transType] ?? "sale";
+      const invoiceIdentifier = row.original.inv_id ?? row.original.id ?? "";
+
+      const searchParams = new URLSearchParams({
+        type: formType,
+        mode: "preview",
+      });
+
+      if (invoiceIdentifier) {
+        searchParams.set("id", String(invoiceIdentifier));
+      }
+
+      const previewHref = `/forms/invoices?${searchParams.toString()}`;
+
+      const editParams = new URLSearchParams({
+        type: formType,
+        mode: "edit",
+        edit: "true",
+      });
+
+      if (invoiceIdentifier) {
+        editParams.set("id", String(invoiceIdentifier));
+      }
+
+      const editHref = `/forms/invoices?${editParams.toString()}`;
 
       return (
         <div className="flex gap-2">

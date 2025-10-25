@@ -92,7 +92,6 @@ export default async function InvoicePage({
   const invoiceType = resolveInvoiceType(toSingleValue(params.type));
   const mode = resolveFormMode(toSingleValue(params.mode));
   const editId = toSingleValue(params.id);
-  const recordId = toSingleValue(params.recordId);
   const startInEdit = toSingleValue(params.edit) === "true";
 
   if ((mode === "edit" || mode === "preview") && !editId) {
@@ -105,7 +104,11 @@ export default async function InvoicePage({
   let invoiceDetails: InvoiceDetail[] = [];
 
   if ((mode === "edit" || mode === "preview") && editId) {
-    invoiceData = await invoiceService.getInvoiceById(editId);
+    const lookupId = editId ?? "";
+    invoiceData = await invoiceService.getInvoiceById(
+      lookupId,
+      config.transType,
+    );
 
     if (!invoiceData) {
       notFound();
@@ -123,17 +126,18 @@ export default async function InvoicePage({
         [
           invoiceData?.inv_id,
           editId,
-          recordId,
           invoiceData?.id ? String(invoiceData.id) : null,
         ]
-          .filter((key): key is string => Boolean(key && `${key}`.trim().length))
+          .filter((key): key is string =>
+            Boolean(key && `${key}`.trim().length),
+          )
           .map((key) => String(key).trim()),
       ),
     );
 
     for (const key of detailKeys) {
       const fetchedDetails =
-        (await invoiceService.getInvoiceDetails(key)) ?? [];
+        (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
 
       if (fetchedDetails.length > 0) {
         invoiceDetails = fetchedDetails;
@@ -157,7 +161,7 @@ export default async function InvoicePage({
         invoiceDetailsData={invoiceDetails}
         isNewInvoice={mode === "new"}
         startInEditMode={startInEdit || mode === "edit"}
-        invoiceRecordId={invoiceData?.id ?? recordId ?? null}
+        invoiceRecordId={invoiceData?.id ?? null}
         customers={formData.customers}
         items={formData.items}
         categories={formData.categories}
