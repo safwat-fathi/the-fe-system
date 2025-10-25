@@ -892,6 +892,20 @@ export default function useInvoiceForm({
       return;
     }
 
+    if (
+      form.pay_type === INVOICE_PAY_TYPES.WAGES ||
+      form.pay_type === INVOICE_PAY_TYPES.VALUE_AND_WAGES
+    ) {
+      const missingWageRate = validItems.some(
+        (item) => parseNumber(item.price_w) <= 0,
+      );
+
+      if (missingWageRate) {
+        toast.error("يرجى إدخال أجرة الجرام لكل الأصناف قبل الحفظ");
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {

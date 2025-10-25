@@ -11,7 +11,11 @@ import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
-import type { InvoiceDetail } from "@/types/models/invoice";
+import {
+  INVOICE_PAY_TYPES,
+  type InvoiceDetail,
+  type InvoicePayType,
+} from "@/types/models/invoice";
 import itemService from "@/services/api/item.service";
 import taxRateService from "@/services/api/tax-rate.service";
 
@@ -44,7 +48,7 @@ interface Props {
   invoiceItems: InvoiceDetail[];
   setInvoiceItems: (items: InvoiceDetail[]) => void;
   goldPrice: number | null;
-  payType: number; // 1=gold, 2=wage, 3=both
+  payType: InvoicePayType;
   categories: Category[];
   homePurity: number;
   isEditing: boolean;
@@ -254,10 +258,10 @@ export default function InvoiceItemTable({
     // decide totals per payType
     let total_a = 0;
     let total_w = 0;
-    if (payType === 1) {
+    if (payType === INVOICE_PAY_TYPES.VALUE) {
       total_a = weight * price;
       total_w = 0;
-    } else if (payType === 2) {
+    } else if (payType === INVOICE_PAY_TYPES.WAGES) {
       total_a = 0;
       total_w = g_weight * price_w;
     } else {
@@ -398,14 +402,14 @@ export default function InvoiceItemTable({
     const existingW = toNum(updated[index].total_w);
     const sumExisting = existingA + existingW;
 
-    if (payType === 1) {
+    if (payType === INVOICE_PAY_TYPES.VALUE) {
       updated[index].total_a = String(totalWithoutTax);
       updated[index].total_w = "0";
       if (toNum(updated[index].weight) > 0)
         updated[index].price = String(
           totalWithoutTax / toNum(updated[index].weight),
         );
-    } else if (payType === 2) {
+    } else if (payType === INVOICE_PAY_TYPES.WAGES) {
       updated[index].total_w = String(totalWithoutTax);
       updated[index].total_a = "0";
       if (toNum(updated[index].weight) > 0)
@@ -509,16 +513,20 @@ export default function InvoiceItemTable({
             <th className="w-[100px]">الوزن القائم</th>
             <th className="w-[80px]">الوزن المعاير</th>
             <th className="w-[80px]">الاحجار</th>
-            {(payType === 1 || payType === 3) && (
+                {(payType === INVOICE_PAY_TYPES.VALUE ||
+                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
               <th className="w-[100px]">سعر الجرام</th>
             )}
-            {(payType === 2 || payType === 3) && (
+            {(payType === INVOICE_PAY_TYPES.WAGES ||
+              payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
               <th className="w-[100px]">أجرة الجرام</th>
             )}
-            {(payType === 1 || payType === 3) && (
+                {(payType === INVOICE_PAY_TYPES.VALUE ||
+                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
               <th className="w-[100px]">اجمالي القيمة</th>
             )}
-            {(payType === 2 || payType === 3) && (
+            {(payType === INVOICE_PAY_TYPES.WAGES ||
+              payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
               <th className="w-[100px]">اجمالي الاجور</th>
             )}
             <th className="w-[100px]">الخصم</th>
@@ -541,8 +549,8 @@ export default function InvoiceItemTable({
             const totalA = weight * price;
             const totalW = gWeight * priceW;
             let rowBase = 0;
-            if (payType === 1) rowBase = totalA;
-            else if (payType === 2) rowBase = totalW;
+            if (payType === INVOICE_PAY_TYPES.VALUE) rowBase = totalA;
+            else if (payType === INVOICE_PAY_TYPES.WAGES) rowBase = totalW;
             else rowBase = totalA + totalW;
 
             const base = rowBase - toNum(item.item_disc_amt);
@@ -637,9 +645,9 @@ export default function InvoiceItemTable({
                       const totalA = w * pr;
                       const totalW = gw * prw;
                       const baseCalc =
-                        (payType === 1
+                        (payType === INVOICE_PAY_TYPES.VALUE
                           ? totalA
-                          : payType === 2
+                          : payType === INVOICE_PAY_TYPES.WAGES
                             ? totalW
                             : totalA + totalW) -
                         toNum(updated[index].item_disc_amt);
@@ -746,7 +754,8 @@ export default function InvoiceItemTable({
                   />
                 </td>
 
-                {(payType === 1 || payType === 3) && (
+                {(payType === INVOICE_PAY_TYPES.VALUE ||
+                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
                     <input
                       ref={(el) => {
@@ -765,7 +774,8 @@ export default function InvoiceItemTable({
                   </td>
                 )}
 
-                {(payType === 2 || payType === 3) && (
+                {(payType === INVOICE_PAY_TYPES.WAGES ||
+                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
                     <input
                       ref={(el) => {
@@ -776,6 +786,10 @@ export default function InvoiceItemTable({
                       type="number"
                       value={toNum(item.price_w).toFixed(priceWDigits)}
                       disabled={!isEditing}
+                      required={
+                        payType === INVOICE_PAY_TYPES.WAGES ||
+                        payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
+                      }
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
                       }
@@ -784,7 +798,8 @@ export default function InvoiceItemTable({
                   </td>
                 )}
 
-                {(payType === 1 || payType === 3) && (
+                {(payType === INVOICE_PAY_TYPES.VALUE ||
+                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
                     <input
                       ref={(el) => {
@@ -803,7 +818,8 @@ export default function InvoiceItemTable({
                   </td>
                 )}
 
-                {(payType === 2 || payType === 3) && (
+                {(payType === INVOICE_PAY_TYPES.WAGES ||
+                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
                     <input
                       ref={(el) => {

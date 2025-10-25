@@ -1,10 +1,9 @@
 "use server";
 
+import { revalidatePath, revalidateTag } from "next/cache";
+
 import invoiceService from "@/services/api/invoice.service";
-import {
-  type Invoice,
-  type InvoiceDetail,
-} from "@/types/models/invoice";
+import { type Invoice, type InvoiceDetail } from "@/types/models/invoice";
 import type { GetAllInvoicesParams } from "@/services/api/invoice.service";
 
 export async function getAllInvoicesAction(
@@ -42,6 +41,12 @@ export async function createInvoiceAction(
     console.log("📨 createInvoiceAction payload:", payload);
     const result = await invoiceService.createInvoice(payload);
     console.log("📨 createInvoiceAction result:", result);
+
+    if (result) {
+      await revalidateTag("invoices");
+      await revalidatePath("/reports/invoices");
+    }
+
     return result;
   } catch (error) {
     console.error("📨 createInvoiceAction error:", error);
