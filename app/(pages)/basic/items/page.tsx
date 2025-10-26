@@ -2,47 +2,75 @@ import { Metadata } from "next";
 
 import ItemsClient from "./components/ItemsClient";
 
-import itemService from "@/services/api/item.service";
+import AppPagination from "@/components/AppPagination";
 import helperService from "@/services/api/helper.service";
+import itemService from "@/services/api/item.service";
+import { Item } from "@/types/models/item";
+import { IPaginatedResponse } from "@/types/services/base";
+
+type Category = {
+  id: number;
+  cat_name: string;
+};
+
+type ItemType = {
+  id: number;
+  type_name: string;
+};
 
 export const metadata: Metadata = {
   title: "الأصناف - NafeesWeb",
   description: "إدارة الأصناف والمنتجات",
 };
 
-export default async function ItemsPage() {
-  // جلب البيانات بالتوازي للأداء الأفضل
-  const [
-    itemsData,
-    categoriesData,
-    itemTypesData,
-    unitsData,
-    boxesData,
-    catTypesData,
-    catStatusesData,
-  ] = await Promise.all([
-    itemService.searchItems({ query: "", page: 1 }).catch(() => []),
+export default async function ItemsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const pageParam = params.page;
+  const searchParam = params.search;
+
+  const currentPage =
+    Number(Array.isArray(pageParam) ? pageParam[0] : pageParam) || 1;
+  const searchQuery = Array.isArray(searchParam)
+    ? searchParam[0] || ""
+    : searchParam || "";
+
+  const [itemsData, categoriesData, itemTypesData] = await Promise.all([
+    itemService.searchItems({ page: currentPage, query: searchQuery }).catch(
+      (): IPaginatedResponse<Item> => ({
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+      }),
+    ),
     helperService.getCategories().catch(() => []),
     helperService.getItemTypes().catch(() => []),
-    helperService.getUnits().catch(() => []),
-    helperService.getBoxes().catch(() => []),
-    helperService.getCatTypes().catch(() => []),
-    helperService.getCatStatuses().catch(() => []),
   ]);
+
+  const itemsPerPage =
+    itemsData.results.length > 0 ? itemsData.results.length : 20;
+  const totalPages =
+    itemsData.count > 0 ? Math.ceil(itemsData.count / itemsPerPage) : 0;
 
   return (
     <div className="responsive-container font-cairo">
       <h1 className="responsive-text-xl font-bold mb-6">الأصناف</h1>
 
       <ItemsClient
-        initialBoxes={boxesData as any}
-        initialCatStatuses={catStatusesData as any}
-        initialCatTypes={catTypesData as any}
-        initialCategories={categoriesData as any}
-        initialItemTypes={itemTypesData as any}
-        initialItems={itemsData.results as any}
-        initialUnits={unitsData as any}
+        currentPage={currentPage}
+        initialCategories={categoriesData as Category[]}
+        initialItemTypes={itemTypesData as ItemType[]}
+        initialItems={itemsData.results as Item[]}
+        initialQuery={searchQuery}
+        totalItems={itemsData.count}
+        totalPages={totalPages}
       />
+
+      <AppPagination total={totalPages} />
     </div>
   );
 }

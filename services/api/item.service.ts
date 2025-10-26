@@ -1,31 +1,6 @@
 import { HttpService } from "@/services/base";
-import { API_ENDPOINTS } from "@/utilities/api";
 import { IPaginatedResponse } from "@/types/services/base";
-
-interface Item {
-  id: number;
-  item_name: string;
-  item_name_e: string;
-  item_price: string;
-  item_img: string;
-  item_code: string;
-  item_barcode: string;
-  first_cost: string;
-  item_weight: string;
-  item_g_weight: string;
-  stones: string;
-  model: string;
-  k: string;
-  purity: string;
-  item_status: number;
-  cr_date: string;
-  cr_user: string;
-  upd_date: string;
-  upd_user: string;
-  cat: number | null;
-  item_type: number | null;
-  unit: number | null;
-}
+import { Item, SearchItemsParams } from "@/types/models/item";
 
 class ItemService extends HttpService<Item> {
   constructor() {
@@ -64,15 +39,17 @@ class ItemService extends HttpService<Item> {
   //   }
   // }
 
-  async getHomeSettings(): Promise<any[]> {
+  async getHomeSettings(): Promise<Record<string, unknown>[]> {
     try {
-      const response = await this.get<any[]>("home_list", undefined, {
+      const response = await this.get<unknown[]>("home_list", undefined, {
         cache: "force-cache",
         next: { tags: ["home_settings"] },
       });
+
       if (response.success && Array.isArray(response.data)) {
-        return response.data;
+        return response.data as Record<string, unknown>[];
       }
+
       return [];
     } catch (error) {
       console.error("Error fetching home settings:", error);
@@ -84,14 +61,12 @@ class ItemService extends HttpService<Item> {
     try {
       const response = await this.get<Item[]>(
         `ItemBarcode/${encodeURIComponent(barcode)}`,
-
         undefined,
         {
           cache: "force-cache",
           next: { tags: [`item-by-barcode-${barcode}`] },
         },
       );
-
 
       if (
         response.success &&
@@ -100,26 +75,33 @@ class ItemService extends HttpService<Item> {
       ) {
         return response.data[0];
       }
+
       return null;
     } catch (error) {
       console.error("Error fetching item by barcode:", error);
+
       return null;
     }
   }
 
   async searchItems({
-    query,
+    query = "",
     page = 1,
-  }: {
-    query?: string;
-    page?: number;
-  }): Promise<IPaginatedResponse<Item> | null> {
+    companyId = 1,
+  }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
+    const emptyResponse: IPaginatedResponse<Item> = {
+      results: [],
+      count: 0,
+      next: null,
+      previous: null,
+    };
+
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
         "SearchItemsList",
         {
-          xcom_id: 1,
-          q: query,
+          xcom_id: companyId,
+          q: query || "0",
           page,
         },
         {
@@ -128,16 +110,27 @@ class ItemService extends HttpService<Item> {
         },
       );
 
-
       if (!response.success || !response.data) {
-        return null;
+        return emptyResponse;
       }
 
-      return response.data;
+      const { results, count, next, previous } = response.data;
+
+      return {
+        results: Array.isArray(results) ? results : [],
+        count:
+          typeof count === "number"
+            ? count
+            : Array.isArray(results)
+              ? results.length
+              : 0,
+        next: typeof next === "string" || next === null ? next : null,
+        previous:
+          typeof previous === "string" || previous === null ? previous : null,
+      };
     } catch (error) {
       console.error("Error searching items:", error);
       throw new Error("حدث خطأ أثناء البحث عن الأصناف");
-
     }
   }
 }
