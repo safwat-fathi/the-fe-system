@@ -36,6 +36,7 @@ interface Props {
   setPrint: (val: boolean) => void;
   isEditing: boolean;
   onEdit: () => void;
+  canEdit?: boolean;
   children: ReactNode;
   // نوع الفاتورة
   invoiceType?: "sales" | "sales_return" | "purchase" | "purchase_return";
@@ -81,6 +82,7 @@ export default function InvoiceTotalsActions({
   setPrint,
   isEditing,
   onEdit,
+  canEdit = true,
   children,
   // نوع الفاتورة
   invoiceType = "sales",
@@ -181,7 +183,7 @@ export default function InvoiceTotalsActions({
               حفظ
             </Button>
 
-            {!isEditing && (
+            {!isEditing && canEdit && (
               <Button
                 className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
                 onClick={onEdit}

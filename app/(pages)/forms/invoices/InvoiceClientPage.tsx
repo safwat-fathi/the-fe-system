@@ -56,7 +56,7 @@ interface InvoiceClientPageProps {
   homePurity: number;
   startInEditMode?: boolean;
   invoiceType?: InvoicePageType;
-  formMode?: "new" | "edit";
+  formMode?: "new" | "edit" | "preview";
   newInvoiceHref?: string;
 }
 
@@ -152,12 +152,13 @@ export default function InvoiceClientPage({
     invoiceRecordId,
     context: FORM_CONTEXT_MAP[invoiceType],
   });
+  const allowEditing = formMode === "edit" || isNewInvoice;
 
   useEffect(() => {
-    if (startInEditMode || formMode === "edit") {
+    if (allowEditing && (startInEditMode || formMode === "edit")) {
       setIsEditing(true);
     }
-  }, [formMode, setIsEditing, startInEditMode]);
+  }, [allowEditing, formMode, setIsEditing, startInEditMode]);
 
   const selectorsInvoiceType = SELECTOR_TYPE_MAP[invoiceType];
   const totalsInvoiceType = TOTALS_TYPE_MAP[invoiceType];
@@ -201,7 +202,12 @@ export default function InvoiceClientPage({
           dispatchForm({ type: "SET_FIELD", field: "print", value })
         }
         isEditing={isEditing}
-        onEdit={() => setIsEditing(true)}
+        onEdit={() => {
+          if (allowEditing) {
+            setIsEditing(true);
+          }
+        }}
+        canEdit={allowEditing}
         invoiceType={totalsInvoiceType}
         autoTotalValue={autoTotalValue}
         autoTotalWages={autoTotalWages}

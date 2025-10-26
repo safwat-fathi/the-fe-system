@@ -88,13 +88,16 @@ class InvoiceService extends HttpService<Invoice> {
     }
   }
 
-  async getInvoiceById(id: string): Promise<Invoice | null> {
+  async getInvoiceById(
+    id: string,
+    transType?: TransTypes,
+  ): Promise<Invoice | null> {
     try {
       const queryParams = {
         page: "1",
         xcom_id: "1",
         xyear_id: "0",
-        xtrans_type: "0",
+        xtrans_type: transType || "0",
         xinv_id: id,
         xfrom_date: "0",
         xto_date: "0",
@@ -157,7 +160,10 @@ class InvoiceService extends HttpService<Invoice> {
     }
   }
 
-  async getInvoiceDetails(invoiceId: string): Promise<InvoiceDetail[]> {
+  async getInvoiceDetails(
+    invoiceId: string,
+    transType?: TransTypes,
+  ): Promise<InvoiceDetail[]> {
     try {
       const response = await this.get<InvoiceDetail[]>(
         `invoices_dtl_list`,
@@ -165,7 +171,7 @@ class InvoiceService extends HttpService<Invoice> {
           // page: "1",
           xcom_id: "1",
           xyear_id: "0",
-          xtrans_type: "0",
+          xtrans_type: transType || "0",
           xinv_id: invoiceId,
           xfrom_date: "0",
           xto_date: "0",
@@ -194,9 +200,7 @@ class InvoiceService extends HttpService<Invoice> {
 
   async getNextInvoiceId(transType: TransTypes | number): Promise<number> {
     try {
-      const resolvedTransType = Number(
-        transType ?? TransTypes.SALES,
-      );
+      const resolvedTransType = Number(transType ?? TransTypes.SALES);
 
       const response = await this.get<InvoiceMaxIdPayload>(
         "api_max_inv_id",
@@ -235,7 +239,10 @@ class InvoiceService extends HttpService<Invoice> {
           : Number.NaN;
 
       if (!Number.isFinite(maxNumber)) {
-        console.error("getNextInvoiceId received invalid payload:", response.data);
+        console.error(
+          "getNextInvoiceId received invalid payload:",
+          response.data,
+        );
         throw new Error("قيمة رقم الفاتورة غير صالحة");
       }
 

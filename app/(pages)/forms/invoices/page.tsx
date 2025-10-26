@@ -8,7 +8,7 @@ import invoiceService from "@/services/api/invoice.service";
 import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
-type InvoiceFormMode = "new" | "edit";
+type InvoiceFormMode = "new" | "edit" | "preview";
 
 const getInvoiceFormData = cache(() =>
   invoiceFormDataService.getInvoiceFormData(),
@@ -62,7 +62,9 @@ const resolveInvoiceType = (rawType: string | undefined): InvoicePageType => {
 const resolveFormMode = (rawMode: string | undefined): InvoiceFormMode => {
   if (!rawMode) return "new";
   const mode = rawMode.toLowerCase();
-  return mode === "edit" ? "edit" : "new";
+  if (mode === "edit") return "edit";
+  if (mode === "preview") return "preview";
+  return "new";
 };
 
 export async function generateMetadata({
@@ -90,10 +92,9 @@ export default async function InvoicePage({
   const invoiceType = resolveInvoiceType(toSingleValue(params.type));
   const mode = resolveFormMode(toSingleValue(params.mode));
   const editId = toSingleValue(params.id);
-  const recordId = toSingleValue(params.recordId);
   const startInEdit = toSingleValue(params.edit) === "true";
 
-  if (mode === "edit" && !editId) {
+  if ((mode === "edit" || mode === "preview") && !editId) {
     notFound();
   }
 
@@ -102,8 +103,12 @@ export default async function InvoicePage({
   let invoiceData: Invoice | null = null;
   let invoiceDetails: InvoiceDetail[] = [];
 
-  if (mode === "edit" && editId) {
-    invoiceData = await invoiceService.getInvoiceById(editId);
+  if ((mode === "edit" || mode === "preview") && editId) {
+    const lookupId = editId ?? "";
+    invoiceData = await invoiceService.getInvoiceById(
+      lookupId,
+      config.transType,
+    );
 
     if (!invoiceData) {
       notFound();
@@ -121,17 +126,18 @@ export default async function InvoicePage({
         [
           invoiceData?.inv_id,
           editId,
-          recordId,
           invoiceData?.id ? String(invoiceData.id) : null,
         ]
-          .filter((key): key is string => Boolean(key && `${key}`.trim().length))
+          .filter((key): key is string =>
+            Boolean(key && `${key}`.trim().length),
+          )
           .map((key) => String(key).trim()),
       ),
     );
 
     for (const key of detailKeys) {
       const fetchedDetails =
-        (await invoiceService.getInvoiceDetails(key)) ?? [];
+        (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
 
       if (fetchedDetails.length > 0) {
         invoiceDetails = fetchedDetails;
@@ -155,7 +161,7 @@ export default async function InvoicePage({
         invoiceDetailsData={invoiceDetails}
         isNewInvoice={mode === "new"}
         startInEditMode={startInEdit || mode === "edit"}
-        invoiceRecordId={invoiceData?.id ?? recordId ?? null}
+        invoiceRecordId={invoiceData?.id ?? null}
         customers={formData.customers}
         items={formData.items}
         categories={formData.categories}

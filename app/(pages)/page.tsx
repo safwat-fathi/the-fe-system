@@ -114,16 +114,6 @@ export default async function DashboardPage() {
         branch={branch}
         year={year}
       />
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-4">
-        <Link href="/forms/invoices?type=sale&mode=new" className="btn-primary">
-          فاتورة جديدة
-        </Link>
-        <Link href="/reports/invoices" className="btn-secondary">
-          قائمة الفواتير
-        </Link>
-      </div>
     </div>
   );
 }

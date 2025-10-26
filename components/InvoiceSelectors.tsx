@@ -1,7 +1,9 @@
 "use client";
 
-import { Dispatch, SetStateAction } from "react";
+import { ChangeEvent, Dispatch, SetStateAction } from "react";
 import ReactSelect from "react-select";
+
+import { INVOICE_PAY_TYPES, type InvoicePayType } from "@/types/models/invoice";
 
 interface Customer {
   id: string;
@@ -30,8 +32,8 @@ interface Props {
   setSelectedCustomerName: (val: string) => void;
   paymentMethod: string;
   setPaymentMethod: (value: string) => void;
-  payType: number;
-  setPayType: (val: number) => void;
+  payType: InvoicePayType;
+  setPayType: (val: InvoicePayType) => void;
   referenceNumber: string;
   setReferenceNumber: (val: string) => void;
   vatNumber: string;
@@ -126,6 +128,21 @@ export default function InvoiceSelectors({
   invoiceDate,
   setInvoiceDate,
 }: Props) {
+  const payTypeOptions = [
+    { value: INVOICE_PAY_TYPES.VALUE, label: "القيمة" },
+    { value: INVOICE_PAY_TYPES.WAGES, label: "الأجور" },
+    { value: INVOICE_PAY_TYPES.VALUE_AND_WAGES, label: "قيمة وأجور" },
+  ] as const;
+
+  const handlePayTypeChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextValue = Number(event.target.value);
+    const validValues = payTypeOptions.map((option) => option.value);
+
+    if (validValues.includes(nextValue as InvoicePayType)) {
+      setPayType(nextValue as InvoicePayType);
+    }
+  };
+
   const resolveCustomerValue = (cust: Customer) =>
     String(cust.cust_code ?? cust.id ?? "");
 
@@ -336,16 +353,18 @@ export default function InvoiceSelectors({
                 >
                   على:
                 </label>
-                <select
-                  className="w-full h-[32px] border px-2 rounded text-xs"
-                  id="pay-type"
-                  value={payType}
-                  onChange={(e) => setPayType(parseInt(e.target.value))}
-                >
-                  <option value={1}>القيمة</option>
-                  <option value={2}>الأجور</option>
-                  <option value={3}>قيمة وأجور</option>
-                </select>
+            <select
+              className="w-full h-[32px] border px-2 rounded text-xs"
+              id="pay-type"
+              value={payType}
+              onChange={handlePayTypeChange}
+            >
+              {payTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
               </div>
             </div>
 

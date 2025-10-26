@@ -5,13 +5,6 @@ export enum TransTypes {
   SALES_RETURN = 4,
 }
 
-export enum InvoiceTypes {
-  VALUE = 1,
-  WAGES = 2,
-  BOTH = 3,
-}
-
-
 export type InvoiceMaxIdPrimitive = number | string | null | undefined;
 
 export type InvoiceMaxIdRecord = {
@@ -26,6 +19,25 @@ export type InvoiceMaxIdPayload =
   | InvoiceMaxIdPrimitive
   | InvoiceMaxIdRecord
   | InvoiceMaxIdRecord[];
+export enum InvoiceTypes {
+  VALUE = 1,
+  WAGES = 2,
+  BOTH = 3,
+}
+
+export const INVOICE_PAY_TYPES = {
+  VALUE: 1,
+  WAGES: 2,
+  VALUE_AND_WAGES: 3,
+} as const;
+
+export type InvoicePayType =
+  (typeof INVOICE_PAY_TYPES)[keyof typeof INVOICE_PAY_TYPES];
+
+/**
+ * Represents how the invoice was paid (cash vs credit).
+ * Distinct from InvoicePayType which controls value/wages calculation.
+ */
 export enum PaymentTypes {
   CASH = 1,
   CREDIT = 2,
@@ -43,7 +55,7 @@ export interface Invoice {
   cust?: number;
   inv_type: InvoiceTypes;
   trans_type: TransTypes;
-  pay_type: PaymentTypes;
+  pay_type: InvoicePayType;
   ref_no: string | null;
   cust_code: string;
   cust_name: string;
