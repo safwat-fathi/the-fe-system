@@ -173,17 +173,20 @@ export default function ItemsClient({
     page = 1,
   ) => {
     try {
-      const itemsArray = await itemService.getAllItems();
+      const itemsArray = await itemService.searchItems({
+        page: page,
+        query: "",
+      });
 
-      const filteredItems = itemsArray.filter((item: any) => {
+      const filteredItems = itemsArray?.results.filter((item: any) => {
         if (xcat && xcat !== 0 && item.cat !== xcat) return false;
         if (xtype && xtype !== 0 && item.item_type !== xtype) return false;
 
         return true;
       });
 
-      setItems(filteredItems);
-      setItemsCount(filteredItems.length);
+      setItems(filteredItems || []);
+      setItemsCount(filteredItems?.length || 0);
       setItemsNextUrl(null);
       setItemsPrevUrl(null);
     } catch (err) {
@@ -194,21 +197,22 @@ export default function ItemsClient({
 
   const searchItems = async (query: string, url?: string, page = 1) => {
     try {
-      const itemsArray = await itemService.getAllItems();
+      const itemsArray = await itemService.searchItems({ query, page });
+
       const term = query.toLowerCase();
-      const filtered = itemsArray.filter((item: any) => {
+      const filtered = itemsArray?.results.filter((item: any) => {
         const code = (item.item_code ?? item.code ?? "").toLowerCase();
         const name = (item.item_name ?? item.text ?? "").toLowerCase();
 
         return code.includes(term) || name.includes(term);
       });
-      const mapped = filtered.map((item: any) => ({
+      const mapped = filtered?.map((item: any) => ({
         ...item,
         item_name: item.item_name ?? item.text ?? "",
       }));
 
-      setItems(mapped);
-      setItemsCount(mapped.length);
+      setItems(mapped || []);
+      setItemsCount(mapped?.length || 0);
       setItemsNextUrl(null);
       setItemsPrevUrl(null);
     } catch (err) {
@@ -217,8 +221,9 @@ export default function ItemsClient({
     }
   };
 
+	console.log("🚀 ~ :230 ~ ItemsClient ~ items:", items);
   const filteredItems = search.trim()
-    ? items.filter((item) => {
+    ? items.results.filter((item) => {
         const term = search.toLowerCase();
 
         return (

@@ -21,7 +21,7 @@ export default async function ItemsPage() {
     catTypesData,
     catStatusesData,
   ] = await Promise.all([
-    itemService.getAllItems().catch(() => []),
+    itemService.searchItems({ query: "", page: 1 }).catch(() => []),
     helperService.getCategories().catch(() => []),
     helperService.getItemTypes().catch(() => []),
     helperService.getUnits().catch(() => []),
@@ -40,7 +40,7 @@ export default async function ItemsPage() {
         initialCatTypes={catTypesData as any}
         initialCategories={categoriesData as any}
         initialItemTypes={itemTypesData as any}
-        initialItems={itemsData as any}
+        initialItems={itemsData.results as any}
         initialUnits={unitsData as any}
       />
     </div>
