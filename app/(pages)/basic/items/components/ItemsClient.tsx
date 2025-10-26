@@ -11,35 +11,26 @@ import toast from "react-hot-toast";
 
 import Card from "@/components/Card";
 import AppDataTable from "@/components/AppDataTable";
-import {
-  HeroModal as Modal,
-  ModalBody,
-  ModalContent,
-  ModalHeader,
-} from "@/components/Modal";
+
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import useFractions, { Fractions } from "@/utilities/useFractions";
-import { Item } from "@/types/models/item";
+import itemService from "@/services/api/item.service";
+import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
+import type { Item as ItemModel } from "@/types/models/item";
 import { createItemColumns } from "@/components/items/itemColumns";
+import AddItem from "./AddItem";
 
-type Category = {
-  id: number;
-  cat_name: string;
-};
-
-type ItemType = {
-  id: number;
-  type_name: string;
-};
+type ModalMode = "add" | "edit" | "view";
 
 type ItemsClientProps = {
-  initialItems: Item[];
+  initialItems: ItemModel[];
   totalItems: number;
   totalPages: number;
   currentPage: number;
   initialQuery: string;
   initialCategories: Category[];
   initialItemTypes: ItemType[];
+  initialUnits: Unit[];
 };
 
 type FilterParams = {
@@ -64,6 +55,31 @@ const DEFAULT_FILTERS: FilterParams = {
   page: "1",
 };
 
+const createEmptyItem = (): ItemForm => ({
+  id: 0,
+  item_name: "",
+  item_name_e: "",
+  item_price: "0.00",
+  item_img: "/default.png",
+  item_code: "0000000000000",
+  item_barcode: "",
+  first_cost: "0.00",
+  item_weight: "0.00",
+  item_g_weight: "0.00",
+  stones: "0.00",
+  model: "",
+  k: "0.00",
+  purity: "0.00",
+  item_status: 1,
+  cr_date: "",
+  cr_user: "",
+  upd_date: "",
+  upd_user: "",
+  cat: null,
+  item_type: null,
+  unit: null,
+});
+
 export default function ItemsClient({
   initialItems,
   totalItems,
@@ -72,52 +88,60 @@ export default function ItemsClient({
   initialQuery,
   initialCategories,
   initialItemTypes,
+  initialUnits,
 }: ItemsClientProps) {
-  const [items, setItems] = useState<Item[]>(initialItems);
+  const [items, setItems] = useState<ItemModel[]>(initialItems);
+  const [itemsCount, setItemsCount] = useState(totalItems);
+  const [categories] = useState<Category[]>(initialCategories);
+  const [itemTypesState] = useState<ItemType[]>(initialItemTypes);
+  const [units] = useState<Unit[]>(initialUnits);
   const [searchValue, setSearchValue] = useState(initialQuery);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ItemModel | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode>("add");
+  const [newItem, setNewItem] = useState<ItemForm>(() => createEmptyItem());
 
   const fractions = useFractions() as Fractions;
 
   const categoryOptions = useMemo(
     () =>
-      initialCategories.map(({ id, cat_name }) => ({
+      categories.map(({ id, cat_name }) => ({
         key: String(id),
         label: cat_name,
       })),
-    [initialCategories],
+    [categories],
   );
 
   const categoryLookup = useMemo(() => {
     const lookup = new Map<number, string>();
 
-    initialCategories.forEach((category) => {
+    categories.forEach((category) => {
       lookup.set(category.id, category.cat_name);
     });
 
     return lookup;
-  }, [initialCategories]);
+  }, [categories]);
 
   const itemTypeOptions = useMemo(
     () =>
-      initialItemTypes.map(({ id, type_name }) => ({
+      itemTypesState.map(({ id, type_name }) => ({
         key: String(id),
         label: type_name,
       })),
-    [initialItemTypes],
+    [itemTypesState],
   );
 
   const itemTypeLookup = useMemo(() => {
     const lookup = new Map<number, string>();
 
-    initialItemTypes.forEach((type) => {
+    itemTypesState.forEach((type) => {
       lookup.set(type.id, type.type_name);
     });
 
     return lookup;
-  }, [initialItemTypes]);
+  }, [itemTypesState]);
 
   const { params, setParams } = useQueryParams<FilterParams>(
     ["search", "category", "itemType", "status", "page"],
@@ -158,11 +182,52 @@ export default function ItemsClient({
 
   useEffect(() => {
     setItems(initialItems);
-  }, [initialItems]);
+    setItemsCount(totalItems);
+  }, [initialItems, totalItems]);
 
   useEffect(() => {
     setSearchValue(params.search ?? "");
   }, [params.search]);
+
+  const refreshItems = async () => {
+    try {
+      const response = await itemService.searchItems({
+        query: params.search ?? "",
+        page: Number(params.page ?? "1") || 1,
+      });
+
+      setItems(response.results);
+      setItemsCount(response.count);
+    } catch (error) {
+      console.error("خطأ في تحديث قائمة الأصناف:", error);
+    }
+  };
+
+  const handleOpenAddModal = () => {
+    setModalMode("add");
+    setNewItem(createEmptyItem());
+    setIsModalOpen(true);
+  };
+
+  const handleAddItem = async () => {
+    try {
+      const result = await itemService.createItem(newItem);
+
+      if (result) {
+        toast.success("✅ تمت إضافة الصنف بنجاح");
+        setIsModalOpen(false);
+        await refreshItems();
+      } else {
+        toast.error("❌ فشل في إضافة الصنف");
+      }
+    } catch (error) {
+      toast.error("❌ حدث خطأ أثناء إضافة الصنف");
+    }
+  };
+
+  const handleUpdateItem = () => {
+    toast("تعديل الأصناف غير متاح حالياً", { icon: "ℹ️" });
+  };
 
   const filteredItems = useMemo(() => {
     const term = (params.search ?? "").trim().toLowerCase();
@@ -254,11 +319,8 @@ export default function ItemsClient({
               </p>
             </div>
             <Button
-              // color="primary"
               startContent={<PlusIcon className="h-4 w-4" />}
-              onPress={() =>
-                toast("إضافة الأصناف ستتوفر قريباً", { icon: "🛠️" })
-              }
+              onPress={handleOpenAddModal}
             >
               إضافة صنف
             </Button>
@@ -355,7 +417,7 @@ export default function ItemsClient({
       <div className="my-4 flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
         <span>
           إجمالي الأصناف:{" "}
-          <strong className="font-semibold text-gray-800">{totalItems}</strong>
+          <strong className="font-semibold text-gray-800">{itemsCount}</strong>
         </span>
         {/* <span>
           الصفحة الحالية:{" "}
@@ -382,78 +444,21 @@ export default function ItemsClient({
         }
         filterable={false}
         searchable={false}
-        title={`قائمة الأصناف (${totalItems} صنف)`}
+        title={`قائمة الأصناف (${itemsCount} صنف)`}
       />
 
-      <Modal
-        isOpen={isDetailsOpen && Boolean(selectedItem)}
-        placement="center"
-        size="lg"
-        onClose={() => setIsDetailsOpen(false)}
-      >
-        <ModalContent className="font-cairo">
-          <ModalHeader>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">
-                تفاصيل الصنف
-              </h3>
-              <p className="text-sm text-gray-500">
-                استعرض معلومات الصنف المحدد
-              </p>
-            </div>
-          </ModalHeader>
-          <ModalBody className="space-y-3">
-            {selectedItem ? (
-              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <dt className="text-xs text-gray-500">اسم الصنف</dt>
-                  <dd className="text-sm font-medium text-gray-800">
-                    {selectedItem.item_name || "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-gray-500">كود الصنف</dt>
-                  <dd className="text-sm font-medium text-gray-800">
-                    {selectedItem.item_code || "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-gray-500">الفئة</dt>
-                  <dd className="text-sm font-medium text-gray-800">
-                    {selectedCategoryLabel}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-gray-500">نوع الصنف</dt>
-                  <dd className="text-sm font-medium text-gray-800">
-                    {selectedItemTypeLabel}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-gray-500">السعر</dt>
-                  <dd className="text-sm font-medium text-gray-800">
-                    {selectedItem.item_price ?? "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-gray-500">الوزن</dt>
-                  <dd className="text-sm font-medium text-gray-800">
-                    {selectedItem.item_weight ?? "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-gray-500">الحالة</dt>
-                  <dd className="text-sm font-medium text-gray-800">
-                    {Number(selectedItem.item_status ?? 0) === 1
-                      ? "فعال"
-                      : "غير فعال"}
-                  </dd>
-                </div>
-              </dl>
-            ) : null}
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+      <AddItem
+        categories={categories}
+        isOpen={isModalOpen}
+        item={newItem}
+        itemTypes={itemTypesState}
+        mode={modalMode}
+        onAdd={handleAddItem}
+        onChange={setNewItem}
+        onClose={() => setIsModalOpen(false)}
+        onUpdate={handleUpdateItem}
+        units={units}
+      />
     </>
   );
 }

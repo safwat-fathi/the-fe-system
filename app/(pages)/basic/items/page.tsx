@@ -7,16 +7,7 @@ import helperService from "@/services/api/helper.service";
 import itemService from "@/services/api/item.service";
 import { Item } from "@/types/models/item";
 import { IPaginatedResponse } from "@/types/services/base";
-
-type Category = {
-  id: number;
-  cat_name: string;
-};
-
-type ItemType = {
-  id: number;
-  type_name: string;
-};
+import type { Category, ItemType, Unit } from "@/types/items";
 
 export const metadata: Metadata = {
   title: "الأصناف - NafeesWeb",
@@ -38,7 +29,7 @@ export default async function ItemsPage({
     ? searchParam[0] || ""
     : searchParam || "";
 
-  const [itemsData, categoriesData, itemTypesData] = await Promise.all([
+  const [itemsData, categoriesData, itemTypesData, unitsData] = await Promise.all([
     itemService.searchItems({ page: currentPage, query: searchQuery }).catch(
       (): IPaginatedResponse<Item> => ({
         count: 0,
@@ -49,6 +40,7 @@ export default async function ItemsPage({
     ),
     helperService.getCategories().catch(() => []),
     helperService.getItemTypes().catch(() => []),
+    helperService.getUnits().catch(() => []),
   ]);
 
   const itemsPerPage =
@@ -64,6 +56,7 @@ export default async function ItemsPage({
         currentPage={currentPage}
         initialCategories={categoriesData as Category[]}
         initialItemTypes={itemTypesData as ItemType[]}
+        initialUnits={unitsData as Unit[]}
         initialItems={itemsData.results as Item[]}
         initialQuery={searchQuery}
         totalItems={itemsData.count}

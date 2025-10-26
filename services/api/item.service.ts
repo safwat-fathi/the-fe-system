@@ -1,10 +1,35 @@
 import { HttpService } from "@/services/base";
 import { IPaginatedResponse } from "@/types/services/base";
 import { Item, SearchItemsParams } from "@/types/models/item";
+import type { ItemForm } from "@/types/items";
 
 class ItemService extends HttpService<Item> {
   constructor() {
     super("");
+  }
+
+  private buildItemFormData(payload: Partial<ItemForm>): FormData {
+    const formData = new FormData();
+
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value === undefined || value === null) {
+        return;
+      }
+
+      if (key === "item_img") {
+        if (typeof File !== "undefined" && value instanceof File) {
+          formData.append(key, value);
+        } else if (typeof value === "string") {
+          formData.append(key, value);
+        }
+
+        return;
+      }
+
+      formData.append(key, String(value));
+    });
+
+    return formData;
   }
 
   // async getAllItems(): Promise<IPaginatedResponse<Item> | null> {
@@ -131,6 +156,63 @@ class ItemService extends HttpService<Item> {
     } catch (error) {
       console.error("Error searching items:", error);
       throw new Error("حدث خطأ أثناء البحث عن الأصناف");
+    }
+  }
+
+  async createItem(item: ItemForm): Promise<Item | null> {
+    try {
+      const response = await this.post<Item>(
+        "api_create_item",
+        this.buildItemFormData(item),
+        undefined,
+        {
+          cache: "no-store",
+        },
+      );
+
+      if (response.success && response.data) {
+        return response.data as Item;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error creating item:", error);
+      throw new Error("حدث خطأ أثناء إنشاء الصنف");
+    }
+  }
+
+  async updateItem(id: number, item: Partial<ItemForm>): Promise<Item | null> {
+    try {
+      const response = await this.put<Item>(
+        `api_update_item/${id}`,
+        this.buildItemFormData(item),
+        undefined,
+        {
+          cache: "no-store",
+        },
+      );
+
+      if (response.success && response.data) {
+        return response.data as Item;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error updating item:", error);
+      throw new Error("حدث خطأ أثناء تحديث الصنف");
+    }
+  }
+
+  async deleteItem(id: number): Promise<boolean> {
+    try {
+      const response = await this.delete(`api_delete_item/${id}`, undefined, {
+        cache: "no-store",
+      });
+
+      return Boolean(response.success);
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      throw new Error("حدث خطأ أثناء حذف الصنف");
     }
   }
 }
