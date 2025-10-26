@@ -104,7 +104,7 @@ const goldBasicLinks = [
     icon: <UserGroupIcon className="h-5 w-5" />,
   },
   {
-    name: "الأصناب",
+    name: "الأصناف",
     href: "/basic/items",
     icon: <CubeIcon className="h-5 w-5" />,
   },

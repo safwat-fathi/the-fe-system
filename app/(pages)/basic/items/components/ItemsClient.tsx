@@ -221,7 +221,6 @@ export default function ItemsClient({
     }
   };
 
-	console.log("🚀 ~ :230 ~ ItemsClient ~ items:", items);
   const filteredItems = search.trim()
     ? items.results.filter((item) => {
         const term = search.toLowerCase();
