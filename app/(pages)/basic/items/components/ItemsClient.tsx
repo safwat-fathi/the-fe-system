@@ -246,7 +246,7 @@ export default function ItemsClient({
         <CardBody className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">
+              <h2 className="text-xl text-right font-semibold text-gray-800">
                 إدارة الأصناف
               </h2>
               <p className="text-sm text-gray-500">
@@ -254,7 +254,7 @@ export default function ItemsClient({
               </p>
             </div>
             <Button
-              color="primary"
+              // color="primary"
               startContent={<PlusIcon className="h-4 w-4" />}
               onPress={() =>
                 toast("إضافة الأصناف ستتوفر قريباً", { icon: "🛠️" })
@@ -352,12 +352,12 @@ export default function ItemsClient({
         </CardBody>
       </Card>
 
-      <div className="mt-4 flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+      <div className="my-4 flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
         <span>
           إجمالي الأصناف:{" "}
           <strong className="font-semibold text-gray-800">{totalItems}</strong>
         </span>
-        <span>
+        {/* <span>
           الصفحة الحالية:{" "}
           <strong className="font-semibold text-gray-800">
             {currentPage} / {Math.max(totalPages, 1)}
@@ -368,7 +368,7 @@ export default function ItemsClient({
           <strong className="font-semibold text-gray-800">
             {filteredItems.length}
           </strong>
-        </span>
+        </span> */}
       </div>
 
       <AppDataTable
