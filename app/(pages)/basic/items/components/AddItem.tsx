@@ -70,7 +70,13 @@ const AddItem = ({
   };
 
   return (
-    <Modal isOpen={isOpen} scrollBehavior="inside" size="5xl" onClose={onClose}>
+    <Modal
+      isDismissable={false}
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="5xl"
+      onClose={onClose}
+    >
       <ModalContent className="font-cairo max-h-[90vh]">
         <ModalHeader>
           <div>
