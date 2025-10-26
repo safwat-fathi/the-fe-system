@@ -18,6 +18,7 @@ import itemService from "@/services/api/item.service";
 import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
 import type { Item as ItemModel } from "@/types/models/item";
 import { createItemColumns } from "@/components/items/itemColumns";
+import { revalidateItemsDataAction } from "@/app/actions/item";
 import AddItem from "./AddItem";
 
 type ModalMode = "add" | "edit" | "view";
@@ -31,6 +32,7 @@ type ItemsClientProps = {
   initialCategories: Category[];
   initialItemTypes: ItemType[];
   initialUnits: Unit[];
+  companyId: number;
 };
 
 type FilterParams = {
@@ -55,12 +57,12 @@ const DEFAULT_FILTERS: FilterParams = {
   page: "1",
 };
 
-const createEmptyItem = (): ItemForm => ({
+const createEmptyItem = (companyId: number): ItemForm => ({
   id: 0,
   item_name: "",
   item_name_e: "",
   item_price: "0.00",
-  item_img: "/default.png",
+  item_img: null,
   item_code: "0000000000000",
   item_barcode: "",
   first_cost: "0.00",
@@ -78,6 +80,7 @@ const createEmptyItem = (): ItemForm => ({
   cat: null,
   item_type: null,
   unit: null,
+  com: companyId,
 });
 
 export default function ItemsClient({
@@ -89,6 +92,7 @@ export default function ItemsClient({
   initialCategories,
   initialItemTypes,
   initialUnits,
+  companyId,
 }: ItemsClientProps) {
   const [items, setItems] = useState<ItemModel[]>(initialItems);
   const [itemsCount, setItemsCount] = useState(totalItems);
@@ -101,7 +105,9 @@ export default function ItemsClient({
   const [isPending, startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("add");
-  const [newItem, setNewItem] = useState<ItemForm>(() => createEmptyItem());
+  const [newItem, setNewItem] = useState<ItemForm>(() =>
+    createEmptyItem(companyId),
+  );
 
   const fractions = useFractions() as Fractions;
 
@@ -189,34 +195,27 @@ export default function ItemsClient({
     setSearchValue(params.search ?? "");
   }, [params.search]);
 
-  const refreshItems = async () => {
-    try {
-      const response = await itemService.searchItems({
-        query: params.search ?? "",
-        page: Number(params.page ?? "1") || 1,
-      });
-
-      setItems(response.results);
-      setItemsCount(response.count);
-    } catch (error) {
-      console.error("خطأ في تحديث قائمة الأصناف:", error);
-    }
-  };
-
   const handleOpenAddModal = () => {
-    setModalMode("add");
-    setNewItem(createEmptyItem());
-    setIsModalOpen(true);
-  };
+      setModalMode("add");
+      setNewItem(createEmptyItem(companyId));
+      setIsModalOpen(true);
+    };
 
   const handleAddItem = async () => {
+    if (!(newItem.item_img instanceof File)) {
+      toast.error("❌ يجب رفع صورة للصنف قبل الحفظ");
+      return;
+    }
+
     try {
       const result = await itemService.createItem(newItem);
 
       if (result) {
         toast.success("✅ تمت إضافة الصنف بنجاح");
         setIsModalOpen(false);
-        await refreshItems();
+        setNewItem(createEmptyItem(companyId));
+        await revalidateItemsDataAction();
+        // await refreshItems();
       } else {
         toast.error("❌ فشل في إضافة الصنف");
       }

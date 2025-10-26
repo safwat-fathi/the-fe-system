@@ -1,13 +1,14 @@
 import { Metadata } from "next";
 
-import ItemsClient from "./components/ItemsClient";
-
 import AppPagination from "@/components/AppPagination";
+import { getBranchParams } from "@/app/actions/branch-params";
 import helperService from "@/services/api/helper.service";
 import itemService from "@/services/api/item.service";
 import { Item } from "@/types/models/item";
 import { IPaginatedResponse } from "@/types/services/base";
 import type { Category, ItemType, Unit } from "@/types/items";
+
+import ItemsClient from "./components/ItemsClient";
 
 export const metadata: Metadata = {
   title: "الأصناف - NafeesWeb",
@@ -29,15 +30,24 @@ export default async function ItemsPage({
     ? searchParam[0] || ""
     : searchParam || "";
 
+  const branchParams = await getBranchParams();
+  const parsedCompanyId = Number(branchParams.com ?? "1");
+  const companyId =
+    Number.isFinite(parsedCompanyId) && parsedCompanyId > 0
+      ? parsedCompanyId
+      : 1;
+
   const [itemsData, categoriesData, itemTypesData, unitsData] = await Promise.all([
-    itemService.searchItems({ page: currentPage, query: searchQuery }).catch(
-      (): IPaginatedResponse<Item> => ({
-        count: 0,
-        next: null,
-        previous: null,
-        results: [],
-      }),
-    ),
+    itemService
+      .searchItems({ page: currentPage, query: searchQuery, companyId })
+      .catch(
+        (): IPaginatedResponse<Item> => ({
+          count: 0,
+          next: null,
+          previous: null,
+          results: [],
+        }),
+      ),
     helperService.getCategories().catch(() => []),
     helperService.getItemTypes().catch(() => []),
     helperService.getUnits().catch(() => []),
@@ -61,6 +71,7 @@ export default async function ItemsPage({
         initialQuery={searchQuery}
         totalItems={itemsData.count}
         totalPages={totalPages}
+        companyId={companyId}
       />
 
       <AppPagination total={totalPages} />

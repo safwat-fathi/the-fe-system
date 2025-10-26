@@ -59,14 +59,12 @@ const AddItem = ({
     };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.target.files?.[0] ?? null;
 
-    if (file) {
-      onChange({
-        ...item,
-        item_img: file,
-      });
-    }
+    onChange({
+      ...item,
+      item_img: file,
+    });
   };
 
   return (
@@ -260,6 +258,7 @@ const AddItem = ({
                 accept="image/*"
                 className="input-field w-full md:max-w-md"
                 disabled={isViewMode}
+                required={!isViewMode && mode === "add"}
                 type="file"
                 onChange={handleFileChange}
               />

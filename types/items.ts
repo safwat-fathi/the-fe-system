@@ -21,7 +21,7 @@ export type ItemForm = {
   item_name: string;
   item_name_e: string;
   item_price: string;
-  item_img: string | File;
+  item_img: File | null;
   item_code: string;
   item_barcode: string;
   first_cost: string;
@@ -39,6 +39,7 @@ export type ItemForm = {
   cat: number | null;
   item_type: number | null;
   unit: number | null;
+  com: number;
 };
 
 export type ItemType = {

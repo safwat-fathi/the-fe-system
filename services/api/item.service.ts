@@ -19,8 +19,6 @@ class ItemService extends HttpService<Item> {
       if (key === "item_img") {
         if (typeof File !== "undefined" && value instanceof File) {
           formData.append(key, value);
-        } else if (typeof value === "string") {
-          formData.append(key, value);
         }
 
         return;
@@ -131,7 +129,13 @@ class ItemService extends HttpService<Item> {
         },
         {
           cache: "force-cache",
-          next: { tags: [`items-search-${query}-${page}`] },
+          next: {
+            tags: [
+              "items",
+              `items-company-${companyId}`,
+              `items-search-${companyId}-${query}-${page}`,
+            ],
+          },
         },
       );
 
@@ -161,12 +165,28 @@ class ItemService extends HttpService<Item> {
 
   async createItem(item: ItemForm): Promise<Item | null> {
     try {
+      const companyId = Number(item.com);
+
+      if (!Number.isFinite(companyId) || companyId <= 0) {
+        throw new Error("رمز الفرع مطلوب قبل إنشاء الصنف");
+      }
+
+      if (typeof File !== "undefined" && !(item.item_img instanceof File)) {
+        throw new Error("صورة الصنف مطلوبة قبل الإنشاء");
+      }
+
+      const formData = this.buildItemFormData({
+        ...item,
+        com: companyId,
+      });
+
       const response = await this.post<Item>(
         "api_create_item",
-        this.buildItemFormData(item),
+        formData,
         undefined,
         {
           cache: "no-store",
+          signal: AbortSignal.timeout(60000),
         },
       );
 
