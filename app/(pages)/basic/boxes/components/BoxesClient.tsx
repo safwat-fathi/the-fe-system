@@ -32,6 +32,7 @@ import {
 } from "@/components/Modal";
 import boxService from "@/services/api/box.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
+import { boxesService } from "@/services/api";
 
 // Interface for customer boxes (customers with cust_type = 99)
 interface CustomerBox {
@@ -91,16 +92,17 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   const rowsPerPage = 10;
 
   // إعادة تحميل البيانات
-  const loadBoxes = async () => {
-    try {
-      const data = await boxService.getAllBoxes();
+  // const loadBoxes = async () => {
+  //   try {
+  //     // const data = await boxService.getAllBoxes();
+  //     const data = await boxesService.getBoxes();
 
-      setBoxes(data);
-    } catch (error) {
-      toast.error("فشل في جلب الصناديق");
-      setBoxes([]);
-    }
-  };
+  //     setBoxes(data as any[]);
+  //   } catch (error) {
+  //     toast.error("فشل في جلب الصناديق");
+  //     setBoxes([]);
+  //   }
+  // };
 
   const loadBoxTypes = async () => {
     try {
@@ -157,7 +159,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         await revalidateTableData("boxes_list");
 
         setIsModalOpen(false);
-        loadBoxes();
+        // loadBoxes();
       } else {
         // Rollback on failure
         setBoxes(previousBoxes);
@@ -186,8 +188,6 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
         // Revalidate cache
         await revalidateTableData("boxes_list");
-
-        loadBoxes();
       } else {
         // Rollback on failure
         setBoxes(previousBoxes);
@@ -260,9 +260,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
     return (
       <div className="text-center py-8">
         <p className="text-red-500 mb-4">لا يمكن تحميل البيانات: {error}</p>
-        <Button color="primary" onClick={loadBoxes}>
-          إعادة المحاولة
-        </Button>
+        <Button color="primary">إعادة المحاولة</Button>
       </div>
     );
   }
