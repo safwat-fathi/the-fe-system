@@ -186,4 +186,4 @@ export const STORAGE_KEYS = {
 - deleting files, chmod
 - running full build
 
-Always write your plan in a markdown file and then ask before implementation.
+Always propose and write your plan in a markdown file and then ask before implementation.
