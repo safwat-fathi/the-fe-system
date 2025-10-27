@@ -53,7 +53,7 @@ const getVoucherDetails = cache(
       const parsedBranchId = Number(branchId ?? 1) || 1;
 
       const detailsResponse = await voucherService.getDetails(voucherId, {
-        com: parsedBranchId,
+        xcom_id: parsedBranchId,
       });
 
       if (!detailsResponse.success || !detailsResponse.data) {
@@ -92,7 +92,7 @@ export default async function VoucherEditPage({
     notFound();
   }
 
-  // جلب تفاصيل القيد - يجب استخدام id (معرف القيد من جدول vouchers)
+  // جلب تفاصيل القيد - استخدام id من targetVoucher
   const branchId =
     Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
   const detailsData = await getVoucherDetails(targetVoucher.id, branchId);
