@@ -1,7 +1,6 @@
 "use client";
 
 import BalanceVoucherHeader from "./BalanceVoucherHeader";
-import BalanceVoucherActions from "./BalanceVoucherActions";
 import BalanceVoucherForm from "./BalanceVoucherForm";
 import BalanceVoucherDetailsTable from "./BalanceVoucherDetailsTable";
 import BalanceVoucherTotals from "./BalanceVoucherTotals";
@@ -53,28 +52,17 @@ export default function BalanceVoucherContainer({
 }: BalanceVoucherContainerProps) {
   return (
     <div className="p-3 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
-      {/* رأس القيد */}
+      {/* رأس القيد مع الأزرار */}
       <BalanceVoucherHeader
         currentTime={currentTime}
         voucher={voucher}
         voucherTypes={voucherTypes}
+        isLoading={isLoading}
+        isPrinting={isPrinting}
+        isBalanced={isBalanced}
+        onSave={onSave}
+        onPrint={onPrint}
       />
-
-      {/* شريط الأزرار */}
-      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-3 mb-4 border border-slate-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BalanceVoucherActions
-              isBalanced={isBalanced}
-              isLoading={isLoading}
-              isPrinting={isPrinting}
-              voucher={voucher}
-              onPrint={onPrint}
-              onSave={onSave}
-            />
-          </div>
-        </div>
-      </div>
 
       {/* نموذج بيانات القيد */}
       <BalanceVoucherForm

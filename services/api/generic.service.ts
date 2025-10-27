@@ -102,6 +102,40 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
   users_list: {
     endpoint: "users_list",
   },
+
+  // Voucher Details (تفاصيل القيود - تحتاج id و xcom_id فقط)
+  vouchers_dtl_list: {
+    endpoint: "vouchers_dtl_list",
+    paramTransform: (params) => ({
+      id: params.id || params.voucherId || "0", // معرف القيد من جدول vouchers
+      xcom_id: params.xcom_id || params.com || "1", // رقم الفرع
+      // لا يحتاج year parameter
+    }),
+  },
+
+  // Invoice Details (تفاصيل الفواتير - تحتاج xinv_id و xcom_id فقط)
+  invoices_dtl_list: {
+    endpoint: "invoices_dtl_list",
+    paramTransform: (params) => ({
+      xcom_id: params.xcom_id || params.com || "1", // رقم الفرع
+      xtrans_type: params.xtrans_type || "0",
+      xinv_id: params.xinv_id || params.invoiceId || "0",
+      xfrom_date: params.xfrom_date || "0",
+      xto_date: params.xto_date || "0",
+      xinv_type: params.xinv_type || "0",
+      // لا يحتاج year parameter
+    }),
+  },
+
+  // Voucher Boxes (صناديق القيود - تحتاج vouch_id و xcom_id)
+  vouchers_box_list: {
+    endpoint: "vouchers_box_list",
+    paramTransform: (params) => ({
+      vouch_id: params.vouch_id || params.voucherId || "0",
+      xcom_id: params.xcom_id || params.com || "1", // رقم الفرع
+      // لا يحتاج year parameter
+    }),
+  },
 };
 
 class GenericService extends HttpService<any> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Table,
@@ -34,6 +34,8 @@ import Card from "@/components/Card";
 import { Voucher } from "@/types/voucher";
 import { deleteVoucherAction } from "@/app/actions/voucher.action";
 import { formatAmount } from "@/utilities/formatAmount";
+import { useQueryParams } from "@/utilities/hooks/useQueryParams";
+import { IParams } from "@/types/services/base";
 
 // VouchersTable Component
 interface VouchersTableProps {
@@ -65,8 +67,8 @@ function VouchersTable({
         <TableColumn>إجراءات</TableColumn>
       </TableHeader>
       <TableBody>
-        {vouchers.map((voucher) => (
-          <TableRow key={voucher.vouch_id}>
+        {vouchers.map((voucher, index) => (
+          <TableRow key={voucher.id || `voucher-${voucher.vouch_id}-${voucher.vouch_type}-${index}`}>
             <TableCell>
               <span className="font-semibold">{voucher.vouch_id}</span>
             </TableCell>
@@ -140,68 +142,88 @@ interface VoucherType {
 interface VouchersReportClientProps {
   initialVouchers: Voucher[];
   initialVoucherTypes: VoucherType[];
+  searchParams: IParams;
+  totalVouchers: number;
+  totalPages: number;
 }
 
 const VouchersReportClient = ({
   initialVouchers,
   initialVoucherTypes,
+  searchParams,
+  totalVouchers,
+  totalPages,
 }: VouchersReportClientProps) => {
   const router = useRouter();
+
+  // Query parameters management
+  const { params, setParams } = useQueryParams<{
+    xvouch_type: string;
+    xvouch_id: string;
+    xfrom_date: string;
+    xto_date: string;
+    page: string;
+  }>(["xvouch_type", "xvouch_id", "xfrom_date", "xto_date", "page"], {
+    defaultValues: {
+      xvouch_type: searchParams.xvouch_type || "0",
+      xvouch_id: searchParams.xvouch_id || "0",
+      xfrom_date: searchParams.xfrom_date || "0",
+      xto_date: searchParams.xto_date || "0",
+      page: searchParams.page || "1",
+    },
+    schema: {
+      xvouch_type: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "0",
+      },
+      xvouch_id: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "0",
+      },
+      xfrom_date: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "0",
+      },
+      xto_date: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "0",
+      },
+      page: {
+        parse: (value) => value,
+        serialize: (value) => value,
+        default: "1",
+      },
+    },
+    pushMode: "replace",
+    refreshOnChange: true,
+    debounce: 350,
+  });
 
   // State
   const [vouchers, setVouchers] = useState<Voucher[]>(initialVouchers);
   const [voucherTypes, setVoucherTypes] =
     useState<VoucherType[]>(initialVoucherTypes);
-  const [filteredVouchers, setFilteredVouchers] =
-    useState<Voucher[]>(initialVouchers);
-  const [selectedType, setSelectedType] = useState<string>("all");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const [searchQ, setSearchQ] = useState(params.xvouch_id || "");
+  const [activeTab, setActiveTab] = useState("all");
+  const [, startTransition] = useTransition();
 
-  // Filter vouchers based on search criteria
-  useEffect(() => {
-    let filtered = vouchers;
-
-    // Filter by type
-    if (selectedType !== "all") {
-      filtered = filtered.filter(
-        (v) => v.vouch_type?.toString() === selectedType,
-      );
-    }
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (v) =>
-          v.vouch_id?.toString().includes(searchTerm) ||
-          v.ref_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          v.vouch_notes?.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-    }
-
-    // Filter by date range
-    if (dateFrom) {
-      filtered = filtered.filter((v) => v.vouch_date >= dateFrom);
-    }
-    if (dateTo) {
-      filtered = filtered.filter((v) => v.vouch_date <= dateTo);
-    }
-
-    setFilteredVouchers(filtered);
-    setPage(1);
-  }, [vouchers, selectedType, searchTerm, dateFrom, dateTo]);
-
-  // Pagination
-  const pages = Math.ceil(filteredVouchers.length / rowsPerPage);
-  const items = useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-
-    return filteredVouchers.slice(start, end);
-  }, [page, filteredVouchers, rowsPerPage]);
+  // Clear filters function
+  const clearFilters = () => {
+    setSearchQ("");
+    startTransition(() =>
+      setParams({
+        xvouch_type: "0",
+        xvouch_id: "0",
+        xfrom_date: "0",
+        xto_date: "0",
+        page: "1",
+      }),
+    );
+  };
 
   // Get voucher type name
   const getVoucherTypeName = (typeId: number) => {
@@ -210,9 +232,9 @@ const VouchersReportClient = ({
     return type?.type_name || `نوع ${typeId}`;
   };
 
-  // Get vouchers by type
+  // Get vouchers by type (filtered on client side for tabs)
   const getVouchersByType = (typeId: number) => {
-    return filteredVouchers.filter((v) => v.vouch_type === typeId);
+    return vouchers.filter((v) => v.vouch_type === typeId);
   };
 
   // Get vouchers for specific types (سند قبض، سند صرف، قيد تسوية)
@@ -250,6 +272,7 @@ const VouchersReportClient = ({
   };
 
   const handleEdit = (voucher: Voucher) => {
+    // ✅ استخدام vouch_id وليس id
     router.push(`/forms/voucher/${voucher.vouch_id}`);
   };
 
@@ -280,7 +303,7 @@ const VouchersReportClient = ({
 
   // Calculate totals
   const calculateTotals = () => {
-    return filteredVouchers.reduce(
+    return vouchers.reduce(
       (acc, voucher) => {
         acc.totalAmount += voucher.vouch_amt || 0;
         acc.totalCount += 1;
@@ -325,43 +348,68 @@ const VouchersReportClient = ({
         {/* Filters */}
         <Card>
           <CardBody>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <Input
-                placeholder="بحث..."
+                placeholder="البحث بالرقم أو البيان..."
                 startContent={
                   <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
                 }
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchQ}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchQ(value);
+                  if (value === params.xvouch_id) return;
+                  startTransition(() => setParams({ xvouch_id: value, page: "1" }));
+                }}
               />
               <Select
                 placeholder="نوع السند"
-                selectedKeys={selectedType !== "all" ? [selectedType] : []}
-                onSelectionChange={(keys) => {
-                  const selected = Array.from(keys)[0] as string;
-
-                  setSelectedType(selected || "all");
-                }}
+                selectedKeys={[params.xvouch_type || "0"]}
+                onSelectionChange={(keys) =>
+                  startTransition(() =>
+                    setParams({
+                      xvouch_type: Array.from(keys)[0] as string,
+                      page: "1",
+                    }),
+                  )
+                }
               >
-                <SelectItem key="all">جميع الأنواع</SelectItem>
-                {voucherTypes.map((type) => (
-                  <SelectItem key={type.id.toString()}>
-                    {type.type_name}
-                  </SelectItem>
-                ))}
+                {[
+                  <SelectItem key="0">جميع الأنواع</SelectItem>,
+                  ...voucherTypes.map((type, idx) => (
+                    <SelectItem key={type.id || `type-${idx}`}>
+                      {type.type_name}
+                    </SelectItem>
+                  ))
+                ]}
               </Select>
               <Input
                 placeholder="من تاريخ"
                 type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                value={params.xfrom_date === "0" ? "" : params.xfrom_date}
+                onChange={(e) =>
+                  startTransition(() =>
+                    setParams({ xfrom_date: e.target.value || "0", page: "1" }),
+                  )
+                }
               />
               <Input
                 placeholder="إلى تاريخ"
                 type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                value={params.xto_date === "0" ? "" : params.xto_date}
+                onChange={(e) =>
+                  startTransition(() =>
+                    setParams({ xto_date: e.target.value || "0", page: "1" }),
+                  )
+                }
               />
+              <Button
+                className="btn-secondary"
+                variant="bordered"
+                onPress={clearFilters}
+              >
+                مسح الفلاتر
+              </Button>
             </div>
           </CardBody>
         </Card>
@@ -373,12 +421,18 @@ const VouchersReportClient = ({
           <h3 className="text-lg font-semibold">قائمة السندات</h3>
         </CardHeader>
         <CardBody>
-          <Tabs aria-label="أنواع السندات" color="primary" variant="underlined">
-            <Tab key="all" title={`جميع السندات (${filteredVouchers.length})`}>
+          <Tabs 
+            aria-label="أنواع السندات" 
+            color="primary" 
+            variant="underlined"
+            selectedKey={activeTab}
+            onSelectionChange={(key) => setActiveTab(key as string)}
+          >
+            <Tab key="all" title={`جميع السندات (${vouchers.length})`}>
               <VouchersTable
                 getStatusChip={getStatusChip}
                 getVoucherTypeName={getVoucherTypeName}
-                vouchers={items}
+                vouchers={vouchers}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onView={handleView}
@@ -425,20 +479,17 @@ const VouchersReportClient = ({
             </Tab>
           </Tabs>
 
-          {/* Pagination for main table */}
+          {/* Summary */}
           <div className="flex justify-between items-center mt-4">
             <div className="text-sm text-gray-600">
-              عرض {(page - 1) * rowsPerPage + 1} إلى{" "}
-              {Math.min(page * rowsPerPage, filteredVouchers.length)} من{" "}
-              {filteredVouchers.length} سند
+              إجمالي السندات: {totalVouchers} سند | 
+              إجمالي المبلغ: {formatAmount(totals.totalAmount)}
             </div>
-            <Pagination
-              showControls
-              showShadow
-              page={page}
-              total={pages}
-              onChange={setPage}
-            />
+            {totalPages > 1 && (
+              <div className="text-sm text-gray-600">
+                الصفحة {params.page} من {totalPages}
+              </div>
+            )}
           </div>
         </CardBody>
       </Card>

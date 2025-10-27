@@ -114,13 +114,6 @@ export default function BalanceVoucherDetailsTable({
       <div className="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
         <h3 className="text-lg font-semibold text-slate-800">تفاصيل القيد</h3>
         <div className="flex items-center gap-2">
-          <button
-            className="h-8 px-4 text-sm bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm font-medium"
-            onClick={onAddRow}
-          >
-            <i className="bi bi-plus-circle me-1" />
-            إضافة صف
-          </button>
           <span
             className={`text-xs px-2 py-1 rounded-full font-bold ${
               isBalanced
@@ -137,6 +130,15 @@ export default function BalanceVoucherDetailsTable({
       </div>
 
       <div className="p-2">
+        <div className="flex justify-between mb-2">
+          <button
+            type="button"
+            className="btn"
+            onClick={onAddRow}
+          >
+            + صف
+          </button>
+        </div>
         <div className="overflow-x-auto mb-3 max-w-full">
           <table className="min-w-[1200px] border text-sm text-center table-fixed">
             <thead className="bg-gray-100 text-xs font-bold">
@@ -460,7 +462,8 @@ export default function BalanceVoucherDetailsTable({
 
                   <td className="p-1 border">
                     <button
-                      className="h-6 w-6 text-xs bg-transparent text-red-600 hover:text-red-800 hover:bg-red-50 border border-red-200 rounded-sm flex items-center justify-center"
+                      className="text-red-600 font-bold"
+                      tabIndex={-1}
                       onClick={() => onRemoveRow(index)}
                     >
                       ×

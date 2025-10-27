@@ -235,7 +235,7 @@ export async function updateVoucherAction(
 
 export async function deleteVoucherAction(voucherId: number) {
   try {
-    const response = await voucherService.delete(voucherId);
+    const response = await voucherService.deleteVoucher(voucherId);
 
     if (response.success) {
       revalidatePath("/forms/voucher");
