@@ -133,27 +133,63 @@ class VoucherService extends HttpService<Voucher> {
 
   /**
    * الحصول على تفاصيل سند معين
-   * يجب تمرير id (معرف القيد من جدول vouchers) وليس vouch_id
-   * ملاحظة: vouchers_dtl_list لا يحتاج year parameter
+   * ملاحظة: vouchers_dtl_list يستخدم xvouch_id (id من جدول vouchers) و xcom_id
    */
   async getDetails(voucherId: number, params?: IParams) {
     const branchParam =
-      (params?.["com"] ??
+      (params?.["xcom_id"] ??
         params?.["com_id"] ??
-        params?.["xcom_id"] ??
+        params?.["com"] ??
         params?.["xcomp_id"]) ?? "1";
 
+    // إزالة com من البارامترات لعدم إرساله في الطلب
+    const { com, com_id, xcomp_id, ...cleanParams } = params || {};
+
     const queryParams: IParams = {
-      ...params,
-      id: voucherId, // معرف القيد من جدول vouchers
-      com: branchParam,
+      ...cleanParams,
+      xvouch_id: voucherId, // id من جدول vouchers
+      xcom_id: branchParam, // رقم الفرع
+      page: params?.page || "1", // pagination
     };
 
-    if (queryParams["xcom_id"] === undefined) {
-      queryParams["xcom_id"] = branchParam;
+    const response = await this.get<IPaginatedResponse<VoucherDetail>>(
+      "vouchers_dtl_list",
+      queryParams,
+    );
+
+    // معالجة الاستجابة المُقسّمة (pagination)
+    if (response.success && response.data) {
+      const data = response.data as any;
+
+      // إذا كانت الاستجابة تحتوي على results (pagination)
+      if (data.results && Array.isArray(data.results)) {
+        return {
+          success: true,
+          data: data.results,
+          count: data.count || data.results.length,
+          next: data.next,
+          previous: data.previous,
+          message: response.message,
+        };
+      }
+
+      // إذا كانت array مباشرة
+      if (Array.isArray(data)) {
+        return {
+          success: true,
+          data: data,
+          count: data.length,
+          message: response.message,
+        };
+      }
     }
 
-    return this.getList<VoucherDetail[]>("vouchers_dtl_list", queryParams);
+    return {
+      success: false,
+      data: [],
+      count: 0,
+      message: response.message || "لم يتم العثور على تفاصيل",
+    };
   }
 
   /**
@@ -231,19 +267,12 @@ class VoucherService extends HttpService<Voucher> {
    */
   async getNextNumber(voucherType: number = 3) {
     try {
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log("🔢 طلب رقم قيد جديد - النوع:", voucherType);
-
       // جلب جميع السندات
       const response = await this.getAll();
 
       if (!response.success || !response.data || response.data.length === 0) {
-        console.log("⚠️ لا توجد قيود، البدء من 1");
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         return 1;
       }
-
-      console.log("📥 إجمالي القيود المُستلمة:", response.data.length);
 
       // فلترة السندات حسب النوع
       const vouchers = response.data.filter(
@@ -254,22 +283,7 @@ class VoucherService extends HttpService<Voucher> {
           isFinite(v.vouch_id),
       );
 
-      console.log(`🔍 عدد القيود من النوع ${voucherType}:`, vouchers.length);
-
-      if (vouchers.length > 0) {
-        console.log(
-          "📋 القيود المفلترة:",
-          vouchers.map((v: any) => ({
-            id: v.id,
-            vouch_id: v.vouch_id,
-            vouch_type: v.vouch_type,
-          })),
-        );
-      }
-
       if (vouchers.length === 0) {
-        console.log(`⚠️ لا توجد قيود من النوع ${voucherType}، البدء من 1`);
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         return 1;
       }
 
@@ -280,13 +294,8 @@ class VoucherService extends HttpService<Voucher> {
 
       const nextId = maxId + 1;
 
-      console.log("📊 أكبر vouch_id من النوع", voucherType, "=", maxId);
-      console.log("✅ الرقم التالي =", nextId);
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
       return nextId;
     } catch (error) {
-      console.error("❌ خطأ في الحصول على رقم القيد:", error);
       return 1;
     }
   }

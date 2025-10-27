@@ -109,6 +109,13 @@ export default function VoucherClientPage({
     return () => clearInterval(interval);
   }, [isClient]);
 
+  // Load vouchers when modal opens
+  useEffect(() => {
+    if (isModalOpen) {
+      loadVouchersList();
+    }
+  }, [isModalOpen]);
+
   // Helper Functions
   const updateCurrentTime = () => {
     const now = new Date();
@@ -125,6 +132,17 @@ export default function VoucherClientPage({
   const updateAccountsList = (newAccount: any) => {
     if (!accounts.find((acc) => acc.id === newAccount.id)) {
       setAccounts([...accounts, newAccount]);
+    }
+  };
+
+  const loadVouchersList = async () => {
+    try {
+      const response = await voucherService.getAll();
+      if (response.success && response.data && Array.isArray(response.data)) {
+        setVouchersList(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading vouchers:", error);
     }
   };
 
@@ -504,13 +522,72 @@ export default function VoucherClientPage({
     }
   };
 
-  const createFromPrevious = () => {
+  const createFromPrevious = async () => {
     if (!selectedVoucher) {
       alert("يرجى اختيار قيد سابق");
       return;
     }
-    setIsModalOpen(false);
-    router.push(`/forms/voucher?copy=${selectedVoucher.vouch_id}&type=${selectedVoucher.vouch_type}`);
+
+    try {
+      setIsModalOpen(false);
+      setIsLoading(true);
+
+      // جلب تفاصيل القيد المحدد
+      const detailsResponse = await voucherService.getDetails(selectedVoucher.id);
+      
+      if (detailsResponse.success && detailsResponse.data && Array.isArray(detailsResponse.data)) {
+        // تحديث بيانات القيد
+        setVoucher({
+          ...selectedVoucher,
+          vouch_id: 0, // رقم جديد
+          vouch_date: new Date().toISOString(),
+          cr_date: new Date().toISOString(),
+          commit: false,
+          post: false,
+          print: false,
+        });
+
+        // نسخ التفاصيل
+        const formattedDetails = detailsResponse.data.map((detail: any) => ({
+          id: 0, // جديد
+          vouch_id: 0,
+          acc_id: detail.acc_id || detail.acc || 0,
+          acc_code: detail.acc_code || "",
+          acc_name: detail.acc_name || "",
+          cost_id: detail.cost_id || 0,
+          debit: parseFloat(detail.debit) || 0,
+          credit: parseFloat(detail.credit) || 0,
+          debit_g: parseFloat(detail.debit_g) || 0,
+          credit_g: parseFloat(detail.credit_g) || 0,
+          gauge: parseFloat(detail.gauge) || 875,
+          tax: parseFloat(detail.tax) || 0,
+          tax_prc: parseFloat(detail.tax_prc) || 0,
+          vat_no: detail.vat_no || 0,
+          vouch_notes: detail.vouch_notes || "",
+          cr_date: new Date().toISOString(),
+        }));
+
+        setDetails(formattedDetails);
+
+        // توليد رقم قيد جديد
+        const nextId = await voucherService.getNextNumber(selectedVoucher.vouch_type);
+        setVoucher((prev) => ({
+          ...prev,
+          vouch_id: nextId,
+        }));
+
+        // إعادة تعيين البحث
+        setSearchTerm("");
+        setSelectedVoucher(null);
+      } else {
+        alert("حدث خطأ أثناء تحميل تفاصيل القيد");
+      }
+    } catch (error) {
+      console.error("Error creating from previous voucher:", error);
+      alert("حدث خطأ أثناء نسخ القيد");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const allowEditing = formMode === "edit" || isNewVoucher;
@@ -842,11 +919,15 @@ export default function VoucherClientPage({
                   value={voucher.vouch_type || 3}
                   onChange={(e) => updateVoucherType(parseInt(e.target.value))}
                 >
-                  {voucherTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
+                  {voucherTypes && voucherTypes.length > 0 ? (
+                    voucherTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.type_name || type.name || `نوع ${type.id}`}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">لا توجد أنواع</option>
+                  )}
                 </select>
               </div>
 
