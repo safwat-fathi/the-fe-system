@@ -170,7 +170,7 @@ class InvoiceService extends HttpService<Invoice> {
         {
           // page: "1",
           xcom_id: "1",
-          xyear_id: "0",
+          // invoices_dtl_list لا يحتاج year parameter
           xtrans_type: transType || "0",
           xinv_id: invoiceId,
           xfrom_date: "0",

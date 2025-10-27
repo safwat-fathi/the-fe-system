@@ -75,6 +75,9 @@ class VoucherService extends HttpService<Voucher> {
         return {
           success: true,
           data: data.results,
+          count: data.count || data.results.length,
+          next: data.next,
+          previous: data.previous,
           message: response.message,
         };
       }
@@ -84,6 +87,7 @@ class VoucherService extends HttpService<Voucher> {
         return {
           success: true,
           data: data,
+          count: data.length,
           message: response.message,
         };
       }
@@ -92,6 +96,7 @@ class VoucherService extends HttpService<Voucher> {
     return {
       success: false,
       data: [],
+      count: 0,
       message: response.message || "لم يتم العثور على قيود",
     };
   }
@@ -120,20 +125,22 @@ class VoucherService extends HttpService<Voucher> {
   /**
    * حذف سند
    */
-  async delete(id: number) {
-    return this.delete<void>(`api_delete_vouch/${id}`);
+  async deleteVoucher(id: number) {
+    return this.delete(`api_delete_vouch/${id}`);
   }
 
   // ====== تفاصيل السند ======
 
   /**
    * الحصول على تفاصيل سند معين
+   * يجب تمرير id (معرف القيد من جدول vouchers) وليس vouch_id
+   * ملاحظة: vouchers_dtl_list لا يحتاج year parameter
    */
-  async getDetails(vouchId: number, params?: IParams) {
-    const queryParams = {
-      vouch_id: vouchId,
-      xcom_id: "1",
-      xyear_id: "0", // 0 = جميع السنوات (للقراءة)
+  async getDetails(voucherId: number, params?: IParams) {
+    const queryParams: any = {
+      id: voucherId, // معرف القيد من جدول vouchers
+      xcom_id: "1", // رقم الفرع (ثابت = 1)
+      // لا يحتاج year parameter
     };
 
     return this.getList<VoucherDetail[]>("vouchers_dtl_list", queryParams);
@@ -157,7 +164,7 @@ class VoucherService extends HttpService<Voucher> {
    * حذف تفصيل سند
    */
   async deleteDetail(id: number) {
-    return this.delete<void>(`api_delete_vouch_dtl/${id}`);
+    return this.delete(`api_delete_vouch_dtl/${id}`);
   }
 
   // ====== صناديق السند ======
@@ -168,6 +175,7 @@ class VoucherService extends HttpService<Voucher> {
   async getBoxes(vouchId: number) {
     return this.getList<VoucherBox[]>("vouchers_box_list", {
       vouch_id: vouchId,
+      xcom_id: "1", // رقم الفرع (ثابت = 1)
     });
   }
 
@@ -189,7 +197,7 @@ class VoucherService extends HttpService<Voucher> {
    * حذف صندوق سند
    */
   async deleteBox(id: number) {
-    return this.delete<void>(`api_delete_vouch_box/${id}`);
+    return this.delete(`api_delete_vouch_box/${id}`);
   }
 
   // ====== القوائم المساعدة ======

@@ -22,7 +22,7 @@ export default function BalanceVoucherActions({
   return (
     <div className="flex items-center gap-2">
       <button
-        className="h-8 px-4 text-sm bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm font-medium disabled:opacity-50"
+        className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm disabled:opacity-50"
         disabled={isLoading || !isBalanced}
         onClick={onSave}
       >
@@ -33,14 +33,14 @@ export default function BalanceVoucherActions({
           </span>
         ) : (
           <span className="flex items-center gap-1">
-            <i className="bi bi-check-circle" />
+            <i className="bi bi-check-circle w-4 h-4" />
             حفظ
           </span>
         )}
       </button>
 
       <button
-        className="h-8 px-4 text-sm bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm font-medium disabled:opacity-50"
+        className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm disabled:opacity-50"
         disabled={isPrinting || !voucher.vouch_id}
         onClick={onPrint}
       >
@@ -51,7 +51,7 @@ export default function BalanceVoucherActions({
           </span>
         ) : (
           <span className="flex items-center gap-1">
-            <i className="bi bi-printer" />
+            <i className="bi bi-printer w-4 h-4" />
             طباعة
           </span>
         )}
