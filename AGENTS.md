@@ -177,6 +177,7 @@ export const STORAGE_KEYS = {
 
 - read and list files
 - read and list directories
+- run test commands
 
 ## Ask Before 
 
@@ -184,3 +185,5 @@ export const STORAGE_KEYS = {
 - git push, pull, merge
 - deleting files, chmod
 - running full build
+
+Always write your plan in a markdown file and then ask before implementation.
