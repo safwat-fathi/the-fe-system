@@ -42,26 +42,32 @@ const getVoucherById = cache(async (voucherId: number) => {
 });
 
 // Cache the voucher details for better performance
-const getVoucherDetails = cache(async (vouchId: number) => {
-  try {
-    if (!vouchId || isNaN(vouchId)) {
-      console.warn("Invalid vouchId:", vouchId);
+const getVoucherDetails = cache(
+  async (voucherId: number, branchId?: number | string) => {
+    try {
+      if (!voucherId || isNaN(voucherId)) {
+        console.warn("Invalid voucherId:", voucherId);
+        return [];
+      }
+
+      const parsedBranchId = Number(branchId ?? 1) || 1;
+
+      const detailsResponse = await voucherService.getDetails(voucherId, {
+        com: parsedBranchId,
+      });
+
+      if (!detailsResponse.success || !detailsResponse.data) {
+        console.warn("Failed to fetch voucher details:", detailsResponse);
+        return [];
+      }
+
+      return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
+    } catch (error) {
+      console.error("Error fetching voucher details:", error);
       return [];
     }
-
-    const detailsResponse = await voucherService.getDetails(vouchId);
-    
-    if (!detailsResponse.success || !detailsResponse.data) {
-      console.warn("Failed to fetch voucher details:", detailsResponse);
-      return [];
-    }
-
-    return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
-  } catch (error) {
-    console.error("Error fetching voucher details:", error);
-    return [];
-  }
-});
+  },
+);
 
 export default async function VoucherEditPage({
   params,
@@ -87,7 +93,9 @@ export default async function VoucherEditPage({
   }
 
   // جلب تفاصيل القيد - يجب استخدام id (معرف القيد من جدول vouchers)
-  const detailsData = await getVoucherDetails(targetVoucher.id);
+  const branchId =
+    Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
+  const detailsData = await getVoucherDetails(targetVoucher.id, branchId);
 
   // معالجة تفاصيل القيد
   const details: VoucherDetail[] = detailsData.map((detail: any) => {

@@ -132,8 +132,13 @@ export default async function VoucherPage({
         };
 
         // جلب تفاصيل السند
-        const voucherVouchId = targetVoucher.vouch_id || parseInt(lookupId);
-        const detailsResponse = await voucherService.getDetails(voucherVouchId);
+        const voucherRecordId = targetVoucher.id || parseInt(lookupId);
+        const branchId =
+          Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
+        const detailsResponse = await voucherService.getDetails(
+          voucherRecordId,
+          { com: branchId },
+        );
         
         if (
           detailsResponse.success &&
