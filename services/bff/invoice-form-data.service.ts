@@ -1,10 +1,13 @@
 import { HttpService } from "@/services/base";
+import { getBranchParams } from "@/app/actions/branch-params";
 import customerService from "../api/customer.service";
 import itemService from "../api/item.service";
 import goldPriceService from "../api/gold-price.service";
 import categoryService from "../api/category.service";
+import boxesService from "../api/boxes.service";
 
 interface InvoiceFormData {
+  boxes: any[];
   customers: any[];
   items: any[];
   categories: any[];
@@ -19,14 +22,28 @@ class InvoiceFormDataService extends HttpService<any> {
 
   async getInvoiceFormData(): Promise<InvoiceFormData> {
     try {
+      const branchParams = await getBranchParams();
+      const parsedCompanyId = Number(branchParams.com ?? 1);
+      const companyId = Number.isFinite(parsedCompanyId)
+        ? parsedCompanyId
+        : 1;
+
       // Fetch all required data in parallel
-      const [customers, itemsResponse, categories, goldPrice] =
+      const [boxes, customers, itemsResponse, categories, goldPrice] =
         await Promise.all([
-          customerService.getAllCustomers(),
+          boxesService.getBoxes({ xcom_id: companyId }),
+          customerService.getAllCustomers({
+            xcom_id: companyId,
+            xcust_type: 0,
+            xcust_code: 0,
+          }),
           itemService.searchItems({ query: "", page: 1 }),
           categoryService.getAllCategories(),
           goldPriceService.getCurrentGoldPrice(),
         ]);
+
+      const resolvedBoxes = Array.isArray(boxes) ? boxes : [];
+      const resolvedCustomers = Array.isArray(customers) ? customers : [];
 
       // Extract items from the paginated response
       const items = itemsResponse?.results || [];
@@ -48,7 +65,10 @@ class InvoiceFormDataService extends HttpService<any> {
       }
 
       return {
-        customers: customers.filter((c: any) => c.box_type !== 2), // Filter out box_type 2
+        boxes: resolvedBoxes.filter(
+          (c: any) => c.box_type === undefined || c.box_type !== 2,
+        ),
+        customers: resolvedCustomers.filter((c: any) => c.box_type !== 2), // Filter out box_type 2
         items,
         categories,
         goldPrice,

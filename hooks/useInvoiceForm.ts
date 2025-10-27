@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type SetStateAction,
+} from "react";
 import toast from "react-hot-toast";
 import useFractions, { type Fractions } from "@/utilities/useFractions";
 import {
@@ -256,6 +264,7 @@ export default function useInvoiceForm({
   invoiceData,
   invoiceDetailsData,
   isNewInvoice,
+  initialBoxes,
   initialCustomers,
   initialItems,
   initialCategories,
@@ -267,6 +276,7 @@ export default function useInvoiceForm({
   invoiceData: Invoice | null;
   invoiceDetailsData: InvoiceDetail[];
   isNewInvoice: boolean;
+  initialBoxes: any[];
   initialCustomers: any[];
   initialItems: any[];
   initialCategories: any[];
@@ -278,6 +288,10 @@ export default function useInvoiceForm({
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
   const defaultTransType = invoiceConfig.transType;
   const contactLabel = invoiceConfig.contactLabel;
+  const filterCustomers = useMemo(
+    () => invoiceConfig.customerFilter ?? ((customer: any) => true),
+    [invoiceConfig],
+  );
   const resolvedInvoiceCustomerCode =
     invoiceData?.cust_code !== undefined && invoiceData?.cust_code !== null
       ? String(invoiceData.cust_code)
@@ -288,9 +302,13 @@ export default function useInvoiceForm({
   // lists - using initial data directly
   const [items, setItems] = useState<any[]>(initialItems || []);
   const [categories, setCategories] = useState<any[]>(initialCategories || []);
-  const filterCustomers = invoiceConfig.customerFilter ?? (() => true);
-  const [customers, setCustomers] = useState<any[]>(
-    initialCustomers?.filter((c: any) => filterCustomers(c)) || [],
+  const [cashCustomers, setCashCustomers] = useState<any[]>(
+    (initialBoxes ?? []).filter((customer: any) => filterCustomers(customer)),
+  );
+  const [creditCustomers, setCreditCustomers] = useState<any[]>(
+    (initialCustomers ?? []).filter((customer: any) =>
+      filterCustomers(customer),
+    ),
   );
 
   // UI state
@@ -309,6 +327,53 @@ export default function useInvoiceForm({
   const [totalRecords, setTotalRecords] = useState<number>(1);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
+
+  const buildInitialFormState = useCallback((): FormState => {
+    return {
+      cust_code: resolvedInvoiceCustomerCode,
+      cust_name: invoiceData?.cust_name ?? "",
+      inv_id: invoiceData?.inv_id ?? null,
+      inv_date: invoiceData?.inv_date ?? defaultInvoiceDate,
+      pay_type: normalizePayType(invoiceData?.pay_type),
+      inv_notes: invoiceData?.inv_notes ?? "",
+      ref_no: invoiceData?.ref_no ?? "",
+      vat_no: invoiceData?.vat_no ?? "",
+      cr_no: invoiceData?.cr_no ?? "",
+      gov: invoiceData?.gov ?? "",
+      city: invoiceData?.city ?? "",
+      area: invoiceData?.area ?? "",
+      street: invoiceData?.street ?? "",
+      build_no: invoiceData?.build_no ?? "",
+      post_no: invoiceData?.post_no ?? "",
+      post_code: invoiceData?.post_code ?? "",
+      commit: invoiceData?.commit ?? false,
+      print: invoiceData?.print ?? false,
+    };
+  }, [invoiceData, resolvedInvoiceCustomerCode]);
+
+  const customers = useMemo(
+    () => (paymentMethod === "cash" ? cashCustomers : creditCustomers),
+    [cashCustomers, creditCustomers, paymentMethod],
+  );
+
+  const setCustomers = useCallback(
+    (updater: SetStateAction<any[]>) => {
+      if (paymentMethod === "cash") {
+        setCashCustomers((prev) =>
+          typeof updater === "function"
+            ? (updater as (value: any[]) => any[])(prev)
+            : updater,
+        );
+      } else {
+        setCreditCustomers((prev) =>
+          typeof updater === "function"
+            ? (updater as (value: any[]) => any[])(prev)
+            : updater,
+        );
+      }
+    },
+    [paymentMethod, setCashCustomers, setCreditCustomers],
+  );
 
   const fractions = useFractions() as Fractions;
   const frac = fractions?.frac ?? 2;
@@ -331,6 +396,20 @@ export default function useInvoiceForm({
   );
   const [deletedItemIds, setDeletedItemIds] = useState<number[]>([]);
   const [defaultTaxPrc, setDefaultTaxPrc] = useState<number>(15);
+
+  useEffect(() => {
+    setCashCustomers(
+      (initialBoxes ?? []).filter((customer: any) => filterCustomers(customer)),
+    );
+  }, [filterCustomers, initialBoxes]);
+
+  useEffect(() => {
+    setCreditCustomers(
+      (initialCustomers ?? []).filter((customer: any) =>
+        filterCustomers(customer),
+      ),
+    );
+  }, [filterCustomers, initialCustomers]);
 
   useEffect(() => {
     const candidate =
@@ -384,28 +463,11 @@ export default function useInvoiceForm({
   }, [invoiceData]);
 
   // form reducer
-  const initialFormState: FormState = {
-    cust_code: resolvedInvoiceCustomerCode,
-    cust_name: invoiceData?.cust_name ?? "",
-    inv_id: invoiceData?.inv_id ?? null,
-    inv_date: invoiceData?.inv_date ?? defaultInvoiceDate,
-    pay_type: normalizePayType(invoiceData?.pay_type),
-    inv_notes: invoiceData?.inv_notes ?? "",
-    ref_no: invoiceData?.ref_no ?? "",
-    vat_no: invoiceData?.vat_no ?? "",
-    cr_no: invoiceData?.cr_no ?? "",
-    gov: invoiceData?.gov ?? "",
-    city: invoiceData?.city ?? "",
-    area: invoiceData?.area ?? "",
-    street: invoiceData?.street ?? "",
-    build_no: invoiceData?.build_no ?? "",
-    post_no: invoiceData?.post_no ?? "",
-    post_code: invoiceData?.post_code ?? "",
-    commit: invoiceData?.commit ?? false,
-    print: invoiceData?.print ?? false,
-  };
-
-  const [form, dispatchForm] = useReducer(formReducer, initialFormState);
+  const [form, dispatchForm] = useReducer(
+    formReducer,
+    undefined,
+    buildInitialFormState,
+  );
 
   // invoice items state
   const makeEmptyRow = useCallback(
@@ -458,29 +520,45 @@ export default function useInvoiceForm({
       return null;
     }
 
-    const matchByCode =
-      customers.find((customer: any) => {
-        if (
-          customer.cust_code !== undefined &&
-          customer.cust_code !== null &&
-          `${customer.cust_code}`.trim().length > 0
-        ) {
-          return String(customer.cust_code) === normalizedCode;
-        }
-        return false;
-      }) ?? null;
+    const findCustomerInList = (list: any[]) => {
+      const matchByCode =
+        list.find((customer: any) => {
+          if (
+            customer.cust_code !== undefined &&
+            customer.cust_code !== null &&
+            `${customer.cust_code}`.trim().length > 0
+          ) {
+            return String(customer.cust_code) === normalizedCode;
+          }
+          return false;
+        }) ?? null;
 
-    if (matchByCode) {
-      return matchByCode;
+      if (matchByCode) {
+        return matchByCode;
+      }
+
+      const matchById =
+        list.find(
+          (customer: any) => String(customer.id ?? "") === normalizedCode,
+        ) ?? null;
+
+      if (matchById) {
+        return matchById;
+      }
+
+      return null;
+    };
+
+    const activeMatch = findCustomerInList(customers);
+    if (activeMatch) {
+      return activeMatch;
     }
 
-    const matchById =
-      customers.find(
-        (customer: any) => String(customer.id ?? "") === normalizedCode,
-      ) ?? null;
-
-    if (matchById) {
-      return matchById;
+    const secondaryList =
+      paymentMethod === "cash" ? creditCustomers : cashCustomers;
+    const secondaryMatch = findCustomerInList(secondaryList);
+    if (secondaryMatch) {
+      return secondaryMatch;
     }
 
     if (invoiceData) {
@@ -507,7 +585,15 @@ export default function useInvoiceForm({
     }
 
     return null;
-  }, [customers, form.cust_code, form.cust_name, invoiceData]);
+  }, [
+    cashCustomers,
+    creditCustomers,
+    customers,
+    form.cust_code,
+    form.cust_name,
+    invoiceData,
+    paymentMethod,
+  ]);
 
   const mapRowToApiPayload = useCallback(
     (
@@ -623,32 +709,8 @@ export default function useInvoiceForm({
 
     setInvoicePk(invoiceData.id ? Number(invoiceData.id) : null);
     dispatchForm({
-      type: "SET_ALL",
-      payload: {
-        cust_code:
-          invoiceData.cust_code !== undefined && invoiceData.cust_code !== null
-            ? String(invoiceData.cust_code)
-            : invoiceData.cust !== undefined && invoiceData.cust !== null
-              ? String(invoiceData.cust)
-              : null,
-        cust_name: invoiceData.cust_name ?? "",
-        inv_id: invoiceData.inv_id ?? null,
-        inv_date: invoiceData.inv_date ?? defaultInvoiceDate,
-        pay_type: normalizePayType(invoiceData.pay_type),
-        inv_notes: invoiceData.inv_notes ?? "",
-        ref_no: invoiceData.ref_no ?? "",
-        vat_no: invoiceData.vat_no ?? "",
-        cr_no: invoiceData.cr_no ?? "",
-        gov: invoiceData.gov ?? "",
-        city: invoiceData.city ?? "",
-        area: invoiceData.area ?? "",
-        street: invoiceData.street ?? "",
-        build_no: invoiceData.build_no ?? "",
-        post_no: invoiceData.post_no ?? "",
-        post_code: invoiceData.post_code ?? "",
-        commit: invoiceData.commit ?? false,
-        print: invoiceData.print ?? false,
-      },
+      type: "RESET",
+      payload: buildInitialFormState(),
     });
 
     if (invoiceData.inv_type) {
@@ -667,7 +729,12 @@ export default function useInvoiceForm({
       setOriginalInvoiceItems(mappedDetails);
       setDeletedItemIds([]);
     }
-  }, [invoiceData, invoiceDetailsData, defaultTransType]);
+  }, [
+    buildInitialFormState,
+    defaultTransType,
+    invoiceData,
+    invoiceDetailsData,
+  ]);
 
   // totals (simple helpers returned to consumer can compute more if needed)
   const computeTotals = useCallback(
@@ -992,8 +1059,6 @@ export default function useInvoiceForm({
         year: resolvedYearId,
       };
 
-      console.log("🧾 Saving invoice with payload:", invoicePayload);
-
       let savedInvoice: Invoice | null = null;
 
       if (isNewInvoice) {
@@ -1001,12 +1066,7 @@ export default function useInvoiceForm({
           savedInvoice = await createInvoiceAction(
             invoicePayload as Partial<Invoice>,
           );
-          console.log(
-            "🧾 createInvoiceAction response:",
-            savedInvoice ?? "⛔️ null response",
-          );
         } catch (actionError) {
-          console.error("🧾 createInvoiceAction threw:", actionError);
           throw actionError;
         }
       } else {
@@ -1018,12 +1078,7 @@ export default function useInvoiceForm({
             invoicePk,
             invoicePayload as Partial<Invoice>,
           );
-          console.log(
-            "🧾 updateInvoiceAction response:",
-            savedInvoice ?? "⛔️ null response",
-          );
         } catch (actionError) {
-          console.error("🧾 updateInvoiceAction threw:", actionError);
           throw actionError;
         }
       }
@@ -1217,6 +1272,70 @@ export default function useInvoiceForm({
   const [manualTotalValue, setManualTotalValue] = useState<number>(0);
   const [manualTotalWages, setManualTotalWages] = useState<number>(0);
   const [useManualTotals, setUseManualTotals] = useState<boolean>(false);
+
+  const resetInvoiceState = useCallback(() => {
+    const initialState = buildInitialFormState();
+    dispatchForm({ type: "RESET", payload: initialState });
+    setInvoiceItems([makeEmptyRow()]);
+    setOriginalInvoiceItems([]);
+    setDeletedItemIds([]);
+    setInvoicePk(null);
+    setEmployee("");
+    setPaymentMethod("cash");
+    setHandlingMethod("");
+    setMobileMethod("");
+    setSearchNumber("");
+    setSearchValue("");
+    setCurrentRecord(1);
+    setTotalRecords(1);
+    setAutoTotalValue(0);
+    setAutoTotalWages(0);
+    setManualTotalValue(0);
+    setManualTotalWages(0);
+    setUseManualTotals(false);
+    setIsEditing(isNewInvoice);
+    setIsLoading(false);
+    setDefaultTaxPrc(15);
+  }, [
+    buildInitialFormState,
+    dispatchForm,
+    isNewInvoice,
+    makeEmptyRow,
+  ]);
+
+  const resetSignature = useMemo(
+    () =>
+      `${context}-${isNewInvoice ? "new" : "existing"}-${
+        invoiceRecordId ?? "none"
+      }-${invoiceData?.id ?? "none"}-${invoiceData?.inv_id ?? "none"}-${
+        invoiceDetailsData.length
+      }`,
+    [
+      context,
+      invoiceData?.id,
+      invoiceData?.inv_id,
+      invoiceDetailsData.length,
+      invoiceRecordId,
+      isNewInvoice,
+    ],
+  );
+
+  const previousResetSignatureRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (
+      isNewInvoice &&
+      !invoiceData &&
+      previousResetSignatureRef.current !== null &&
+      previousResetSignatureRef.current !== resetSignature
+    ) {
+      resetInvoiceState();
+    }
+
+    if (previousResetSignatureRef.current !== resetSignature) {
+      previousResetSignatureRef.current = resetSignature;
+    }
+  }, [invoiceData, isNewInvoice, resetInvoiceState, resetSignature]);
 
   const handleManualTotalChange = useCallback(
     (type: "value" | "wages", value: number) => {

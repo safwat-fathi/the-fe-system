@@ -49,7 +49,7 @@ No testing framework is used in this project.
 ## Before any changes
 
 - Propose a plan for the changes and get approval
-- Ensure that the changes don't break existing functionality
+- Ensure that the changes don't break existing functionality and logic
 - Ensure that the changes don't introduce new bugs
 
 ## Patterns and best practices
@@ -101,7 +101,8 @@ export default async function InvoicesPage({
 
 ### State Management
 
-- Do not use React Context API for state management instead use Zustand if needed
+- Do not use React Context API for state management instead use Zustand for global, application-wide state. 
+- use `useReducer` for complex state management. 
 
 ### Forms
 
@@ -165,6 +166,8 @@ export const STORAGE_KEYS = {
 } as const;
 ```
 
+- Use as const for static maps
+- Check existing utilities before re-implementing
 - Don’t import React just import what you need from its named exports
 - Check already built components inside project before building / using external one
 - The app is intended for Arabic language users
@@ -172,11 +175,15 @@ export const STORAGE_KEYS = {
 - For any feature that requires using 3rd party code or building a custom one check React available ready-to-use code first. For example instead of building a custom useDebounce hook you can use `useDeferredValue` React hook.
 - This is an ERP application do not focus on SEO optimization methodologies 
 - Shared types, global models (`User`, `Invoice`, `Customer`, etc…) should be defined in types die
+- Use PascalCase for all React component file and component names (e.g., InvoiceForm.tsx, Sidebar.tsx).
+- Prefer to read and summarize before editing.
+- Never overwrite or remove large files without explicit user approval.
 
 ## Allowed Without Prompt
 
 - read and list files
 - read and list directories
+- run test commands
 
 ## Ask Before 
 
@@ -184,3 +191,5 @@ export const STORAGE_KEYS = {
 - git push, pull, merge
 - deleting files, chmod
 - running full build
+
+**Always read & summarize before proposing a clear plan and write your plan in a markdown file and then ask before implementation / committing.**
