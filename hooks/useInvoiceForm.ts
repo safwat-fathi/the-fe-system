@@ -992,8 +992,6 @@ export default function useInvoiceForm({
         year: resolvedYearId,
       };
 
-      console.log("🧾 Saving invoice with payload:", invoicePayload);
-
       let savedInvoice: Invoice | null = null;
 
       if (isNewInvoice) {
@@ -1001,12 +999,7 @@ export default function useInvoiceForm({
           savedInvoice = await createInvoiceAction(
             invoicePayload as Partial<Invoice>,
           );
-          console.log(
-            "🧾 createInvoiceAction response:",
-            savedInvoice ?? "⛔️ null response",
-          );
         } catch (actionError) {
-          console.error("🧾 createInvoiceAction threw:", actionError);
           throw actionError;
         }
       } else {
@@ -1018,12 +1011,7 @@ export default function useInvoiceForm({
             invoicePk,
             invoicePayload as Partial<Invoice>,
           );
-          console.log(
-            "🧾 updateInvoiceAction response:",
-            savedInvoice ?? "⛔️ null response",
-          );
         } catch (actionError) {
-          console.error("🧾 updateInvoiceAction threw:", actionError);
           throw actionError;
         }
       }
