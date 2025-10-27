@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+  type SetStateAction,
+} from "react";
 import toast from "react-hot-toast";
 import useFractions, { type Fractions } from "@/utilities/useFractions";
 import {
@@ -256,6 +263,7 @@ export default function useInvoiceForm({
   invoiceData,
   invoiceDetailsData,
   isNewInvoice,
+  initialBoxes,
   initialCustomers,
   initialItems,
   initialCategories,
@@ -267,6 +275,7 @@ export default function useInvoiceForm({
   invoiceData: Invoice | null;
   invoiceDetailsData: InvoiceDetail[];
   isNewInvoice: boolean;
+  initialBoxes: any[];
   initialCustomers: any[];
   initialItems: any[];
   initialCategories: any[];
@@ -278,6 +287,10 @@ export default function useInvoiceForm({
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
   const defaultTransType = invoiceConfig.transType;
   const contactLabel = invoiceConfig.contactLabel;
+  const filterCustomers = useMemo(
+    () => invoiceConfig.customerFilter ?? ((customer: any) => true),
+    [invoiceConfig],
+  );
   const resolvedInvoiceCustomerCode =
     invoiceData?.cust_code !== undefined && invoiceData?.cust_code !== null
       ? String(invoiceData.cust_code)
@@ -288,9 +301,13 @@ export default function useInvoiceForm({
   // lists - using initial data directly
   const [items, setItems] = useState<any[]>(initialItems || []);
   const [categories, setCategories] = useState<any[]>(initialCategories || []);
-  const filterCustomers = invoiceConfig.customerFilter ?? (() => true);
-  const [customers, setCustomers] = useState<any[]>(
-    initialCustomers?.filter((c: any) => filterCustomers(c)) || [],
+  const [cashCustomers, setCashCustomers] = useState<any[]>(
+    (initialBoxes ?? []).filter((customer: any) => filterCustomers(customer)),
+  );
+  const [creditCustomers, setCreditCustomers] = useState<any[]>(
+    (initialCustomers ?? []).filter((customer: any) =>
+      filterCustomers(customer),
+    ),
   );
 
   // UI state
@@ -309,6 +326,30 @@ export default function useInvoiceForm({
   const [totalRecords, setTotalRecords] = useState<number>(1);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
+
+  const customers = useMemo(
+    () => (paymentMethod === "cash" ? cashCustomers : creditCustomers),
+    [cashCustomers, creditCustomers, paymentMethod],
+  );
+
+  const setCustomers = useCallback(
+    (updater: SetStateAction<any[]>) => {
+      if (paymentMethod === "cash") {
+        setCashCustomers((prev) =>
+          typeof updater === "function"
+            ? (updater as (value: any[]) => any[])(prev)
+            : updater,
+        );
+      } else {
+        setCreditCustomers((prev) =>
+          typeof updater === "function"
+            ? (updater as (value: any[]) => any[])(prev)
+            : updater,
+        );
+      }
+    },
+    [paymentMethod, setCashCustomers, setCreditCustomers],
+  );
 
   const fractions = useFractions() as Fractions;
   const frac = fractions?.frac ?? 2;
@@ -331,6 +372,20 @@ export default function useInvoiceForm({
   );
   const [deletedItemIds, setDeletedItemIds] = useState<number[]>([]);
   const [defaultTaxPrc, setDefaultTaxPrc] = useState<number>(15);
+
+  useEffect(() => {
+    setCashCustomers(
+      (initialBoxes ?? []).filter((customer: any) => filterCustomers(customer)),
+    );
+  }, [filterCustomers, initialBoxes]);
+
+  useEffect(() => {
+    setCreditCustomers(
+      (initialCustomers ?? []).filter((customer: any) =>
+        filterCustomers(customer),
+      ),
+    );
+  }, [filterCustomers, initialCustomers]);
 
   useEffect(() => {
     const candidate =
@@ -458,29 +513,45 @@ export default function useInvoiceForm({
       return null;
     }
 
-    const matchByCode =
-      customers.find((customer: any) => {
-        if (
-          customer.cust_code !== undefined &&
-          customer.cust_code !== null &&
-          `${customer.cust_code}`.trim().length > 0
-        ) {
-          return String(customer.cust_code) === normalizedCode;
-        }
-        return false;
-      }) ?? null;
+    const findCustomerInList = (list: any[]) => {
+      const matchByCode =
+        list.find((customer: any) => {
+          if (
+            customer.cust_code !== undefined &&
+            customer.cust_code !== null &&
+            `${customer.cust_code}`.trim().length > 0
+          ) {
+            return String(customer.cust_code) === normalizedCode;
+          }
+          return false;
+        }) ?? null;
 
-    if (matchByCode) {
-      return matchByCode;
+      if (matchByCode) {
+        return matchByCode;
+      }
+
+      const matchById =
+        list.find(
+          (customer: any) => String(customer.id ?? "") === normalizedCode,
+        ) ?? null;
+
+      if (matchById) {
+        return matchById;
+      }
+
+      return null;
+    };
+
+    const activeMatch = findCustomerInList(customers);
+    if (activeMatch) {
+      return activeMatch;
     }
 
-    const matchById =
-      customers.find(
-        (customer: any) => String(customer.id ?? "") === normalizedCode,
-      ) ?? null;
-
-    if (matchById) {
-      return matchById;
+    const secondaryList =
+      paymentMethod === "cash" ? creditCustomers : cashCustomers;
+    const secondaryMatch = findCustomerInList(secondaryList);
+    if (secondaryMatch) {
+      return secondaryMatch;
     }
 
     if (invoiceData) {
@@ -507,7 +578,15 @@ export default function useInvoiceForm({
     }
 
     return null;
-  }, [customers, form.cust_code, form.cust_name, invoiceData]);
+  }, [
+    cashCustomers,
+    creditCustomers,
+    customers,
+    form.cust_code,
+    form.cust_name,
+    invoiceData,
+    paymentMethod,
+  ]);
 
   const mapRowToApiPayload = useCallback(
     (

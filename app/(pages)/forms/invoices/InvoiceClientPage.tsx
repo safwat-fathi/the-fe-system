@@ -49,6 +49,7 @@ interface InvoiceClientPageProps {
   invoiceDetailsData: InvoiceDetail[];
   isNewInvoice: boolean;
   invoiceRecordId?: number | string | null;
+  boxes: any[];
   customers: any[];
   items: any[];
   categories: any[];
@@ -65,6 +66,7 @@ export default function InvoiceClientPage({
   invoiceDetailsData,
   isNewInvoice,
   invoiceRecordId,
+  boxes: initialBoxes,
   customers: initialCustomers,
   items: initialItems,
   categories: initialCategories,
@@ -144,6 +146,7 @@ export default function InvoiceClientPage({
     invoiceData,
     invoiceDetailsData,
     isNewInvoice,
+    initialBoxes,
     initialCustomers,
     initialItems,
     initialCategories,

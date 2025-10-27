@@ -162,6 +162,7 @@ export default async function InvoicePage({
         isNewInvoice={mode === "new"}
         startInEditMode={startInEdit || mode === "edit"}
         invoiceRecordId={invoiceData?.id ?? null}
+        boxes={formData.boxes}
         customers={formData.customers}
         items={formData.items}
         categories={formData.categories}
