@@ -137,11 +137,21 @@ class VoucherService extends HttpService<Voucher> {
    * ملاحظة: vouchers_dtl_list لا يحتاج year parameter
    */
   async getDetails(voucherId: number, params?: IParams) {
-    const queryParams: any = {
+    const branchParam =
+      (params?.["com"] ??
+        params?.["com_id"] ??
+        params?.["xcom_id"] ??
+        params?.["xcomp_id"]) ?? "1";
+
+    const queryParams: IParams = {
+      ...params,
       id: voucherId, // معرف القيد من جدول vouchers
-      xcom_id: "1", // رقم الفرع (ثابت = 1)
-      // لا يحتاج year parameter
+      com: branchParam,
     };
+
+    if (queryParams["xcom_id"] === undefined) {
+      queryParams["xcom_id"] = branchParam;
+    }
 
     return this.getList<VoucherDetail[]>("vouchers_dtl_list", queryParams);
   }

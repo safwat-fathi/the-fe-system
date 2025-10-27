@@ -108,7 +108,18 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
     endpoint: "vouchers_dtl_list",
     paramTransform: (params) => ({
       id: params.id || params.voucherId || "0", // معرف القيد من جدول vouchers
-      xcom_id: params.xcom_id || params.com || "1", // رقم الفرع
+      com:
+        params.com ||
+        params.com_id ||
+        params.xcom_id ||
+        params.xcomp_id ||
+        "1", // رقم الفرع
+      xcom_id:
+        params.xcom_id ||
+        params.xcomp_id ||
+        params.com ||
+        params.com_id ||
+        "1",
       // لا يحتاج year parameter
     }),
   },
