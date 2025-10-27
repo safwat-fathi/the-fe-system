@@ -155,6 +155,7 @@ export default async function InvoicePage({
   return (
     <div className="container mx-auto p-4">
       <InvoiceClientPage
+        key={`${invoiceType}-${mode}-${invoiceData?.id ?? "new"}`}
         invoiceType={invoiceType}
         formMode={mode}
         invoiceData={invoiceData}
