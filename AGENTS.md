@@ -49,7 +49,7 @@ No testing framework is used in this project.
 ## Before any changes
 
 - Propose a plan for the changes and get approval
-- Ensure that the changes don't break existing functionality
+- Ensure that the changes don't break existing functionality and logic
 - Ensure that the changes don't introduce new bugs
 
 ## Patterns and best practices
