@@ -10,7 +10,8 @@ import {
   accountService,
   costCenterService,
 } from "@/services/api";
-import { createVoucherAction } from "@/app/actions/voucher.action";
+import toast from "react-hot-toast";
+import { createVoucherAction, updateVoucherAction } from "@/app/actions/voucher.action";
 import { searchAccountsAction } from "@/app/actions/accounts.action";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
@@ -42,7 +43,7 @@ export default function VoucherClientPage({
   voucherTypes: initialVoucherTypes,
   voucherStatuses: initialVoucherStatuses,
   startInEditMode = false,
-  vouchType = 3, // قيد تسوية
+  vouchType = 2, // قيد تسوية
   formMode = "new",
   newVoucherHref,
 }: VoucherClientPageProps) {
@@ -63,6 +64,7 @@ export default function VoucherClientPage({
       commit: false,
       post: false,
       print: false,
+      opps_vouch: 0,
     }
   );
 
@@ -77,6 +79,7 @@ export default function VoucherClientPage({
   const [voucherStatuses, setVoucherStatuses] = useState<any[]>(initialVoucherStatuses);
   const [isLoading, setIsLoading] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(1);
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
@@ -84,6 +87,7 @@ export default function VoucherClientPage({
   const [isPrinting, setIsPrinting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(startInEditMode);
+  const [defaultAccountOptions, setDefaultAccountOptions] = useState<any[]>([]);
 
   // Initialize component
   useEffect(() => {
@@ -115,6 +119,29 @@ export default function VoucherClientPage({
       loadVouchersList();
     }
   }, [isModalOpen]);
+
+  // Load default account options
+  useEffect(() => {
+    const loadDefaultAccounts = () => {
+      const options = accounts.slice(0, 50).map((acc) => ({
+        value: acc.id,
+        label: `${acc.acc_code ?? acc.code ?? ""} - ${acc.acc_name ?? acc.name ?? ""}`,
+        account: acc,
+      }));
+      setDefaultAccountOptions(options);
+      console.log("Default account options loaded:", options.length);
+    };
+    
+    if (accounts.length > 0) {
+      loadDefaultAccounts();
+    }
+  }, [accounts]);
+
+  // Debug voucher types
+  useEffect(() => {
+    console.log("Voucher Types in component:", voucherTypes);
+    console.log("Voucher Statuses in component:", voucherStatuses);
+  }, [voucherTypes, voucherStatuses]);
 
   // Helper Functions
   const updateCurrentTime = () => {
@@ -222,7 +249,7 @@ export default function VoucherClientPage({
                 credit: detail.credit || 0,
                 debit_g: detail.debit_g || 0,
                 credit_g: detail.credit_g || 0,
-                gauge: detail.gauge || 875,
+                gauge: detail.gauge,
                 tax: detail.tax || 0,
                 tax_prc: detail.tax_prc || 0,
                 vat_no: detail.vat_no || 0,
@@ -271,7 +298,7 @@ export default function VoucherClientPage({
 
     const targetVoucher = vouchersList[targetIndex];
     if (targetVoucher) {
-      router.push(`/forms/voucher/${targetVoucher.vouch_id || targetVoucher.id}`);
+      router.push(`/forms/voucher?id=${targetVoucher.vouch_id || targetVoucher.id}&mode=edit`);
     }
   };
 
@@ -282,19 +309,22 @@ export default function VoucherClientPage({
       acc_id: 0,
       acc_code: "",
       acc_name: "",
-      debit: 0,
-      credit: 0,
-      debit_g: 0,
-      credit_g: 0,
+      debit: undefined,
+      credit: undefined,
+      debit_g: undefined,
+      credit_g: undefined,
       gauge: 875,
       cost_id: 0,
       vouch_notes: "",
-      tax: 0,
-      tax_prc: 0,
-      vat_no: 0,
+      tax: undefined,
+      tax_prc: undefined,
+      vat_no: undefined,
       cr_date: new Date().toISOString(),
     };
     setDetails((prev) => [...prev, newDetail]);
+    
+    // إعادة تعيين التحقق البصري عند إضافة صف جديد
+    setShowValidationErrors(false);
   };
 
   const removeDetailRow = (index: number) => {
@@ -307,9 +337,40 @@ export default function VoucherClientPage({
     value: any,
   ) => {
     setDetails((prev) => {
-      const updated = prev.map((detail, i) =>
-        i === index ? { ...detail, [field]: value } : detail,
-      );
+      const updated = prev.map((detail, i) => {
+        if (i !== index) return detail;
+        
+        const newDetail = { ...detail, [field]: value };
+        
+        // تصفير الحقل المقابل تلقائياً
+        if (field === "debit" && parseFloat(value) > 0) {
+          newDetail.credit = undefined;
+        } else if (field === "credit" && parseFloat(value) > 0) {
+          newDetail.debit = undefined;
+        } else if (field === "debit_g" && parseFloat(value) > 0) {
+          newDetail.credit_g = undefined;
+        } else if (field === "credit_g" && parseFloat(value) > 0) {
+          newDetail.debit_g = undefined;
+        }
+
+        // حساب الضريبة تلقائياً عند تغيير نسبة الضريبة
+        if (field === "tax_prc") {
+          const taxPercentage = parseFloat(value) || 0;
+          const baseAmount = (newDetail.debit || 0) + (newDetail.credit || 0);
+          const calculatedTax = (baseAmount * taxPercentage) / 100;
+          newDetail.tax = calculatedTax;
+        }
+
+        // حساب الضريبة تلقائياً عند تغيير debit أو credit
+        if ((field === "debit" || field === "credit") && newDetail.tax_prc) {
+          const baseAmount = (newDetail.debit || 0) + (newDetail.credit || 0);
+          const taxPercentage = parseFloat(String(newDetail.tax_prc)) || 0;
+          const calculatedTax = (baseAmount * taxPercentage) / 100;
+          newDetail.tax = calculatedTax;
+        }
+        
+        return newDetail;
+      });
       return updated;
     });
   };
@@ -322,12 +383,12 @@ export default function VoucherClientPage({
   const calculateTotals = useCallback(() => {
     const totals = details.reduce(
       (totals, detail) => {
-        const debit = parseFloat(String(detail.debit || 0)) || 0;
-        const credit = parseFloat(String(detail.credit || 0)) || 0;
-        const debitG = parseFloat(String(detail.debit_g || 0)) || 0;
-        const creditG = parseFloat(String(detail.credit_g || 0)) || 0;
-        const tax = parseFloat(String(detail.tax || 0)) || 0;
-        const taxPrc = parseFloat(String(detail.tax_prc || 0)) || 0;
+        const debit = detail.debit !== undefined ? parseFloat(String(detail.debit)) || 0 : 0;
+        const credit = detail.credit !== undefined ? parseFloat(String(detail.credit)) || 0 : 0;
+        const debitG = detail.debit_g !== undefined ? parseFloat(String(detail.debit_g)) || 0 : 0;
+        const creditG = detail.credit_g !== undefined ? parseFloat(String(detail.credit_g)) || 0 : 0;
+        const tax = detail.tax !== undefined ? parseFloat(String(detail.tax)) || 0 : 0;
+        const taxPrc = detail.tax_prc !== undefined ? parseFloat(String(detail.tax_prc)) || 0 : 0;
 
         return {
           totalDebit: totals.totalDebit + debit,
@@ -351,17 +412,46 @@ export default function VoucherClientPage({
   }, [details]);
 
   const totals = calculateTotals();
-  const balance = totals.totalDebit - totals.totalCredit;
-  const isBalanced = Math.abs(balance) < 0.01;
+  const cashBalance = totals.totalDebit - totals.totalCredit;
+  const goldBalance = totals.totalDebitG - totals.totalCreditG;
+  const isCashBalanced = Math.abs(cashBalance) < 0.01;
+  const isGoldBalanced = Math.abs(goldBalance) < 0.01;
+  const isBalanced = isCashBalanced && isGoldBalanced;
 
   const saveVoucher = async () => {
-    if (!isBalanced) {
-      alert("يجب أن يكون إجمالي المدين مساوي لإجمالي الدائن");
+    // تفعيل التحقق البصري عند محاولة الحفظ
+    setShowValidationErrors(true);
+
+    if (!isCashBalanced) {
+      toast.error("يجب أن يكون إجمالي المدين مساوي لإجمالي الدائن (نقداً)");
+      return;
+    }
+
+    if (!isGoldBalanced) {
+      toast.error("يجب أن يكون إجمالي المدين مساوي لإجمالي الدائن (ذهباً)");
       return;
     }
 
     if (details.length === 0) {
-      alert("يجب إضافة تفاصيل للقيد");
+      toast.error("يجب إضافة تفاصيل للقيد");
+      return;
+    }
+
+    // التحقق من وجود حسابات فارغة
+    const emptyAccountDetails = details.filter(
+      (detail) => !detail.acc_id || detail.acc_id === 0
+    );
+    if (emptyAccountDetails.length > 0) {
+      toast.error("يرجى اختيار حساب لجميع الصفوف قبل الحفظ");
+      return;
+    }
+
+    // التحقق من وجود حسابات صحيحة على الأقل
+    const validDetails = details.filter(
+      (detail) => detail.acc_id && detail.acc_id > 0
+    );
+    if (validDetails.length === 0) {
+      toast.error("يرجى إدخال حساب صحيح على الأقل");
       return;
     }
 
@@ -370,7 +460,7 @@ export default function VoucherClientPage({
       voucher.vouch_id <= 0 ||
       !isFinite(voucher.vouch_id)
     ) {
-      alert("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
+      toast.error("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
       return;
     }
 
@@ -380,45 +470,63 @@ export default function VoucherClientPage({
         vouch_id: voucher.vouch_id,
         vouch_date: voucher.vouch_date,
         vouch_type: voucher.vouch_type,
-        vouch_amt: totals.totalDebit,
+        vouch_amt: 0, // إبقاء المبلغ الإجمالي 0 دائماً
         vouch_notes: voucher.vouch_notes || "",
         vouch_status: voucher.vouch_status || 1,
         pay_type: voucher.pay_type,
         ref_no: voucher.ref_no || "",
+        opps_vouch: voucher.opps_vouch || 0, // حفظ قيمة opps_vouch من API
       };
 
       const detailsData = details
         .filter((detail) => detail.acc_id && detail.acc_id > 0)
         .map((detail) => ({
-          id: 0,
+          id: detail.id || 0, // استخدام id الموجود للتحديث أو 0 للجديد
           vouch_id: voucher.vouch_id,
           acc_id: detail.acc_id,
-          debit: detail.debit || 0,
-          credit: detail.credit || 0,
-          debit_g: detail.debit_g || 0,
-          credit_g: detail.credit_g || 0,
-          gauge: detail.gauge || 875,
+          debit: detail.debit,
+          credit: detail.credit,
+          debit_g: detail.debit_g,
+          credit_g: detail.credit_g,
+          gauge: detail.gauge,
           vouch_notes: detail.vouch_notes || "",
           cost_id: detail.cost_id || null,
-          tax: detail.tax || 0,
-          tax_prc: detail.tax_prc || 0,
+          tax: detail.tax,
+          tax_prc: detail.tax_prc,
           vat_no: detail.vat_no || 0,
         }));
 
-      const result = await createVoucherAction(voucherData, detailsData);
+      // اختيار الدالة المناسبة حسب الوضع
+      console.log("🔍 معلومات الحفظ:");
+      console.log("- الوضع:", formMode);
+      console.log("- معرف القيد:", voucher.vouch_id);
+      console.log("- بيانات القيد:", voucherData);
+      console.log("- عدد التفاصيل:", detailsData.length);
+      
+      const result = formMode === "edit" 
+        ? await updateVoucherAction(voucherData, detailsData)
+        : await createVoucherAction(voucherData, detailsData);
 
       if (result.success && result.data) {
         const masterId = result.data.vouch_id;
         setVoucher((prev) => ({ ...prev, commit: true, id: masterId }));
-        alert(result.message);
+        toast.success(result.message);
+        
+        // إعادة التوجيه حسب الوضع
         if (masterId) {
-          router.push(`/forms/voucher/${masterId}`);
+          if (formMode === "new") {
+            // بعد الإنشاء، انتقل إلى وضع التعديل
+            router.push(`/forms/voucher?id=${masterId}&mode=edit`);
+          } else {
+            // في وضع التعديل، ابق في نفس الصفحة أو انتقل إلى التقارير
+            router.push(`/forms/voucher?id=${masterId}&mode=edit`);
+          }
         }
       } else {
-        alert(result.message);
+        toast.error(result.message);
       }
     } catch (error) {
-      alert(
+      toast.error(
         `حدث خطأ أثناء حفظ القيد: ${error instanceof Error ? error.message : "خطأ غير معروف"}`,
       );
     } finally {
@@ -503,7 +611,7 @@ export default function VoucherClientPage({
         setVoucher((prev) => ({ ...prev, print: true }));
       }
     } catch (error) {
-      alert(
+      toast.error(
         `حدث خطأ أثناء الطباعة: ${error instanceof Error ? error.message : "خطأ غير معروف"}`,
       );
     } finally {
@@ -517,14 +625,14 @@ export default function VoucherClientPage({
         (v) => v.vouch_id?.toString() === searchTerm || v.id?.toString() === searchTerm,
       );
       if (foundVoucher) {
-        router.push(`/forms/voucher/${foundVoucher.vouch_id || foundVoucher.id}`);
+        router.push(`/forms/voucher?id=${foundVoucher.vouch_id || foundVoucher.id}&mode=edit`);
       }
     }
   };
 
   const createFromPrevious = async () => {
     if (!selectedVoucher) {
-      alert("يرجى اختيار قيد سابق");
+      toast.error("يرجى اختيار قيد سابق");
       return;
     }
 
@@ -580,23 +688,29 @@ export default function VoucherClientPage({
         setSearchTerm("");
         setSelectedVoucher(null);
       } else {
-        alert("حدث خطأ أثناء تحميل تفاصيل القيد");
+        toast.error("حدث خطأ أثناء تحميل تفاصيل القيد");
       }
     } catch (error) {
       console.error("Error creating from previous voucher:", error);
-      alert("حدث خطأ أثناء نسخ القيد");
+      toast.error("حدث خطأ أثناء نسخ القيد");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const allowEditing = formMode === "edit" || isNewVoucher;
+  const allowEditing = formMode === "edit" || formMode === "new";
 
   useEffect(() => {
-    if (allowEditing && (startInEditMode || formMode === "edit")) {
+    if (formMode === "edit" || formMode === "new") {
+      setIsEditing(true);
+    } else if (formMode === "preview") {
+      setIsEditing(false);
+    }
+    
+    if (startInEditMode && allowEditing) {
       setIsEditing(true);
     }
-  }, [allowEditing, formMode, startInEditMode]);
+  }, [formMode, startInEditMode, allowEditing]);
 
   if (!isClient) {
     return (
@@ -688,7 +802,8 @@ export default function VoucherClientPage({
               <div>
                 <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-4">
                   <span>
-                    {voucherTypes.find((t) => t.id === voucher.vouch_type)?.name ||
+                    {voucherTypes.find((t) => (t.Id || t.id) === voucher.vouch_type)?.name ||
+                      voucherTypes.find((t) => (t.Id || t.id) === voucher.vouch_type)?.["Code Desc"] ||
                       "قيد تسوية"}
                   </span>
                   <span className="text-slate-600 font-medium">
@@ -748,12 +863,17 @@ export default function VoucherClientPage({
                 )}
               </button>
 
-              {!isEditing && allowEditing && (
+              {!isEditing && formMode === "preview" && (
                 <button
-                  className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                  onClick={() => setIsEditing(true)}
+                  className="h-7 px-3 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300 rounded-md shadow-sm"
+                  onClick={() => {
+                    // تغيير الـ URL إلى وضع edit
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('mode', 'edit');
+                    router.push(currentUrl.pathname + currentUrl.search);
+                  }}
                 >
-                  <i className="bi bi-pencil-square w-4 h-4 text-slate-500 me-1" />
+                  <i className="bi bi-pencil-square w-4 h-4 text-blue-600 me-1" />
                   تعديل
                 </button>
               )}
@@ -869,7 +989,9 @@ export default function VoucherClientPage({
                   رقم المرجع
                 </label>
                 <input
-                  className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                  readOnly={!isEditing}
+                  disabled={!isEditing}
+                  className={`text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 ${!isEditing ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="أدخل رقم المرجع"
                   value={voucher.ref_no || ""}
                   onChange={(e) => setVoucher((prev) => ({ ...prev, ref_no: e.target.value }))}
@@ -901,11 +1023,18 @@ export default function VoucherClientPage({
                     setVoucher((prev) => ({ ...prev, vouch_status: parseInt(e.target.value) }))
                   }
                 >
-                  {voucherStatuses.map((status) => (
-                    <option key={status.id} value={status.id}>
-                      {status.name}
-                    </option>
-                  ))}
+                  {voucherStatuses && voucherStatuses.length > 0 ? (
+                    voucherStatuses.map((status) => (
+                      <option key={status.Id || status.id} value={status.Id || status.id}>
+                        {status.name || status["Code Desc"] || `حالة ${status.Id || status.id}`}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="1">مفتوح</option>
+                      <option value="2">مغلق</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -916,17 +1045,24 @@ export default function VoucherClientPage({
                 </label>
                 <select
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
-                  value={voucher.vouch_type || 3}
+                  value={voucher.vouch_type || 2}
                   onChange={(e) => updateVoucherType(parseInt(e.target.value))}
                 >
                   {voucherTypes && voucherTypes.length > 0 ? (
                     voucherTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.type_name || type.name || `نوع ${type.id}`}
+                      <option key={type.Id || type.id} value={type.Id || type.id}>
+                        {type.name || type["Code Desc"] || type.type_name || `نوع ${type.Id || type.id}`}
                       </option>
                     ))
                   ) : (
-                    <option value="">لا توجد أنواع</option>
+                    <>
+                      <option value="1">قيد يومية</option>
+                      <option value="2">قيد عكسي</option>
+                      <option value="3">قيد تسوية</option>
+                      <option value="4">قيد فوارق عملة</option>
+                      <option value="5">قيد فوارق مخزون</option>
+                      <option value="6">قيد مرتبات</option>
+                    </>
                   )}
                 </select>
               </div>
@@ -961,6 +1097,13 @@ export default function VoucherClientPage({
                   className={`bi ${isBalanced ? "bi-check-circle" : "bi-exclamation-triangle"} me-1`}
                 />
                 {isBalanced ? "متوازن" : "غير متوازن"}
+                {!isBalanced && (
+                  <span className="block text-xs mt-1">
+                    {!isCashBalanced && "نقد"}
+                    {!isCashBalanced && !isGoldBalanced && " + "}
+                    {!isGoldBalanced && "ذهب"}
+                  </span>
+                )}
               </span>
             </div>
           </div>
@@ -975,6 +1118,13 @@ export default function VoucherClientPage({
                 + صف
               </button>
             </div>
+            {/* رسالة تحذيرية للحسابات الفارغة - تظهر فقط بعد محاولة الحفظ */}
+            {showValidationErrors && details.some(detail => !detail.acc_id || detail.acc_id === 0) && (
+              <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                ⚠️ يرجى اختيار حساب لجميع الصفوف قبل الحفظ
+              </div>
+            )}
+            
             <div className="overflow-x-auto mb-3 max-w-full">
               <table className="min-w-[1200px] border text-sm text-center table-fixed">
                 <thead className="bg-gray-100 text-xs font-bold">
@@ -1021,14 +1171,12 @@ export default function VoucherClientPage({
                     >
                       الرقم الضريبي
                     </th>
-                    {costCenters.length > 0 && (
-                      <th
-                        className="w-40 p-0.5 font-bold text-slate-700 border"
-                        rowSpan={2}
-                      >
-                        مركز التكلفة
-                      </th>
-                    )}
+                    <th
+                      className="w-40 p-0.5 font-bold text-slate-700 border"
+                      rowSpan={2}
+                    >
+                      مركز التكلفة
+                    </th>
                     <th
                       className="w-48 p-0.5 font-bold text-slate-700 border"
                       rowSpan={2}
@@ -1061,7 +1209,11 @@ export default function VoucherClientPage({
                   {details.map((detail, index) => (
                     <tr
                       key={index}
-                      className="border-b border-slate-100 hover:bg-slate-50"
+                      className={`border-b border-slate-100 hover:bg-slate-50 ${
+                        showValidationErrors && (!detail.acc_id || detail.acc_id === 0)
+                          ? 'bg-red-50 border-red-200' 
+                          : ''
+                      }`}
                     >
                       <td className="p-0.5 border">
                         <AsyncCreatableSelect
@@ -1070,6 +1222,7 @@ export default function VoucherClientPage({
                           className="text-xs"
                           classNamePrefix="select"
                           components={{ IndicatorSeparator: () => null }}
+                          defaultOptions={defaultAccountOptions}
                           formatCreateLabel={(inputValue) =>
                             `إضافة حساب جديد: "${inputValue}"`
                           }
@@ -1085,6 +1238,7 @@ export default function VoucherClientPage({
                               ...base,
                               minHeight: 30,
                               height: 30,
+                              borderColor: showValidationErrors && (!detail.acc_id || detail.acc_id === 0) ? '#ef4444' : base.borderColor,
                             }),
                             menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                           }}
@@ -1114,6 +1268,11 @@ export default function VoucherClientPage({
                               "acc_name",
                               selected.acc_name ?? selected.name ?? "",
                             );
+                            
+                            // إعادة تعيين التحقق البصري عند اختيار حساب
+                            if (showValidationErrors && selected.id) {
+                              setShowValidationErrors(false);
+                            }
                           }}
                         />
                       </td>
@@ -1124,12 +1283,12 @@ export default function VoucherClientPage({
                           placeholder="0.00"
                           step="0.01"
                           type="number"
-                          value={String(detail.debit || 0)}
+                          value={detail.debit ? String(detail.debit) : ""}
                           onChange={(e) =>
                             updateDetail(
                               index,
                               "debit",
-                              parseFloat(e.target.value) || 0,
+                              e.target.value ? parseFloat(e.target.value) : undefined,
                             )
                           }
                         />
@@ -1141,12 +1300,12 @@ export default function VoucherClientPage({
                           placeholder="0.00"
                           step="0.01"
                           type="number"
-                          value={String(detail.credit || 0)}
+                          value={detail.credit ? String(detail.credit) : ""}
                           onChange={(e) =>
                             updateDetail(
                               index,
                               "credit",
-                              parseFloat(e.target.value) || 0,
+                              e.target.value ? parseFloat(e.target.value) : undefined,
                             )
                           }
                         />
@@ -1158,12 +1317,12 @@ export default function VoucherClientPage({
                           placeholder="0.00"
                           step="0.01"
                           type="number"
-                          value={String(detail.debit_g || 0)}
+                          value={detail.debit_g ? String(detail.debit_g) : ""}
                           onChange={(e) =>
                             updateDetail(
                               index,
                               "debit_g",
-                              parseFloat(e.target.value) || 0,
+                              e.target.value ? parseFloat(e.target.value) : undefined,
                             )
                           }
                         />
@@ -1175,12 +1334,12 @@ export default function VoucherClientPage({
                           placeholder="0.00"
                           step="0.01"
                           type="number"
-                          value={String(detail.credit_g || 0)}
+                          value={detail.credit_g ? String(detail.credit_g) : ""}
                           onChange={(e) =>
                             updateDetail(
                               index,
                               "credit_g",
-                              parseFloat(e.target.value) || 0,
+                              e.target.value ? parseFloat(e.target.value) : undefined,
                             )
                           }
                         />
@@ -1196,7 +1355,7 @@ export default function VoucherClientPage({
                             updateDetail(
                               index,
                               "gauge",
-                              parseInt(e.target.value) || 875,
+                              e.target.value ? parseInt(e.target.value) : undefined,
                             )
                           }
                         />
@@ -1208,12 +1367,12 @@ export default function VoucherClientPage({
                           placeholder="0.00"
                           step="0.01"
                           type="number"
-                          value={String(detail.tax || 0)}
+                          value={detail.tax ? String(detail.tax) : ""}
                           onChange={(e) =>
                             updateDetail(
                               index,
                               "tax",
-                              parseFloat(e.target.value) || 0,
+                              e.target.value ? parseFloat(e.target.value) : undefined,
                             )
                           }
                         />
@@ -1225,12 +1384,12 @@ export default function VoucherClientPage({
                           placeholder="0.00"
                           step="0.01"
                           type="number"
-                          value={String(detail.tax_prc || 0)}
+                          value={detail.tax_prc ? String(detail.tax_prc) : ""}
                           onChange={(e) =>
                             updateDetail(
                               index,
                               "tax_prc",
-                              parseFloat(e.target.value) || 0,
+                              e.target.value ? parseFloat(e.target.value) : undefined,
                             )
                           }
                         />
@@ -1239,41 +1398,39 @@ export default function VoucherClientPage({
                       <td className="p-1 border">
                         <input
                           className="border w-full p-1 text-xs text-center appearance-none"
-                          placeholder="0"
+                          placeholder=""
                           type="number"
-                          value={String(detail.vat_no || 0)}
+                          value={detail.vat_no ? String(detail.vat_no) : ""}
                           onChange={(e) =>
                             updateDetail(
                               index,
                               "vat_no",
-                              parseInt(e.target.value) || 0,
+                              e.target.value ? parseInt(e.target.value) : undefined,
                             )
                           }
                         />
                       </td>
 
-                      {costCenters.length > 0 && (
-                        <td className="p-1 border">
-                          <select
-                            className="w-full text-xs border border-slate-300 rounded px-2 py-1 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
-                            value={detail.cost_id || ""}
-                            onChange={(e) =>
-                              updateDetail(
-                                index,
-                                "cost_id",
-                                e.target.value ? parseInt(e.target.value) : null,
-                              )
-                            }
-                          >
-                            <option value="">مركز التكلفة</option>
-                            {costCenters.map((center) => (
-                              <option key={center.id} value={center.id}>
-                                {center.name}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      )}
+                      <td className="p-1 border">
+                        <select
+                          className="w-full text-xs border border-slate-300 rounded px-2 py-1 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                          value={detail.cost_id || ""}
+                          onChange={(e) =>
+                            updateDetail(
+                              index,
+                              "cost_id",
+                              e.target.value ? parseInt(e.target.value) : null,
+                            )
+                          }
+                        >
+                          <option value="">مركز التكلفة</option>
+                          {costCenters.map((center) => (
+                            <option key={center.id} value={center.id}>
+                              {center.name || center.cost_name || `مركز ${center.id}`}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
 
                       <td className="p-1 border">
                         <input
@@ -1411,8 +1568,10 @@ export default function VoucherClientPage({
                             <td className="p-2 text-slate-800">{v.vouch_id}</td>
                             <td className="p-2 text-slate-600">{v.vouch_date}</td>
                             <td className="p-2 text-slate-600">
-                              {voucherTypes.find((t) => t.id === v.vouch_type)
-                                ?.name || "غير محدد"}
+                              {voucherTypes.find((t) => (t.Id || t.id) === v.vouch_type)
+                                ?.name || 
+                               voucherTypes.find((t) => (t.Id || t.id) === v.vouch_type)?.["Code Desc"] ||
+                               "غير محدد"}
                             </td>
                             <td className="p-2 text-slate-800">
                               {formatAmount(v.vouch_amt || 0)}
@@ -1425,8 +1584,10 @@ export default function VoucherClientPage({
                                     : "bg-yellow-100 text-yellow-800"
                                 }`}
                               >
-                                {voucherStatuses.find((s) => s.id === v.vouch_status)
-                                  ?.name || "غير محدد"}
+                                {voucherStatuses.find((s) => (s.Id || s.id) === v.vouch_status)
+                                  ?.name || 
+                                 voucherStatuses.find((s) => (s.Id || s.id) === v.vouch_status)?.["Code Desc"] ||
+                                 "غير محدد"}
                               </span>
                             </td>
                             <td className="p-2">
