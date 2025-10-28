@@ -37,8 +37,8 @@ export default function UserHeader() {
     await onLogoutAction();
   };
 
-  const handleNavigateToTest = () => {
-    router.push("/test-service");
+  const handleNavigateToVouchers = () => {
+    router.push("/reports/vouchers");
   };
 
   return (
@@ -68,12 +68,12 @@ export default function UserHeader() {
             </DropdownTrigger>
             <DropdownMenu aria-label="قائمة المستخدم">
               <DropdownItem
-                key="test-service"
+                key="vouchers"
                 className="text-blue-600"
                 startContent={<BeakerIcon className="w-4 h-4" />}
-                onClick={handleNavigateToTest}
+                onClick={handleNavigateToVouchers}
               >
-                صفحة الاختبار
+                تقرير السندات
               </DropdownItem>
               <DropdownItem
                 key="logout"

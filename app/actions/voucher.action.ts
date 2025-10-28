@@ -13,22 +13,23 @@ interface SaveVoucherData {
   vouch_status?: number;
   pay_type: number;
   ref_no?: string;
+  opps_vouch?: number;
 }
 
 interface VoucherDetailData {
   id?: number;
   vouch_id: number;
   acc_id: number;
-  debit: number;
-  credit: number;
-  debit_g: number;
-  credit_g: number;
-  gauge: number;
+  debit: number | undefined;
+  credit: number | undefined;
+  debit_g: number | undefined;
+  credit_g: number | undefined;
+  gauge: number | undefined;
   vouch_notes?: string;
   cost_id?: number | null;
-  tax: number;
-  tax_prc: number;
-  vat_no: number;
+  tax: number | undefined;
+  tax_prc: number | undefined;
+  vat_no: number | undefined;
 }
 
 export async function createVoucherAction(
@@ -36,16 +37,24 @@ export async function createVoucherAction(
   details: VoucherDetailData[],
 ) {
   try {
+    console.log("🆕 بدء إنشاء قيد جديد:", voucherData);
+    
     // تجهيز بيانات القيد
     const voucherPayload = {
       ...voucherData,
       com: 1, // الفرع = 1
       year: 1, // السنة = 1
       cr_date: new Date().toISOString(),
+      vouch_amt: 0, // إبقاء المبلغ الإجمالي 0 دائماً
+      opps_vouch: voucherData.opps_vouch || 0, // حفظ قيمة opps_vouch من API
     };
+
+    console.log("📤 بيانات الإنشاء:", voucherPayload);
 
     // حفظ السند الرئيسي
     const voucherResponse = await voucherService.create(voucherPayload);
+
+    console.log("📥 استجابة الإنشاء:", voucherResponse);
 
     if (!voucherResponse.success || !voucherResponse.data) {
       console.error("❌ فشل حفظ القيد:", voucherResponse.message);
@@ -58,7 +67,7 @@ export async function createVoucherAction(
     }
 
     const savedVoucher = voucherResponse.data;
-    const masterId = savedVoucher.id; // استخدام id من الجدول (ليس vouch_id)
+    const masterId = (savedVoucher as any).id; // استخدام id من الجدول (ليس vouch_id)
 
     console.log("✅ تم حفظ القيد - المعرف:", masterId);
 
@@ -134,19 +143,62 @@ export async function updateVoucherAction(
   details: VoucherDetailData[],
 ) {
   try {
-    // تجهيز بيانات القيد
+    console.log("🔄 بدء تحديث القيد:", voucherData);
+    
+    // التحقق من صحة البيانات
+    if (!voucherData.vouch_id || voucherData.vouch_id <= 0) {
+      console.error("❌ معرف القيد غير صحيح:", voucherData.vouch_id);
+      return {
+        success: false,
+        message: "معرف القيد غير صحيح",
+      };
+    }
+
+    // البحث عن ID الحقيقي من قاعدة البيانات
+    console.log("🔍 البحث عن ID الحقيقي للقيد:", voucherData.vouch_id);
+    const vouchersResponse = await voucherService.getAll();
+    const voucherRecord = vouchersResponse.data?.find(
+      (v: any) => v.vouch_id === voucherData.vouch_id,
+    );
+    
+    if (!voucherRecord || !voucherRecord.id) {
+      console.error("❌ لم يتم العثور على القيد في قاعدة البيانات:", voucherData.vouch_id);
+      return {
+        success: false,
+        message: "لم يتم العثور على القيد في قاعدة البيانات",
+      };
+    }
+
+    const realVoucherId = voucherRecord.id;
+    console.log("✅ تم العثور على ID الحقيقي:", realVoucherId, "للـ vouch_id:", voucherData.vouch_id);
+    
+    // تجهيز بيانات القيد للتحديث (فقط البيانات المطلوب تحديثها)
     const voucherPayload = {
-      ...voucherData,
-      com: 1, // الفرع = 1
-      year: 1, // السنة = 1
-      cr_date: new Date().toISOString(),
+      vouch_notes: voucherData.vouch_notes || "",
+      vouch_date: voucherData.vouch_date,
+      vouch_status: voucherData.vouch_status || 1,
+      pay_type: voucherData.pay_type,
+      ref_no: voucherData.ref_no || "",
+      vouch_amt: 0, // إبقاء المبلغ الإجمالي 0 دائماً
+      opps_vouch: voucherData.opps_vouch || 0, // حفظ قيمة opps_vouch من API
+      // إزالة com و year و cr_date لأنها لا تحتاج تحديث
     };
+
+    console.log("📤 بيانات التحديث:", voucherPayload);
+    console.log("🔗 URL المطلوب:", `api_update_vouch/${realVoucherId}`);
+    console.log("🆔 معرف القيد الحقيقي:", realVoucherId);
+    console.log("🔍 نوع البيانات المرسلة:", typeof voucherPayload);
+    console.log("📋 محتوى البيانات:", JSON.stringify(voucherPayload, null, 2));
 
     // تحديث السند الرئيسي
     const voucherResponse = await voucherService.update(
-      voucherData.vouch_id,
+      realVoucherId, // استخدام ID الحقيقي من قاعدة البيانات
       voucherPayload,
     );
+
+    console.log("📥 استجابة التحديث:", voucherResponse);
+    console.log("📊 حالة الاستجابة:", voucherResponse.success ? "نجح" : "فشل");
+    console.log("💬 رسالة الاستجابة:", voucherResponse.message);
 
     if (!voucherResponse.success) {
       console.error("❌ فشل تحديث القيد:", voucherResponse.message);
@@ -159,19 +211,8 @@ export async function updateVoucherAction(
     }
 
     // حفظ/تحديث التفاصيل
-    // نحتاج لجلب id الحقيقي من جدول vouchers
-    const vouchersResponse = await voucherService.getAll();
-    const voucherRecord = vouchersResponse.data?.find(
-      (v: any) => v.vouch_id === voucherData.vouch_id,
-    );
-    const vouchMasterId = voucherRecord?.id;
-
-    if (!vouchMasterId) {
-      return {
-        success: false,
-        message: "لم يتم العثور على القيد في قاعدة البيانات",
-      };
-    }
+    // استخدام realVoucherId الذي تم الحصول عليه مسبقاً
+    const vouchMasterId = realVoucherId;
 
     for (let i = 0; i < details.length; i++) {
       const detail = details[i];

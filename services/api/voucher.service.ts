@@ -13,6 +13,7 @@ export interface Voucher {
   ref_no?: string;
   acc_id?: number;
   cost_id?: number;
+  opps_vouch?: number;
 }
 
 export interface VoucherDetail {
@@ -119,7 +120,8 @@ class VoucherService extends HttpService<Voucher> {
    * تحديث سند موجود
    */
   async update(id: number, voucher: any) {
-    return this.put<Voucher>(`api_update_vouch/${id}`, voucher);
+    // استخدام ID في URL كما في Postman
+    return this.patch<Voucher>(`api_update_vouch/${id}`, voucher);
   }
 
   /**
@@ -251,21 +253,61 @@ class VoucherService extends HttpService<Voucher> {
   /**
    * الحصول على أنواع السندات
    */
-  async getVoucherTypes() {
-    return this.getList<any[]>("getVoucherTypeList");
+  async getVoucherTypes(params?: IParams) {
+    const queryParams: IParams = {
+      com: params?.com || params?.xcom_id || "1",
+      year: params?.year || params?.xyear_id || "1",
+    };
+    
+    console.log("Fetching voucher types with params:", queryParams);
+    
+    const response = await this.getList<any[]>("getVoucherTypeList", queryParams);
+    
+    // معالجة الاستجابة
+    if (response.success && response.data) {
+      const data = Array.isArray(response.data) ? response.data : [];
+      console.log("Voucher types loaded:", data.length);
+      return {
+        success: true,
+        data: data,
+      };
+    }
+    
+    console.warn("Voucher types API returned no data");
+    return { success: false, data: [] };
   }
 
   /**
    * الحصول على حالات السندات
    */
-  async getVoucherStages() {
-    return this.getList<any[]>("getVoucherStageList");
+  async getVoucherStages(params?: IParams) {
+    const queryParams: IParams = {
+      com: params?.com || params?.xcom_id || "1",
+      year: params?.year || params?.xyear_id || "1",
+    };
+    
+    console.log("Fetching voucher stages with params:", queryParams);
+    
+    const response = await this.getList<any[]>("getVoucherStageList", queryParams);
+    
+    // معالجة الاستجابة
+    if (response.success && response.data) {
+      const data = Array.isArray(response.data) ? response.data : [];
+      console.log("Voucher stages loaded:", data.length);
+      return {
+        success: true,
+        data: data,
+      };
+    }
+    
+    console.warn("Voucher stages API returned no data");
+    return { success: false, data: [] };
   }
 
   /**
    * الحصول على رقم السند التالي لنوع معين
    */
-  async getNextNumber(voucherType: number = 3) {
+  async getNextNumber(voucherType: number = 2) {
     try {
       // جلب جميع السندات
       const response = await this.getAll();

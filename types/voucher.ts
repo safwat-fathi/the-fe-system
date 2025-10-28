@@ -19,7 +19,7 @@ export interface Voucher {
   commit?: boolean;
   inv_id_id?: number;
   mobile?: number;
-  opps_vouch?: boolean;
+  opps_vouch?: number;
   pay_type: number;
   post?: boolean;
   print?: boolean;
@@ -27,14 +27,15 @@ export interface Voucher {
   vat_no?: number;
   com_id?: number;
   year_id?: number;
+  details?: VoucherDetail[];
 }
 
 export interface VoucherDetail {
   id?: number;
-  credit: number;
-  debit: number;
-  tax_prc?: number;
-  tax?: number;
+  credit: number | undefined;
+  debit: number | undefined;
+  tax_prc?: number | undefined;
+  tax?: number | undefined;
   vouch_notes?: string;
   vouch_status?: number;
   cr_date: string;
@@ -52,10 +53,10 @@ export interface VoucherDetail {
   change?: number;
   com_id?: number;
   cost_id?: number;
-  credit_g?: number;
+  credit_g?: number | undefined;
   cur_id?: number;
   cust_id?: number;
-  debit_g?: number;
+  debit_g?: number | undefined;
   g_credit?: number;
   g_debit?: number;
   gauge?: number;
