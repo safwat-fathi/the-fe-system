@@ -1120,8 +1120,9 @@ export default function useInvoiceForm({
       );
 
       const derivedDeletedIds = originalInvoiceItems
-        .filter((item) => !currentValidIds.has(item.id))
-        .map((item) => item.id);
+        .filter((item) => !currentValidIds.has(Number(item.id)))
+        .map((item) => Number(item.id))
+        .filter((id) => Number.isFinite(id) && id > 0);
 
       const deletions = Array.from(
         new Set([
@@ -1133,7 +1134,7 @@ export default function useInvoiceForm({
       for (const detailId of deletions) {
         if (!detailId || detailId <= 0) continue;
         try {
-          await deleteInvoiceDetailAction(detailId);
+          await deleteInvoiceDetailAction(detailId, resolvedInvoicePk);
         } catch (deleteError) {
           console.error(`فشل حذف السطر ${detailId}:`, deleteError);
         }
@@ -1148,13 +1149,21 @@ export default function useInvoiceForm({
         );
         if (!detailPayload) continue;
 
-        const isExistingRow = originalInvoiceItems.some(
-          (item) => item.id === row.id && item.id > 0,
-        );
+        const rowId = Number(row.id);
+        const isExistingRow =
+          Number.isFinite(rowId) &&
+          rowId > 0 &&
+          originalInvoiceItems.some(
+            (item) => Number(item.id) === rowId && Number(item.id) > 0,
+          );
 
         if (isExistingRow) {
           try {
-            await updateInvoiceDetailAction(Number(row.id), detailPayload);
+            await updateInvoiceDetailAction(
+              rowId,
+              detailPayload,
+              resolvedInvoicePk,
+            );
           } catch (updateError) {
             console.error(
               `خطأ أثناء تحديث تفاصيل السطر ${row.id}:`,
@@ -1164,7 +1173,7 @@ export default function useInvoiceForm({
         } else {
           try {
             const { id, ...creationPayload } = detailPayload;
-            await createInvoiceDetailAction(creationPayload);
+            await createInvoiceDetailAction(creationPayload, resolvedInvoicePk);
           } catch (createError) {
             console.error("خطأ أثناء إنشاء تفاصيل السطر:", createError);
           }
