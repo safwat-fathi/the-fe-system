@@ -247,6 +247,166 @@ const getItemIdFromRow = (row: InvoiceItemRow): number | null => {
   return parsed > 0 ? parsed : null;
 };
 
+const getNumericRowId = (id: unknown): number | null => {
+  const numeric = Number(id);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+};
+
+const normalizeRowIdentifier = (id: unknown): string | null => {
+  if (id === null || id === undefined) return null;
+
+  const numeric = getNumericRowId(id);
+  if (numeric !== null) return `num:${numeric}`;
+
+  const stringValue = String(id).trim();
+  return stringValue.length > 0 ? `str:${stringValue}` : null;
+};
+
+type ComparableRow = {
+  itemId: number | null;
+  qty: number;
+  weight: number;
+  gWeight: number;
+  price: number;
+  priceW: number;
+  total: number;
+  totalW: number;
+  totalA: number;
+  tax: number;
+  taxRate: number;
+  discountAmount: number;
+  discountRate: number;
+  stones: number | null;
+  purity: string;
+  note: string;
+  extraNote: string;
+  itemCode: string;
+  itemDesc: string;
+  transType: number;
+  karat: string;
+  box: number | null;
+};
+
+const normalizeRowForComparison = (
+  row: InvoiceItemRow | undefined,
+  fallbackTransType: number,
+): ComparableRow | null => {
+  if (!row) return null;
+
+  return {
+    itemId: getItemIdFromRow(row),
+    qty: parseNumber(row.qty),
+    weight: parseNumber(row.weight),
+    gWeight: parseNumber(row.g_weight),
+    price: parseNumber(row.price),
+    priceW: parseNumber(row.price_w),
+    total: parseNumber(row.total),
+    totalW: parseNumber(row.total_w),
+    totalA: parseNumber(row.total_a),
+    tax: parseNumber(row.tax),
+    taxRate: parseNumber(row.tax_prc),
+    discountAmount: parseNumber(row.item_disc_amt),
+    discountRate: parseNumber(row.item_disc_prc ?? 0),
+    stones:
+      row.stones === null || row.stones === "" ? null : parseNumber(row.stones),
+    purity: row.purity ? String(row.purity).trim() : "",
+    note: row.note ? String(row.note).trim() : "",
+    extraNote: row.inv_notes ? String(row.inv_notes).trim() : "",
+    itemCode: row.item_code ? String(row.item_code).trim() : "",
+    itemDesc: row.item_desc ? String(row.item_desc).trim() : "",
+    transType:
+      row.trans_type !== undefined && row.trans_type !== null
+        ? Number(row.trans_type)
+        : fallbackTransType,
+    karat: row.k !== undefined && row.k !== null ? String(row.k).trim() : "",
+    box:
+      row.box !== undefined && row.box !== null ? parseNumber(row.box) : null,
+  };
+};
+
+const hasRowChanged = (
+  originalRow: InvoiceItemRow | undefined,
+  currentRow: InvoiceItemRow,
+  fallbackTransType: number,
+): boolean => {
+  const originalComparable = normalizeRowForComparison(
+    originalRow,
+    fallbackTransType,
+  );
+  const currentComparable = normalizeRowForComparison(
+    currentRow,
+    fallbackTransType,
+  );
+
+  if (!currentComparable) {
+    return false;
+  }
+
+  if (!originalComparable) {
+    return true;
+  }
+
+  const numericKeys: Array<keyof ComparableRow> = [
+    "itemId",
+    "qty",
+    "weight",
+    "gWeight",
+    "price",
+    "priceW",
+    "total",
+    "totalW",
+    "totalA",
+    "tax",
+    "taxRate",
+    "discountAmount",
+    "discountRate",
+    "stones",
+    "transType",
+    "box",
+  ];
+
+  for (const key of numericKeys) {
+    const originalValue = originalComparable[key];
+    const currentValue = currentComparable[key];
+
+    const originalNumber =
+      originalValue === null || originalValue === undefined
+        ? null
+        : Number(originalValue);
+    const currentNumber =
+      currentValue === null || currentValue === undefined
+        ? null
+        : Number(currentValue);
+
+    if (originalNumber === null && currentNumber === null) continue;
+
+    if (
+      originalNumber === null ||
+      currentNumber === null ||
+      Math.abs(originalNumber - currentNumber) > 1e-6
+    ) {
+      return true;
+    }
+  }
+
+  const stringKeys: Array<keyof ComparableRow> = [
+    "purity",
+    "note",
+    "extraNote",
+    "itemCode",
+    "itemDesc",
+    "karat",
+  ];
+
+  for (const key of stringKeys) {
+    if (originalComparable[key] !== currentComparable[key]) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_FIELD":
@@ -506,6 +666,19 @@ export default function useInvoiceForm({
     originalInvoiceItems.length > 0 ? originalInvoiceItems : [makeEmptyRow()],
   );
 
+  const originalInvoiceItemMap = useMemo(() => {
+    const map = new Map<string, InvoiceItemRow>();
+
+    for (const item of originalInvoiceItems) {
+      const key = normalizeRowIdentifier(item.id);
+      if (key) {
+        map.set(key, item);
+      }
+    }
+
+    return map;
+  }, [originalInvoiceItems]);
+
   const selectedCustomer = useMemo(() => {
     const rawCode = form.cust_code;
     const normalizedCode =
@@ -632,7 +805,7 @@ export default function useInvoiceForm({
         row.total_a !== undefined
           ? parseNumber(row.total_a)
           : weight *
-              (form.pay_type === INVOICE_PAY_TYPES.WAGES ? priceW : price);
+            (form.pay_type === INVOICE_PAY_TYPES.WAGES ? priceW : price);
 
       const combinedTotal =
         row.total !== undefined
@@ -655,8 +828,10 @@ export default function useInvoiceForm({
           ? null
           : resolvedNote;
 
+      const normalizedRowId = getNumericRowId(row.id);
+
       return {
-        id: row.id,
+        id: normalizedRowId ?? row.id,
         trans_type: row.trans_type ?? defaultTransType,
         G875: row.purity ? parseNumber(row.purity) : null,
         k:
@@ -694,13 +869,7 @@ export default function useInvoiceForm({
         box: row.box ?? null,
       };
     },
-    [
-      defaultTaxPrc,
-      defaultTransType,
-      frac,
-      frac2,
-      form.pay_type,
-    ],
+    [defaultTaxPrc, defaultTransType, frac, frac2, form.pay_type],
   );
 
   // sync incoming invoiceData/details
@@ -954,6 +1123,17 @@ export default function useInvoiceForm({
       (item) => getItemIdFromRow(item) !== null,
     );
 
+    console.log("🧾 [saveInvoice] start:", {
+      isNewInvoice,
+      currentInvoicePk: invoicePk,
+      validItemsCount: validItems.length,
+      validItemIds: validItems.map((item) => ({
+        rowId: item.id,
+        itemId: getItemIdFromRow(item),
+        itemCode: item.item_code,
+      })),
+    });
+
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
       return;
@@ -1113,16 +1293,27 @@ export default function useInvoiceForm({
         value: invoiceNumber,
       });
 
-      const currentValidIds = new Set(
-        validItems
-          .map((item) => Number(item.id))
-          .filter((id) => Number.isFinite(id) && id > 0),
-      );
+      const currentValidKeys = new Set<string>();
+      validItems.forEach((item) => {
+        const key = normalizeRowIdentifier(item.id);
+        if (key) currentValidKeys.add(key);
+      });
 
       const derivedDeletedIds = originalInvoiceItems
-        .filter((item) => !currentValidIds.has(Number(item.id)))
-        .map((item) => Number(item.id))
-        .filter((id) => Number.isFinite(id) && id > 0);
+        .map((item) => {
+          const key = normalizeRowIdentifier(item.id);
+          const numericId = getNumericRowId(item.id);
+          return { key, numericId };
+        })
+        .filter(
+          ({ key, numericId }) =>
+            key !== null &&
+            !currentValidKeys.has(key) &&
+            numericId !== null &&
+            Number.isFinite(numericId) &&
+            numericId > 0,
+        )
+        .map(({ numericId }) => numericId as number);
 
       const deletions = Array.from(
         new Set([
@@ -1130,6 +1321,13 @@ export default function useInvoiceForm({
           ...derivedDeletedIds.filter((id) => Number.isFinite(id) && id > 0),
         ]),
       );
+
+      console.log("🧾 [saveInvoice] derived deletions:", {
+        deletions,
+        originalIds: originalInvoiceItems.map((item) => item.id),
+        currentValidKeys: Array.from(currentValidKeys),
+        derivedDeletedIds,
+      });
 
       for (const detailId of deletions) {
         if (!detailId || detailId <= 0) continue;
@@ -1149,18 +1347,77 @@ export default function useInvoiceForm({
         );
         if (!detailPayload) continue;
 
-        const rowId = Number(row.id);
-        const isExistingRow =
-          Number.isFinite(rowId) &&
-          rowId > 0 &&
-          originalInvoiceItems.some(
-            (item) => Number(item.id) === rowId && Number(item.id) > 0,
+        const numericRowId = getNumericRowId(row.id);
+        const rowKey = normalizeRowIdentifier(row.id);
+        let originalRow =
+          rowKey !== null ? originalInvoiceItemMap.get(rowKey) : undefined;
+
+        if (!originalRow && numericRowId !== null) {
+          const fallbackKey = normalizeRowIdentifier(numericRowId);
+          if (fallbackKey) {
+            originalRow = originalInvoiceItemMap.get(fallbackKey);
+          }
+        }
+
+        if (!originalRow && typeof row.id !== "undefined") {
+          const fallbackKey = normalizeRowIdentifier(
+            (row as InvoiceItemRow).id,
           );
+          if (fallbackKey) {
+            originalRow = originalInvoiceItemMap.get(fallbackKey);
+          }
+        }
+
+        const originalDetailId = getNumericRowId(originalRow?.id);
+        const effectiveDetailId =
+          originalDetailId !== null ? originalDetailId : numericRowId;
+        const isExistingRow = Boolean(
+          originalRow && effectiveDetailId !== null,
+        );
+
+        console.log("🧾 [saveInvoice] processing row:", {
+          rowId: row.id,
+          numericRowId,
+          rowKey,
+          originalDetailId,
+          effectiveDetailId,
+          isExistingRow,
+          row,
+        });
 
         if (isExistingRow) {
+          const rowHasChanged = hasRowChanged(
+            originalRow,
+            row,
+            defaultTransType,
+          );
+
+          console.log("🧾 [saveInvoice] existing row change detection:", {
+            rowId: row.id,
+            numericRowId,
+            rowHasChanged,
+            originalRow,
+            currentRow: row,
+          });
+
+          if (!rowHasChanged) {
+            console.log("🧾 [saveInvoice] skipping unchanged row:", {
+              rowId: row.id,
+              numericRowId,
+              effectiveDetailId,
+            });
+            continue;
+          }
+
           try {
+            console.log("🧾 [saveInvoice] updating detail row:", {
+              rowId: row.id,
+              numericRowId,
+              effectiveDetailId,
+              detailPayload,
+            });
             await updateInvoiceDetailAction(
-              rowId,
+              effectiveDetailId!,
               detailPayload,
               resolvedInvoicePk,
             );
@@ -1173,6 +1430,10 @@ export default function useInvoiceForm({
         } else {
           try {
             const { id, ...creationPayload } = detailPayload;
+            console.log("🧾 [saveInvoice] creating new detail row:", {
+              originalId: row.id,
+              detailPayload: creationPayload,
+            });
             await createInvoiceDetailAction(creationPayload, resolvedInvoicePk);
           } catch (createError) {
             console.error("خطأ أثناء إنشاء تفاصيل السطر:", createError);
@@ -1186,6 +1447,11 @@ export default function useInvoiceForm({
       const mappedDetails = refreshedDetails.map((detail) =>
         mapDetailToRow(detail, defaultTransType),
       );
+
+      console.log("🧾 [saveInvoice] refreshed details count:", {
+        rows: mappedDetails.length,
+        resolvedInvoicePk,
+      });
 
       setInvoiceItems(
         mappedDetails.length > 0 ? mappedDetails : [makeEmptyRow()],
@@ -1249,6 +1515,7 @@ export default function useInvoiceForm({
     isNewInvoice,
     mapRowToApiPayload,
     mobileMethod,
+    originalInvoiceItemMap,
     originalInvoiceItems,
     paymentMethod,
     invoiceData,

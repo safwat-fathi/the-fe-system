@@ -280,10 +280,6 @@ class InvoiceService extends HttpService<Invoice> {
           signal: AbortSignal.timeout(60000),
         },
       );
-      console.log(
-        "🚀 ~ :202 ~ InvoiceService ~ createInvoice ~ response:",
-        response,
-      );
 
       if (!response.success) {
         const errorInfo = {
@@ -536,18 +532,14 @@ function extractMaxInvoiceId(
     }
 
     if (record.data !== undefined) {
-      const nested = extractMaxInvoiceId(
-        record.data as InvoiceMaxIdPayload,
-      );
+      const nested = extractMaxInvoiceId(record.data as InvoiceMaxIdPayload);
       if (nested !== null && nested !== undefined) {
         return nested;
       }
     }
 
     if (record.results !== undefined) {
-      const nested = extractMaxInvoiceId(
-        record.results as InvoiceMaxIdPayload,
-      );
+      const nested = extractMaxInvoiceId(record.results as InvoiceMaxIdPayload);
       if (nested !== null && nested !== undefined) {
         return nested;
       }
