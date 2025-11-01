@@ -68,13 +68,33 @@ const accountingFormLinks: Array<{
   icon: React.ReactNode;
 }> = [
   {
-    name: "قيد تسوية",
-    href: "/forms/voucher?mode=new",
+    name: "قيد افتتاحي",
+    href: "/forms/balance",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {
-    name: "قيد افتتاحي",
-    href: "/forms/balance",
+    name: "سند قبض",
+    href: "/forms/voucher1",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند صرف",
+    href: "/forms/voucher2",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند قبض عميل",
+    href: "/forms/gvoucher4",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند صرف عميل",
+    href: "/forms/gvoucher5",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "قيد تسوية",
+    href: "/forms/voucher?mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
 ];

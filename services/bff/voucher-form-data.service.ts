@@ -5,6 +5,9 @@ import {
   accountService,
   costCenterService,
   taxRateService,
+  boxesService,
+  itemService,
+  customerService,
 } from "@/services/api";
 
 export interface VoucherFormData {
@@ -14,6 +17,9 @@ export interface VoucherFormData {
   voucherStatuses: any[];
   caratTypes: any[];
   taxRates: number[];
+  boxes: any[];
+  items?: any[];
+  customers?: any[];
 }
 
 const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
@@ -24,6 +30,9 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     voucherStagesResponse,
     caratTypesResponse,
     taxRates,
+    boxesResponse,
+    itemsResponse,
+    customersResponse,
   ] = await Promise.all([
     accountService.getAllAccounts(),
     costCenterService.getAllCostCenters(),
@@ -31,6 +40,9 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     voucherService.getVoucherStages({ com: "1", year: "1" }),
     voucherService.getCaratTypes(),
     taxRateService.getTaxRates(),
+    boxesService.getBoxes({ xcom_id: 1 }),
+    itemService.searchItems({ companyId: 1 }),
+    customerService.getAllCustomers({ xcom_id: 1 }),
   ]);
 
   // معالجة الحسابات
@@ -100,6 +112,36 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
 
   console.log("Tax Rates loaded:", taxRatesList.length);
 
+  // معالجة الصناديق
+  const boxes = Array.isArray(boxesResponse) ? boxesResponse : [];
+
+  console.log("Boxes loaded:", boxes.length);
+
+  // معالجة الأصناف
+  let items: any[] = [];
+
+  if (itemsResponse && itemsResponse.results) {
+    items = Array.isArray(itemsResponse.results)
+      ? itemsResponse.results
+      : [];
+    console.log("Items loaded:", items.length);
+  } else if (Array.isArray(itemsResponse)) {
+    items = itemsResponse;
+    console.log("Items loaded:", items.length);
+  } else {
+    console.warn("Items API returned no data");
+  }
+
+  // معالجة العملاء
+  let customers: any[] = [];
+
+  if (customersResponse && Array.isArray(customersResponse)) {
+    customers = customersResponse;
+    console.log("Customers loaded:", customers.length);
+  } else {
+    console.warn("Customers API returned no data");
+  }
+
   return {
     accounts,
     costCenters,
@@ -107,6 +149,9 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     voucherStatuses,
     caratTypes,
     taxRates: taxRatesList,
+    boxes,
+    items,
+    customers,
   };
 });
 
