@@ -34,7 +34,7 @@ NafeesWeb Gold System is a business management application that provides end-to-
 
 ## Key technologies
 
-- Next.js
+- Next.js v15
 - TypeScript
 - React
 - TailwindCSS
