@@ -257,10 +257,12 @@ const VouchersReportClient = ({
 
   // خريطة ثابتة لأنواع السندات (القيم الثابتة في النظام)
   const VOUCHER_TYPE_NAMES: Record<number, string> = {
-    1: "قيد افتتاحي",
-    2: "قيد تسوية",
-    3: "سند قبض",
-    4: "سند صرف",
+    0: "قيد افتتاحي",
+    1: "سند قبض",
+    2: "سند صرف",
+    3: "قيد تسوية",
+    4: "سند قبض عميل",
+    5: "سند صرف عميل",
   };
 
   // Get voucher type name
@@ -297,10 +299,13 @@ const VouchersReportClient = ({
     return vouchers.filter((v) => v.vouch_type === typeId);
   };
 
-  // Get vouchers for specific types (سند قبض، سند صرف، قيد تسوية)
-  const receiptVouchers = getVouchersByType(3); // سند قبض
-  const paymentVouchers = getVouchersByType(4); // سند صرف
-  const adjustmentVouchers = getVouchersByType(2); // قيد تسوية
+  // Get vouchers for specific types (vouch_type values)
+  const openingVouchers = getVouchersByType(0); // القيد الافتتاحي
+  const receiptVouchers = getVouchersByType(1); // سند قبض
+  const paymentVouchers = getVouchersByType(2); // سند صرف
+  const customerReceiptVouchers = getVouchersByType(4); // سند قبض عميل
+  const customerPaymentVouchers = getVouchersByType(5); // سند صرف عميل
+  const adjustmentVouchers = getVouchersByType(3); // قيد تسوية
 
   // Get voucher status chip
   const getStatusChip = (status?: number) => {
@@ -326,24 +331,88 @@ const VouchersReportClient = ({
     }
   };
 
-  // Handle actions
+  // Handle actions - تحديد المسار بناءً على نوع السند
   const handleView = (voucher: Voucher) => {
-    // عرض القيد في وضع preview
-    router.push(`/forms/voucher?id=${voucher.id}&mode=preview`);
+    const voucherId = voucher.id || voucher.vouch_id;
+    const vouchType = voucher.vouch_type;
+
+    // تحديد المسار بناءً على نوع السند
+    if (vouchType === 0) {
+      // القيد الافتتاحي
+      router.push(`/forms/balance/${voucherId}?mode=preview`);
+    } else if (vouchType === 1) {
+      // سند قبض
+      router.push(`/forms/voucher1/${voucherId}?mode=preview`);
+    } else if (vouchType === 2) {
+      // سند صرف
+      router.push(`/forms/voucher2/${voucherId}?mode=preview`);
+    } else if (vouchType === 4) {
+      // سند قبض عميل
+      router.push(`/forms/gvoucher4/${voucherId}?mode=preview`);
+    } else if (vouchType === 5) {
+      // سند صرف عميل
+      router.push(`/forms/gvoucher5/${voucherId}?mode=preview`);
+    } else {
+      // قيد تسوية (vouch_type = 3) أو أنواع أخرى
+      router.push(`/forms/voucher/${voucherId}?mode=preview`);
+    }
   };
 
   const handleEdit = (voucher: Voucher) => {
-    // تعديل القيد
-    router.push(`/forms/voucher?id=${voucher.id}&mode=edit`);
+    const voucherId = voucher.id || voucher.vouch_id;
+    const vouchType = voucher.vouch_type;
+
+    // تحديد المسار بناءً على نوع السند
+    if (vouchType === 0) {
+      // القيد الافتتاحي
+      router.push(`/forms/balance/${voucherId}?mode=edit`);
+    } else if (vouchType === 1) {
+      // سند قبض
+      router.push(`/forms/voucher1/${voucherId}?mode=edit`);
+    } else if (vouchType === 2) {
+      // سند صرف
+      router.push(`/forms/voucher2/${voucherId}?mode=edit`);
+    } else if (vouchType === 4) {
+      // سند قبض عميل
+      router.push(`/forms/gvoucher4/${voucherId}?mode=edit`);
+    } else if (vouchType === 5) {
+      // سند صرف عميل
+      router.push(`/forms/gvoucher5/${voucherId}?mode=edit`);
+    } else {
+      // قيد تسوية (vouch_type = 3) أو أنواع أخرى
+      router.push(`/forms/voucher/${voucherId}?mode=edit`);
+    }
   };
 
   const handlePrint = (voucher: Voucher) => {
     const voucherId = voucher.id || voucher.vouch_id;
+    const vouchType = voucher.vouch_type;
+
+    // تحديد المسار بناءً على نوع السند
+    let printUrl = "";
+
+    if (vouchType === 0) {
+      // القيد الافتتاحي
+      printUrl = `/forms/balance/${voucherId}?mode=preview`;
+    } else if (vouchType === 1) {
+      // سند قبض
+      printUrl = `/forms/voucher1/${voucherId}?mode=preview`;
+    } else if (vouchType === 2) {
+      // سند صرف
+      printUrl = `/forms/voucher2/${voucherId}?mode=preview`;
+    } else if (vouchType === 4) {
+      // سند قبض عميل
+      printUrl = `/forms/gvoucher4/${voucherId}?mode=preview`;
+    } else if (vouchType === 5) {
+      // سند صرف عميل
+      printUrl = `/forms/gvoucher5/${voucherId}?mode=preview`;
+    } else {
+      // قيد تسوية (vouch_type = 3) أو أنواع أخرى
+      printUrl = `/forms/voucher/${voucherId}?mode=preview`;
+    }
+
     // فتح صفحة القيد في نافذة جديدة للطباعة
-    const printWindow = window.open(
-      `/forms/voucher/${voucherId}?mode=preview`,
-      "_blank",
-    );
+    const printWindow = window.open(printUrl, "_blank");
 
     // بعد تحميل الصفحة، استدعاء الطباعة
     if (printWindow) {
@@ -683,6 +752,23 @@ const VouchersReportClient = ({
               />
             </Tab>
             <Tab
+              key="opening"
+              title={`القيد الافتتاحي (${openingVouchers.length})`}
+            >
+              <VouchersTable
+                calculateVoucherCashTotal={calculateVoucherCashTotal}
+                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
+                formatDate={formatDate}
+                getStatusChip={getStatusChip}
+                getVoucherTypeName={getVoucherTypeName}
+                vouchers={openingVouchers}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                onPrint={handlePrint}
+                onView={handleView}
+              />
+            </Tab>
+            <Tab
               key="receipt"
               title={`سندات القبض (${receiptVouchers.length})`}
             >
@@ -695,6 +781,7 @@ const VouchersReportClient = ({
                 vouchers={receiptVouchers}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
+                onPrint={handlePrint}
                 onView={handleView}
               />
             </Tab>
@@ -711,6 +798,41 @@ const VouchersReportClient = ({
                 vouchers={paymentVouchers}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
+                onPrint={handlePrint}
+                onView={handleView}
+              />
+            </Tab>
+            <Tab
+              key="customer-receipt"
+              title={`سندات القبض (عملاء) (${customerReceiptVouchers.length})`}
+            >
+              <VouchersTable
+                calculateVoucherCashTotal={calculateVoucherCashTotal}
+                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
+                formatDate={formatDate}
+                getStatusChip={getStatusChip}
+                getVoucherTypeName={getVoucherTypeName}
+                vouchers={customerReceiptVouchers}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                onPrint={handlePrint}
+                onView={handleView}
+              />
+            </Tab>
+            <Tab
+              key="customer-payment"
+              title={`سندات الصرف (عملاء) (${customerPaymentVouchers.length})`}
+            >
+              <VouchersTable
+                calculateVoucherCashTotal={calculateVoucherCashTotal}
+                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
+                formatDate={formatDate}
+                getStatusChip={getStatusChip}
+                getVoucherTypeName={getVoucherTypeName}
+                vouchers={customerPaymentVouchers}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                onPrint={handlePrint}
                 onView={handleView}
               />
             </Tab>
@@ -727,6 +849,7 @@ const VouchersReportClient = ({
                 vouchers={adjustmentVouchers}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
+                onPrint={handlePrint}
                 onView={handleView}
               />
             </Tab>

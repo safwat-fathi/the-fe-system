@@ -220,12 +220,26 @@ class VoucherService extends HttpService<Voucher> {
 
   /**
    * الحصول على صناديق سند معين
+   * ملاحظة: vouchers_box_list يستخدم xvouch_id (id من جدول vouchers) و xcom_id
    */
-  async getBoxes(vouchId: number) {
-    return this.getList<VoucherBox[]>("vouchers_box_list", {
-      vouch_id: vouchId,
-      xcom_id: "1", // رقم الفرع (ثابت = 1)
-    });
+  async getBoxes(vouchId: number, params?: IParams) {
+    const branchParam =
+      params?.["xcom_id"] ??
+      params?.["com_id"] ??
+      params?.["com"] ??
+      params?.["xcomp_id"] ??
+      "1";
+
+    // إزالة com من البارامترات لعدم إرساله في الطلب
+    const { com, com_id, xcomp_id, ...cleanParams } = params || {};
+
+    const queryParams: IParams = {
+      ...cleanParams,
+      xvouch_id: vouchId, // id من جدول vouchers (primary key)
+      xcom_id: branchParam, // رقم الفرع
+    };
+
+    return this.getList<VoucherBox[]>("vouchers_box_list", queryParams);
   }
 
   /**
@@ -386,6 +400,88 @@ class VoucherService extends HttpService<Voucher> {
       cache: "no-store",
       next: { tags: ["carat-types"] },
     });
+  }
+
+  // ====== تفاصيل السند الذهبي (Gold Voucher Details) ======
+
+  /**
+   * الحصول على تفاصيل سند ذهبي معين
+   * ملاحظة: gvouchers_dtl_list يستخدم xvouch_id (id من جدول vouchers) و xcom_id
+   */
+  async getGoldDetails(vouchId: number, params?: IParams) {
+    const branchParam =
+      params?.["xcom_id"] ??
+      params?.["com_id"] ??
+      params?.["com"] ??
+      params?.["xcomp_id"] ??
+      "1";
+
+    // إزالة com من البارامترات لعدم إرساله في الطلب
+    const { com, com_id, xcomp_id, ...cleanParams } = params || {};
+
+    const queryParams: IParams = {
+      ...cleanParams,
+      xvouch_id: vouchId, // id من جدول vouchers (primary key)
+      xcom_id: branchParam, // رقم الفرع
+      page: params?.page || "1", // pagination
+    };
+
+    const response = await this.getList<any[]>("gvouchers_dtl_list", queryParams);
+
+    // معالجة الاستجابة المُقسّمة (pagination)
+    if (response.success && response.data) {
+      const data = response.data as any;
+
+      // إذا كانت الاستجابة تحتوي على results (pagination)
+      if (data.results && Array.isArray(data.results)) {
+        return {
+          success: true,
+          data: data.results,
+          count: data.count || data.results.length,
+          next: data.next,
+          previous: data.previous,
+          message: response.message,
+        };
+      }
+
+      // إذا كانت array مباشرة
+      if (Array.isArray(data)) {
+        return {
+          success: true,
+          data: data,
+          count: data.length,
+          message: response.message,
+        };
+      }
+    }
+
+    return {
+      success: false,
+      data: [],
+      count: 0,
+      message: response.message || "لم يتم العثور على تفاصيل الذهب",
+    };
+  }
+
+  /**
+   * إنشاء تفصيل سند ذهبي جديد
+   */
+  async createGoldDetail(detail: any) {
+    return this.post<any>("api_create_gvouch_dtl", detail);
+  }
+
+  /**
+   * تحديث تفصيل سند ذهبي
+   */
+  async updateGoldDetail(id: number, detail: any) {
+    return this.put<any>(`api_update_gvouch_dtl/${id}`, detail);
+  }
+
+  /**
+   * حذف تفصيل سند ذهبي
+   */
+  async deleteGoldDetail(id: number) {
+    return this.delete(`api_delete_gvouch_dtl/${id}`);
   }
 }
 
