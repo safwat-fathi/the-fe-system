@@ -141,13 +141,10 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
   private async _clearTokens(): Promise<void> {
     try {
-      // await onLogoutAction();
+      await onLogoutAction();
     } catch (error) {
-      if (error instanceof AuthenticationError) {
-        throw error;
-      }
+      // Do not throw to avoid cascading failures
       console.error("Error during logout:", error);
-      throw new AuthenticationError("Authentication failed");
     }
   }
 
@@ -220,19 +217,15 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
         );
       }
 
-      // Handle unauthorized - try token refresh once
-      if (response.status === 401 && retryCount === 0) {
-        console.log("Authorization failed");
-
-        const refreshSuccess = await this._handleTokenRefresh();
-
-        if (refreshSuccess) {
-          // Retry the original request with new token
-          return this._request(route, method, options, params, retryCount + 1);
+      // Handle unauthorized simply: clear tokens and redirect to login
+      if (response.status === 401) {
+        await this._clearTokens();
+        if (typeof window !== "undefined") {
+          try {
+            window.location.href = "/auth/login";
+          } catch {}
         }
-
-        // If refresh failed, return unauthorized response
-        throw new AuthenticationError("Session expired - please login again");
+        return { success: false, message: "Unauthorized" } as ServiceResponse<R>;
       }
 
       // Parse response
