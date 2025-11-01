@@ -132,21 +132,22 @@ export interface InvoiceDetail {
   id: number;
   trans_type: number;
   G875: number | null; // Assumed to be a number if not null
-  qty: string; // '0.00' - Treat as string to preserve decimal precision/format
-  price: string; // '17.0000...' - Treat as string to preserve decimal precision/format
-  price_w: string; // '17.0000...'
-  weight: string; // '51.4400...'
-  g_weight: string; // '51.4400...'
-  total: string; // '1005.6520...'
-  total_w: string; // '874.4800...'
-  total_a: string; // '874.4800...'
+  k?: number | null;
+  qty: string | number; // API may return string but we can send numeric values
+  price: string | number; // '17.0000...' or numeric value
+  price_w: string | number; // '17.0000...' or numeric value
+  weight: string | number; // '51.4400...' or numeric value
+  g_weight: string | number; // '51.4400...' or numeric value
+  total: string | number; // '1005.6520...' or numeric value
+  total_w: string | number; // '874.4800...' or numeric value
+  total_a: string | number; // '874.4800...' or numeric value
   inv_notes: string | null; // Assumed to be a string if not null
   diff: number | null; // Assumed to be a number if not null
-  tax: string; // '131.1720...'
-  tax_prc: string; // '15.00'
+  tax: string | number; // '131.1720...' or numeric value
+  tax_prc: string | number; // '15.00' or numeric value
   stones: number | null; // Assumed to be a number if not null
-  item_disc_prc: string; // '0.00'
-  item_disc_amt: string; // '0.0000...'
+  item_disc_prc: string | number; // '0.00' or numeric value
+  item_disc_amt: string | number; // '0.0000...' or numeric value
   sn: string; // ''
   item_desc: string; // ''
   price2: string | null;

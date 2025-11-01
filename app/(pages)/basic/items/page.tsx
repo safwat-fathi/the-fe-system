@@ -12,8 +12,8 @@ import { Item } from "@/types/models/item";
 import { IPaginatedResponse } from "@/types/services/base";
 
 export const metadata: Metadata = {
-  title: "الأصناف - NafeesWeb",
-  description: "إدارة الأصناف والمنتجات",
+  title: "الأصناف",
+  description: "إدارة الأصناف",
 };
 
 export default async function ItemsPage({
@@ -38,22 +38,22 @@ export default async function ItemsPage({
       ? parsedCompanyId
       : 1;
 
-  const [itemsData, categoriesData, itemTypesData, unitsData] =
-    await Promise.all([
-      itemService
-        .searchItems({ page: currentPage, query: searchQuery, companyId })
-        .catch(
-          (): IPaginatedResponse<Item> => ({
-            count: 0,
-            next: null,
-            previous: null,
-            results: [],
-          }),
-        ),
-      helperService.getCategories().catch(() => []),
-      helperService.getItemTypes().catch(() => []),
-      helperService.getUnits().catch(() => []),
-    ]);
+  const [itemsData, categoriesData, itemTypesData, unitsData] = await Promise.all([
+    itemService
+      .searchItems({ page: currentPage, query: searchQuery, companyId })
+      .catch(
+        (): IPaginatedResponse<Item> => ({
+          count: 0,
+          next: null,
+          previous: null,
+          results: [],
+        }),
+      ),
+    helperService.getCategories().catch(() => []),
+    helperService.getItemTypes().catch(() => []),
+    helperService.getUnits().catch(() => []),
+  ]);
+  console.log("🚀 ~ :55 ~ ItemsPage ~ itemsData:", itemsData);
 
   const itemsPerPage =
     itemsData.results.length > 0 ? itemsData.results.length : 20;

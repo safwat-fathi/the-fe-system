@@ -657,6 +657,8 @@ export default function InvoiceItemTable({
                       updated[index] = {
                         ...updated[index],
                         item: selected.id ?? 0,
+                        // keep both to avoid stale reads in save mapper
+                        ...(selected.id ? { item_id: selected.id } : {}),
                         item_desc:
                           selected.item_name ??
                           selected.item_code ??
@@ -713,6 +715,7 @@ export default function InvoiceItemTable({
                       updated[index] = {
                         ...updated[index],
                         item: newItem.id,
+                        item_id: newItem.id,
                         item_desc: newItem.item_name,
                         price: String(goldPrice ?? newItem.item_price ?? 0),
                         price_w: String(newItem.work_price ?? 0),
