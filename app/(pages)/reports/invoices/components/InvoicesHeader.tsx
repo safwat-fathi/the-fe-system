@@ -1,8 +1,8 @@
 "use client";
 
 import { PrintButton } from "@/components";
-import { ArrowDownTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
-import Link from "next/link";
+import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+
 
 const InvoicesHeader = () => {
 	return (

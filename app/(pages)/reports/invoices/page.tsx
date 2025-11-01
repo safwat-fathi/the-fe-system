@@ -11,6 +11,11 @@ import AppLoading from "@/components/AppLoading";
 
 export const revalidate = 3600;
 
+export const metadata = {
+  title: "تقارير الفواتير",
+  description: "تقرير شامل لجميع الفواتير",
+};
+
 export default async function InvoicesPage({
   searchParams,
 }: {
