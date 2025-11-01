@@ -10,6 +10,7 @@ class GoldPriceService {
       // Check if the gold price API endpoint is configured
       if (!API_ENDPOINTS.GOLD_PRICE) {
         console.warn("⚠️ Gold price API endpoint not configured");
+
         return null;
       }
 
@@ -28,9 +29,11 @@ class GoldPriceService {
       if (!pricePerOunce) return null;
 
       const pricePerGram = pricePerOunce / TROY_OUNCE_TO_GRAM;
+
       return parseFloat(pricePerGram.toFixed(2));
     } catch (error) {
       console.error("❌ فشل جلب سعر الذهب:", error);
+
       return null;
     }
   }

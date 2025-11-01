@@ -162,6 +162,7 @@ export default function InvoiceSelectors({
     const matchById = customers.find(
       (cust) => String(cust.id ?? "") === normalized,
     );
+
     if (matchById) return matchById;
 
     return null;
@@ -223,15 +224,19 @@ export default function InvoiceSelectors({
                   تاريخ ووقت الفاتورة:
                 </label>
                 <input
+                  className="w-full h-[32px] border px-2 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   id="invoice-date"
                   type="datetime-local"
-                  className="w-full h-[32px] border px-2 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  value={invoiceDate ? new Date(invoiceDate).toISOString().slice(0, 16) : ""}
+                  value={
+                    invoiceDate
+                      ? new Date(invoiceDate).toISOString().slice(0, 16)
+                      : ""
+                  }
                   onChange={(e) => setInvoiceDate(e.target.value)}
                 />
               </div>
             )}
-            
+
             <div>
               <label
                 className="block mb-1 font-medium text-gray-700 text-xs"
@@ -273,6 +278,7 @@ export default function InvoiceSelectors({
                 value={selectedOption}
                 onChange={(selectedOption) => {
                   const nextValue = selectedOption?.value ?? null;
+
                   setSelectedCustomer(nextValue);
                   setReferenceNumber("");
 
@@ -353,18 +359,18 @@ export default function InvoiceSelectors({
                 >
                   على:
                 </label>
-            <select
-              className="w-full h-[32px] border px-2 rounded text-xs"
-              id="pay-type"
-              value={payType}
-              onChange={handlePayTypeChange}
-            >
-              {payTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+                <select
+                  className="w-full h-[32px] border px-2 rounded text-xs"
+                  id="pay-type"
+                  value={payType}
+                  onChange={handlePayTypeChange}
+                >
+                  {payTypeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

@@ -26,7 +26,10 @@ export const INVOICE_TYPE_FILTERS = [
 
 export const TRANS_TYPE_META: Record<
   TransTypes,
-  { label: string; color: "default" | "primary" | "success" | "warning" | "danger" }
+  {
+    label: string;
+    color: "default" | "primary" | "success" | "warning" | "danger";
+  }
 > = {
   [TransTypes.PURCHASE]: { label: "شراء", color: "primary" },
   [TransTypes.SALES]: { label: "بيع", color: "success" },

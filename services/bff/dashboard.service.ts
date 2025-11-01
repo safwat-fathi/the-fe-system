@@ -41,10 +41,10 @@ class DashboardService extends HttpService<any> {
       if (!invoices) return null;
 
       // Calculate monthly sales
-      const invoicesList = Array.isArray(invoices?.results) 
-        ? invoices.results 
+      const invoicesList = Array.isArray(invoices?.results)
+        ? invoices.results
         : [];
-      
+
       const monthlySales = await invoiceService
         .calculateMonthlySales(invoicesList)
         .catch((err) => {

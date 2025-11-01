@@ -37,8 +37,8 @@ export default async function InvoicesPage({
         }
       >
         <InvoiceClient
-          totalInvoices={count}
           invoices={invoices?.results ?? []}
+          totalInvoices={count}
         />
       </Suspense>
 

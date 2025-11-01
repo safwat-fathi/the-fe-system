@@ -25,7 +25,7 @@ const authMiddleware: MiddlewareFactory = () => {
       // Get the authentication token
       const token = request.cookies.get(STORAGE_KEYS.ACCESS_TOKEN)?.value;
 
-			if (!isTokenValid(token)) {
+      if (!isTokenValid(token)) {
         console.log("Token is invalid");
 
         // Delete the auth token cookie
@@ -36,7 +36,7 @@ const authMiddleware: MiddlewareFactory = () => {
         // If token is invalid, redirect to login
         return NextResponse.redirect(new URL(AUTH_LOGIN_URL, request.url));
       }
-			
+
       // If token exists and user is on login page, redirect to dashboard
       if (token && pathname === AUTH_LOGIN_URL) {
         return NextResponse.redirect(new URL("/", request.url));

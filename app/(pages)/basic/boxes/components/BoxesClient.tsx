@@ -32,7 +32,6 @@ import {
 } from "@/components/Modal";
 import boxService from "@/services/api/box.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
-import { boxesService } from "@/services/api";
 
 // Interface for customer boxes (customers with cust_type = 99)
 interface CustomerBox {

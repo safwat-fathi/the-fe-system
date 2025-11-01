@@ -1,10 +1,11 @@
-import { HttpService } from "@/services/base";
-import { getBranchParams } from "@/app/actions/branch-params";
 import customerService from "../api/customer.service";
 import itemService from "../api/item.service";
 import goldPriceService from "../api/gold-price.service";
 import categoryService from "../api/category.service";
 import boxesService from "../api/boxes.service";
+
+import { getBranchParams } from "@/app/actions/branch-params";
+import { HttpService } from "@/services/base";
 
 interface InvoiceFormData {
   boxes: any[];
@@ -24,9 +25,7 @@ class InvoiceFormDataService extends HttpService<any> {
     try {
       const branchParams = await getBranchParams();
       const parsedCompanyId = Number(branchParams.com ?? 1);
-      const companyId = Number.isFinite(parsedCompanyId)
-        ? parsedCompanyId
-        : 1;
+      const companyId = Number.isFinite(parsedCompanyId) ? parsedCompanyId : 1;
 
       // Fetch all required data in parallel
       const [boxes, customers, itemsResponse, categories, goldPrice] =
@@ -50,10 +49,13 @@ class InvoiceFormDataService extends HttpService<any> {
 
       // Fetch home settings to get homePurity
       let homePurity = 0;
+
       try {
         const homeSettings = await itemService.getHomeSettings();
+
         if (homeSettings && homeSettings.length > 0) {
           const purityValue = parseFloat(homeSettings[0]?.purity);
+
           if (!isNaN(purityValue)) {
             homePurity = purityValue;
           }

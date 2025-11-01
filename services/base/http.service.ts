@@ -1,18 +1,13 @@
-
-
 import {
   HttpServiceAbstract,
   IPaginatedResponse,
   IParams,
   TMethod,
 } from "@/types/services/base";
-
 import { getCookieAction, setCookieAction } from "@/app/actions/cookie-store";
 import { createParams } from "@/utilities/qs";
 import { STORAGE_KEYS } from "@/constants";
-import { onLogoutAction } from "@/app/actions/auth";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
-import { isTokenValid } from "@/utilities/token";
 import { getBranchParams } from "@/app/actions/branch-params";
 
 // Enhanced response type for better type safety
@@ -33,7 +28,6 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
   constructor(url: string, timeout = 10000) {
     super();
-
 
     if (!this._baseUrl) {
       throw new Error("API_BASE_URL is not defined");
@@ -58,12 +52,14 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   private async _addBranchParams(params: IParams): Promise<IParams> {
     try {
       const branchParams = await getBranchParams();
+
       return {
         ...params,
         ...branchParams,
       };
     } catch (error) {
       console.warn("Failed to get branch parameters, using defaults:", error);
+
       return {
         ...params,
         com: "1",
@@ -82,6 +78,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
     try {
       const result = await this._refreshPromise;
+
       return result;
     } finally {
       this._isRefreshing = false;
@@ -110,6 +107,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
         body: JSON.stringify({ refresh: refreshToken }),
         credentials: "include",
       });
+
       console.log(
         "🚀 ~ :100 ~ HttpService ~ _performTokenRefresh ~ refreshResponse:",
         refreshResponse,
@@ -162,10 +160,11 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   ): Promise<ServiceResponse<R>> {
     try {
       // Validate base URL is configured
-      if (!this._baseUrl || this._baseUrl.startsWith('undefined')) {
+      if (!this._baseUrl || this._baseUrl.startsWith("undefined")) {
         return {
           success: false,
-          message: "API base URL is not configured. Please set NEXT_PUBLIC_API_BASE_URL in your .env.local file.",
+          message:
+            "API base URL is not configured. Please set NEXT_PUBLIC_API_BASE_URL in your .env.local file.",
         };
       }
 
@@ -199,6 +198,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
       if (!response.ok) {
         let errorBody: string | undefined;
+
         try {
           errorBody = await responseClone.text();
         } catch (readError) {
@@ -240,6 +240,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       const isJson = contentType?.includes("application/json");
 
       let data: any;
+
       if (isJson) {
         try {
           data = await response.json();

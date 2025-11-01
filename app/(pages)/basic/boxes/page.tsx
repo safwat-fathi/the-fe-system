@@ -2,7 +2,6 @@ import { Metadata } from "next";
 
 import BoxesClient from "./components/BoxesClient";
 
-import genericService from "@/services/api/generic.service";
 import { getBranchParams } from "@/app/actions/branch-params";
 import { boxesService } from "@/services/api";
 
@@ -49,6 +48,7 @@ export default async function BoxesPage() {
   // جلب بيانات الصناديق باستخدام GenericService
 
   const response = await boxesService.getBoxes({ xcom_id: branchParams.com });
+
   console.log("🚀 ~ :55 ~ BoxesPage ~ response:", response);
 
   return (

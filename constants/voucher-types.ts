@@ -10,8 +10,7 @@ export const VOUCHER_TYPES = {
   ADJUSTMENT: 3, // قيد تسوية
 } as const;
 
-export type VoucherType =
-  (typeof VOUCHER_TYPES)[keyof typeof VOUCHER_TYPES];
+export type VoucherType = (typeof VOUCHER_TYPES)[keyof typeof VOUCHER_TYPES];
 
 /**
  * أسماء أنواع القيود بالعربية
@@ -43,6 +42,6 @@ export const getVoucherTypeName = (
   if (lang === "ar") {
     return VOUCHER_TYPE_NAMES[type as VoucherType] || "غير محدد";
   }
+
   return VOUCHER_TYPE_NAMES_EN[type as VoucherType] || "Unknown";
 };
-

@@ -1,5 +1,6 @@
-import { HttpService } from "@/services/base";
 import type { Box, GetBoxesParams } from "@/types/models/box";
+
+import { HttpService } from "@/services/base";
 
 class BoxesService extends HttpService<Box> {
   constructor() {

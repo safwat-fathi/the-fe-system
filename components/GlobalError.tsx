@@ -5,16 +5,20 @@ import Link from "next/link";
 const isDevelopment = process.env.NODE_ENV === "development";
 
 type GlobalErrorProps = {
-	message: string;
-	stack: string | undefined;
-	onRetry: () => void;
+  message: string;
+  stack: string | undefined;
+  onRetry: () => void;
 };
 
-export default function GlobalError({ message, stack, onRetry }:  GlobalErrorProps) {
+export default function GlobalError({
+  message,
+  stack,
+  onRetry,
+}: GlobalErrorProps) {
   return (
     <div
-      dir="rtl" // Added for right-to-left layout
       className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4"
+      dir="rtl" // Added for right-to-left layout
     >
       {isDevelopment ? (
         // Show error stack in development
@@ -43,15 +47,15 @@ export default function GlobalError({ message, stack, onRetry }:  GlobalErrorPro
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={onRetry}
                 className="px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors"
+                onClick={onRetry}
               >
                 حاول مرة أخرى
               </button>
 
               <Link
-                href="/"
                 className="px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors"
+                href="/"
               >
                 العودة للرئيسية
               </Link>
@@ -76,11 +80,11 @@ export default function GlobalError({ message, stack, onRetry }:  GlobalErrorPro
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                ></path>
+                />
               </svg>
             </div>
 
@@ -93,15 +97,15 @@ export default function GlobalError({ message, stack, onRetry }:  GlobalErrorPro
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={onRetry}
                 className="px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors"
+                onClick={onRetry}
               >
                 حاول مرة أخرى
               </button>
 
               <Link
-                href="/"
                 className="px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors"
+                href="/"
               >
                 العودة للرئيسية
               </Link>
@@ -112,8 +116,8 @@ export default function GlobalError({ message, stack, onRetry }:  GlobalErrorPro
             <p className="text-sm text-gray-500">
               هل تحتاج إلى مساعدة؟ تواصل مع الدعم عبر{" "}
               <a
-                href="mailto:support@nafeesweb.com"
                 className="text-red-500 hover:underline"
+                href="mailto:support@nafeesweb.com"
               >
                 support@nafeesweb.com
               </a>

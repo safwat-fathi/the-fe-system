@@ -69,7 +69,7 @@ const accountingFormLinks: Array<{
 }> = [
   {
     name: "قيد تسوية",
-    href: "/forms/voucher",
+    href: "/forms/voucher?mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {

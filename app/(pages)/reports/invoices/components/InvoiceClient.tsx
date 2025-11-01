@@ -10,8 +10,13 @@ import {
   Tab,
   CardBody,
 } from "@heroui/react";
+import {
+  FunnelIcon,
+  ChartBarIcon,
+  TableCellsIcon,
+} from "@heroicons/react/24/outline";
+
 import Card from "@/components/Card";
-import { FunnelIcon, ChartBarIcon, TableCellsIcon } from "@heroicons/react/24/outline";
 import useFractions from "@/utilities/useFractions";
 import AppDataTable from "@/components/AppDataTable";
 import InvoiceAnalytics from "@/components/InvoiceAnalytics";
@@ -119,6 +124,7 @@ export default function InvoiceClient({
               value={searchQ}
               onChange={(e) => {
                 const value = e.target.value;
+
                 setSearchQ(value);
                 if (value === params.xinv_id) return;
                 startTransition(() => setParams({ xinv_id: value, page: "1" }));

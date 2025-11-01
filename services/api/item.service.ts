@@ -1,7 +1,8 @@
+import type { ItemForm } from "@/types/items";
+
 import { HttpService } from "@/services/base";
 import { IPaginatedResponse } from "@/types/services/base";
 import { Item, SearchItemsParams } from "@/types/models/item";
-import type { ItemForm } from "@/types/items";
 
 class ItemService extends HttpService<Item> {
   constructor() {

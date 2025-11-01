@@ -5,12 +5,14 @@ import { Voucher } from "@/types/voucher";
 interface BalanceVoucherFormProps {
   voucher: Voucher;
   currentTime: string;
+  isEditing?: boolean;
   onVoucherChange: (field: keyof Voucher, value: any) => void;
 }
 
 export default function BalanceVoucherForm({
   voucher,
   currentTime,
+  isEditing = true,
   onVoucherChange,
 }: BalanceVoucherFormProps) {
   return (
@@ -24,7 +26,9 @@ export default function BalanceVoucherForm({
             </label>
             <input
               className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+              disabled={!isEditing}
               placeholder="أدخل رقم المرجع"
+              readOnly={!isEditing}
               value={voucher.ref_no || ""}
               onChange={(e) => onVoucherChange("ref_no", e.target.value)}
             />
@@ -36,9 +40,15 @@ export default function BalanceVoucherForm({
               تاريخ ووقت القيد
             </label>
             <input
-              type="datetime-local"
               className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
-              value={voucher.vouch_date ? new Date(voucher.vouch_date).toISOString().slice(0, 16) : ""}
+              disabled={!isEditing}
+              readOnly={!isEditing}
+              type="datetime-local"
+              value={
+                voucher.vouch_date
+                  ? new Date(voucher.vouch_date).toISOString().slice(0, 16)
+                  : ""
+              }
               onChange={(e) => onVoucherChange("vouch_date", e.target.value)}
             />
           </div>
@@ -48,7 +58,9 @@ export default function BalanceVoucherForm({
             <label className="text-sm font-medium text-slate-700">البيان</label>
             <input
               className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+              disabled={!isEditing}
               placeholder="أدخل بيان القيد"
+              readOnly={!isEditing}
               value={voucher.vouch_notes || ""}
               onChange={(e) => onVoucherChange("vouch_notes", e.target.value)}
             />

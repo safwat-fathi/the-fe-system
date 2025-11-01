@@ -1,6 +1,6 @@
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import Link from "next/link";
-import { Button, Chip } from "@heroui/react";
+import { Button } from "@heroui/react";
 import { EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 
 import { formatDateTime } from "@/utilities/dateUtils";
@@ -60,12 +60,8 @@ export const createInvoiceColumns = (
     cell: ({ row }) => {
       const transType = Number(row.original.trans_type) as TransTypes;
       const typeMeta = TRANS_TYPE_META[transType];
-      			
-      return (
-        <span  >
-          {typeMeta?.label ?? "غير محدد"}
-        </span>
-      );
+
+      return <span>{typeMeta?.label ?? "غير محدد"}</span>;
     },
   }),
   columnHelper.display({

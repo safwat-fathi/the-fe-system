@@ -17,18 +17,19 @@ import {
   Tab,
   Chip,
   Tooltip,
-  Pagination,
 } from "@heroui/react";
-import { CardBody, CardHeader } from "@heroui/react";
+import { CardBody } from "@heroui/react";
 import {
   MagnifyingGlassIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
   PlusIcon,
+  PrinterIcon,
 } from "@heroicons/react/24/outline";
 
 import Card from "@/components/Card";
+import { PrintButton } from "@/components";
 import { Voucher } from "@/types/voucher";
 import { deleteVoucherAction } from "@/app/actions/voucher.action";
 import { formatAmount } from "@/utilities/formatAmount";
@@ -42,6 +43,7 @@ interface VouchersTableProps {
   onView: (voucher: Voucher) => void;
   onEdit: (voucher: Voucher) => void;
   onDelete: (voucher: Voucher) => void;
+  onPrint?: (voucher: Voucher) => void;
   getVoucherTypeName: (typeId: number) => string;
   getStatusChip: (status?: number) => React.ReactNode;
   calculateVoucherCashTotal: (voucher: Voucher) => number;
@@ -54,6 +56,7 @@ function VouchersTable({
   onView,
   onEdit,
   onDelete,
+  onPrint,
   getVoucherTypeName,
   getStatusChip,
   calculateVoucherCashTotal,
@@ -74,13 +77,16 @@ function VouchersTable({
       </TableHeader>
       <TableBody>
         {vouchers.map((voucher, index) => (
-          <TableRow key={voucher.id || `voucher-${voucher.vouch_id}-${voucher.vouch_type}-${index}`}>
+          <TableRow
+            key={
+              voucher.id ||
+              `voucher-${voucher.vouch_id}-${voucher.vouch_type}-${index}`
+            }
+          >
             <TableCell>
               <span className="font-semibold">{voucher.vouch_id}</span>
             </TableCell>
-            <TableCell>
-              {formatDate(voucher.vouch_date)}
-            </TableCell>
+            <TableCell>{formatDate(voucher.vouch_date)}</TableCell>
             <TableCell>
               <Chip color="primary" size="sm">
                 {getVoucherTypeName(voucher.vouch_type || 0)}
@@ -104,7 +110,7 @@ function VouchersTable({
             </TableCell>
             <TableCell>{getStatusChip(voucher.vouch_status)}</TableCell>
             <TableCell>
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 <Tooltip content="عرض">
                   <Button
                     isIconOnly
@@ -112,29 +118,39 @@ function VouchersTable({
                     variant="light"
                     onPress={() => onView(voucher)}
                   >
-                    <EyeIcon className="h-4 w-4" />
+                    <EyeIcon className="h-4 w-4 text-blue-500" />
                   </Button>
                 </Tooltip>
                 <Tooltip content="تعديل">
                   <Button
                     isIconOnly
-                    color="primary"
                     size="sm"
                     variant="light"
                     onPress={() => onEdit(voucher)}
                   >
-                    <PencilIcon className="h-4 w-4" />
+                    <PencilIcon className="h-4 w-4 text-yellow-500" />
                   </Button>
                 </Tooltip>
+                {onPrint && (
+                  <Tooltip content="طباعة">
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={() => onPrint(voucher)}
+                    >
+                      <PrinterIcon className="h-4 w-4 text-gray-600" />
+                    </Button>
+                  </Tooltip>
+                )}
                 <Tooltip content="حذف">
                   <Button
                     isIconOnly
-                    color="danger"
                     size="sm"
                     variant="light"
                     onPress={() => onDelete(voucher)}
                   >
-                    <TrashIcon className="h-4 w-4" />
+                    <TrashIcon className="h-4 w-4 text-red-500" />
                   </Button>
                 </Tooltip>
               </div>
@@ -242,7 +258,7 @@ const VouchersReportClient = ({
   // خريطة ثابتة لأنواع السندات (القيم الثابتة في النظام)
   const VOUCHER_TYPE_NAMES: Record<number, string> = {
     1: "قيد افتتاحي",
-    2: "قيد تسوية", 
+    2: "قيد تسوية",
     3: "سند قبض",
     4: "سند صرف",
   };
@@ -250,15 +266,14 @@ const VouchersReportClient = ({
   // Get voucher type name
   const getVoucherTypeName = (typeId: number) => {
     const type = voucherTypes.find((t) => t.id === typeId);
-    
+
     // تشخيص البيانات
     if (typeId && !type) {
       console.log(`❌ لم يتم العثور على نوع السند ${typeId} في:`, voucherTypes);
     }
-    
+
     // محاولة العثور على الاسم في حقول مختلفة
-    const typeName = type?.type_name || 
-                    type?.type_name_e;
+    const typeName = type?.type_name || type?.type_name_e;
 
     // استخدام الاسم من API أو الخريطة الثابتة
     return typeName || VOUCHER_TYPE_NAMES[typeId] || `نوع ${typeId}`;
@@ -267,10 +282,10 @@ const VouchersReportClient = ({
   // Format date to dd/mm/yyyy
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+      return new Date(dateString).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
       });
     } catch (error) {
       return dateString; // fallback to original string if parsing fails
@@ -322,6 +337,24 @@ const VouchersReportClient = ({
     router.push(`/forms/voucher?id=${voucher.id}&mode=edit`);
   };
 
+  const handlePrint = (voucher: Voucher) => {
+    const voucherId = voucher.id || voucher.vouch_id;
+    // فتح صفحة القيد في نافذة جديدة للطباعة
+    const printWindow = window.open(
+      `/forms/voucher/${voucherId}?mode=preview`,
+      "_blank",
+    );
+
+    // بعد تحميل الصفحة، استدعاء الطباعة
+    if (printWindow) {
+      printWindow.addEventListener("load", () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      });
+    }
+  };
+
   const handleDelete = async (voucher: Voucher) => {
     if (confirm("هل أنت متأكد من حذف هذا السند؟")) {
       try {
@@ -347,21 +380,24 @@ const VouchersReportClient = ({
     router.push("/forms/voucher");
   };
 
-  // Calculate totals
-  const calculateTotals = () => {
+  // Calculate totals - استخدام useMemo لتحسين الأداء
+  const totals = useMemo(() => {
     return vouchers.reduce(
       (acc, voucher) => {
-        acc.totalAmount += calculateVoucherCashTotal(voucher);
+        // استخدام vouch_amt مباشرة (أسرع بكثير)
+        acc.totalAmount += parseFloat(String(voucher.vouch_amt || 0));
         acc.totalCount += 1;
 
         return acc;
       },
       { totalAmount: 0, totalCount: 0 },
     );
-  };
+  }, [vouchers]);
 
   // State for storing voucher details
-  const [voucherDetails, setVoucherDetails] = useState<Record<number, any[]>>({});
+  const [voucherDetails, setVoucherDetails] = useState<Record<number, any[]>>(
+    {},
+  );
 
   // Fetch details for a specific voucher
   const fetchVoucherDetails = async (voucherId: number) => {
@@ -371,82 +407,164 @@ const VouchersReportClient = ({
 
     try {
       const response = await voucherService.getDetails(voucherId);
+
       if (response.success && response.data) {
         const details = Array.isArray(response.data) ? response.data : [];
-        setVoucherDetails(prev => ({ ...prev, [voucherId]: details }));
+
+        setVoucherDetails((prev) => ({ ...prev, [voucherId]: details }));
+
         return details;
       }
     } catch (error) {
       console.error("Error fetching voucher details:", error);
     }
+
     return [];
   };
 
-  // Calculate cash totals for each voucher from details
+  // Calculate cash totals for each voucher - محسن للأداء
   const calculateVoucherCashTotal = (voucher: Voucher) => {
+    // أولاً: استخدام vouch_amt مباشرة إذا كان متوفراً (أسرع)
+    if (
+      voucher.vouch_amt !== undefined &&
+      voucher.vouch_amt !== null &&
+      voucher.vouch_amt > 0
+    ) {
+      return parseFloat(String(voucher.vouch_amt)) || 0;
+    }
+
+    // ثانياً: استخدام التفاصيل المحملة إذا كانت متوفرة
     const voucherId = voucher.id || voucher.vouch_id;
     const details = voucherDetails[voucherId] || [];
-    
+
     if (details.length > 0) {
       return details.reduce((total: number, detail: any) => {
         const debit = parseFloat(detail.debit) || 0;
         const credit = parseFloat(detail.credit) || 0;
+
         return total + debit + credit;
       }, 0);
     }
-    
-    // إذا لم تكن التفاصيل متوفرة، استخدم vouch_amt كبديل
-    return parseFloat(String(voucher.vouch_amt)) || 0;
+
+    return 0;
   };
 
-  // Calculate gold totals for each voucher from details
+  // Calculate gold totals for each voucher - محسن للأداء
   const calculateVoucherGoldTotal = (voucher: Voucher) => {
+    // أولاً: استخدام bag_wt مباشرة إذا كان متوفراً (أسرع)
+    if (
+      voucher.bag_wt !== undefined &&
+      voucher.bag_wt !== null &&
+      voucher.bag_wt > 0
+    ) {
+      return parseFloat(String(voucher.bag_wt)) || 0;
+    }
+
+    // ثانياً: استخدام التفاصيل المحملة إذا كانت متوفرة
     const voucherId = voucher.id || voucher.vouch_id;
     const details = voucherDetails[voucherId] || [];
-    
+
     if (details.length > 0) {
       return details.reduce((total: number, detail: any) => {
         const debitG = parseFloat(detail.debit_g) || 0;
         const creditG = parseFloat(detail.credit_g) || 0;
+
         return total + debitG + creditG;
       }, 0);
     }
-    
-    // إذا لم تكن التفاصيل متوفرة، استخدم bag_wt كبديل
-    return voucher.bag_wt || 0;
+
+    return 0;
   };
 
-
-  // Calculate total cash amount for all vouchers
-  const calculateTotalCash = () => {
+  // Calculate total cash amount for all vouchers - استخدام useMemo مع voucherDetails
+  const calculateTotalCash = useMemo(() => {
     return vouchers.reduce((total, voucher) => {
       return total + calculateVoucherCashTotal(voucher);
     }, 0);
-  };
+  }, [vouchers, voucherDetails]);
 
-  // Calculate total gold amount for all vouchers
-  const calculateTotalGold = () => {
+  // Calculate total gold amount for all vouchers - استخدام useMemo مع voucherDetails
+  const calculateTotalGold = useMemo(() => {
     return vouchers.reduce((total, voucher) => {
       return total + calculateVoucherGoldTotal(voucher);
     }, 0);
-  };
+  }, [vouchers, voucherDetails]);
 
-  const totals = calculateTotals();
-
-  // Fetch details for all vouchers when vouchers change
+  // جلب تفاصيل السندات بشكل متوازي لتحسين الأداء
   useEffect(() => {
     const fetchAllVoucherDetails = async () => {
-      for (const voucher of vouchers) {
+      // فلترة السندات التي تحتاج لجلب التفاصيل
+      // نجلب التفاصيل لجميع السندات التي لم تكن محملة مسبقاً
+      const vouchersToFetch = vouchers.filter((voucher) => {
         const voucherId = voucher.id || voucher.vouch_id;
-        if (voucherId && !voucherDetails[voucherId]) {
-          await fetchVoucherDetails(voucherId);
+
+        if (!voucherId) return false;
+
+        // إذا كانت التفاصيل محملة مسبقاً، لا نحتاج لجلبها
+        if (
+          voucherDetails[voucherId] &&
+          Array.isArray(voucherDetails[voucherId])
+        ) {
+          return false;
         }
+
+        // نجلب التفاصيل لجميع السندات (سنستخدمها في الحسابات)
+        return true;
+      });
+
+      if (vouchersToFetch.length === 0) {
+        return;
+      }
+
+      console.log(`📥 جلب تفاصيل ${vouchersToFetch.length} سند بشكل متوازي...`);
+
+      // جلب جميع التفاصيل بشكل متوازي (أسرع بكثير من المتسلسل)
+      try {
+        const detailsPromises = vouchersToFetch.map(async (voucher) => {
+          const voucherId = voucher.id || voucher.vouch_id;
+
+          if (!voucherId) return null;
+
+          const branchId = Number(voucher.com_id ?? voucher.com ?? 1) || 1;
+          const response = await voucherService.getDetails(voucherId, {
+            xcom_id: branchId,
+          });
+
+          if (response.success && response.data) {
+            const details = Array.isArray(response.data) ? response.data : [];
+
+            return { voucherId, details };
+          }
+
+          return { voucherId, details: [] };
+        });
+
+        const results = await Promise.all(detailsPromises);
+
+        // تحديث state بجميع التفاصيل مرة واحدة
+        setVoucherDetails((prev) => {
+          const updated = { ...prev };
+          let newDetailsCount = 0;
+
+          results.forEach((result) => {
+            if (result && result.voucherId && result.details.length > 0) {
+              updated[result.voucherId] = result.details;
+              newDetailsCount++;
+            }
+          });
+          console.log(`✅ تم تحميل تفاصيل ${newDetailsCount} سند`);
+
+          return updated;
+        });
+      } catch (error) {
+        console.error("Error fetching voucher details:", error);
       }
     };
 
     if (vouchers.length > 0) {
       fetchAllVoucherDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vouchers]);
 
   return (
@@ -455,14 +573,15 @@ const VouchersReportClient = ({
       <div className="mb-2">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold mt-2">تقرير السندات</h1>
-          <div className="flex gap-2">
-             <Button
-               color="primary"
-               startContent={<PlusIcon className="h-4 w-4" />}
-               onPress={handleNewVoucher}
-             >
-               سند جديد
-             </Button>
+          <div className="flex gap-3">
+            <PrintButton />
+            <Button
+              color="primary"
+              startContent={<PlusIcon className="h-4 w-4" />}
+              onPress={handleNewVoucher}
+            >
+              سند جديد
+            </Button>
           </div>
         </div>
 
@@ -478,9 +597,12 @@ const VouchersReportClient = ({
                 value={searchQ}
                 onChange={(e) => {
                   const value = e.target.value;
+
                   setSearchQ(value);
                   if (value === params.xvouch_id) return;
-                  startTransition(() => setParams({ xvouch_id: value, page: "1" }));
+                  startTransition(() =>
+                    setParams({ xvouch_id: value, page: "1" }),
+                  );
                 }}
               />
               <Select
@@ -501,7 +623,7 @@ const VouchersReportClient = ({
                     <SelectItem key={type.id || `type-${idx}`}>
                       {type.type_name}
                     </SelectItem>
-                  ))
+                  )),
                 ]}
               </Select>
               <Input
@@ -539,24 +661,25 @@ const VouchersReportClient = ({
       {/* Vouchers Table with Tabs */}
       <Card>
         <CardBody className="p-2">
-          <Tabs 
-            aria-label="أنواع السندات" 
-            color="primary" 
-            variant="underlined"
+          <Tabs
+            aria-label="أنواع السندات"
+            color="primary"
             selectedKey={activeTab}
+            variant="underlined"
             onSelectionChange={(key) => setActiveTab(key as string)}
           >
             <Tab key="all" title={`جميع السندات (${vouchers.length})`}>
               <VouchersTable
+                calculateVoucherCashTotal={calculateVoucherCashTotal}
+                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
+                formatDate={formatDate}
                 getStatusChip={getStatusChip}
                 getVoucherTypeName={getVoucherTypeName}
                 vouchers={vouchers}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
+                onPrint={handlePrint}
                 onView={handleView}
-                calculateVoucherCashTotal={calculateVoucherCashTotal}
-                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
-                formatDate={formatDate}
               />
             </Tab>
             <Tab
@@ -564,15 +687,15 @@ const VouchersReportClient = ({
               title={`سندات القبض (${receiptVouchers.length})`}
             >
               <VouchersTable
+                calculateVoucherCashTotal={calculateVoucherCashTotal}
+                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
+                formatDate={formatDate}
                 getStatusChip={getStatusChip}
                 getVoucherTypeName={getVoucherTypeName}
                 vouchers={receiptVouchers}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onView={handleView}
-                calculateVoucherCashTotal={calculateVoucherCashTotal}
-                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
-                formatDate={formatDate}
               />
             </Tab>
             <Tab
@@ -580,15 +703,15 @@ const VouchersReportClient = ({
               title={`سندات الصرف (${paymentVouchers.length})`}
             >
               <VouchersTable
+                calculateVoucherCashTotal={calculateVoucherCashTotal}
+                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
+                formatDate={formatDate}
                 getStatusChip={getStatusChip}
                 getVoucherTypeName={getVoucherTypeName}
                 vouchers={paymentVouchers}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onView={handleView}
-                calculateVoucherCashTotal={calculateVoucherCashTotal}
-                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
-                formatDate={formatDate}
               />
             </Tab>
             <Tab
@@ -596,15 +719,15 @@ const VouchersReportClient = ({
               title={`قيود التسوية (${adjustmentVouchers.length})`}
             >
               <VouchersTable
+                calculateVoucherCashTotal={calculateVoucherCashTotal}
+                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
+                formatDate={formatDate}
                 getStatusChip={getStatusChip}
                 getVoucherTypeName={getVoucherTypeName}
                 vouchers={adjustmentVouchers}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onView={handleView}
-                calculateVoucherCashTotal={calculateVoucherCashTotal}
-                calculateVoucherGoldTotal={calculateVoucherGoldTotal}
-                formatDate={formatDate}
               />
             </Tab>
           </Tabs>
@@ -612,9 +735,9 @@ const VouchersReportClient = ({
           {/* Summary */}
           <div className="flex justify-between items-center mt-2">
             <div className="text-sm text-gray-600">
-              إجمالي السندات: {totalVouchers} سند | 
-              إجمالي المبلغ: {formatAmount(calculateTotalCash())} | 
-              إجمالي الجرام: {formatAmount(calculateTotalGold())} جم
+              إجمالي السندات: {totalVouchers} سند | إجمالي المبلغ:{" "}
+              {formatAmount(calculateTotalCash)} | إجمالي الجرام:{" "}
+              {formatAmount(calculateTotalGold)} جم
             </div>
             {totalPages > 1 && (
               <div className="text-sm text-gray-600">
@@ -629,4 +752,3 @@ const VouchersReportClient = ({
 };
 
 export default VouchersReportClient;
-

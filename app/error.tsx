@@ -1,7 +1,8 @@
 "use client";
 
-import GlobalError from "@/components/GlobalError";
 import { useEffect } from "react";
+
+import GlobalError from "@/components/GlobalError";
 
 export default function Error({
   error,

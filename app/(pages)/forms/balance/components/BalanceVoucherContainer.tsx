@@ -15,6 +15,10 @@ interface BalanceVoucherContainerProps {
   costCenters: any[];
   voucherTypes: any[];
   voucherStatuses: any[];
+  caratTypes?: any[];
+  taxRates?: number[];
+  isEditing?: boolean;
+  formMode?: "new" | "edit" | "preview";
   isLoading: boolean;
   isPrinting: boolean;
   isBalanced: boolean;
@@ -29,6 +33,7 @@ interface BalanceVoucherContainerProps {
   onSave: () => void;
   onPrint: () => void;
   onUpdateAccountsList: (newAccount: any) => void;
+  onEditClick?: () => void;
 }
 
 export default function BalanceVoucherContainer({
@@ -42,6 +47,10 @@ export default function BalanceVoucherContainer({
   costCenters,
   voucherTypes,
   voucherStatuses,
+  caratTypes = [],
+  taxRates = [],
+  isEditing = true,
+  formMode = "new",
   onVoucherChange,
   onUpdateDetail,
   onAddRow,
@@ -49,24 +58,29 @@ export default function BalanceVoucherContainer({
   onSave,
   onPrint,
   onUpdateAccountsList,
+  onEditClick,
 }: BalanceVoucherContainerProps) {
   return (
     <div className="p-3 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* رأس القيد مع الأزرار */}
       <BalanceVoucherHeader
         currentTime={currentTime}
-        voucher={voucher}
-        voucherTypes={voucherTypes}
+        formMode={formMode}
+        isBalanced={isBalanced}
+        isEditing={isEditing}
         isLoading={isLoading}
         isPrinting={isPrinting}
-        isBalanced={isBalanced}
-        onSave={onSave}
+        voucher={voucher}
+        voucherTypes={voucherTypes}
+        onEditClick={onEditClick}
         onPrint={onPrint}
+        onSave={onSave}
       />
 
       {/* نموذج بيانات القيد */}
       <BalanceVoucherForm
         currentTime={currentTime}
+        isEditing={isEditing}
         voucher={voucher}
         onVoucherChange={onVoucherChange}
       />
@@ -74,9 +88,12 @@ export default function BalanceVoucherContainer({
       {/* جدول تفاصيل القيد */}
       <BalanceVoucherDetailsTable
         accounts={accounts}
+        caratTypes={caratTypes}
         costCenters={costCenters}
         details={details}
         isBalanced={isBalanced}
+        isEditing={isEditing}
+        taxRates={taxRates}
         onAddRow={onAddRow}
         onRemoveRow={onRemoveRow}
         onUpdateAccountsList={onUpdateAccountsList}

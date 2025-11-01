@@ -50,20 +50,24 @@ const toSingleValue = (
   value: string | string[] | undefined,
 ): string | undefined => {
   if (Array.isArray(value)) return value[0];
+
   return value;
 };
 
 const resolveInvoiceType = (rawType: string | undefined): InvoicePageType => {
   if (!rawType) return FALLBACK_TYPE;
   const type = rawType.toLowerCase() as InvoicePageType;
+
   return type in INVOICE_TYPE_CONFIG ? type : FALLBACK_TYPE;
 };
 
 const resolveFormMode = (rawMode: string | undefined): InvoiceFormMode => {
   if (!rawMode) return "new";
   const mode = rawMode.toLowerCase();
+
   if (mode === "edit") return "edit";
   if (mode === "preview") return "preview";
+
   return "new";
 };
 
@@ -108,6 +112,7 @@ export default async function InvoicePage({
 
   if ((mode === "edit" || mode === "preview") && editId) {
     const lookupId = editId ?? "";
+
     invoiceData = await invoiceService.getInvoiceById(
       lookupId,
       config.transType,
@@ -161,20 +166,20 @@ export default async function InvoicePage({
     <div className="container mx-auto p-4">
       <InvoiceClientPage
         key={`${invoiceType}-${mode}-${invoiceData?.id ?? "new"}`}
-        invoiceType={invoiceType}
-        formMode={mode}
-        invoiceData={invoiceData}
-        invoiceDetailsData={invoiceDetails}
-        isNewInvoice={mode === "new"}
-        startInEditMode={startInEdit || mode === "edit"}
-        invoiceRecordId={invoiceData?.id ?? null}
         boxes={formData.boxes}
-        customers={formData.customers}
-        items={formData.items}
         categories={formData.categories}
+        customers={formData.customers}
+        formMode={mode}
         goldPrice={formData.goldPrice}
         homePurity={formData.homePurity}
+        invoiceData={invoiceData}
+        invoiceDetailsData={invoiceDetails}
+        invoiceRecordId={invoiceData?.id ?? null}
+        invoiceType={invoiceType}
+        isNewInvoice={mode === "new"}
+        items={formData.items}
         newInvoiceHref={newInvoiceHref}
+        startInEditMode={startInEdit || mode === "edit"}
       />
     </div>
   );

@@ -1,11 +1,12 @@
 "use client";
 
-import { PrintButton } from "@/components";
 import { ArrowDownTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
+import { PrintButton } from "@/components";
+
 const InvoicesHeader = () => {
-	return (
+  return (
     <div className="flex items-center justify-between">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">تقارير الفواتير</h1>
@@ -13,8 +14,8 @@ const InvoicesHeader = () => {
       </div>
       <div className="flex gap-3">
         <Link
-          href="/forms/invoices?type=sale&mode=new"
           className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700"
+          href="/forms/invoices?type=sale&mode=new"
         >
           <PlusIcon className="h-4 w-4" />
           إضافة فاتورة

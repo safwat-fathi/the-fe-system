@@ -81,11 +81,11 @@ export async function loginUser(username: string, password: string) {
 /**
  * @deprecated غير آمن - يستخدم localStorage
  * ⚠️ لا تستخدم في كود جديد!
- * 
+ *
  * استخدم بدلاً من ذلك:
  * - في Server Components: HttpService يقرأ من cookies تلقائياً
  * - في Client Components: استخدم Server Actions
- * 
+ *
  * هذه الدالة موجودة فقط للتوافق مع الكود القديم وسيتم حذفها قريباً
  */
 export function getAuthToken(): string | null {
@@ -115,7 +115,7 @@ export function getAuthToken(): string | null {
 /**
  * @deprecated غير آمن - يستخدم localStorage
  * ⚠️ لا تستخدم إطلاقاً! استخدم setCookieAction من app/actions
- * 
+ *
  * هذه الدالة موجودة فقط للتوافق مع الكود القديم وسيتم حذفها قريباً
  */
 export function setAuthToken(token: string) {
@@ -520,15 +520,15 @@ export async function searchAccounts(
 /**
  * @deprecated استخدم Server Actions للطلبات من Client Components
  * ⚠️ هذه الدالة موجودة مؤقتاً فقط لدعم صفحات الفواتير القديمة
- * 
+ *
  * استخدم بدلاً منها:
  * - Server Actions: app/actions/*.action.ts
  * - Services: services/api/*.service.ts (من Server Components فقط)
- * 
+ *
  * أمثلة:
  * - getAccountsAction() للحصول على الحسابات
  * - createInvoiceAction() لإنشاء فاتورة
- * 
+ *
  * سيتم حذف هذه الدالة بعد ترحيل صفحات الفواتير
  */
 export function apiFetch(input: string, init?: RequestInit) {
