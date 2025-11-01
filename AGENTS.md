@@ -193,3 +193,4 @@ export const STORAGE_KEYS = {
 - running full build
 
 **Always read & summarize before proposing a clear plan and write your plan in a markdown file and then ask before implementation / committing.**
+**Write your plan in a markdown file in `.docs/plans` directory and then ask before implementation / committing.**

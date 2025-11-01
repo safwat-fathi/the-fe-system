@@ -8,6 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 import toast from "react-hot-toast";
+
 import useFractions, { type Fractions } from "@/utilities/useFractions";
 import {
   Invoice,
@@ -19,7 +20,7 @@ import {
 import {
   createInvoiceAction,
   updateInvoiceAction,
-  createInvoiceDetailAction,
+  // createInvoiceDetailAction, // no longer used in update flow
   updateInvoiceDetailAction,
   deleteInvoiceDetailAction,
   getInvoiceByIdAction,
@@ -99,12 +100,11 @@ const PAYMENT_METHOD_INV_TYPES = {
   credit: 2,
 } as const;
 
-const PAY_TYPE_VALUES = Object.values(
-  INVOICE_PAY_TYPES,
-) as InvoicePayType[];
+const PAY_TYPE_VALUES = Object.values(INVOICE_PAY_TYPES) as InvoicePayType[];
 
 const normalizePayType = (value: unknown): InvoicePayType => {
   const numeric = Number(value);
+
   return PAY_TYPE_VALUES.includes(numeric as InvoicePayType)
     ? (numeric as InvoicePayType)
     : INVOICE_PAY_TYPES.VALUE_AND_WAGES;
@@ -120,6 +120,7 @@ const parseDefaultIdentifier = (
   fallback: number,
 ): number => {
   const parsed = Number(value);
+
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
@@ -175,20 +176,24 @@ const parseNumber = (value: unknown): number => {
   if (typeof value === "string") {
     const cleaned = value.replace(/,/g, "").trim();
     const parsed = Number(cleaned);
+
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
   const numeric = Number(value ?? 0);
+
   return Number.isFinite(numeric) ? numeric : 0;
 };
 
 const ensurePositiveNumber = (value: unknown): number | null => {
   const numeric = parseNumber(value);
+
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
 const formatDecimalString = (value: number, digits: number): string => {
   const normalized = Number.isFinite(value) ? value : 0;
+
   return normalized.toFixed(digits);
 };
 
@@ -200,6 +205,7 @@ const mapDetailToRow = (
   fallbackTransType: number,
 ): InvoiceItemRow => {
   const itemId = Number(detail.item);
+
   return {
     id: Number(detail.id),
     item_id: Number.isFinite(itemId) ? itemId : null,
@@ -237,18 +243,20 @@ const mapDetailToRow = (
 };
 
 const getItemIdFromRow = (row: InvoiceItemRow): number | null => {
-  const candidate =
-    row.item_id ??
-    (typeof row.item === "number"
-      ? row.item
-      : parseNumber((row.item as unknown) ?? 0));
+  // Prefer the live "item" field (used by the editor) over the legacy "item_id"
+  const primary =
+    typeof row.item === "number" ? row.item : parseNumber((row.item as any) ?? 0);
+  const fallback = parseNumber((row.item_id as any) ?? 0);
 
+  const candidate = Number.isFinite(primary) && primary > 0 ? primary : fallback;
   const parsed = parseNumber(candidate);
+
   return parsed > 0 ? parsed : null;
 };
 
 const getNumericRowId = (id: unknown): number | null => {
   const numeric = Number(id);
+
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
@@ -256,9 +264,11 @@ const normalizeRowIdentifier = (id: unknown): string | null => {
   if (id === null || id === undefined) return null;
 
   const numeric = getNumericRowId(id);
+
   if (numeric !== null) return `num:${numeric}`;
 
   const stringValue = String(id).trim();
+
   return stringValue.length > 0 ? `str:${stringValue}` : null;
 };
 
@@ -583,6 +593,7 @@ export default function useInvoiceForm({
     }
 
     const parsed = Number(candidate);
+
     setInvoicePk(Number.isFinite(parsed) && parsed > 0 ? parsed : null);
   }, [invoiceData?.id, invoiceRecordId]);
 
@@ -598,25 +609,23 @@ export default function useInvoiceForm({
         ?.split("=")[1];
 
       const rawValue = localValue ?? cookieValue;
+
       if (!rawValue || rawValue === "undefined" || rawValue === "null") {
         return null;
       }
 
       const parsed = Number(rawValue);
+
       return Number.isFinite(parsed) ? parsed : null;
     };
 
     const resolvedBranch =
       readNumericValue("selectedBranch") ??
-      (invoiceData?.com !== undefined
-        ? parseNumber(invoiceData.com)
-        : null);
+      (invoiceData?.com !== undefined ? parseNumber(invoiceData.com) : null);
 
     const resolvedYear =
       readNumericValue("selectedYear") ??
-      (invoiceData?.year !== undefined
-        ? parseNumber(invoiceData.year)
-        : null);
+      (invoiceData?.year !== undefined ? parseNumber(invoiceData.year) : null);
 
     setSelectedBranchId(resolvedBranch);
     setSelectedYearId(resolvedYear);
@@ -671,6 +680,7 @@ export default function useInvoiceForm({
 
     for (const item of originalInvoiceItems) {
       const key = normalizeRowIdentifier(item.id);
+
       if (key) {
         map.set(key, item);
       }
@@ -703,6 +713,7 @@ export default function useInvoiceForm({
           ) {
             return String(customer.cust_code) === normalizedCode;
           }
+
           return false;
         }) ?? null;
 
@@ -723,6 +734,7 @@ export default function useInvoiceForm({
     };
 
     const activeMatch = findCustomerInList(customers);
+
     if (activeMatch) {
       return activeMatch;
     }
@@ -730,6 +742,7 @@ export default function useInvoiceForm({
     const secondaryList =
       paymentMethod === "cash" ? creditCustomers : cashCustomers;
     const secondaryMatch = findCustomerInList(secondaryList);
+
     if (secondaryMatch) {
       return secondaryMatch;
     }
@@ -776,6 +789,7 @@ export default function useInvoiceForm({
       yearId: number,
     ) => {
       const itemId = getItemIdFromRow(row);
+
       if (!itemId) return null;
 
       const resolvedCompanyId =
@@ -820,7 +834,7 @@ export default function useInvoiceForm({
       const stonesValue =
         row.stones === null || row.stones === ""
           ? null
-          : formatDecimalString(parseNumber(row.stones), frac);
+          : parseNumber(row.stones);
 
       const resolvedNote = row.note ?? row.inv_notes ?? "";
       const normalizedNote =
@@ -829,31 +843,33 @@ export default function useInvoiceForm({
           : resolvedNote;
 
       const normalizedRowId = getNumericRowId(row.id);
+      let normalizedKValue: number | null = null;
+      if (row.k !== undefined && row.k !== null) {
+        const rawK = String(row.k).trim();
+        if (rawK.length > 0) {
+          const numericK = parseNumber(row.k);
+          normalizedKValue = Number.isFinite(numericK) && numericK > 0 ? numericK : null;
+        }
+      }
 
       return {
         id: normalizedRowId ?? row.id,
         trans_type: row.trans_type ?? defaultTransType,
         G875: row.purity ? parseNumber(row.purity) : null,
-        k:
-          row.k !== undefined && row.k !== null && row.k !== ""
-            ? parseNumber(row.k)
-            : null,
-        qty: formatDecimalString(qty, frac),
-        price: formatDecimalString(price, frac),
-        price_w: formatDecimalString(priceW, frac),
-        weight: formatDecimalString(weight, frac2),
-        g_weight: formatDecimalString(gWeight, frac2),
-        total: formatDecimalString(combinedTotal, frac),
-        total_w: formatDecimalString(computedTotalW, frac),
-        total_a: formatDecimalString(computedTotalA, frac),
-        tax: formatDecimalString(taxValue, frac),
-        tax_prc: formatDecimalString(taxRate, frac),
+        k: normalizedKValue,
+        qty,
+        price,
+        price_w: priceW,
+        weight,
+        g_weight: gWeight,
+        total: combinedTotal,
+        total_w: computedTotalW,
+        total_a: computedTotalA,
+        tax: taxValue,
+        tax_prc: taxRate,
         stones: stonesValue,
-        item_disc_prc: formatDecimalString(
-          parseNumber(row.item_disc_prc ?? 0),
-          frac,
-        ),
-        item_disc_amt: formatDecimalString(itemDiscountAmount, frac),
+        item_disc_prc: parseNumber(row.item_disc_prc ?? 0),
+        item_disc_amt: itemDiscountAmount,
         sn: row.sn ?? "",
         item_desc: row.item_desc ?? row.item_name ?? "",
         item_code: row.item_code ?? "",
@@ -869,7 +885,7 @@ export default function useInvoiceForm({
         box: row.box ?? null,
       };
     },
-    [defaultTaxPrc, defaultTransType, frac, frac2, form.pay_type],
+    [defaultTaxPrc, defaultTransType, form.pay_type],
   );
 
   // sync incoming invoiceData/details
@@ -894,6 +910,7 @@ export default function useInvoiceForm({
       const mappedDetails = invoiceDetailsData.map((detail) =>
         mapDetailToRow(detail, defaultTransType),
       );
+
       setInvoiceItems(mappedDetails);
       setOriginalInvoiceItems(mappedDetails);
       setDeletedItemIds([]);
@@ -943,16 +960,19 @@ export default function useInvoiceForm({
               ? totalW
               : totalA + totalW;
         const base = rowTotal - discount;
+
         return sum + base * taxRate;
       }, 0);
 
       const totalDiscount = rows.reduce((sum, item) => {
         const discount = parseNumber(item.item_disc_amt);
+
         return sum + discount;
       }, 0);
 
       const totalGWeight = rows.reduce((sum, item) => {
         const gWeight = parseNumber(item.g_weight);
+
         return sum + gWeight;
       }, 0);
 
@@ -972,6 +992,7 @@ export default function useInvoiceForm({
   const handleBarcodeSearch = useCallback(
     async (term?: string) => {
       const searchTerm = (term ?? searchValue).trim();
+
       if (!searchTerm || !isEditing) return;
 
       try {
@@ -980,6 +1001,7 @@ export default function useInvoiceForm({
         exactMatch = items.find((item: any) => {
           const itemBarcode = (item.item_barcode ?? "").toString().trim();
           const itemCode = (item.item_code ?? "").toString().trim();
+
           return itemBarcode === searchTerm || itemCode === searchTerm;
         });
 
@@ -988,6 +1010,7 @@ export default function useInvoiceForm({
           // This would need to be refactored to use a service that can be called from the server component
           toast.error(`لم يتم العثور على صنف: ${searchTerm}`);
           setSearchValue("");
+
           return;
         }
 
@@ -1001,6 +1024,7 @@ export default function useInvoiceForm({
         if (firstEmptyRowIndex === -1) updated.unshift(makeEmptyRow());
 
         const selected = exactMatch;
+
         if (!items.find((i) => i.id === selected.id))
           setItems((prev) => [...prev, selected]);
 
@@ -1116,6 +1140,7 @@ export default function useInvoiceForm({
   const saveInvoice = useCallback(async () => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
+
       return;
     }
 
@@ -1136,6 +1161,7 @@ export default function useInvoiceForm({
 
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
+
       return;
     }
 
@@ -1149,6 +1175,7 @@ export default function useInvoiceForm({
 
       if (missingWageRate) {
         toast.error("يرجى إدخال أجرة الجرام لكل الأصناف قبل الحفظ");
+
         return;
       }
     }
@@ -1277,6 +1304,7 @@ export default function useInvoiceForm({
         const fetchedInvoice = await getInvoiceByIdAction(
           String(invoiceNumber),
         );
+
         resolvedInvoicePk = fetchedInvoice?.id
           ? parseNumber(fetchedInvoice.id)
           : null;
@@ -1294,8 +1322,10 @@ export default function useInvoiceForm({
       });
 
       const currentValidKeys = new Set<string>();
+
       validItems.forEach((item) => {
         const key = normalizeRowIdentifier(item.id);
+
         if (key) currentValidKeys.add(key);
       });
 
@@ -1303,6 +1333,7 @@ export default function useInvoiceForm({
         .map((item) => {
           const key = normalizeRowIdentifier(item.id);
           const numericId = getNumericRowId(item.id);
+
           return { key, numericId };
         })
         .filter(
@@ -1345,6 +1376,7 @@ export default function useInvoiceForm({
           resolvedCompanyId,
           resolvedYearId,
         );
+
         if (!detailPayload) continue;
 
         const numericRowId = getNumericRowId(row.id);
@@ -1352,8 +1384,16 @@ export default function useInvoiceForm({
         let originalRow =
           rowKey !== null ? originalInvoiceItemMap.get(rowKey) : undefined;
 
+        // If the row's numeric id appears in original items, treat it as existing even if map lookup failed
+        const wasExistingOriginally =
+          numericRowId !== null &&
+          originalInvoiceItems.some(
+            (orig) => getNumericRowId(orig.id) === numericRowId,
+          );
+
         if (!originalRow && numericRowId !== null) {
           const fallbackKey = normalizeRowIdentifier(numericRowId);
+
           if (fallbackKey) {
             originalRow = originalInvoiceItemMap.get(fallbackKey);
           }
@@ -1363,6 +1403,7 @@ export default function useInvoiceForm({
           const fallbackKey = normalizeRowIdentifier(
             (row as InvoiceItemRow).id,
           );
+
           if (fallbackKey) {
             originalRow = originalInvoiceItemMap.get(fallbackKey);
           }
@@ -1370,10 +1411,12 @@ export default function useInvoiceForm({
 
         const originalDetailId = getNumericRowId(originalRow?.id);
         const effectiveDetailId =
-          originalDetailId !== null ? originalDetailId : numericRowId;
-        const isExistingRow = Boolean(
-          originalRow && effectiveDetailId !== null,
-        );
+          originalDetailId !== null
+            ? originalDetailId
+            : wasExistingOriginally
+              ? numericRowId
+              : null;
+        const isExistingRow = Boolean(wasExistingOriginally && effectiveDetailId);
 
         console.log("🧾 [saveInvoice] processing row:", {
           rowId: row.id,
@@ -1385,59 +1428,29 @@ export default function useInvoiceForm({
           row,
         });
 
-        if (isExistingRow) {
-          const rowHasChanged = hasRowChanged(
-            originalRow,
-            row,
-            defaultTransType,
-          );
+        // Always send to UPDATE endpoint. For new rows, pass id = 0 (server should upsert).
+        const upsertId = isExistingRow && effectiveDetailId !== null ? effectiveDetailId : 0;
 
-          console.log("🧾 [saveInvoice] existing row change detection:", {
+        try {
+          // Ensure payload id matches the upsert id contract (0 for new rows)
+          if (!isExistingRow || effectiveDetailId === null) {
+            (detailPayload as any).id = 0;
+          }
+          console.log("🧾 [saveInvoice] upserting detail row via UPDATE:", {
             rowId: row.id,
             numericRowId,
-            rowHasChanged,
-            originalRow,
-            currentRow: row,
+            originalDetailId,
+            effectiveDetailId,
+            upsertId,
+            isExistingRow,
+            detailPayload,
           });
-
-          if (!rowHasChanged) {
-            console.log("🧾 [saveInvoice] skipping unchanged row:", {
-              rowId: row.id,
-              numericRowId,
-              effectiveDetailId,
-            });
-            continue;
-          }
-
-          try {
-            console.log("🧾 [saveInvoice] updating detail row:", {
-              rowId: row.id,
-              numericRowId,
-              effectiveDetailId,
-              detailPayload,
-            });
-            await updateInvoiceDetailAction(
-              effectiveDetailId!,
-              detailPayload,
-              resolvedInvoicePk,
-            );
-          } catch (updateError) {
-            console.error(
-              `خطأ أثناء تحديث تفاصيل السطر ${row.id}:`,
-              updateError,
-            );
-          }
-        } else {
-          try {
-            const { id, ...creationPayload } = detailPayload;
-            console.log("🧾 [saveInvoice] creating new detail row:", {
-              originalId: row.id,
-              detailPayload: creationPayload,
-            });
-            await createInvoiceDetailAction(creationPayload, resolvedInvoicePk);
-          } catch (createError) {
-            console.error("خطأ أثناء إنشاء تفاصيل السطر:", createError);
-          }
+          await updateInvoiceDetailAction(upsertId as number, detailPayload, resolvedInvoicePk);
+        } catch (updateError) {
+          console.error(
+            `خطأ أثناء تحديث/إدراج تفاصيل السطر ${row.id}:`,
+            updateError,
+          );
         }
       }
 
@@ -1527,6 +1540,7 @@ export default function useInvoiceForm({
   const previewInvoice = useCallback(() => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
+
       return;
     }
 
@@ -1536,6 +1550,7 @@ export default function useInvoiceForm({
 
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
+
       return;
     }
 
@@ -1551,6 +1566,7 @@ export default function useInvoiceForm({
 
   const resetInvoiceState = useCallback(() => {
     const initialState = buildInitialFormState();
+
     dispatchForm({ type: "RESET", payload: initialState });
     setInvoiceItems([makeEmptyRow()]);
     setOriginalInvoiceItems([]);
@@ -1572,12 +1588,7 @@ export default function useInvoiceForm({
     setIsEditing(isNewInvoice);
     setIsLoading(false);
     setDefaultTaxPrc(15);
-  }, [
-    buildInitialFormState,
-    dispatchForm,
-    isNewInvoice,
-    makeEmptyRow,
-  ]);
+  }, [buildInitialFormState, dispatchForm, isNewInvoice, makeEmptyRow]);
 
   const resetSignature = useMemo(
     () =>
@@ -1639,6 +1650,7 @@ export default function useInvoiceForm({
         first: "الأول",
         last: "الأخير",
       };
+
       toast.success(`التنقل إلى ${directionText[direction]}`);
     },
     [],
