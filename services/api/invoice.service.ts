@@ -108,7 +108,7 @@ class InvoiceService extends HttpService<Invoice> {
         queryParams as GetAllInvoicesParams,
       );
 
-      const response = await this.get<IPaginatedResponse<Invoice>>(
+      const response = await this.get<IPaginatedResponse<Invoice> | Invoice | Invoice[]>(
         "invoices_list",
         queryParams,
         {
@@ -118,40 +118,58 @@ class InvoiceService extends HttpService<Invoice> {
         },
       );
 
-      if (response.success && response.data) return response.data.results[0];
+      if (response.success && response.data) {
+        const data: any = response.data as any;
 
-      // Find the specific invoice by inv_id
-      // const invoice = invoiceResponse.data.results.find(
-      //   (inv: any) => String(inv.inv_id) === String(id),
-      // );
+        const requested = String(id).trim();
+        const requestedIsNumeric = !Number.isNaN(Number(requested));
+        const matchTransType = (inv: any) =>
+          transType === undefined ||
+          Number(inv?.trans_type) === Number(transType);
 
-      // if (!invoice) {
-      //   return null;
-      // }
+        // Helper to pick best match from a list
+        const pickFromList = (list: any[]): Invoice | null => {
+          if (!Array.isArray(list)) return null;
+          // Prefer match by inv_id
+          const byInvId = list.find(
+            (inv: any) =>
+              String(inv?.inv_id ?? "").trim() === requested && matchTransType(inv),
+          );
+          if (byInvId) return byInvId as Invoice;
 
-      // Fetch invoice details
-      // const detailsResponse = await this.get<any>(
-      //   `invoices_dtl_list`,
-      //   undefined,
-      //   {
-      //     cache: "force-cache",
-      //     next: { tags: [`invoice-details-${invoice.id}`] },
-      //   },
-      // );
+          // Fallback to id match if requested looks numeric
+          if (requestedIsNumeric) {
+            const byId = list.find(
+              (inv: any) => Number(inv?.id) === Number(requested) && matchTransType(inv),
+            );
+            if (byId) return byId as Invoice;
+          }
 
-      // Filter details for this specific invoice
-      // let invoiceDetails: InvoiceDetail[] = [];
-      // if (detailsResponse.success) {
-      //   if (Array.isArray(detailsResponse.data)) {
-      //     invoiceDetails = detailsResponse.data.filter(
-      //       (detail: any) => Number(detail.inv) === Number(invoice.id),
-      //     );
-      //   } else if (Array.isArray(detailsResponse.data.results)) {
-      //     invoiceDetails = detailsResponse.data.results.filter(
-      //       (detail: any) => Number(detail.inv) === Number(invoice.id),
-      //     );
-      //   }
-      // }
+          // As a last resort, return first with transType match if provided
+          const byType = list.find((inv: any) => matchTransType(inv));
+          return (byType ?? list[0]) as Invoice;
+        };
+
+        if (Array.isArray(data)) {
+          return pickFromList(data);
+        }
+
+        if (Array.isArray((data as any)?.results)) {
+          return pickFromList((data as any).results);
+        }
+
+        if (typeof data === "object" && data !== null) {
+          const obj = data as any;
+          // If single-object response, ensure it matches our request when possible
+          if (
+            (String(obj?.inv_id ?? "").trim() === requested ||
+              (requestedIsNumeric && Number(obj?.id) === Number(requested))) &&
+            matchTransType(obj)
+          ) {
+            return obj as Invoice;
+          }
+        }
+      }
 
       return null;
     } catch (error) {
@@ -165,30 +183,74 @@ class InvoiceService extends HttpService<Invoice> {
     transType?: TransTypes,
   ): Promise<InvoiceDetail[]> {
     try {
-      const response = await this.get<InvoiceDetail[]>(
+      const requested = String(invoiceId).trim();
+      const requestedIsNumeric = !Number.isNaN(Number(requested));
+
+      // Helper to normalize response
+      const normalize = (payload: any): InvoiceDetail[] => {
+        if (!payload) return [];
+        if (Array.isArray(payload)) return payload as InvoiceDetail[];
+        if (Array.isArray((payload as any).results))
+          return (payload as any).results as InvoiceDetail[];
+        return [];
+      };
+
+      // Prefer fetching by invoice number (xinv_id). If caller passed a record id,
+      // resolve header first to obtain its inv_id, then fetch details by xinv_id.
+      if (requestedIsNumeric) {
+        const header = await this.getInvoiceById(requested, transType);
+        const invNo = header?.inv_id ? String(header.inv_id).trim() : null;
+
+        if (invNo && invNo.length > 0) {
+          const byInvNoResponse = await this.get<
+            InvoiceDetail[] | { results?: InvoiceDetail[] }
+          >(
+            `invoices_dtl_list`,
+            {
+              xcom_id: "1",
+              xtrans_type: transType || "0",
+              xinv_id: invNo,
+              xfrom_date: "0",
+              xto_date: "0",
+              xinv_type: "0",
+            },
+            {
+              cache: "force-cache",
+              next: { tags: [
+                `invoice-details-${invNo}`,
+                `invoice-details-${requested}`,
+              ] },
+            },
+          );
+
+          if (byInvNoResponse.success) {
+            const data = normalize(byInvNoResponse.data);
+            if (data.length > 0) return data;
+          }
+        }
+      }
+
+      // Fallback: treat provided identifier as xinv_id directly
+      const byInvIdResponse = await this.get<
+        InvoiceDetail[] | { results?: InvoiceDetail[] }
+      >(
         `invoices_dtl_list`,
         {
-          // page: "1",
           xcom_id: "1",
-          // invoices_dtl_list لا يحتاج year parameter
           xtrans_type: transType || "0",
-          xinv_id: invoiceId,
+          xinv_id: requested,
           xfrom_date: "0",
           xto_date: "0",
           xinv_type: "0",
         },
         {
           cache: "force-cache",
-          next: { tags: [`invoice-details-${invoiceId}`] },
+          next: { tags: [`invoice-details-${requested}`] },
         },
       );
 
-      if (response.success) {
-        if (Array.isArray(response.data)) {
-          return response.data;
-        } else if (Array.isArray((response.data as any)?.results)) {
-          return (response.data as any).results;
-        }
+      if (byInvIdResponse.success) {
+        return normalize(byInvIdResponse.data);
       }
 
       return [];
@@ -280,10 +342,6 @@ class InvoiceService extends HttpService<Invoice> {
           signal: AbortSignal.timeout(60000),
         },
       );
-      console.log(
-        "🚀 ~ :202 ~ InvoiceService ~ createInvoice ~ response:",
-        response,
-      );
 
       if (!response.success) {
         const errorInfo = {
@@ -370,6 +428,10 @@ class InvoiceService extends HttpService<Invoice> {
   async createInvoiceDetail(
     detailData: Partial<InvoiceDetail>,
   ): Promise<InvoiceDetail | null> {
+    console.log(
+      "🚀 ~ :431 ~ InvoiceService ~ createInvoiceDetail ~ detailData:",
+      detailData,
+    );
     try {
       const companyId = Number(detailData?.com);
       const invoicePk = Number(detailData?.inv);
@@ -442,8 +504,14 @@ class InvoiceService extends HttpService<Invoice> {
     detailData: Partial<InvoiceDetail>,
   ): Promise<InvoiceDetail | null> {
     try {
+      // If id is not valid (> 0), create instead of update (server does not upsert on id=0)
+      const parsedId = Number(id);
+      if (!Number.isFinite(parsedId) || parsedId <= 0) {
+        return this.createInvoiceDetail(detailData);
+      }
+
       const response = await this.patch<InvoiceDetail>(
-        `api_update_invoice_dtl/${id}`,
+        `api_update_invoice_dtl/${parsedId}`,
         detailData,
       );
 
@@ -536,18 +604,14 @@ function extractMaxInvoiceId(
     }
 
     if (record.data !== undefined) {
-      const nested = extractMaxInvoiceId(
-        record.data as InvoiceMaxIdPayload,
-      );
+      const nested = extractMaxInvoiceId(record.data as InvoiceMaxIdPayload);
       if (nested !== null && nested !== undefined) {
         return nested;
       }
     }
 
     if (record.results !== undefined) {
-      const nested = extractMaxInvoiceId(
-        record.results as InvoiceMaxIdPayload,
-      );
+      const nested = extractMaxInvoiceId(record.results as InvoiceMaxIdPayload);
       if (nested !== null && nested !== undefined) {
         return nested;
       }

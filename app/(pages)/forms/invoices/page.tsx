@@ -91,7 +91,10 @@ export default async function InvoicePage({
 
   const invoiceType = resolveInvoiceType(toSingleValue(params.type));
   const mode = resolveFormMode(toSingleValue(params.mode));
-  const editId = toSingleValue(params.id);
+  // Support both inv_id (human invoice number) and id (record id)
+  const editInvId = toSingleValue(params.inv_id);
+  const editRecordId = toSingleValue(params.id);
+  const editId = editInvId ?? editRecordId;
   const startInEdit = toSingleValue(params.edit) === "true";
 
   if ((mode === "edit" || mode === "preview") && !editId) {
@@ -121,12 +124,13 @@ export default async function InvoicePage({
       notFound();
     }
 
+    // Prefer record id first, then invoice number, then raw param
     const detailKeys = Array.from(
       new Set(
         [
+          invoiceData?.id ? String(invoiceData.id) : null,
           invoiceData?.inv_id,
           editId,
-          invoiceData?.id ? String(invoiceData.id) : null,
         ]
           .filter((key): key is string =>
             Boolean(key && `${key}`.trim().length),
@@ -145,6 +149,7 @@ export default async function InvoicePage({
       }
     }
   }
+		console.log("🚀 ~ :144 ~ InvoicePage ~ invoiceDetails:", invoiceDetails);
 
   const formData = await getInvoiceFormData();
 
