@@ -28,6 +28,17 @@ import {
   getNextInvoiceIdAction,
 } from "@/app/actions/invoice";
 import { generateZatcaQR } from "@/utilities/zatca";
+import {
+  mapRowToApiPayload as mapRowToApiPayloadUtil,
+  mapDetailToRow as mapDetailToRowUtil,
+  getItemIdFromRow as getItemIdFromRowUtil,
+  getNumericRowId as getNumericRowIdUtil,
+  normalizeRowIdentifier as normalizeRowIdentifierUtil,
+  parseNumber as parseNumberUtil,
+  ensurePositiveNumber as ensurePositiveNumberUtil,
+  formatDecimalString as formatDecimalStringUtil,
+  formatNumber as formatNumberUtil,
+} from "@/utilities/invoiceForm";
 
 type NumericValue = number | string;
 
@@ -170,110 +181,18 @@ const INVOICE_FORM_CONFIG: Record<
   },
 };
 
-const parseNumber = (value: unknown): number => {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
+const parseNumber = parseNumberUtil;
+const ensurePositiveNumber = ensurePositiveNumberUtil;
+const formatDecimalString = formatDecimalStringUtil;
+const formatNumber = formatNumberUtil;
 
-  if (typeof value === "string") {
-    const cleaned = value.replace(/,/g, "").trim();
-    const parsed = Number(cleaned);
+const mapDetailToRow = mapDetailToRowUtil;
 
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
+const getItemIdFromRow = getItemIdFromRowUtil;
 
-  const numeric = Number(value ?? 0);
+const getNumericRowId = getNumericRowIdUtil;
 
-  return Number.isFinite(numeric) ? numeric : 0;
-};
-
-const ensurePositiveNumber = (value: unknown): number | null => {
-  const numeric = parseNumber(value);
-
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-};
-
-const formatDecimalString = (value: number, digits: number): string => {
-  const normalized = Number.isFinite(value) ? value : 0;
-
-  return normalized.toFixed(digits);
-};
-
-const formatNumber = (value: number, digits: number): number =>
-  Number.parseFloat(value.toFixed(digits));
-
-const mapDetailToRow = (
-  detail: InvoiceDetail,
-  fallbackTransType: number,
-): InvoiceItemRow => {
-  const itemId = Number(detail.item);
-
-  return {
-    id: Number(detail.id),
-    item_id: Number.isFinite(itemId) ? itemId : null,
-    item: Number.isFinite(itemId) ? itemId : null,
-    item_code: detail.sn ?? "",
-    item_name: detail.item_desc ?? "",
-    qty: detail.qty ?? "0",
-    weight: detail.weight ?? "0",
-    g_weight: detail.g_weight ?? "0",
-    k: "",
-    price: detail.price ?? "0",
-    price_w: detail.price_w ?? "0",
-    note: detail.inv_notes ?? "",
-    trans_type: detail.trans_type ?? fallbackTransType,
-    purity: detail.G875 ? String(detail.G875) : "",
-    total: detail.total ?? "0",
-    total_w: detail.total_w ?? "0",
-    total_a: detail.total_a ?? "0",
-    tax: detail.tax ?? "0",
-    tax_prc: detail.tax_prc ?? "15",
-    stones: detail.stones ?? null,
-    item_disc_amt: detail.item_disc_amt ?? "0",
-    item_disc_prc: detail.item_disc_prc ?? "0",
-    sn: detail.sn ?? "",
-    item_desc: detail.item_desc ?? "",
-    inv_notes: detail.inv_notes ?? "",
-    cr_date: detail.cr_date ?? "",
-    cr_user: detail.cr_user ?? "",
-    upd_date: detail.upd_date ?? "",
-    upd_user: detail.upd_user ?? "",
-    com: detail.com ?? undefined,
-    inv: detail.inv ?? undefined,
-    box: detail.box ?? null,
-  };
-};
-
-const getItemIdFromRow = (row: InvoiceItemRow): number | null => {
-  // Prefer the live "item" field (used by the editor) over the legacy "item_id"
-  const primary =
-    typeof row.item === "number"
-      ? row.item
-      : parseNumber((row.item as any) ?? 0);
-  const fallback = parseNumber((row.item_id as any) ?? 0);
-
-  const candidate =
-    Number.isFinite(primary) && primary > 0 ? primary : fallback;
-  const parsed = parseNumber(candidate);
-
-  return parsed > 0 ? parsed : null;
-};
-
-const getNumericRowId = (id: unknown): number | null => {
-  const numeric = Number(id);
-
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-};
-
-const normalizeRowIdentifier = (id: unknown): string | null => {
-  if (id === null || id === undefined) return null;
-
-  const numeric = getNumericRowId(id);
-
-  if (numeric !== null) return `num:${numeric}`;
-
-  const stringValue = String(id).trim();
-
-  return stringValue.length > 0 ? `str:${stringValue}` : null;
-};
+const normalizeRowIdentifier = normalizeRowIdentifierUtil;
 
 type ComparableRow = {
   itemId: number | null;
@@ -790,110 +709,12 @@ export default function useInvoiceForm({
       invoicePrimaryKey: number,
       companyId: number,
       yearId: number,
-    ) => {
-      const itemId = getItemIdFromRow(row);
-
-      if (!itemId) return null;
-
-      const resolvedCompanyId =
-        ensurePositiveNumber(row.com) ?? ensurePositiveNumber(companyId);
-      const resolvedYearId =
-        ensurePositiveNumber(row.year) ?? ensurePositiveNumber(yearId);
-
-      if (!resolvedCompanyId || !resolvedYearId) {
-        throw new Error("تعذر تحديد بيانات الفرع أو السنة لسطر الفاتورة");
-      }
-
-      const qty = parseNumber(row.qty);
-      const weight = parseNumber(row.weight);
-      const gWeight = parseNumber(row.g_weight);
-      const price = parseNumber(row.price);
-      const priceW = parseNumber(row.price_w);
-      const itemDiscountAmount = parseNumber(row.item_disc_amt ?? 0);
-      const taxRate =
-        row.tax_prc !== undefined
-          ? parseNumber(row.tax_prc)
-          : (defaultTaxPrc ?? 15);
-
-      const computedTotalW =
-        row.total_w !== undefined ? parseNumber(row.total_w) : weight * priceW;
-
-      const computedTotalA =
-        row.total_a !== undefined
-          ? parseNumber(row.total_a)
-          : weight *
-            (form.pay_type === INVOICE_PAY_TYPES.WAGES ? priceW : price);
-
-      const combinedTotal =
-        row.total !== undefined
-          ? parseNumber(row.total)
-          : weight * price + weight * priceW - itemDiscountAmount;
-
-      const taxValue =
-        row.tax !== undefined
-          ? parseNumber(row.tax)
-          : (combinedTotal - itemDiscountAmount) * (taxRate / 100);
-
-      const stonesValue =
-        row.stones === null || row.stones === ""
-          ? null
-          : parseNumber(row.stones);
-
-      const resolvedNote = row.note ?? row.inv_notes ?? "";
-      const normalizedNote =
-        typeof resolvedNote === "string" && resolvedNote.trim().length === 0
-          ? null
-          : resolvedNote;
-
-      const normalizedRowId = getNumericRowId(row.id);
-      let normalizedKValue: number | null = null;
-      if (row.k !== undefined && row.k !== null) {
-        const rawK = String(row.k).trim();
-        if (rawK.length > 0) {
-          const numericK = parseNumber(row.k);
-          normalizedKValue =
-            Number.isFinite(numericK) && numericK > 0 ? numericK : null;
-        }
-      }
-
-      return {
-        id: normalizedRowId ?? row.id,
-        // Always enforce invoice trans_type to avoid mismatches during fetch
-        trans_type: defaultTransType,
-        G875: row.purity ? parseNumber(row.purity) : null,
-        k: normalizedKValue,
-        qty,
-        price,
-        price_w: priceW,
-        weight,
-        g_weight: gWeight,
-        total: combinedTotal,
-        total_w: computedTotalW,
-        total_a: computedTotalA,
-        tax: taxValue,
-        tax_prc: taxRate,
-        // Backend accepts empty string for stones; avoid null where possible
-        stones: stonesValue ?? "",
-        item_disc_prc: parseNumber(row.item_disc_prc ?? 0),
-        item_disc_amt: itemDiscountAmount,
-        sn: row.sn ?? "",
-        item_desc: row.item_desc ?? row.item_name ?? "",
-        // Ensure item_code is populated (fallback to item id string)
-        item_code:
-          (row.item_code && String(row.item_code)) ||
-          (itemId ? String(itemId) : ""),
-        inv_notes: normalizedNote,
-        cr_date: row.cr_date ?? new Date().toISOString(),
-        cr_user: row.cr_user ?? "",
-        upd_date: new Date().toISOString(),
-        upd_user: row.upd_user ?? "",
-        com: resolvedCompanyId,
-        year: resolvedYearId,
-        inv: invoicePrimaryKey,
-        item: itemId,
-        box: row.box ?? null,
-      };
-    },
+    ) =>
+      mapRowToApiPayloadUtil(row, invoicePrimaryKey, companyId, yearId, {
+        defaultTaxPrc: defaultTaxPrc ?? 15,
+        defaultTransType,
+        payType: form.pay_type,
+      }),
     [defaultTaxPrc, defaultTransType, form.pay_type],
   );
 
@@ -1157,17 +978,6 @@ export default function useInvoiceForm({
       (item) => getItemIdFromRow(item) !== null,
     );
 
-    console.log("🧾 [saveInvoice] start:", {
-      isNewInvoice,
-      currentInvoicePk: invoicePk,
-      validItemsCount: validItems.length,
-      validItemIds: validItems.map((item) => ({
-        rowId: item.id,
-        itemId: getItemIdFromRow(item),
-        itemCode: item.item_code,
-      })),
-    });
-
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
 
@@ -1375,25 +1185,16 @@ export default function useInvoiceForm({
       const replacementDeletions: number[] = [];
 
       for (const row of validItems) {
-        console.log("🚀 ~ :1384 ~ useInvoiceForm ~ row:", row);
         const detailPayload = mapRowToApiPayload(
           row,
           resolvedInvoicePk,
           resolvedCompanyId,
           resolvedYearId,
         );
-        console.log(
-          "🚀 ~ :1388 ~ useInvoiceForm ~ resolvedInvoicePk:",
-          resolvedInvoicePk,
-        );
 
         if (!detailPayload) continue;
 
         const numericRowId = getNumericRowId(row.id);
-        console.log(
-          "🚀 ~ :1394 ~ useInvoiceForm ~ numericRowId:",
-          numericRowId,
-        );
         const isExistingRow =
           numericRowId !== null && originalDetailIdSet.has(numericRowId);
         const currentItemId = getItemIdFromRow(row);
@@ -1407,28 +1208,13 @@ export default function useInvoiceForm({
           originalItemId !== null &&
           currentItemId !== null &&
           originalItemId !== currentItemId;
-        console.log(
-          "🚀 ~ :1397 ~ useInvoiceForm ~ isExistingRow:",
-          isExistingRow,
-        );
-
         try {
           if (!isExistingRow) {
-            console.log("🚀 ~ :1410 ~ new item useInvoiceForm ~ row:", row);
-            console.log(
-              "🚀 ~ :1413 ~ useInvoiceForm ~ resolvedInvoicePk:",
-              resolvedInvoicePk,
-            );
             // Create new detail row
             const createPayload = { ...(detailPayload as any) } as any;
             delete createPayload.id; // ensure no client id leaks into POST
             await createInvoiceDetailAction(createPayload, resolvedInvoicePk);
           } else if (itemChanged && numericRowId !== null) {
-            console.log("🚀 ~ :1416 ~ item changed useInvoiceForm ~ row:", row);
-            console.log(
-              "🚀 ~ :1420 ~ useInvoiceForm ~ resolvedInvoicePk:",
-              resolvedInvoicePk,
-            );
             // Replace: create new detail, then delete original row id
             const createPayload = { ...(detailPayload as any) } as any;
             delete createPayload.id;
@@ -1436,11 +1222,6 @@ export default function useInvoiceForm({
             replacementDeletions.push(numericRowId);
           } else if (numericRowId !== null) {
             // Update existing detail row (use path id, not body id)
-            console.log("🚀 ~ :1424 ~ ????????? useInvoiceForm ~ row:", row);
-            console.log(
-              "🚀 ~ :1429 ~ useInvoiceForm ~ resolvedInvoicePk:",
-              resolvedInvoicePk,
-            );
             const updatePayload = { ...(detailPayload as any) } as any;
             delete updatePayload.id;
             await updateInvoiceDetailAction(
@@ -1473,11 +1254,6 @@ export default function useInvoiceForm({
       const mappedDetails = refreshedDetails.map((detail) =>
         mapDetailToRow(detail, defaultTransType),
       );
-
-      console.log("🧾 [saveInvoice] refreshed details count:", {
-        rows: mappedDetails.length,
-        resolvedInvoicePk,
-      });
 
       setInvoiceItems(
         mappedDetails.length > 0 ? mappedDetails : [makeEmptyRow()],

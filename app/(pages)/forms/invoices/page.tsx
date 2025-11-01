@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import InvoiceClientPage from "@/app/(pages)/forms/invoices/InvoiceClientPage";
+import Breadcrumb from "@/components/Breadcrumb";
 import invoiceFormDataService from "@/services/bff/invoice-form-data.service";
 import invoiceService from "@/services/api/invoice.service";
 import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
@@ -159,6 +160,20 @@ export default async function InvoicePage({
 
   return (
     <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { name: "الفواتير", href: "/reports/invoices" },
+          { name: INVOICE_TYPE_CONFIG[invoiceType].title, href: newInvoiceHref },
+          {
+            name:
+              mode === "new"
+                ? "جديدة"
+                : mode === "edit"
+                  ? `تعديل ${invoiceData?.inv_id ?? editId ?? ""}`
+                  : "معاينة",
+          },
+        ]}
+      />
       <InvoiceClientPage
         key={`${invoiceType}-${mode}-${invoiceData?.id ?? "new"}`}
         invoiceType={invoiceType}

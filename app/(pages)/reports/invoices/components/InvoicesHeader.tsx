@@ -12,13 +12,13 @@ const InvoicesHeader = () => {
         <p className="text-gray-500 mt-1">إدارة وعرض جميع الفواتير</p>
       </div>
       <div className="flex gap-3">
-        <Link
+        {/* <Link
           href="/forms/invoices?type=sale&mode=new"
           className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700"
         >
           <PlusIcon className="h-4 w-4" />
           إضافة فاتورة
-        </Link>
+        </Link> */}
         <PrintButton />
         <button
           className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700"

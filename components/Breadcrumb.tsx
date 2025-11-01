@@ -42,9 +42,9 @@ const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
         <li className="inline-flex items-center">
           <Link
             className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600"
-            href=""
+            href="/"
           >
-            Dashboard
+            الرئيسية
           </Link>
         </li>
 
