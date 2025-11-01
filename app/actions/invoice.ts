@@ -54,11 +54,6 @@ export async function updateInvoiceAction(
       throw new Error("invalid invoice id for update");
     }
 
-    console.log("🧾 [updateInvoiceAction] request:", {
-      invoiceId: parsedId,
-      payload,
-    });
-
     const result = await invoiceService.updateInvoice(parsedId, payload);
 
     if (result) {
@@ -87,11 +82,6 @@ export async function createInvoiceDetailAction(
         payload.inv ??
         (result.inv !== undefined ? result.inv : undefined);
 
-      console.log("🧾 [createInvoiceDetailAction] result:", {
-        payload,
-        invoiceId: targetInvoiceId,
-      });
-
       await revalidateTag("invoices");
       await revalidatePath("/reports/invoices");
 
@@ -112,12 +102,6 @@ export async function updateInvoiceDetailAction(
   invoiceId?: number | string,
 ) {
   try {
-    console.log("🧾 [updateInvoiceDetailAction] request:", {
-      id,
-      invoiceId,
-      payload,
-    });
-
     const result = await invoiceService.updateInvoiceDetail(id, payload);
 
     if (result) {
@@ -125,12 +109,6 @@ export async function updateInvoiceDetailAction(
         invoiceId ??
         payload.inv ??
         (result.inv !== undefined ? result.inv : undefined);
-
-      console.log("🧾 [updateInvoiceDetailAction] result:", {
-        id,
-        invoiceId: targetInvoiceId,
-        result,
-      });
 
       await revalidateTag("invoices");
       await revalidatePath("/reports/invoices");
@@ -154,11 +132,6 @@ export async function deleteInvoiceDetailAction(
     const result = await invoiceService.deleteInvoiceDetail(id);
 
     if (result) {
-      console.log("🧾 [deleteInvoiceDetailAction] result:", {
-        id,
-        invoiceId,
-      });
-
       await revalidateTag("invoices");
       await revalidatePath("/reports/invoices");
 

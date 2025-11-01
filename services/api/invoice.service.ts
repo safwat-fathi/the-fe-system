@@ -428,6 +428,10 @@ class InvoiceService extends HttpService<Invoice> {
   async createInvoiceDetail(
     detailData: Partial<InvoiceDetail>,
   ): Promise<InvoiceDetail | null> {
+    console.log(
+      "🚀 ~ :431 ~ InvoiceService ~ createInvoiceDetail ~ detailData:",
+      detailData,
+    );
     try {
       const companyId = Number(detailData?.com);
       const invoicePk = Number(detailData?.inv);

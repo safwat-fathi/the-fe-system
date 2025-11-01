@@ -112,6 +112,7 @@ export default async function InvoicePage({
       lookupId,
       config.transType,
     );
+    console.log("🚀 ~ :115 ~ InvoicePage ~ invoiceData:", invoiceData);
 
     if (!invoiceData) {
       notFound();
@@ -132,7 +133,9 @@ export default async function InvoicePage({
           invoiceData?.inv_id,
           editId,
         ]
-          .filter((key): key is string => Boolean(key && `${key}`.trim().length))
+          .filter((key): key is string =>
+            Boolean(key && `${key}`.trim().length),
+          )
           .map((key) => String(key).trim()),
       ),
     );
@@ -147,6 +150,7 @@ export default async function InvoicePage({
       }
     }
   }
+		console.log("🚀 ~ :144 ~ InvoicePage ~ invoiceDetails:", invoiceDetails);
 
   const formData = await getInvoiceFormData();
 

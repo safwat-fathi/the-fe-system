@@ -20,7 +20,7 @@ import {
 import {
   createInvoiceAction,
   updateInvoiceAction,
-  // createInvoiceDetailAction, // no longer used in update flow
+  createInvoiceDetailAction,
   updateInvoiceDetailAction,
   deleteInvoiceDetailAction,
   getInvoiceByIdAction,
@@ -245,10 +245,13 @@ const mapDetailToRow = (
 const getItemIdFromRow = (row: InvoiceItemRow): number | null => {
   // Prefer the live "item" field (used by the editor) over the legacy "item_id"
   const primary =
-    typeof row.item === "number" ? row.item : parseNumber((row.item as any) ?? 0);
+    typeof row.item === "number"
+      ? row.item
+      : parseNumber((row.item as any) ?? 0);
   const fallback = parseNumber((row.item_id as any) ?? 0);
 
-  const candidate = Number.isFinite(primary) && primary > 0 ? primary : fallback;
+  const candidate =
+    Number.isFinite(primary) && primary > 0 ? primary : fallback;
   const parsed = parseNumber(candidate);
 
   return parsed > 0 ? parsed : null;
@@ -848,13 +851,15 @@ export default function useInvoiceForm({
         const rawK = String(row.k).trim();
         if (rawK.length > 0) {
           const numericK = parseNumber(row.k);
-          normalizedKValue = Number.isFinite(numericK) && numericK > 0 ? numericK : null;
+          normalizedKValue =
+            Number.isFinite(numericK) && numericK > 0 ? numericK : null;
         }
       }
 
       return {
         id: normalizedRowId ?? row.id,
-        trans_type: row.trans_type ?? defaultTransType,
+        // Always enforce invoice trans_type to avoid mismatches during fetch
+        trans_type: defaultTransType,
         G875: row.purity ? parseNumber(row.purity) : null,
         k: normalizedKValue,
         qty,
@@ -867,12 +872,16 @@ export default function useInvoiceForm({
         total_a: computedTotalA,
         tax: taxValue,
         tax_prc: taxRate,
-        stones: stonesValue,
+        // Backend accepts empty string for stones; avoid null where possible
+        stones: stonesValue ?? "",
         item_disc_prc: parseNumber(row.item_disc_prc ?? 0),
         item_disc_amt: itemDiscountAmount,
         sn: row.sn ?? "",
         item_desc: row.item_desc ?? row.item_name ?? "",
-        item_code: row.item_code ?? "",
+        // Ensure item_code is populated (fallback to item id string)
+        item_code:
+          (row.item_code && String(row.item_code)) ||
+          (itemId ? String(itemId) : ""),
         inv_notes: normalizedNote,
         cr_date: row.cr_date ?? new Date().toISOString(),
         cr_user: row.cr_user ?? "",
@@ -1346,111 +1355,115 @@ export default function useInvoiceForm({
         )
         .map(({ numericId }) => numericId as number);
 
-      const deletions = Array.from(
+      const baseDeletions = Array.from(
         new Set([
           ...deletedItemIds,
           ...derivedDeletedIds.filter((id) => Number.isFinite(id) && id > 0),
         ]),
       );
-
-      console.log("🧾 [saveInvoice] derived deletions:", {
-        deletions,
-        originalIds: originalInvoiceItems.map((item) => item.id),
-        currentValidKeys: Array.from(currentValidKeys),
-        derivedDeletedIds,
-      });
-
-      for (const detailId of deletions) {
-        if (!detailId || detailId <= 0) continue;
-        try {
-          await deleteInvoiceDetailAction(detailId, resolvedInvoicePk);
-        } catch (deleteError) {
-          console.error(`فشل حذف السطر ${detailId}:`, deleteError);
-        }
+      // Build set/map of original DB detail ids and rows
+      const originalDetailIdSet = new Set(
+        originalInvoiceItems
+          .map((orig) => getNumericRowId(orig.id))
+          .filter((v): v is number => v !== null),
+      );
+      const originalById = new Map<number, InvoiceItemRow>();
+      for (const orig of originalInvoiceItems) {
+        const idn = getNumericRowId(orig.id);
+        if (idn !== null) originalById.set(idn, orig);
       }
+      const replacementDeletions: number[] = [];
 
       for (const row of validItems) {
+        console.log("🚀 ~ :1384 ~ useInvoiceForm ~ row:", row);
         const detailPayload = mapRowToApiPayload(
           row,
           resolvedInvoicePk,
           resolvedCompanyId,
           resolvedYearId,
         );
+        console.log(
+          "🚀 ~ :1388 ~ useInvoiceForm ~ resolvedInvoicePk:",
+          resolvedInvoicePk,
+        );
 
         if (!detailPayload) continue;
 
         const numericRowId = getNumericRowId(row.id);
-        const rowKey = normalizeRowIdentifier(row.id);
-        let originalRow =
-          rowKey !== null ? originalInvoiceItemMap.get(rowKey) : undefined;
-
-        // If the row's numeric id appears in original items, treat it as existing even if map lookup failed
-        const wasExistingOriginally =
-          numericRowId !== null &&
-          originalInvoiceItems.some(
-            (orig) => getNumericRowId(orig.id) === numericRowId,
-          );
-
-        if (!originalRow && numericRowId !== null) {
-          const fallbackKey = normalizeRowIdentifier(numericRowId);
-
-          if (fallbackKey) {
-            originalRow = originalInvoiceItemMap.get(fallbackKey);
-          }
-        }
-
-        if (!originalRow && typeof row.id !== "undefined") {
-          const fallbackKey = normalizeRowIdentifier(
-            (row as InvoiceItemRow).id,
-          );
-
-          if (fallbackKey) {
-            originalRow = originalInvoiceItemMap.get(fallbackKey);
-          }
-        }
-
-        const originalDetailId = getNumericRowId(originalRow?.id);
-        const effectiveDetailId =
-          originalDetailId !== null
-            ? originalDetailId
-            : wasExistingOriginally
-              ? numericRowId
-              : null;
-        const isExistingRow = Boolean(wasExistingOriginally && effectiveDetailId);
-
-        console.log("🧾 [saveInvoice] processing row:", {
-          rowId: row.id,
+        console.log(
+          "🚀 ~ :1394 ~ useInvoiceForm ~ numericRowId:",
           numericRowId,
-          rowKey,
-          originalDetailId,
-          effectiveDetailId,
+        );
+        const isExistingRow =
+          numericRowId !== null && originalDetailIdSet.has(numericRowId);
+        const currentItemId = getItemIdFromRow(row);
+        const originalRow =
+          numericRowId !== null ? originalById.get(numericRowId) : undefined;
+        const originalItemId = originalRow
+          ? getItemIdFromRow(originalRow)
+          : null;
+        const itemChanged =
+          isExistingRow &&
+          originalItemId !== null &&
+          currentItemId !== null &&
+          originalItemId !== currentItemId;
+        console.log(
+          "🚀 ~ :1397 ~ useInvoiceForm ~ isExistingRow:",
           isExistingRow,
-          row,
-        });
-
-        // Always send to UPDATE endpoint. For new rows, pass id = 0 (server should upsert).
-        const upsertId = isExistingRow && effectiveDetailId !== null ? effectiveDetailId : 0;
+        );
 
         try {
-          // Ensure payload id matches the upsert id contract (0 for new rows)
-          if (!isExistingRow || effectiveDetailId === null) {
-            (detailPayload as any).id = 0;
+          if (!isExistingRow) {
+            console.log("🚀 ~ :1410 ~ new item useInvoiceForm ~ row:", row);
+            console.log(
+              "🚀 ~ :1413 ~ useInvoiceForm ~ resolvedInvoicePk:",
+              resolvedInvoicePk,
+            );
+            // Create new detail row
+            const createPayload = { ...(detailPayload as any) } as any;
+            delete createPayload.id; // ensure no client id leaks into POST
+            await createInvoiceDetailAction(createPayload, resolvedInvoicePk);
+          } else if (itemChanged && numericRowId !== null) {
+            console.log("🚀 ~ :1416 ~ item changed useInvoiceForm ~ row:", row);
+            console.log(
+              "🚀 ~ :1420 ~ useInvoiceForm ~ resolvedInvoicePk:",
+              resolvedInvoicePk,
+            );
+            // Replace: create new detail, then delete original row id
+            const createPayload = { ...(detailPayload as any) } as any;
+            delete createPayload.id;
+            await createInvoiceDetailAction(createPayload, resolvedInvoicePk);
+            replacementDeletions.push(numericRowId);
+          } else if (numericRowId !== null) {
+            // Update existing detail row (use path id, not body id)
+            console.log("🚀 ~ :1424 ~ ????????? useInvoiceForm ~ row:", row);
+            console.log(
+              "🚀 ~ :1429 ~ useInvoiceForm ~ resolvedInvoicePk:",
+              resolvedInvoicePk,
+            );
+            const updatePayload = { ...(detailPayload as any) } as any;
+            delete updatePayload.id;
+            await updateInvoiceDetailAction(
+              numericRowId,
+              updatePayload,
+              resolvedInvoicePk,
+            );
           }
-          console.log("🧾 [saveInvoice] upserting detail row via UPDATE:", {
-            rowId: row.id,
-            numericRowId,
-            originalDetailId,
-            effectiveDetailId,
-            upsertId,
-            isExistingRow,
-            detailPayload,
-          });
-          await updateInvoiceDetailAction(upsertId as number, detailPayload, resolvedInvoicePk);
-        } catch (updateError) {
-          console.error(
-            `خطأ أثناء تحديث/إدراج تفاصيل السطر ${row.id}:`,
-            updateError,
-          );
+        } catch (detailError) {
+          console.error(`خطأ أثناء حفظ تفاصيل السطر ${row.id}:`, detailError);
+        }
+      }
+
+      // Perform deletions after creates/updates (user + derived + replacements)
+      const finalDeletions = Array.from(
+        new Set<number>([...baseDeletions, ...replacementDeletions]),
+      );
+      for (const detailId of finalDeletions) {
+        if (!detailId || detailId <= 0) continue;
+        try {
+          await deleteInvoiceDetailAction(detailId, resolvedInvoicePk);
+        } catch (deleteError) {
+          console.error(`فشل حذف السطر ${detailId}:`, deleteError);
         }
       }
 

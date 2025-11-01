@@ -11,8 +11,8 @@ import type { Category, ItemType, Unit } from "@/types/items";
 import ItemsClient from "./components/ItemsClient";
 
 export const metadata: Metadata = {
-  title: "الأصناف - NafeesWeb",
-  description: "إدارة الأصناف والمنتجات",
+  title: "الأصناف",
+  description: "إدارة الأصناف",
 };
 
 export default async function ItemsPage({
@@ -52,6 +52,7 @@ export default async function ItemsPage({
     helperService.getItemTypes().catch(() => []),
     helperService.getUnits().catch(() => []),
   ]);
+  console.log("🚀 ~ :55 ~ ItemsPage ~ itemsData:", itemsData);
 
   const itemsPerPage =
     itemsData.results.length > 0 ? itemsData.results.length : 20;
