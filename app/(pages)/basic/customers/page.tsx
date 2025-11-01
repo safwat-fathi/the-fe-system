@@ -24,7 +24,9 @@ export default async function CustomersPage() {
     accountsData,
     boxTypesData,
   ] = await Promise.all([
-    customerService.getAllCustomers({ xcom_id: branchParams.com }).catch(() => []),
+    customerService
+      .getAllCustomers({ xcom_id: branchParams.com })
+      .catch(() => []),
     helperService.getCustomerTypes().catch(() => []),
     helperService.getCustomerStatuses().catch(() => []),
     accountService.getAllAccounts().catch(() => []),

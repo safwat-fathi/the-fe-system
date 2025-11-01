@@ -53,13 +53,13 @@ class VoucherService extends HttpService<Voucher> {
    */
   async getAll(params?: IParams) {
     const queryParams: any = {
-      xcom_id: "1", // الفرع ثابت = 1
-      xyear_id: "0", // 0 = جميع السنوات (للقراءة)
-      xvouch_type: params?.xvouch_type || params?.vouch_type || "0", // ✅ xvouch_type
-      xvouch_id: params?.xvouch_id || "0", // ✅ إضافة
-      xfrom_date: params?.xfrom_date || "0", // ✅ إضافة
-      xto_date: params?.xto_date || "0", // ✅ إضافة
-      page: params?.page || "1", // pagination
+      xcom_id: "1",
+      xyear_id: "0",
+      xvouch_type: params?.xvouch_type || params?.vouch_type || "0",
+      xvouch_id: params?.xvouch_id || "0",
+      xfrom_date: params?.xfrom_date || "0",
+      xto_date: params?.xto_date || "0",
+      page: params?.page || "1",
     };
 
     const response = await this.get<IPaginatedResponse<Voucher>>(
@@ -139,10 +139,11 @@ class VoucherService extends HttpService<Voucher> {
    */
   async getDetails(voucherId: number, params?: IParams) {
     const branchParam =
-      (params?.["xcom_id"] ??
-        params?.["com_id"] ??
-        params?.["com"] ??
-        params?.["xcomp_id"]) ?? "1";
+      params?.["xcom_id"] ??
+      params?.["com_id"] ??
+      params?.["com"] ??
+      params?.["xcomp_id"] ??
+      "1";
 
     // إزالة com من البارامترات لعدم إرساله في الطلب
     const { com, com_id, xcomp_id, ...cleanParams } = params || {};
@@ -251,57 +252,90 @@ class VoucherService extends HttpService<Voucher> {
   // ====== القوائم المساعدة ======
 
   /**
+   * Helper method لجلب قوائم البيانات من API
+   */
+  private async _getListData(
+    endpoint: string,
+    params?: IParams,
+    options?: {
+      useBranchParams?: boolean;
+      logLabel?: string;
+      cache?: RequestCache;
+      next?: { tags?: string[] };
+    },
+  ) {
+    try {
+      let queryParams: IParams = {};
+
+      if (options?.useBranchParams !== false) {
+        queryParams = {
+          com: params?.com || params?.xcom_id || "1",
+          year: params?.year || params?.xyear_id || "1",
+        };
+      } else {
+        queryParams = params || {};
+      }
+
+      if (options?.logLabel) {
+        console.log(`Fetching ${options.logLabel} with params:`, queryParams);
+      }
+
+      const response = await this.getList<any[]>(
+        endpoint,
+        queryParams,
+        options?.cache
+          ? {
+              cache: options.cache,
+              next: options.next,
+            }
+          : undefined,
+      );
+
+      if (response.success && response.data) {
+        const data = Array.isArray(response.data) ? response.data : [];
+
+        if (options?.logLabel) {
+          console.log(`${options.logLabel} loaded:`, data.length);
+        }
+
+        return {
+          success: true,
+          data: data,
+        };
+      }
+
+      if (options?.logLabel) {
+        console.warn(`${options.logLabel} API returned no data`);
+      }
+
+      return { success: false, data: [] };
+    } catch (error) {
+      if (options?.logLabel) {
+        console.error(`Error fetching ${options.logLabel}:`, error);
+      }
+
+      return { success: false, data: [] };
+    }
+  }
+
+  /**
    * الحصول على أنواع السندات
    */
   async getVoucherTypes(params?: IParams) {
-    const queryParams: IParams = {
-      com: params?.com || params?.xcom_id || "1",
-      year: params?.year || params?.xyear_id || "1",
-    };
-    
-    console.log("Fetching voucher types with params:", queryParams);
-    
-    const response = await this.getList<any[]>("getVoucherTypeList", queryParams);
-    
-    // معالجة الاستجابة
-    if (response.success && response.data) {
-      const data = Array.isArray(response.data) ? response.data : [];
-      console.log("Voucher types loaded:", data.length);
-      return {
-        success: true,
-        data: data,
-      };
-    }
-    
-    console.warn("Voucher types API returned no data");
-    return { success: false, data: [] };
+    return this._getListData("getVoucherTypeList", params, {
+      useBranchParams: true,
+      logLabel: "Voucher types",
+    });
   }
 
   /**
    * الحصول على حالات السندات
    */
   async getVoucherStages(params?: IParams) {
-    const queryParams: IParams = {
-      com: params?.com || params?.xcom_id || "1",
-      year: params?.year || params?.xyear_id || "1",
-    };
-    
-    console.log("Fetching voucher stages with params:", queryParams);
-    
-    const response = await this.getList<any[]>("getVoucherStageList", queryParams);
-    
-    // معالجة الاستجابة
-    if (response.success && response.data) {
-      const data = Array.isArray(response.data) ? response.data : [];
-      console.log("Voucher stages loaded:", data.length);
-      return {
-        success: true,
-        data: data,
-      };
-    }
-    
-    console.warn("Voucher stages API returned no data");
-    return { success: false, data: [] };
+    return this._getListData("getVoucherStageList", params, {
+      useBranchParams: true,
+      logLabel: "Voucher stages",
+    });
   }
 
   /**
@@ -340,6 +374,18 @@ class VoucherService extends HttpService<Voucher> {
     } catch (error) {
       return 1;
     }
+  }
+
+  /**
+   * الحصول على أنواع المعايرة
+   */
+  async getCaratTypes(params?: IParams) {
+    return this._getListData("getCaratTypeList", params, {
+      useBranchParams: false,
+      logLabel: "Carat types",
+      cache: "no-store",
+      next: { tags: ["carat-types"] },
+    });
   }
 }
 

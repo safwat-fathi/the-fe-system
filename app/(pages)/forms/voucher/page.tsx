@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -49,20 +48,24 @@ const toSingleValue = (
   value: string | string[] | undefined,
 ): string | undefined => {
   if (Array.isArray(value)) return value[0];
+
   return value;
 };
 
 const resolveVoucherType = (rawType: string | undefined): VoucherPageType => {
   if (!rawType) return FALLBACK_TYPE;
   const type = rawType.toLowerCase() as VoucherPageType;
+
   return type in VOUCHER_TYPE_CONFIG ? type : FALLBACK_TYPE;
 };
 
 const resolveFormMode = (rawMode: string | undefined): VoucherFormMode => {
   if (!rawMode) return "new";
   const mode = rawMode.toLowerCase();
+
   if (mode === "edit") return "edit";
   if (mode === "preview") return "preview";
+
   return "new";
 };
 
@@ -104,10 +107,10 @@ export default async function VoucherPage({
 
   if ((mode === "edit" || mode === "preview") && editId) {
     const lookupId = editId ?? "";
-    
+
     // جلب السند
     const vouchersResponse = await voucherService.getAll();
-    
+
     if (
       vouchersResponse.success &&
       vouchersResponse.data &&
@@ -139,7 +142,7 @@ export default async function VoucherPage({
           voucherRecordId,
           { com: branchId },
         );
-        
+
         if (
           detailsResponse.success &&
           detailsResponse.data &&
@@ -179,18 +182,24 @@ export default async function VoucherPage({
   return (
     <div className="container mx-auto p-4">
       <VoucherClientPage
+        accounts={formData.accounts}
+        caratTypes={formData.caratTypes}
+        costCenters={formData.costCenters}
         formMode={mode}
+        isNewVoucher={mode === "new"}
+        newVoucherHref={newVoucherHref}
+        startInEditMode={
+          mode === "new"
+            ? true // في وضع new، الحقول قابلة للتعديل دائماً
+            : startInEdit || mode === "edit" // في وضع edit أو preview
+        }
+        taxRates={formData.taxRates}
+        vouchType={config.vouchType}
         voucherData={voucherData}
         voucherDetailsData={voucherDetailsData}
-        isNewVoucher={mode === "new"}
-        startInEditMode={startInEdit || mode === "edit"}
         voucherRecordId={voucherData?.id ?? null}
-        accounts={formData.accounts}
-        costCenters={formData.costCenters}
-        voucherTypes={formData.voucherTypes}
         voucherStatuses={formData.voucherStatuses}
-        vouchType={config.vouchType}
-        newVoucherHref={newVoucherHref}
+        voucherTypes={formData.voucherTypes}
       />
     </div>
   );

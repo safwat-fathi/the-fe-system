@@ -93,6 +93,7 @@ export const getNextNumber = async (
     return maxId + 1;
   } catch (error) {
     console.error(`خطأ في الحصول على الرقم التالي:`, error);
+
     return 1;
   }
 };

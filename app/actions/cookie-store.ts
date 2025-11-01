@@ -32,4 +32,3 @@ export async function setCookieAction(
 export async function deleteCookieAction(name: string) {
   (await cookies()).delete(name);
 }
-

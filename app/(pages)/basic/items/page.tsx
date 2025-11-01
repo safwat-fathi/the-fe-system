@@ -1,4 +1,8 @@
+import type { Category, ItemType, Unit } from "@/types/items";
+
 import { Metadata } from "next";
+
+import ItemsClient from "./components/ItemsClient";
 
 import AppPagination from "@/components/AppPagination";
 import { getBranchParams } from "@/app/actions/branch-params";
@@ -6,9 +10,6 @@ import helperService from "@/services/api/helper.service";
 import itemService from "@/services/api/item.service";
 import { Item } from "@/types/models/item";
 import { IPaginatedResponse } from "@/types/services/base";
-import type { Category, ItemType, Unit } from "@/types/items";
-
-import ItemsClient from "./components/ItemsClient";
 
 export const metadata: Metadata = {
   title: "الأصناف - NafeesWeb",
@@ -37,21 +38,22 @@ export default async function ItemsPage({
       ? parsedCompanyId
       : 1;
 
-  const [itemsData, categoriesData, itemTypesData, unitsData] = await Promise.all([
-    itemService
-      .searchItems({ page: currentPage, query: searchQuery, companyId })
-      .catch(
-        (): IPaginatedResponse<Item> => ({
-          count: 0,
-          next: null,
-          previous: null,
-          results: [],
-        }),
-      ),
-    helperService.getCategories().catch(() => []),
-    helperService.getItemTypes().catch(() => []),
-    helperService.getUnits().catch(() => []),
-  ]);
+  const [itemsData, categoriesData, itemTypesData, unitsData] =
+    await Promise.all([
+      itemService
+        .searchItems({ page: currentPage, query: searchQuery, companyId })
+        .catch(
+          (): IPaginatedResponse<Item> => ({
+            count: 0,
+            next: null,
+            previous: null,
+            results: [],
+          }),
+        ),
+      helperService.getCategories().catch(() => []),
+      helperService.getItemTypes().catch(() => []),
+      helperService.getUnits().catch(() => []),
+    ]);
 
   const itemsPerPage =
     itemsData.results.length > 0 ? itemsData.results.length : 20;
@@ -63,15 +65,15 @@ export default async function ItemsPage({
       <h1 className="responsive-text-xl font-bold mb-6">الأصناف</h1>
 
       <ItemsClient
+        companyId={companyId}
         currentPage={currentPage}
         initialCategories={categoriesData as Category[]}
         initialItemTypes={itemTypesData as ItemType[]}
-        initialUnits={unitsData as Unit[]}
         initialItems={itemsData.results as Item[]}
         initialQuery={searchQuery}
+        initialUnits={unitsData as Unit[]}
         totalItems={itemsData.count}
         totalPages={totalPages}
-        companyId={companyId}
       />
 
       <AppPagination total={totalPages} />

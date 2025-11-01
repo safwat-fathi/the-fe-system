@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { cache } from "react";
 
 import VoucherClientPage from "../VoucherClientPage";
+
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
@@ -17,26 +18,35 @@ const getVoucherById = cache(async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
       console.warn("Invalid voucherId:", voucherId);
+
       return null;
     }
 
     const vouchersResponse = await voucherService.getAll();
-    
+
     if (!vouchersResponse.success || !vouchersResponse.data) {
       console.warn("Failed to fetch vouchers:", vouchersResponse);
+
       return null;
     }
 
-    const vouchers = Array.isArray(vouchersResponse.data) ? vouchersResponse.data : [];
-    const foundVoucher = vouchers.find((v: any) => v.vouch_id === voucherId);
-    
+    const vouchers = Array.isArray(vouchersResponse.data)
+      ? vouchersResponse.data
+      : [];
+
+    // البحث أولاً بـ id (primary key) ثم بـ vouch_id
+    const foundVoucher = vouchers.find(
+      (v: any) => v.id === voucherId || v.vouch_id === voucherId,
+    );
+
     if (!foundVoucher) {
-      console.warn("Voucher not found with vouch_id:", voucherId);
+      console.warn("Voucher not found with id or vouch_id:", voucherId);
     }
-    
+
     return foundVoucher;
   } catch (error) {
     console.error("Error fetching voucher:", error);
+
     return null;
   }
 });
@@ -47,6 +57,7 @@ const getVoucherDetails = cache(
     try {
       if (!voucherId || isNaN(voucherId)) {
         console.warn("Invalid voucherId:", voucherId);
+
         return [];
       }
 
@@ -58,12 +69,14 @@ const getVoucherDetails = cache(
 
       if (!detailsResponse.success || !detailsResponse.data) {
         console.warn("Failed to fetch voucher details:", detailsResponse);
+
         return [];
       }
 
       return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
     } catch (error) {
       console.error("Error fetching voucher details:", error);
+
       return [];
     }
   },
@@ -71,10 +84,21 @@ const getVoucherDetails = cache(
 
 export default async function VoucherEditPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const searchParamsData = await searchParams;
+  const mode = Array.isArray(searchParamsData.mode)
+    ? searchParamsData.mode[0]
+    : searchParamsData.mode;
+
+  // تحديد الوضع: preview (افتراضي بعد الحفظ) أو edit
+  const formMode = mode === "edit" ? "edit" : "preview";
+  const startInEditMode = mode === "edit";
+
   const voucherId = parseInt(id);
 
   // التحقق من صحة المعرف
@@ -93,8 +117,7 @@ export default async function VoucherEditPage({
   }
 
   // جلب تفاصيل القيد - استخدام id من targetVoucher
-  const branchId =
-    Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
+  const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
   const detailsData = await getVoucherDetails(targetVoucher.id, branchId);
 
   // معالجة تفاصيل القيد
@@ -141,18 +164,20 @@ export default async function VoucherEditPage({
   return (
     <div className="container mx-auto p-4">
       <VoucherClientPage
+        accounts={formData.accounts}
+        caratTypes={formData.caratTypes}
+        costCenters={formData.costCenters}
+        formMode={formMode}
+        isNewVoucher={false}
+        newVoucherHref="/forms/voucher"
+        startInEditMode={startInEditMode}
+        taxRates={formData.taxRates}
+        vouchType={formattedVoucher.vouch_type}
         voucherData={formattedVoucher}
         voucherDetailsData={details}
-        isNewVoucher={false}
-        startInEditMode={true}
         voucherRecordId={targetVoucher.id}
-        accounts={formData.accounts}
-        costCenters={formData.costCenters}
-        voucherTypes={formData.voucherTypes}
         voucherStatuses={formData.voucherStatuses}
-        vouchType={formattedVoucher.vouch_type}
-        formMode="edit"
-        newVoucherHref="/forms/voucher"
+        voucherTypes={formData.voucherTypes}
       />
     </div>
   );

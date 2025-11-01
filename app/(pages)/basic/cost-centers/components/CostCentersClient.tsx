@@ -305,7 +305,9 @@ export default function CostCentersClient({
               <TableCell>{costCenter.id}</TableCell>
               <TableCell>{costCenter.cost_name}</TableCell>
               <TableCell>{costCenter.cost_name_e}</TableCell>
-              <TableCell>{getCostCenterTypeLabel(costCenter.cost_type)}</TableCell>
+              <TableCell>
+                {getCostCenterTypeLabel(costCenter.cost_type)}
+              </TableCell>
               <TableCell>{getAccountName(costCenter.acc)}</TableCell>
               <TableCell>{getParentName(costCenter.parent)}</TableCell>
               <TableCell>
@@ -406,9 +408,7 @@ export default function CostCentersClient({
               }
               popoverProps={{ shouldBlockScroll: false }}
               selectedKeys={
-                currentCostCenter.acc
-                  ? [currentCostCenter.acc.toString()]
-                  : []
+                currentCostCenter.acc ? [currentCostCenter.acc.toString()] : []
               }
               onSelectionChange={(keys) => {
                 const selectedKey = Array.from(keys)[0];

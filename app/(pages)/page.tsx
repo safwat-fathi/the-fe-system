@@ -1,11 +1,10 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
-import { StatCard } from "@/components/Card";
 import { Metadata } from "next";
-import dashboardService from "@/services/bff/dashboard.service";
+
 import DashboardClient from "./components/DashboardClient";
-import { notFound, redirect } from "next/navigation";
-import { STORAGE_KEYS } from "@/constants";
+
+import { StatCard } from "@/components/Card";
+import dashboardService from "@/services/bff/dashboard.service";
 
 // meta data
 export const metadata: Metadata = {
@@ -72,36 +71,36 @@ export default async function DashboardPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="الفواتير"
-          icon="🧾"
-          value={dashboardData.invoices?.count || 0}
           href="/reports/invoices"
+          icon="🧾"
+          title="الفواتير"
+          value={dashboardData.invoices?.count || 0}
         />
         <StatCard
-          title="العملاء"
-          icon="👥"
-          value={dashboardData.customerCount}
           href="/basic/customers"
+          icon="👥"
+          title="العملاء"
+          value={dashboardData.customerCount}
         />
         <StatCard
-          title="الأصناف"
-          icon="📦"
-          value={dashboardData.itemCount}
           href="/basic/items"
+          icon="📦"
+          title="الأصناف"
+          value={dashboardData.itemCount}
         />
         <StatCard
-          title="الفئات"
-          icon="🏷️"
-          value={dashboardData.categoryCount}
           href="/basic/categories"
+          icon="🏷️"
+          title="الفئات"
+          value={dashboardData.categoryCount}
         />
       </div>
 
       {/* Gold Price Card */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <StatCard
-          title="سعر الذهب للجرام"
           icon="💰"
+          title="سعر الذهب للجرام"
           value={dashboardData.goldPrice ? `${dashboardData.goldPrice} ﷼` : "-"}
         />
       </div>
@@ -109,9 +108,9 @@ export default async function DashboardPage() {
       {/* Pass data to client component for interactive charts */}
 
       <DashboardClient
-        salesChartData={salesChartData}
-        invoices={dashboardData.invoices?.results || []}
         branch={branch}
+        invoices={dashboardData.invoices?.results || []}
+        salesChartData={salesChartData}
         year={year}
       />
     </div>

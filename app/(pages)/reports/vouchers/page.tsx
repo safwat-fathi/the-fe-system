@@ -2,8 +2,8 @@ import { Metadata } from "next";
 import { Suspense } from "react";
 
 import VouchersReportClient from "./components/VouchersReportClient";
-import AppLoading from "@/components/AppLoading";
 
+import AppLoading from "@/components/AppLoading";
 import { voucherService } from "@/services/api";
 import { IParams } from "@/types/services/base";
 
@@ -57,11 +57,11 @@ export default async function VoucherReportsPage({
         }
       >
         <VouchersReportClient
-          initialVouchers={vouchers}
           initialVoucherTypes={voucherTypes}
+          initialVouchers={vouchers}
           searchParams={queryParams}
-          totalVouchers={count}
           totalPages={totalPages}
+          totalVouchers={count}
         />
       </Suspense>
     </div>

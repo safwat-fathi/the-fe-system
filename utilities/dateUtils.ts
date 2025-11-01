@@ -33,5 +33,6 @@ export function toDateTimeLocalFormat(dateString: string | Date): string {
 // دالة لتحويل من تنسيق datetime-local إلى ISO
 export function fromDateTimeLocalFormat(dateTimeLocal: string): string {
   if (!dateTimeLocal) return "";
+
   return new Date(dateTimeLocal).toISOString();
 }

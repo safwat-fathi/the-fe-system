@@ -109,17 +109,9 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
     paramTransform: (params) => ({
       id: params.id || params.voucherId || "0", // معرف القيد من جدول vouchers
       com:
-        params.com ||
-        params.com_id ||
-        params.xcom_id ||
-        params.xcomp_id ||
-        "1", // رقم الفرع
+        params.com || params.com_id || params.xcom_id || params.xcomp_id || "1", // رقم الفرع
       xcom_id:
-        params.xcom_id ||
-        params.xcomp_id ||
-        params.com ||
-        params.com_id ||
-        "1",
+        params.xcom_id || params.xcomp_id || params.com || params.com_id || "1",
       // لا يحتاج year parameter
     }),
   },

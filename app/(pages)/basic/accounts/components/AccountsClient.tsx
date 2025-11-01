@@ -964,9 +964,9 @@ export default function AccountsClient({
           />
 
           <Select
-            label="نوع الحساب"
             disableAnimation
-            popoverProps={{ 
+            label="نوع الحساب"
+            popoverProps={{
               shouldBlockScroll: false,
               shouldCloseOnBlur: false,
             }}
@@ -984,9 +984,9 @@ export default function AccountsClient({
           </Select>
 
           <Select
-            label="نوع التقرير"
             disableAnimation
-            popoverProps={{ 
+            label="نوع التقرير"
+            popoverProps={{
               shouldBlockScroll: false,
               shouldCloseOnBlur: false,
             }}
@@ -1004,9 +1004,9 @@ export default function AccountsClient({
           </Select>
 
           <Select
-            label="العملة"
             disableAnimation
-            popoverProps={{ 
+            label="العملة"
+            popoverProps={{
               shouldBlockScroll: false,
               shouldCloseOnBlur: false,
             }}
@@ -1093,9 +1093,9 @@ export default function AccountsClient({
               />
 
               <Select
-                label="نوع الحساب"
                 disableAnimation
-                popoverProps={{ 
+                label="نوع الحساب"
+                popoverProps={{
                   shouldBlockScroll: false,
                   shouldCloseOnBlur: false,
                 }}
@@ -1113,9 +1113,9 @@ export default function AccountsClient({
               </Select>
 
               <Select
-                label="نوع التقرير"
                 disableAnimation
-                popoverProps={{ 
+                label="نوع التقرير"
+                popoverProps={{
                   shouldBlockScroll: false,
                   shouldCloseOnBlur: false,
                 }}
@@ -1133,9 +1133,9 @@ export default function AccountsClient({
               </Select>
 
               <Select
-                label="العملة"
                 disableAnimation
-                popoverProps={{ 
+                label="العملة"
+                popoverProps={{
                   shouldBlockScroll: false,
                   shouldCloseOnBlur: false,
                 }}

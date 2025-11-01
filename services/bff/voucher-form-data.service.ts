@@ -1,8 +1,10 @@
 import { cache } from "react";
+
 import {
   voucherService,
   accountService,
   costCenterService,
+  taxRateService,
 } from "@/services/api";
 
 export interface VoucherFormData {
@@ -10,6 +12,8 @@ export interface VoucherFormData {
   costCenters: any[];
   voucherTypes: any[];
   voucherStatuses: any[];
+  caratTypes: any[];
+  taxRates: number[];
 }
 
 const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
@@ -18,17 +22,24 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     costCentersResponse,
     voucherTypesResponse,
     voucherStagesResponse,
+    caratTypesResponse,
+    taxRates,
   ] = await Promise.all([
     accountService.getAllAccounts(),
     costCenterService.getAllCostCenters(),
     voucherService.getVoucherTypes({ com: "1", year: "1" }),
     voucherService.getVoucherStages({ com: "1", year: "1" }),
+    voucherService.getCaratTypes(),
+    taxRateService.getTaxRates(),
   ]);
 
   // معالجة الحسابات
   let accounts: any[] = [];
+
   if (accountsResponse && Array.isArray(accountsResponse)) {
-    accounts = accountsResponse.filter((account: any) => account.acc_level === 5);
+    accounts = accountsResponse.filter(
+      (account: any) => account.acc_level === 5,
+    );
     console.log("Accounts loaded:", accounts.length);
   } else {
     console.warn("Accounts API returned no data");
@@ -36,6 +47,7 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
 
   // معالجة مراكز التكلفة
   let costCenters: any[] = [];
+
   if (costCentersResponse && Array.isArray(costCentersResponse)) {
     costCenters = costCentersResponse;
     console.log("Cost Centers loaded:", costCenters.length);
@@ -45,6 +57,7 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
 
   // معالجة أنواع السندات
   let voucherTypes: any[] = [];
+
   if (voucherTypesResponse.success && voucherTypesResponse.data) {
     voucherTypes = Array.isArray(voucherTypesResponse.data)
       ? voucherTypesResponse.data
@@ -58,6 +71,7 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
 
   // معالجة حالات السندات
   let voucherStatuses = [];
+
   if (voucherStagesResponse.success && voucherStagesResponse.data) {
     voucherStatuses = Array.isArray(voucherStagesResponse.data)
       ? voucherStagesResponse.data
@@ -69,11 +83,30 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     console.log("Voucher Statuses response:", voucherStagesResponse);
   }
 
+  // معالجة أنواع المعايرة
+  let caratTypes: any[] = [];
+
+  if (caratTypesResponse.success && caratTypesResponse.data) {
+    caratTypes = Array.isArray(caratTypesResponse.data)
+      ? caratTypesResponse.data
+      : [];
+    console.log("Carat Types loaded:", caratTypes.length);
+  } else {
+    console.warn("Carat Types API returned no data");
+  }
+
+  // معالجة نسب الضرائب
+  const taxRatesList = Array.isArray(taxRates) ? taxRates : [];
+
+  console.log("Tax Rates loaded:", taxRatesList.length);
+
   return {
     accounts,
     costCenters,
     voucherTypes,
     voucherStatuses,
+    caratTypes,
+    taxRates: taxRatesList,
   };
 });
 

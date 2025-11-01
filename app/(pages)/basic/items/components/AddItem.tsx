@@ -1,6 +1,15 @@
 "use client";
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
-import { Button, Input, Select, SelectItem, type Selection } from "@heroui/react";
+import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
+
+import {
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  type Selection,
+} from "@heroui/react";
+
 import {
   HeroModal as Modal,
   ModalBody,
@@ -8,7 +17,6 @@ import {
   ModalFooter,
   ModalHeader,
 } from "@/components/Modal";
-import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
 
 type AddItemMode = "add" | "edit" | "view";
 
@@ -223,9 +231,7 @@ const AddItem = ({
                 className="input-field"
                 isDisabled={isViewMode}
                 label="نوع الصنف"
-                selectedKeys={
-                  item.item_type ? [item.item_type.toString()] : []
-                }
+                selectedKeys={item.item_type ? [item.item_type.toString()] : []}
                 onSelectionChange={handleSelectChange("item_type")}
               >
                 {(itemTypes || []).map((type) => (

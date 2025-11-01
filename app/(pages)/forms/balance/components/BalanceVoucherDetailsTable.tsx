@@ -9,7 +9,10 @@ interface BalanceVoucherDetailsTableProps {
   details: VoucherDetail[];
   accounts: any[];
   costCenters: any[];
+  caratTypes?: any[];
+  taxRates?: number[];
   isBalanced: boolean;
+  isEditing?: boolean;
   onAddRow: () => void;
   onRemoveRow: (index: number) => void;
   onUpdateDetail: (
@@ -24,7 +27,10 @@ export default function BalanceVoucherDetailsTable({
   details,
   accounts,
   costCenters,
+  caratTypes = [],
+  taxRates = [],
   isBalanced,
+  isEditing = true,
   onAddRow,
   onRemoveRow,
   onUpdateDetail,
@@ -35,9 +41,10 @@ export default function BalanceVoucherDetailsTable({
     try {
       // استخدام Server Action لجلب الحسابات مع المصادقة الصحيحة
       const result = await searchAccountsAction(search);
-      
+
       if (!result.success) {
         console.error("❌ فشل في جلب الحسابات:", result.error);
+
         return [];
       }
 
@@ -124,7 +131,7 @@ export default function BalanceVoucherDetailsTable({
             <i
               className={`bi ${isBalanced ? "bi-check-circle" : "bi-exclamation-triangle"} me-1`}
             />
-            {isBalanced ? "متوازن" : "غير متوازن"}
+            {isBalanced ? "متزن" : "غير متزن"}
           </span>
         </div>
       </div>
@@ -132,8 +139,9 @@ export default function BalanceVoucherDetailsTable({
       <div className="p-2">
         <div className="flex justify-between mb-2">
           <button
-            type="button"
             className="btn"
+            disabled={!isEditing}
+            type="button"
             onClick={onAddRow}
           >
             + صف
@@ -166,24 +174,6 @@ export default function BalanceVoucherDetailsTable({
                   rowSpan={2}
                 >
                   المعايرة
-                </th>
-                <th
-                  className="w-20 p-0.5 font-bold text-slate-700 border"
-                  rowSpan={2}
-                >
-                  الضريبة
-                </th>
-                <th
-                  className="w-20 p-0.5 font-bold text-slate-700 border"
-                  rowSpan={2}
-                >
-                  نسبة الضريبة
-                </th>
-                <th
-                  className="w-20 p-0.5 font-bold text-slate-700 border"
-                  rowSpan={2}
-                >
-                  الرقم الضريبي
                 </th>
                 {costCenters.length > 0 && (
                   <th
@@ -227,7 +217,7 @@ export default function BalanceVoucherDetailsTable({
                   key={index}
                   className="border-b border-slate-100 hover:bg-slate-50"
                 >
-                  <td className="p-0.5 border">
+                  <td className="p-0 border">
                     <AsyncCreatableSelect
                       isClearable
                       isSearchable
@@ -238,6 +228,7 @@ export default function BalanceVoucherDetailsTable({
                         `إضافة حساب جديد: "${inputValue}"`
                       }
                       instanceId={`account-select-${index}`}
+                      isDisabled={!isEditing}
                       loadOptions={loadAccountOptions}
                       menuPortalTarget={
                         typeof window !== "undefined" ? document.body : null
@@ -245,24 +236,41 @@ export default function BalanceVoucherDetailsTable({
                       menuPosition="fixed"
                       placeholder="اختر الحساب..."
                       styles={{
-                        control: (base) => ({
+                        control: (base, state) => ({
                           ...base,
-                          minHeight: 30,
-                          height: 30,
+                          minHeight: "100%",
+                          height: "100%",
+                          border: "none",
+                          borderRadius: 0,
+                          boxShadow: "none",
+                          cursor: !isEditing ? "not-allowed" : base.cursor,
+                          backgroundColor: "transparent",
+                          "&:hover": {
+                            border: "none",
+                            boxShadow: "none",
+                          },
+                        }),
+                        valueContainer: (base) => ({
+                          ...base,
+                          padding: "0.125rem 0.25rem",
+                          height: "100%",
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          margin: 0,
+                          padding: 0,
                         }),
                         menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                       }}
                       value={getAccountSelectValue(detail)}
-                      onChange={(selectedOption) => {
-                        // selectedOption may carry full account data via `account` field
+                      onChange={(selectedOption: any) => {
+                        if (!isEditing) return;
                         const opt: any = selectedOption;
                         const selected =
                           opt?.account ||
                           accounts.find((acc) => acc.id === opt?.value);
 
                         if (!selected) return;
-
-                        console.log("تم اختيار الحساب:", selected);
 
                         // cache option in accounts list if not already present
                         if (!accounts.find((a) => a.id === selected.id)) {
@@ -281,154 +289,165 @@ export default function BalanceVoucherDetailsTable({
                           "acc_name",
                           selected.acc_name ?? selected.name ?? "",
                         );
-
-                        console.log("تم تحديث الحساب في الصف", index, ":", {
-                          acc_id: selected.id,
-                          acc_code: selected.acc_code ?? selected.code,
-                          acc_name: selected.acc_name ?? selected.name,
-                        });
                       }}
                     />
                   </td>
 
-                  <td className="p-0.5 border">
+                  <td className="p-0 border">
                     <input
-                      className="border w-full p-0.5 text-xs text-center appearance-none"
+                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                      disabled={!isEditing}
+                      min="0"
                       placeholder="0.00"
+                      readOnly={!isEditing}
                       step="0.01"
+                      style={{
+                        MozAppearance: "textfield",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                      }}
                       type="number"
-                      value={String(detail.debit || 0)}
-                      onChange={(e) =>
-                        onUpdateDetail(
-                          index,
-                          "debit",
-                          parseFloat(e.target.value) || 0,
-                        )
-                      }
+                      value={detail.debit ? String(detail.debit) : ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+
+                        if (!val || parseFloat(val) >= 0) {
+                          onUpdateDetail(
+                            index,
+                            "debit",
+                            val ? parseFloat(val) : undefined,
+                          );
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                        }
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
                     />
                   </td>
 
-                  <td className="p-0.5 border">
+                  <td className="p-0 border">
                     <input
-                      className="border w-full p-0.5 text-xs text-center appearance-none"
+                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                      disabled={!isEditing}
+                      min="0"
                       placeholder="0.00"
+                      readOnly={!isEditing}
                       step="0.01"
+                      style={{
+                        MozAppearance: "textfield",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                      }}
                       type="number"
-                      value={String(detail.credit || 0)}
-                      onChange={(e) =>
-                        onUpdateDetail(
-                          index,
-                          "credit",
-                          parseFloat(e.target.value) || 0,
-                        )
-                      }
+                      value={detail.credit ? String(detail.credit) : ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+
+                        if (!val || parseFloat(val) >= 0) {
+                          onUpdateDetail(
+                            index,
+                            "credit",
+                            val ? parseFloat(val) : undefined,
+                          );
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                        }
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
                     />
                   </td>
 
-                  <td className="p-1 border">
+                  <td className="p-0 border">
                     <input
-                      className="border w-full p-1 text-xs text-center appearance-none"
+                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                      disabled={!isEditing}
+                      min="0"
                       placeholder="0.00"
+                      readOnly={!isEditing}
                       step="0.01"
+                      style={{
+                        MozAppearance: "textfield",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                      }}
                       type="number"
-                      value={String(detail.debit_g || 0)}
-                      onChange={(e) =>
-                        onUpdateDetail(
-                          index,
-                          "debit_g",
-                          parseFloat(e.target.value) || 0,
-                        )
-                      }
+                      value={detail.debit_g ? String(detail.debit_g) : ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+
+                        if (!val || parseFloat(val) >= 0) {
+                          onUpdateDetail(
+                            index,
+                            "debit_g",
+                            val ? parseFloat(val) : undefined,
+                          );
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                        }
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
                     />
                   </td>
 
-                  <td className="p-0.5 border">
+                  <td className="p-0 border">
                     <input
-                      className="border w-full p-0.5 text-xs text-center appearance-none"
+                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                      disabled={!isEditing}
+                      min="0"
                       placeholder="0.00"
+                      readOnly={!isEditing}
                       step="0.01"
+                      style={{
+                        MozAppearance: "textfield",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                      }}
                       type="number"
-                      value={String(detail.credit_g || 0)}
-                      onChange={(e) =>
-                        onUpdateDetail(
-                          index,
-                          "credit_g",
-                          parseFloat(e.target.value) || 0,
-                        )
-                      }
+                      value={detail.credit_g ? String(detail.credit_g) : ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+
+                        if (!val || parseFloat(val) >= 0) {
+                          onUpdateDetail(
+                            index,
+                            "credit_g",
+                            val ? parseFloat(val) : undefined,
+                          );
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                        }
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
                     />
                   </td>
 
-                  <td className="p-0.5 border">
+                  <td className="p-0 border">
                     <input
-                      className="border w-full p-0.5 text-xs text-center appearance-none"
+                      readOnly
+                      className="w-full h-full text-xs border-0 rounded-none text-center cursor-not-allowed"
                       placeholder="875"
-                      type="number"
+                      type="text"
                       value={String(detail.gauge || 875)}
-                      onChange={(e) =>
-                        onUpdateDetail(
-                          index,
-                          "gauge",
-                          parseInt(e.target.value) || 875,
-                        )
-                      }
-                    />
-                  </td>
-
-                  <td className="p-0.5 border">
-                    <input
-                      className="border w-full p-0.5 text-xs text-center appearance-none"
-                      placeholder="0.00"
-                      step="0.01"
-                      type="number"
-                      value={String(detail.tax || 0)}
-                      onChange={(e) =>
-                        onUpdateDetail(
-                          index,
-                          "tax",
-                          parseFloat(e.target.value) || 0,
-                        )
-                      }
-                    />
-                  </td>
-
-                  <td className="p-0.5 border">
-                    <input
-                      className="border w-full p-0.5 text-xs text-center appearance-none"
-                      placeholder="0.00"
-                      step="0.01"
-                      type="number"
-                      value={String(detail.tax_prc || 0)}
-                      onChange={(e) =>
-                        onUpdateDetail(
-                          index,
-                          "tax_prc",
-                          parseFloat(e.target.value) || 0,
-                        )
-                      }
-                    />
-                  </td>
-
-                  <td className="p-1 border">
-                    <input
-                      className="border w-full p-1 text-xs text-center appearance-none"
-                      placeholder="0"
-                      type="number"
-                      value={String(detail.vat_no || 0)}
-                      onChange={(e) =>
-                        onUpdateDetail(
-                          index,
-                          "vat_no",
-                          parseInt(e.target.value) || 0,
-                        )
-                      }
                     />
                   </td>
 
                   {costCenters.length > 0 && (
-                    <td className="p-1 border">
+                    <td className="p-0 border">
                       <select
-                        className="w-full text-xs border border-slate-300 rounded px-2 py-1 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                        className={`w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                        disabled={!isEditing}
                         value={detail.cost_id || ""}
                         onChange={(e) =>
                           onUpdateDetail(
@@ -441,17 +460,21 @@ export default function BalanceVoucherDetailsTable({
                         <option value="">مركز التكلفة</option>
                         {costCenters.map((center) => (
                           <option key={center.id} value={center.id}>
-                            {center.name}
+                            {center.name ||
+                              center.cost_name ||
+                              `مركز ${center.id}`}
                           </option>
                         ))}
                       </select>
                     </td>
                   )}
 
-                  <td className="p-1 border">
+                  <td className="p-0 border">
                     <input
-                      className="border w-full p-1 text-xs text-center appearance-none"
+                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                      disabled={!isEditing}
                       placeholder="البيان"
+                      readOnly={!isEditing}
                       type="text"
                       value={detail.vouch_notes || ""}
                       onChange={(e) =>
@@ -462,8 +485,10 @@ export default function BalanceVoucherDetailsTable({
 
                   <td className="p-1 border">
                     <button
-                      className="text-red-600 font-bold"
+                      className="font-bold text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      disabled={!isEditing}
                       tabIndex={-1}
+                      title="حذف السطر"
                       onClick={() => onRemoveRow(index)}
                     >
                       ×

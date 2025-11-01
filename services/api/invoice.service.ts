@@ -224,6 +224,7 @@ class InvoiceService extends HttpService<Invoice> {
           errors: response.errors,
           data: response.data,
         };
+
         console.error("getNextInvoiceId failed:", errorInfo);
         throw new Error(
           `فشل تحديد رقم الفاتورة: ${
@@ -280,6 +281,7 @@ class InvoiceService extends HttpService<Invoice> {
           signal: AbortSignal.timeout(60000),
         },
       );
+
       console.log(
         "🚀 ~ :202 ~ InvoiceService ~ createInvoice ~ response:",
         response,
@@ -291,6 +293,7 @@ class InvoiceService extends HttpService<Invoice> {
           errors: response.errors,
           data: response.data,
         };
+
         console.error("createInvoice failed:", errorInfo);
         throw new Error(
           `فشل إنشاء الفاتورة: ${
@@ -344,6 +347,7 @@ class InvoiceService extends HttpService<Invoice> {
           errors: response.errors,
           data: response.data,
         };
+
         console.error("updateInvoiceByRecordId failed:", errorInfo);
         throw new Error(
           `فشل تحديث الفاتورة: ${
@@ -415,6 +419,7 @@ class InvoiceService extends HttpService<Invoice> {
           errors: response.errors,
           data: response.data,
         };
+
         console.error("createInvoiceDetail failed:", errorInfo);
         throw new Error(
           `فشل إنشاء سطر الفاتورة: ${
@@ -453,6 +458,7 @@ class InvoiceService extends HttpService<Invoice> {
           errors: response.errors,
           data: response.data,
         };
+
         console.error("updateInvoiceDetail failed:", errorInfo);
         throw new Error(
           `فشل تحديث سطر الفاتورة: ${
@@ -478,6 +484,7 @@ class InvoiceService extends HttpService<Invoice> {
   async deleteInvoiceDetail(id: number): Promise<boolean> {
     try {
       const response = await this.delete(`api_delete_invoice_dtl/${id}`);
+
       return response.success;
     } catch (error) {
       console.error("Error deleting invoice detail:", error);
@@ -491,6 +498,7 @@ class InvoiceService extends HttpService<Invoice> {
     invoices.forEach((inv) => {
       const date = new Date(inv.inv_date);
       const month = date.getMonth();
+
       monthlySales[month] += parseFloat(inv.inv_amt ?? inv.inv_net ?? "0");
     });
 
@@ -512,6 +520,7 @@ function extractMaxInvoiceId(
   if (Array.isArray(payload)) {
     for (const entry of payload) {
       const candidate = extractMaxInvoiceId(entry as InvoiceMaxIdPayload);
+
       if (candidate !== null && candidate !== undefined) {
         return candidate;
       }
@@ -536,18 +545,16 @@ function extractMaxInvoiceId(
     }
 
     if (record.data !== undefined) {
-      const nested = extractMaxInvoiceId(
-        record.data as InvoiceMaxIdPayload,
-      );
+      const nested = extractMaxInvoiceId(record.data as InvoiceMaxIdPayload);
+
       if (nested !== null && nested !== undefined) {
         return nested;
       }
     }
 
     if (record.results !== undefined) {
-      const nested = extractMaxInvoiceId(
-        record.results as InvoiceMaxIdPayload,
-      );
+      const nested = extractMaxInvoiceId(record.results as InvoiceMaxIdPayload);
+
       if (nested !== null && nested !== undefined) {
         return nested;
       }

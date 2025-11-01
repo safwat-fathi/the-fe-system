@@ -49,9 +49,11 @@ class CustomerService extends HttpService<Customer> {
   async getCustomerCount(): Promise<number> {
     try {
       const customers = await this.getAllCustomers();
+
       return customers.length;
     } catch (error) {
       console.error("Error counting customers:", error);
+
       return 0;
     }
   }
@@ -125,9 +127,11 @@ class CustomerService extends HttpService<Customer> {
   async getCustomerById(id: number): Promise<Customer | null> {
     try {
       const customers = await this.getAllCustomers();
+
       return customers.find((customer) => customer.id === id) || null;
     } catch (error) {
       console.error("Error fetching customer by ID:", error);
+
       return null;
     }
   }

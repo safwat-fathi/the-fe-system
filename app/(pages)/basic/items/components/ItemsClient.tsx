@@ -1,5 +1,8 @@
 "use client";
 
+import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
+import type { Item as ItemModel } from "@/types/models/item";
+
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button, CardBody, Input, Select, SelectItem } from "@heroui/react";
 import {
@@ -9,17 +12,15 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
+import AddItem from "./AddItem";
+
 import Card from "@/components/Card";
 import AppDataTable from "@/components/AppDataTable";
-
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import useFractions, { Fractions } from "@/utilities/useFractions";
 import itemService from "@/services/api/item.service";
-import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
-import type { Item as ItemModel } from "@/types/models/item";
 import { createItemColumns } from "@/components/items/itemColumns";
 import { revalidateItemsDataAction } from "@/app/actions/item";
-import AddItem from "./AddItem";
 
 type ModalMode = "add" | "edit" | "view";
 
@@ -196,14 +197,15 @@ export default function ItemsClient({
   }, [params.search]);
 
   const handleOpenAddModal = () => {
-      setModalMode("add");
-      setNewItem(createEmptyItem(companyId));
-      setIsModalOpen(true);
-    };
+    setModalMode("add");
+    setNewItem(createEmptyItem(companyId));
+    setIsModalOpen(true);
+  };
 
   const handleAddItem = async () => {
     if (!(newItem.item_img instanceof File)) {
       toast.error("❌ يجب رفع صورة للصنف قبل الحفظ");
+
       return;
     }
 
@@ -452,11 +454,11 @@ export default function ItemsClient({
         item={newItem}
         itemTypes={itemTypesState}
         mode={modalMode}
+        units={units}
         onAdd={handleAddItem}
         onChange={setNewItem}
         onClose={() => setIsModalOpen(false)}
         onUpdate={handleUpdateItem}
-        units={units}
       />
     </>
   );

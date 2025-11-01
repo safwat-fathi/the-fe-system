@@ -76,7 +76,9 @@ export default function AppDataTable<TData>({
 
   const renderSortIcon = (columnId: string) => {
     const sort = sorting.find((item) => item.id === columnId);
+
     if (!sort) return <ArrowsUpDownIcon className="h-4 w-4 text-gray-400" />;
+
     return sort.desc ? (
       <ChevronDownIcon className="h-4 w-4 text-blue-500" />
     ) : (
@@ -97,13 +99,13 @@ export default function AppDataTable<TData>({
           {searchable && (
             <div className="relative flex-1 max-w-md">
               <Input
+                className="input-field"
                 placeholder={searchPlaceholder}
-                value={globalFilter}
-                onChange={(e) => setGlobalFilter(e.target.value)}
                 startContent={
                   <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
                 }
-                className="input-field"
+                value={globalFilter}
+                onChange={(e) => setGlobalFilter(e.target.value)}
               />
             </div>
           )}
@@ -111,9 +113,9 @@ export default function AppDataTable<TData>({
           {filterable && (
             <div className="flex gap-2">
               <Button
-                variant="bordered"
-                startContent={<FunnelIcon className="h-4 w-4" />}
                 className="btn-secondary"
+                startContent={<FunnelIcon className="h-4 w-4" />}
+                variant="bordered"
               >
                 تصفية
               </Button>
@@ -138,6 +140,7 @@ export default function AppDataTable<TData>({
               .filter((header) => !header.isPlaceholder)
               .map((header) => {
                 const isSortable = header.column.getCanSort();
+
                 return (
                   <TableColumn
                     key={header.id}
@@ -174,7 +177,10 @@ export default function AppDataTable<TData>({
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -185,9 +191,7 @@ export default function AppDataTable<TData>({
       </div>
 
       <div className="flex items-center justify-between text-sm text-gray-500">
-        <span>
-          إجمالي النتائج: {table.getFilteredRowModel().rows.length}
-        </span>
+        <span>إجمالي النتائج: {table.getFilteredRowModel().rows.length}</span>
         {globalFilter && <span>نتائج البحث عن: "{globalFilter}"</span>}
       </div>
     </div>

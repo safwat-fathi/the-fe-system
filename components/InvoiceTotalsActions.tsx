@@ -1,12 +1,8 @@
 "use client";
 
-import { Button, Calendar, Checkbox, Input } from "@heroui/react";
+import { Button, Checkbox, Input } from "@heroui/react";
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
-
-import { RiyalIcon } from "./RiyalIcon";
-
-import useFractions from "@/utilities/useFractions";
 import {
   CalendarIcon,
   CheckCircleIcon,
@@ -19,7 +15,11 @@ import {
   PlusCircleIcon,
   PrinterIcon,
 } from "@heroicons/react/24/outline";
+
+import { RiyalIcon } from "./RiyalIcon";
 import { SearchIcon } from "./icons";
+
+import useFractions from "@/utilities/useFractions";
 
 interface Props {
   invoiceNumber: string;
@@ -162,8 +162,8 @@ export default function InvoiceTotalsActions({
               onChange={(e) => setSearchNumber(e.target.value)}
             />
             <Button
-              size="sm"
               className="h-7 px-2 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
+              size="sm"
               onPress={onInvoiceSearch}
             >
               <SearchIcon className="w-4 h-4" />
@@ -215,16 +215,16 @@ export default function InvoiceTotalsActions({
             {navigateToInvoice && (
               <div className="flex items-center gap-1 mr-2">
                 <Button
-                  size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+                  size="sm"
                   onClick={() => navigateToInvoice("first")}
                 >
                   {/* <i className="bi bi-chevron-double-right text-xs"></i> */}
                   <ChevronDoubleRightIcon className="w-4 h-4 " />
                 </Button>
                 <Button
-                  size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+                  size="sm"
                   onClick={() => navigateToInvoice("prev")}
                 >
                   <ChevronRightIcon className="w-4 h-4 " />
@@ -233,15 +233,15 @@ export default function InvoiceTotalsActions({
                   {currentRecord} من {totalRecords}
                 </span>
                 <Button
-                  size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+                  size="sm"
                   onClick={() => navigateToInvoice("next")}
                 >
                   <ChevronLeftIcon className="w-4 h-4 " />
                 </Button>
                 <Button
-                  size="sm"
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+                  size="sm"
                   onClick={() => navigateToInvoice("last")}
                 >
                   <ChevronDoubleLeftIcon className="w-4 h-4 " />
@@ -253,21 +253,21 @@ export default function InvoiceTotalsActions({
           {/* حالة الفاتورة */}
           <div className="flex items-center gap-3">
             <Checkbox
-              isSelected={commit}
-              onValueChange={setCommit}
-              isDisabled={!isEditing}
               color="success"
+              isDisabled={!isEditing}
+              isSelected={commit}
               size="sm"
+              onValueChange={setCommit}
             >
               <span className="text-xs text-slate-600">حُفظ</span>
             </Checkbox>
 
             <Checkbox
-              isSelected={print}
-              onValueChange={setPrint}
-              isDisabled={!isEditing}
               color="warning"
+              isDisabled={!isEditing}
+              isSelected={print}
               size="sm"
+              onValueChange={setPrint}
             >
               <span className="text-xs text-slate-600">طُبع</span>
             </Checkbox>

@@ -8,6 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 import toast from "react-hot-toast";
+
 import useFractions, { type Fractions } from "@/utilities/useFractions";
 import {
   Invoice,
@@ -99,12 +100,11 @@ const PAYMENT_METHOD_INV_TYPES = {
   credit: 2,
 } as const;
 
-const PAY_TYPE_VALUES = Object.values(
-  INVOICE_PAY_TYPES,
-) as InvoicePayType[];
+const PAY_TYPE_VALUES = Object.values(INVOICE_PAY_TYPES) as InvoicePayType[];
 
 const normalizePayType = (value: unknown): InvoicePayType => {
   const numeric = Number(value);
+
   return PAY_TYPE_VALUES.includes(numeric as InvoicePayType)
     ? (numeric as InvoicePayType)
     : INVOICE_PAY_TYPES.VALUE_AND_WAGES;
@@ -120,6 +120,7 @@ const parseDefaultIdentifier = (
   fallback: number,
 ): number => {
   const parsed = Number(value);
+
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
@@ -175,20 +176,24 @@ const parseNumber = (value: unknown): number => {
   if (typeof value === "string") {
     const cleaned = value.replace(/,/g, "").trim();
     const parsed = Number(cleaned);
+
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
   const numeric = Number(value ?? 0);
+
   return Number.isFinite(numeric) ? numeric : 0;
 };
 
 const ensurePositiveNumber = (value: unknown): number | null => {
   const numeric = parseNumber(value);
+
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
 const formatDecimalString = (value: number, digits: number): string => {
   const normalized = Number.isFinite(value) ? value : 0;
+
   return normalized.toFixed(digits);
 };
 
@@ -200,6 +205,7 @@ const mapDetailToRow = (
   fallbackTransType: number,
 ): InvoiceItemRow => {
   const itemId = Number(detail.item);
+
   return {
     id: Number(detail.id),
     item_id: Number.isFinite(itemId) ? itemId : null,
@@ -244,6 +250,7 @@ const getItemIdFromRow = (row: InvoiceItemRow): number | null => {
       : parseNumber((row.item as unknown) ?? 0));
 
   const parsed = parseNumber(candidate);
+
   return parsed > 0 ? parsed : null;
 };
 
@@ -423,6 +430,7 @@ export default function useInvoiceForm({
     }
 
     const parsed = Number(candidate);
+
     setInvoicePk(Number.isFinite(parsed) && parsed > 0 ? parsed : null);
   }, [invoiceData?.id, invoiceRecordId]);
 
@@ -438,25 +446,23 @@ export default function useInvoiceForm({
         ?.split("=")[1];
 
       const rawValue = localValue ?? cookieValue;
+
       if (!rawValue || rawValue === "undefined" || rawValue === "null") {
         return null;
       }
 
       const parsed = Number(rawValue);
+
       return Number.isFinite(parsed) ? parsed : null;
     };
 
     const resolvedBranch =
       readNumericValue("selectedBranch") ??
-      (invoiceData?.com !== undefined
-        ? parseNumber(invoiceData.com)
-        : null);
+      (invoiceData?.com !== undefined ? parseNumber(invoiceData.com) : null);
 
     const resolvedYear =
       readNumericValue("selectedYear") ??
-      (invoiceData?.year !== undefined
-        ? parseNumber(invoiceData.year)
-        : null);
+      (invoiceData?.year !== undefined ? parseNumber(invoiceData.year) : null);
 
     setSelectedBranchId(resolvedBranch);
     setSelectedYearId(resolvedYear);
@@ -530,6 +536,7 @@ export default function useInvoiceForm({
           ) {
             return String(customer.cust_code) === normalizedCode;
           }
+
           return false;
         }) ?? null;
 
@@ -550,6 +557,7 @@ export default function useInvoiceForm({
     };
 
     const activeMatch = findCustomerInList(customers);
+
     if (activeMatch) {
       return activeMatch;
     }
@@ -557,6 +565,7 @@ export default function useInvoiceForm({
     const secondaryList =
       paymentMethod === "cash" ? creditCustomers : cashCustomers;
     const secondaryMatch = findCustomerInList(secondaryList);
+
     if (secondaryMatch) {
       return secondaryMatch;
     }
@@ -603,6 +612,7 @@ export default function useInvoiceForm({
       yearId: number,
     ) => {
       const itemId = getItemIdFromRow(row);
+
       if (!itemId) return null;
 
       const resolvedCompanyId =
@@ -632,7 +642,7 @@ export default function useInvoiceForm({
         row.total_a !== undefined
           ? parseNumber(row.total_a)
           : weight *
-              (form.pay_type === INVOICE_PAY_TYPES.WAGES ? priceW : price);
+            (form.pay_type === INVOICE_PAY_TYPES.WAGES ? priceW : price);
 
       const combinedTotal =
         row.total !== undefined
@@ -694,13 +704,7 @@ export default function useInvoiceForm({
         box: row.box ?? null,
       };
     },
-    [
-      defaultTaxPrc,
-      defaultTransType,
-      frac,
-      frac2,
-      form.pay_type,
-    ],
+    [defaultTaxPrc, defaultTransType, frac, frac2, form.pay_type],
   );
 
   // sync incoming invoiceData/details
@@ -725,6 +729,7 @@ export default function useInvoiceForm({
       const mappedDetails = invoiceDetailsData.map((detail) =>
         mapDetailToRow(detail, defaultTransType),
       );
+
       setInvoiceItems(mappedDetails);
       setOriginalInvoiceItems(mappedDetails);
       setDeletedItemIds([]);
@@ -774,16 +779,19 @@ export default function useInvoiceForm({
               ? totalW
               : totalA + totalW;
         const base = rowTotal - discount;
+
         return sum + base * taxRate;
       }, 0);
 
       const totalDiscount = rows.reduce((sum, item) => {
         const discount = parseNumber(item.item_disc_amt);
+
         return sum + discount;
       }, 0);
 
       const totalGWeight = rows.reduce((sum, item) => {
         const gWeight = parseNumber(item.g_weight);
+
         return sum + gWeight;
       }, 0);
 
@@ -803,6 +811,7 @@ export default function useInvoiceForm({
   const handleBarcodeSearch = useCallback(
     async (term?: string) => {
       const searchTerm = (term ?? searchValue).trim();
+
       if (!searchTerm || !isEditing) return;
 
       try {
@@ -811,6 +820,7 @@ export default function useInvoiceForm({
         exactMatch = items.find((item: any) => {
           const itemBarcode = (item.item_barcode ?? "").toString().trim();
           const itemCode = (item.item_code ?? "").toString().trim();
+
           return itemBarcode === searchTerm || itemCode === searchTerm;
         });
 
@@ -819,6 +829,7 @@ export default function useInvoiceForm({
           // This would need to be refactored to use a service that can be called from the server component
           toast.error(`لم يتم العثور على صنف: ${searchTerm}`);
           setSearchValue("");
+
           return;
         }
 
@@ -832,6 +843,7 @@ export default function useInvoiceForm({
         if (firstEmptyRowIndex === -1) updated.unshift(makeEmptyRow());
 
         const selected = exactMatch;
+
         if (!items.find((i) => i.id === selected.id))
           setItems((prev) => [...prev, selected]);
 
@@ -947,6 +959,7 @@ export default function useInvoiceForm({
   const saveInvoice = useCallback(async () => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
+
       return;
     }
 
@@ -956,6 +969,7 @@ export default function useInvoiceForm({
 
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
+
       return;
     }
 
@@ -969,6 +983,7 @@ export default function useInvoiceForm({
 
       if (missingWageRate) {
         toast.error("يرجى إدخال أجرة الجرام لكل الأصناف قبل الحفظ");
+
         return;
       }
     }
@@ -1097,6 +1112,7 @@ export default function useInvoiceForm({
         const fetchedInvoice = await getInvoiceByIdAction(
           String(invoiceNumber),
         );
+
         resolvedInvoicePk = fetchedInvoice?.id
           ? parseNumber(fetchedInvoice.id)
           : null;
@@ -1146,6 +1162,7 @@ export default function useInvoiceForm({
           resolvedCompanyId,
           resolvedYearId,
         );
+
         if (!detailPayload) continue;
 
         const isExistingRow = originalInvoiceItems.some(
@@ -1164,6 +1181,7 @@ export default function useInvoiceForm({
         } else {
           try {
             const { id, ...creationPayload } = detailPayload;
+
             await createInvoiceDetailAction(creationPayload);
           } catch (createError) {
             console.error("خطأ أثناء إنشاء تفاصيل السطر:", createError);
@@ -1251,6 +1269,7 @@ export default function useInvoiceForm({
   const previewInvoice = useCallback(() => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
+
       return;
     }
 
@@ -1260,6 +1279,7 @@ export default function useInvoiceForm({
 
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
+
       return;
     }
 
@@ -1275,6 +1295,7 @@ export default function useInvoiceForm({
 
   const resetInvoiceState = useCallback(() => {
     const initialState = buildInitialFormState();
+
     dispatchForm({ type: "RESET", payload: initialState });
     setInvoiceItems([makeEmptyRow()]);
     setOriginalInvoiceItems([]);
@@ -1296,12 +1317,7 @@ export default function useInvoiceForm({
     setIsEditing(isNewInvoice);
     setIsLoading(false);
     setDefaultTaxPrc(15);
-  }, [
-    buildInitialFormState,
-    dispatchForm,
-    isNewInvoice,
-    makeEmptyRow,
-  ]);
+  }, [buildInitialFormState, dispatchForm, isNewInvoice, makeEmptyRow]);
 
   const resetSignature = useMemo(
     () =>
@@ -1363,6 +1379,7 @@ export default function useInvoiceForm({
         first: "الأول",
         last: "الأخير",
       };
+
       toast.success(`التنقل إلى ${directionText[direction]}`);
     },
     [],

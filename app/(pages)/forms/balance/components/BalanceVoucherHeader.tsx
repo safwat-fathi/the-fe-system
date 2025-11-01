@@ -9,8 +9,11 @@ interface BalanceVoucherHeaderProps {
   isLoading: boolean;
   isPrinting: boolean;
   isBalanced: boolean;
+  isEditing?: boolean;
+  formMode?: "new" | "edit" | "preview";
   onSave: () => void;
   onPrint: () => void;
+  onEditClick?: () => void;
 }
 
 export default function BalanceVoucherHeader({
@@ -20,8 +23,11 @@ export default function BalanceVoucherHeader({
   isLoading,
   isPrinting,
   isBalanced,
+  isEditing = true,
+  formMode = "new",
   onSave,
   onPrint,
+  onEditClick,
 }: BalanceVoucherHeaderProps) {
   return (
     <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-3 mb-4 border border-slate-200">
@@ -35,7 +41,8 @@ export default function BalanceVoucherHeader({
                   "قيد افتتاحي"}
               </span>
               <span className="text-slate-600 font-medium">
-                #{voucher.vouch_id &&
+                #
+                {voucher.vouch_id &&
                 voucher.vouch_id > 0 &&
                 isFinite(voucher.vouch_id)
                   ? voucher.vouch_id
@@ -50,22 +57,6 @@ export default function BalanceVoucherHeader({
             </h1>
           </div>
         </div>
-
-        {/* البحث */}
-        <div className="flex items-center gap-2">
-          <input
-            className="w-32 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
-            placeholder="بحث برقم القيد..."
-            type="number"
-            disabled
-          />
-          <button
-            className="h-7 px-2 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
-            disabled
-          >
-            <i className="bi bi-search w-4 h-4" />
-          </button>
-        </div>
       </div>
 
       {/* الصف الثاني: الأزرار والحالة */}
@@ -74,7 +65,7 @@ export default function BalanceVoucherHeader({
         <div className="flex items-center gap-2">
           <button
             className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm disabled:opacity-50"
-            disabled={isLoading || !isBalanced}
+            disabled={isLoading || !isEditing}
             onClick={onSave}
           >
             {isLoading ? (
@@ -91,6 +82,26 @@ export default function BalanceVoucherHeader({
           </button>
 
           <button
+            className={`h-7 px-3 text-xs border rounded-md shadow-sm ${
+              formMode === "new" || isEditing
+                ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed opacity-50"
+                : "bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+            }`}
+            disabled={formMode === "new" || isEditing || isLoading}
+            title={
+              formMode === "new"
+                ? "لا يمكن التعديل في وضع جديد"
+                : isEditing
+                  ? "أنت بالفعل في وضع التعديل"
+                  : "تعديل القيد"
+            }
+            onClick={onEditClick}
+          >
+            <i className="bi bi-pencil-square w-4 h-4 me-1" />
+            تعديل
+          </button>
+
+          <button
             className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm disabled:opacity-50"
             disabled={isPrinting || !voucher.vouch_id}
             onClick={onPrint}
@@ -102,7 +113,7 @@ export default function BalanceVoucherHeader({
               </span>
             ) : (
               <span className="flex items-center gap-1">
-                <i className="bi bi-printer w-4 h-4" />
+                <i className="bi bi-printer w-4 h-4 me-1" />
                 طباعة
               </span>
             )}

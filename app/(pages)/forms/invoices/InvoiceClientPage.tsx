@@ -1,18 +1,14 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+
 import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
-
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
 import useInvoiceForm from "@/hooks/useInvoiceForm";
 
-type InvoicePageType =
-  | "sale"
-  | "purchase"
-  | "sale-return"
-  | "purchase-return";
+type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 
 const FORM_CONTEXT_MAP: Record<
   InvoicePageType,
@@ -178,7 +174,7 @@ export default function InvoiceClientPage({
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">جاري التحميل...</p>
         </div>
       </div>
@@ -188,50 +184,50 @@ export default function InvoiceClientPage({
   return (
     <>
       <InvoiceTotalsActions
-        invoiceNumber={form.inv_id}
-        formattedDateTime={new Date(form.inv_date).toLocaleString("ar-EG")}
-        saveInvoice={saveInvoice}
-        previewInvoice={previewInvoice}
-        totalAmount={totals.totalAmount}
-        taxAmount={totals.taxAmount}
-        netAmount={totals.netAmount}
-        totalDiscount={totals.totalDiscount}
+        autoTotalValue={autoTotalValue}
+        autoTotalWages={autoTotalWages}
+        canEdit={allowEditing}
         commit={form.commit}
+        currentRecord={currentRecord}
+        formattedDateTime={new Date(form.inv_date).toLocaleString("ar-EG")}
+        invoiceNumber={form.inv_id}
+        invoiceType={totalsInvoiceType}
+        isEditing={isEditing}
+        manualTotalValue={manualTotalValue}
+        manualTotalWages={manualTotalWages}
+        navigateToInvoice={navigateToInvoice}
+        netAmount={totals.netAmount}
+        newInvoiceHref={resolvedNewInvoiceHref}
+        paymentMethod={paymentMethod}
+        previewInvoice={previewInvoice}
+        print={form.print}
+        saveInvoice={saveInvoice}
+        searchNumber={searchNumber}
         setCommit={(value: boolean) =>
           dispatchForm({ type: "SET_FIELD", field: "commit", value })
         }
-        print={form.print}
         setPrint={(value: boolean) =>
           dispatchForm({ type: "SET_FIELD", field: "print", value })
         }
-        isEditing={isEditing}
+        setSearchNumber={setSearchNumber}
+        taxAmount={totals.taxAmount}
+        totalAmount={totals.totalAmount}
+        totalDiscount={totals.totalDiscount}
+        totalGWeight={totals.totalGWeight}
+        totalRecords={totalRecords}
+        totalTax={totals.taxAmount ?? 0}
+        totalValueTax={totals.taxAmount ?? 0}
+        totalWagesTax={0}
+        useManualTotals={useManualTotals}
         onEdit={() => {
           if (allowEditing) {
             setIsEditing(true);
           }
         }}
-        canEdit={allowEditing}
-        invoiceType={totalsInvoiceType}
-        autoTotalValue={autoTotalValue}
-        autoTotalWages={autoTotalWages}
-        manualTotalValue={manualTotalValue}
-        manualTotalWages={manualTotalWages}
-        useManualTotals={useManualTotals}
-        onManualTotalChange={handleManualTotalChange}
-        onUseManualTotalsChange={setUseManualTotals}
-        onResetManualTotals={resetManualTotals}
-        searchNumber={searchNumber}
-        setSearchNumber={setSearchNumber}
         onInvoiceSearch={handleInvoiceSearch}
-        totalGWeight={totals.totalGWeight}
-        totalValueTax={totals.taxAmount ?? 0}
-        totalWagesTax={0}
-        totalTax={totals.taxAmount ?? 0}
-        paymentMethod={paymentMethod}
-        currentRecord={currentRecord}
-        totalRecords={totalRecords}
-        navigateToInvoice={navigateToInvoice}
-        newInvoiceHref={resolvedNewInvoiceHref}
+        onManualTotalChange={handleManualTotalChange}
+        onResetManualTotals={resetManualTotals}
+        onUseManualTotalsChange={setUseManualTotals}
       >
         <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
           <InvoiceSelectors
@@ -242,8 +238,11 @@ export default function InvoiceClientPage({
             customers={customers}
             employee={employee}
             goldPrice={goldPrice}
+            goldPriceValue={goldPrice ?? maybeGoldPrice}
             gov={form.gov}
             handlingMethod={handlingMethod}
+            invoiceType={selectorsInvoiceType}
+            isEditing={isEditing}
             mobileMethod={mobileMethod}
             note={form.inv_notes}
             payType={form.pay_type}
@@ -252,10 +251,9 @@ export default function InvoiceClientPage({
             postNo={form.post_no}
             referenceNumber={form.ref_no}
             saleInvoices={[]}
+            searchValue={searchValue}
             selectedCustomer={form.cust_code}
             selectedCustomerName={form.cust_name}
-            street={form.street}
-            onInvoiceSelect={() => {}}
             setArea={(v) =>
               dispatchForm({ type: "SET_FIELD", field: "area", value: v })
             }
@@ -295,8 +293,7 @@ export default function InvoiceClientPage({
               dispatchForm({
                 type: "SET_FIELD",
                 field: "cust_code",
-                value:
-                  v !== null && v !== undefined ? String(v) : null,
+                value: v !== null && v !== undefined ? String(v) : null,
               })
             }
             setSelectedCustomerName={(value) =>
@@ -312,23 +309,21 @@ export default function InvoiceClientPage({
             setVatNumber={(v) =>
               dispatchForm({ type: "SET_FIELD", field: "vat_no", value: v })
             }
-            goldPriceValue={goldPrice ?? maybeGoldPrice}
-            searchValue={searchValue}
+            street={form.street}
             onBarcodeSearch={() => handleBarcodeSearch()}
-            isEditing={isEditing}
-            invoiceType={selectorsInvoiceType}
+            onInvoiceSelect={() => {}}
           />
 
           <InvoiceItemTable
-            items={items}
-            setItems={setItems}
-            invoiceItems={invoiceItems}
-            setInvoiceItems={setInvoiceItems}
-            goldPrice={goldPrice ?? maybeGoldPrice ?? null}
-            payType={form.pay_type}
             categories={categories}
+            goldPrice={goldPrice ?? maybeGoldPrice ?? null}
             homePurity={homePurity}
+            invoiceItems={invoiceItems}
             isEditing={isEditing}
+            items={items}
+            payType={form.pay_type}
+            setInvoiceItems={setInvoiceItems}
+            setItems={setItems}
             onItemRemoved={handleItemRemoved}
           />
         </div>

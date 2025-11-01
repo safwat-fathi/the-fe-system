@@ -9,12 +9,14 @@ import accountService from "@/services/api/account.service";
 export async function getAccountsAction() {
   try {
     const accounts = await accountService.getAllAccounts();
+
     return {
       success: true,
       data: accounts,
     };
   } catch (error) {
     console.error("❌ Error in getAccountsAction:", error);
+
     return {
       success: false,
       data: [],
@@ -30,19 +32,21 @@ export async function searchAccountsAction(query: string) {
   try {
     const accounts = await accountService.getAllAccounts();
     const term = query.toLowerCase();
-    
+
     const filtered = accounts.filter((acc: any) => {
       const accountCode = (acc.acc_code ?? "").toString().toLowerCase();
       const accountName = (acc.acc_name ?? "").toLowerCase();
+
       return accountCode.includes(term) || accountName.includes(term);
     });
-    
+
     return {
       success: true,
       data: filtered,
     };
   } catch (error) {
     console.error("❌ Error in searchAccountsAction:", error);
+
     return {
       success: false,
       data: [],
@@ -50,4 +54,3 @@ export async function searchAccountsAction(query: string) {
     };
   }
 }
-
