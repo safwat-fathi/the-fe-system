@@ -112,7 +112,6 @@ export default async function InvoicePage({
       lookupId,
       config.transType,
     );
-    console.log("🚀 ~ :115 ~ InvoicePage ~ invoiceData:", invoiceData);
 
     if (!invoiceData) {
       notFound();
