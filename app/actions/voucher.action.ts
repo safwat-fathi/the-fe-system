@@ -29,9 +29,6 @@ interface VoucherDetailData {
   gauge: number | undefined;
   vouch_notes?: string;
   cost_id?: number | null;
-  tax: number | undefined;
-  tax_prc: number | undefined;
-  vat_no: number | undefined;
 }
 
 interface VoucherBoxData {
@@ -41,9 +38,6 @@ interface VoucherBoxData {
   vouch_notes?: string;
   cost_id?: number | null;
   inv_id?: number;
-  vat_no?: number; // الرقم الضريبي
-  tax_prc?: number; // نسبة الضريبة
-  tax?: number; // قيمة الضريبة
   close_weight?: number; // وزن التسكير
 }
 
@@ -160,12 +154,9 @@ export async function createVoucherAction(
           box_note: box.vouch_notes || "", // API يستخدم box_note وليس vouch_notes
           com: 1,
           cur: 1, // العملة - مطلوبة في API
-          tax_prc: (box.tax_prc || 0).toString(), // نسبة الضريبة
-          tax: (box.tax || 0).toString(), // مبلغ الضريبة
           change: "1.00000", // سعر الصرف
           vouch_status: 1, // حالة السند
           close_weight: box.close_weight || null, // وزن التسكير
-          vat_no: box.vat_no || null, // الرقم الضريبي
           cr_date: new Date().toISOString(),
         };
 
@@ -211,9 +202,6 @@ export async function createVoucherAction(
         gauge: detail.gauge || 875,
         vouch_notes: detail.vouch_notes || "",
         cost_id: detail.cost_id || null,
-        tax: detail.tax || 0,
-        tax_prc: detail.tax_prc || 0,
-        vat_no: detail.vat_no || 0,
         com: 1, // الفرع = 1
         year: 1, // السنة = 1
         cr_date: new Date().toISOString(),
@@ -571,12 +559,9 @@ export async function updateVoucherAction(
           box_note: box.vouch_notes || "", // API يستخدم box_note وليس vouch_notes
           com: 1,
           cur: 1, // العملة - مطلوبة في API
-          tax_prc: (box.tax_prc || 0).toString(), // نسبة الضريبة
-          tax: (box.tax || 0).toString(), // مبلغ الضريبة
           change: "1.00000", // سعر الصرف
           vouch_status: 1, // حالة السند
           close_weight: box.close_weight || null, // وزن التسكير
-          vat_no: box.vat_no || null, // الرقم الضريبي
           cr_date: new Date().toISOString(),
         };
 
@@ -686,9 +671,6 @@ export async function updateVoucherAction(
         gauge: detail.gauge || 875,
         vouch_notes: detail.vouch_notes || "",
         cost_id: detail.cost_id || null,
-        tax: detail.tax || 0,
-        tax_prc: detail.tax_prc || 0,
-        vat_no: detail.vat_no || 0,
         com: 1, // الفرع = 1
         year: 1, // السنة = 1
         cr_date: new Date().toISOString(),

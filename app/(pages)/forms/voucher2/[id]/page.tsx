@@ -7,6 +7,7 @@ import CashReceiptVoucherClientPage from "../../voucher1/CashReceiptVoucherClien
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "عرض سند صرف - NafeesWeb",
@@ -175,9 +176,6 @@ export default async function PaymentVoucherEditPage({
       debit_g: parseFloat(detail.debit_g) || 0,
       credit_g: parseFloat(detail.credit_g) || 0,
       gauge: parseFloat(detail.gauge) || 875,
-      tax: parseFloat(detail.tax) || 0,
-      tax_prc: parseFloat(detail.tax_prc) || 0,
-      vat_no: parseInt(detail.vat_no) || 0,
       vouch_notes: detail.vouch_notes || "",
       cr_date: detail.cr_date || new Date().toISOString(),
     };
@@ -213,6 +211,18 @@ export default async function PaymentVoucherEditPage({
 
   return (
     <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { name: "القيود", href: "/forms/voucher?type=adjustment" },
+          { name: "سند صرف", href: "/forms/voucher2" },
+          {
+            name:
+              formMode === "edit"
+                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
+                : "معاينة",
+          },
+        ]}
+      />
       <CashReceiptVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes}

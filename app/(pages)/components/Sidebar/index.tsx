@@ -9,6 +9,7 @@ import {
   Cog6ToothIcon,
   CubeIcon,
   DocumentTextIcon,
+  DocumentCheckIcon,
   HomeIcon,
   TagIcon,
   UserGroupIcon,
@@ -35,6 +36,11 @@ const settingsLinks = [
     name: "إعدادات النظام",
     href: "/settings",
     icon: <Cog6ToothIcon className="h-5 w-5" />,
+  },
+  {
+    name: "الضرائب",
+    href: "/settings/taxes",
+    icon: <DocumentCheckIcon className="h-5 w-5" />,
   },
 ];
 
@@ -108,6 +114,11 @@ const accountingReportLinks: Array<{
     name: "تقرير السندات",
     href: "/reports/vouchers",
     icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "قائمة الدخل",
+    href: "/reports/income-statement",
+    icon: <CalculatorIcon className="h-5 w-5" />,
   },
 ];
 

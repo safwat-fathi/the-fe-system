@@ -7,6 +7,7 @@ import CustomerGoldVoucherClientPage from "../../gvoucher4/CustomerGoldVoucherCl
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "عرض سند صرف عميل - NafeesWeb",
@@ -209,9 +210,6 @@ export default async function CustomerPaymentVoucherEditPage({
     vouch_notes: box.box_note || box.vouch_notes || "",
     cost_id: box.cost || box.cost_id || null,
     inv_id: box.inv || box.inv_id || null,
-    vat_no: box.vat_no || undefined,
-    tax_prc: parseFloat(box.tax_prc) || undefined,
-    tax: parseFloat(box.tax) || undefined,
     close_weight: parseFloat(box.close_weight) || undefined,
     cr_date: box.cr_date || new Date().toISOString(),
   }));
@@ -234,6 +232,18 @@ export default async function CustomerPaymentVoucherEditPage({
 
   return (
     <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { name: "القيود", href: "/forms/voucher?type=adjustment" },
+          { name: "الصرف عملاء", href: "/forms/gvoucher5" },
+          {
+            name:
+              formMode === "edit"
+                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
+                : "معاينة",
+          },
+        ]}
+      />
       <CustomerGoldVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes || []}

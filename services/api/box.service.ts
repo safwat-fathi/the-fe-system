@@ -31,8 +31,11 @@ interface Box {
 }
 
 interface BoxType {
+  id: number;
   code_id: number;
   code_desc: string;
+  code_desc_l: string | null;
+  type_id: number;
 }
 
 class BoxService extends HttpService<Box> {
@@ -147,7 +150,7 @@ class BoxService extends HttpService<Box> {
 
   async getBoxTypes(): Promise<BoxType[]> {
     try {
-      const response = await this.get<BoxType[]>("getBoxTypeList", undefined, {
+      const response = await this.get<BoxType[]>("get_box_type", undefined, {
         cache: "no-store",
         next: { tags: ["box-types"] },
       });

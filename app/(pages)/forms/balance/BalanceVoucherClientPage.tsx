@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 import { BalanceVoucherContainer } from "./components";
 
 import { Voucher, VoucherDetail } from "@/types/voucher";
 import { getNextVoucherNumber } from "@/utilities/numbering";
+import { voucherService } from "@/services/api";
 import {
   createVoucherAction,
   updateVoucherAction,
@@ -15,32 +16,52 @@ import {
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-interface BalanceVoucherNewClientProps {
+interface BalanceVoucherClientPageProps {
+  voucherData?: Voucher | null;
+  voucherDetailsData?: VoucherDetail[];
   formData: any;
+  formMode?: "new" | "edit" | "preview";
+  voucherRecordId?: number | string | null;
+  isNewVoucher?: boolean;
 }
 
-export default function BalanceVoucherNewClient({
+export default function BalanceVoucherClientPage({
+  voucherData,
+  voucherDetailsData,
   formData,
-}: BalanceVoucherNewClientProps) {
+  formMode: initialFormMode = "new",
+  voucherRecordId,
+  isNewVoucher = true,
+}: BalanceVoucherClientPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") || initialFormMode;
+  const formMode = (
+    mode === "new" ? "new" : mode === "edit" ? "edit" : "preview"
+  ) as "new" | "edit" | "preview";
+  const startInEditMode = formMode === "edit" || formMode === "new";
 
   // State Management
-  const [voucher, setVoucher] = useState<Voucher>({
-    vouch_id: 0,
-    vouch_date: new Date().toISOString(),
-    vouch_type: 0, // قيد افتتاحي
-    vouch_amt: 0,
-    pay_type: 1,
-    cr_date: new Date().toISOString(),
-    vouch_status: 1,
-    commit: false,
-    post: false,
-    print: false,
-  });
+  const [voucher, setVoucher] = useState<Voucher>(
+    voucherData || {
+      vouch_id: 0,
+      vouch_date: new Date().toISOString(),
+      vouch_type: 0, // قيد افتتاحي
+      vouch_amt: 0,
+      pay_type: 1,
+      cr_date: new Date().toISOString(),
+      vouch_status: 1,
+      commit: false,
+      post: false,
+      print: false,
+    },
+  );
 
   const [currentTime, setCurrentTime] = useState("");
   const [isClient, setIsClient] = useState(false);
-  const [details, setDetails] = useState<VoucherDetail[]>([]);
+  const [details, setDetails] = useState<VoucherDetail[]>(
+    voucherDetailsData || [],
+  );
   const [accounts, setAccounts] = useState<any[]>(formData.accounts || []);
   const [costCenters, setCostCenters] = useState<any[]>(
     formData.costCenters || [],
@@ -57,42 +78,51 @@ export default function BalanceVoucherNewClient({
   const [taxRates, setTaxRates] = useState<number[]>(formData.taxRates || []);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [isEditing, setIsEditing] = useState(true);
-  const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>([]);
+  const [isEditing, setIsEditing] = useState(startInEditMode);
+  const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>(
+    voucherDetailsData || [],
+  );
+  const previousVouchNotesRef = useRef<string>(
+    voucherData?.vouch_notes || "",
+  );
 
   // Initialize component
   useEffect(() => {
     setIsClient(true);
     updateCurrentTime();
-    generateNextVoucherNumber();
 
-    // إضافة سطر فارغ واحد عند التهيئة (يمكن حذفه لاحقاً)
-    setDetails((prev) => {
-      if (prev.length === 0) {
-        const newDetail: VoucherDetail = {
-          id: 0,
-          vouch_id: voucher.vouch_id,
-          acc_id: 0,
-          acc_code: "",
-          acc_name: "",
-          debit: undefined,
-          credit: undefined,
-          debit_g: undefined,
-          credit_g: undefined,
-          gauge: 875,
-          cost_id: 0,
-          vouch_notes: "",
-          tax: undefined,
-          tax_prc: undefined,
-          vat_no: undefined,
-          cr_date: new Date().toISOString(),
-        };
+    // إضافة سطر فارغ واحد عند التهيئة للقيد الجديد فقط
+    if (isNewVoucher && details.length === 0) {
+      const newDetail: VoucherDetail = {
+        id: 0,
+        vouch_id: voucher.vouch_id,
+        acc_id: 0,
+        acc_code: "",
+        acc_name: "",
+        debit: undefined,
+        credit: undefined,
+        debit_g: undefined,
+        credit_g: undefined,
+        gauge: 875,
+        cost_id: 0,
+        vouch_notes: "",
+        cr_date: new Date().toISOString(),
+      };
 
-        return [newDetail];
-      }
+      setDetails([newDetail]);
+    }
 
-      return prev;
-    });
+    // حفظ التفاصيل الأصلية للقيد الموجود
+    if (!isNewVoucher && voucherDetailsData && voucherDetailsData.length > 0) {
+      setOriginalDetails([...voucherDetailsData]);
+    }
+
+    // توليد رقم القيد التالي للقيد الجديد - بشكل async بدون انتظار
+    if (isNewVoucher && voucher.vouch_id === 0) {
+      generateNextVoucherNumber().catch((error) => {
+        console.error("خطأ في توليد رقم القيد:", error);
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -101,6 +131,37 @@ export default function BalanceVoucherNewClient({
 
     return () => clearInterval(interval);
   }, [isClient]);
+
+  // تحديث isEditing عند تغيير formMode
+  useEffect(() => {
+    setIsEditing(startInEditMode);
+  }, [startInEditMode]);
+
+  // نقل البيان من القيد الرئيسي إلى التفاصيل تلقائياً
+  useEffect(() => {
+    const currentNotes = voucher.vouch_notes || "";
+    const previousNotes = previousVouchNotesRef.current;
+
+    // فقط عند تغيير البيان الرئيسي
+    if (currentNotes === previousNotes) return;
+
+    // تحديث المرجع للبيان السابق
+    previousVouchNotesRef.current = currentNotes;
+
+    // إذا كان البيان فارغاً، لا تقم بأي شيء
+    if (!currentNotes) return;
+
+    setDetails((prev) => {
+      return prev.map((detail) => {
+        // إذا كان البيان في التفصيل فارغاً أو مطابقاً للبيان السابق، قم بتحديثه
+        // إذا كان المستخدم قد عدّل البيان يدوياً (مختلف عن البيان السابق)، اتركه كما هو
+        if (!detail.vouch_notes || detail.vouch_notes === previousNotes) {
+          return { ...detail, vouch_notes: currentNotes };
+        }
+        return detail;
+      });
+    });
+  }, [voucher.vouch_notes]);
 
   // Helper Functions
   const updateCurrentTime = () => {
@@ -125,7 +186,7 @@ export default function BalanceVoucherNewClient({
 
   const generateNextVoucherNumber = async () => {
     try {
-      const nextId = await getNextVoucherNumber(voucher.vouch_type);
+      const nextId = await getNextVoucherNumber(0); // القيد الافتتاحي نوعه 0
 
       setVoucher((prev) => ({
         ...prev,
@@ -158,9 +219,6 @@ export default function BalanceVoucherNewClient({
       gauge: 875,
       cost_id: 0,
       vouch_notes: "",
-      tax: undefined,
-      tax_prc: undefined,
-      vat_no: undefined,
       cr_date: new Date().toISOString(),
     };
 
@@ -239,8 +297,6 @@ export default function BalanceVoucherNewClient({
           }
         }
 
-        // لا يوجد حساب ضريبة في القيد الافتتاحي
-
         return newDetail;
       });
 
@@ -248,13 +304,26 @@ export default function BalanceVoucherNewClient({
     });
   };
 
-  const calculateTotals = useCallback(() => {
-    const totals = details.reduce(
+  // تحسين: استخدام useMemo بدلاً من useCallback لحساب الإجماليات
+  const totals = useMemo(() => {
+    return details.reduce(
       (totals, detail) => {
-        const debit = parseFloat(String(detail.debit || 0)) || 0;
-        const credit = parseFloat(String(detail.credit || 0)) || 0;
-        const debitG = parseFloat(String(detail.debit_g || 0)) || 0;
-        const creditG = parseFloat(String(detail.credit_g || 0)) || 0;
+        const debit =
+          detail.debit !== undefined
+            ? parseFloat(String(detail.debit)) || 0
+            : 0;
+        const credit =
+          detail.credit !== undefined
+            ? parseFloat(String(detail.credit)) || 0
+            : 0;
+        const debitG =
+          detail.debit_g !== undefined
+            ? parseFloat(String(detail.debit_g)) || 0
+            : 0;
+        const creditG =
+          detail.credit_g !== undefined
+            ? parseFloat(String(detail.credit_g)) || 0
+            : 0;
 
         return {
           totalDebit: totals.totalDebit + debit,
@@ -274,11 +343,7 @@ export default function BalanceVoucherNewClient({
         totalTaxPrc: 0,
       },
     );
-
-    return totals;
   }, [details]);
-
-  const totals = calculateTotals();
   const balance = totals.totalDebit - totals.totalCredit;
   const isBalanced = Math.abs(balance) < 0.01;
 
@@ -316,8 +381,6 @@ export default function BalanceVoucherNewClient({
     }
 
     // التحقق من وجود حسابات فارغة
-    // السماح بحفظ قيد بدون تفاصيل أو بتفاصيل كلها فارغة
-    // ولكن إذا كان هناك تفاصيل، يجب أن يكون لكل تفصيل حساب أو لا يوجد حساب لأي منها
     const detailsWithAccounts = details.filter(
       (detail) => detail.acc_id && detail.acc_id > 0,
     );
@@ -369,13 +432,22 @@ export default function BalanceVoucherNewClient({
           gauge: detail.gauge,
           vouch_notes: detail.vouch_notes || "",
           cost_id: detail.cost_id || null,
-          // لا توجد ضريبة في القيد الافتتاحي
           tax: 0,
           tax_prc: 0,
           vat_no: 0,
         }));
 
-      const result = await createVoucherAction(voucherData, detailsData);
+      let result;
+
+      if (isNewVoucher || !voucherRecordId) {
+        result = await createVoucherAction(voucherData, detailsData);
+      } else {
+        result = await updateVoucherAction(
+          Number(voucherRecordId),
+          voucherData,
+          detailsData,
+        );
+      }
 
       if (result.success && result.data) {
         const realId = result.data.id;
@@ -694,6 +766,19 @@ export default function BalanceVoucherNewClient({
     }
   };
 
+  const handleEditClick = () => {
+    // عند فتح وضع التعديل، نلغي commit (تصبح false) حتى يتم الحفظ
+    setVoucher((prev) => ({
+      ...prev,
+      commit: false,
+    }));
+
+    // تغيير الـ URL إلى وضع edit
+    if (voucherRecordId) {
+      router.push(`/forms/balance/${voucherRecordId}?mode=edit`);
+    }
+  };
+
   if (!isClient) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -709,7 +794,7 @@ export default function BalanceVoucherNewClient({
       costCenters={costCenters}
       currentTime={currentTime}
       details={details}
-      formMode="new"
+      formMode={formMode}
       isBalanced={isBalanced}
       isEditing={isEditing}
       isLoading={isLoading}
@@ -719,9 +804,7 @@ export default function BalanceVoucherNewClient({
       voucherStatuses={voucherStatuses}
       voucherTypes={voucherTypes}
       onAddRow={addDetailRow}
-      onEditClick={() => {
-        // لا يوجد زر تعديل في القيد الجديد
-      }}
+      onEditClick={handleEditClick}
       onPrint={printVoucher}
       onRemoveRow={removeDetailRow}
       onSave={saveVoucher}

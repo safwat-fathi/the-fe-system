@@ -55,14 +55,27 @@ class CostCenterService extends HttpService<CostCenter> {
     costCenter: Omit<CostCenter, "id">,
   ): Promise<CostCenter | null> {
     try {
+      // جلب معاملات الفرع لإضافة com
+      let companyId = "1";
+
+      try {
+        const branchParams = await import("@/app/actions/branch-params").then(
+          (m) => m.getBranchParams(),
+        );
+        companyId = branchParams.com || "1";
+      } catch {
+        companyId = "1";
+      }
+
       const costCenterData = {
         ...costCenter,
+        com: companyId, // إضافة حقل com المطلوب من API
         cost_status: costCenter.cost_status || 1, // Default active status
         cost_type: costCenter.cost_type || 1, // Default cost type
       };
 
       const response = await this.post<CostCenter>(
-        "api_create_cost_center",
+        "api_create_cost",
         costCenterData,
         undefined,
         {
@@ -86,14 +99,27 @@ class CostCenterService extends HttpService<CostCenter> {
     costCenter: Partial<CostCenter>,
   ): Promise<CostCenter | null> {
     try {
+      // جلب معاملات الفرع لإضافة com
+      let companyId = "1";
+
+      try {
+        const branchParams = await import("@/app/actions/branch-params").then(
+          (m) => m.getBranchParams(),
+        );
+        companyId = branchParams.com || "1";
+      } catch {
+        companyId = "1";
+      }
+
       const costCenterData = {
         ...costCenter,
+        com: companyId, // إضافة حقل com المطلوب من API
         cost_status: costCenter.cost_status || 1,
         cost_type: costCenter.cost_type || 1,
       };
 
       const response = await this.put<CostCenter>(
-        `api_update_cost_center/${id}`,
+        `api_updatecost/${id}`,
         costCenterData,
         undefined,
         {
@@ -115,7 +141,7 @@ class CostCenterService extends HttpService<CostCenter> {
   async deleteCostCenter(id: number): Promise<boolean> {
     try {
       const response = await this.delete(
-        `api_delete_cost_center/${id}`,
+        `api_delete_cost/${id}`,
         undefined,
         {
           cache: "no-store",
@@ -141,12 +167,32 @@ class CostCenterService extends HttpService<CostCenter> {
     }
   }
 
-  async getAccounts(): Promise<Account[]> {
+  async getAccounts(xcom_id?: number | string): Promise<Account[]> {
     try {
-      const response = await this.get<Account[]>("accounts_list", undefined, {
-        cache: "no-store",
-        next: { tags: ["accounts"] },
-      });
+      let companyId = xcom_id;
+
+      if (!companyId) {
+        try {
+          const branchParams = await import("@/app/actions/branch-params").then(
+            (m) => m.getBranchParams(),
+          );
+
+          companyId = branchParams.com || "1";
+        } catch {
+          companyId = "1";
+        }
+      }
+
+      const response = await this.get<Account[]>(
+        "accounts_list",
+        {
+          xcom_id: companyId || "1",
+        },
+        {
+          cache: "no-store",
+          next: { tags: ["accounts"] },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {

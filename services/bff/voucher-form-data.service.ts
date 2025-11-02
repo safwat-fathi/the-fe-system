@@ -22,6 +22,76 @@ export interface VoucherFormData {
   customers?: any[];
 }
 
+// خدمة محسّنة للقيد الافتتاحي - تجلب البيانات الضرورية فقط
+const getBalanceVoucherFormData = cache(async (): Promise<Omit<VoucherFormData, "items" | "customers" | "boxes">> => {
+  const [
+    accountsResponse,
+    costCentersResponse,
+    voucherTypesResponse,
+    voucherStagesResponse,
+    caratTypesResponse,
+    taxRates,
+  ] = await Promise.all([
+    accountService.getAllAccounts(),
+    costCenterService.getAllCostCenters(),
+    voucherService.getVoucherTypes({ com: "1", year: "1" }),
+    voucherService.getVoucherStages({ com: "1", year: "1" }),
+    voucherService.getCaratTypes(),
+    taxRateService.getTaxRates(),
+  ]);
+
+  // معالجة الحسابات
+  let accounts: any[] = [];
+
+  if (accountsResponse && Array.isArray(accountsResponse)) {
+    accounts = accountsResponse.filter(
+      (account: any) => account.acc_level === 5,
+    );
+  }
+
+  // معالجة مراكز التكلفة
+  const costCenters = Array.isArray(costCentersResponse)
+    ? costCentersResponse
+    : [];
+
+  // معالجة أنواع السندات
+  const voucherTypes =
+    voucherTypesResponse.success && voucherTypesResponse.data
+      ? Array.isArray(voucherTypesResponse.data)
+        ? voucherTypesResponse.data
+        : []
+      : [];
+
+  // معالجة حالات السندات
+  const voucherStatuses =
+    voucherStagesResponse.success && voucherStagesResponse.data
+      ? Array.isArray(voucherStagesResponse.data)
+        ? voucherStagesResponse.data
+        : []
+      : [];
+
+  // معالجة أنواع المعايرة
+  const caratTypes =
+    caratTypesResponse.success && caratTypesResponse.data
+      ? Array.isArray(caratTypesResponse.data)
+        ? caratTypesResponse.data
+        : []
+      : [];
+
+  // معالجة نسب الضرائب
+  const taxRatesList = Array.isArray(taxRates) ? taxRates : [];
+
+  return {
+    accounts,
+    costCenters,
+    voucherTypes,
+    voucherStatuses,
+    caratTypes,
+    taxRates: taxRatesList,
+    boxes: [], // فارغ للقيد الافتتاحي
+  };
+});
+
 const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
   const [
     accountsResponse,
@@ -52,70 +122,42 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     accounts = accountsResponse.filter(
       (account: any) => account.acc_level === 5,
     );
-    console.log("Accounts loaded:", accounts.length);
-  } else {
-    console.warn("Accounts API returned no data");
   }
 
   // معالجة مراكز التكلفة
-  let costCenters: any[] = [];
-
-  if (costCentersResponse && Array.isArray(costCentersResponse)) {
-    costCenters = costCentersResponse;
-    console.log("Cost Centers loaded:", costCenters.length);
-  } else {
-    console.warn("Cost Centers API returned no data");
-  }
+  const costCenters = Array.isArray(costCentersResponse)
+    ? costCentersResponse
+    : [];
 
   // معالجة أنواع السندات
-  let voucherTypes: any[] = [];
-
-  if (voucherTypesResponse.success && voucherTypesResponse.data) {
-    voucherTypes = Array.isArray(voucherTypesResponse.data)
-      ? voucherTypesResponse.data
+  const voucherTypes =
+    voucherTypesResponse.success && voucherTypesResponse.data
+      ? Array.isArray(voucherTypesResponse.data)
+        ? voucherTypesResponse.data
+        : []
       : [];
-    console.log("Voucher Types loaded:", voucherTypes.length);
-    console.log("Voucher Types data:", voucherTypes);
-  } else {
-    console.warn("Voucher Types API returned no data");
-    console.log("Voucher Types response:", voucherTypesResponse);
-  }
 
   // معالجة حالات السندات
-  let voucherStatuses = [];
-
-  if (voucherStagesResponse.success && voucherStagesResponse.data) {
-    voucherStatuses = Array.isArray(voucherStagesResponse.data)
-      ? voucherStagesResponse.data
+  const voucherStatuses =
+    voucherStagesResponse.success && voucherStagesResponse.data
+      ? Array.isArray(voucherStagesResponse.data)
+        ? voucherStagesResponse.data
+        : []
       : [];
-    console.log("Voucher Statuses loaded:", voucherStatuses.length);
-    console.log("Voucher Statuses data:", voucherStatuses);
-  } else {
-    console.warn("Voucher Statuses API returned no data");
-    console.log("Voucher Statuses response:", voucherStagesResponse);
-  }
 
   // معالجة أنواع المعايرة
-  let caratTypes: any[] = [];
-
-  if (caratTypesResponse.success && caratTypesResponse.data) {
-    caratTypes = Array.isArray(caratTypesResponse.data)
-      ? caratTypesResponse.data
+  const caratTypes =
+    caratTypesResponse.success && caratTypesResponse.data
+      ? Array.isArray(caratTypesResponse.data)
+        ? caratTypesResponse.data
+        : []
       : [];
-    console.log("Carat Types loaded:", caratTypes.length);
-  } else {
-    console.warn("Carat Types API returned no data");
-  }
 
   // معالجة نسب الضرائب
   const taxRatesList = Array.isArray(taxRates) ? taxRates : [];
 
-  console.log("Tax Rates loaded:", taxRatesList.length);
-
   // معالجة الصناديق
   const boxes = Array.isArray(boxesResponse) ? boxesResponse : [];
-
-  console.log("Boxes loaded:", boxes.length);
 
   // معالجة الأصناف
   let items: any[] = [];
@@ -124,23 +166,14 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     items = Array.isArray(itemsResponse.results)
       ? itemsResponse.results
       : [];
-    console.log("Items loaded:", items.length);
   } else if (Array.isArray(itemsResponse)) {
     items = itemsResponse;
-    console.log("Items loaded:", items.length);
-  } else {
-    console.warn("Items API returned no data");
   }
 
   // معالجة العملاء
-  let customers: any[] = [];
-
-  if (customersResponse && Array.isArray(customersResponse)) {
-    customers = customersResponse;
-    console.log("Customers loaded:", customers.length);
-  } else {
-    console.warn("Customers API returned no data");
-  }
+  const customers = Array.isArray(customersResponse)
+    ? customersResponse
+    : [];
 
   return {
     accounts,
@@ -157,4 +190,5 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
 
 export default {
   getVoucherFormData,
+  getBalanceVoucherFormData,
 };

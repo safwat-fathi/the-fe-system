@@ -29,14 +29,34 @@ class AccountService extends HttpService<Account> {
     super("");
   }
 
-  async getAllAccounts(): Promise<Account[]> {
+  async getAllAccounts(xcom_id?: number | string): Promise<Account[]> {
     try {
-      const response = await this.get<Account[]>("accounts_list", undefined, {
-        next: {
-          revalidate: 300, // Cache for 5 minutes
-          tags: ["accounts", "accounts_list"],
+      let companyId = xcom_id;
+
+      if (!companyId) {
+        try {
+          const branchParams = await import("@/app/actions/branch-params").then(
+            (m) => m.getBranchParams(),
+          );
+
+          companyId = branchParams.com || "1";
+        } catch {
+          companyId = "1";
+        }
+      }
+
+      const response = await this.get<Account[]>(
+        "accounts_list",
+        {
+          xcom_id: companyId || "1",
         },
-      });
+        {
+          next: {
+            revalidate: 300, // Cache for 5 minutes
+            tags: ["accounts", "accounts_list"],
+          },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {

@@ -2,12 +2,12 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cache } from "react";
 
-import BalanceVoucherClientPage from "./BalanceVoucherClientPage";
+import BalanceVoucherClientPage from "../BalanceVoucherClientPage";
 
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
-import { getBranchParams } from "@/app/actions/branch-params";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "عرض قيد افتتاحي - NafeesWeb",
@@ -15,103 +15,38 @@ export const metadata: Metadata = {
 };
 
 // Cache the voucher lookup for better performance
-const getVoucherById = cache(async (voucherId: number, branchId?: string) => {
+const getVoucherById = cache(async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
       console.warn("Invalid voucherId:", voucherId);
-
       return null;
     }
 
-    const comId = branchId || "1";
-
-    console.log("🔍 Searching for voucher:", { voucherId, branchId: comId });
-
-    // أولاً: جلب جميع القيود الافتتاحية للفرع (بدون فلتر xvouch_id)
-    // لأن xvouch_id يبحث بـ vouch_id وليس id (primary key)
-    let vouchersResponse = await voucherService.getAll({
-      xvouch_type: "0", // قيد افتتاحي
-      xvouch_id: "0", // "0" يعني جميع القيود
-      xcom_id: comId,
-      xyear_id: "0",
+    const vouchersResponse = await voucherService.getAll({
+      xvouch_type: "0", // قيد افتتاحي فقط
     });
 
-    let vouchers: any[] = [];
-
-    if (vouchersResponse.success && vouchersResponse.data) {
-      vouchers = Array.isArray(vouchersResponse.data)
-        ? vouchersResponse.data
-        : [];
+    if (!vouchersResponse.success || !vouchersResponse.data) {
+      console.warn("Failed to fetch vouchers:", vouchersResponse);
+      return null;
     }
 
-    console.log("📋 Found vouchers (type 0):", vouchers.length);
+    const vouchers = Array.isArray(vouchersResponse.data)
+      ? vouchersResponse.data
+      : [];
 
-    // البحث أولاً بـ id (primary key) - هذا الأهم
-    let foundVoucher = vouchers.find(
-      (v: any) => v.id === voucherId && v.vouch_type === 0,
+    // البحث أولاً بـ id (primary key) ثم بـ vouch_id
+    const foundVoucher = vouchers.find(
+      (v: any) => v.id === voucherId || v.vouch_id === voucherId,
     );
 
-    if (foundVoucher) {
-      console.log("✅ Found voucher by id:", foundVoucher.id);
-      return foundVoucher;
-    }
-
-    // إذا لم نجد، نجرب البحث بـ vouch_id
-    foundVoucher = vouchers.find(
-      (v: any) => v.vouch_id === voucherId && v.vouch_type === 0,
-    );
-
-    if (foundVoucher) {
-      console.log("✅ Found voucher by vouch_id:", foundVoucher.vouch_id);
-      return foundVoucher;
-    }
-
-    // محاولة ثانية: جلب جميع القيود بدون فلتر النوع
     if (!foundVoucher) {
-      vouchersResponse = await voucherService.getAll({
-        xcom_id: comId,
-      });
-
-      if (vouchersResponse.success && vouchersResponse.data) {
-        const allVouchers = Array.isArray(vouchersResponse.data)
-          ? vouchersResponse.data
-          : [];
-
-        console.log("📋 Found all vouchers:", allVouchers.length);
-
-        foundVoucher = allVouchers.find(
-          (v: any) => (v.id === voucherId || v.vouch_id === voucherId) && v.vouch_type === 0,
-        );
-      }
+      console.warn("Voucher not found with id or vouch_id:", voucherId);
     }
 
-    // محاولة أخيرة: البحث في جميع القيود بدون أي فلتر
-    if (!foundVoucher) {
-      const lastAttempt = await voucherService.getAll();
-
-      if (lastAttempt.success && lastAttempt.data) {
-        const allVouchers = Array.isArray(lastAttempt.data)
-          ? lastAttempt.data
-          : [];
-
-        console.log("📋 Found all vouchers (no filters):", allVouchers.length);
-
-        foundVoucher = allVouchers.find(
-          (v: any) => (v.id === voucherId || v.vouch_id === voucherId) && v.vouch_type === 0,
-        );
-      }
-    }
-
-    if (foundVoucher) {
-      console.log("✅ Found voucher in fallback:", foundVoucher.id || foundVoucher.vouch_id);
-      return foundVoucher;
-    }
-
-    console.warn("❌ Voucher not found:", voucherId);
-    return null;
+    return foundVoucher;
   } catch (error) {
     console.error("Error fetching voucher:", error);
-
     return null;
   }
 });
@@ -162,6 +97,7 @@ export default async function BalanceVoucherEditPage({
 
   // تحديد الوضع: preview (افتراضي بعد الحفظ) أو edit
   const formMode = mode === "edit" ? "edit" : "preview";
+  const startInEditMode = mode === "edit";
 
   const voucherId = parseInt(id);
 
@@ -170,14 +106,10 @@ export default async function BalanceVoucherEditPage({
     notFound();
   }
 
-  // الحصول على معاملات الفرع
-  const branchParams = await getBranchParams();
-  const branchId = branchParams.com || "1";
-
   // جلب البيانات بشكل متوازي
   const [targetVoucher, formData] = await Promise.all([
-    getVoucherById(voucherId, branchId),
-    voucherFormDataService.getVoucherFormData(),
+    getVoucherById(voucherId),
+    voucherFormDataService.getBalanceVoucherFormData(),
   ]);
 
   if (!targetVoucher) {
@@ -189,12 +121,13 @@ export default async function BalanceVoucherEditPage({
     notFound();
   }
 
-  // جلب تفاصيل القيد - استخدام id من targetVoucher
-  // استخدام branchId الذي تم تعريفه سابقاً، أو com_id من القيد إذا كان مختلفاً
-  const voucherBranchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? branchId) || branchId;
-  const detailsData = await getVoucherDetails(targetVoucher.id, voucherBranchId);
+  // جلب تفاصيل القيد
+  const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
+  const detailsData = await getVoucherDetails(targetVoucher.id, branchId);
+
 
   // معالجة تفاصيل القيد
+  // ملاحظة: API يستخدم vouch (id من vouchers), acc, cost
   const details: VoucherDetail[] = detailsData.map((detail: any) => {
     const account = formData.accounts.find(
       (acc: any) => acc.id === (detail.acc_id || detail.acc),
@@ -202,11 +135,11 @@ export default async function BalanceVoucherEditPage({
 
     return {
       id: detail.id || 0,
-      vouch_id: detail.vouch_id || targetVoucher.vouch_id || 0,
-      acc_id: detail.acc_id || detail.acc || 0,
+      vouch_id: targetVoucher.vouch_id || 0, // vouch_id من voucher الرئيسي
+      acc_id: detail.acc_id || detail.acc || 0, // API يعيد acc
       acc_code: (account as any)?.acc_code || detail.acc_code || "",
       acc_name: (account as any)?.acc_name || detail.acc_name || "",
-      cost_id: detail.cost_id || 0,
+      cost_id: detail.cost_id || detail.cost || 0, // API يعيد cost
       debit:
         detail.debit !== undefined && detail.debit !== null
           ? parseFloat(String(detail.debit))
@@ -224,10 +157,6 @@ export default async function BalanceVoucherEditPage({
           ? parseFloat(String(detail.credit_g))
           : undefined,
       gauge: parseFloat(detail.gauge) || 875,
-      // لا توجد ضريبة في القيد الافتتاحي
-      tax: undefined,
-      tax_prc: undefined,
-      vat_no: undefined,
       vouch_notes: detail.vouch_notes || "",
       cr_date: detail.cr_date || new Date().toISOString(),
     };
@@ -250,12 +179,27 @@ export default async function BalanceVoucherEditPage({
   };
 
   return (
-    <BalanceVoucherClientPage
-      formData={formData}
-      formMode={formMode}
-      voucherData={formattedVoucher}
-      voucherDetailsData={details}
-      voucherRecordId={targetVoucher.id}
-    />
+    <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { name: "القيود", href: "/forms/voucher?type=adjustment" },
+          { name: "قيد افتتاحي", href: "/forms/balance" },
+          {
+            name:
+              formMode === "edit"
+                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
+                : "معاينة",
+          },
+        ]}
+      />
+      <BalanceVoucherClientPage
+        formData={formData}
+        formMode={formMode}
+        isNewVoucher={false}
+        voucherData={formattedVoucher}
+        voucherDetailsData={details}
+        voucherRecordId={targetVoucher.id}
+      />
+    </div>
   );
 }
