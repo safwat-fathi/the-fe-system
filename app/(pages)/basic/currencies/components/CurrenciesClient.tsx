@@ -25,6 +25,7 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
@@ -35,6 +36,7 @@ import {
   findCurrencyByCode,
   type CurrencyInfo,
 } from "@/utilities/currencies";
+import currencyExchangeService from "@/services/external/currency-exchange.service";
 
 interface Currency {
   id: number;
@@ -49,19 +51,17 @@ interface Currency {
   cur_status: boolean;
 }
 
-const columns = [
-  { name: "ID", uid: "id" },
-  { name: "الاسم", uid: "cur_name" },
-  { name: "الاسم بالإنجليزي", uid: "cur_name_e" },
-  { name: "جزء العملة", uid: "cur_part" },
-  { name: "جزء العملة بالإنجليزي", uid: "cur_part_e" },
-  { name: "الرمز", uid: "cur_sign" },
-  { name: "السعر", uid: "cur_price" },
-  { name: "الوسم", uid: "cur_tag" },
-  { name: "التاريخ", uid: "cr_date" },
-  { name: "الحالة", uid: "cur_status" },
-  { name: "", uid: "actions" },
-];
+  const columns = [
+    { name: "الاسم", uid: "cur_name" },
+    { name: "الاسم بالإنجليزي", uid: "cur_name_e" },
+    { name: "جزء العملة", uid: "cur_part" },
+    { name: "جزء العملة بالإنجليزي", uid: "cur_part_e" },
+    { name: "الرمز", uid: "cur_sign" },
+    { name: "السعر", uid: "cur_price" },
+    { name: "الوسم", uid: "cur_tag" },
+    { name: "الحالة", uid: "cur_status" },
+    { name: "", uid: "actions" },
+  ];
 
 interface CurrenciesClientProps {
   initialData: Currency[];
@@ -78,6 +78,8 @@ export default function CurrenciesClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
   const [currentCurrency, setCurrentCurrency] = useState<Partial<Currency>>({});
+  const [isLoadingPrice, setIsLoadingPrice] = useState(false);
+  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState<string>(""); // حفظ كود العملة المختارة
 
   const rowsPerPage = 12;
 
@@ -291,7 +293,6 @@ export default function CurrenciesClient({
         <TableBody>
           {paginated.map((cur) => (
             <TableRow key={cur.id}>
-              <TableCell>{cur.id}</TableCell>
               <TableCell>{cur.cur_name}</TableCell>
               <TableCell>{cur.cur_name_e}</TableCell>
               <TableCell>{cur.cur_part}</TableCell>
@@ -299,7 +300,6 @@ export default function CurrenciesClient({
               <TableCell>{cur.cur_sign}</TableCell>
               <TableCell>{cur.cur_price}</TableCell>
               <TableCell>{cur.cur_tag}</TableCell>
-              <TableCell>{cur.cr_date}</TableCell>
               <TableCell>
                 <Checkbox isReadOnly isSelected={cur.cur_status} />
               </TableCell>
@@ -344,29 +344,79 @@ export default function CurrenciesClient({
                     currentCurrency.cur_tag ? [currentCurrency.cur_tag] : []
                   }
                   variant="bordered"
-                  onSelectionChange={(keys) => {
+                  onSelectionChange={async (keys) => {
                     const selectedCode = Array.from(keys)[0] as string;
 
                     if (selectedCode) {
                       const currencyInfo = findCurrencyByCode(selectedCode);
 
                       if (currencyInfo) {
+                        // حفظ كود العملة المختارة لاستخدامه لاحقاً
+                        setSelectedCurrencyCode(currencyInfo.code);
+
                         // استخدام أول حرف من كود ISO للوسم (حرف واحد فقط)
                         const tagChar = currencyInfo.code.charAt(0).toUpperCase();
 
+                        // جلب المعلومات الأساسية أولاً
                         setCurrentCurrency({
                           ...currentCurrency,
-                          cur_tag: tagChar, // حرف واحد فقط
+                          cur_tag: tagChar,
                           cur_name: currencyInfo.nameAr,
                           cur_name_e: currencyInfo.nameEn,
                           cur_part: currencyInfo.fractionalUnit,
                           cur_part_e: currencyInfo.fractionalUnitEn,
                           cur_sign: currencyInfo.symbol,
-                          // السعر يبقى فارغاً للمستخدم ليدخله
                         });
-                        toast.success(
-                          `تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`,
-                        );
+
+                        // جلب سعر الصرف تلقائياً (باستثناء الريال السعودي)
+                        if (selectedCode.toUpperCase() !== "SAR") {
+                          setIsLoadingPrice(true);
+                          try {
+                            const exchangeRate =
+                              await currencyExchangeService.getExchangeRateToSAR(
+                                selectedCode,
+                              );
+
+                            if (exchangeRate && exchangeRate > 0) {
+                              setCurrentCurrency((prev) => ({
+                                ...prev,
+                                cur_price: exchangeRate.toFixed(2),
+                              }));
+                              toast.success(
+                                `تم تحميل معلومات ${currencyInfo.nameAr} مع سعر الصرف تلقائياً`,
+                                { duration: 3000 },
+                              );
+                            } else {
+                              toast.success(
+                                `تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`,
+                              );
+                              toast(
+                                "⚠️ لم يتم جلب سعر الصرف. يرجى إدخال السعر يدوياً",
+                                { icon: "ℹ️", duration: 4000 },
+                              );
+                            }
+                          } catch (error) {
+                            console.error("خطأ في جلب سعر الصرف:", error);
+                            toast.success(
+                              `تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`,
+                            );
+                            toast(
+                              "⚠️ لم يتم جلب سعر الصرف. يرجى إدخال السعر يدوياً",
+                              { icon: "ℹ️", duration: 4000 },
+                            );
+                          } finally {
+                            setIsLoadingPrice(false);
+                          }
+                        } else {
+                          // إذا كانت العملة هي الريال السعودي، السعر = 1
+                          setCurrentCurrency((prev) => ({
+                            ...prev,
+                            cur_price: "1",
+                          }));
+                          toast.success(
+                            `تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`,
+                          );
+                        }
                       }
                     }
                   }}
@@ -461,18 +511,83 @@ export default function CurrenciesClient({
                 });
               }}
             />
-            <Input
-              required
-              isDisabled={isViewMode}
-              label="السعر"
-              value={currentCurrency.cur_price || ""}
-              onChange={(e) =>
-                setCurrentCurrency({
-                  ...currentCurrency,
-                  cur_price: e.target.value,
-                })
-              }
-            />
+            <div className="flex items-end gap-2">
+              <Input
+                required
+                isDisabled={isViewMode || isLoadingPrice}
+                label="السعر (مقابل الريال السعودي)"
+                value={currentCurrency.cur_price || ""}
+                description={
+                  isLoadingPrice
+                    ? "جاري جلب سعر الصرف..."
+                    : "سعر الصرف مقابل الريال السعودي"
+                }
+                onChange={(e) =>
+                  setCurrentCurrency({
+                    ...currentCurrency,
+                    cur_price: e.target.value,
+                  })
+                }
+                className="flex-1"
+              />
+              {modalMode === "add" &&
+                (selectedCurrencyCode || currentCurrency.cur_tag) && (
+                  <Button
+                    className="h-[56px] min-w-[40px] bg-transparent hover:bg-gray-100 text-gray-600 hover:text-blue-600 rounded-lg transition-colors"
+                    variant="light"
+                    isIconOnly
+                    isLoading={isLoadingPrice}
+                    size="md"
+                    title="تحديث سعر الصرف من الإنترنت"
+                    onPress={async () => {
+                      // استخدام الكود المحفوظ أو البحث عن العملة
+                      const currencyCode =
+                        selectedCurrencyCode ||
+                        getCurrencyOptions().find(
+                          (opt) =>
+                            opt.value.charAt(0).toUpperCase() ===
+                            currentCurrency.cur_tag?.toUpperCase(),
+                        )?.value;
+
+                      if (currencyCode && currencyCode.toUpperCase() !== "SAR") {
+                        setIsLoadingPrice(true);
+                        try {
+                          const rate =
+                            await currencyExchangeService.getExchangeRateToSAR(
+                              currencyCode,
+                            );
+
+                          if (rate && rate > 0) {
+                            setCurrentCurrency((prev) => ({
+                              ...prev,
+                              cur_price: rate.toFixed(2),
+                            }));
+                            toast.success("✅ تم تحديث سعر الصرف");
+                          } else {
+                            toast.error("❌ لم يتم جلب سعر الصرف");
+                          }
+                        } catch (error) {
+                          toast.error("❌ خطأ في جلب سعر الصرف");
+                        } finally {
+                          setIsLoadingPrice(false);
+                        }
+                      } else if (currencyCode?.toUpperCase() === "SAR") {
+                        setCurrentCurrency((prev) => ({
+                          ...prev,
+                          cur_price: "1",
+                        }));
+                        toast.success("✅ السعر محدث (الريال السعودي = 1)");
+                      }
+                    }}
+                  >
+                    <ArrowPathIcon
+                      className={`w-4 h-4 text-gray-600 ${
+                        isLoadingPrice ? "animate-spin text-blue-600" : ""
+                      }`}
+                    />
+                  </Button>
+                )}
+            </div>
             <Input
               isDisabled={isViewMode}
               label="الوسم"

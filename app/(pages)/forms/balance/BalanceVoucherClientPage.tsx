@@ -23,6 +23,7 @@ interface BalanceVoucherClientPageProps {
   formMode?: "new" | "edit" | "preview";
   voucherRecordId?: number | string | null;
   isNewVoucher?: boolean;
+  startInEditMode?: boolean;
 }
 
 export default function BalanceVoucherClientPage({
@@ -32,6 +33,7 @@ export default function BalanceVoucherClientPage({
   formMode: initialFormMode = "new",
   voucherRecordId,
   isNewVoucher = true,
+  startInEditMode: propStartInEditMode,
 }: BalanceVoucherClientPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,7 +41,11 @@ export default function BalanceVoucherClientPage({
   const formMode = (
     mode === "new" ? "new" : mode === "edit" ? "edit" : "preview"
   ) as "new" | "edit" | "preview";
-  const startInEditMode = formMode === "edit" || formMode === "new";
+  // استخدام propStartInEditMode إذا كان متوفراً، وإلا استخدام المنطق الافتراضي
+  const startInEditMode =
+    propStartInEditMode !== undefined
+      ? propStartInEditMode
+      : formMode === "edit" || formMode === "new";
 
   // State Management
   const [voucher, setVoucher] = useState<Voucher>(
@@ -86,6 +92,9 @@ export default function BalanceVoucherClientPage({
     voucherData?.vouch_notes || "",
   );
 
+  // استخدام useRef لتتبع ما إذا تم استدعاء generateNextVoucherNumber مسبقاً
+  const hasGeneratedVoucherNumber = useRef(false);
+
   // Initialize component
   useEffect(() => {
     setIsClient(true);
@@ -101,9 +110,11 @@ export default function BalanceVoucherClientPage({
         acc_name: "",
         debit: undefined,
         credit: undefined,
+        base_debit: undefined,
+        base_credit: undefined,
+        gauge: 875,
         debit_g: undefined,
         credit_g: undefined,
-        gauge: 875,
         cost_id: 0,
         vouch_notes: "",
         cr_date: new Date().toISOString(),
@@ -117,10 +128,12 @@ export default function BalanceVoucherClientPage({
       setOriginalDetails([...voucherDetailsData]);
     }
 
-    // توليد رقم القيد التالي للقيد الجديد - بشكل async بدون انتظار
-    if (isNewVoucher && voucher.vouch_id === 0) {
+    // توليد رقم القيد التالي للقيد الجديد - مرة واحدة فقط
+    if (isNewVoucher && !hasGeneratedVoucherNumber.current && (!voucher.vouch_id || voucher.vouch_id === 0)) {
+      hasGeneratedVoucherNumber.current = true;
       generateNextVoucherNumber().catch((error) => {
         console.error("خطأ في توليد رقم القيد:", error);
+        hasGeneratedVoucherNumber.current = false; // إعادة المحاولة في المرة القادمة
       });
     }
   }, []);
@@ -250,6 +263,18 @@ export default function BalanceVoucherClientPage({
         ) {
           newDetail.debit = undefined;
         } else if (
+          field === "base_debit" &&
+          value !== undefined &&
+          parseFloat(value) > 0
+        ) {
+          newDetail.base_credit = undefined;
+        } else if (
+          field === "base_credit" &&
+          value !== undefined &&
+          parseFloat(value) > 0
+        ) {
+          newDetail.base_debit = undefined;
+        } else if (
           field === "debit_g" &&
           value !== undefined &&
           parseFloat(value) > 0
@@ -294,6 +319,49 @@ export default function BalanceVoucherClientPage({
               // افتراضياً 875 إذا لم توجد معايرة
               newDetail.gauge = 875;
             }
+          }
+        }
+
+        // حساب الذهب المعاير تلقائياً بناءً على المعادلة: debit_g = base_debit * (gauge / 875)
+        // المعادلة: g_weight = weight * (gauge / 875)
+        const baseGauge = 875; // المعيار الأساسي (21 قيراط)
+        const currentGauge = newDetail.gauge || 875;
+
+        // حساب debit_g من base_debit عند تغيير base_debit أو gauge
+        if (field === "base_debit") {
+          const baseDebit = value !== undefined && value !== null ? parseFloat(String(value)) : 0;
+          if (baseDebit > 0 && currentGauge > 0) {
+            const calculatedDebitG = (baseDebit * currentGauge) / baseGauge;
+            newDetail.debit_g = parseFloat(calculatedDebitG.toFixed(6));
+          } else {
+            newDetail.debit_g = undefined;
+          }
+        } else if (field === "gauge" && newDetail.base_debit !== undefined && newDetail.base_debit !== null && newDetail.base_debit > 0) {
+          // إعادة حساب debit_g عند تغيير المعايرة إذا كان هناك base_debit
+          const newGauge = parseFloat(String(value)) || 875;
+          const baseDebit = parseFloat(String(newDetail.base_debit)) || 0;
+          if (baseDebit > 0 && newGauge > 0) {
+            const calculatedDebitG = (baseDebit * newGauge) / baseGauge;
+            newDetail.debit_g = parseFloat(calculatedDebitG.toFixed(6));
+          }
+        }
+
+        // حساب credit_g من base_credit عند تغيير base_credit أو gauge
+        if (field === "base_credit") {
+          const baseCredit = value !== undefined && value !== null ? parseFloat(String(value)) : 0;
+          if (baseCredit > 0 && currentGauge > 0) {
+            const calculatedCreditG = (baseCredit * currentGauge) / baseGauge;
+            newDetail.credit_g = parseFloat(calculatedCreditG.toFixed(6));
+          } else {
+            newDetail.credit_g = undefined;
+          }
+        } else if (field === "gauge" && newDetail.base_credit !== undefined && newDetail.base_credit !== null && newDetail.base_credit > 0) {
+          // إعادة حساب credit_g عند تغيير المعايرة إذا كان هناك base_credit
+          const newGauge = parseFloat(String(value)) || 875;
+          const baseCredit = parseFloat(String(newDetail.base_credit)) || 0;
+          if (baseCredit > 0 && newGauge > 0) {
+            const calculatedCreditG = (baseCredit * newGauge) / baseGauge;
+            newDetail.credit_g = parseFloat(calculatedCreditG.toFixed(6));
           }
         }
 
@@ -344,10 +412,54 @@ export default function BalanceVoucherClientPage({
       },
     );
   }, [details]);
-  const balance = totals.totalDebit - totals.totalCredit;
-  const isBalanced = Math.abs(balance) < 0.01;
+  
+  // حساب الاتزان: النقدية و الذهب المعاير كلاهما يجب أن يكون متزناً
+  const cashBalance = totals.totalDebit - totals.totalCredit;
+  const goldBalance = totals.totalDebitG - totals.totalCreditG;
+  const isCashBalanced = Math.abs(cashBalance) < 0.01;
+  const isGoldBalanced = Math.abs(goldBalance) < 0.01;
+  const isBalanced = isCashBalanced && isGoldBalanced;
+
+  // التحقق من وجود قيد افتتاحي قبل الحفظ
+  const checkExistingBalanceVoucher = async (): Promise<number | null> => {
+    try {
+      const vouchersResponse = await voucherService.getAll({
+        xvouch_type: "0", // قيد افتتاحي فقط
+      });
+
+      if (vouchersResponse.success && vouchersResponse.data) {
+        const vouchers = Array.isArray(vouchersResponse.data)
+          ? vouchersResponse.data
+          : [];
+
+        // إذا كان هناك قيد موجود ولم نكن في وضع التعديل
+        if (vouchers.length > 0 && isNewVoucher) {
+          const existingId = vouchers[0].id || vouchers[0].vouch_id;
+          return existingId || null;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error checking existing balance voucher:", error);
+      return null;
+    }
+  };
 
   const saveVoucher = async () => {
+    // التحقق من وجود قيد افتتاحي قبل الحفظ (للقيود الجديدة فقط)
+    if (isNewVoucher) {
+      const existingId = await checkExistingBalanceVoucher();
+      if (existingId) {
+        toast.error(
+          "⚠️ يوجد قيد افتتاحي موجود مسبقاً. يرجى تعديل القيد الموجود بدلاً من إنشاء قيد جديد.",
+          { duration: 6000 },
+        );
+        // إعادة التوجيه إلى القيد الموجود
+        router.push(`/forms/balance/${existingId}`);
+        return;
+      }
+    }
     // التحقق من التاريخ - منع التواريخ المستقبلية
     const voucherDate = new Date(voucher.vouch_date);
     const today = new Date();
@@ -395,20 +507,33 @@ export default function BalanceVoucherClientPage({
       return;
     }
 
-    if (
-      !voucher.vouch_id ||
-      voucher.vouch_id <= 0 ||
-      !isFinite(voucher.vouch_id)
-    ) {
-      toast.error("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
+    // توليد رقم القيد إذا لم يكن موجوداً (للقيد الجديد فقط)
+    let finalVouchId = voucher.vouch_id;
+    if (isNewVoucher && (!finalVouchId || finalVouchId <= 0 || !isFinite(finalVouchId))) {
+      try {
+        finalVouchId = await getNextVoucherNumber(0); // القيد الافتتاحي نوعه 0
+        // تحديث state فوراً
+        setVoucher((prev) => ({
+          ...prev,
+          vouch_id: finalVouchId,
+        }));
+      } catch (error) {
+        console.error("خطأ في توليد رقم القيد:", error);
+        toast.error("❌ فشل في توليد رقم القيد. يرجى المحاولة مرة أخرى.");
+        return;
+      }
+    }
 
+    // التحقق النهائي من رقم القيد
+    if (!finalVouchId || finalVouchId <= 0 || !isFinite(finalVouchId)) {
+      toast.error("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
       return;
     }
 
     setIsLoading(true);
     try {
       const voucherData = {
-        vouch_id: voucher.vouch_id,
+        vouch_id: finalVouchId,
         vouch_date: voucher.vouch_date,
         vouch_type: 0, // القيد الافتتاحي نوعه دائماً 0 (ثابت)
         vouch_amt: 0, // إبقاء المبلغ الإجمالي 0 دائماً
@@ -423,13 +548,15 @@ export default function BalanceVoucherClientPage({
         .filter((detail) => detail.acc_id && detail.acc_id > 0)
         .map((detail) => ({
           id: detail.id || 0,
-          vouch_id: voucher.vouch_id,
+          vouch_id: finalVouchId,
           acc_id: detail.acc_id,
           debit: detail.debit,
           credit: detail.credit,
+          base_debit: detail.base_debit,
+          base_credit: detail.base_credit,
+          gauge: detail.gauge,
           debit_g: detail.debit_g,
           credit_g: detail.credit_g,
-          gauge: detail.gauge,
           vouch_notes: detail.vouch_notes || "",
           cost_id: detail.cost_id || null,
           tax: 0,
@@ -773,9 +900,13 @@ export default function BalanceVoucherClientPage({
       commit: false,
     }));
 
-    // تغيير الـ URL إلى وضع edit
+    // تغيير وضع الصفحة إلى edit باستخدام query params في نفس الصفحة
     if (voucherRecordId) {
-      router.push(`/forms/balance/${voucherRecordId}?mode=edit`);
+      router.push(`/forms/balance?mode=edit`);
+    } else {
+      // إذا لم يكن هناك voucherRecordId، نفعّل التعديل مباشرة
+      setIsEditing(true);
+      toast.success("✅ تم تفعيل وضع التعديل");
     }
   };
 

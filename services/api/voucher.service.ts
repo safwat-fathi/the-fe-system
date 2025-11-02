@@ -220,7 +220,7 @@ class VoucherService extends HttpService<Voucher> {
 
   /**
    * الحصول على صناديق سند معين
-   * ملاحظة: vouchers_box_list يستخدم vouch_id (id من جدول vouchers) و xcom_id
+   * ملاحظة: vouchers_box_list يستخدم xvouch_id (id من جدول vouchers) و xcom_id
    */
   async getBoxes(vouchId: number, params?: IParams) {
     const branchParam =
@@ -235,7 +235,7 @@ class VoucherService extends HttpService<Voucher> {
 
     const queryParams: IParams = {
       ...cleanParams,
-      vouch_id: vouchId, // id من جدول vouchers (primary key) - vouchers_box_list يتوقع vouch_id وليس xvouch_id
+      xvouch_id: vouchId, // id من جدول vouchers (primary key) - vouchers_box_list يتوقع xvouch_id وليس vouch_id
       xcom_id: branchParam, // رقم الفرع
     };
 

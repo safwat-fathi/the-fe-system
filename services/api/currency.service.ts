@@ -72,11 +72,17 @@ class CurrencyService extends HttpService<Currency> {
           : currency.cur_tag.toUpperCase()
         : currency.cur_sign?.charAt(0)?.toUpperCase() || "";
 
+      // تقييد cur_price إلى منزلتين عشريتين فقط
+      const curPrice = parseFloat(currency.cur_price);
+      const formattedPrice = isNaN(curPrice)
+        ? currency.cur_price
+        : curPrice.toFixed(2);
+
       const currencyData = {
         ...currency,
         com: companyId, // إضافة حقل com المطلوب
         cur_tag: curTag, // تقييد لحرف واحد فقط
-        cur_price: currency.cur_price, // التأكد من وجود السعر
+        cur_price: formattedPrice, // تقييد إلى منزلتين عشريتين
       };
 
       const response = await this.post<Currency>(
@@ -116,6 +122,15 @@ class CurrencyService extends HttpService<Currency> {
         companyId = "1";
       }
 
+      // تقييد cur_price إلى منزلتين عشريتين فقط (إن وجد)
+      let formattedPrice: string | undefined = undefined;
+      if (currency.cur_price) {
+        const curPrice = parseFloat(String(currency.cur_price));
+        formattedPrice = isNaN(curPrice)
+          ? String(currency.cur_price)
+          : curPrice.toFixed(2);
+      }
+
       // تقييد cur_tag لحرف واحد فقط إذا كان موجوداً
       const currencyData: any = {
         ...currency,
@@ -127,6 +142,11 @@ class CurrencyService extends HttpService<Currency> {
           currency.cur_tag.length > 1
             ? currency.cur_tag.charAt(0).toUpperCase()
             : currency.cur_tag.toUpperCase();
+      }
+
+      // تحديث cur_price إذا كان موجوداً
+      if (formattedPrice !== undefined) {
+        currencyData.cur_price = formattedPrice;
       }
 
       const response = await this.put<Currency>(

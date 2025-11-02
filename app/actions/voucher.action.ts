@@ -24,9 +24,11 @@ interface VoucherDetailData {
   acc_id: number;
   debit: number | undefined;
   credit: number | undefined;
+  base_debit?: number | undefined;
+  base_credit?: number | undefined;
+  gauge: number | undefined;
   debit_g: number | undefined;
   credit_g: number | undefined;
-  gauge: number | undefined;
   vouch_notes?: string;
   cost_id?: number | null;
 }
@@ -77,6 +79,7 @@ export async function createVoucherAction(
       year: 1, // السنة = 1
       cr_date: new Date().toISOString(),
       vouch_amt: 0, // إبقاء المبلغ الإجمالي 0 دائماً
+      vouch_status: voucherData.vouch_status || 1, // حالة السند من getVoucherStageList
       opps_vouch: voucherData.opps_vouch || 0, // حفظ قيمة opps_vouch من API
       commit: true, // تحديد القيد كـ محفوظ بعد الحفظ
     };
@@ -142,13 +145,14 @@ export async function createVoucherAction(
       for (let i = 0; i < voucherBoxes.length; i++) {
         const box = voucherBoxes[i];
 
+        // التحقق من أن box_id و amount موجودان وصحيحان
         if (!box.box_id || box.box_id === 0 || !box.amount || box.amount === 0) {
           continue;
         }
 
         const boxData: any = {
           vouch: masterId, // API يستخدم vouch وليس vouch_id
-          box: box.box_id, // API يستخدم box وليس box_id
+          box: box.box_id, // API يستخدم box - مهم: يجب إرسال box دائماً إذا كان box_id > 0
           vouch_amt: box.amount.toString(), // API يتوقع string
           vouch_base_amt: box.amount.toString(), // المبلغ الأساسي
           box_note: box.vouch_notes || "", // API يستخدم box_note وليس vouch_notes
@@ -159,16 +163,14 @@ export async function createVoucherAction(
           close_weight: box.close_weight || null, // وزن التسكير
           cr_date: new Date().toISOString(),
         };
-
-        // إضافة cost و inv فقط إذا كانت موجودة
-        if (box.cost_id && box.cost_id > 0) {
+        
+        // إضافة cost و inv فقط إذا كانت موجودة وقيمة صحيحة
+        if (box.cost_id !== undefined && box.cost_id !== null && box.cost_id > 0) {
           boxData.cost = box.cost_id;
         }
-        if (box.inv_id && box.inv_id > 0) {
+        if (box.inv_id !== undefined && box.inv_id !== null && box.inv_id > 0) {
           boxData.inv = box.inv_id;
         }
-
-        console.log(`📤 حفظ صندوق ${i + 1}:`, boxData);
 
         const boxResponse = await voucherService.createBox(boxData as any);
 
@@ -192,20 +194,26 @@ export async function createVoucherAction(
         continue;
       }
 
-      const detailData = {
+      const detailData: any = {
         vouch: masterId, // id من جدول vouchers
         acc: detail.acc_id, // رقم الحساب فقط
         debit: detail.debit || 0,
         credit: detail.credit || 0,
+        base_debit: detail.base_debit || 0,
+        base_credit: detail.base_credit || 0,
+        gauge: detail.gauge || 875,
         debit_g: detail.debit_g || 0,
         credit_g: detail.credit_g || 0,
-        gauge: detail.gauge || 875,
         vouch_notes: detail.vouch_notes || "",
-        cost_id: detail.cost_id || null,
         com: 1, // الفرع = 1
         year: 1, // السنة = 1
         cr_date: new Date().toISOString(),
       };
+
+      // إضافة cost فقط إذا كانت موجودة وقيمة صحيحة (API يتوقع cost وليس cost_id)
+      if (detail.cost_id !== undefined && detail.cost_id !== null && detail.cost_id > 0) {
+        detailData.cost = detail.cost_id;
+      }
 
       console.log(`📤 حفظ التفصيل ${i + 1}:`, detailData);
 
@@ -553,7 +561,7 @@ export async function updateVoucherAction(
 
         const boxData: any = {
           vouch: realVoucherId, // API يستخدم vouch وليس vouch_id
-          box: box.box_id, // API يستخدم box وليس box_id
+          box: box.box_id, // API يستخدم box - مهم: يجب إرسال box دائماً إذا كان box_id > 0
           vouch_amt: box.amount.toString(), // API يتوقع string
           vouch_base_amt: box.amount.toString(), // المبلغ الأساسي
           box_note: box.vouch_notes || "", // API يستخدم box_note وليس vouch_notes
@@ -564,12 +572,12 @@ export async function updateVoucherAction(
           close_weight: box.close_weight || null, // وزن التسكير
           cr_date: new Date().toISOString(),
         };
-
-        // إضافة cost و inv فقط إذا كانت موجودة
-        if (box.cost_id && box.cost_id > 0) {
+        
+        // إضافة cost و inv فقط إذا كانت موجودة وقيمة صحيحة
+        if (box.cost_id !== undefined && box.cost_id !== null && box.cost_id > 0) {
           boxData.cost = box.cost_id;
         }
-        if (box.inv_id && box.inv_id > 0) {
+        if (box.inv_id !== undefined && box.inv_id !== null && box.inv_id > 0) {
           boxData.inv = box.inv_id;
         }
 
@@ -661,20 +669,26 @@ export async function updateVoucherAction(
         continue;
       }
 
-      const detailData = {
+      const detailData: any = {
         vouch: vouchMasterId, // id من جدول vouchers
         acc: detail.acc_id, // رقم الحساب فقط
         debit: detail.debit || 0,
         credit: detail.credit || 0,
+        base_debit: detail.base_debit || 0,
+        base_credit: detail.base_credit || 0,
+        gauge: detail.gauge || 875,
         debit_g: detail.debit_g || 0,
         credit_g: detail.credit_g || 0,
-        gauge: detail.gauge || 875,
         vouch_notes: detail.vouch_notes || "",
-        cost_id: detail.cost_id || null,
         com: 1, // الفرع = 1
         year: 1, // السنة = 1
         cr_date: new Date().toISOString(),
       };
+
+      // إضافة cost فقط إذا كانت موجودة وقيمة صحيحة (API يتوقع cost وليس cost_id)
+      if (detail.cost_id !== undefined && detail.cost_id !== null && detail.cost_id > 0) {
+        detailData.cost = detail.cost_id;
+      }
 
       const detailResponse =
         detail.id && detail.id > 0

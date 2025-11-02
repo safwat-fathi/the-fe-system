@@ -67,15 +67,37 @@ class BoxService extends HttpService<Box> {
 
   async createBox(box: Omit<Box, "id">): Promise<Box | null> {
     try {
+      // جلب معاملات الفرع لإضافة com
+      let companyId = "1";
+      try {
+        const branchParams = await import("@/app/actions/branch-params").then(
+          (m) => m.getBranchParams(),
+        );
+        companyId = branchParams.com || "1";
+      } catch {
+        companyId = "1";
+      }
+
+      // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
+      const { acc_name, ...rest } = box;
       const boxData = {
-        ...box,
+        ...rest,
+        com: companyId, // إضافة حقل com المطلوب
         cust_type: 99, // Set customer type to 99 for boxes
-        cust_code: box.cust_code || String(box.id || ""),
+        cust_code: box.cust_code || "",
         cust_status: box.cust_status || 1, // Default active status
+        acc: Number(box.acc) || null,
+        vat_no: Number(box.vat_no) || null,
+        cr_no: Number(box.cr_no) || null,
+        perc: Number(box.perc) || null,
+        expt: !!box.expt,
+        hide: !!box.hide,
+        post_code: box.post_code || "",
       };
 
+      // استخدام api_create_customer لأن الصناديق هي نوع من العملاء
       const response = await this.post<Box>(
-        "api_create_box",
+        "api_create_customer",
         boxData,
         undefined,
         {
@@ -87,8 +109,54 @@ class BoxService extends HttpService<Box> {
         return response.data as Box;
       }
 
-      return null;
+      // استخراج رسائل الخطأ من API response
+      let errorMessage = "حدث خطأ أثناء إنشاء الصندوق";
+      if (response.data && typeof response.data === "object") {
+        const errorData = response.data as any;
+        const errorMessages: string[] = [];
+
+        if (errorData.cust_code) {
+          const messages = Array.isArray(errorData.cust_code)
+            ? errorData.cust_code
+            : [errorData.cust_code];
+          if (messages.some((msg: string) => msg.includes("already exists"))) {
+            errorMessages.push("❌ كود الصندوق موجود مسبقاً");
+          } else {
+            errorMessages.push(...messages.map((msg: string) => `كود الصندوق: ${msg}`));
+          }
+        }
+
+        if (errorData.cust_name) {
+          const messages = Array.isArray(errorData.cust_name)
+            ? errorData.cust_name
+            : [errorData.cust_name];
+          if (messages.some((msg: string) => msg.includes("already exists"))) {
+            errorMessages.push("❌ اسم الصندوق موجود مسبقاً");
+          } else {
+            errorMessages.push(...messages.map((msg: string) => `اسم الصندوق: ${msg}`));
+          }
+        }
+
+        // إضافة أي رسائل خطأ أخرى
+        Object.keys(errorData).forEach((key) => {
+          if (key !== "cust_code" && key !== "cust_name") {
+            const messages = Array.isArray(errorData[key])
+              ? errorData[key]
+              : [errorData[key]];
+            errorMessages.push(...messages.map((msg: string) => `${key}: ${msg}`));
+          }
+        });
+
+        if (errorMessages.length > 0) {
+          errorMessage = errorMessages.join("\n");
+        }
+      }
+
+      throw new Error(errorMessage);
     } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
       console.error("Error creating box:", error);
       throw new Error("حدث خطأ أثناء إنشاء الصندوق");
     }
@@ -96,15 +164,37 @@ class BoxService extends HttpService<Box> {
 
   async updateBox(id: number, box: Partial<Box>): Promise<Box | null> {
     try {
+      // جلب معاملات الفرع لإضافة com
+      let companyId = "1";
+      try {
+        const branchParams = await import("@/app/actions/branch-params").then(
+          (m) => m.getBranchParams(),
+        );
+        companyId = branchParams.com || "1";
+      } catch {
+        companyId = "1";
+      }
+
+      // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
+      const { acc_name, ...rest } = box;
       const boxData = {
-        ...box,
+        ...rest,
+        com: companyId, // إضافة حقل com المطلوب
         cust_type: 99, // Ensure it remains a box
         cust_code: box.cust_code || String(id),
         cust_status: box.cust_status || 1,
+        acc: box.acc !== undefined ? (Number(box.acc) || null) : undefined,
+        vat_no: box.vat_no !== undefined ? (Number(box.vat_no) || null) : undefined,
+        cr_no: box.cr_no !== undefined ? (Number(box.cr_no) || null) : undefined,
+        perc: box.perc !== undefined ? (Number(box.perc) || null) : undefined,
+        expt: box.expt !== undefined ? !!box.expt : undefined,
+        hide: box.hide !== undefined ? !!box.hide : undefined,
+        post_code: box.post_code || "",
       };
 
+      // استخدام api_update_customer لأن الصناديق هي نوع من العملاء
       const response = await this.put<Box>(
-        `api_update_box/${id}`,
+        `api_update_customer/${id}`,
         boxData,
         undefined,
         {
@@ -116,8 +206,54 @@ class BoxService extends HttpService<Box> {
         return response.data as Box;
       }
 
-      return null;
+      // استخراج رسائل الخطأ من API response
+      let errorMessage = "حدث خطأ أثناء تحديث الصندوق";
+      if (response.data && typeof response.data === "object") {
+        const errorData = response.data as any;
+        const errorMessages: string[] = [];
+
+        if (errorData.cust_code) {
+          const messages = Array.isArray(errorData.cust_code)
+            ? errorData.cust_code
+            : [errorData.cust_code];
+          if (messages.some((msg: string) => msg.includes("already exists"))) {
+            errorMessages.push("❌ كود الصندوق موجود مسبقاً");
+          } else {
+            errorMessages.push(...messages.map((msg: string) => `كود الصندوق: ${msg}`));
+          }
+        }
+
+        if (errorData.cust_name) {
+          const messages = Array.isArray(errorData.cust_name)
+            ? errorData.cust_name
+            : [errorData.cust_name];
+          if (messages.some((msg: string) => msg.includes("already exists"))) {
+            errorMessages.push("❌ اسم الصندوق موجود مسبقاً");
+          } else {
+            errorMessages.push(...messages.map((msg: string) => `اسم الصندوق: ${msg}`));
+          }
+        }
+
+        // إضافة أي رسائل خطأ أخرى
+        Object.keys(errorData).forEach((key) => {
+          if (key !== "cust_code" && key !== "cust_name") {
+            const messages = Array.isArray(errorData[key])
+              ? errorData[key]
+              : [errorData[key]];
+            errorMessages.push(...messages.map((msg: string) => `${key}: ${msg}`));
+          }
+        });
+
+        if (errorMessages.length > 0) {
+          errorMessage = errorMessages.join("\n");
+        }
+      }
+
+      throw new Error(errorMessage);
     } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
       console.error("Error updating box:", error);
       throw new Error("حدث خطأ أثناء تحديث الصندوق");
     }
@@ -125,7 +261,8 @@ class BoxService extends HttpService<Box> {
 
   async deleteBox(id: number): Promise<boolean> {
     try {
-      const response = await this.delete(`api_delete_box/${id}`, undefined, {
+      // استخدام api_delete_customer لأن الصناديق هي نوع من العملاء
+      const response = await this.delete(`api_delete_customer/${id}`, undefined, {
         cache: "no-store",
       });
 

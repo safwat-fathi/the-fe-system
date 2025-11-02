@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import toast from "react-hot-toast";
@@ -82,22 +82,33 @@ export default function CashReceiptVoucherClientPage({
   const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
   const [voucherTypes, setVoucherTypes] = useState<any[]>(initialVoucherTypes);
   const [voucherStatuses, setVoucherStatuses] = useState<any[]>(
-    initialVoucherStatuses,
+    initialVoucherStatuses || [],
   );
+
+  // التأكد من تحديث voucherStatuses عند تغيير initialVoucherStatuses
+  useEffect(() => {
+    if (initialVoucherStatuses && Array.isArray(initialVoucherStatuses)) {
+      setVoucherStatuses(initialVoucherStatuses);
+    }
+  }, [initialVoucherStatuses]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>([]);
   const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // استخدام useRef لتتبع ما إذا تم استدعاء generateNextVoucherNumber مسبقاً
+  const hasGeneratedVoucherNumber = useRef(false);
 
-  // Initialize component
+  // Initialize component - يتم تشغيله مرة واحدة فقط عند التحميل
   useEffect(() => {
     setIsClient(true);
     updateCurrentTime();
 
-    if (isNewVoucher) {
+    if (isNewVoucher && !hasGeneratedVoucherNumber.current) {
       generateNextVoucherNumber();
+      hasGeneratedVoucherNumber.current = true;
       // إضافة صف فارغ واحد على الأقل لكل جدول
       if (voucherBoxes.length === 0) {
         setVoucherBoxes([
@@ -132,11 +143,27 @@ export default function CashReceiptVoucherClientPage({
           },
         ]);
       }
-    } else {
+    } else if (!isNewVoucher) {
       setOriginalDetails(voucherDetailsData || []);
       setOriginalBoxes(initialVoucherBoxes || []);
+      // عند تحميل سند موجود، تحديث voucherBoxes بالبيانات المسترجعة
+      if (initialVoucherBoxes && initialVoucherBoxes.length > 0) {
+        setVoucherBoxes(initialVoucherBoxes);
+      }
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // فارغ = مرة واحدة فقط عند mount
+
+  // useEffect إضافي لضمان تحديث voucherBoxes عند تحميل سند موجود
+  // استخدام useRef لتتبع ما إذا تم التحميل مسبقاً
+  const hasLoadedVoucherBoxes = useRef(false);
+  useEffect(() => {
+    if (!isNewVoucher && initialVoucherBoxes && initialVoucherBoxes.length > 0 && !hasLoadedVoucherBoxes.current) {
+      setVoucherBoxes(initialVoucherBoxes);
+      hasLoadedVoucherBoxes.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNewVoucher]); // يعتمد فقط على isNewVoucher
 
   useEffect(() => {
     if (formMode === "preview") {
@@ -185,7 +212,12 @@ export default function CashReceiptVoucherClientPage({
     setVoucherBoxes((prev) => {
       const updated = prev.map((box, i) => {
         if (i === index) {
-          return { ...box, [field]: value };
+          const updatedBox = { ...box, [field]: value };
+          // إذا تم تحديث box_id وكان 0، احذف box object
+          if (field === "box_id" && (!value || value === 0)) {
+            updatedBox.box = undefined;
+          }
+          return updatedBox;
         }
 
         return box;
@@ -344,7 +376,8 @@ export default function CashReceiptVoucherClientPage({
     return { totalBoxes, totalDetails };
   }, [voucherBoxes, details, vouchType]);
 
-  const isBalanced = Math.abs(totals.totalBoxes - totals.totalDetails) < 0.01;
+  const balance = totals.totalBoxes - totals.totalDetails;
+  const isBalanced = Math.abs(balance) < 0.01;
 
   // Save voucher
   const saveVoucher = async () => {
@@ -1229,19 +1262,35 @@ export default function CashReceiptVoucherClientPage({
           <select
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
-            value={voucher.vouch_status || 1}
+            value={String(voucher.vouch_status ?? 1)}
             onChange={(e) =>
               setVoucher((prev) => ({
                 ...prev,
-                vouch_status: parseInt(e.target.value),
+                vouch_status: parseInt(e.target.value) || 1,
               }))
             }
           >
-            {voucherStatuses.map((status) => (
-              <option key={status.id || status.Id} value={status.id || status.Id}>
-                {status.name || status["Code Desc"] || "غير محدد"}
-              </option>
-            ))}
+            {voucherStatuses && Array.isArray(voucherStatuses) && voucherStatuses.length > 0 ? (
+              voucherStatuses.map((status) => {
+                const statusValue = status.code_id !== undefined && status.code_id !== null 
+                  ? String(status.code_id) 
+                  : String(status.id || status.Id || "");
+                const statusLabel = status.code_desc || status["Code Desc"] || status.name || "غير محدد";
+                
+                return (
+                  <option key={status.id || status.Id} value={statusValue}>
+                    {statusLabel}
+                  </option>
+                );
+              })
+            ) : (
+              <>
+                <option value="0">ملغي</option>
+                <option value="1">فعال</option>
+                <option value="2">معلق</option>
+                <option value="3">غير مكتمل</option>
+              </>
+            )}
           </select>
         </div>
       </div>
@@ -1309,19 +1358,26 @@ export default function CashReceiptVoucherClientPage({
                     <select
                       className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
                       disabled={!isEditing}
-                      value={box.box_id || ""}
-                      onChange={(e) =>
-                        updateVoucherBox(
-                          index,
-                          "box_id",
-                          e.target.value ? parseInt(e.target.value) : 0,
-                        )
-                      }
+                      value={box.box_id && box.box_id > 0 ? String(box.box_id) : ""}
+                      onChange={(e) => {
+                        const selectedBoxId = e.target.value ? parseInt(e.target.value) : 0;
+                        const selectedBox = boxes.find((b) => b.id === selectedBoxId);
+                        updateVoucherBox(index, "box_id", selectedBoxId);
+                        // تحديث معلومات box object إذا كان الصندوق محدداً
+                        if (selectedBox) {
+                          updateVoucherBox(index, "box", {
+                            id: selectedBox.id,
+                            cust_name: selectedBox.cust_name || selectedBox.name || "",
+                            cust_code: selectedBox.cust_code || "",
+                            box_type: selectedBox.box_type,
+                          });
+                        }
+                      }}
                     >
                       <option value="">اختر الصندوق</option>
                       {boxes.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.cust_name || b.name || `صندوق ${b.id}`}
+                        <option key={b.id} value={String(b.id)}>
+                          {b.cust_name || b.name || box.box?.cust_name || `صندوق ${b.id}`}
                         </option>
                       ))}
                     </select>
@@ -1342,7 +1398,7 @@ export default function CashReceiptVoucherClientPage({
                     <select
                       className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
                       disabled={!isEditing}
-                      value={box.cost_id || ""}
+                      value={box.cost_id && box.cost_id > 0 ? String(box.cost_id) : ""}
                       onChange={(e) =>
                         updateVoucherBox(
                           index,
@@ -1353,7 +1409,7 @@ export default function CashReceiptVoucherClientPage({
                     >
                       <option value="">مركز التكلفة</option>
                       {costCenters.map((center) => (
-                        <option key={center.id} value={center.id}>
+                        <option key={center.id} value={String(center.id)}>
                           {center.name || center.cost_name || `مركز ${center.id}`}
                         </option>
                       ))}
@@ -1557,7 +1613,7 @@ export default function CashReceiptVoucherClientPage({
                     <select
                       className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
                       disabled={!isEditing}
-                      value={detail.cost_id || ""}
+                      value={detail.cost_id !== null && detail.cost_id !== undefined && detail.cost_id > 0 ? String(detail.cost_id) : ""}
                       onChange={(e) =>
                         updateDetail(
                           index,
@@ -1568,7 +1624,7 @@ export default function CashReceiptVoucherClientPage({
                     >
                       <option value="">مركز التكلفة</option>
                       {costCenters.map((center) => (
-                        <option key={center.id} value={center.id}>
+                        <option key={center.id} value={String(center.id)}>
                           {center.name ||
                             center.cost_name ||
                             `مركز ${center.id}`}
@@ -1611,6 +1667,19 @@ export default function CashReceiptVoucherClientPage({
               <RiyalIcon color="currentColor" />
             </span>
           </div>
+
+          {!isBalanced && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-700 font-medium">الفارق:</span>
+              <span className="font-semibold text-red-700 flex items-center gap-1">
+                {formatAmount(Math.abs(balance))}
+                <RiyalIcon color="currentColor" />
+                <span className="text-xs text-red-600">
+                  ({balance > 0 ? "مدين" : "دائن"})
+                </span>
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <span className="text-gray-700 font-medium">الحالة:</span>

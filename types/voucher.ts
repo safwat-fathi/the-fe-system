@@ -68,6 +68,13 @@ export interface VoucherBox {
   id?: number;
   vouch_id: number;
   box_id: number;
+  box?: {
+    id: number;
+    cust_name?: string;
+    name?: string;
+    cust_code?: string;
+    box_type?: number;
+  }; // حقل box من voucher_box (معلومات الصندوق الكاملة)
   amount: number; // vouch_amt في vouchers_box
   amount_g?: number;
   total_amount?: number;

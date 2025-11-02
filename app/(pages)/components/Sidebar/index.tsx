@@ -13,6 +13,7 @@ import {
   HomeIcon,
   TagIcon,
   UserGroupIcon,
+  LinkIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@heroui/react";
 import clsx from "clsx";
@@ -41,6 +42,11 @@ const settingsLinks = [
     name: "الضرائب",
     href: "/settings/taxes",
     icon: <DocumentCheckIcon className="h-5 w-5" />,
+  },
+  {
+    name: "خدمات الربط",
+    href: "/settings/integrations",
+    icon: <LinkIcon className="h-5 w-5" />,
   },
 ];
 

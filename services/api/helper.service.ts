@@ -137,12 +137,29 @@ class HelperService extends HttpService {
   }
 
   // جلب الصناديق
-  async getBoxes(): Promise<Box[]> {
+  async getBoxes(xcom_id?: string | number): Promise<Box[]> {
     try {
-      const response = await this.get<Box[]>("boxes_list", undefined, {
-        cache: "no-store",
-        next: { tags: ["boxes"] },
-      });
+      // جلب companyId من branch-params إذا لم يتم توفيره
+      let companyId = xcom_id;
+      if (!companyId) {
+        try {
+          const branchParams = await import("@/app/actions/branch-params").then(
+            (m) => m.getBranchParams(),
+          );
+          companyId = branchParams.com || "1";
+        } catch {
+          companyId = "1";
+        }
+      }
+
+      const response = await this.get<Box[]>(
+        "boxes_list",
+        { xcom_id: String(companyId) },
+        {
+          cache: "no-store",
+          next: { tags: ["boxes"] },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {

@@ -198,7 +198,23 @@ export default function CustomerGoldVoucherClientPage({
     setVoucherBoxes((prev) => {
       const updated = prev.map((box, i) => {
         if (i === index) {
-          return { ...box, [field]: value };
+          const updatedBox = { ...box, [field]: value };
+          // إذا تم تحديث box_id وكان 0، احذف box object
+          if (field === "box_id" && (!value || value === 0)) {
+            updatedBox.box = undefined;
+          } else if (field === "box_id" && value && value > 0) {
+            // عند اختيار صندوق، احفظ معلوماته في box object
+            const selectedBox = boxes.find((b) => b.id === value);
+            if (selectedBox) {
+              updatedBox.box = {
+                id: selectedBox.id,
+                cust_name: selectedBox.cust_name || selectedBox.name || "",
+                cust_code: selectedBox.cust_code || "",
+                box_type: selectedBox.box_type,
+              };
+            }
+          }
+          return updatedBox;
         }
         return box;
       });
@@ -595,7 +611,12 @@ export default function CustomerGoldVoucherClientPage({
         );
 
         // Helper functions
-        const getBoxName = (boxId: number) => {
+        const getBoxName = (boxId: number, boxObject?: VoucherBox["box"]) => {
+          // استخدام box object إذا كان متوفراً (من حقل box في voucher_box)
+          if (boxObject && boxObject.cust_name) {
+            return boxObject.cust_name;
+          }
+          // البحث في قائمة الصناديق
           const box = boxes.find((b) => b.id === boxId);
           return box?.cust_name || box?.name || `صندوق ${boxId}`;
         };
@@ -993,7 +1014,7 @@ export default function CustomerGoldVoucherClientPage({
                   <tbody>
                     ${validBoxes
                       .map((box) => {
-                        const boxName = getBoxName(box.box_id);
+                        const boxName = getBoxName(box.box_id, box.box);
                         const costName = getCostCenterName(box.cost_id);
 
                         return `
@@ -1890,19 +1911,16 @@ export default function CustomerGoldVoucherClientPage({
                       <select
                         className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
                         disabled={!isEditing}
-                        value={box.box_id || ""}
-                        onChange={(e) =>
-                          updateVoucherBox(
-                            index,
-                            "box_id",
-                            e.target.value ? parseInt(e.target.value) : 0,
-                          )
-                        }
+                        value={box.box_id && box.box_id > 0 ? String(box.box_id) : ""}
+                        onChange={(e) => {
+                          const selectedBoxId = e.target.value ? parseInt(e.target.value) : 0;
+                          updateVoucherBox(index, "box_id", selectedBoxId);
+                        }}
                       >
                         <option value="">اختر الصندوق</option>
                         {boxes.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.cust_name || b.name || `صندوق ${b.id}`}
+                          <option key={b.id} value={String(b.id)}>
+                            {b.cust_name || b.name || box.box?.cust_name || `صندوق ${b.id}`}
                           </option>
                         ))}
                       </select>

@@ -128,6 +128,30 @@ export default function BalanceVoucherContainer({
             0,
           ),
         }}
+        isCashBalanced={(() => {
+          const cashBalance =
+            details.reduce(
+              (sum, d) => sum + (parseFloat(String(d.debit || 0)) || 0),
+              0,
+            ) -
+            details.reduce(
+              (sum, d) => sum + (parseFloat(String(d.credit || 0)) || 0),
+              0,
+            );
+          return Math.abs(cashBalance) < 0.01;
+        })()}
+        isGoldBalanced={(() => {
+          const goldBalance =
+            details.reduce(
+              (sum, d) => sum + (parseFloat(String(d.debit_g || 0)) || 0),
+              0,
+            ) -
+            details.reduce(
+              (sum, d) => sum + (parseFloat(String(d.credit_g || 0)) || 0),
+              0,
+            );
+          return Math.abs(goldBalance) < 0.01;
+        })()}
       />
     </div>
   );

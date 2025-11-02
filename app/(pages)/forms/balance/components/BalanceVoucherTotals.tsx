@@ -12,11 +12,18 @@ interface BalanceVoucherTotalsProps {
     totalTax: number;
     totalTaxPrc: number;
   };
+  isCashBalanced?: boolean;
+  isGoldBalanced?: boolean;
 }
 
 export default function BalanceVoucherTotals({
   totals,
+  isCashBalanced = true,
+  isGoldBalanced = true,
 }: BalanceVoucherTotalsProps) {
+  const cashBalance = totals.totalDebit - totals.totalCredit;
+  const goldBalance = totals.totalDebitG - totals.totalCreditG;
+
   return (
     <div className="mt-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
       <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
@@ -37,6 +44,25 @@ export default function BalanceVoucherTotals({
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="text-gray-700 font-medium">اتزان النقدية:</span>
+          <span
+            className={`font-semibold flex items-center gap-1 ${
+              isCashBalanced
+                ? "text-emerald-700"
+                : "text-red-700"
+            }`}
+          >
+            {formatAmount(Math.abs(cashBalance))}
+            {!isCashBalanced && (
+              <span className="text-xs">
+                ({cashBalance > 0 ? "مدين" : "دائن"})
+              </span>
+            )}
+            <RiyalIcon color="currentColor" />
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
           <span className="text-amber-800 font-medium">
             إجمالي المدين المعاير:
           </span>
@@ -52,6 +78,25 @@ export default function BalanceVoucherTotals({
           </span>
           <span className="font-semibold text-yellow-600 flex items-center gap-1">
             {formatAmount(totals.totalCreditG)}
+            <span className="text-xs text-yellow-500">جم</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-amber-800 font-medium">اتزان الذهب المعاير:</span>
+          <span
+            className={`font-semibold flex items-center gap-1 ${
+              isGoldBalanced
+                ? "text-emerald-700"
+                : "text-red-700"
+            }`}
+          >
+            {formatAmount(Math.abs(goldBalance))}
+            {!isGoldBalanced && (
+              <span className="text-xs">
+                ({goldBalance > 0 ? "مدين" : "دائن"})
+              </span>
+            )}
             <span className="text-xs text-yellow-500">جم</span>
           </span>
         </div>
