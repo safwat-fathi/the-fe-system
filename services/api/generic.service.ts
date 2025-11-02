@@ -133,11 +133,11 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
     }),
   },
 
-  // Voucher Boxes (صناديق القيود - تحتاج vouch_id و xcom_id)
+  // Voucher Boxes (صناديق القيود - تحتاج xvouch_id و xcom_id)
   vouchers_box_list: {
     endpoint: "vouchers_box_list",
     paramTransform: (params) => ({
-      vouch_id: params.vouch_id || params.voucherId || params.xvouch_id || "0", // دعم xvouch_id أيضاً للتوافق
+      xvouch_id: params.xvouch_id || params.vouch_id || params.voucherId || "0", // API يتوقع xvouch_id (الأولوية لـ xvouch_id)
       xcom_id: params.xcom_id || params.com || "1", // رقم الفرع
       // لا يحتاج year parameter
     }),

@@ -172,7 +172,29 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
     } catch (error) {
       // Rollback on error
       setBoxes(previousBoxes);
-      toast.error("❌ حدث خطأ أثناء حفظ الصندوق");
+      
+      // عرض رسالة الخطأ الواضحة للمستخدم
+      let errorMessage = "❌ حدث خطأ أثناء حفظ الصندوق";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      }
+      
+      // تقسيم الرسائل المتعددة وعرضها
+      const messages = errorMessage.split("\n");
+      if (messages.length > 1) {
+        // إذا كانت هناك رسائل متعددة، عرض الأولى كرسالة رئيسية والباقي كرسائل منفصلة
+        toast.error(messages[0], { duration: 5000 });
+        messages.slice(1).forEach((msg) => {
+          if (msg.trim()) {
+            toast.error(msg.trim(), { duration: 4000 });
+          }
+        });
+      } else {
+        toast.error(errorMessage, { duration: 5000 });
+      }
     }
   };
 
@@ -325,9 +347,10 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       </div>
 
       <Modal
+        isDismissable={false}
         isOpen={isModalOpen}
         scrollBehavior="inside"
-        shouldBlockScroll={false}
+        size="5xl"
         onClose={() => setIsModalOpen(false)}
       >
         <ModalContent className="font-cairo">
@@ -337,7 +360,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
             {modalMode === "view" && "عرض بيانات الصندوق"}
           </ModalHeader>
 
-          <ModalBody className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
+          <ModalBody className="grid grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto pr-2">
             <Input
               isDisabled={isViewMode}
               label="كود الصندوق"

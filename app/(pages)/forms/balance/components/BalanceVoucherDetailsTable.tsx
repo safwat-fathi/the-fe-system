@@ -148,7 +148,7 @@ export default function BalanceVoucherDetailsTable({
           </button>
         </div>
         <div className="overflow-x-auto overflow-y-auto mb-3 max-w-full max-h-[600px]">
-          <table className="min-w-[1200px] border text-sm text-center table-fixed">
+          <table className="min-w-[1400px] border text-sm text-center table-fixed">
             <thead className="bg-gray-100 text-xs font-bold">
               <tr>
                 <th
@@ -167,13 +167,19 @@ export default function BalanceVoucherDetailsTable({
                   className="w-40 p-0.5 font-bold text-slate-700 border"
                   colSpan={2}
                 >
-                  ذهب
+                  ذهب قائم
                 </th>
                 <th
                   className="w-20 p-0.5 font-bold text-slate-700 border"
                   rowSpan={2}
                 >
                   المعايرة
+                </th>
+                <th
+                  className="w-40 p-0.5 font-bold text-slate-700 border"
+                  colSpan={2}
+                >
+                  ذهب معاير
                 </th>
                 {costCenters.length > 0 && (
                   <th
@@ -197,6 +203,12 @@ export default function BalanceVoucherDetailsTable({
                 </th>
               </tr>
               <tr>
+                <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                  مدين
+                </th>
+                <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                  دائن
+                </th>
                 <th className="w-20 p-0.5 font-bold text-slate-700 border">
                   مدين
                 </th>
@@ -363,6 +375,7 @@ export default function BalanceVoucherDetailsTable({
                     />
                   </td>
 
+                  {/* حقول ذهب (base_debit/base_credit) */}
                   <td className="p-0 border">
                     <input
                       className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
@@ -377,10 +390,116 @@ export default function BalanceVoucherDetailsTable({
                         appearance: "none",
                       }}
                       type="number"
-                      value={detail.debit_g ? String(detail.debit_g) : ""}
+                      value={detail.base_debit ? String(detail.base_debit) : ""}
                       onChange={(e) => {
                         const val = e.target.value;
 
+                        if (!val || parseFloat(val) >= 0) {
+                          onUpdateDetail(
+                            index,
+                            "base_debit",
+                            val ? parseFloat(val) : undefined,
+                          );
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                        }
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
+                    />
+                  </td>
+
+                  <td className="p-0 border">
+                    <input
+                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                      disabled={!isEditing}
+                      min="0"
+                      placeholder="0.00"
+                      readOnly={!isEditing}
+                      step="0.01"
+                      style={{
+                        MozAppearance: "textfield",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                      }}
+                      type="number"
+                      value={detail.base_credit ? String(detail.base_credit) : ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+
+                        if (!val || parseFloat(val) >= 0) {
+                          onUpdateDetail(
+                            index,
+                            "base_credit",
+                            val ? parseFloat(val) : undefined,
+                          );
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                        }
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
+                    />
+                  </td>
+
+                  {/* حقل المعايرة */}
+                  <td className="p-0 border">
+                    <input
+                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                      disabled={!isEditing}
+                      min="0"
+                      placeholder="875"
+                      readOnly={!isEditing}
+                      step="0.01"
+                      style={{
+                        MozAppearance: "textfield",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                      }}
+                      type="number"
+                      value={detail.gauge ? String(detail.gauge) : "875"}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val || parseFloat(val) >= 0) {
+                          onUpdateDetail(
+                            index,
+                            "gauge",
+                            val ? parseFloat(val) : 875,
+                          );
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                        }
+                      }}
+                      onWheel={(e) => e.currentTarget.blur()}
+                    />
+                  </td>
+
+                  {/* حقول ذهب معاير (debit_g/credit_g) - تُحسب تلقائياً من base_debit/base_credit والمعايرة */}
+                  <td className="p-0 border">
+                    <input
+                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed bg-gray-50" : "bg-yellow-50"}`}
+                      disabled={!isEditing}
+                      min="0"
+                      placeholder="0.00"
+                      readOnly={!isEditing}
+                      step="0.000001"
+                      style={{
+                        MozAppearance: "textfield",
+                        WebkitAppearance: "none",
+                        appearance: "none",
+                      }}
+                      type="number"
+                      value={detail.debit_g ? String(detail.debit_g) : ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // السماح بالتعديل اليدوي إذا أراد المستخدم
                         if (!val || parseFloat(val) >= 0) {
                           onUpdateDetail(
                             index,
@@ -395,17 +514,18 @@ export default function BalanceVoucherDetailsTable({
                         }
                       }}
                       onWheel={(e) => e.currentTarget.blur()}
+                      title="يُحسب تلقائياً من: مدين ذهب قائم × (المعايرة / 875)"
                     />
                   </td>
 
                   <td className="p-0 border">
                     <input
-                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                      className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed bg-gray-50" : "bg-yellow-50"}`}
                       disabled={!isEditing}
                       min="0"
                       placeholder="0.00"
                       readOnly={!isEditing}
-                      step="0.01"
+                      step="0.000001"
                       style={{
                         MozAppearance: "textfield",
                         WebkitAppearance: "none",
@@ -415,7 +535,7 @@ export default function BalanceVoucherDetailsTable({
                       value={detail.credit_g ? String(detail.credit_g) : ""}
                       onChange={(e) => {
                         const val = e.target.value;
-
+                        // السماح بالتعديل اليدوي إذا أراد المستخدم
                         if (!val || parseFloat(val) >= 0) {
                           onUpdateDetail(
                             index,
@@ -430,16 +550,7 @@ export default function BalanceVoucherDetailsTable({
                         }
                       }}
                       onWheel={(e) => e.currentTarget.blur()}
-                    />
-                  </td>
-
-                  <td className="p-0 border">
-                    <input
-                      readOnly
-                      className="w-full h-full text-xs border-0 rounded-none text-center cursor-not-allowed"
-                      placeholder="875"
-                      type="text"
-                      value={String(detail.gauge || 875)}
+                      title="يُحسب تلقائياً من: دائن ذهب قائم × (المعايرة / 875)"
                     />
                   </td>
 

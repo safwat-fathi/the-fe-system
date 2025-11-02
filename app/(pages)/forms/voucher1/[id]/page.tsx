@@ -107,7 +107,9 @@ const getVoucherBoxes = cache(
         return [];
       }
 
-      return Array.isArray(boxesResponse.data) ? boxesResponse.data : [];
+      const boxes = Array.isArray(boxesResponse.data) ? boxesResponse.data : [];
+
+      return boxes;
     } catch (error) {
       console.error("Error fetching voucher boxes:", error);
 
@@ -152,6 +154,8 @@ export default async function ReceiptVoucherEditPage({
 
   // جلب تفاصيل القيد والصناديق بشكل متوازي
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
+  // استخدام id (primary key) لجلب التفاصيل والصناديق
+  // ملاحظة: getBoxes في voucherService يتوقع id من جدول vouchers وليس vouch_id
   const [detailsData, boxesData] = await Promise.all([
     getVoucherDetails(targetVoucher.id, branchId),
     getVoucherBoxes(targetVoucher.id, branchId),
@@ -164,13 +168,27 @@ export default async function ReceiptVoucherEditPage({
       (acc: any) => acc.id === (detail.acc_id || detail.acc),
     );
 
+    // معالجة cost_id - قد يكون cost أو cost_id، وأحياناً يكون null
+    let costId: number | null = null;
+    if (detail.hasOwnProperty("cost")) {
+      // الحقل cost موجود في الاستجابة (حتى لو null)
+      if (detail.cost !== null && detail.cost !== undefined && detail.cost !== "") {
+        costId = Number(detail.cost);
+      }
+    } else if (detail.hasOwnProperty("cost_id")) {
+      // الحقل cost_id موجود في الاستجابة
+      if (detail.cost_id !== null && detail.cost_id !== undefined && detail.cost_id !== "") {
+        costId = Number(detail.cost_id);
+      }
+    }
+
     return {
       id: detail.id || 0,
       vouch_id: targetVoucher.vouch_id || 0, // vouch_id من voucher الرئيسي
       acc_id: detail.acc_id || detail.acc || 0, // API يعيد acc
       acc_code: (account as any)?.acc_code || detail.acc_code || "",
       acc_name: (account as any)?.acc_name || detail.acc_name || "",
-      cost_id: detail.cost_id || detail.cost || 0, // API يعيد cost
+      cost_id: costId, // قد يكون null أو رقم
       debit: parseFloat(detail.debit) || 0,
       credit: parseFloat(detail.credit) || 0,
       debit_g: parseFloat(detail.debit_g) || 0,
@@ -183,16 +201,79 @@ export default async function ReceiptVoucherEditPage({
 
   // معالجة الصناديق
   // ملاحظة: API يستخدم vouch (id من vouchers), box, vouch_amt, box_note, cost, inv
-  const boxes: VoucherBox[] = boxesData.map((box: any) => ({
-    id: box.id || 0,
-    vouch_id: box.vouch || targetVoucher.id || 0, // API يعيد vouch (id من vouchers)
-    box_id: box.box || 0, // API يعيد box (box_id)
-    amount: parseFloat(box.vouch_amt || box.amount || 0), // API يعيد vouch_amt
-    vouch_notes: box.box_note || box.vouch_notes || "", // API يعيد box_note
-    cost_id: box.cost || box.cost_id || null, // API يعيد cost
-    inv_id: box.inv || box.inv_id || null, // API يعيد inv
-    cr_date: box.cr_date || new Date().toISOString(),
-  }));
+  const boxes: VoucherBox[] = boxesData.map((boxData: any) => {
+    // معالجة box_id - قد يكون box (object أو ID) أو box_id
+    let boxId = 0;
+    let boxObject: VoucherBox["box"] = undefined;
+    
+    if (boxData.hasOwnProperty("box")) {
+      // الحقل box موجود في الاستجابة
+      if (boxData.box !== null && boxData.box !== undefined) {
+        // إذا كان box object (يحتوي على id أو cust_name)
+        if (typeof boxData.box === "object" && !Array.isArray(boxData.box)) {
+          boxObject = {
+            id: boxData.box.id || boxData.box.Id || 0,
+            cust_name: boxData.box.cust_name || boxData.box.name || boxData.box.cust_name_e || "",
+            cust_code: boxData.box.cust_code || boxData.box.code || "",
+            box_type: boxData.box.box_type || boxData.box.type_id || undefined,
+          };
+          boxId = boxObject.id;
+        } else if (typeof boxData.box === "number" || (typeof boxData.box === "string" && boxData.box !== "")) {
+          // إذا كان box ID فقط
+          boxId = Number(boxData.box);
+        }
+      }
+    }
+    
+    // إذا لم نحصل على box_id من box object، جرب box_id
+    if (boxId === 0 && boxData.hasOwnProperty("box_id")) {
+      if (boxData.box_id !== null && boxData.box_id !== undefined && boxData.box_id !== "") {
+        boxId = Number(boxData.box_id);
+      }
+    }
+    
+    // معالجة cost_id - قد يكون cost أو cost_id
+    let costId: number | null = null;
+    if (boxData.hasOwnProperty("cost")) {
+      // الحقل cost موجود في الاستجابة (حتى لو null)
+      if (boxData.cost !== null && boxData.cost !== undefined && boxData.cost !== "") {
+        costId = Number(boxData.cost);
+      }
+    } else if (boxData.hasOwnProperty("cost_id")) {
+      // الحقل cost_id موجود في الاستجابة
+      if (boxData.cost_id !== null && boxData.cost_id !== undefined && boxData.cost_id !== "") {
+        costId = Number(boxData.cost_id);
+      }
+    }
+    
+    // معالجة inv_id
+    let invId: number | null = null;
+    if (boxData.hasOwnProperty("inv")) {
+      // الحقل inv موجود في الاستجابة (حتى لو null)
+      if (boxData.inv !== null && boxData.inv !== undefined && boxData.inv !== "") {
+        invId = Number(boxData.inv);
+      }
+    } else if (boxData.hasOwnProperty("inv_id")) {
+      // الحقل inv_id موجود في الاستجابة
+      if (boxData.inv_id !== null && boxData.inv_id !== undefined && boxData.inv_id !== "") {
+        invId = Number(boxData.inv_id);
+      }
+    }
+
+    const processedBox: VoucherBox = {
+      id: boxData.id || 0,
+      vouch_id: boxData.vouch || boxData.vouch_id || targetVoucher.id || 0, // API يعيد vouch (id من vouchers)
+      box_id: boxId,
+      box: boxObject, // معلومات الصندوق الكاملة إذا كانت موجودة
+      amount: parseFloat(String(boxData.vouch_amt || boxData.amount || 0)), // API يعيد vouch_amt
+      vouch_notes: boxData.box_note || boxData.vouch_notes || boxData.notes || "", // API يعيد box_note أو notes
+      cost_id: costId,
+      inv_id: invId,
+      cr_date: boxData.cr_date || new Date().toISOString(),
+    };
+
+    return processedBox;
+  });
 
   // تنسيق بيانات القيد
   const formattedVoucher: Voucher = {

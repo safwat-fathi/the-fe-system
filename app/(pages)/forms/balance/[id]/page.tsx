@@ -148,6 +148,15 @@ export default async function BalanceVoucherEditPage({
         detail.credit !== undefined && detail.credit !== null
           ? parseFloat(String(detail.credit))
           : undefined,
+      base_debit:
+        detail.base_debit !== undefined && detail.base_debit !== null
+          ? parseFloat(String(detail.base_debit))
+          : undefined,
+      base_credit:
+        detail.base_credit !== undefined && detail.base_credit !== null
+          ? parseFloat(String(detail.base_credit))
+          : undefined,
+      gauge: parseFloat(detail.gauge) || 875,
       debit_g:
         detail.debit_g !== undefined && detail.debit_g !== null
           ? parseFloat(String(detail.debit_g))
@@ -156,7 +165,6 @@ export default async function BalanceVoucherEditPage({
         detail.credit_g !== undefined && detail.credit_g !== null
           ? parseFloat(String(detail.credit_g))
           : undefined,
-      gauge: parseFloat(detail.gauge) || 875,
       vouch_notes: detail.vouch_notes || "",
       cr_date: detail.cr_date || new Date().toISOString(),
     };

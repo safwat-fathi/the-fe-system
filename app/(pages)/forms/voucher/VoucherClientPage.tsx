@@ -14,6 +14,7 @@ import {
 import { searchAccountsAction } from "@/app/actions/accounts.action";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
+import { formatDateTime } from "@/utilities/dateUtils";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -81,8 +82,15 @@ export default function VoucherClientPage({
   const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
   const [voucherTypes, setVoucherTypes] = useState<any[]>(initialVoucherTypes);
   const [voucherStatuses, setVoucherStatuses] = useState<any[]>(
-    initialVoucherStatuses,
+    initialVoucherStatuses || [],
   );
+
+  // التأكد من تحديث voucherStatuses عند تغيير initialVoucherStatuses
+  useEffect(() => {
+    if (initialVoucherStatuses && Array.isArray(initialVoucherStatuses)) {
+      setVoucherStatuses(initialVoucherStatuses);
+    }
+  }, [initialVoucherStatuses]);
   const [caratTypes, setCaratTypes] = useState<any[]>(initialCaratTypes);
   const [taxRates, setTaxRates] = useState<number[]>(initialTaxRates);
   const [isLoading, setIsLoading] = useState(false);
@@ -252,10 +260,19 @@ export default function VoucherClientPage({
 
   const loadVouchersList = async () => {
     try {
-      const response = await voucherService.getAll();
+      // جلب فقط قيود التسوية (vouch_type = 3)
+      const response = await voucherService.getAll({
+        xvouch_type: "3", // قيود التسوية فقط
+        xcom_id: "1",
+        xyear_id: "0", // جميع السنوات
+      });
 
       if (response.success && response.data && Array.isArray(response.data)) {
-        setVouchersList(response.data);
+        // تصفية إضافية للتأكد (فقط قيود التسوية)
+        const settlementVouchers = response.data.filter(
+          (v: any) => v.vouch_type === 3,
+        );
+        setVouchersList(settlementVouchers);
       }
     } catch (error) {
       console.error("Error loading vouchers:", error);
@@ -1164,8 +1181,10 @@ export default function VoucherClientPage({
     }
   };
 
-  const createFromPrevious = async () => {
-    if (!selectedVoucher) {
+  const createFromPrevious = async (voucher?: any) => {
+    const voucherToUse = voucher || selectedVoucher;
+
+    if (!voucherToUse || !voucherToUse.id) {
       toast.error("يرجى اختيار قيد سابق");
 
       return;
@@ -1177,7 +1196,7 @@ export default function VoucherClientPage({
 
       // جلب تفاصيل القيد المحدد
       const detailsResponse = await voucherService.getDetails(
-        selectedVoucher.id,
+        voucherToUse.id,
       );
 
       if (
@@ -1187,7 +1206,7 @@ export default function VoucherClientPage({
       ) {
         // تحديث بيانات القيد
         setVoucher({
-          ...selectedVoucher,
+          ...voucherToUse,
           vouch_id: 0, // رقم جديد
           vouch_date: new Date().toISOString(),
           cr_date: new Date().toISOString(),
@@ -1217,7 +1236,7 @@ export default function VoucherClientPage({
 
         // توليد رقم قيد جديد
         const nextId = await voucherService.getNextNumber(
-          selectedVoucher.vouch_type,
+          voucherToUse.vouch_type,
         );
 
         setVoucher((prev) => ({
@@ -1613,7 +1632,7 @@ export default function VoucherClientPage({
                 <select
                   className={`text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 ${!isEditing ? "cursor-not-allowed" : ""}`}
                   disabled={!isEditing}
-                  value={voucher.vouch_status || 1}
+                  value={String(voucher.vouch_status ?? 1)}
                   onChange={(e) =>
                     setVoucher((prev) => ({
                       ...prev,
@@ -1621,21 +1640,28 @@ export default function VoucherClientPage({
                     }))
                   }
                 >
-                  {voucherStatuses && voucherStatuses.length > 0 ? (
-                    voucherStatuses.map((status) => (
-                      <option
-                        key={status.Id || status.id}
-                        value={status.Id || status.id}
-                      >
-                        {status.name ||
-                          status["Code Desc"] ||
-                          `حالة ${status.Id || status.id}`}
-                      </option>
-                    ))
+                  {voucherStatuses && Array.isArray(voucherStatuses) && voucherStatuses.length > 0 ? (
+                    voucherStatuses.map((status) => {
+                      const statusValue = status.code_id !== undefined && status.code_id !== null 
+                        ? String(status.code_id) 
+                        : String(status.id || status.Id || "");
+                      const statusLabel = status.code_desc || status["Code Desc"] || status.name || `حالة ${status.code_id ?? (status.id || status.Id)}`;
+                      
+                      return (
+                        <option
+                          key={status.id || status.Id}
+                          value={statusValue}
+                        >
+                          {statusLabel}
+                        </option>
+                      );
+                    })
                   ) : (
                     <>
-                      <option value="1">مفتوح</option>
-                      <option value="2">مغلق</option>
+                      <option value="0">ملغي</option>
+                      <option value="1">فعال</option>
+                      <option value="2">معلق</option>
+                      <option value="3">غير مكتمل</option>
                     </>
                   )}
                 </select>
@@ -2193,10 +2219,7 @@ export default function VoucherClientPage({
                           التاريخ
                         </th>
                         <th className="text-right p-2 font-medium text-slate-700">
-                          النوع
-                        </th>
-                        <th className="text-right p-2 font-medium text-slate-700">
-                          المبلغ
+                          البيان
                         </th>
                         <th className="text-right p-2 font-medium text-slate-700">
                           الحالة
@@ -2223,43 +2246,74 @@ export default function VoucherClientPage({
                           >
                             <td className="p-2 text-slate-800">{v.vouch_id}</td>
                             <td className="p-2 text-slate-600">
-                              {v.vouch_date}
+                              {v.vouch_date
+                                ? formatDateTime(v.vouch_date).split(" :")[0]
+                                : "-"}
                             </td>
-                            <td className="p-2 text-slate-600">
-                              {voucherTypes.find(
-                                (t) => (t.Id || t.id) === v.vouch_type,
-                              )?.name ||
-                                voucherTypes.find(
-                                  (t) => (t.Id || t.id) === v.vouch_type,
-                                )?.["Code Desc"] ||
-                                "غير محدد"}
-                            </td>
-                            <td className="p-2 text-slate-800">
-                              {formatAmount(v.vouch_amt || 0)}
+                            <td className="p-2 text-slate-600 text-sm">
+                              {v.vouch_notes || "-"}
                             </td>
                             <td className="p-2">
                               <span
                                 className={`text-xs px-2 py-1 rounded-full ${
-                                  v.vouch_status === 2
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-yellow-100 text-yellow-800"
+                                  Number(v.vouch_status) === 1
+                                    ? "bg-emerald-100 text-emerald-800" // فعال
+                                    : Number(v.vouch_status) === 0
+                                      ? "bg-red-100 text-red-800" // ملغي
+                                      : Number(v.vouch_status) === 2
+                                        ? "bg-yellow-100 text-yellow-800" // معلق
+                                        : "bg-gray-100 text-gray-800" // غير مكتمل أو أخرى
                                 }`}
                               >
-                                {voucherStatuses.find(
-                                  (s) => (s.Id || s.id) === v.vouch_status,
-                                )?.name ||
-                                  voucherStatuses.find(
-                                    (s) => (s.Id || s.id) === v.vouch_status,
-                                  )?.["Code Desc"] ||
-                                  "غير محدد"}
+                                {(() => {
+                                  const vouchStatusNum = Number(v.vouch_status);
+                                  
+                                  // خريطة افتراضية للحالات
+                                  const defaultStatusMap: Record<number, string> = {
+                                    0: "ملغي",
+                                    1: "فعال",
+                                    2: "معلق",
+                                    3: "غير مكتمل",
+                                  };
+
+                                  // إذا لم توجد حالات محملة، استخدم الخريطة الافتراضية
+                                  if (!voucherStatuses || !Array.isArray(voucherStatuses) || voucherStatuses.length === 0) {
+                                    return defaultStatusMap[vouchStatusNum] || (isNaN(vouchStatusNum) ? "غير محدد" : `حالة ${vouchStatusNum}`);
+                                  }
+
+                                  // البحث عن الحالة باستخدام code_id (من getVoucherStageList)
+                                  // البيانات المتوقعة: { id: 102, code_id: 0, code_desc: "ملغي", ... }
+                                  const status = voucherStatuses.find((s: any) => {
+                                    // محاولة قراءة code_id من عدة مصادر محتملة
+                                    const statusCodeId = s.code_id !== undefined && s.code_id !== null 
+                                      ? Number(s.code_id)
+                                      : s.Id !== undefined && s.Id !== null
+                                        ? Number(s.Id)
+                                        : s.id !== undefined && s.id !== null
+                                          ? Number(s.id)
+                                          : null;
+                                    
+                                    return statusCodeId !== null && statusCodeId === vouchStatusNum;
+                                  });
+
+                                  if (status) {
+                                    // محاولة قراءة النص من عدة مصادر محتملة
+                                    const statusText = status.code_desc || status["Code Desc"] || status.name || status.code_desc_l;
+                                    if (statusText && statusText.trim() !== "") {
+                                      return statusText;
+                                    }
+                                  }
+
+                                  // Fallback: استخدام الخريطة الافتراضية
+                                  return defaultStatusMap[vouchStatusNum] || (isNaN(vouchStatusNum) ? "غير محدد" : `حالة ${vouchStatusNum}`);
+                                })()}
                               </span>
                             </td>
                             <td className="p-2">
                               <button
                                 className="h-6 px-2 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300 rounded-md shadow-sm"
                                 onClick={() => {
-                                  setSelectedVoucher(v);
-                                  createFromPrevious();
+                                  createFromPrevious(v);
                                 }}
                               >
                                 اختر
