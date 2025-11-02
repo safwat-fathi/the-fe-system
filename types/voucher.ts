@@ -70,13 +70,10 @@ export interface VoucherBox {
   box_id: number;
   amount: number; // vouch_amt في vouchers_box
   amount_g?: number;
-  tax_prc?: number;
-  tax?: number;
   total_amount?: number;
   vouch_notes?: string;
   cost_id?: number; // مركز التكلفة
   inv_id?: number; // رقم الفاتورة
-  vat_no?: number; // الرقم الضريبي
   close_weight?: number; // وزن التسكير
   cr_date: string;
   cr_user?: string;

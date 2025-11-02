@@ -128,9 +128,6 @@ export default function CashReceiptVoucherClientPage({
             gauge: 875,
             cost_id: null,
             vouch_notes: "",
-            tax: undefined,
-            tax_prc: undefined,
-            vat_no: undefined,
             cr_date: new Date().toISOString(),
           },
         ]);
@@ -254,9 +251,6 @@ export default function CashReceiptVoucherClientPage({
         gauge: 875,
         cost_id: null,
         vouch_notes: "",
-        tax: undefined,
-        tax_prc: undefined,
-        vat_no: undefined,
         cr_date: new Date().toISOString(),
       },
     ]);
@@ -434,9 +428,6 @@ export default function CashReceiptVoucherClientPage({
         gauge: detail.gauge || 875,
         vouch_notes: detail.vouch_notes || "",
         cost_id: detail.cost_id || null,
-        tax: 0,
-        tax_prc: 0,
-        vat_no: 0,
       }));
 
       // تحديد التفاصيل والصناديق المحذوفة
@@ -1117,6 +1108,17 @@ export default function CashReceiptVoucherClientPage({
             >
               <i className="bi bi-pencil-square w-4 h-4 me-1" />
               تعديل
+            </button>
+
+            {/* زر "جديد" */}
+            <button
+              className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+              onClick={() => {
+                router.push("/forms/voucher1");
+              }}
+            >
+              <i className="bi bi-plus-circle w-4 h-4 me-1" />
+              جديد
             </button>
 
             <button

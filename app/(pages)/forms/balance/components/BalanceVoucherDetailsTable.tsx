@@ -147,7 +147,7 @@ export default function BalanceVoucherDetailsTable({
             + صف
           </button>
         </div>
-        <div className="overflow-x-auto mb-3 max-w-full">
+        <div className="overflow-x-auto overflow-y-auto mb-3 max-w-full max-h-[600px]">
           <table className="min-w-[1200px] border text-sm text-center table-fixed">
             <thead className="bg-gray-100 text-xs font-bold">
               <tr>

@@ -7,6 +7,7 @@ import VoucherClientPage from "../VoucherClientPage";
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "تعديل قيد تسوية - NafeesWeb",
@@ -161,15 +162,50 @@ export default async function VoucherEditPage({
     print: targetVoucher.print || false,
   };
 
+  // تحديد عنوان القيد بناءً على النوع
+  const getVoucherTitle = (vouchType: number) => {
+    switch (vouchType) {
+      case 1:
+        return "سند قبض";
+      case 2:
+        return "سند صرف";
+      case 3:
+        return "قيد تسوية";
+      default:
+        return "قيد";
+    }
+  };
+
+  const voucherTitle = getVoucherTitle(formattedVoucher.vouch_type || 3);
+  const newVoucherHref = `/forms/voucher?type=${
+    formattedVoucher.vouch_type === 1
+      ? "receipt"
+      : formattedVoucher.vouch_type === 2
+        ? "payment"
+        : "adjustment"
+  }&mode=new`;
+
   return (
     <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { name: "القيود", href: "/forms/voucher?type=adjustment" },
+          { name: voucherTitle, href: newVoucherHref },
+          {
+            name:
+              formMode === "edit"
+                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
+                : "معاينة",
+          },
+        ]}
+      />
       <VoucherClientPage
         accounts={formData.accounts}
         caratTypes={formData.caratTypes}
         costCenters={formData.costCenters}
         formMode={formMode}
         isNewVoucher={false}
-        newVoucherHref="/forms/voucher"
+        newVoucherHref={newVoucherHref}
         startInEditMode={startInEditMode}
         taxRates={formData.taxRates}
         vouchType={formattedVoucher.vouch_type}

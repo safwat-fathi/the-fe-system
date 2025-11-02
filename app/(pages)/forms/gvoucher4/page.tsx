@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import CustomerGoldVoucherClientPage from "./CustomerGoldVoucherClientPage";
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "سند قبض عميل - NafeesWeb",
@@ -15,6 +16,13 @@ export default async function CustomerReceiptVoucherPage() {
 
   return (
     <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { name: "القيود", href: "/forms/voucher?type=adjustment" },
+          { name: "القبض عملاء", href: "/forms/gvoucher4" },
+          { name: "جديدة" },
+        ]}
+      />
       <CustomerGoldVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes || []}

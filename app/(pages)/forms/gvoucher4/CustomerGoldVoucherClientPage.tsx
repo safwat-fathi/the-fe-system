@@ -110,9 +110,6 @@ export default function CustomerGoldVoucherClientPage({
             vouch_notes: "",
             cost_id: null,
             inv_id: undefined,
-            vat_no: undefined,
-            tax_prc: undefined,
-            tax: undefined,
             close_weight: undefined,
             cr_date: new Date().toISOString(),
           },
@@ -466,7 +463,7 @@ export default function CustomerGoldVoucherClientPage({
         cust_id: voucher.cust_id || null,
       };
 
-      // تحضير بيانات الصناديق (مع الحقول الضريبية)
+      // تحضير بيانات الصناديق
       const boxesData = validBoxes.map((box) => ({
         id: box.id || 0,
         box_id: box.box_id,
@@ -474,9 +471,6 @@ export default function CustomerGoldVoucherClientPage({
         vouch_notes: box.vouch_notes || "",
         cost_id: box.cost_id || null,
         inv_id: box.inv_id || null,
-        vat_no: box.vat_no || undefined,
-        tax_prc: box.tax_prc || undefined,
-        tax: box.tax || undefined,
         close_weight: box.close_weight || undefined,
       }));
 
@@ -990,9 +984,6 @@ export default function CustomerGoldVoucherClientPage({
                     <tr>
                       <th>المبلغ</th>
                       <th>الصندوق</th>
-                      <th>الرقم الضريبي</th>
-                      <th>نسبة الضريبة</th>
-                      <th>قيمة الضريبة</th>
                       <th>البيان</th>
                       <th>وزن التسكير</th>
                       <th>رقم الفاتورة</th>
@@ -1009,9 +1000,6 @@ export default function CustomerGoldVoucherClientPage({
                         <tr>
                           <td class="amount amount-cash">${formatAmount(box.amount || 0)}</td>
                           <td style="text-align: right;">${boxName}</td>
-                          <td>${box.vat_no || "-"}</td>
-                          <td>${box.tax_prc ? `${box.tax_prc}%` : "-"}</td>
-                          <td class="amount">${box.tax ? formatAmount(box.tax) : "-"}</td>
                           <td style="text-align: right; font-size: 11px; color: #718096;">${box.vouch_notes || "-"}</td>
                           <td>${box.close_weight ? box.close_weight.toFixed(5) : "-"}</td>
                           <td>${box.inv_id || "-"}</td>
@@ -1022,7 +1010,7 @@ export default function CustomerGoldVoucherClientPage({
                       .join("")}
                     <tr class="totals">
                       <td class="amount amount-cash">${formatAmount(totals.totalBoxes)}</td>
-                      <td colspan="8" style="text-align: right; padding-right: 20px; font-weight: 700;">إجمالي النقدية</td>
+                      <td colspan="5" style="text-align: right; padding-right: 20px; font-weight: 700;">إجمالي النقدية</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1295,6 +1283,18 @@ export default function CustomerGoldVoucherClientPage({
               تعديل
             </button>
 
+            {/* زر "جديد" */}
+            <button
+              className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+              onClick={() => {
+                const newPath = vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+                router.push(newPath);
+              }}
+            >
+              <i className="bi bi-plus-circle w-4 h-4 me-1" />
+              جديد
+            </button>
+
             <button
               className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm disabled:opacity-50"
               disabled={isPrinting}
@@ -1479,7 +1479,7 @@ export default function CustomerGoldVoucherClientPage({
             </button>
           </div>
           <div className="overflow-x-auto mb-3 max-w-full">
-            <table className="min-w-[1400px] border text-sm text-center table-fixed">
+            <table className="min-w-[1000px] border text-sm text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
                   <th className="w-48 p-2 border">رقم الصنف</th>
@@ -1843,14 +1843,11 @@ export default function CustomerGoldVoucherClientPage({
             </button>
           </div>
           <div className="overflow-x-auto mb-3 max-w-full">
-            <table className="min-w-[1400px] border text-sm text-center table-fixed">
+            <table className="min-w-[1000px] border text-sm text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
                   <th className="w-32 p-2 border">المبلغ</th>
                   <th className="w-48 p-2 border">الصندوق</th>
-                  <th className="w-32 p-2 border">الرقم الضريبي</th>
-                  <th className="w-32 p-2 border">نسبة الضريبة</th>
-                  <th className="w-32 p-2 border">قيمة الضريبة</th>
                   <th className="w-80 p-2 border">البيان</th>
                   <th className="w-32 p-2 border">وزن التسكير</th>
                   <th className="w-32 p-2 border">رقم الفاتورة</th>
@@ -1909,90 +1906,6 @@ export default function CustomerGoldVoucherClientPage({
                           </option>
                         ))}
                       </select>
-                    </td>
-                    <td className="p-0 border">
-                      <input
-                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        min="0"
-                        readOnly={!isEditing}
-                        style={{
-                          MozAppearance: "textfield",
-                          WebkitAppearance: "none",
-                          appearance: "none",
-                        }}
-                        type="number"
-                        value={box.vat_no || ""}
-                        onChange={(e) =>
-                          updateVoucherBox(
-                            index,
-                            "vat_no",
-                            e.target.value ? parseInt(e.target.value) : undefined,
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            e.preventDefault();
-                          }
-                        }}
-                        onWheel={(e) => e.currentTarget.blur()}
-                      />
-                    </td>
-                    <td className="p-0 border">
-                      <input
-                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        min="0"
-                        readOnly={!isEditing}
-                        style={{
-                          MozAppearance: "textfield",
-                          WebkitAppearance: "none",
-                          appearance: "none",
-                        }}
-                        type="number"
-                        value={box.tax_prc || ""}
-                        onChange={(e) =>
-                          updateVoucherBox(
-                            index,
-                            "tax_prc",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            e.preventDefault();
-                          }
-                        }}
-                        onWheel={(e) => e.currentTarget.blur()}
-                      />
-                    </td>
-                    <td className="p-0 border">
-                      <input
-                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        min="0"
-                        readOnly={!isEditing}
-                        style={{
-                          MozAppearance: "textfield",
-                          WebkitAppearance: "none",
-                          appearance: "none",
-                        }}
-                        type="number"
-                        value={box.tax || ""}
-                        onChange={(e) =>
-                          updateVoucherBox(
-                            index,
-                            "tax",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            e.preventDefault();
-                          }
-                        }}
-                        onWheel={(e) => e.currentTarget.blur()}
-                      />
                     </td>
                     <td className="p-0 border">
                       <input

@@ -6,6 +6,7 @@ export { default as itemService } from "./item.service";
 export { default as boxesService } from "./boxes.service";
 export { default as goldPriceService } from "./gold-price.service";
 export { default as taxRateService } from "./tax-rate.service";
+export { default as taxService } from "./tax.service";
 export { default as genericService } from "./generic.service";
 export { default as voucherService } from "./voucher.service";
 export { default as accountService } from "./account.service";

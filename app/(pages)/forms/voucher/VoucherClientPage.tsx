@@ -121,9 +121,6 @@ export default function VoucherClientPage({
             gauge: 875,
             cost_id: 0,
             vouch_notes: "",
-            tax: undefined,
-            tax_prc: undefined,
-            vat_no: undefined,
             cr_date: new Date().toISOString(),
           };
           const newDetail2: VoucherDetail = {
@@ -146,9 +143,6 @@ export default function VoucherClientPage({
             gauge: 875,
             cost_id: 0,
             vouch_notes: "",
-            tax: undefined,
-            tax_prc: undefined,
-            vat_no: undefined,
             cr_date: new Date().toISOString(),
           };
 
@@ -180,9 +174,6 @@ export default function VoucherClientPage({
               gauge: 875,
               cost_id: 0,
               vouch_notes: "",
-              tax: undefined,
-              tax_prc: undefined,
-              vat_no: undefined,
               cr_date: new Date().toISOString(),
             });
           }
@@ -351,9 +342,6 @@ export default function VoucherClientPage({
                 debit_g: detail.debit_g || 0,
                 credit_g: detail.credit_g || 0,
                 gauge: detail.gauge,
-                tax: detail.tax || 0,
-                tax_prc: detail.tax_prc || 0,
-                vat_no: detail.vat_no || 0,
                 vouch_notes: detail.vouch_notes || "",
               };
             });
@@ -423,9 +411,6 @@ export default function VoucherClientPage({
       gauge: 875,
       cost_id: 0,
       vouch_notes: "",
-      tax: undefined,
-      tax_prc: undefined,
-      vat_no: undefined,
       cr_date: new Date().toISOString(),
     };
 
@@ -499,23 +484,6 @@ export default function VoucherClientPage({
           }
         }
 
-        // حساب الضريبة تلقائياً عند تغيير نسبة الضريبة
-        if (field === "tax_prc") {
-          const taxPercentage = parseFloat(value) || 0;
-          const baseAmount = (newDetail.debit || 0) + (newDetail.credit || 0);
-          const calculatedTax = (baseAmount * taxPercentage) / 100;
-
-          newDetail.tax = calculatedTax;
-        }
-
-        // حساب الضريبة تلقائياً عند تغيير debit أو credit
-        if ((field === "debit" || field === "credit") && newDetail.tax_prc) {
-          const baseAmount = (newDetail.debit || 0) + (newDetail.credit || 0);
-          const taxPercentage = parseFloat(String(newDetail.tax_prc)) || 0;
-          const calculatedTax = (baseAmount * taxPercentage) / 100;
-
-          newDetail.tax = calculatedTax;
-        }
 
         return newDetail;
       });
@@ -548,20 +516,11 @@ export default function VoucherClientPage({
           detail.credit_g !== undefined
             ? parseFloat(String(detail.credit_g)) || 0
             : 0;
-        const tax =
-          detail.tax !== undefined ? parseFloat(String(detail.tax)) || 0 : 0;
-        const taxPrc =
-          detail.tax_prc !== undefined
-            ? parseFloat(String(detail.tax_prc)) || 0
-            : 0;
-
         return {
           totalDebit: totals.totalDebit + debit,
           totalCredit: totals.totalCredit + credit,
           totalDebitG: totals.totalDebitG + debitG,
           totalCreditG: totals.totalCreditG + creditG,
-          totalTax: totals.totalTax + tax,
-          totalTaxPrc: totals.totalTaxPrc + taxPrc,
         };
       },
       {
@@ -569,8 +528,6 @@ export default function VoucherClientPage({
         totalCredit: 0,
         totalDebitG: 0,
         totalCreditG: 0,
-        totalTax: 0,
-        totalTaxPrc: 0,
       },
     );
 
@@ -677,9 +634,6 @@ export default function VoucherClientPage({
           gauge: detail.gauge,
           vouch_notes: detail.vouch_notes || "",
           cost_id: detail.cost_id || null,
-          tax: detail.tax,
-          tax_prc: detail.tax_prc,
-          vat_no: detail.vat_no || 0,
         }));
 
       // تحديد التفاصيل المحذوفة
@@ -1255,9 +1209,6 @@ export default function VoucherClientPage({
           debit_g: parseFloat(detail.debit_g) || 0,
           credit_g: parseFloat(detail.credit_g) || 0,
           gauge: parseFloat(detail.gauge) || 875,
-          tax: parseFloat(detail.tax) || 0,
-          tax_prc: parseFloat(detail.tax_prc) || 0,
-          vat_no: detail.vat_no || 0,
           vouch_notes: detail.vouch_notes || "",
           cr_date: new Date().toISOString(),
         }));
@@ -1503,23 +1454,17 @@ export default function VoucherClientPage({
                 تعديل
               </button>
 
-              {/* زر "جديد" - يظهر فقط للقيود التي يمكن تكرارها (ليس قيد التسوية) */}
-              {vouchType !== 3 && (
-                <button
-                  className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-                  onClick={() => {
-                    // إعادة تعيين الحالة والعودة إلى صفحة جديدة
-                    router.push("/forms/voucher");
-                    // إعادة تحميل الصفحة لضمان إعادة تعيين الحالة
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 100);
-                  }}
-                >
-                  <i className="bi bi-plus-circle w-4 h-4 me-1" />
-                  جديد
-                </button>
-              )}
+              {/* زر "جديد" */}
+              <button
+                className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+                onClick={() => {
+                  // الانتقال إلى صفحة جديدة
+                  router.push(newVoucherHref || "/forms/voucher");
+                }}
+              >
+                <i className="bi bi-plus-circle w-4 h-4 me-1" />
+                جديد
+              </button>
 
               <button
                 className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm disabled:opacity-50"
@@ -1834,24 +1779,6 @@ export default function VoucherClientPage({
                       المعايرة
                     </th>
                     <th
-                      className="w-20 p-0.5 font-bold text-slate-700 border"
-                      rowSpan={2}
-                    >
-                      الضريبة
-                    </th>
-                    <th
-                      className="w-20 p-0.5 font-bold text-slate-700 border"
-                      rowSpan={2}
-                    >
-                      نسبة الضريبة
-                    </th>
-                    <th
-                      className="w-20 p-0.5 font-bold text-slate-700 border"
-                      rowSpan={2}
-                    >
-                      الرقم الضريبي
-                    </th>
-                    <th
                       className="w-40 p-0.5 font-bold text-slate-700 border"
                       rowSpan={2}
                     >
@@ -2129,77 +2056,6 @@ export default function VoucherClientPage({
                       </td>
 
                       <td className="p-0 border">
-                        <input
-                          readOnly
-                          className="w-full h-full text-xs border-0 rounded-none text-center cursor-not-allowed"
-                          placeholder="0.00"
-                          type="text"
-                          value={detail.tax ? formatAmount(detail.tax) : "0.00"}
-                        />
-                      </td>
-
-                      <td className="p-0 border">
-                        <select
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          value={detail.tax_prc || 0}
-                          onChange={(e) =>
-                            updateDetail(
-                              index,
-                              "tax_prc",
-                              e.target.value ? parseFloat(e.target.value) : 0,
-                            )
-                          }
-                        >
-                          {taxRates.length > 0 ? (
-                            taxRates.map((rate) => (
-                              <option key={rate} value={rate}>
-                                {rate}%
-                              </option>
-                            ))
-                          ) : (
-                            <>
-                              <option value={0}>0%</option>
-                              <option value={5}>5%</option>
-                              <option value={10}>10%</option>
-                              <option value={15}>15%</option>
-                              <option value={20}>20%</option>
-                            </>
-                          )}
-                        </select>
-                      </td>
-
-                      <td className="p-0 border">
-                        <input
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          placeholder=""
-                          readOnly={!isEditing}
-                          style={{
-                            MozAppearance: "textfield",
-                            WebkitAppearance: "none",
-                            appearance: "none",
-                          }}
-                          type="number"
-                          value={detail.vat_no ? String(detail.vat_no) : ""}
-                          onChange={(e) =>
-                            updateDetail(
-                              index,
-                              "vat_no",
-                              e.target.value
-                                ? parseInt(e.target.value)
-                                : undefined,
-                            )
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                              e.preventDefault();
-                            }
-                          }}
-                        />
-                      </td>
-
-                      <td className="p-0 border">
                         <select
                           className={`w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
                           disabled={!isEditing}
@@ -2304,11 +2160,6 @@ export default function VoucherClientPage({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-gray-700 font-medium">إجمالي الضريبة:</span>
-              <span className="font-semibold text-green-700 flex items-center gap-1">
-                {formatAmount(totals.totalTax)}
-                <RiyalIcon color="currentColor" />
-              </span>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import VoucherClientPage from "@/app/(pages)/forms/voucher/VoucherClientPage";
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
+import Breadcrumb from "@/components/Breadcrumb";
 
 type VoucherPageType = "adjustment" | "receipt" | "payment" | "opening";
 type VoucherFormMode = "new" | "edit" | "preview";
@@ -181,6 +182,20 @@ export default async function VoucherPage({
 
   return (
     <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { name: "القيود", href: "/forms/voucher?type=adjustment" },
+          { name: config.title, href: newVoucherHref },
+          {
+            name:
+              mode === "new"
+                ? "جديدة"
+                : mode === "edit"
+                  ? `تعديل ${voucherData?.vouch_id ?? editId ?? ""}`
+                  : "معاينة",
+          },
+        ]}
+      />
       <VoucherClientPage
         accounts={formData.accounts}
         caratTypes={formData.caratTypes}

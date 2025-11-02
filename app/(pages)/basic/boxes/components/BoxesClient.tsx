@@ -114,7 +114,12 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
     }
   };
 
-  // تحميل البيانات عند فتح المودال
+  // تحميل أنواع الصناديق عند تحميل المكون
+  React.useEffect(() => {
+    loadBoxTypes();
+  }, []);
+
+  // تحميل البيانات عند فتح المودال (لتأكيد التحديث)
   React.useEffect(() => {
     if (isModalOpen) {
       loadBoxTypes();
@@ -292,8 +297,9 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
               <TableCell>{box.cust_name}</TableCell>
               <TableCell>{box.cust_name_e}</TableCell>
               <TableCell>
-                {boxTypes.find((type) => type.code_id === box.box_type)
-                  ?.code_desc ||
+                {boxTypes.find(
+                  (type) => type.code_id === Number(box.box_type),
+                )?.code_desc ||
                   box.box_type ||
                   "-"}
               </TableCell>
@@ -362,18 +368,25 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
               popoverProps={{
                 shouldBlockScroll: false,
               }}
-              selectedKeys={currentBox.box_type ? [currentBox.box_type] : []}
+              selectedKeys={
+                currentBox.box_type
+                  ? [String(currentBox.box_type)]
+                  : []
+              }
               onSelectionChange={(keys) => {
                 const selectedKey = Array.from(keys)[0];
 
                 setCurrentBox({
                   ...currentBox,
-                  box_type: selectedKey as string,
+                  box_type: String(selectedKey),
                 });
               }}
             >
               {boxTypes.map((type) => (
-                <SelectItem key={type.code_id} textValue={type.code_desc}>
+                <SelectItem
+                  key={String(type.code_id)}
+                  textValue={type.code_desc || ""}
+                >
                   {type.code_desc}
                 </SelectItem>
               ))}

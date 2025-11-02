@@ -17,6 +17,8 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import {
   PlusIcon,
@@ -28,6 +30,11 @@ import toast from "react-hot-toast";
 
 import currencyService from "@/services/api/currency.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
+import {
+  getCurrencyOptions,
+  findCurrencyByCode,
+  type CurrencyInfo,
+} from "@/utilities/currencies";
 
 interface Currency {
   id: number;
@@ -112,6 +119,17 @@ export default function CurrenciesClient({
   }, [loadCurrencies]);
 
   const handleSave = async () => {
+    // التحقق من الحقول المطلوبة
+    if (!currentCurrency.cur_name || currentCurrency.cur_name.trim() === "") {
+      toast.error("⚠️ اسم العملة مطلوب");
+      return;
+    }
+
+    if (!currentCurrency.cur_price || currentCurrency.cur_price.trim() === "") {
+      toast.error("⚠️ السعر مطلوب");
+      return;
+    }
+
     const previousCurrencies = [...currencies];
 
     try {
@@ -316,6 +334,62 @@ export default function CurrenciesClient({
           </ModalHeader>
 
           <ModalBody className="grid grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto pr-2">
+            {/* اختيار العملة من القائمة العالمية - فقط في وضع الإضافة */}
+            {modalMode === "add" && (
+              <div className="col-span-2">
+                <Select
+                  label="اختر العملة"
+                  placeholder="ابحث واختر عملة من القائمة العالمية"
+                  selectedKeys={
+                    currentCurrency.cur_tag ? [currentCurrency.cur_tag] : []
+                  }
+                  variant="bordered"
+                  onSelectionChange={(keys) => {
+                    const selectedCode = Array.from(keys)[0] as string;
+
+                    if (selectedCode) {
+                      const currencyInfo = findCurrencyByCode(selectedCode);
+
+                      if (currencyInfo) {
+                        // استخدام أول حرف من كود ISO للوسم (حرف واحد فقط)
+                        const tagChar = currencyInfo.code.charAt(0).toUpperCase();
+
+                        setCurrentCurrency({
+                          ...currentCurrency,
+                          cur_tag: tagChar, // حرف واحد فقط
+                          cur_name: currencyInfo.nameAr,
+                          cur_name_e: currencyInfo.nameEn,
+                          cur_part: currencyInfo.fractionalUnit,
+                          cur_part_e: currencyInfo.fractionalUnitEn,
+                          cur_sign: currencyInfo.symbol,
+                          // السعر يبقى فارغاً للمستخدم ليدخله
+                        });
+                        toast.success(
+                          `تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`,
+                        );
+                      }
+                    }
+                  }}
+                >
+                  {getCurrencyOptions().map((option) => (
+                    <SelectItem key={option.value} textValue={option.label}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  اختر عملة من القائمة لتعبئة الحقول تلقائياً
+                </p>
+              </div>
+            )}
+
+            {/* قسم تفاصيل العملة */}
+            <div className="col-span-2">
+              <h3 className="text-lg font-semibold mb-3 text-gray-700">
+                تفاصيل العملة
+              </h3>
+            </div>
+
             <Input
               required
               isDisabled={isViewMode}
@@ -371,6 +445,21 @@ export default function CurrenciesClient({
                   cur_sign: e.target.value,
                 })
               }
+            />
+            <Input
+              isDisabled={isViewMode}
+              label="الوسم (حرف واحد فقط)"
+              value={currentCurrency.cur_tag || ""}
+              placeholder="مثال: U, E, S"
+              maxLength={1}
+              description="الوسم يجب أن يكون حرف واحد فقط (سيتم أخذ أول حرف تلقائياً)"
+              onChange={(e) => {
+                const value = e.target.value.slice(0, 1).toUpperCase();
+                setCurrentCurrency({
+                  ...currentCurrency,
+                  cur_tag: value,
+                });
+              }}
             />
             <Input
               required

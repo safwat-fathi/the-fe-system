@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import CashReceiptVoucherClientPage from "./CashReceiptVoucherClientPage";
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "سند قبض - NafeesWeb",
@@ -15,6 +16,13 @@ export default async function ReceiptVoucherPage() {
 
   return (
     <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { name: "القيود", href: "/forms/voucher?type=adjustment" },
+          { name: "سند قبض", href: "/forms/voucher1" },
+          { name: "جديدة" },
+        ]}
+      />
       <CashReceiptVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes}

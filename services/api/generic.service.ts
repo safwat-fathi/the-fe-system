@@ -66,6 +66,9 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
   // Accounts (قوائم أساسية - بدون year)
   accounts_list: {
     endpoint: "accounts_list",
+    paramTransform: (params) => ({
+      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
+    }),
   },
 
   // Boxes (قوائم أساسية - بدون year)
@@ -134,7 +137,7 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
   vouchers_box_list: {
     endpoint: "vouchers_box_list",
     paramTransform: (params) => ({
-      vouch_id: params.vouch_id || params.voucherId || "0",
+      vouch_id: params.vouch_id || params.voucherId || params.xvouch_id || "0", // دعم xvouch_id أيضاً للتوافق
       xcom_id: params.xcom_id || params.com || "1", // رقم الفرع
       // لا يحتاج year parameter
     }),

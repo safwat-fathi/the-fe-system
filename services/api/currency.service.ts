@@ -48,9 +48,40 @@ class CurrencyService extends HttpService<Currency> {
     currency: Omit<Currency, "id">,
   ): Promise<Currency | null> {
     try {
+      // جلب معاملات الفرع لإضافة com
+      let companyId = "1";
+
+      try {
+        const branchParams = await import("@/app/actions/branch-params").then(
+          (m) => m.getBranchParams(),
+        );
+        companyId = branchParams.com || "1";
+      } catch {
+        companyId = "1";
+      }
+
+      // التحقق من أن cur_price موجود وليس فارغ
+      if (!currency.cur_price || currency.cur_price.trim() === "") {
+        throw new Error("السعر مطلوب");
+      }
+
+      // تقييد cur_tag لحرف واحد فقط (أول حرف من الكود أو الرمز)
+      const curTag = currency.cur_tag
+        ? currency.cur_tag.length > 1
+          ? currency.cur_tag.charAt(0).toUpperCase()
+          : currency.cur_tag.toUpperCase()
+        : currency.cur_sign?.charAt(0)?.toUpperCase() || "";
+
+      const currencyData = {
+        ...currency,
+        com: companyId, // إضافة حقل com المطلوب
+        cur_tag: curTag, // تقييد لحرف واحد فقط
+        cur_price: currency.cur_price, // التأكد من وجود السعر
+      };
+
       const response = await this.post<Currency>(
         "api_create_currency",
-        currency,
+        currencyData,
         undefined,
         {
           cache: "no-store",
@@ -73,9 +104,34 @@ class CurrencyService extends HttpService<Currency> {
     currency: Partial<Currency>,
   ): Promise<Currency | null> {
     try {
+      // جلب معاملات الفرع لإضافة com
+      let companyId = "1";
+
+      try {
+        const branchParams = await import("@/app/actions/branch-params").then(
+          (m) => m.getBranchParams(),
+        );
+        companyId = branchParams.com || "1";
+      } catch {
+        companyId = "1";
+      }
+
+      // تقييد cur_tag لحرف واحد فقط إذا كان موجوداً
+      const currencyData: any = {
+        ...currency,
+        com: companyId, // إضافة حقل com المطلوب
+      };
+
+      if (currency.cur_tag) {
+        currencyData.cur_tag =
+          currency.cur_tag.length > 1
+            ? currency.cur_tag.charAt(0).toUpperCase()
+            : currency.cur_tag.toUpperCase();
+      }
+
       const response = await this.put<Currency>(
         `api_update_currency/${id}`,
-        currency,
+        currencyData,
         undefined,
         {
           cache: "no-store",
