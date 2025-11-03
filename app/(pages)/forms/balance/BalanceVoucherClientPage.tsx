@@ -1,24 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import toast from "react-hot-toast";
+import AsyncCreatableSelect from "react-select/async-creatable";
 
-import { BalanceVoucherContainer } from "./components";
-
-import { Voucher, VoucherDetail } from "@/types/voucher";
-import { getNextVoucherNumber } from "@/utilities/numbering";
-import { voucherService } from "@/services/api";
-import {
-  createVoucherAction,
-  updateVoucherAction,
-} from "@/app/actions/voucher.action";
+import { useBalanceVoucherForm } from "@/hooks/useBalanceVoucherForm";
+import { RiyalIcon } from "@/components/RiyalIcon";
+import { formatAmount } from "@/utilities/formatAmount";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 interface BalanceVoucherClientPageProps {
-  voucherData?: Voucher | null;
-  voucherDetailsData?: VoucherDetail[];
+  voucherData?: any;
+  voucherDetailsData?: any[];
   formData: any;
   formMode?: "new" | "edit" | "preview";
   voucherRecordId?: number | string | null;
@@ -41,874 +34,55 @@ export default function BalanceVoucherClientPage({
   const formMode = (
     mode === "new" ? "new" : mode === "edit" ? "edit" : "preview"
   ) as "new" | "edit" | "preview";
-  // استخدام propStartInEditMode إذا كان متوفراً، وإلا استخدام المنطق الافتراضي
   const startInEditMode =
     propStartInEditMode !== undefined
       ? propStartInEditMode
       : formMode === "edit" || formMode === "new";
 
-  // State Management
-  const [voucher, setVoucher] = useState<Voucher>(
-    voucherData || {
-      vouch_id: 0,
-      vouch_date: new Date().toISOString(),
-      vouch_type: 0, // قيد افتتاحي
-      vouch_amt: 0,
-      pay_type: 1,
-      cr_date: new Date().toISOString(),
-      vouch_status: 1,
-      commit: false,
-      post: false,
-      print: false,
-    },
-  );
-
-  const [currentTime, setCurrentTime] = useState("");
-  const [isClient, setIsClient] = useState(false);
-  const [details, setDetails] = useState<VoucherDetail[]>(
-    voucherDetailsData || [],
-  );
-  const [accounts, setAccounts] = useState<any[]>(formData.accounts || []);
-  const [costCenters, setCostCenters] = useState<any[]>(
-    formData.costCenters || [],
-  );
-  const [voucherTypes, setVoucherTypes] = useState<any[]>(
-    formData.voucherTypes || [],
-  );
-  const [voucherStatuses, setVoucherStatuses] = useState<any[]>(
-    formData.voucherStatuses || [],
-  );
-  const [caratTypes, setCaratTypes] = useState<any[]>(
-    formData.caratTypes || [],
-  );
-  const [taxRates, setTaxRates] = useState<number[]>(formData.taxRates || []);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
-  const [isEditing, setIsEditing] = useState(startInEditMode);
-  const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>(
-    voucherDetailsData || [],
-  );
-  const previousVouchNotesRef = useRef<string>(
-    voucherData?.vouch_notes || "",
-  );
-
-  // استخدام useRef لتتبع ما إذا تم استدعاء generateNextVoucherNumber مسبقاً
-  const hasGeneratedVoucherNumber = useRef(false);
-
-  // Initialize component
-  useEffect(() => {
-    setIsClient(true);
-    updateCurrentTime();
-
-    // إضافة سطر فارغ واحد عند التهيئة للقيد الجديد فقط
-    if (isNewVoucher && details.length === 0) {
-      const newDetail: VoucherDetail = {
-        id: 0,
-        vouch_id: voucher.vouch_id,
-        acc_id: 0,
-        acc_code: "",
-        acc_name: "",
-        debit: undefined,
-        credit: undefined,
-        base_debit: undefined,
-        base_credit: undefined,
-        gauge: 875,
-        debit_g: undefined,
-        credit_g: undefined,
-        cost_id: 0,
-        vouch_notes: "",
-        cr_date: new Date().toISOString(),
-      };
-
-      setDetails([newDetail]);
-    }
-
-    // حفظ التفاصيل الأصلية للقيد الموجود
-    if (!isNewVoucher && voucherDetailsData && voucherDetailsData.length > 0) {
-      setOriginalDetails([...voucherDetailsData]);
-    }
-
-    // توليد رقم القيد التالي للقيد الجديد - مرة واحدة فقط
-    if (isNewVoucher && !hasGeneratedVoucherNumber.current && (!voucher.vouch_id || voucher.vouch_id === 0)) {
-      hasGeneratedVoucherNumber.current = true;
-      generateNextVoucherNumber().catch((error) => {
-        console.error("خطأ في توليد رقم القيد:", error);
-        hasGeneratedVoucherNumber.current = false; // إعادة المحاولة في المرة القادمة
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isClient) return;
-    const interval = setInterval(updateCurrentTime, 60000);
-
-    return () => clearInterval(interval);
-  }, [isClient]);
-
-  // تحديث isEditing عند تغيير formMode
-  useEffect(() => {
-    setIsEditing(startInEditMode);
-  }, [startInEditMode]);
-
-  // نقل البيان من القيد الرئيسي إلى التفاصيل تلقائياً
-  useEffect(() => {
-    const currentNotes = voucher.vouch_notes || "";
-    const previousNotes = previousVouchNotesRef.current;
-
-    // فقط عند تغيير البيان الرئيسي
-    if (currentNotes === previousNotes) return;
-
-    // تحديث المرجع للبيان السابق
-    previousVouchNotesRef.current = currentNotes;
-
-    // إذا كان البيان فارغاً، لا تقم بأي شيء
-    if (!currentNotes) return;
-
-    setDetails((prev) => {
-      return prev.map((detail) => {
-        // إذا كان البيان في التفصيل فارغاً أو مطابقاً للبيان السابق، قم بتحديثه
-        // إذا كان المستخدم قد عدّل البيان يدوياً (مختلف عن البيان السابق)، اتركه كما هو
-        if (!detail.vouch_notes || detail.vouch_notes === previousNotes) {
-          return { ...detail, vouch_notes: currentNotes };
-        }
-        return detail;
-      });
-    });
-  }, [voucher.vouch_notes]);
-
-  // Helper Functions
-  const updateCurrentTime = () => {
-    const now = new Date();
-
-    setCurrentTime(
-      now.toLocaleTimeString("ar-SA", {
-        hour12: true,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
-    );
-  };
-
-  // دالة تحديث الحسابات المحملة عند اختيار حساب جديد
-  const updateAccountsList = (newAccount: any) => {
-    if (!accounts.find((acc) => acc.id === newAccount.id)) {
-      setAccounts([...accounts, newAccount]);
-    }
-  };
-
-  const generateNextVoucherNumber = async () => {
-    try {
-      const nextId = await getNextVoucherNumber(0); // القيد الافتتاحي نوعه 0
-
-      setVoucher((prev) => ({
-        ...prev,
-        vouch_id: nextId,
-        vouch_date: new Date().toISOString(),
-        cr_date: new Date().toISOString(),
-      }));
-    } catch (error) {
-      console.error("خطأ في الحصول على رقم القيد التالي:", error);
-      setVoucher((prev) => ({
-        ...prev,
-        vouch_id: 1,
-        vouch_date: new Date().toISOString(),
-        cr_date: new Date().toISOString(),
-      }));
-    }
-  };
-
-  const addDetailRow = () => {
-    const newDetail: VoucherDetail = {
-      id: 0,
-      vouch_id: voucher.vouch_id,
-      acc_id: 0,
-      acc_code: "",
-      acc_name: "",
-      debit: undefined,
-      credit: undefined,
-      debit_g: undefined,
-      credit_g: undefined,
-      gauge: 875,
-      cost_id: 0,
-      vouch_notes: "",
-      cr_date: new Date().toISOString(),
-    };
-
-    setDetails((prev) => [...prev, newDetail]);
-  };
-
-  const removeDetailRow = (index: number) => {
-    setDetails((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateDetail = (
-    index: number,
-    field: keyof VoucherDetail,
-    value: any,
-  ) => {
-    setDetails((prev) => {
-      const updated = prev.map((detail, i) => {
-        if (i !== index) return detail;
-
-        const newDetail = { ...detail, [field]: value };
-
-        // تصفير الحقل المقابل تلقائياً
-        if (field === "debit" && value !== undefined && parseFloat(value) > 0) {
-          newDetail.credit = undefined;
-        } else if (
-          field === "credit" &&
-          value !== undefined &&
-          parseFloat(value) > 0
-        ) {
-          newDetail.debit = undefined;
-        } else if (
-          field === "base_debit" &&
-          value !== undefined &&
-          parseFloat(value) > 0
-        ) {
-          newDetail.base_credit = undefined;
-        } else if (
-          field === "base_credit" &&
-          value !== undefined &&
-          parseFloat(value) > 0
-        ) {
-          newDetail.base_debit = undefined;
-        } else if (
-          field === "debit_g" &&
-          value !== undefined &&
-          parseFloat(value) > 0
-        ) {
-          newDetail.credit_g = undefined;
-        } else if (
-          field === "credit_g" &&
-          value !== undefined &&
-          parseFloat(value) > 0
-        ) {
-          newDetail.debit_g = undefined;
-        }
-
-        // عند اختيار الحساب، جلب المعايرة من caratTypes أو من الحساب
-        if (field === "acc_id" && value) {
-          const selectedAccount = accounts.find((acc) => acc.id === value);
-
-          if (selectedAccount) {
-            // البحث عن المعايرة المرتبطة بالحساب
-            const accountGauge = selectedAccount.gauge || selectedAccount.carat;
-
-            if (accountGauge && caratTypes.length > 0) {
-              const matchedCaratType = caratTypes.find(
-                (ct: any) =>
-                  ct.id === accountGauge ||
-                  ct.gauge === accountGauge ||
-                  ct.value === accountGauge,
-              );
-
-              if (matchedCaratType) {
-                newDetail.gauge =
-                  matchedCaratType.gauge ||
-                  matchedCaratType.value ||
-                  matchedCaratType.id ||
-                  875;
-              } else {
-                newDetail.gauge = accountGauge;
-              }
-            } else if (accountGauge) {
-              newDetail.gauge = accountGauge;
-            } else {
-              // افتراضياً 875 إذا لم توجد معايرة
-              newDetail.gauge = 875;
-            }
-          }
-        }
-
-        // حساب الذهب المعاير تلقائياً بناءً على المعادلة: debit_g = base_debit * (gauge / 875)
-        // المعادلة: g_weight = weight * (gauge / 875)
-        const baseGauge = 875; // المعيار الأساسي (21 قيراط)
-        const currentGauge = newDetail.gauge || 875;
-
-        // حساب debit_g من base_debit عند تغيير base_debit أو gauge
-        if (field === "base_debit") {
-          const baseDebit = value !== undefined && value !== null ? parseFloat(String(value)) : 0;
-          if (baseDebit > 0 && currentGauge > 0) {
-            const calculatedDebitG = (baseDebit * currentGauge) / baseGauge;
-            newDetail.debit_g = parseFloat(calculatedDebitG.toFixed(6));
-          } else {
-            newDetail.debit_g = undefined;
-          }
-        } else if (field === "gauge" && newDetail.base_debit !== undefined && newDetail.base_debit !== null && newDetail.base_debit > 0) {
-          // إعادة حساب debit_g عند تغيير المعايرة إذا كان هناك base_debit
-          const newGauge = parseFloat(String(value)) || 875;
-          const baseDebit = parseFloat(String(newDetail.base_debit)) || 0;
-          if (baseDebit > 0 && newGauge > 0) {
-            const calculatedDebitG = (baseDebit * newGauge) / baseGauge;
-            newDetail.debit_g = parseFloat(calculatedDebitG.toFixed(6));
-          }
-        }
-
-        // حساب credit_g من base_credit عند تغيير base_credit أو gauge
-        if (field === "base_credit") {
-          const baseCredit = value !== undefined && value !== null ? parseFloat(String(value)) : 0;
-          if (baseCredit > 0 && currentGauge > 0) {
-            const calculatedCreditG = (baseCredit * currentGauge) / baseGauge;
-            newDetail.credit_g = parseFloat(calculatedCreditG.toFixed(6));
-          } else {
-            newDetail.credit_g = undefined;
-          }
-        } else if (field === "gauge" && newDetail.base_credit !== undefined && newDetail.base_credit !== null && newDetail.base_credit > 0) {
-          // إعادة حساب credit_g عند تغيير المعايرة إذا كان هناك base_credit
-          const newGauge = parseFloat(String(value)) || 875;
-          const baseCredit = parseFloat(String(newDetail.base_credit)) || 0;
-          if (baseCredit > 0 && newGauge > 0) {
-            const calculatedCreditG = (baseCredit * newGauge) / baseGauge;
-            newDetail.credit_g = parseFloat(calculatedCreditG.toFixed(6));
-          }
-        }
-
-        return newDetail;
-      });
-
-      return updated;
-    });
-  };
-
-  // تحسين: استخدام useMemo بدلاً من useCallback لحساب الإجماليات
-  const totals = useMemo(() => {
-    return details.reduce(
-      (totals, detail) => {
-        const debit =
-          detail.debit !== undefined
-            ? parseFloat(String(detail.debit)) || 0
-            : 0;
-        const credit =
-          detail.credit !== undefined
-            ? parseFloat(String(detail.credit)) || 0
-            : 0;
-        const debitG =
-          detail.debit_g !== undefined
-            ? parseFloat(String(detail.debit_g)) || 0
-            : 0;
-        const creditG =
-          detail.credit_g !== undefined
-            ? parseFloat(String(detail.credit_g)) || 0
-            : 0;
-
-        return {
-          totalDebit: totals.totalDebit + debit,
-          totalCredit: totals.totalCredit + credit,
-          totalDebitG: totals.totalDebitG + debitG,
-          totalCreditG: totals.totalCreditG + creditG,
-          totalTax: 0,
-          totalTaxPrc: 0,
-        };
-      },
-      {
-        totalDebit: 0,
-        totalCredit: 0,
-        totalDebitG: 0,
-        totalCreditG: 0,
-        totalTax: 0,
-        totalTaxPrc: 0,
-      },
-    );
-  }, [details]);
-  
-  // حساب الاتزان: النقدية و الذهب المعاير كلاهما يجب أن يكون متزناً
-  const cashBalance = totals.totalDebit - totals.totalCredit;
-  const goldBalance = totals.totalDebitG - totals.totalCreditG;
-  const isCashBalanced = Math.abs(cashBalance) < 0.01;
-  const isGoldBalanced = Math.abs(goldBalance) < 0.01;
-  const isBalanced = isCashBalanced && isGoldBalanced;
-
-  // التحقق من وجود قيد افتتاحي قبل الحفظ
-  const checkExistingBalanceVoucher = async (): Promise<number | null> => {
-    try {
-      const vouchersResponse = await voucherService.getAll({
-        xvouch_type: "0", // قيد افتتاحي فقط
-      });
-
-      if (vouchersResponse.success && vouchersResponse.data) {
-        const vouchers = Array.isArray(vouchersResponse.data)
-          ? vouchersResponse.data
-          : [];
-
-        // إذا كان هناك قيد موجود ولم نكن في وضع التعديل
-        if (vouchers.length > 0 && isNewVoucher) {
-          const existingId = vouchers[0].id || vouchers[0].vouch_id;
-          return existingId || null;
-        }
-      }
-
-      return null;
-    } catch (error) {
-      console.error("Error checking existing balance voucher:", error);
-      return null;
-    }
-  };
-
-  const saveVoucher = async () => {
-    // التحقق من وجود قيد افتتاحي قبل الحفظ (للقيود الجديدة فقط)
-    if (isNewVoucher) {
-      const existingId = await checkExistingBalanceVoucher();
-      if (existingId) {
-        toast.error(
-          "⚠️ يوجد قيد افتتاحي موجود مسبقاً. يرجى تعديل القيد الموجود بدلاً من إنشاء قيد جديد.",
-          { duration: 6000 },
-        );
-        // إعادة التوجيه إلى القيد الموجود
-        router.push(`/forms/balance/${existingId}`);
-        return;
-      }
-    }
-    // التحقق من التاريخ - منع التواريخ المستقبلية
-    const voucherDate = new Date(voucher.vouch_date);
-    const today = new Date();
-
-    today.setHours(23, 59, 59, 999);
-
-    if (voucherDate > today) {
-      toast.error("لا يمكن إنشاء قيد بتاريخ أكبر من تاريخ اليوم");
-
-      return;
-    }
-
-    // في القيد الافتتاحي، يمكن الحفظ حتى لو كان غير متزن (فقط تنبيه)
-    if (!isBalanced) {
-      const proceed = window.confirm(
-        "⚠️ القيد غير متزن!\n\nإجمالي المدين: " +
-          totals.totalDebit.toFixed(2) +
-          "\nإجمالي الدائن: " +
-          totals.totalCredit.toFixed(2) +
-          "\n\nهل تريد المتابعة والحفظ رغم ذلك؟",
-      );
-
-      if (!proceed) {
-        return;
-      }
-      // عرض تنبيه فقط لكن لا نمنع الحفظ
-      toast("تم حفظ القيد رغم عدم التوازن", {
-        icon: "⚠️",
-        duration: 4000,
-      });
-    }
-
-    // التحقق من وجود حسابات فارغة
-    const detailsWithAccounts = details.filter(
-      (detail) => detail.acc_id && detail.acc_id > 0,
-    );
-    const detailsWithoutAccounts = details.filter(
-      (detail) => !detail.acc_id || detail.acc_id === 0,
-    );
-
-    // إذا كان هناك مزيج من تفاصيل مع حسابات وبدون حسابات، هذا خطأ
-    if (detailsWithAccounts.length > 0 && detailsWithoutAccounts.length > 0) {
-      toast.error("يرجى اختيار حساب لجميع الصفوف التي تحتوي على بيانات");
-
-      return;
-    }
-
-    // توليد رقم القيد إذا لم يكن موجوداً (للقيد الجديد فقط)
-    let finalVouchId = voucher.vouch_id;
-    if (isNewVoucher && (!finalVouchId || finalVouchId <= 0 || !isFinite(finalVouchId))) {
-      try {
-        finalVouchId = await getNextVoucherNumber(0); // القيد الافتتاحي نوعه 0
-        // تحديث state فوراً
-        setVoucher((prev) => ({
-          ...prev,
-          vouch_id: finalVouchId,
-        }));
-      } catch (error) {
-        console.error("خطأ في توليد رقم القيد:", error);
-        toast.error("❌ فشل في توليد رقم القيد. يرجى المحاولة مرة أخرى.");
-        return;
-      }
-    }
-
-    // التحقق النهائي من رقم القيد
-    if (!finalVouchId || finalVouchId <= 0 || !isFinite(finalVouchId)) {
-      toast.error("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const voucherData = {
-        vouch_id: finalVouchId,
-        vouch_date: voucher.vouch_date,
-        vouch_type: 0, // القيد الافتتاحي نوعه دائماً 0 (ثابت)
-        vouch_amt: 0, // إبقاء المبلغ الإجمالي 0 دائماً
-        vouch_notes: voucher.vouch_notes || "",
-        vouch_status: voucher.vouch_status || 1,
-        pay_type: voucher.pay_type,
-        ref_no: voucher.ref_no || "",
-        opps_vouch: voucher.opps_vouch || 0,
-      };
-
-      const detailsData = details
-        .filter((detail) => detail.acc_id && detail.acc_id > 0)
-        .map((detail) => ({
-          id: detail.id || 0,
-          vouch_id: finalVouchId,
-          acc_id: detail.acc_id,
-          debit: detail.debit,
-          credit: detail.credit,
-          base_debit: detail.base_debit,
-          base_credit: detail.base_credit,
-          gauge: detail.gauge,
-          debit_g: detail.debit_g,
-          credit_g: detail.credit_g,
-          vouch_notes: detail.vouch_notes || "",
-          cost_id: detail.cost_id || null,
-          tax: 0,
-          tax_prc: 0,
-          vat_no: 0,
-        }));
-
-      let result;
-
-      if (isNewVoucher || !voucherRecordId) {
-        result = await createVoucherAction(voucherData, detailsData);
-      } else {
-        result = await updateVoucherAction(
-          Number(voucherRecordId),
-          voucherData,
-          detailsData,
-        );
-      }
-
-      if (result.success && result.data) {
-        const realId = result.data.id;
-        const vouchId = result.data.vouch_id || voucher.vouch_id;
-
-        setVoucher((prev) => ({
-          ...prev,
-          commit: true,
-          id: realId,
-          vouch_id: vouchId,
-        }));
-
-        toast.success(result.message);
-
-        // التوجيه إلى وضع preview بعد الحفظ
-        if (realId) {
-          router.push(`/forms/balance/${realId}?mode=preview`);
-          router.refresh();
-        } else {
-          router.push(`/forms/balance`);
-        }
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      toast.error(
-        `حدث خطأ أثناء حفظ القيد: ${error instanceof Error ? error.message : "خطأ غير معروف"}`,
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const printVoucher = async () => {
-    setIsPrinting(true);
-    try {
-      const printWindow = window.open("", "_blank");
-
-      if (printWindow) {
-        const formattedDate = voucher.vouch_date
-          ? new Date(voucher.vouch_date).toLocaleDateString("ar-SA", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })
-          : "";
-
-        const validDetails = details.filter((d) => d.acc_id && d.acc_id > 0);
-
-        printWindow.document.write(`
-          <html dir="rtl">
-            <head>
-              <title>قيد افتتاحي - ${voucher.vouch_id}</title>
-              <link rel="preconnect" href="https://fonts.googleapis.com" />
-              <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-              <link
-                href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap"
-                rel="stylesheet"
-              />
-              <style>
-                * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
-                }
-                
-                body {
-                  font-family: 'Cairo', sans-serif;
-                  padding: 30px 20px;
-                  background: #fff;
-                  color: #2d3748;
-                  line-height: 1.6;
-                }
-                
-                .header {
-                  text-align: center;
-                  margin-bottom: 35px;
-                  padding-bottom: 25px;
-                  border-bottom: 3px solid #e2e8f0;
-                }
-                
-                .header h1 {
-                  font-size: 28px;
-                  font-weight: 700;
-                  color: #1a202c;
-                  margin-bottom: 15px;
-                }
-                
-                .header-info {
-                  display: flex;
-                  justify-content: center;
-                  gap: 40px;
-                  flex-wrap: wrap;
-                  margin-top: 20px;
-                }
-                
-                .header-info-item {
-                  display: flex;
-                  flex-direction: column;
-                  gap: 5px;
-                }
-                
-                .header-info-label {
-                  font-size: 12px;
-                  color: #718096;
-                  font-weight: 600;
-                  text-transform: uppercase;
-                }
-                
-                .header-info-value {
-                  font-size: 16px;
-                  color: #2d3748;
-                  font-weight: 600;
-                }
-                
-                .voucher-notes {
-                  margin-top: 15px;
-                  padding: 15px;
-                  background: #f7fafc;
-                  border-right: 4px solid #4299e1;
-                  border-radius: 4px;
-                  font-size: 14px;
-                  color: #4a5568;
-                }
-                
-                table {
-                  width: 100%;
-                  border-collapse: collapse;
-                  margin: 30px 0;
-                  font-size: 12px;
-                  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                }
-                
-                th {
-                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                  color: #fff;
-                  padding: 14px 10px;
-                  text-align: center;
-                  font-weight: 600;
-                  border: 1px solid #4c51bf;
-                  font-size: 12px;
-                }
-                
-                td {
-                  padding: 12px 10px;
-                  text-align: center;
-                  border: 1px solid #e2e8f0;
-                  font-size: 11.5px;
-                  color: #2d3748;
-                }
-                
-                tr:nth-child(even) {
-                  background-color: #f8f9fa;
-                }
-                
-                tr:hover {
-                  background-color: #f1f3f5;
-                }
-                
-                .account-code {
-                  font-family: 'Courier New', monospace;
-                  font-weight: 600;
-                  color: #4a5568;
-                }
-                
-                .account-name {
-                  text-align: right;
-                  font-weight: 500;
-                  color: #2d3748;
-                }
-                
-                .amount-debit {
-                  color: #059669;
-                }
-                
-                .amount-credit {
-                  color: #dc2626;
-                }
-                
-                .amount-gold {
-                  color: #d97706;
-                  font-weight: 600;
-                }
-                
-                .gauge {
-                  font-family: 'Courier New', monospace;
-                  color: #7c3aed;
-                  font-weight: 500;
-                }
-                
-                .totals {
-                  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                  font-weight: 700;
-                  border-top: 2px solid #f59e0b;
-                  border-bottom: 2px solid #f59e0b;
-                }
-                
-                .totals td {
-                  padding: 16px 10px;
-                  font-size: 13.5px;
-                  color: #92400e;
-                  border: none;
-                }
-                
-                .footer {
-                  margin-top: 40px;
-                  padding-top: 20px;
-                  border-top: 2px solid #e2e8f0;
-                  text-align: center;
-                  color: #718096;
-                  font-size: 11px;
-                }
-                
-                @media print {
-                  body {
-                    padding: 20px 15px;
-                  }
-                }
-              </style>
-            </head>
-            <body>
-              <div class="header">
-                <h1>قيد افتتاحي</h1>
-                <div class="header-info">
-                  <div class="header-info-item">
-                    <span class="header-info-label">رقم القيد</span>
-                    <span class="header-info-value">${voucher.vouch_id || "-"}</span>
-                  </div>
-                  <div class="header-info-item">
-                    <span class="header-info-label">التاريخ</span>
-                    <span class="header-info-value">${formattedDate}</span>
-                  </div>
-                  <div class="header-info-item">
-                    <span class="header-info-label">عدد البنود</span>
-                    <span class="header-info-value">${validDetails.length}</span>
-                  </div>
-                </div>
-                ${
-                  voucher.vouch_notes
-                    ? `
-                <div class="voucher-notes">
-                  <strong>البيان:</strong> ${voucher.vouch_notes}
-                </div>
-                `
-                    : ""
-                }
-              </div>
-              
-              <table>
-                <thead>
-                  <tr>
-                    <th>رقم الحساب</th>
-                    <th>اسم الحساب</th>
-                    <th>مدين</th>
-                    <th>دائن</th>
-                    <th>مدين معاير</th>
-                    <th>دائن معاير</th>
-                    <th>المعايرة</th>
-                    <th>البيان</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${validDetails
-                    .map((detail) => {
-                      const account = accounts.find(
-                        (acc) => acc.id === detail.acc_id,
-                      );
-                      const debit = detail.debit || 0;
-                      const credit = detail.credit || 0;
-                      const debitG = detail.debit_g || 0;
-                      const creditG = detail.credit_g || 0;
-                      const gauge = detail.gauge || 875;
-
-                      return `
-                      <tr>
-                        <td class="account-code">${account?.acc_code || "-"}</td>
-                        <td class="account-name">${account?.acc_name || "-"}</td>
-                        <td class="amount amount-debit">${debit > 0 ? debit.toFixed(2) : "-"}</td>
-                        <td class="amount amount-credit">${credit > 0 ? credit.toFixed(2) : "-"}</td>
-                        <td class="amount amount-gold">${debitG > 0 ? debitG.toFixed(2) : "-"}</td>
-                        <td class="amount amount-gold">${creditG > 0 ? creditG.toFixed(2) : "-"}</td>
-                        <td class="gauge">${gauge}</td>
-                        <td style="text-align: right; font-size: 11px; color: #718096;">${detail.vouch_notes || "-"}</td>
-                      </tr>
-                    `;
-                    })
-                    .join("")}
-                  <tr class="totals">
-                    <td colspan="2" style="text-align: right; padding-right: 20px; font-weight: 700;">الإجمالي</td>
-                    <td class="amount amount-debit">${totals.totalDebit.toFixed(2)}</td>
-                    <td class="amount amount-credit">${totals.totalCredit.toFixed(2)}</td>
-                    <td class="amount amount-gold">${totals.totalDebitG.toFixed(2)}</td>
-                    <td class="amount amount-gold">${totals.totalCreditG.toFixed(2)}</td>
-                    <td></td>
-                    <td></td>
-                  </tr>
-                </tbody>
-              </table>
-              
-              <div class="footer">
-                <p>تم طباعة هذا القيد بتاريخ ${new Date().toLocaleDateString("ar-SA")} - نظام NafeesWeb</p>
-              </div>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-        setVoucher((prev) => ({ ...prev, print: true }));
-      }
-    } catch (error) {
-      toast.error(
-        `حدث خطأ أثناء الطباعة: ${error instanceof Error ? error.message : "خطأ غير معروف"}`,
-      );
-    } finally {
-      setIsPrinting(false);
-    }
-  };
-
-  const handleEditClick = () => {
-    // عند فتح وضع التعديل، نلغي commit (تصبح false) حتى يتم الحفظ
-    setVoucher((prev) => ({
-      ...prev,
-      commit: false,
-    }));
-
-    // تغيير وضع الصفحة إلى edit باستخدام query params في نفس الصفحة
-    if (voucherRecordId) {
-      router.push(`/forms/balance?mode=edit`);
-    } else {
-      // إذا لم يكن هناك voucherRecordId، نفعّل التعديل مباشرة
-      setIsEditing(true);
-      toast.success("✅ تم تفعيل وضع التعديل");
-    }
-  };
+  // Use the hook for all state management and business logic
+  const {
+    // State
+    voucher,
+    setVoucher,
+    details,
+    accounts,
+    costCenters,
+    voucherTypes,
+    voucherStatuses,
+    caratTypes,
+    isLoading,
+    isEditing,
+    setIsEditing,
+    isPrinting,
+    isClient,
+
+    // Totals and balances
+    totals,
+    cashBalance,
+    goldBalance,
+    isCashBalanced,
+    isGoldBalanced,
+    isBalanced,
+
+    // Functions
+    addDetailRow,
+    removeDetailRow,
+    updateDetail,
+    saveVoucher,
+    printVoucher,
+    handleEditClick,
+    loadAccountOptions,
+    getAccountSelectValue,
+    updateAccountsList,
+  } = useBalanceVoucherForm({
+    voucherData,
+    voucherDetailsData,
+    formData,
+    formMode,
+    voucherRecordId,
+    isNewVoucher,
+    startInEditMode: propStartInEditMode,
+  });
 
   if (!isClient) {
     return (
@@ -919,32 +93,755 @@ export default function BalanceVoucherClientPage({
   }
 
   return (
-    <BalanceVoucherContainer
-      accounts={accounts}
-      caratTypes={caratTypes}
-      costCenters={costCenters}
-      currentTime={currentTime}
-      details={details}
-      formMode={formMode}
-      isBalanced={isBalanced}
-      isEditing={isEditing}
-      isLoading={isLoading}
-      isPrinting={isPrinting}
-      taxRates={taxRates}
-      voucher={voucher}
-      voucherStatuses={voucherStatuses}
-      voucherTypes={voucherTypes}
-      onAddRow={addDetailRow}
-      onEditClick={handleEditClick}
-      onPrint={printVoucher}
-      onRemoveRow={removeDetailRow}
-      onSave={saveVoucher}
-      onUpdateAccountsList={updateAccountsList}
-      onUpdateDetail={updateDetail}
-      onVoucherChange={(field, value) =>
-        setVoucher((prev) => ({ ...prev, [field]: value }))
-      }
-    />
+    <div className="p-3 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
+      {/* Header - رأس القيد مع الأزرار */}
+      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-3 mb-4 border border-slate-200">
+        {/* الصف الأول: معلومات القيد */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-4">
+                <span>
+                  {voucherTypes.find((t) => t.id === voucher.vouch_type)?.name ||
+                    "قيد افتتاحي"}
+                </span>
+                <span className="text-slate-600 font-medium">
+                  #
+                  {voucher.vouch_id &&
+                  voucher.vouch_id > 0 &&
+                  isFinite(voucher.vouch_id)
+                    ? voucher.vouch_id
+                    : voucher.id
+                      ? `DB-${voucher.id}`
+                      : "جاري الترقيم..."}
+                </span>
+                <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
+                  <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
+                  {new Date(voucher.vouch_date).toLocaleString("ar-EG")}
+                </span>
+              </h1>
+            </div>
+          </div>
+        </div>
+
+        {/* الصف الثاني: الأزرار والحالة */}
+        <div className="flex items-center justify-between">
+          {/* الأزرار من اليسار لليمين */}
+          <div className="flex items-center gap-2">
+            <button
+              className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm disabled:opacity-50"
+              disabled={isLoading || !isEditing}
+              onClick={saveVoucher}
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-1">
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  حفظ...
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <i className="bi bi-check-circle w-4 h-4" />
+                  حفظ
+                </span>
+              )}
+            </button>
+
+            <button
+              className={`h-7 px-3 text-xs border rounded-md shadow-sm ${
+                formMode === "new" || isEditing
+                  ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed opacity-50"
+                  : "bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+              }`}
+              disabled={formMode === "new" || isEditing || isLoading}
+              title={
+                formMode === "new"
+                  ? "لا يمكن التعديل في وضع جديد"
+                  : isEditing
+                    ? "أنت بالفعل في وضع التعديل"
+                    : "تعديل القيد"
+              }
+              onClick={handleEditClick}
+            >
+              <i className="bi bi-pencil-square w-4 h-4 me-1" />
+              تعديل
+            </button>
+
+            <button
+              className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm disabled:opacity-50"
+              disabled={isPrinting || !voucher.vouch_id}
+              onClick={printVoucher}
+            >
+              {isPrinting ? (
+                <span className="flex items-center gap-1">
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  طباعة...
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <i className="bi bi-printer w-4 h-4 me-1" />
+                  طباعة
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* حالة القيد */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <input
+                readOnly
+                checked={voucher.commit}
+                className="w-3 h-3 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500"
+                type="checkbox"
+              />
+              <span className="text-xs text-slate-600">حُفظ</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <input
+                readOnly
+                checked={voucher.post}
+                className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                type="checkbox"
+              />
+              <span className="text-xs text-slate-600">مرحل</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <input
+                readOnly
+                checked={voucher.print}
+                className="w-3 h-3 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500"
+                type="checkbox"
+              />
+              <span className="text-xs text-slate-600">طُبع</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Form - نموذج بيانات القيد */}
+      <div className="bg-white rounded-lg border border-slate-200 mb-4">
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* رقم المرجع */}
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-700">
+                رقم المرجع
+              </label>
+              <input
+                className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                disabled={!isEditing}
+                placeholder="أدخل رقم المرجع"
+                readOnly={!isEditing}
+                value={voucher.ref_no || ""}
+                onChange={(e) =>
+                  setVoucher((prev) => ({ ...prev, ref_no: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* تاريخ ووقت القيد */}
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-700">
+                تاريخ ووقت القيد
+              </label>
+              <input
+                className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                disabled={!isEditing}
+                readOnly={!isEditing}
+                type="datetime-local"
+                value={
+                  voucher.vouch_date
+                    ? new Date(voucher.vouch_date).toISOString().slice(0, 16)
+                    : ""
+                }
+                onChange={(e) =>
+                  setVoucher((prev) => ({
+                    ...prev,
+                    vouch_date: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            {/* البيان */}
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-slate-700">البيان</label>
+              <input
+                className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                disabled={!isEditing}
+                placeholder="أدخل بيان القيد"
+                readOnly={!isEditing}
+                value={voucher.vouch_notes || ""}
+                onChange={(e) =>
+                  setVoucher((prev) => ({
+                    ...prev,
+                    vouch_notes: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Details Table - جدول تفاصيل القيد */}
+      <div className="bg-white rounded-lg border border-slate-200 mb-4">
+        <div className="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-slate-800">تفاصيل القيد</h3>
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs px-2 py-1 rounded-full font-bold ${
+                isBalanced
+                  ? "bg-emerald-200 text-emerald-900"
+                  : "bg-red-200 text-red-900"
+              }`}
+            >
+              <i
+                className={`bi ${isBalanced ? "bi-check-circle" : "bi-exclamation-triangle"} me-1`}
+              />
+              {isBalanced ? "متزن" : "غير متزن"}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-2">
+          <div className="flex justify-between mb-2">
+            <button
+              className="btn"
+              disabled={!isEditing}
+              type="button"
+              onClick={addDetailRow}
+            >
+              + صف
+            </button>
+          </div>
+          <div className="overflow-x-auto overflow-y-auto mb-3 max-w-full max-h-[600px]">
+            <table className="min-w-[1400px] border text-sm text-center table-fixed">
+              <thead className="bg-gray-100 text-xs font-bold">
+                <tr>
+                  <th
+                    className="w-64 p-0.5 font-bold text-slate-700 border"
+                    rowSpan={2}
+                  >
+                    الحساب
+                  </th>
+                  <th
+                    className="w-40 p-0.5 font-bold text-slate-700 border"
+                    colSpan={2}
+                  >
+                    نقدي
+                  </th>
+                  <th
+                    className="w-40 p-0.5 font-bold text-slate-700 border"
+                    colSpan={2}
+                  >
+                    ذهب قائم
+                  </th>
+                  <th
+                    className="w-20 p-0.5 font-bold text-slate-700 border"
+                    rowSpan={2}
+                  >
+                    المعايرة
+                  </th>
+                  <th
+                    className="w-40 p-0.5 font-bold text-slate-700 border"
+                    colSpan={2}
+                  >
+                    ذهب معاير
+                  </th>
+                  {costCenters.length > 0 && (
+                    <th
+                      className="w-40 p-0.5 font-bold text-slate-700 border"
+                      rowSpan={2}
+                    >
+                      مركز التكلفة
+                    </th>
+                  )}
+                  <th
+                    className="w-48 p-0.5 font-bold text-slate-700 border"
+                    rowSpan={2}
+                  >
+                    البيان
+                  </th>
+                  <th
+                    className="w-12 p-0.5 font-bold text-slate-700 border"
+                    rowSpan={2}
+                  >
+                    حذف
+                  </th>
+                </tr>
+                <tr>
+                  <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                    مدين
+                  </th>
+                  <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                    دائن
+                  </th>
+                  <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                    مدين
+                  </th>
+                  <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                    دائن
+                  </th>
+                  <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                    مدين
+                  </th>
+                  <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                    دائن
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {details.map((detail, index) => (
+                  <tr
+                    key={index}
+                    className="border-b border-slate-100 hover:bg-slate-50"
+                  >
+                    <td className="p-0 border">
+                      <AsyncCreatableSelect
+                        isClearable
+                        isSearchable
+                        className="text-xs"
+                        classNamePrefix="select"
+                        components={{ IndicatorSeparator: () => null }}
+                        formatCreateLabel={(inputValue) =>
+                          `إضافة حساب جديد: "${inputValue}"`
+                        }
+                        instanceId={`account-select-${index}`}
+                        isDisabled={!isEditing}
+                        loadOptions={loadAccountOptions}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
+                        }
+                        menuPosition="fixed"
+                        placeholder="اختر الحساب..."
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            minHeight: "100%",
+                            height: "100%",
+                            border: "none",
+                            borderRadius: 0,
+                            boxShadow: "none",
+                            cursor: !isEditing ? "not-allowed" : base.cursor,
+                            backgroundColor: "transparent",
+                            "&:hover": {
+                              border: "none",
+                              boxShadow: "none",
+                            },
+                          }),
+                          valueContainer: (base) => ({
+                            ...base,
+                            padding: "0.125rem 0.25rem",
+                            height: "100%",
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            margin: 0,
+                            padding: 0,
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                        }}
+                        value={getAccountSelectValue(detail)}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
+                          const opt: any = selectedOption;
+                          const selected =
+                            opt?.account ||
+                            accounts.find((acc) => acc.id === opt?.value);
+
+                          if (!selected) return;
+
+                          if (!accounts.find((a) => a.id === selected.id)) {
+                            updateAccountsList(selected);
+                          }
+
+                          updateDetail(index, "acc_id", selected.id ?? null);
+                          updateDetail(
+                            index,
+                            "acc_code",
+                            selected.acc_code ?? selected.code ?? "",
+                          );
+                          updateDetail(
+                            index,
+                            "acc_name",
+                            selected.acc_name ?? selected.name ?? "",
+                          );
+                        }}
+                      />
+                    </td>
+
+                    <td className="p-0 border">
+                      <input
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                        disabled={!isEditing}
+                        min="0"
+                        placeholder="0.00"
+                        readOnly={!isEditing}
+                        step="0.01"
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={detail.debit ? String(detail.debit) : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val || parseFloat(val) >= 0) {
+                            updateDetail(
+                              index,
+                              "debit",
+                              val ? parseFloat(val) : undefined,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </td>
+
+                    <td className="p-0 border">
+                      <input
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                        disabled={!isEditing}
+                        min="0"
+                        placeholder="0.00"
+                        readOnly={!isEditing}
+                        step="0.01"
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={detail.credit ? String(detail.credit) : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val || parseFloat(val) >= 0) {
+                            updateDetail(
+                              index,
+                              "credit",
+                              val ? parseFloat(val) : undefined,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </td>
+
+                    {/* حقول ذهب (base_debit/base_credit) */}
+                    <td className="p-0 border">
+                      <input
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                        disabled={!isEditing}
+                        min="0"
+                        placeholder="0.00"
+                        readOnly={!isEditing}
+                        step="0.01"
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={detail.base_debit ? String(detail.base_debit) : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val || parseFloat(val) >= 0) {
+                            updateDetail(
+                              index,
+                              "base_debit",
+                              val ? parseFloat(val) : undefined,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </td>
+
+                    <td className="p-0 border">
+                      <input
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                        disabled={!isEditing}
+                        min="0"
+                        placeholder="0.00"
+                        readOnly={!isEditing}
+                        step="0.01"
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={detail.base_credit ? String(detail.base_credit) : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val || parseFloat(val) >= 0) {
+                            updateDetail(
+                              index,
+                              "base_credit",
+                              val ? parseFloat(val) : undefined,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </td>
+
+                    {/* حقل المعايرة */}
+                    <td className="p-0 border">
+                      <input
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                        disabled={!isEditing}
+                        min="0"
+                        placeholder="875"
+                        readOnly={!isEditing}
+                        step="0.01"
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={detail.gauge ? String(detail.gauge) : "875"}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val || parseFloat(val) >= 0) {
+                            updateDetail(
+                              index,
+                              "gauge",
+                              val ? parseFloat(val) : 875,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </td>
+
+                    {/* حقول ذهب معاير (debit_g/credit_g) */}
+                    <td className="p-0 border">
+                      <input
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed bg-gray-50" : "bg-yellow-50"}`}
+                        disabled={!isEditing}
+                        min="0"
+                        placeholder="0.00"
+                        readOnly={!isEditing}
+                        step="0.000001"
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={detail.debit_g ? String(detail.debit_g) : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val || parseFloat(val) >= 0) {
+                            updateDetail(
+                              index,
+                              "debit_g",
+                              val ? parseFloat(val) : undefined,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                        title="يُحسب تلقائياً من: مدين ذهب قائم × (المعايرة / 875)"
+                      />
+                    </td>
+
+                    <td className="p-0 border">
+                      <input
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed bg-gray-50" : "bg-yellow-50"}`}
+                        disabled={!isEditing}
+                        min="0"
+                        placeholder="0.00"
+                        readOnly={!isEditing}
+                        step="0.000001"
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={detail.credit_g ? String(detail.credit_g) : ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val || parseFloat(val) >= 0) {
+                            updateDetail(
+                              index,
+                              "credit_g",
+                              val ? parseFloat(val) : undefined,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                        title="يُحسب تلقائياً من: دائن ذهب قائم × (المعايرة / 875)"
+                      />
+                    </td>
+
+                    {costCenters.length > 0 && (
+                      <td className="p-0 border">
+                        <select
+                          className={`w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                          disabled={!isEditing}
+                          value={detail.cost_id || ""}
+                          onChange={(e) =>
+                            updateDetail(
+                              index,
+                              "cost_id",
+                              e.target.value ? parseInt(e.target.value) : null,
+                            )
+                          }
+                        >
+                          <option value="">مركز التكلفة</option>
+                          {costCenters.map((center) => (
+                            <option key={center.id} value={center.id}>
+                              {center.name ||
+                                center.cost_name ||
+                                `مركز ${center.id}`}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    )}
+
+                    <td className="p-0 border">
+                      <input
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                        disabled={!isEditing}
+                        placeholder="البيان"
+                        readOnly={!isEditing}
+                        type="text"
+                        value={detail.vouch_notes || ""}
+                        onChange={(e) =>
+                          updateDetail(index, "vouch_notes", e.target.value)
+                        }
+                      />
+                    </td>
+
+                    <td className="p-1 border">
+                      <button
+                        className="font-bold text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        disabled={!isEditing}
+                        tabIndex={-1}
+                        title="حذف السطر"
+                        onClick={() => removeDetailRow(index)}
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Totals - شريط الإجماليات */}
+      <div className="mt-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
+        <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-700 font-medium">إجمالي المدين:</span>
+            <span className="font-semibold text-emerald-700 flex items-center gap-1">
+              {formatAmount(totals.totalDebit)}
+              <RiyalIcon color="currentColor" />
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-gray-700 font-medium">إجمالي الدائن:</span>
+            <span className="font-semibold text-red-700 flex items-center gap-1">
+              {formatAmount(totals.totalCredit)}
+              <RiyalIcon color="currentColor" />
+            </span>
+          </div>
+
+          {!isCashBalanced && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-700 font-medium">فارق النقدية:</span>
+              <span className="font-semibold text-red-700 flex items-center gap-1">
+                {formatAmount(Math.abs(cashBalance))}
+                <span className="text-xs">
+                  ({cashBalance > 0 ? "مدين" : "دائن"})
+                </span>
+                <RiyalIcon color="currentColor" />
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-amber-800 font-medium">
+              إجمالي المدين المعاير:
+            </span>
+            <span className="font-semibold text-yellow-600 flex items-center gap-1">
+              {formatAmount(totals.totalDebitG)}
+              <span className="text-xs text-yellow-500">جم</span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-amber-800 font-medium">
+              إجمالي الدائن المعاير:
+            </span>
+            <span className="font-semibold text-yellow-600 flex items-center gap-1">
+              {formatAmount(totals.totalCreditG)}
+              <span className="text-xs text-yellow-500">جم</span>
+            </span>
+          </div>
+
+          {!isGoldBalanced && (
+            <div className="flex items-center gap-2">
+              <span className="text-amber-800 font-medium">فارق الذهب:</span>
+              <span className="font-semibold text-red-700 flex items-center gap-1">
+                {formatAmount(Math.abs(goldBalance))}
+                <span className="text-xs">
+                  ({goldBalance > 0 ? "مدين" : "دائن"})
+                </span>
+                <span className="text-xs text-yellow-500">جم</span>
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

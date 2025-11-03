@@ -109,6 +109,16 @@ const accountingFormLinks: Array<{
     href: "/forms/voucher?mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
+  {
+    name: "سند استلام",
+    href: "/forms/receipt",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند تسليم",
+    href: "/forms/delivery",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
 ];
 
 const accountingReportLinks: Array<{
@@ -120,6 +130,11 @@ const accountingReportLinks: Array<{
     name: "تقرير السندات",
     href: "/reports/vouchers",
     icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "كشف حساب",
+    href: "/reports/account-statement",
+    icon: <CalculatorIcon className="h-5 w-5" />,
   },
   {
     name: "قائمة الدخل",

@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import AsyncCreatableSelect from "react-select/async-creatable";
+import CreatableSelect from "react-select/creatable";
+import AsyncCreatableSelectRegular from "react-select/async-creatable";
+import { withAsyncPaginate } from "react-select-async-paginate";
 import toast from "react-hot-toast";
+
+const AsyncPaginateCreatableSelect = withAsyncPaginate(CreatableSelect);
 
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { voucherService, itemService, customerService } from "@/services/api";
@@ -67,6 +71,7 @@ export default function CustomerGoldVoucherClientPage({
       post: false,
       print: false,
       opps_vouch: 0,
+      handling: voucherData?.handling || "",
     },
   );
 
@@ -91,6 +96,7 @@ export default function CustomerGoldVoucherClientPage({
   const [originalGoldDetails, setOriginalGoldDetails] = useState<GVoucherDetail[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>([]);
 
   // Initialize component
   useEffect(() => {
@@ -152,7 +158,30 @@ export default function CustomerGoldVoucherClientPage({
         }
       }
     }
+
+    // تحميل الخيارات الافتراضية للعملاء
+    if (initialCustomers && initialCustomers.length > 0) {
+      const options = initialCustomers.map((customer: any) => ({
+        value: customer.id,
+        label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
+        customer: customer,
+      }));
+      setDefaultCustomerOptions(options);
+    }
   }, []);
+
+  // تحميل العملاء عند تغيير initialCustomers
+  useEffect(() => {
+    if (initialCustomers && initialCustomers.length > 0 && customers.length === 0) {
+      setCustomers(initialCustomers);
+      const options = initialCustomers.map((customer: any) => ({
+        value: customer.id,
+        label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
+        customer: customer,
+      }));
+      setDefaultCustomerOptions(options);
+    }
+  }, [initialCustomers]);
 
   useEffect(() => {
     if (formMode === "preview") {
@@ -222,14 +251,67 @@ export default function CustomerGoldVoucherClientPage({
     });
   };
 
-  // Update gold detail
+  // Update gold detail with automatic g_weight calculation (نفس منطق التسليم والاستلام)
   const updateGoldDetail = (index: number, field: string, value: any) => {
     setGoldDetails((prev) => {
       const updated = prev.map((detail, i) => {
-        if (i === index) {
-          return { ...detail, [field]: value };
+        if (i !== index) return detail;
+
+        const newDetail = { ...detail, [field]: value };
+
+        // حساب تلقائي للوزن المعاير: g_weight = weight * (k / 875)
+        // نفس منطق التسليم والاستلام بالضبط
+        if (field === "weight" || field === "k") {
+          const weight = field === "weight" 
+            ? (typeof value === "number" ? value : parseFloat(String(value || "0")) || 0)
+            : (typeof newDetail.weight === "number" ? newDetail.weight : parseFloat(String(newDetail.weight || "0")) || 0);
+          const k = field === "k" 
+            ? (typeof value === "number" ? value : parseFloat(String(value || "0")) || 0)
+            : (typeof newDetail.k === "number" ? newDetail.k : parseFloat(String(newDetail.k || "0")) || 0);
+
+          if (weight > 0 && k > 0) {
+            // حساب الوزن المعاير: g_weight = weight * (k / 875)
+            const calculatedGWeight = (weight * k) / 875;
+            newDetail.g_weight = parseFloat(calculatedGWeight.toFixed(5));
+          } else {
+            newDetail.g_weight = undefined;
+          }
         }
-        return detail;
+
+        // عند تغيير item_id، جلب k و weight من الصنف المحدد
+        // ثم حساب g_weight إذا كان weight و k موجودان
+        if (field === "item_id" && value) {
+          const selectedItem = items.find((item) => item.id === value);
+          if (selectedItem) {
+            // تحديث k من الصنف
+            if (selectedItem.k !== undefined && selectedItem.k !== null) {
+              const itemK = typeof selectedItem.k === "number" ? selectedItem.k : parseFloat(String(selectedItem.k || "0")) || 0;
+              if (itemK > 0) {
+                newDetail.k = itemK;
+              }
+            }
+            // تحديث weight من الصنف إذا كان موجوداً ولم يكن المستخدم قد أدخل وزن
+            if (selectedItem.item_weight !== undefined && selectedItem.item_weight !== null) {
+              const itemWeight = typeof selectedItem.item_weight === "number" ? selectedItem.item_weight : parseFloat(String(selectedItem.item_weight || "0")) || 0;
+              if (itemWeight > 0 && (!newDetail.weight || newDetail.weight === 0)) {
+                newDetail.weight = itemWeight;
+              }
+            }
+          }
+
+          // حساب g_weight بعد تحديث k و weight من الصنف
+          const weight = typeof newDetail.weight === "number" ? newDetail.weight : parseFloat(String(newDetail.weight || "0")) || 0;
+          const k = typeof newDetail.k === "number" ? newDetail.k : parseFloat(String(newDetail.k || "0")) || 0;
+          if (weight > 0 && k > 0) {
+            // حساب الوزن المعاير: g_weight = weight * (k / 875)
+            const calculatedGWeight = (weight * k) / 875;
+            newDetail.g_weight = parseFloat(calculatedGWeight.toFixed(5));
+          } else {
+            newDetail.g_weight = undefined;
+          }
+        }
+
+        return newDetail;
       });
       return updated;
     });
@@ -294,24 +376,114 @@ export default function CustomerGoldVoucherClientPage({
     setGoldDetails((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Load item options
-  const loadItemOptions = async (search: string): Promise<any[]> => {
+  // Load item options with pagination
+  const loadItemOptions = async (
+    search: string,
+    loadedOptions: readonly any[] = [],
+    additional: { page?: number } = { page: 1 },
+  ) => {
+    const trimmed = search.trim();
+    const page = additional?.page || 1;
+
     try {
+      // إذا لم يكن هناك بحث، جلب أول 20 صنف
+      if (!trimmed) {
+        const result = await itemService.searchItems({
+          query: "0", // "0" للحصول على جميع الأصناف
+          page,
+          companyId: 1,
+        });
+
+        if (!result || !result.results) {
+          return {
+            options: [],
+            hasMore: false,
+            additional: { page: 1 },
+          };
+        }
+
+        const normalizedResults = result.results.map((item: any) => ({
+          id: Number(item.id ?? 0),
+          item_code: item.item_code ?? item.code ?? String(item.id ?? ""),
+          item_name: item.item_name ?? item.name ?? "",
+          item_price: item.item_price ?? item.price ?? 0,
+          item_weight: item.item_weight ?? item.weight ?? 0,
+          item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+          work_price: item.work_price ?? item.price_w ?? 0,
+          purity: item.purity ?? item.k ?? "",
+          stones: item.stones ?? item.stone ?? null,
+          cat: item.cat ?? undefined,
+          k: item.k ?? undefined,
+        }));
+
+        // تحديث items في state
+        setItems((prev) => {
+          const existingIds = new Set(prev.map((item) => item.id));
+          const additions = normalizedResults.filter(
+            (item) => !existingIds.has(item.id),
+          );
+          return additions.length > 0 ? [...prev, ...additions] : prev;
+        });
+
+        const options = normalizedResults.map((item: any) => ({
+          value: item.id,
+          label: `${item.item_code || ""} - ${item.item_name || ""}`,
+          item: item,
+        }));
+
+        return {
+          options,
+          hasMore: Boolean(result.next),
+          additional: { page: result.next ? page + 1 : page },
+        };
+      }
+
+      // إذا كان هناك بحث، استدعي API للبحث مع pagination
       const result = await itemService.searchItems({
-        query: search,
+        query: trimmed,
+        page,
         companyId: 1,
       });
+
       if (!result || !result.results) {
-        return [];
+        return {
+          options: [],
+          hasMore: false,
+          additional: { page: 1 },
+        };
       }
-      const filteredItems = result.results;
-      const term = search.toLowerCase();
-      const options = filteredItems
+
+      const normalizedResults = result.results.map((item: any) => ({
+        id: Number(item.id ?? 0),
+        item_code: item.item_code ?? item.code ?? String(item.id ?? ""),
+        item_name: item.item_name ?? item.name ?? "",
+        item_price: item.item_price ?? item.price ?? 0,
+        item_weight: item.item_weight ?? item.weight ?? 0,
+        item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+        work_price: item.work_price ?? item.price_w ?? 0,
+        purity: item.purity ?? item.k ?? "",
+        stones: item.stones ?? item.stone ?? null,
+        cat: item.cat ?? undefined,
+        k: item.k ?? undefined,
+      }));
+
+      // تحديث items في state
+      setItems((prev) => {
+        const existingIds = new Set(prev.map((item) => item.id));
+        const additions = normalizedResults.filter(
+          (item) => !existingIds.has(item.id),
+        );
+        return additions.length > 0 ? [...prev, ...additions] : prev;
+      });
+
+      const term = trimmed.toLowerCase();
+      const options = normalizedResults
         .map((item: any) => {
-          const itemCode = (item.item_code ?? "").toLowerCase();
-          const itemName = (item.item_name ?? "").toLowerCase();
+          const itemCode = String(item.item_code ?? "").toLowerCase();
+          const itemName = String(item.item_name ?? "").toLowerCase();
           const codeMatch = itemCode.indexOf(term);
           const nameMatch = itemName.indexOf(term);
+
           return {
             value: item.id,
             label: `${item.item_code || ""} - ${item.item_name || ""}`,
@@ -320,7 +492,8 @@ export default function CustomerGoldVoucherClientPage({
             nameMatch,
           };
         })
-        .sort((a: any, b: any) => {
+        .filter((entry) => entry.codeMatch !== -1 || entry.nameMatch !== -1)
+        .sort((a, b) => {
           const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
           const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
           if (aCode !== bCode) return aCode - bCode;
@@ -328,50 +501,56 @@ export default function CustomerGoldVoucherClientPage({
           const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
           return aName - bName;
         })
-        .map(({ value, label, item }: any) => ({ value, label, item }));
-      return options;
+        .map(({ value, label, item }) => ({ value, label, item }));
+
+      return {
+        options,
+        hasMore: Boolean(result.next),
+        additional: { page: result.next ? page + 1 : page },
+      };
     } catch (e) {
-      return [];
+      console.error("Error loading item options:", e);
+      return { options: [], hasMore: false, additional: { page: 1 } };
     }
   };
 
-  // Load customer options
-  const loadCustomerOptions = async (search: string): Promise<any[]> => {
+  // Load customer options with search
+  const loadCustomerOptions = async (search: string = ""): Promise<any[]> => {
     try {
-      const allCustomers = await customerService.getAllCustomers({ xcom_id: 1 });
-      const term = search.toLowerCase();
+      // استخدام customers من state أو initialCustomers
+      let allCustomers = customers.length > 0 ? customers : initialCustomers || [];
+      
+      // إذا كانت القائمة فارغة، جلب من API
+      if (allCustomers.length === 0) {
+        const apiCustomers = await customerService.getAllCustomers({ xcom_id: 1 });
+        if (Array.isArray(apiCustomers) && apiCustomers.length > 0) {
+          allCustomers = apiCustomers;
+          setCustomers(apiCustomers);
+        }
+      }
+
+      // فلترة العملاء بناءً على البحث
+      const term = search.trim().toLowerCase();
       const filteredCustomers = term
         ? allCustomers.filter(
-            (customer: any) =>
-              (customer.cust_code?.toString().toLowerCase().includes(term) ||
-                customer.cust_name?.toLowerCase().includes(term)),
+            (customer: any) => {
+              const custCode = String(customer.cust_code ?? "").toLowerCase();
+              const custName = String(customer.cust_name ?? "").toLowerCase();
+              return custCode.includes(term) || custName.includes(term);
+            },
           )
         : allCustomers;
-      const options = filteredCustomers
-        .map((customer: any) => {
-          const custCode = (customer.cust_code ?? "").toLowerCase();
-          const custName = (customer.cust_name ?? "").toLowerCase();
-          const codeMatch = custCode.indexOf(term);
-          const nameMatch = custName.indexOf(term);
-          return {
-            value: customer.id,
-            label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
-            customer: customer,
-            codeMatch,
-            nameMatch,
-          };
-        })
-        .sort((a: any, b: any) => {
-          const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
-          const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
-          if (aCode !== bCode) return aCode - bCode;
-          const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
-          const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
-          return aName - bName;
-        })
-        .map(({ value, label, customer }: any) => ({ value, label, customer }));
+
+      // تحويل العملاء إلى خيارات
+      const options = filteredCustomers.map((customer: any) => ({
+        value: customer.id,
+        label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
+        customer: customer,
+      }));
+
       return options;
     } catch (e) {
+      console.error("Error loading customer options:", e);
       return [];
     }
   };
@@ -466,6 +645,14 @@ export default function CustomerGoldVoucherClientPage({
     setIsLoading(true);
 
     try {
+      // التأكد من وجود cust_id من voucher أو selectedCustomer
+      const custId = voucher.cust_id || selectedCustomer?.id || null;
+      
+      if (!custId || custId === 0) {
+        toast.error("يرجى اختيار العميل");
+        return;
+      }
+
       const voucherData = {
         vouch_id: voucher.vouch_id,
         vouch_date: voucher.vouch_date,
@@ -476,8 +663,15 @@ export default function CustomerGoldVoucherClientPage({
         pay_type: voucher.pay_type,
         ref_no: voucher.ref_no || "",
         opps_vouch: voucher.opps_vouch || 0,
-        cust_id: voucher.cust_id || null,
+        cust_id: custId, // استخدام custId الذي تأكدنا من وجوده
+        handling: voucher.handling || null,
       };
+
+      console.log("📤 Client - بيانات السند قبل الإرسال:", {
+        cust_id: voucherData.cust_id,
+        selectedCustomer: selectedCustomer?.id,
+        voucher_cust_id: voucher.cust_id,
+      });
 
       // تحضير بيانات الصناديق
       const boxesData = validBoxes.map((box) => ({
@@ -1405,13 +1599,15 @@ export default function CustomerGoldVoucherClientPage({
           <label className="block text-xs font-medium text-slate-700 mb-1">
             العميل
           </label>
-          <AsyncCreatableSelect
+          <AsyncCreatableSelectRegular
             isClearable
             isSearchable
             className="text-xs"
             classNamePrefix="select"
             isDisabled={!isEditing}
             loadOptions={loadCustomerOptions}
+            defaultOptions={defaultCustomerOptions.length > 0 ? defaultCustomerOptions : true}
+            cacheOptions
             menuPortalTarget={typeof window !== "undefined" ? document.body : null}
             menuPosition="fixed"
             placeholder="اختر العميل..."
@@ -1460,9 +1656,34 @@ export default function CustomerGoldVoucherClientPage({
               const selected =
                 opt?.customer ||
                 customers.find((cust) => cust.id === opt?.value);
-              setVoucher((prev) => ({ ...prev, cust_id: selected?.id ?? null }));
+              
               setSelectedCustomer(selected || null);
+              
+              // نسخ المناولة من العميل تلقائياً (مثل الفواتير)
+              const handling = selected?.handling?.toString() || "";
+              setVoucher((prev) => ({ 
+                ...prev, 
+                cust_id: selected?.id ?? null,
+                handling: handling,
+              }));
             }}
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-700 mb-1">
+            مناولة
+          </label>
+          <input
+            className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
+            disabled={!isEditing}
+            readOnly={!isEditing}
+            type="text"
+            value={voucher.handling || ""}
+            onChange={(e) =>
+              setVoucher((prev) => ({ ...prev, handling: e.target.value }))
+            }
+            placeholder="مناولة"
           />
         </div>
 
@@ -1521,7 +1742,7 @@ export default function CustomerGoldVoucherClientPage({
                 {goldDetails.map((detail, index) => (
                   <tr key={index} className="border-b">
                     <td className="p-0 border">
-                      <AsyncCreatableSelect
+                      <AsyncPaginateCreatableSelect
                         isClearable
                         isSearchable
                         className="text-xs"
@@ -1530,6 +1751,8 @@ export default function CustomerGoldVoucherClientPage({
                         instanceId={`item-select-${index}`}
                         isDisabled={!isEditing}
                         loadOptions={loadItemOptions}
+                        defaultOptions
+                        additional={{ page: 1 }}
                         menuPortalTarget={
                           typeof window !== "undefined" ? document.body : null
                         }
@@ -1583,6 +1806,11 @@ export default function CustomerGoldVoucherClientPage({
                             "item_name",
                             selected.item_name ?? "",
                           );
+                          
+                          // تحديث k إذا كان موجوداً في الصنف
+                          if (selected.k !== undefined && selected.k !== null) {
+                            updateGoldDetail(index, "k", selected.k);
+                          }
                         }}
                       />
                     </td>

@@ -292,6 +292,7 @@ export default async function CustomerReceiptVoucherEditPage({
     pay_type: targetVoucher.pay_type || 1,
     commit: targetVoucher.commit || false,
     post: targetVoucher.post || false,
+    handling: (targetVoucher as any).handling || "",
     print: targetVoucher.print || false,
     cust_id: targetVoucher.cust_id || undefined,
   };

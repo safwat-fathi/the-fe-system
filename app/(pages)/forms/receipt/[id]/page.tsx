@@ -2,34 +2,28 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cache } from "react";
 
-import CustomerGoldVoucherClientPage from "../../gvoucher4/CustomerGoldVoucherClientPage";
-
+import ReceiptVoucherClientPage from "../ReceiptVoucherClientPage";
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
-  title: "عرض سند صرف عميل - NafeesWeb",
-  description: "عرض وتعديل سند الصرف للعميل",
+  title: "عرض سند استلام - NafeesWeb",
+  description: "عرض وتعديل سند الاستلام",
 };
 
-// Cache the voucher lookup for better performance
 const getVoucherById = cache(async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
-      console.warn("Invalid voucherId:", voucherId);
-
       return null;
     }
 
     const vouchersResponse = await voucherService.getAll({
-      xvouch_type: "5", // سند الصرف للعميل فقط
+      xvouch_type: "111", // سند الاستلام فقط
     });
 
     if (!vouchersResponse.success || !vouchersResponse.data) {
-      console.warn("Failed to fetch vouchers:", vouchersResponse);
-
       return null;
     }
 
@@ -37,30 +31,21 @@ const getVoucherById = cache(async (voucherId: number) => {
       ? vouchersResponse.data
       : [];
 
-    // البحث أولاً بـ id (primary key) ثم بـ vouch_id
     const foundVoucher = vouchers.find(
       (v: any) => v.id === voucherId || v.vouch_id === voucherId,
     );
 
-    if (!foundVoucher) {
-      console.warn("Voucher not found with id or vouch_id:", voucherId);
-    }
-
     return foundVoucher;
   } catch (error) {
     console.error("Error fetching voucher:", error);
-
     return null;
   }
 });
 
-// Cache the gold details for better performance
 const getGoldDetails = cache(
   async (voucherId: number, branchId?: number | string) => {
     try {
       if (!voucherId || isNaN(voucherId)) {
-        console.warn("Invalid voucherId:", voucherId);
-
         return [];
       }
 
@@ -71,8 +56,6 @@ const getGoldDetails = cache(
       });
 
       if (!goldDetailsResponse.success || !goldDetailsResponse.data) {
-        console.warn("Failed to fetch gold details:", goldDetailsResponse);
-
         return [];
       }
 
@@ -81,19 +64,15 @@ const getGoldDetails = cache(
         : [];
     } catch (error) {
       console.error("Error fetching gold details:", error);
-
       return [];
     }
   },
 );
 
-// Cache the voucher boxes for better performance
 const getVoucherBoxes = cache(
   async (voucherId: number, branchId?: number | string) => {
     try {
       if (!voucherId || isNaN(voucherId)) {
-        console.warn("Invalid voucherId:", voucherId);
-
         return [];
       }
 
@@ -104,21 +83,19 @@ const getVoucherBoxes = cache(
       });
 
       if (!boxesResponse.success || !boxesResponse.data) {
-        console.warn("Failed to fetch voucher boxes:", boxesResponse);
-
         return [];
       }
 
-      return Array.isArray(boxesResponse.data) ? boxesResponse.data : [];
+      const boxes = Array.isArray(boxesResponse.data) ? boxesResponse.data : [];
+      return boxes;
     } catch (error) {
       console.error("Error fetching voucher boxes:", error);
-
       return [];
     }
   },
 );
 
-export default async function CustomerPaymentVoucherEditPage({
+export default async function ReceiptVoucherEditPage({
   params,
   searchParams,
 }: {
@@ -131,18 +108,15 @@ export default async function CustomerPaymentVoucherEditPage({
     ? searchParamsData.mode[0]
     : searchParamsData.mode;
 
-  // تحديد الوضع: preview (افتراضي بعد الحفظ) أو edit
   const formMode = mode === "edit" ? "edit" : "preview";
   const startInEditMode = mode === "edit";
 
   const voucherId = parseInt(id);
 
-  // التحقق من صحة المعرف
   if (isNaN(voucherId) || voucherId <= 0) {
     notFound();
   }
 
-  // جلب البيانات بشكل متوازي
   const [targetVoucher, formData] = await Promise.all([
     getVoucherById(voucherId),
     voucherFormDataService.getVoucherFormData(),
@@ -152,15 +126,12 @@ export default async function CustomerPaymentVoucherEditPage({
     notFound();
   }
 
-  // جلب تفاصيل الذهب والصناديق بشكل متوازي
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
   const [goldDetailsData, boxesData] = await Promise.all([
     getGoldDetails(targetVoucher.id, branchId),
     getVoucherBoxes(targetVoucher.id, branchId),
   ]);
 
-  // معالجة تفاصيل الذهب
-  // ملاحظة: API يستخدم vouch (id من vouchers), item, box, cost, inv
   const goldDetails: GVoucherDetail[] = goldDetailsData.map((detail: any) => {
     const item = formData.items?.find(
       (itm: any) => itm.id === (detail.item_id || detail.item),
@@ -200,17 +171,12 @@ export default async function CustomerPaymentVoucherEditPage({
     };
   });
 
-  // معالجة الصناديق
-  // ملاحظة: API يستخدم vouch (id من vouchers), box, vouch_amt, box_note, cost, inv
   const boxes: VoucherBox[] = boxesData.map((boxData: any) => {
-    // معالجة box_id - قد يكون box (object أو ID) أو box_id
     let boxId = 0;
     let boxObject: VoucherBox["box"] = undefined;
     
     if (boxData.hasOwnProperty("box")) {
-      // الحقل box موجود في الاستجابة
       if (boxData.box !== null && boxData.box !== undefined) {
-        // إذا كان box object (يحتوي على id أو cust_name)
         if (typeof boxData.box === "object" && !Array.isArray(boxData.box)) {
           boxObject = {
             id: boxData.box.id || boxData.box.Id || 0,
@@ -220,20 +186,17 @@ export default async function CustomerPaymentVoucherEditPage({
           };
           boxId = boxObject.id;
         } else if (typeof boxData.box === "number" || (typeof boxData.box === "string" && boxData.box !== "")) {
-          // إذا كان box ID فقط
           boxId = Number(boxData.box);
         }
       }
     }
     
-    // إذا لم نحصل على box_id من box object، جرب box_id
     if (boxId === 0 && boxData.hasOwnProperty("box_id")) {
       if (boxData.box_id !== null && boxData.box_id !== undefined && boxData.box_id !== "") {
         boxId = Number(boxData.box_id);
       }
     }
     
-    // معالجة cost_id - قد يكون cost أو cost_id
     let costId: number | null = null;
     if (boxData.hasOwnProperty("cost")) {
       if (boxData.cost !== null && boxData.cost !== undefined && boxData.cost !== "") {
@@ -245,7 +208,6 @@ export default async function CustomerPaymentVoucherEditPage({
       }
     }
     
-    // معالجة inv_id
     let invId: number | null = null;
     if (boxData.hasOwnProperty("inv")) {
       if (boxData.inv !== null && boxData.inv !== undefined && boxData.inv !== "") {
@@ -261,7 +223,7 @@ export default async function CustomerPaymentVoucherEditPage({
       id: boxData.id || 0,
       vouch_id: boxData.vouch || boxData.vouch_id || targetVoucher.id || 0,
       box_id: boxId,
-      box: boxObject, // معلومات الصندوق الكاملة إذا كانت موجودة
+      box: boxObject,
       amount: parseFloat(String(boxData.vouch_amt || boxData.amount || 0)),
       vouch_notes: boxData.box_note || boxData.vouch_notes || boxData.notes || "",
       cost_id: costId,
@@ -271,7 +233,6 @@ export default async function CustomerPaymentVoucherEditPage({
     };
   });
 
-  // تنسيق بيانات القيد
   const formattedVoucher: Voucher = {
     ...targetVoucher,
     vouch_date: targetVoucher.vouch_date || new Date().toISOString(),
@@ -293,7 +254,7 @@ export default async function CustomerPaymentVoucherEditPage({
       <Breadcrumb
         items={[
           { name: "القيود", href: "/forms/voucher?type=adjustment" },
-          { name: "الصرف عملاء", href: "/forms/gvoucher5" },
+          { name: "سند استلام", href: "/forms/receipt" },
           {
             name:
               formMode === "edit"
@@ -302,7 +263,7 @@ export default async function CustomerPaymentVoucherEditPage({
           },
         ]}
       />
-      <CustomerGoldVoucherClientPage
+      <ReceiptVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes || []}
         costCenters={formData.costCenters}
@@ -312,7 +273,7 @@ export default async function CustomerPaymentVoucherEditPage({
         isNewVoucher={false}
         items={formData.items || []}
         startInEditMode={startInEditMode}
-        vouchType={5}
+        vouchType={111}
         voucherBoxes={boxes}
         voucherData={formattedVoucher}
         voucherRecordId={targetVoucher.id}

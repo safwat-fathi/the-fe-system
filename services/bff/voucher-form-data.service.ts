@@ -4,7 +4,6 @@ import {
   voucherService,
   accountService,
   costCenterService,
-  taxRateService,
   boxesService,
   itemService,
   customerService,
@@ -16,7 +15,6 @@ export interface VoucherFormData {
   voucherTypes: any[];
   voucherStatuses: any[];
   caratTypes: any[];
-  taxRates: number[];
   boxes: any[];
   items?: any[];
   customers?: any[];
@@ -30,14 +28,12 @@ const getBalanceVoucherFormData = cache(async (): Promise<Omit<VoucherFormData, 
     voucherTypesResponse,
     voucherStagesResponse,
     caratTypesResponse,
-    taxRates,
   ] = await Promise.all([
     accountService.getAllAccounts(),
     costCenterService.getAllCostCenters(),
     voucherService.getVoucherTypes({ com: "1", year: "1" }),
     voucherService.getVoucherStages({ com: "1", year: "1" }),
     voucherService.getCaratTypes(),
-    taxRateService.getTaxRates(),
   ]);
 
   // معالجة الحسابات
@@ -78,16 +74,12 @@ const getBalanceVoucherFormData = cache(async (): Promise<Omit<VoucherFormData, 
         : []
       : [];
 
-  // معالجة نسب الضرائب
-  const taxRatesList = Array.isArray(taxRates) ? taxRates : [];
-
   return {
     accounts,
     costCenters,
     voucherTypes,
     voucherStatuses,
     caratTypes,
-    taxRates: taxRatesList,
     boxes: [], // فارغ للقيد الافتتاحي
   };
 });
@@ -99,7 +91,6 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     voucherTypesResponse,
     voucherStagesResponse,
     caratTypesResponse,
-    taxRates,
     boxesResponse,
     itemsResponse,
     customersResponse,
@@ -109,7 +100,6 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     voucherService.getVoucherTypes({ com: "1", year: "1" }),
     voucherService.getVoucherStages({ com: "1", year: "1" }),
     voucherService.getCaratTypes(),
-    taxRateService.getTaxRates(),
     boxesService.getBoxes({ xcom_id: 1 }),
     itemService.searchItems({ companyId: 1 }),
     customerService.getAllCustomers({ xcom_id: 1 }),
@@ -153,9 +143,6 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
         : []
       : [];
 
-  // معالجة نسب الضرائب
-  const taxRatesList = Array.isArray(taxRates) ? taxRates : [];
-
   // معالجة الصناديق
   const boxes = Array.isArray(boxesResponse) ? boxesResponse : [];
 
@@ -181,7 +168,6 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     voucherTypes,
     voucherStatuses,
     caratTypes,
-    taxRates: taxRatesList,
     boxes,
     items,
     customers,

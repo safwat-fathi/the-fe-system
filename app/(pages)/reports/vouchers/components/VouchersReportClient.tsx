@@ -352,6 +352,12 @@ const VouchersReportClient = ({
     } else if (vouchType === 5) {
       // سند صرف عميل
       router.push(`/forms/gvoucher5/${voucherId}?mode=preview`);
+    } else if (vouchType === 111) {
+      // سند استلام
+      router.push(`/forms/receipt/${voucherId}?mode=preview`);
+    } else if (vouchType === 222) {
+      // سند تسليم
+      router.push(`/forms/delivery/${voucherId}?mode=preview`);
     } else {
       // قيد تسوية (vouch_type = 3) أو أنواع أخرى
       router.push(`/forms/voucher/${voucherId}?mode=preview`);
@@ -378,6 +384,12 @@ const VouchersReportClient = ({
     } else if (vouchType === 5) {
       // سند صرف عميل
       router.push(`/forms/gvoucher5/${voucherId}?mode=edit`);
+    } else if (vouchType === 111) {
+      // سند استلام
+      router.push(`/forms/receipt/${voucherId}?mode=edit`);
+    } else if (vouchType === 222) {
+      // سند تسليم
+      router.push(`/forms/delivery/${voucherId}?mode=edit`);
     } else {
       // قيد تسوية (vouch_type = 3) أو أنواع أخرى
       router.push(`/forms/voucher/${voucherId}?mode=edit`);
@@ -406,6 +418,12 @@ const VouchersReportClient = ({
     } else if (vouchType === 5) {
       // سند صرف عميل
       printUrl = `/forms/gvoucher5/${voucherId}?mode=preview`;
+    } else if (vouchType === 111) {
+      // سند استلام
+      printUrl = `/forms/receipt/${voucherId}?mode=preview`;
+    } else if (vouchType === 222) {
+      // سند تسليم
+      printUrl = `/forms/delivery/${voucherId}?mode=preview`;
     } else {
       // قيد تسوية (vouch_type = 3) أو أنواع أخرى
       printUrl = `/forms/voucher/${voucherId}?mode=preview`;

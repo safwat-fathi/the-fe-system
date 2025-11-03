@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description: "عرض وتعديل قيد التسوية",
 };
 
-// Cache the voucher lookup for better performance
+// Cache the voucher lookup for better performance (مثل voucher1 و gvoucher4)
 const getVoucherById = cache(async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
@@ -23,7 +23,9 @@ const getVoucherById = cache(async (voucherId: number) => {
       return null;
     }
 
-    const vouchersResponse = await voucherService.getAll();
+    const vouchersResponse = await voucherService.getAll({
+      xvouch_type: "3", // قيد التسوية فقط
+    });
 
     if (!vouchersResponse.success || !vouchersResponse.data) {
       console.warn("Failed to fetch vouchers:", vouchersResponse);
@@ -117,23 +119,41 @@ export default async function VoucherEditPage({
     notFound();
   }
 
-  // جلب تفاصيل القيد - استخدام id من targetVoucher
+  // جلب تفاصيل القيد - استخدام id (primary key) من targetVoucher
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
-  const detailsData = await getVoucherDetails(targetVoucher.id, branchId);
+  // استخدام id (primary key) لجلب التفاصيل (مثل voucher1 و gvoucher4)
+  const [detailsData] = await Promise.all([
+    getVoucherDetails(targetVoucher.id, branchId),
+  ]);
 
   // معالجة تفاصيل القيد
+  // ملاحظة: API يستخدم vouch (id من vouchers), acc, cost
   const details: VoucherDetail[] = detailsData.map((detail: any) => {
     const account = formData.accounts.find(
       (acc: any) => acc.id === (detail.acc_id || detail.acc),
     );
 
+    // معالجة cost_id - قد يكون cost أو cost_id، وأحياناً يكون null
+    let costId: number | undefined = undefined;
+    if (detail.hasOwnProperty("cost")) {
+      // الحقل cost موجود في الاستجابة (حتى لو null)
+      if (detail.cost !== null && detail.cost !== undefined && detail.cost !== "") {
+        costId = Number(detail.cost);
+      }
+    } else if (detail.hasOwnProperty("cost_id")) {
+      // الحقل cost_id موجود في الاستجابة
+      if (detail.cost_id !== null && detail.cost_id !== undefined && detail.cost_id !== "") {
+        costId = Number(detail.cost_id);
+      }
+    }
+
     return {
       id: detail.id || 0,
-      vouch_id: detail.vouch_id || targetVoucher.vouch_id || 0,
+      vouch_id: targetVoucher.vouch_id || 0, // vouch_id من voucher الرئيسي
       acc_id: detail.acc_id || detail.acc || 0,
       acc_code: (account as any)?.acc_code || detail.acc_code || "",
       acc_name: (account as any)?.acc_name || detail.acc_name || "",
-      cost_id: detail.cost_id || 0,
+      cost_id: costId, // قد يكون undefined أو رقم
       debit: parseFloat(detail.debit) || 0,
       credit: parseFloat(detail.credit) || 0,
       debit_g: parseFloat(detail.debit_g) || 0,
@@ -153,6 +173,7 @@ export default async function VoucherEditPage({
     vouch_date: targetVoucher.vouch_date || new Date().toISOString(),
     cr_date: targetVoucher.cr_date || new Date().toISOString(),
     vouch_id: targetVoucher.vouch_id || 0,
+    vouch_amt: targetVoucher.vouch_amt || 0,
     ref_no: targetVoucher.ref_no || "",
     vouch_notes: targetVoucher.vouch_notes || "",
     vouch_status: targetVoucher.vouch_status || 1,
@@ -207,7 +228,6 @@ export default async function VoucherEditPage({
         isNewVoucher={false}
         newVoucherHref={newVoucherHref}
         startInEditMode={startInEditMode}
-        taxRates={formData.taxRates}
         vouchType={formattedVoucher.vouch_type}
         voucherData={formattedVoucher}
         voucherDetailsData={details}
