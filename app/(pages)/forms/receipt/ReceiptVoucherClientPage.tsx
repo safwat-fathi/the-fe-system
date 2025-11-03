@@ -13,6 +13,9 @@ import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { useReceiptDeliveryVoucherForm } from "@/hooks/useReceiptDeliveryVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
+import { glTransactionService } from "@/services/api";
+import { GLTransaction } from "@/types/models/gl-transaction";
+import GLTransactionModal from "../components/GLTransactionModal";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -52,6 +55,11 @@ export default function ReceiptVoucherClientPage({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // State للمودال والقيد المحاسبي
+  const [isGLModalOpen, setIsGLModalOpen] = useState(false);
+  const [glTransactions, setGlTransactions] = useState<GLTransaction[]>([]);
+  const [loadingGLTransactions, setLoadingGLTransactions] = useState(false);
 
   // Use the hook for all state management and business logic
   const {
@@ -113,6 +121,47 @@ export default function ReceiptVoucherClientPage({
 
   // Handle search
   const [searchTerm, setSearchTerm] = useState("");
+
+  // دالة جلب القيد المحاسبي (فقط للحركة الحالية)
+  const loadGLTransactions = async () => {
+    if (!voucher.vouch_id || voucher.vouch_id <= 0) {
+      return;
+    }
+
+    setLoadingGLTransactions(true);
+    try {
+      const response = await glTransactionService.getAll({
+        xtrans_id: voucher.vouch_id,
+        xtrans_type: vouchType, // 111 للاستلام
+        xcom_id: 1,
+        xyear_id: 0,
+        xfrom_date: 0,
+        xto_date: 0,
+      });
+
+      if (response.success && response.data) {
+        const transactions = Array.isArray(response.data) ? response.data : [];
+        const filteredTransactions = transactions.filter(
+          (trans: GLTransaction) =>
+            trans.trans_id === voucher.vouch_id && trans.trans_type === vouchType,
+        );
+        setGlTransactions(filteredTransactions);
+      } else {
+        setGlTransactions([]);
+      }
+    } catch (error) {
+      console.error("Error loading GL transactions:", error);
+      setGlTransactions([]);
+    } finally {
+      setLoadingGLTransactions(false);
+    }
+  };
+
+  // فتح المودال عند الضغط على الزر
+  const handleViewGLTransactions = async () => {
+    setIsGLModalOpen(true);
+    await loadGLTransactions();
+  };
 
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
@@ -289,6 +338,18 @@ export default function ReceiptVoucherClientPage({
             >
               <i className="bi bi-printer w-4 h-4 me-1" />
               طباعة
+            </button>
+
+            <button
+              className="h-7 px-3 text-xs bg-indigo-600 text-white hover:bg-indigo-700 border border-indigo-600 rounded-md shadow-sm disabled:opacity-50"
+              disabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              onClick={handleViewGLTransactions}
+              title="عرض القيد المحاسبي"
+            >
+              <span className="flex items-center gap-1">
+                <i className="bi bi-list-check w-4 h-4 me-1" />
+                القيد المحاسبي
+              </span>
             </button>
           </div>
 
@@ -1160,6 +1221,16 @@ export default function ReceiptVoucherClientPage({
           </div>
         </div>
       </div>
+
+      {/* مودال عرض القيد المحاسبي */}
+      <GLTransactionModal
+        isOpen={isGLModalOpen}
+        onClose={() => setIsGLModalOpen(false)}
+        loading={loadingGLTransactions}
+        transactions={glTransactions}
+        voucherId={voucher.vouch_id || 0}
+        refNo={voucher.ref_no}
+      />
     </div>
   );
 }

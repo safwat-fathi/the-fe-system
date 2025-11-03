@@ -10,13 +10,15 @@ import toast from "react-hot-toast";
 const AsyncPaginateCreatableSelect = withAsyncPaginate(CreatableSelect);
 
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
-import { voucherService, itemService, customerService } from "@/services/api";
+import { voucherService, itemService, customerService, glTransactionService } from "@/services/api";
 import {
   createVoucherAction,
   updateVoucherAction,
 } from "@/app/actions/voucher.action";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
+import { GLTransaction } from "@/types/models/gl-transaction";
+import GLTransactionModal from "../components/GLTransactionModal";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -87,6 +89,11 @@ export default function CustomerGoldVoucherClientPage({
   const [boxes, setBoxes] = useState<any[]>(initialBoxes);
   const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
   const [customers, setCustomers] = useState<any[]>(initialCustomers);
+  
+  // State للمودال والقيد المحاسبي
+  const [isGLModalOpen, setIsGLModalOpen] = useState(false);
+  const [glTransactions, setGlTransactions] = useState<GLTransaction[]>([]);
+  const [loadingGLTransactions, setLoadingGLTransactions] = useState(false);
   const [items, setItems] = useState<any[]>(initialItems);
   const [voucherTypes, setVoucherTypes] = useState<any[]>(initialVoucherTypes);
   const [isLoading, setIsLoading] = useState(false);
@@ -849,6 +856,47 @@ export default function CustomerGoldVoucherClientPage({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // دالة جلب القيد المحاسبي (فقط للحركة الحالية)
+  const loadGLTransactions = async () => {
+    if (!voucher.vouch_id || voucher.vouch_id <= 0) {
+      return;
+    }
+
+    setLoadingGLTransactions(true);
+    try {
+      const response = await glTransactionService.getAll({
+        xtrans_id: voucher.vouch_id,
+        xtrans_type: vouchType, // 4 للقبض، 5 للصرف
+        xcom_id: 1,
+        xyear_id: 0,
+        xfrom_date: 0,
+        xto_date: 0,
+      });
+
+      if (response.success && response.data) {
+        const transactions = Array.isArray(response.data) ? response.data : [];
+        const filteredTransactions = transactions.filter(
+          (trans: GLTransaction) =>
+            trans.trans_id === voucher.vouch_id && trans.trans_type === vouchType,
+        );
+        setGlTransactions(filteredTransactions);
+      } else {
+        setGlTransactions([]);
+      }
+    } catch (error) {
+      console.error("Error loading GL transactions:", error);
+      setGlTransactions([]);
+    } finally {
+      setLoadingGLTransactions(false);
+    }
+  };
+
+  // فتح المودال عند الضغط على الزر
+  const handleViewGLTransactions = async () => {
+    setIsGLModalOpen(true);
+    await loadGLTransactions();
   };
 
   // Print voucher
@@ -2430,6 +2478,16 @@ export default function CustomerGoldVoucherClientPage({
           </div>
         </div>
       </div>
+
+      {/* مودال عرض القيد المحاسبي */}
+      <GLTransactionModal
+        isOpen={isGLModalOpen}
+        onClose={() => setIsGLModalOpen(false)}
+        loading={loadingGLTransactions}
+        transactions={glTransactions}
+        voucherId={voucher.vouch_id || 0}
+        refNo={voucher.ref_no}
+      />
     </div>
   );
 }

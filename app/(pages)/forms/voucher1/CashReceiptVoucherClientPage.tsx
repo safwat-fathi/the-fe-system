@@ -4,12 +4,25 @@ import { useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import toast from "react-hot-toast";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/react";
 
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 import { useCashReceiptVoucherForm } from "@/hooks/useCashReceiptVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
-import { voucherService } from "@/services/api";
+import { voucherService, glTransactionService } from "@/services/api";
+import { GLTransaction } from "@/types/models/gl-transaction";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -50,6 +63,11 @@ export default function CashReceiptVoucherClientPage({
 
   // Handle search - must be before any conditional returns (Rules of Hooks)
   const [searchTerm, setSearchTerm] = useState("");
+
+  // State للمودال والقيد المحاسبي
+  const [isGLModalOpen, setIsGLModalOpen] = useState(false);
+  const [glTransactions, setGlTransactions] = useState<GLTransaction[]>([]);
+  const [loadingGLTransactions, setLoadingGLTransactions] = useState(false);
 
   // Use the hook for all state management and business logic
   const {
@@ -103,6 +121,47 @@ export default function CashReceiptVoucherClientPage({
     vouchType,
     formMode,
   });
+
+  // دالة جلب القيد المحاسبي (فقط للحركة الحالية)
+  const loadGLTransactions = async () => {
+    if (!voucher.vouch_id || voucher.vouch_id <= 0) {
+      return;
+    }
+
+    setLoadingGLTransactions(true);
+    try {
+      const response = await glTransactionService.getAll({
+        xtrans_id: voucher.vouch_id,
+        xtrans_type: vouchType, // 1 للقبض، 2 للصرف
+        xcom_id: 1,
+        xyear_id: 0,
+        xfrom_date: 0,
+        xto_date: 0,
+      });
+
+      if (response.success && response.data) {
+        const transactions = Array.isArray(response.data) ? response.data : [];
+        const filteredTransactions = transactions.filter(
+          (trans: GLTransaction) =>
+            trans.trans_id === voucher.vouch_id && trans.trans_type === vouchType,
+        );
+        setGlTransactions(filteredTransactions);
+      } else {
+        setGlTransactions([]);
+      }
+    } catch (error) {
+      console.error("Error loading GL transactions:", error);
+      setGlTransactions([]);
+    } finally {
+      setLoadingGLTransactions(false);
+    }
+  };
+
+  // فتح المودال عند الضغط على الزر
+  const handleViewGLTransactions = async () => {
+    setIsGLModalOpen(true);
+    await loadGLTransactions();
+  };
 
   if (!isClient) {
     return (
@@ -339,6 +398,18 @@ export default function CashReceiptVoucherClientPage({
             >
               <i className="bi bi-printer w-4 h-4 me-1" />
               طباعة
+            </button>
+
+            <button
+              className="h-7 px-3 text-xs bg-indigo-600 text-white hover:bg-indigo-700 border border-indigo-600 rounded-md shadow-sm disabled:opacity-50"
+              disabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              onClick={handleViewGLTransactions}
+              title="عرض القيد المحاسبي"
+            >
+              <span className="flex items-center gap-1">
+                <i className="bi bi-list-check w-4 h-4 me-1" />
+                القيد المحاسبي
+              </span>
             </button>
           </div>
 
@@ -911,6 +982,215 @@ export default function CashReceiptVoucherClientPage({
           </div>
         </div>
       </div>
+
+      {/* مودال عرض القيد المحاسبي */}
+      <Modal
+        isOpen={isGLModalOpen}
+        onClose={() => setIsGLModalOpen(false)}
+        size="5xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent className="max-h-[85vh]">
+          <ModalHeader className="border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-blue-50">
+            <div className="flex flex-col w-full">
+              <h3 className="text-xl font-bold text-indigo-900">القيد المحاسبي</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                القيد رقم: <span className="font-semibold">{voucher.vouch_id}</span>{" "}
+                {voucher.ref_no && (
+                  <>
+                    - المرجع: <span className="font-semibold">{voucher.ref_no}</span>
+                  </>
+                )}
+              </p>
+            </div>
+          </ModalHeader>
+          <ModalBody className="p-4">
+            {loadingGLTransactions ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                <span className="mr-4 text-gray-600">جاري التحميل...</span>
+              </div>
+            ) : glTransactions.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <i className="bi bi-info-circle text-4xl mb-3 block text-gray-400" />
+                <p className="text-lg">لا توجد سجلات ترحيل لهذا القيد</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <Table
+                    aria-label="GL Transactions Table"
+                    className="min-w-full"
+                    removeWrapper
+                  >
+                    <TableHeader>
+                      <TableColumn className="text-center">#</TableColumn>
+                      <TableColumn className="text-center">الحساب</TableColumn>
+                      <TableColumn className="text-center">البيان</TableColumn>
+                      <TableColumn className="text-center">مدين</TableColumn>
+                      <TableColumn className="text-center">دائن</TableColumn>
+                      <TableColumn className="text-center">مدين أساس</TableColumn>
+                      <TableColumn className="text-center">دائن أساس</TableColumn>
+                      <TableColumn className="text-center">مدين ذهب</TableColumn>
+                      <TableColumn className="text-center">دائن ذهب</TableColumn>
+                      <TableColumn className="text-center">مدين معاير</TableColumn>
+                      <TableColumn className="text-center">دائن معاير</TableColumn>
+                    </TableHeader>
+                    <TableBody>
+                      {glTransactions.map((transaction, index) => {
+                        const debit = Number(transaction.debit || 0);
+                        const credit = Number(transaction.credit || 0);
+                        const debitBase = Number(transaction.debit_base || 0);
+                        const creditBase = Number(transaction.credit_base || 0);
+                        const gDebit = Number(transaction.g_debit || 0);
+                        const gCredit = Number(transaction.g_credit || 0);
+                        const gDebitBase = Number(transaction.g_debit_base || 0);
+                        const gCreditBase = Number(transaction.g_credit_base || 0);
+
+                        return (
+                          <TableRow key={transaction.id || index}>
+                            <TableCell className="text-center text-sm">
+                              {transaction.seq || index + 1}
+                            </TableCell>
+                            <TableCell className="text-center text-sm font-medium">
+                              {transaction.acc || "-"}
+                            </TableCell>
+                            <TableCell
+                              className="text-sm max-w-[200px] truncate"
+                              title={transaction.note || ""}
+                            >
+                              {transaction.note || "-"}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {debit > 0 ? (
+                                <span className="font-semibold text-gray-800">
+                                  {formatAmount(debit)}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {credit > 0 ? (
+                                <span className="font-semibold text-green-600">
+                                  {formatAmount(credit)}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center text-sm">
+                              {debitBase > 0 ? formatAmount(debitBase) : "-"}
+                            </TableCell>
+                            <TableCell className="text-center text-sm">
+                              {creditBase > 0 ? formatAmount(creditBase) : "-"}
+                            </TableCell>
+                            <TableCell className="text-center text-sm">
+                              {gDebit > 0 ? `${formatAmount(gDebit)} جم` : "-"}
+                            </TableCell>
+                            <TableCell className="text-center text-sm">
+                              {gCredit > 0 ? `${formatAmount(gCredit)} جم` : "-"}
+                            </TableCell>
+                            <TableCell className="text-center text-sm">
+                              {gDebitBase > 0
+                                ? `${formatAmount(gDebitBase)} جم`
+                                : "-"}
+                            </TableCell>
+                            <TableCell className="text-center text-sm">
+                              {gCreditBase > 0
+                                ? `${formatAmount(gCreditBase)} جم`
+                                : "-"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {/* صف الإجماليات */}
+                      {(() => {
+                        const totals = glTransactions.reduce(
+                          (acc, trans) => {
+                            acc.totalDebit += Number(trans.debit || 0);
+                            acc.totalCredit += Number(trans.credit || 0);
+                            acc.totalDebitBase += Number(trans.debit_base || 0);
+                            acc.totalCreditBase += Number(trans.credit_base || 0);
+                            acc.totalGDebit += Number(trans.g_debit || 0);
+                            acc.totalGCredit += Number(trans.g_credit || 0);
+                            acc.totalGDebitBase += Number(trans.g_debit_base || 0);
+                            acc.totalGCreditBase += Number(
+                              trans.g_credit_base || 0,
+                            );
+                            return acc;
+                          },
+                          {
+                            totalDebit: 0,
+                            totalCredit: 0,
+                            totalDebitBase: 0,
+                            totalCreditBase: 0,
+                            totalGDebit: 0,
+                            totalGCredit: 0,
+                            totalGDebitBase: 0,
+                            totalGCreditBase: 0,
+                          },
+                        );
+
+                        return (
+                          <TableRow className="bg-gradient-to-r from-gray-50 to-slate-50 border-t-2 border-gray-300">
+                            <TableCell
+                              colSpan={3}
+                              className="text-center font-bold text-base text-gray-800"
+                            >
+                              الإجمالي
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-bold text-gray-900">
+                                {formatAmount(totals.totalDebit)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-bold text-green-700">
+                                {formatAmount(totals.totalCredit)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-semibold text-gray-700">
+                                {formatAmount(totals.totalDebitBase)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-semibold text-gray-700">
+                                {formatAmount(totals.totalCreditBase)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-semibold text-gray-700">
+                                {formatAmount(totals.totalGDebit)} جم
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-semibold text-gray-700">
+                                {formatAmount(totals.totalGCredit)} جم
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-semibold text-gray-700">
+                                {formatAmount(totals.totalGDebitBase)} جم
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-semibold text-gray-700">
+                                {formatAmount(totals.totalGCreditBase)} جم
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })()}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
