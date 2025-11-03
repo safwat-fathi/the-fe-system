@@ -141,11 +141,13 @@ class HelperService extends HttpService {
     try {
       // جلب companyId من branch-params إذا لم يتم توفيره
       let companyId = xcom_id;
+
       if (!companyId) {
         try {
           const branchParams = await import("@/app/actions/branch-params").then(
             (m) => m.getBranchParams(),
           );
+
           companyId = branchParams.com || "1";
         } catch {
           companyId = "1";

@@ -55,6 +55,7 @@ class CurrencyService extends HttpService<Currency> {
         const branchParams = await import("@/app/actions/branch-params").then(
           (m) => m.getBranchParams(),
         );
+
         companyId = branchParams.com || "1";
       } catch {
         companyId = "1";
@@ -117,6 +118,7 @@ class CurrencyService extends HttpService<Currency> {
         const branchParams = await import("@/app/actions/branch-params").then(
           (m) => m.getBranchParams(),
         );
+
         companyId = branchParams.com || "1";
       } catch {
         companyId = "1";
@@ -124,8 +126,10 @@ class CurrencyService extends HttpService<Currency> {
 
       // تقييد cur_price إلى منزلتين عشريتين فقط (إن وجد)
       let formattedPrice: string | undefined = undefined;
+
       if (currency.cur_price) {
         const curPrice = parseFloat(String(currency.cur_price));
+
         formattedPrice = isNaN(curPrice)
           ? String(currency.cur_price)
           : curPrice.toFixed(2);

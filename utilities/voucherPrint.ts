@@ -1,5 +1,3 @@
-import { formatAmount } from "./formatAmount";
-
 /**
  * Generate HTML for printing balance voucher (قيد افتتاحي)
  */
@@ -236,4 +234,3 @@ export const generateBalanceVoucherPrintHTML = (
     </html>
   `;
 };
-

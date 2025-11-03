@@ -118,10 +118,7 @@ class VoucherService extends HttpService<Voucher> {
   ): Promise<Voucher | null> {
     try {
       const branchParam =
-        params?.["xcom_id"] ??
-        params?.["com_id"] ??
-        params?.["com"] ??
-        "1";
+        params?.["xcom_id"] ?? params?.["com_id"] ?? params?.["com"] ?? "1";
 
       // البحث بالـ ID يمكن أن يكون id (primary key) أو vouch_id (رقم القيد)
       const requestedId = String(id).trim();
@@ -151,15 +148,15 @@ class VoucherService extends HttpService<Voucher> {
           if (!Array.isArray(list)) return null;
 
           // البحث أولاً بـ id (primary key)
-          const byId = list.find(
-            (v: any) => Number(v?.id) === requestedId,
-          );
+          const byId = list.find((v: any) => Number(v?.id) === requestedId);
+
           if (byId) return byId as Voucher;
 
           // Fallback إلى vouch_id
           const byVouchId = list.find(
             (v: any) => Number(v?.vouch_id) === requestedId,
           );
+
           if (byVouchId) return byVouchId as Voucher;
 
           // آخر حل: أول عنصر في القائمة
@@ -177,7 +174,10 @@ class VoucherService extends HttpService<Voucher> {
 
         // إذا كان object مباشر
         if (data && typeof data === "object") {
-          if (Number(data.id) === requestedId || Number(data.vouch_id) === requestedId) {
+          if (
+            Number(data.id) === requestedId ||
+            Number(data.vouch_id) === requestedId
+          ) {
             return data as Voucher;
           }
         }
@@ -186,6 +186,7 @@ class VoucherService extends HttpService<Voucher> {
       return null;
     } catch (error) {
       console.error("Error fetching voucher by ID:", error);
+
       return null;
     }
   }
@@ -507,7 +508,10 @@ class VoucherService extends HttpService<Voucher> {
       page: params?.page || "1", // pagination
     };
 
-    const response = await this.getList<any[]>("gvouchers_dtl_list", queryParams);
+    const response = await this.getList<any[]>(
+      "gvouchers_dtl_list",
+      queryParams,
+    );
 
     // معالجة الاستجابة المُقسّمة (pagination)
     if (response.success && response.data) {
@@ -568,6 +572,7 @@ class VoucherService extends HttpService<Voucher> {
       ...params,
       com: params?.com || params?.xcom_id || "1",
     };
+
     return this.delete(`api_delete_gvouch_dtl/${id}`, queryParams);
   }
 }

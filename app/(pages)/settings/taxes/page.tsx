@@ -22,10 +22,9 @@ export default async function TaxesPage() {
       <h1 className="responsive-text-xl font-bold mb-6">الضرائب</h1>
 
       <TaxesClient
-        initialTaxes={taxesData as any}
         initialAccounts={accountsData as any}
+        initialTaxes={taxesData as any}
       />
     </div>
   );
 }
-

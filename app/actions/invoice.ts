@@ -59,6 +59,7 @@ export async function updateInvoiceAction(
 
     if (result) {
       const stringId = String(parsedId);
+
       await revalidateTag("invoices");
       await revalidatePath("/reports/invoices");
       await revalidateTag(`invoice-details-${stringId}`);

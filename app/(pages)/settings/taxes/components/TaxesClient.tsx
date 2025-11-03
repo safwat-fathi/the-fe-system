@@ -1,5 +1,7 @@
 "use client";
 
+import type { Tax } from "@/types/models/tax";
+
 import React, { useState, useMemo } from "react";
 import {
   Table,
@@ -19,14 +21,9 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import {
-  PlusIcon,
-  EyeIcon,
-  PencilIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon, EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import type { Tax } from "@/types/models/tax";
 import taxService from "@/services/api/tax.service";
 
 const columns = [
@@ -228,8 +225,8 @@ export default function TaxesClient({
         isDismissable={false}
         isOpen={isModalOpen}
         shouldBlockScroll={false}
-        onClose={() => setIsModalOpen(false)}
         size="2xl"
+        onClose={() => setIsModalOpen(false)}
       >
         <ModalContent className="font-cairo">
           <ModalHeader>
@@ -259,9 +256,7 @@ export default function TaxesClient({
               label="الحساب"
               popoverProps={{ shouldBlockScroll: false }}
               selectedKeys={
-                currentTax.tax_account
-                  ? [String(currentTax.tax_account)]
-                  : []
+                currentTax.tax_account ? [String(currentTax.tax_account)] : []
               }
               onSelectionChange={(keys) => {
                 const id = Number(Array.from(keys)[0]);
@@ -289,8 +284,8 @@ export default function TaxesClient({
             <Input
               isDisabled={modalMode === "view"}
               label="النسبة"
-              type="number"
               step="0.1"
+              type="number"
               value={String(currentTax.tax_prc || 0)}
               onChange={(e) =>
                 setCurrentTax({
@@ -308,7 +303,9 @@ export default function TaxesClient({
               <Button
                 color="primary"
                 onPress={() => {
-                  toast.info("الميزة قيد التطوير - سيتم إضافة API للإنشاء والتعديل قريباً");
+                  toast.info(
+                    "الميزة قيد التطوير - سيتم إضافة API للإنشاء والتعديل قريباً",
+                  );
                   setIsModalOpen(false);
                 }}
               >
@@ -328,4 +325,3 @@ export default function TaxesClient({
     </>
   );
 }
-

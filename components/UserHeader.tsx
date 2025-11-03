@@ -13,6 +13,7 @@ import {
 } from "@heroui/react";
 import { UserIcon, BeakerIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { onLogoutAction } from "@/app/actions/auth";
 
@@ -32,6 +33,34 @@ const STATIC_USER_INFO: UserInfo = {
 
 export default function UserHeader() {
   const router = useRouter();
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setCurrentTime(new Date());
+    
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date: Date | null) => {
+    if (!date) return "--:--:--";
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return "--/--/----";
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   const handleLogout = async () => {
     await onLogoutAction();
@@ -42,25 +71,36 @@ export default function UserHeader() {
   };
 
   return (
-    <Navbar className="bg-white shadow-sm border-b" maxWidth="full">
+    <Navbar className="bg-gradient-to-r from-white via-slate-50 to-white shadow-md border-b border-slate-200/50 backdrop-blur-sm" maxWidth="full">
+      <NavbarContent justify="start" className="hidden md:flex">
+        <NavbarItem>
+          <div className="flex items-center gap-2 px-3 py-2">
+            <div className="text-right">
+              <div className="text-base font-semibold text-slate-800 font-mono tracking-wide">
+                {formatDate(currentTime)} | {formatTime(currentTime)}
+              </div>
+            </div>
+          </div>
+        </NavbarItem>
+      </NavbarContent>
       <NavbarContent justify="end">
         {/* أيقونة المستخدم مع اسمه وقائمة منسدلة */}
         <NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <Button className="flex items-center gap-2 px-2" variant="light">
+              <Button className="flex items-center gap-2 px-3 hover:bg-slate-100 rounded-full transition-all duration-200" variant="light">
                 <Avatar
-                  className="bg-blue-100 text-blue-600"
+                  className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-sm"
                   name={
                     STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username
                   }
                   size="sm"
                 />
                 <div className="hidden md:flex flex-col items-start">
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-semibold text-slate-900">
                     {STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-slate-600">
                     {STATIC_USER_INFO?.role || "مستخدم"}
                   </span>
                 </div>

@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import CashReceiptVoucherClientPage from "../voucher1/CashReceiptVoucherClientPage";
+
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import Breadcrumb from "@/components/Breadcrumb";
 
@@ -31,10 +32,9 @@ export default async function PaymentVoucherPage() {
         isNewVoucher={true}
         startInEditMode={true}
         vouchType={2}
-        voucherTypes={formData.voucherTypes}
         voucherStatuses={formData.voucherStatuses}
+        voucherTypes={formData.voucherTypes}
       />
     </div>
   );
 }
-

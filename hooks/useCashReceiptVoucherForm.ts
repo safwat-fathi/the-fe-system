@@ -1,13 +1,9 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import type { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-import type { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 import { voucherService } from "@/services/api";
 import {
   createVoucherAction,
@@ -141,7 +137,12 @@ export const useCashReceiptVoucherForm = ({
   }, []);
 
   useEffect(() => {
-    if (!isNewVoucher && initialVoucherBoxes && initialVoucherBoxes.length > 0 && !hasLoadedVoucherBoxes.current) {
+    if (
+      !isNewVoucher &&
+      initialVoucherBoxes &&
+      initialVoucherBoxes.length > 0 &&
+      !hasLoadedVoucherBoxes.current
+    ) {
       setVoucherBoxes(initialVoucherBoxes);
       hasLoadedVoucherBoxes.current = true;
     }
@@ -166,12 +167,14 @@ export const useCashReceiptVoucherForm = ({
   useEffect(() => {
     if (!isClient) return;
     const interval = setInterval(updateCurrentTime, 1000);
+
     return () => clearInterval(interval);
   }, [isClient]);
 
   // Helper Functions
   const updateCurrentTime = () => {
     const now = new Date();
+
     setCurrentTime(now.toLocaleTimeString("ar-EG"));
   };
 
@@ -184,6 +187,7 @@ export const useCashReceiptVoucherForm = ({
   const generateNextVoucherNumber = async () => {
     try {
       const nextId = await voucherService.getNextNumber(vouchType);
+
       setVoucher((prev) => ({
         ...prev,
         vouch_id: nextId,
@@ -203,6 +207,7 @@ export const useCashReceiptVoucherForm = ({
   const loadAccountOptions = async (search: string): Promise<any[]> => {
     try {
       const result = await searchAccountsAction(search);
+
       if (!result.success) return [];
 
       const filteredAccounts = result.data;
@@ -210,8 +215,12 @@ export const useCashReceiptVoucherForm = ({
 
       const options = filteredAccounts
         .map((acc: any) => {
-          const accountCode = String(acc.acc_code ?? acc.code ?? "").toLowerCase();
-          const accountName = String(acc.acc_name ?? acc.name ?? "").toLowerCase();
+          const accountCode = String(
+            acc.acc_code ?? acc.code ?? "",
+          ).toLowerCase();
+          const accountName = String(
+            acc.acc_name ?? acc.name ?? "",
+          ).toLowerCase();
           const codeMatch = accountCode.indexOf(term);
           const nameMatch = accountName.indexOf(term);
 
@@ -226,9 +235,11 @@ export const useCashReceiptVoucherForm = ({
         .sort((a: any, b: any) => {
           const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
           const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+
           if (aCode !== bCode) return aCode - bCode;
           const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
           const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+
           return aName - bName;
         })
         .map(({ value, label, account }: any) => ({ value, label, account }));
@@ -250,6 +261,7 @@ export const useCashReceiptVoucherForm = ({
     }
 
     const account = accounts.find((acc) => acc.id === detail.acc_id);
+
     if (account) {
       return {
         value: detail.acc_id,
@@ -266,13 +278,17 @@ export const useCashReceiptVoucherForm = ({
       const updated = prev.map((box, i) => {
         if (i === index) {
           const updatedBox = { ...box, [field]: value };
+
           if (field === "box_id" && (!value || value === 0)) {
             updatedBox.box = undefined;
           }
+
           return updatedBox;
         }
+
         return box;
       });
+
       return updated;
     });
   };
@@ -304,8 +320,10 @@ export const useCashReceiptVoucherForm = ({
         if (i === index) {
           return { ...detail, [field]: value };
         }
+
         return detail;
       });
+
       return updated;
     });
   };
@@ -357,10 +375,12 @@ export const useCashReceiptVoucherForm = ({
   const saveVoucher = async () => {
     const voucherDate = new Date(voucher.vouch_date);
     const today = new Date();
+
     today.setHours(23, 59, 59, 999);
 
     if (voucherDate > today) {
       toast.error("لا يمكن إنشاء قيد بتاريخ أكبر من تاريخ اليوم");
+
       return;
     }
 
@@ -368,6 +388,7 @@ export const useCashReceiptVoucherForm = ({
       toast.error(
         `غير متزن: إجمالي النقدية (${totals.totalBoxes.toFixed(2)}) يجب أن يساوي إجمالي التفاصيل (${totals.totalDetails.toFixed(2)})`,
       );
+
       return;
     }
 
@@ -377,6 +398,7 @@ export const useCashReceiptVoucherForm = ({
 
     if (validBoxes.length === 0) {
       toast.error("يرجى إدخال صندوق واحد على الأقل");
+
       return;
     }
 
@@ -386,6 +408,7 @@ export const useCashReceiptVoucherForm = ({
 
     if (validDetails.length === 0) {
       toast.error("يرجى إدخال حساب واحد على الأقل");
+
       return;
     }
 
@@ -436,9 +459,7 @@ export const useCashReceiptVoucherForm = ({
         (id) => !currentDetailIds.includes(id),
       );
 
-      const currentBoxIds = boxesData
-        .map((b) => b.id)
-        .filter((id) => id > 0);
+      const currentBoxIds = boxesData.map((b) => b.id).filter((id) => id > 0);
       const originalBoxIds = originalBoxes
         .map((b) => b.id)
         .filter((id) => id && id > 0) as number[];
@@ -509,12 +530,14 @@ export const useCashReceiptVoucherForm = ({
 
         const getBoxName = (boxId: number) => {
           const box = boxes.find((b) => b.id === boxId);
+
           return box?.cust_name || box?.name || `صندوق ${boxId}`;
         };
 
         const getCostCenterName = (costId: number | null | undefined) => {
           if (!costId || costId === 0) return "-";
           const center = costCenters.find((c) => c.id === costId);
+
           return center?.name || center?.cost_name || `مركز ${costId}`;
         };
 
@@ -605,4 +628,3 @@ export const useCashReceiptVoucherForm = ({
     printVoucher,
   };
 };
-

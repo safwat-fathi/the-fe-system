@@ -83,4 +83,3 @@ const DynamicDataTable = ({ data, tableName }: DynamicDataTableProps) => {
 };
 
 export default DynamicDataTable;
-

@@ -66,9 +66,12 @@ const getGoldDetails = cache(
 
       const parsedBranchId = Number(branchId ?? 1) || 1;
 
-      const goldDetailsResponse = await voucherService.getGoldDetails(voucherId, {
-        xcom_id: parsedBranchId,
-      });
+      const goldDetailsResponse = await voucherService.getGoldDetails(
+        voucherId,
+        {
+          xcom_id: parsedBranchId,
+        },
+      );
 
       if (!goldDetailsResponse.success || !goldDetailsResponse.data) {
         console.warn("Failed to fetch gold details:", goldDetailsResponse);
@@ -110,12 +113,18 @@ const getVoucherBoxes = cache(
       }
 
       const boxes = Array.isArray(boxesResponse.data) ? boxesResponse.data : [];
-      
+
       // تسجيل البيانات للتصحيح
       if (boxes.length > 0) {
-        console.log(`✅ تم جلب ${boxes.length} صندوق للسند ${voucherId}:`, boxes);
+        console.log(
+          `✅ تم جلب ${boxes.length} صندوق للسند ${voucherId}:`,
+          boxes,
+        );
       } else {
-        console.warn(`⚠️ لم يتم جلب أي صناديق للسند ${voucherId}. Response:`, boxesResponse);
+        console.warn(
+          `⚠️ لم يتم جلب أي صناديق للسند ${voucherId}. Response:`,
+          boxesResponse,
+        );
       }
 
       return boxes;
@@ -200,7 +209,8 @@ export default async function CustomerReceiptVoucherEditPage({
       close_weight: parseFloat(detail.close_weight) || undefined,
       inv_id: detail.inv_id || detail.inv || undefined,
       cost_id: detail.cost_id || detail.cost || undefined,
-      cost_name: costCenter?.name || costCenter?.cost_name || detail.cost_name || "",
+      cost_name:
+        costCenter?.name || costCenter?.cost_name || detail.cost_name || "",
       work_amt: parseFloat(detail.work_amt) || undefined,
       total_work: parseFloat(detail.total_work) || undefined,
       qty: parseInt(detail.qty) || undefined,
@@ -215,7 +225,7 @@ export default async function CustomerReceiptVoucherEditPage({
     // معالجة box_id - قد يكون box (object أو ID) أو box_id
     let boxId = 0;
     let boxObject: VoucherBox["box"] = undefined;
-    
+
     if (boxData.hasOwnProperty("box")) {
       // الحقل box موجود في الاستجابة
       if (boxData.box !== null && boxData.box !== undefined) {
@@ -223,45 +233,74 @@ export default async function CustomerReceiptVoucherEditPage({
         if (typeof boxData.box === "object" && !Array.isArray(boxData.box)) {
           boxObject = {
             id: boxData.box.id || boxData.box.Id || 0,
-            cust_name: boxData.box.cust_name || boxData.box.name || boxData.box.cust_name_e || "",
+            cust_name:
+              boxData.box.cust_name ||
+              boxData.box.name ||
+              boxData.box.cust_name_e ||
+              "",
             cust_code: boxData.box.cust_code || boxData.box.code || "",
             box_type: boxData.box.box_type || boxData.box.type_id || undefined,
           };
           boxId = boxObject.id;
-        } else if (typeof boxData.box === "number" || (typeof boxData.box === "string" && boxData.box !== "")) {
+        } else if (
+          typeof boxData.box === "number" ||
+          (typeof boxData.box === "string" && boxData.box !== "")
+        ) {
           // إذا كان box ID فقط
           boxId = Number(boxData.box);
         }
       }
     }
-    
+
     // إذا لم نحصل على box_id من box object، جرب box_id
     if (boxId === 0 && boxData.hasOwnProperty("box_id")) {
-      if (boxData.box_id !== null && boxData.box_id !== undefined && boxData.box_id !== "") {
+      if (
+        boxData.box_id !== null &&
+        boxData.box_id !== undefined &&
+        boxData.box_id !== ""
+      ) {
         boxId = Number(boxData.box_id);
       }
     }
-    
+
     // معالجة cost_id - قد يكون cost أو cost_id
     let costId: number | null = null;
+
     if (boxData.hasOwnProperty("cost")) {
-      if (boxData.cost !== null && boxData.cost !== undefined && boxData.cost !== "") {
+      if (
+        boxData.cost !== null &&
+        boxData.cost !== undefined &&
+        boxData.cost !== ""
+      ) {
         costId = Number(boxData.cost);
       }
     } else if (boxData.hasOwnProperty("cost_id")) {
-      if (boxData.cost_id !== null && boxData.cost_id !== undefined && boxData.cost_id !== "") {
+      if (
+        boxData.cost_id !== null &&
+        boxData.cost_id !== undefined &&
+        boxData.cost_id !== ""
+      ) {
         costId = Number(boxData.cost_id);
       }
     }
-    
+
     // معالجة inv_id
     let invId: number | null = null;
+
     if (boxData.hasOwnProperty("inv")) {
-      if (boxData.inv !== null && boxData.inv !== undefined && boxData.inv !== "") {
+      if (
+        boxData.inv !== null &&
+        boxData.inv !== undefined &&
+        boxData.inv !== ""
+      ) {
         invId = Number(boxData.inv);
       }
     } else if (boxData.hasOwnProperty("inv_id")) {
-      if (boxData.inv_id !== null && boxData.inv_id !== undefined && boxData.inv_id !== "") {
+      if (
+        boxData.inv_id !== null &&
+        boxData.inv_id !== undefined &&
+        boxData.inv_id !== ""
+      ) {
         invId = Number(boxData.inv_id);
       }
     }
@@ -272,7 +311,8 @@ export default async function CustomerReceiptVoucherEditPage({
       box_id: boxId,
       box: boxObject, // معلومات الصندوق الكاملة إذا كانت موجودة
       amount: parseFloat(String(boxData.vouch_amt || boxData.amount || 0)),
-      vouch_notes: boxData.box_note || boxData.vouch_notes || boxData.notes || "",
+      vouch_notes:
+        boxData.box_note || boxData.vouch_notes || boxData.notes || "",
       cost_id: costId,
       inv_id: invId,
       close_weight: parseFloat(String(boxData.close_weight || 0)) || undefined,
@@ -330,4 +370,3 @@ export default async function CustomerReceiptVoucherEditPage({
     </div>
   );
 }
-

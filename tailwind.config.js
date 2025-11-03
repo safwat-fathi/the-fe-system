@@ -108,6 +108,8 @@ module.exports = {
         'fade-slide-down': 'fadeInSlideDown 0.6s ease-out forwards',
         'fade-slide-up': 'fadeInSlideUp 0.6s ease-out forwards',
         'fade-slide-down-sm': 'fadeInSlideDownSm 0.6s ease-out forwards',
+        'soft-pulse': 'softPulse 3s ease-in-out infinite',
+        'soft-ping': 'softPing 3s ease-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -137,6 +139,15 @@ module.exports = {
         fadeInSlideDownSm: {
           '0%': { opacity: '0', transform: 'translateY(-20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        softPulse: {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '0.7', transform: 'scale(1.1)' },
+        },
+        softPing: {
+          '0%': { opacity: '0', transform: 'scale(1)' },
+          '50%': { opacity: '0.5', transform: 'scale(2)' },
+          '100%': { opacity: '0', transform: 'scale(2.5)' },
         },
       },
     },

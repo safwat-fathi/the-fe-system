@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { cache } from "react";
 
 import BalanceVoucherClientPage from "./BalanceVoucherClientPage";
+
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
@@ -12,7 +13,8 @@ export const metadata: Metadata = {
   description: "القيد الافتتاحي",
 };
 
-const getBalanceVoucherFormData = voucherFormDataService.getBalanceVoucherFormData;
+const getBalanceVoucherFormData =
+  voucherFormDataService.getBalanceVoucherFormData;
 
 // البحث عن القيد الافتتاحي الموجود (نوع 0)
 const getExistingBalanceVoucher = cache(async () => {
@@ -32,7 +34,13 @@ const getExistingBalanceVoucher = cache(async () => {
 
     return null;
   } catch (error) {
-    console.error("Error fetching existing balance voucher:", error);
+    // في حالة فشل الاتصال بالخادم، لا نوقف العملية
+    // نعيد null حتى يتم عرض نموذج جديد
+    console.warn(
+      "[SERVER] ⚠️ فشل جلب القيد الافتتاحي (الخادم غير متاح):",
+      error instanceof Error ? error.message : String(error),
+    );
+
     return null;
   }
 });
@@ -43,6 +51,7 @@ const getVoucherDetails = cache(
     try {
       if (!voucherId || isNaN(voucherId)) {
         console.warn("Invalid voucherId:", voucherId);
+
         return [];
       }
 
@@ -54,12 +63,14 @@ const getVoucherDetails = cache(
 
       if (!detailsResponse.success || !detailsResponse.data) {
         console.warn("Failed to fetch voucher details:", detailsResponse);
+
         return [];
       }
 
       return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
     } catch (error) {
       console.error("Error fetching voucher details:", error);
+
       return [];
     }
   },
@@ -87,7 +98,8 @@ export default async function BalanceVoucherPage({
 
   // إذا كان القيد موجوداً، عرضه مباشرة (بدون redirect)
   if (existingVoucher && existingVoucher.id) {
-    const branchId = Number(existingVoucher.com_id ?? existingVoucher.com ?? 1) || 1;
+    const branchId =
+      Number(existingVoucher.com_id ?? existingVoucher.com ?? 1) || 1;
     const detailsData = await getVoucherDetails(existingVoucher.id, branchId);
 
     // معالجة تفاصيل القيد

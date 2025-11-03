@@ -62,6 +62,7 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
             selectedKeys={[selectedTable]}
             onSelectionChange={(keys) => {
               const selectedValue = Array.from(keys)[0] as string;
+
               if (selectedValue) {
                 handleSelectChange(selectedValue);
               }
@@ -129,4 +130,3 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
 };
 
 export default TableSelector;
-

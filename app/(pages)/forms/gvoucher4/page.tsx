@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import CustomerGoldVoucherClientPage from "./CustomerGoldVoucherClientPage";
+
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import Breadcrumb from "@/components/Breadcrumb";
 
@@ -38,4 +39,3 @@ export default async function CustomerReceiptVoucherPage() {
     </div>
   );
 }
-

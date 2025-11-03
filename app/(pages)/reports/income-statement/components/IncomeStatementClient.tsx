@@ -86,42 +86,38 @@ export default function IncomeStatementClient() {
           <div className="flex items-center gap-2">
             <Switch
               isSelected={advancedAnalysis}
-              onValueChange={setAdvancedAnalysis}
               size="sm"
+              onValueChange={setAdvancedAnalysis}
             />
             <span className="text-sm">تحليل متقدم</span>
           </div>
           <div className="flex items-center gap-2">
             <Switch
               isSelected={checkMode}
-              onValueChange={setCheckMode}
               size="sm"
+              onValueChange={setCheckMode}
             />
             <span className="text-sm flex items-center gap-1">
               <MagnifyingGlassIcon className="h-4 w-4" />
               فحص
             </span>
           </div>
-          <Button
-            className="btn-secondary"
-            size="sm"
-            onPress={resetFilters}
-          >
+          <Button className="btn-secondary" size="sm" onPress={resetFilters}>
             <ArrowPathIcon className="h-4 w-4" /> إعادة تعيين
           </Button>
           <Button className="btn-secondary" size="sm">
             <FunnelIcon className="h-4 w-4" /> بحث
           </Button>
           <Select
-            size="sm"
+            className="min-w-[120px]"
             placeholder="المستوى 7"
             selectedKeys={level ? [level] : []}
+            size="sm"
             onSelectionChange={(keys) => {
               const val = Array.from(keys)[0] as string;
 
               setLevel(val);
             }}
-            className="min-w-[120px]"
           >
             <SelectItem key="7" value="7">
               المستوى 7
@@ -134,15 +130,15 @@ export default function IncomeStatementClient() {
             </SelectItem>
           </Select>
           <Select
-            size="sm"
+            className="min-w-[120px]"
             placeholder="فترة"
             selectedKeys={period ? [period] : []}
+            size="sm"
             onSelectionChange={(keys) => {
               const val = Array.from(keys)[0] as string;
 
               setPeriod(val);
             }}
-            className="min-w-[120px]"
           >
             <SelectItem key="monthly" value="monthly">
               شهري
@@ -162,11 +158,11 @@ export default function IncomeStatementClient() {
             {comparePeriod ? "✓" : ""} مقارنة بفترة سابقة
           </Button>
           <Input
-            type="date"
+            className="min-w-[150px]"
             size="sm"
+            type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="min-w-[150px]"
           />
         </div>
       </div>
@@ -187,19 +183,19 @@ export default function IncomeStatementClient() {
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">من تاريخ</label>
               <Input
+                className="min-w-[200px]"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="min-w-[200px]"
               />
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm text-gray-600">إلى تاريخ</label>
               <Input
+                className="min-w-[200px]"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="min-w-[200px]"
               />
             </div>
           </div>
@@ -248,4 +244,3 @@ export default function IncomeStatementClient() {
     </>
   );
 }
-

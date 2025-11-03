@@ -31,11 +31,7 @@ import toast from "react-hot-toast";
 
 import currencyService from "@/services/api/currency.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
-import {
-  getCurrencyOptions,
-  findCurrencyByCode,
-  type CurrencyInfo,
-} from "@/utilities/currencies";
+import { getCurrencyOptions, findCurrencyByCode } from "@/utilities/currencies";
 import currencyExchangeService from "@/services/external/currency-exchange.service";
 
 interface Currency {
@@ -51,17 +47,17 @@ interface Currency {
   cur_status: boolean;
 }
 
-  const columns = [
-    { name: "الاسم", uid: "cur_name" },
-    { name: "الاسم بالإنجليزي", uid: "cur_name_e" },
-    { name: "جزء العملة", uid: "cur_part" },
-    { name: "جزء العملة بالإنجليزي", uid: "cur_part_e" },
-    { name: "الرمز", uid: "cur_sign" },
-    { name: "السعر", uid: "cur_price" },
-    { name: "الوسم", uid: "cur_tag" },
-    { name: "الحالة", uid: "cur_status" },
-    { name: "", uid: "actions" },
-  ];
+const columns = [
+  { name: "الاسم", uid: "cur_name" },
+  { name: "الاسم بالإنجليزي", uid: "cur_name_e" },
+  { name: "جزء العملة", uid: "cur_part" },
+  { name: "جزء العملة بالإنجليزي", uid: "cur_part_e" },
+  { name: "الرمز", uid: "cur_sign" },
+  { name: "السعر", uid: "cur_price" },
+  { name: "الوسم", uid: "cur_tag" },
+  { name: "الحالة", uid: "cur_status" },
+  { name: "", uid: "actions" },
+];
 
 interface CurrenciesClientProps {
   initialData: Currency[];
@@ -124,11 +120,13 @@ export default function CurrenciesClient({
     // التحقق من الحقول المطلوبة
     if (!currentCurrency.cur_name || currentCurrency.cur_name.trim() === "") {
       toast.error("⚠️ اسم العملة مطلوب");
+
       return;
     }
 
     if (!currentCurrency.cur_price || currentCurrency.cur_price.trim() === "") {
       toast.error("⚠️ السعر مطلوب");
+
       return;
     }
 
@@ -355,7 +353,9 @@ export default function CurrenciesClient({
                         setSelectedCurrencyCode(currencyInfo.code);
 
                         // استخدام أول حرف من كود ISO للوسم (حرف واحد فقط)
-                        const tagChar = currencyInfo.code.charAt(0).toUpperCase();
+                        const tagChar = currencyInfo.code
+                          .charAt(0)
+                          .toUpperCase();
 
                         // جلب المعلومات الأساسية أولاً
                         setCurrentCurrency({
@@ -497,14 +497,15 @@ export default function CurrenciesClient({
               }
             />
             <Input
+              description="الوسم يجب أن يكون حرف واحد فقط (سيتم أخذ أول حرف تلقائياً)"
               isDisabled={isViewMode}
               label="الوسم (حرف واحد فقط)"
-              value={currentCurrency.cur_tag || ""}
-              placeholder="مثال: U, E, S"
               maxLength={1}
-              description="الوسم يجب أن يكون حرف واحد فقط (سيتم أخذ أول حرف تلقائياً)"
+              placeholder="مثال: U, E, S"
+              value={currentCurrency.cur_tag || ""}
               onChange={(e) => {
                 const value = e.target.value.slice(0, 1).toUpperCase();
+
                 setCurrentCurrency({
                   ...currentCurrency,
                   cur_tag: value,
@@ -514,31 +515,31 @@ export default function CurrenciesClient({
             <div className="flex items-end gap-2">
               <Input
                 required
-                isDisabled={isViewMode || isLoadingPrice}
-                label="السعر (مقابل الريال السعودي)"
-                value={currentCurrency.cur_price || ""}
+                className="flex-1"
                 description={
                   isLoadingPrice
                     ? "جاري جلب سعر الصرف..."
                     : "سعر الصرف مقابل الريال السعودي"
                 }
+                isDisabled={isViewMode || isLoadingPrice}
+                label="السعر (مقابل الريال السعودي)"
+                value={currentCurrency.cur_price || ""}
                 onChange={(e) =>
                   setCurrentCurrency({
                     ...currentCurrency,
                     cur_price: e.target.value,
                   })
                 }
-                className="flex-1"
               />
               {modalMode === "add" &&
                 (selectedCurrencyCode || currentCurrency.cur_tag) && (
                   <Button
-                    className="h-[56px] min-w-[40px] bg-transparent hover:bg-gray-100 text-gray-600 hover:text-blue-600 rounded-lg transition-colors"
-                    variant="light"
                     isIconOnly
+                    className="h-[56px] min-w-[40px] bg-transparent hover:bg-gray-100 text-gray-600 hover:text-blue-600 rounded-lg transition-colors"
                     isLoading={isLoadingPrice}
                     size="md"
                     title="تحديث سعر الصرف من الإنترنت"
+                    variant="light"
                     onPress={async () => {
                       // استخدام الكود المحفوظ أو البحث عن العملة
                       const currencyCode =
@@ -549,7 +550,10 @@ export default function CurrenciesClient({
                             currentCurrency.cur_tag?.toUpperCase(),
                         )?.value;
 
-                      if (currencyCode && currencyCode.toUpperCase() !== "SAR") {
+                      if (
+                        currencyCode &&
+                        currencyCode.toUpperCase() !== "SAR"
+                      ) {
                         setIsLoadingPrice(true);
                         try {
                           const rate =

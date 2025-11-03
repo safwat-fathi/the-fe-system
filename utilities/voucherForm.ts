@@ -36,20 +36,24 @@ export const parseNumber = (value: unknown): number => {
   if (typeof value === "string") {
     const cleaned = value.replace(/,/g, "").trim();
     const parsed = Number(cleaned);
+
     return Number.isFinite(parsed) ? parsed : 0;
   }
   if (value === undefined || value === null) return 0;
   const numeric = Number(value);
+
   return Number.isFinite(numeric) ? numeric : 0;
 };
 
 export const ensurePositiveNumber = (value: unknown): number | null => {
   const numeric = parseNumber(value);
+
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
 export const formatDecimalString = (value: number, digits: number): string => {
   const normalized = Number.isFinite(value) ? value : 0;
+
   return normalized.toFixed(digits);
 };
 
@@ -57,27 +61,34 @@ export const formatNumber = (value: number, digits: number): number =>
   Number.parseFloat(value.toFixed(digits));
 
 // Identity helpers
-export const getAccountIdFromDetail = (detail: VoucherDetail): number | null => {
+export const getAccountIdFromDetail = (
+  detail: VoucherDetail,
+): number | null => {
   const primary = parseNumber((detail.acc_id as any) ?? 0);
+
   return primary > 0 ? primary : null;
 };
 
 export const getNumericDetailId = (id: unknown): number | null => {
   const numeric = Number(id);
+
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
 export const normalizeDetailIdentifier = (id: unknown): string | null => {
   if (id === null || id === undefined) return null;
   const numeric = getNumericDetailId(id);
+
   if (numeric !== null) return `num:${numeric}`;
   const stringValue = String(id).trim();
+
   return stringValue.length > 0 ? `str:${stringValue}` : null;
 };
 
 // Mapping helpers
 export const mapDetailToRow = (detail: VoucherDetail): VoucherDetailRow => {
   const accId = Number(detail.acc_id);
+
   return {
     id: Number(detail.id) || 0,
     vouch_id: Number(detail.vouch_id) || 0,
@@ -99,6 +110,7 @@ export const normalizeDetailForComparison = (
   detail: VoucherDetailRow | undefined,
 ): ComparableDetail | null => {
   if (!detail) return null;
+
   return {
     accId: getAccountIdFromDetail(detail as any),
     debit: parseNumber(detail.debit),
@@ -117,6 +129,7 @@ export const hasDetailChanged = (
 ): boolean => {
   const originalComparable = normalizeDetailForComparison(originalDetail);
   const currentComparable = normalizeDetailForComparison(currentDetail);
+
   if (!currentComparable) return false;
   if (!originalComparable) return true;
 
@@ -129,14 +142,17 @@ export const hasDetailChanged = (
     "gauge",
     "costId",
   ];
+
   for (const key of numericKeys) {
     if (
-      Number(originalComparable[key] ?? 0) !== Number(currentComparable[key] ?? 0)
+      Number(originalComparable[key] ?? 0) !==
+      Number(currentComparable[key] ?? 0)
     ) {
       return true;
     }
   }
   if (originalComparable.notes !== currentComparable.notes) return true;
+
   return false;
 };
 
@@ -145,6 +161,7 @@ export function mapRowToApiPayload(
   voucherId: number,
 ): Partial<VoucherDetail> | null {
   const accId = getAccountIdFromDetail(detail as any);
+
   if (!accId) return null;
 
   const normalizedDetailId = getNumericDetailId(detail.id);
@@ -155,9 +172,12 @@ export function mapRowToApiPayload(
     vouch_id: voucherId,
     acc_id: accId,
     debit: detail.debit !== undefined ? parseNumber(detail.debit) : undefined,
-    credit: detail.credit !== undefined ? parseNumber(detail.credit) : undefined,
-    debit_g: detail.debit_g !== undefined ? parseNumber(detail.debit_g) : undefined,
-    credit_g: detail.credit_g !== undefined ? parseNumber(detail.credit_g) : undefined,
+    credit:
+      detail.credit !== undefined ? parseNumber(detail.credit) : undefined,
+    debit_g:
+      detail.debit_g !== undefined ? parseNumber(detail.debit_g) : undefined,
+    credit_g:
+      detail.credit_g !== undefined ? parseNumber(detail.credit_g) : undefined,
     gauge: parseNumber(detail.gauge) || 875,
     vouch_notes: detail.vouch_notes ?? "",
     cost_id: costId > 0 ? costId : null,
@@ -169,17 +189,17 @@ export function mapRowToApiPayload(
 export const clearOppositeField = (
   field: keyof VoucherDetail,
   value: any,
-): { 
-  debit?: undefined; 
-  credit?: undefined; 
+): {
+  debit?: undefined;
+  credit?: undefined;
   base_debit?: undefined;
   base_credit?: undefined;
-  debit_g?: undefined; 
+  debit_g?: undefined;
   credit_g?: undefined;
 } => {
   const cleared: any = {};
   const numValue = parseNumber(value);
-  
+
   if (field === "debit" && numValue > 0) {
     cleared.credit = undefined;
   } else if (field === "credit" && numValue > 0) {
@@ -193,7 +213,7 @@ export const clearOppositeField = (
   } else if (field === "credit_g" && numValue > 0) {
     cleared.debit_g = undefined;
   }
-  
+
   return cleared;
 };
 
@@ -205,6 +225,7 @@ export const getAccountGauge = (
   if (!selectedAccount || caratTypes.length === 0) return 875;
 
   const accountGauge = selectedAccount.gauge || selectedAccount.carat;
+
   if (!accountGauge) return 875;
 
   const matchedCaratType = caratTypes.find(
@@ -239,15 +260,20 @@ export const calculateVoucherTotals = (
   return details.reduce(
     (totals, detail) => {
       const debit = detail.debit !== undefined ? parseNumber(detail.debit) : 0;
-      const credit = detail.credit !== undefined ? parseNumber(detail.credit) : 0;
-      const baseDebit = includeBaseDebitCredit && detail.base_debit !== undefined 
-        ? parseNumber(detail.base_debit) 
-        : 0;
-      const baseCredit = includeBaseDebitCredit && detail.base_credit !== undefined 
-        ? parseNumber(detail.base_credit) 
-        : 0;
-      const debitG = detail.debit_g !== undefined ? parseNumber(detail.debit_g) : 0;
-      const creditG = detail.credit_g !== undefined ? parseNumber(detail.credit_g) : 0;
+      const credit =
+        detail.credit !== undefined ? parseNumber(detail.credit) : 0;
+      const baseDebit =
+        includeBaseDebitCredit && detail.base_debit !== undefined
+          ? parseNumber(detail.base_debit)
+          : 0;
+      const baseCredit =
+        includeBaseDebitCredit && detail.base_credit !== undefined
+          ? parseNumber(detail.base_credit)
+          : 0;
+      const debitG =
+        detail.debit_g !== undefined ? parseNumber(detail.debit_g) : 0;
+      const creditG =
+        detail.credit_g !== undefined ? parseNumber(detail.credit_g) : 0;
 
       return {
         totalDebit: totals.totalDebit + debit + baseDebit,
@@ -272,6 +298,6 @@ export const calculateCalibratedGold = (
   baseGauge: number = 875,
 ): number => {
   if (!baseValue || baseValue <= 0 || !gauge || gauge <= 0) return 0;
+
   return parseFloat(((baseValue * gauge) / baseGauge).toFixed(6));
 };
-

@@ -19,6 +19,7 @@ const getVoucherById = cache(async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
       console.warn("Invalid voucherId:", voucherId);
+
       return null;
     }
 
@@ -28,6 +29,7 @@ const getVoucherById = cache(async (voucherId: number) => {
 
     if (!vouchersResponse.success || !vouchersResponse.data) {
       console.warn("Failed to fetch vouchers:", vouchersResponse);
+
       return null;
     }
 
@@ -47,6 +49,7 @@ const getVoucherById = cache(async (voucherId: number) => {
     return foundVoucher;
   } catch (error) {
     console.error("Error fetching voucher:", error);
+
     return null;
   }
 });
@@ -124,7 +127,6 @@ export default async function BalanceVoucherEditPage({
   // جلب تفاصيل القيد
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
   const detailsData = await getVoucherDetails(targetVoucher.id, branchId);
-
 
   // معالجة تفاصيل القيد
   // ملاحظة: API يستخدم vouch (id من vouchers), acc, cost
