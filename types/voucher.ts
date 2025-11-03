@@ -28,6 +28,7 @@ export interface Voucher {
   com_id?: number;
   year_id?: number;
   details?: VoucherDetail[];
+  handling?: string; // مناولة
 }
 
 export interface VoucherDetail {

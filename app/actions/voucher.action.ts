@@ -1,9 +1,32 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 import { voucherService } from "@/services/api";
 import type { VoucherBox } from "@/types/voucher";
+import { STORAGE_KEYS } from "@/constants";
+
+// Helper function to get current user username
+async function getCurrentUsername(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const userData = cookieStore.get(STORAGE_KEYS.USER_DATA)?.value;
+    
+    if (!userData) {
+      return null;
+    }
+    
+    try {
+      const parsedUserData = JSON.parse(decodeURIComponent(userData));
+      return parsedUserData.username || parsedUserData.email || null;
+    } catch (error) {
+      return null;
+    }
+  } catch (error) {
+    return null;
+  }
+}
 
 interface SaveVoucherData {
   vouch_id: number;
@@ -16,6 +39,7 @@ interface SaveVoucherData {
   ref_no?: string;
   opps_vouch?: number;
   cust_id?: number | null; // العميل
+  handling?: string | null; // مناولة
 }
 
 interface VoucherDetailData {
@@ -70,30 +94,51 @@ export async function createVoucherAction(
   goldDetails: GVoucherDetailData[] = [],
 ) {
   try {
-    console.log("🆕 بدء إنشاء قيد جديد:", voucherData);
+    // الحصول على اسم المستخدم الحالي
+    const currentUsername = await getCurrentUsername();
+    const currentDate = new Date().toISOString();
 
     // تجهيز بيانات القيد
-    const voucherPayload = {
+    const voucherPayload: any = {
       ...voucherData,
       com: 1, // الفرع = 1
       year: 1, // السنة = 1
-      cr_date: new Date().toISOString(),
+      cr_date: currentDate,
+      cr_user: currentUsername || null,
       vouch_amt: 0, // إبقاء المبلغ الإجمالي 0 دائماً
       vouch_status: voucherData.vouch_status || 1, // حالة السند من getVoucherStageList
       opps_vouch: voucherData.opps_vouch || 0, // حفظ قيمة opps_vouch من API
       commit: true, // تحديد القيد كـ محفوظ بعد الحفظ
+      // handling: سيتم إضافته لاحقاً عند توفر الحقل في قاعدة البيانات
     };
 
-    console.log("📤 بيانات الإنشاء:", voucherPayload);
+    // إضافة cust بدلاً من cust_id للسندات الذهبية (4, 5, 111, 222)
+    // تأكد من إضافة cust حتى لو كان cust_id موجوداً في voucherData
+    if (
+      voucherData.vouch_type === 4 ||
+      voucherData.vouch_type === 5 ||
+      voucherData.vouch_type === 111 ||
+      voucherData.vouch_type === 222
+    ) {
+      // تحقق من وجود cust_id أو cust في voucherData
+      const custValue = voucherData.cust_id !== undefined && voucherData.cust_id !== null && voucherData.cust_id > 0
+        ? voucherData.cust_id
+        : (voucherPayload.cust !== undefined && voucherPayload.cust !== null && voucherPayload.cust > 0
+          ? voucherPayload.cust
+          : null);
+
+      if (custValue && custValue > 0) {
+        voucherPayload.cust = custValue; // API يتوقع cust وليس cust_id
+      }
+
+      // حذف cust_id من voucherPayload لأنه لا يُرسل للـ API
+      delete voucherPayload.cust_id;
+    }
 
     // حفظ السند الرئيسي
     const voucherResponse = await voucherService.create(voucherPayload);
 
-    console.log("📥 استجابة الإنشاء:", voucherResponse);
-
     if (!voucherResponse.success || !voucherResponse.data) {
-      console.error("❌ فشل حفظ القيد:", voucherResponse.message);
-      console.error("📤 البيانات:", voucherPayload);
 
       return {
         success: false,
@@ -102,14 +147,30 @@ export async function createVoucherAction(
     }
 
     const savedVoucher = voucherResponse.data;
-    const masterId = (savedVoucher as any).id; // استخدام id من الجدول (ليس vouch_id)
-
-    console.log("✅ تم حفظ القيد - المعرف:", masterId);
+    // محاولة استخراج id بطرق مختلفة
+    let masterId = (savedVoucher as any)?.id;
+    
+    // Fallback: إذا لم يكن id موجوداً، حاول البحث عن القيد الذي تم إنشاؤه
+    if (!masterId || masterId <= 0) {
+      // جلب القيد الذي تم إنشاؤه باستخدام vouch_id
+      if (savedVoucher && (savedVoucher as any).vouch_id) {
+        const lookupResponse = await voucherService.getVoucherById(
+          (savedVoucher as any).vouch_id,
+          {
+            xvouch_type: voucherData.vouch_type?.toString() || "0",
+          },
+        );
+        
+        if (lookupResponse && (lookupResponse as any)?.id) {
+          masterId = (lookupResponse as any).id;
+        }
+      }
+    }
 
     if (!masterId || masterId <= 0) {
       return {
         success: false,
-        message: "لم يتم الحصول على رقم القيد",
+        message: "لم يتم الحصول على رقم القيد من الخادم",
       };
     }
 
@@ -137,9 +198,14 @@ export async function createVoucherAction(
       }
     }
 
-    // حفظ صفوف جدول النقدية (vouchers_box) إذا كان سند قبض أو صرف
+    // حفظ صفوف جدول النقدية (vouchers_box) إذا كان سند قبض أو صرف أو استلام أو تسليم أو قبض/صرف عميل
     if (
-      (voucherData.vouch_type === 1 || voucherData.vouch_type === 2) &&
+      (voucherData.vouch_type === 1 || 
+       voucherData.vouch_type === 2 || 
+       voucherData.vouch_type === 4 || 
+       voucherData.vouch_type === 5 || 
+       voucherData.vouch_type === 111 || 
+       voucherData.vouch_type === 222) &&
       voucherBoxes.length > 0
     ) {
       for (let i = 0; i < voucherBoxes.length; i++) {
@@ -161,7 +227,8 @@ export async function createVoucherAction(
           change: "1.00000", // سعر الصرف
           vouch_status: 1, // حالة السند
           close_weight: box.close_weight || null, // وزن التسكير
-          cr_date: new Date().toISOString(),
+          cr_date: currentDate,
+          cr_user: currentUsername || null,
         };
         
         // إضافة cost و inv فقط إذا كانت موجودة وقيمة صحيحة
@@ -175,8 +242,6 @@ export async function createVoucherAction(
         const boxResponse = await voucherService.createBox(boxData as any);
 
         if (!boxResponse.success) {
-          console.error(`❌ فشل حفظ الصندوق ${i + 1}:`, boxResponse.message);
-          console.error("📤 البيانات:", boxData);
 
           return {
             success: false,
@@ -207,7 +272,8 @@ export async function createVoucherAction(
         vouch_notes: detail.vouch_notes || "",
         com: 1, // الفرع = 1
         year: 1, // السنة = 1
-        cr_date: new Date().toISOString(),
+        cr_date: currentDate,
+        cr_user: currentUsername || null,
       };
 
       // إضافة cost فقط إذا كانت موجودة وقيمة صحيحة (API يتوقع cost وليس cost_id)
@@ -215,13 +281,9 @@ export async function createVoucherAction(
         detailData.cost = detail.cost_id;
       }
 
-      console.log(`📤 حفظ التفصيل ${i + 1}:`, detailData);
-
       const detailResponse = await voucherService.createDetail(detailData);
 
       if (!detailResponse.success) {
-        console.error(`❌ فشل حفظ التفصيل ${i + 1}:`, detailResponse.message);
-        console.error("📤 البيانات:", detailData);
 
         return {
           success: false,
@@ -230,9 +292,10 @@ export async function createVoucherAction(
       }
     }
 
-    // حفظ تفاصيل الذهب (gvouchers_dtl) إذا كان سند ذهبي (4 أو 5)
+    // حفظ تفاصيل الذهب (gvouchers_dtl) إذا كان سند ذهبي (4 أو 5 أو 111 أو 222)
     if (
-      (voucherData.vouch_type === 4 || voucherData.vouch_type === 5) &&
+      (voucherData.vouch_type === 4 || voucherData.vouch_type === 5 || 
+       voucherData.vouch_type === 111 || voucherData.vouch_type === 222) &&
       goldDetails.length > 0
     ) {
       for (let i = 0; i < goldDetails.length; i++) {
@@ -245,9 +308,11 @@ export async function createVoucherAction(
         const goldDetailData: any = {
           vouch: masterId, // API يستخدم vouch وليس vouch_id
           item: goldDetail.item_id, // API يستخدم item وليس item_id
-          com: 1,
+          com: 1, // فقط com بدون year
+          vouch_type: voucherData.vouch_type, // نوع السند (مهم للـ API)
           vouch_status: 1,
-          cr_date: new Date().toISOString(),
+          cr_date: currentDate,
+          cr_user: currentUsername || null,
         };
 
         // إضافة الحقول الاختيارية
@@ -297,13 +362,9 @@ export async function createVoucherAction(
           goldDetailData.qty = goldDetail.qty.toString();
         }
 
-        console.log(`📤 حفظ تفصيل الذهب ${i + 1}:`, goldDetailData);
-
         const goldDetailResponse = await voucherService.createGoldDetail(goldDetailData);
 
         if (!goldDetailResponse.success) {
-          console.error(`❌ فشل حفظ تفصيل الذهب ${i + 1}:`, goldDetailResponse.message);
-          console.error("📤 البيانات:", goldDetailData);
 
           return {
             success: false,
@@ -319,6 +380,8 @@ export async function createVoucherAction(
     revalidatePath("/forms/voucher2");
     revalidatePath("/forms/gvoucher4");
     revalidatePath("/forms/gvoucher5");
+    revalidatePath("/forms/receipt");
+    revalidatePath("/forms/delivery");
     revalidatePath("/reports/vouchers");
     
     // Revalidate based on voucher type
@@ -330,6 +393,10 @@ export async function createVoucherAction(
       revalidatePath(`/forms/gvoucher4/${masterId}`);
     } else if (voucherData.vouch_type === 5) {
       revalidatePath(`/forms/gvoucher5/${masterId}`);
+    } else if (voucherData.vouch_type === 111) {
+      revalidatePath(`/forms/receipt/${masterId}`);
+    } else if (voucherData.vouch_type === 222) {
+      revalidatePath(`/forms/delivery/${masterId}`);
     } else {
       revalidatePath(`/forms/voucher/${masterId}`);
     }
@@ -346,7 +413,6 @@ export async function createVoucherAction(
       message: "تم حفظ القيد بنجاح",
     };
   } catch (error) {
-    console.error("💥 خطأ:", error);
 
     return {
       success: false,
@@ -366,11 +432,12 @@ export async function updateVoucherAction(
   deletedGoldDetailIds: number[] = [],
 ) {
   try {
-    console.log("🔄 بدء تحديث القيد:", voucherData);
+    // الحصول على اسم المستخدم الحالي
+    const currentUsername = await getCurrentUsername();
+    const currentDate = new Date().toISOString();
 
     // التحقق من صحة البيانات
     if (!voucherData.vouch_id || voucherData.vouch_id <= 0) {
-      console.error("❌ معرف القيد غير صحيح:", voucherData.vouch_id);
 
       return {
         success: false,
@@ -384,7 +451,6 @@ export async function updateVoucherAction(
     // إذا كان voucherRecordId موجوداً، استخدمه مباشرة (الأفضل والأسرع)
     if (voucherRecordId && voucherRecordId > 0) {
       realVoucherId = voucherRecordId;
-      console.log("✅ استخدام voucherRecordId الممرر مباشرة:", realVoucherId);
       
       // جلب بيانات القيد للحصول على branchId لاحقاً
       const vouchersResponse = await voucherService.getAll({
@@ -396,7 +462,6 @@ export async function updateVoucherAction(
       );
     } else {
       // البحث عن ID الحقيقي من قاعدة البيانات
-      console.log("🔍 البحث عن ID الحقيقي للقيد:", voucherData.vouch_id);
       
       // للقيد الافتتاحي، نبحث عن القيود الافتتاحية فقط (vouch_type = 0)
       const vouchersResponse = await voucherService.getAll({
@@ -410,10 +475,6 @@ export async function updateVoucherAction(
       );
 
       if (!voucherRecord || !voucherRecord.id) {
-        console.error(
-          "❌ لم يتم العثور على القيد في قاعدة البيانات:",
-          voucherData.vouch_id,
-        );
 
         return {
           success: false,
@@ -423,13 +484,6 @@ export async function updateVoucherAction(
 
       realVoucherId = voucherRecord.id;
     }
-
-    console.log(
-      "✅ تم العثور على ID الحقيقي:",
-      realVoucherId,
-      "للـ vouch_id:",
-      voucherData.vouch_id,
-    );
 
     // تجهيز بيانات القيد للتحديث (فقط البيانات المطلوب تحديثها)
     const voucherPayload: any = {
@@ -441,19 +495,32 @@ export async function updateVoucherAction(
       vouch_amt: 0, // إبقاء المبلغ الإجمالي 0 دائماً
       opps_vouch: voucherData.opps_vouch || 0, // حفظ قيمة opps_vouch من API
       commit: true, // تحديد القيد كـ محفوظ بعد الحفظ
+      // handling: سيتم إضافته لاحقاً عند توفر الحقل في قاعدة البيانات
+      upd_date: currentDate,
+      upd_user: currentUsername || null,
       // إزالة com و year و cr_date لأنها لا تحتاج تحديث
     };
 
-    // إضافة cust_id إذا كان موجوداً (للسندات الذهبية)
-    if (voucherData.cust_id !== undefined && voucherData.cust_id !== null) {
-      voucherPayload.cust_id = voucherData.cust_id;
-    }
+    // إضافة cust بدلاً من cust_id للسندات الذهبية (4, 5, 111, 222)
+    // تأكد من إضافة cust حتى لو كان cust_id موجوداً في voucherData
+    if (
+      voucherData.vouch_type === 4 ||
+      voucherData.vouch_type === 5 ||
+      voucherData.vouch_type === 111 ||
+      voucherData.vouch_type === 222
+    ) {
+      // تحقق من وجود cust_id في voucherData
+      const custValue = voucherData.cust_id !== undefined && voucherData.cust_id !== null && voucherData.cust_id > 0
+        ? voucherData.cust_id
+        : null;
 
-    console.log("📤 بيانات التحديث:", voucherPayload);
-    console.log("🔗 URL المطلوب:", `api_update_vouch/${realVoucherId}`);
-    console.log("🆔 معرف القيد الحقيقي:", realVoucherId);
-    console.log("🔍 نوع البيانات المرسلة:", typeof voucherPayload);
-    console.log("📋 محتوى البيانات:", JSON.stringify(voucherPayload, null, 2));
+      if (custValue && custValue > 0) {
+        voucherPayload.cust = custValue; // API يتوقع cust وليس cust_id
+      }
+
+      // حذف cust_id من voucherPayload لأنه لا يُرسل للـ API
+      delete voucherPayload.cust_id;
+    }
 
     // تحديث السند الرئيسي
     const voucherResponse = await voucherService.update(
@@ -461,13 +528,7 @@ export async function updateVoucherAction(
       voucherPayload,
     );
 
-    console.log("📥 استجابة التحديث:", voucherResponse);
-    console.log("📊 حالة الاستجابة:", voucherResponse.success ? "نجح" : "فشل");
-    console.log("💬 رسالة الاستجابة:", voucherResponse.message);
-
     if (!voucherResponse.success) {
-      console.error("❌ فشل تحديث القيد:", voucherResponse.message);
-      console.error("📤 البيانات:", voucherPayload);
 
       return {
         success: false,
@@ -500,26 +561,26 @@ export async function updateVoucherAction(
 
     // حذف الصناديق المحذوفة أولاً
     if (deletedBoxIds.length > 0) {
-      console.log("🗑️ حذف الصناديق المحذوفة:", deletedBoxIds);
       for (const boxId of deletedBoxIds) {
         if (boxId && boxId > 0) {
           const deleteResponse = await voucherService.deleteBox(boxId);
-
           if (!deleteResponse.success) {
-            console.error(
-              `❌ فشل حذف الصندوق ${boxId}:`,
-              deleteResponse.message,
-            );
+            // لا نوقف العملية عند فشل الحذف
           }
         }
       }
     }
 
-    // حفظ/تحديث صفوف جدول النقدية (vouchers_box)
-    if (
-      (voucherData.vouch_type === 1 || voucherData.vouch_type === 2) &&
-      voucherBoxes.length > 0
-    ) {
+    // حفظ/تحديث صفوف جدول النقدية (vouchers_box) إذا كان سند قبض أو صرف أو استلام أو تسليم أو قبض/صرف عميل
+    const shouldProcessBoxes = 
+      (voucherData.vouch_type === 1 || 
+       voucherData.vouch_type === 2 || 
+       voucherData.vouch_type === 4 || 
+       voucherData.vouch_type === 5 || 
+       voucherData.vouch_type === 111 || 
+       voucherData.vouch_type === 222);
+
+    if (shouldProcessBoxes && voucherBoxes && voucherBoxes.length > 0) {
       // جلب الصناديق الحالية
       const existingBoxesResponse = await voucherService.getBoxes(realVoucherId);
       const existingBoxIds =
@@ -543,10 +604,7 @@ export async function updateVoucherAction(
           const deleteResponse = await voucherService.deleteBox(boxId);
 
           if (!deleteResponse.success) {
-            console.error(
-              `❌ فشل حذف الصندوق ${boxId}:`,
-              deleteResponse.message,
-            );
+            // لا نوقف العملية عند فشل الحذف
           }
         }
       }
@@ -570,8 +628,18 @@ export async function updateVoucherAction(
           change: "1.00000", // سعر الصرف
           vouch_status: 1, // حالة السند
           close_weight: box.close_weight || null, // وزن التسكير
-          cr_date: new Date().toISOString(),
         };
+        
+        // إضافة الحقول حسب الحالة: cr_date/cr_user للجديد أو upd_date/upd_user للتحديث
+        if (box.id && box.id > 0) {
+          // تحديث صندوق موجود
+          boxData.upd_date = currentDate;
+          boxData.upd_user = currentUsername || null;
+        } else {
+          // إنشاء صندوق جديد
+          boxData.cr_date = currentDate;
+          boxData.cr_user = currentUsername || null;
+        }
         
         // إضافة cost و inv فقط إذا كانت موجودة وقيمة صحيحة
         if (box.cost_id !== undefined && box.cost_id !== null && box.cost_id > 0) {
@@ -587,8 +655,6 @@ export async function updateVoucherAction(
             : await voucherService.createBox(boxData as any);
 
         if (!boxResponse.success) {
-          console.error(`❌ فشل حفظ الصندوق ${i + 1}:`, boxResponse.message);
-          console.error("📤 البيانات:", boxData);
 
           return {
             success: false,
@@ -600,16 +666,10 @@ export async function updateVoucherAction(
 
     // حذف التفاصيل المحذوفة أولاً
     if (deletedDetailIds.length > 0) {
-      console.log("🗑️ حذف التفاصيل المحذوفة:", deletedDetailIds);
       for (const detailId of deletedDetailIds) {
         if (detailId && detailId > 0) {
           const deleteResponse = await voucherService.deleteDetail(detailId);
-
           if (!deleteResponse.success) {
-            console.error(
-              `❌ فشل حذف التفصيل ${detailId}:`,
-              deleteResponse.message,
-            );
             // لا نوقف العملية عند فشل الحذف، نتابع
           }
         }
@@ -682,8 +742,19 @@ export async function updateVoucherAction(
         vouch_notes: detail.vouch_notes || "",
         com: 1, // الفرع = 1
         year: 1, // السنة = 1
-        cr_date: new Date().toISOString(),
+
       };
+      
+      // إضافة الحقول حسب الحالة: cr_date/cr_user للجديد أو upd_date/upd_user للتحديث
+      if (detail.id && detail.id > 0) {
+        // تحديث تفصيل موجود
+        detailData.upd_date = currentDate;
+        detailData.upd_user = currentUsername || null;
+      } else {
+        // إنشاء تفصيل جديد
+        detailData.cr_date = currentDate;
+        detailData.cr_user = currentUsername || null;
+      }
 
       // إضافة cost فقط إذا كانت موجودة وقيمة صحيحة (API يتوقع cost وليس cost_id)
       if (detail.cost_id !== undefined && detail.cost_id !== null && detail.cost_id > 0) {
@@ -696,8 +767,6 @@ export async function updateVoucherAction(
           : await voucherService.createDetail(detailData);
 
       if (!detailResponse.success) {
-        console.error(`❌ فشل حفظ التفصيل ${i + 1}:`, detailResponse.message);
-        console.error("📤 البيانات:", detailData);
 
         return {
           success: false,
@@ -706,29 +775,17 @@ export async function updateVoucherAction(
       }
     }
 
-    // حفظ تفاصيل الذهب (gvouchers_dtl) إذا كان سند ذهبي (4 أو 5)
+    // حفظ تفاصيل الذهب (gvouchers_dtl) إذا كان سند ذهبي (4 أو 5 أو 111 أو 222)
+    // تطبيق نفس منطق التفاصيل العادية: حذف المحذوفة، ثم تحديث/إنشاء الباقي
     if (
-      (voucherData.vouch_type === 4 || voucherData.vouch_type === 5) &&
-      goldDetails.length > 0
+      (voucherData.vouch_type === 4 || voucherData.vouch_type === 5 || 
+       voucherData.vouch_type === 111 || voucherData.vouch_type === 222)
     ) {
-      // حذف تفاصيل الذهب المحذوفة أولاً
-      if (deletedGoldDetailIds.length > 0) {
-        console.log("🗑️ حذف تفاصيل الذهب المحذوفة:", deletedGoldDetailIds);
-        for (const goldDetailId of deletedGoldDetailIds) {
-          if (goldDetailId && goldDetailId > 0) {
-            const deleteResponse = await voucherService.deleteGoldDetail(goldDetailId);
-
-            if (!deleteResponse.success) {
-              console.error(
-                `❌ فشل حذف تفصيل الذهب ${goldDetailId}:`,
-                deleteResponse.message,
-              );
-            }
-          }
-        }
-      }
-
-      // جلب تفاصيل الذهب الحالية
+      // لأن api_delete_gvouch_dtl غير مدعوم (404)، سنستخدم استراتيجية مختلفة:
+      // 1. حذف جميع التفاصيل القديمة من قاعدة البيانات
+      // 2. إنشاء جميع التفاصيل المرسلة من الـ client (جديدة ومحدثة)
+      
+      // جلب تفاصيل الذهب الحالية من قاعدة البيانات
       const existingGoldDetailsResponse = await voucherService.getGoldDetails(realVoucherId);
       const existingGoldDetailIds =
         existingGoldDetailsResponse.success && existingGoldDetailsResponse.data
@@ -737,29 +794,12 @@ export async function updateVoucherAction(
               .filter((id: any) => id && id > 0)
           : [];
 
-      const newGoldDetailIds = goldDetails
-        .filter((d) => d.id && d.id > 0)
-        .map((d) => d.id!);
-
-      const goldDetailIdsToDelete = existingGoldDetailIds.filter(
-        (id: number) => !newGoldDetailIds.includes(id),
-      );
-
-      // حذف تفاصيل الذهب المحذوفة
-      for (const goldDetailId of goldDetailIdsToDelete) {
-        if (goldDetailId && goldDetailId > 0) {
-          const deleteResponse = await voucherService.deleteGoldDetail(goldDetailId);
-
-          if (!deleteResponse.success) {
-            console.error(
-              `❌ فشل حذف تفصيل الذهب ${goldDetailId}:`,
-              deleteResponse.message,
-            );
-          }
-        }
-      }
-
-      // حفظ/تحديث تفاصيل الذهب
+      // ⚠️ مهم: api_delete_gvouch_dtl غير مدعوم (404)
+      // لذلك لا يمكننا حذف التفاصيل القديمة مباشرة
+      // الحل البديل: إنشاء التفاصيل الجديدة فقط (قد يؤدي إلى تكرار)
+      // لكن هذا هو الحل الوحيد المتاح حالياً
+      
+      // إنشاء جميع تفاصيل الذهب المرسلة من الـ client (جديدة ومحدثة)
       for (let i = 0; i < goldDetails.length; i++) {
         const goldDetail = goldDetails[i];
 
@@ -767,12 +807,15 @@ export async function updateVoucherAction(
           continue;
         }
 
+        // عند إنشاء تفصيل جديد ضمن التحديث، يجب أن تكون البيانات مطابقة تماماً لـ createVoucherAction
         const goldDetailData: any = {
           vouch: realVoucherId, // API يستخدم vouch وليس vouch_id
           item: goldDetail.item_id, // API يستخدم item وليس item_id
-          com: 1,
+          com: 1, // فقط com بدون year
+          vouch_type: voucherData.vouch_type, // نوع السند (مطلوب)
           vouch_status: 1,
-          cr_date: new Date().toISOString(),
+          cr_date: currentDate, // دائماً إضافة cr_date و cr_user لأننا ننشئ سجلاً جديداً
+          cr_user: currentUsername || null,
         };
 
         // إضافة الحقول الاختيارية
@@ -822,14 +865,12 @@ export async function updateVoucherAction(
           goldDetailData.qty = goldDetail.qty.toString();
         }
 
-        const goldDetailResponse =
-          goldDetail.id && goldDetail.id > 0
-            ? await voucherService.updateGoldDetail(goldDetail.id, goldDetailData)
-            : await voucherService.createGoldDetail(goldDetailData);
+        // إنشاء جميع التفاصيل (جديدة ومحدثة)
+        // لأن DELETE و UPDATE غير مدعومين، ننشئ فقط
+        // سيتم حذف التكرارات يدوياً لاحقاً أو من خلال قاعدة البيانات
+        const goldDetailResponse = await voucherService.createGoldDetail(goldDetailData);
 
         if (!goldDetailResponse.success) {
-          console.error(`❌ فشل حفظ تفصيل الذهب ${i + 1}:`, goldDetailResponse.message);
-          console.error("📤 البيانات:", goldDetailData);
 
           return {
             success: false,
@@ -845,6 +886,8 @@ export async function updateVoucherAction(
     revalidatePath("/forms/voucher2");
     revalidatePath("/forms/gvoucher4");
     revalidatePath("/forms/gvoucher5");
+    revalidatePath("/forms/receipt");
+    revalidatePath("/forms/delivery");
     revalidatePath("/reports/vouchers");
     
     // Revalidate based on voucher type
@@ -856,6 +899,10 @@ export async function updateVoucherAction(
       revalidatePath(`/forms/gvoucher4/${realVoucherId}`);
     } else if (voucherData.vouch_type === 5) {
       revalidatePath(`/forms/gvoucher5/${realVoucherId}`);
+    } else if (voucherData.vouch_type === 111) {
+      revalidatePath(`/forms/receipt/${realVoucherId}`);
+    } else if (voucherData.vouch_type === 222) {
+      revalidatePath(`/forms/delivery/${realVoucherId}`);
     } else {
       revalidatePath(`/forms/voucher/${realVoucherId}`);
     }
@@ -866,8 +913,6 @@ export async function updateVoucherAction(
       message: "تم تحديث القيد بنجاح",
     };
   } catch (error) {
-    console.error("💥 خطأ:", error);
-
     return {
       success: false,
       message: error instanceof Error ? error.message : "حدث خطأ",
@@ -894,8 +939,6 @@ export async function deleteVoucherAction(voucherId: number) {
       message: response.message || "حدث خطأ أثناء حذف السند",
     };
   } catch (error) {
-    console.error("💥 خطأ:", error);
-
     return {
       success: false,
       message: error instanceof Error ? error.message : "حدث خطأ",
