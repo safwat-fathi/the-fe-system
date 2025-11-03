@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
+import toast from "react-hot-toast";
 
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 import { useCashReceiptVoucherForm } from "@/hooks/useCashReceiptVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
-import toast from "react-hot-toast";
 import { voucherService } from "@/services/api";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -108,7 +108,7 @@ export default function CashReceiptVoucherClientPage({
     return (
       <div className="flex justify-center items-center h-screen">
         جاري التحميل...
-                  </div>
+      </div>
     );
   }
 
@@ -157,7 +157,9 @@ export default function CashReceiptVoucherClientPage({
           const targetId = foundVoucher.id || foundVoucher.vouch_id;
 
           if (targetId) {
-            const basePath = vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
+            const basePath =
+              vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
+
             router.push(`${basePath}/${targetId}?mode=preview`);
             setSearchTerm(""); // مسح حقل البحث
 
@@ -167,7 +169,9 @@ export default function CashReceiptVoucherClientPage({
       }
 
       // إذا لم نجد في السندات من نفس النوع، نبحث في جميع أنواع السندات
-      console.log("لم يتم العثور على سند من نفس النوع، البحث في جميع السندات...");
+      console.log(
+        "لم يتم العثور على سند من نفس النوع، البحث في جميع السندات...",
+      );
       const allVouchersResponse = await voucherService.getAll({
         xvouch_type: "0", // جميع الأنواع
         xvouch_id: searchValue,
@@ -190,6 +194,7 @@ export default function CashReceiptVoucherClientPage({
           // التحقق من نوع السند
           if (foundAny.vouch_type !== vouchType) {
             const voucherTypeName = vouchType === 1 ? "سند قبض" : "سند صرف";
+
             toast.error(
               `السند الموجود (${foundAny.vouch_id}) ليس من نوع ${voucherTypeName}`,
             );
@@ -200,7 +205,9 @@ export default function CashReceiptVoucherClientPage({
           const targetId = foundAny.id || foundAny.vouch_id;
 
           if (targetId) {
-            const basePath = vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
+            const basePath =
+              vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
+
             router.push(`${basePath}/${targetId}?mode=preview`);
             setSearchTerm("");
 
@@ -211,6 +218,7 @@ export default function CashReceiptVoucherClientPage({
 
       // إذا لم نجد السند نهائياً
       const voucherTypeName = vouchType === 1 ? "سند قبض" : "سند صرف";
+
       toast.error(`لم يتم العثور على ${voucherTypeName} برقم: ${searchValue}`);
     } catch (error) {
       console.error("Error searching voucher:", error);
@@ -227,6 +235,7 @@ export default function CashReceiptVoucherClientPage({
 
     if (pathname && voucherRecordId) {
       const basePath = vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
+
       router.push(`${basePath}/${voucherRecordId}?mode=edit`);
     }
   };
@@ -439,17 +448,24 @@ export default function CashReceiptVoucherClientPage({
               }))
             }
           >
-            {voucherStatuses && Array.isArray(voucherStatuses) && voucherStatuses.length > 0 ? (
+            {voucherStatuses &&
+            Array.isArray(voucherStatuses) &&
+            voucherStatuses.length > 0 ? (
               voucherStatuses.map((status) => {
-                const statusValue = status.code_id !== undefined && status.code_id !== null 
-                  ? String(status.code_id) 
-                  : String(status.id || status.Id || "");
-                const statusLabel = status.code_desc || status["Code Desc"] || status.name || "غير محدد";
-                
+                const statusValue =
+                  status.code_id !== undefined && status.code_id !== null
+                    ? String(status.code_id)
+                    : String(status.id || status.Id || "");
+                const statusLabel =
+                  status.code_desc ||
+                  status["Code Desc"] ||
+                  status.name ||
+                  "غير محدد";
+
                 return (
                   <option key={status.id || status.Id} value={statusValue}>
                     {statusLabel}
-              </option>
+                  </option>
                 );
               })
             ) : (
@@ -482,149 +498,168 @@ export default function CashReceiptVoucherClientPage({
           </div>
           <div className="overflow-x-auto mb-3 max-w-full">
             <table className="min-w-[1200px] border text-sm text-center table-fixed">
-            <thead className="bg-gray-100 text-xs font-bold">
-              <tr>
-                <th className="w-32 p-2 border">المبلغ</th>
-                <th className="w-48 p-2 border">الصندوق</th>
-                <th className="w-80 p-2 border">البيان</th>
-                <th className="w-48 p-2 border">مركز التكلفة</th>
-                <th className="w-32 p-2 border">رقم الفاتورة</th>
-                <th className="w-12 p-2 border">حذف</th>
-              </tr>
-            </thead>
-            <tbody>
-              {voucherBoxes.map((box, index) => (
-                <tr key={index} className="border-b">
-                  <td className="p-0 border">
-                    <input
-                      className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                      disabled={!isEditing}
-                      min="0"
-                      readOnly={!isEditing}
-                      style={{
-                        MozAppearance: "textfield",
-                        WebkitAppearance: "none",
-                        appearance: "none",
-                      }}
-                      type="number"
-                      value={box.amount || ""}
-                      onChange={(e) =>
-                        updateVoucherBox(
-                          index,
-                          "amount",
-                          e.target.value ? parseFloat(e.target.value) : 0,
-                        )
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                          e.preventDefault();
-                        }
-                      }}
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
-                  </td>
-                  <td className="p-0 border">
-                    <select
-                      className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                      disabled={!isEditing}
-                      value={box.box_id && box.box_id > 0 ? String(box.box_id) : ""}
-                      onChange={(e) => {
-                        const selectedBoxId = e.target.value ? parseInt(e.target.value) : 0;
-                        const selectedBox = boxes.find((b) => b.id === selectedBoxId);
-                        updateVoucherBox(index, "box_id", selectedBoxId);
-                        // تحديث معلومات box object إذا كان الصندوق محدداً
-                        if (selectedBox) {
-                          updateVoucherBox(index, "box", {
-                            id: selectedBox.id,
-                            cust_name: selectedBox.cust_name || selectedBox.name || "",
-                            cust_code: selectedBox.cust_code || "",
-                            box_type: selectedBox.box_type,
-                          });
-                        }
-                      }}
-                    >
-                      <option value="">اختر الصندوق</option>
-                      {boxes.map((b) => (
-                        <option key={b.id} value={String(b.id)}>
-                          {b.cust_name || b.name || box.box?.cust_name || `صندوق ${b.id}`}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-0 border">
-                    <input
-                      className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                      disabled={!isEditing}
-                      readOnly={!isEditing}
-                      type="text"
-                      value={box.vouch_notes || ""}
-                      onChange={(e) =>
-                        updateVoucherBox(index, "vouch_notes", e.target.value)
-                      }
-                    />
-                  </td>
-                  <td className="p-0 border">
-                    <select
-                      className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                      disabled={!isEditing}
-                      value={box.cost_id && box.cost_id > 0 ? String(box.cost_id) : ""}
-                      onChange={(e) =>
-                        updateVoucherBox(
-                          index,
-                          "cost_id",
-                          e.target.value ? parseInt(e.target.value) : null,
-                        )
-                      }
-                    >
-                      <option value="">مركز التكلفة</option>
-                      {costCenters.map((center) => (
-                        <option key={center.id} value={String(center.id)}>
-                          {center.name || center.cost_name || `مركز ${center.id}`}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-0 border">
-                    <input
-                      className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                      disabled={!isEditing}
-                      min="0"
-                      readOnly={!isEditing}
-                      style={{
-                        MozAppearance: "textfield",
-                        WebkitAppearance: "none",
-                        appearance: "none",
-                      }}
-                      type="number"
-                      value={box.inv_id || ""}
-                      onChange={(e) =>
-                        updateVoucherBox(
-                          index,
-                          "inv_id",
-                          e.target.value ? parseInt(e.target.value) : undefined,
-                        )
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                          e.preventDefault();
-                        }
-                      }}
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
-                  </td>
-                  <td className="p-1 border">
-                    <button
-                      className="font-bold text-red-600 disabled:text-gray-400 disabled:cursor-not-allowed"
-                      disabled={!isEditing}
-                      onClick={() => removeVoucherBoxRow(index)}
-                    >
-                      ×
-                    </button>
-                  </td>
+              <thead className="bg-gray-100 text-xs font-bold">
+                <tr>
+                  <th className="w-32 p-2 border">المبلغ</th>
+                  <th className="w-48 p-2 border">الصندوق</th>
+                  <th className="w-80 p-2 border">البيان</th>
+                  <th className="w-48 p-2 border">مركز التكلفة</th>
+                  <th className="w-32 p-2 border">رقم الفاتورة</th>
+                  <th className="w-12 p-2 border">حذف</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {voucherBoxes.map((box, index) => (
+                  <tr key={index} className="border-b">
+                    <td className="p-0 border">
+                      <input
+                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        disabled={!isEditing}
+                        min="0"
+                        readOnly={!isEditing}
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={box.amount || ""}
+                        onChange={(e) =>
+                          updateVoucherBox(
+                            index,
+                            "amount",
+                            e.target.value ? parseFloat(e.target.value) : 0,
+                          )
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </td>
+                    <td className="p-0 border">
+                      <select
+                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
+                        disabled={!isEditing}
+                        value={
+                          box.box_id && box.box_id > 0 ? String(box.box_id) : ""
+                        }
+                        onChange={(e) => {
+                          const selectedBoxId = e.target.value
+                            ? parseInt(e.target.value)
+                            : 0;
+                          const selectedBox = boxes.find(
+                            (b) => b.id === selectedBoxId,
+                          );
+
+                          updateVoucherBox(index, "box_id", selectedBoxId);
+                          // تحديث معلومات box object إذا كان الصندوق محدداً
+                          if (selectedBox) {
+                            updateVoucherBox(index, "box", {
+                              id: selectedBox.id,
+                              cust_name:
+                                selectedBox.cust_name || selectedBox.name || "",
+                              cust_code: selectedBox.cust_code || "",
+                              box_type: selectedBox.box_type,
+                            });
+                          }
+                        }}
+                      >
+                        <option value="">اختر الصندوق</option>
+                        {boxes.map((b) => (
+                          <option key={b.id} value={String(b.id)}>
+                            {b.cust_name ||
+                              b.name ||
+                              box.box?.cust_name ||
+                              `صندوق ${b.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-0 border">
+                      <input
+                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        disabled={!isEditing}
+                        readOnly={!isEditing}
+                        type="text"
+                        value={box.vouch_notes || ""}
+                        onChange={(e) =>
+                          updateVoucherBox(index, "vouch_notes", e.target.value)
+                        }
+                      />
+                    </td>
+                    <td className="p-0 border">
+                      <select
+                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
+                        disabled={!isEditing}
+                        value={
+                          box.cost_id && box.cost_id > 0
+                            ? String(box.cost_id)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          updateVoucherBox(
+                            index,
+                            "cost_id",
+                            e.target.value ? parseInt(e.target.value) : null,
+                          )
+                        }
+                      >
+                        <option value="">مركز التكلفة</option>
+                        {costCenters.map((center) => (
+                          <option key={center.id} value={String(center.id)}>
+                            {center.name ||
+                              center.cost_name ||
+                              `مركز ${center.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-0 border">
+                      <input
+                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        disabled={!isEditing}
+                        min="0"
+                        readOnly={!isEditing}
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={box.inv_id || ""}
+                        onChange={(e) =>
+                          updateVoucherBox(
+                            index,
+                            "inv_id",
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
+                          )
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </td>
+                    <td className="p-1 border">
+                      <button
+                        className="font-bold text-red-600 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        disabled={!isEditing}
+                        onClick={() => removeVoucherBoxRow(index)}
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -647,173 +682,187 @@ export default function CashReceiptVoucherClientPage({
           </div>
           <div className="overflow-x-auto mb-3 max-w-full">
             <table className="min-w-[1200px] border text-sm text-center table-fixed">
-            <thead className="bg-gray-100 text-xs font-bold">
-              <tr>
-                <th className="w-80 p-2 border">الحساب</th>
-                <th className="w-32 p-2 border">المبلغ</th>
-                <th className="w-80 p-2 border">البيان</th>
-                <th className="w-48 p-2 border">مركز التكلفة</th>
-                <th className="w-12 p-2 border">حذف</th>
-              </tr>
-            </thead>
-            <tbody>
-              {details.map((detail, index) => (
-                <tr key={index} className="border-b">
-                  <td className="p-0 border">
-                    <AsyncCreatableSelect
-                      isClearable
-                      isSearchable
-                      className="text-xs"
-                      classNamePrefix="select"
-                      components={{ IndicatorSeparator: () => null }}
-                      instanceId={`account-select-${index}`}
-                      isDisabled={!isEditing}
-                      loadOptions={loadAccountOptions}
-                      menuPortalTarget={
-                        typeof window !== "undefined" ? document.body : null
-                      }
-                      menuPosition="fixed"
-                      placeholder="اختر الحساب..."
-                      styles={{
-                        control: (base, state) => ({
-                          ...base,
-                          minHeight: "100%",
-                          height: "100%",
-                          border: "none",
-                          borderRadius: 0,
-                          boxShadow: "none",
-                          cursor: !isEditing ? "not-allowed" : base.cursor,
-                          backgroundColor: "transparent",
-                          "&:hover": {
-                            border: "none",
-                            boxShadow: "none",
-                          },
-                        }),
-                        valueContainer: (base) => ({
-                          ...base,
-                          padding: "0.125rem 0.25rem",
-                          height: "100%",
-                        }),
-                        input: (base) => ({
-                          ...base,
-                          margin: 0,
-                          padding: 0,
-                        }),
-                        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                      }}
-                      value={getAccountSelectValue(detail)}
-                      onChange={(selectedOption: any) => {
-                        if (!isEditing) return;
-                        const opt: any = selectedOption;
-                        const selected =
-                          opt?.account ||
-                          accounts.find((acc) => acc.id === opt?.value);
-
-                        if (!selected) return;
-
-                        updateDetail(index, "acc_id", selected.id ?? null);
-                        updateDetail(
-                          index,
-                          "acc_code",
-                          selected.acc_code ?? selected.code ?? "",
-                        );
-                        updateDetail(
-                          index,
-                          "acc_name",
-                          selected.acc_name ?? selected.name ?? "",
-                        );
-                      }}
-                    />
-                  </td>
-                  <td className="p-0 border">
-                    <input
-                      className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                      disabled={!isEditing}
-                      min="0"
-                      placeholder="0.00"
-                      readOnly={!isEditing}
-                      style={{
-                        MozAppearance: "textfield",
-                        WebkitAppearance: "none",
-                        appearance: "none",
-                      }}
-                      type="number"
-                      value={
-                        vouchType === 1
-                          ? detail.credit || ""
-                          : detail.debit || ""
-                      }
-                      onChange={(e) => {
-                        const val = e.target.value;
-
-                        if (!val || parseFloat(val) >= 0) {
-                          if (vouchType === 1) {
-                            // سند قبض: المبلغ في credit
-                            updateDetail(index, "credit", val ? parseFloat(val) : undefined);
-                            updateDetail(index, "debit", undefined);
-                          } else {
-                            // سند صرف: المبلغ في debit
-                            updateDetail(index, "debit", val ? parseFloat(val) : undefined);
-                            updateDetail(index, "credit", undefined);
-                          }
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                          e.preventDefault();
-                        }
-                      }}
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
-                  </td>
-                  <td className="p-0 border">
-                    <input
-                      className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                      disabled={!isEditing}
-                      readOnly={!isEditing}
-                      type="text"
-                      value={detail.vouch_notes || ""}
-                      onChange={(e) =>
-                        updateDetail(index, "vouch_notes", e.target.value)
-                      }
-                    />
-                  </td>
-                  <td className="p-0 border">
-                    <select
-                      className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                      disabled={!isEditing}
-                      value={detail.cost_id !== null && detail.cost_id !== undefined && detail.cost_id > 0 ? String(detail.cost_id) : ""}
-                      onChange={(e) =>
-                        updateDetail(
-                          index,
-                          "cost_id",
-                          e.target.value ? parseInt(e.target.value) : null,
-                        )
-                      }
-                    >
-                      <option value="">مركز التكلفة</option>
-                      {costCenters.map((center) => (
-                        <option key={center.id} value={String(center.id)}>
-                          {center.name ||
-                            center.cost_name ||
-                            `مركز ${center.id}`}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-1 border">
-                    <button
-                      className="font-bold text-red-600 disabled:text-gray-400 disabled:cursor-not-allowed"
-                      disabled={!isEditing}
-                      onClick={() => removeDetailRow(index)}
-                    >
-                      ×
-                    </button>
-                  </td>
+              <thead className="bg-gray-100 text-xs font-bold">
+                <tr>
+                  <th className="w-80 p-2 border">الحساب</th>
+                  <th className="w-32 p-2 border">المبلغ</th>
+                  <th className="w-80 p-2 border">البيان</th>
+                  <th className="w-48 p-2 border">مركز التكلفة</th>
+                  <th className="w-12 p-2 border">حذف</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {details.map((detail, index) => (
+                  <tr key={index} className="border-b">
+                    <td className="p-0 border">
+                      <AsyncCreatableSelect
+                        isClearable
+                        isSearchable
+                        className="text-xs"
+                        classNamePrefix="select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`account-select-${index}`}
+                        isDisabled={!isEditing}
+                        loadOptions={loadAccountOptions}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
+                        }
+                        menuPosition="fixed"
+                        placeholder="اختر الحساب..."
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            minHeight: "100%",
+                            height: "100%",
+                            border: "none",
+                            borderRadius: 0,
+                            boxShadow: "none",
+                            cursor: !isEditing ? "not-allowed" : base.cursor,
+                            backgroundColor: "transparent",
+                            "&:hover": {
+                              border: "none",
+                              boxShadow: "none",
+                            },
+                          }),
+                          valueContainer: (base) => ({
+                            ...base,
+                            padding: "0.125rem 0.25rem",
+                            height: "100%",
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            margin: 0,
+                            padding: 0,
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                        }}
+                        value={getAccountSelectValue(detail)}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
+                          const opt: any = selectedOption;
+                          const selected =
+                            opt?.account ||
+                            accounts.find((acc) => acc.id === opt?.value);
+
+                          if (!selected) return;
+
+                          updateDetail(index, "acc_id", selected.id ?? null);
+                          updateDetail(
+                            index,
+                            "acc_code",
+                            selected.acc_code ?? selected.code ?? "",
+                          );
+                          updateDetail(
+                            index,
+                            "acc_name",
+                            selected.acc_name ?? selected.name ?? "",
+                          );
+                        }}
+                      />
+                    </td>
+                    <td className="p-0 border">
+                      <input
+                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        disabled={!isEditing}
+                        min="0"
+                        placeholder="0.00"
+                        readOnly={!isEditing}
+                        style={{
+                          MozAppearance: "textfield",
+                          WebkitAppearance: "none",
+                          appearance: "none",
+                        }}
+                        type="number"
+                        value={
+                          vouchType === 1
+                            ? detail.credit || ""
+                            : detail.debit || ""
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+
+                          if (!val || parseFloat(val) >= 0) {
+                            if (vouchType === 1) {
+                              // سند قبض: المبلغ في credit
+                              updateDetail(
+                                index,
+                                "credit",
+                                val ? parseFloat(val) : undefined,
+                              );
+                              updateDetail(index, "debit", undefined);
+                            } else {
+                              // سند صرف: المبلغ في debit
+                              updateDetail(
+                                index,
+                                "debit",
+                                val ? parseFloat(val) : undefined,
+                              );
+                              updateDetail(index, "credit", undefined);
+                            }
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                      />
+                    </td>
+                    <td className="p-0 border">
+                      <input
+                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        disabled={!isEditing}
+                        readOnly={!isEditing}
+                        type="text"
+                        value={detail.vouch_notes || ""}
+                        onChange={(e) =>
+                          updateDetail(index, "vouch_notes", e.target.value)
+                        }
+                      />
+                    </td>
+                    <td className="p-0 border">
+                      <select
+                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
+                        disabled={!isEditing}
+                        value={
+                          detail.cost_id !== null &&
+                          detail.cost_id !== undefined &&
+                          detail.cost_id > 0
+                            ? String(detail.cost_id)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          updateDetail(
+                            index,
+                            "cost_id",
+                            e.target.value ? parseInt(e.target.value) : null,
+                          )
+                        }
+                      >
+                        <option value="">مركز التكلفة</option>
+                        {costCenters.map((center) => (
+                          <option key={center.id} value={String(center.id)}>
+                            {center.name ||
+                              center.cost_name ||
+                              `مركز ${center.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-1 border">
+                      <button
+                        className="font-bold text-red-600 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        disabled={!isEditing}
+                        onClick={() => removeDetailRow(index)}
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -865,4 +914,3 @@ export default function CashReceiptVoucherClientPage({
     </div>
   );
 }
-

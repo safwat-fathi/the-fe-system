@@ -1,14 +1,9 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import type { Voucher, VoucherDetail } from "@/types/voucher";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 
-import type { Voucher, VoucherDetail } from "@/types/voucher";
 import { voucherService } from "@/services/api";
 import {
   createVoucherAction,
@@ -99,20 +94,20 @@ export const useVoucherForm = ({
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [defaultAccountOptions, setDefaultAccountOptions] = useState<any[]>([]);
   const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>([]);
-  
+
   const hasGeneratedVoucherNumber = useRef(false);
 
   // Initialize component
   useEffect(() => {
     setIsClient(true);
     updateCurrentTime();
-    
+
     if (isNewVoucher) {
       if (!hasGeneratedVoucherNumber.current) {
         hasGeneratedVoucherNumber.current = true;
         generateNextVoucherNumber();
       }
-      
+
       // في وضع new، نبدأ بسطرين على الأقل
       setDetails((prev) => {
         if (prev.length === 0) {
@@ -132,6 +127,7 @@ export const useVoucherForm = ({
             cr_date: new Date().toISOString(),
           };
           const newDetail2: VoucherDetail = { ...newDetail1 };
+
           return [newDetail1, newDetail2];
         } else if (prev.length === 1) {
           const newDetail: VoucherDetail = {
@@ -149,8 +145,10 @@ export const useVoucherForm = ({
             vouch_notes: "",
             cr_date: new Date().toISOString(),
           };
+
           return [...prev, newDetail];
         }
+
         return prev;
       });
     }
@@ -183,6 +181,7 @@ export const useVoucherForm = ({
         label: `${acc.acc_code ?? acc.code ?? ""} - ${acc.acc_name ?? acc.name ?? ""}`,
         account: acc,
       }));
+
       setDefaultAccountOptions(options);
     };
 
@@ -205,6 +204,7 @@ export const useVoucherForm = ({
   // Helper Functions
   const updateCurrentTime = () => {
     const now = new Date();
+
     setCurrentTime(
       now.toLocaleTimeString("ar-SA", {
         hour12: true,
@@ -233,6 +233,7 @@ export const useVoucherForm = ({
         const settlementVouchers = response.data.filter(
           (v: any) => v.vouch_type === 3,
         );
+
         setVouchersList(settlementVouchers);
       }
     } catch (error) {
@@ -243,6 +244,7 @@ export const useVoucherForm = ({
   const generateNextVoucherNumber = async () => {
     try {
       const nextId = await voucherService.getNextNumber(voucher.vouch_type);
+
       setVoucher((prev) => ({
         ...prev,
         vouch_id: nextId,
@@ -291,6 +293,7 @@ export const useVoucherForm = ({
           const voucherIndex = vouchersResponse.data.findIndex(
             (v: any) => v.id === id,
           );
+
           setCurrentRecord(voucherIndex + 1);
 
           const voucherVouchId = targetVoucher.vouch_id || id;
@@ -302,41 +305,37 @@ export const useVoucherForm = ({
             detailsResponse.data &&
             Array.isArray(detailsResponse.data)
           ) {
-            const formattedDetails = detailsResponse.data.map(
-              (detail: any) => {
-                const account = accounts.find(
-                  (acc) => acc.id === (detail.acc_id || detail.acc),
-                );
+            const formattedDetails = detailsResponse.data.map((detail: any) => {
+              const account = accounts.find(
+                (acc) => acc.id === (detail.acc_id || detail.acc),
+              );
 
-                return {
-                  ...detail,
-                  acc_id: detail.acc_id || detail.acc || 0,
-                  acc_code:
-                    (account as any)?.acc_code || detail.acc_code || "",
-                  acc_name:
-                    (account as any)?.acc_name || detail.acc_name || "",
-                  cost_id: detail.cost_id || 0,
-                  debit:
-                    detail.debit !== undefined && detail.debit !== null
-                      ? parseNumber(detail.debit)
-                      : undefined,
-                  credit:
-                    detail.credit !== undefined && detail.credit !== null
-                      ? parseNumber(detail.credit)
-                      : undefined,
-                  debit_g:
-                    detail.debit_g !== undefined && detail.debit_g !== null
-                      ? parseNumber(detail.debit_g)
-                      : undefined,
-                  credit_g:
-                    detail.credit_g !== undefined && detail.credit_g !== null
-                      ? parseNumber(detail.credit_g)
-                      : undefined,
-                  gauge: parseNumber(detail.gauge) || 875,
-                  vouch_notes: detail.vouch_notes || "",
-                };
-              },
-            );
+              return {
+                ...detail,
+                acc_id: detail.acc_id || detail.acc || 0,
+                acc_code: (account as any)?.acc_code || detail.acc_code || "",
+                acc_name: (account as any)?.acc_name || detail.acc_name || "",
+                cost_id: detail.cost_id || 0,
+                debit:
+                  detail.debit !== undefined && detail.debit !== null
+                    ? parseNumber(detail.debit)
+                    : undefined,
+                credit:
+                  detail.credit !== undefined && detail.credit !== null
+                    ? parseNumber(detail.credit)
+                    : undefined,
+                debit_g:
+                  detail.debit_g !== undefined && detail.debit_g !== null
+                    ? parseNumber(detail.debit_g)
+                    : undefined,
+                credit_g:
+                  detail.credit_g !== undefined && detail.credit_g !== null
+                    ? parseNumber(detail.credit_g)
+                    : undefined,
+                gauge: parseNumber(detail.gauge) || 875,
+                vouch_notes: detail.vouch_notes || "",
+              };
+            });
 
             setDetails(formattedDetails);
             setOriginalDetails(formattedDetails);
@@ -379,8 +378,10 @@ export const useVoucherForm = ({
     }
 
     const targetVoucher = vouchersList[targetIndex];
+
     if (targetVoucher) {
       const targetId = targetVoucher.id || targetVoucher.vouch_id;
+
       if (targetId) {
         router.push(`/forms/voucher/${targetId}?mode=preview`);
       }
@@ -411,6 +412,7 @@ export const useVoucherForm = ({
   const removeDetailRow = (index: number) => {
     if (details.length <= 2) {
       toast.error("يجب أن يكون هناك سطرين على الأقل في تفاصيل القيد");
+
       return;
     }
     setDetails((prev) => prev.filter((_, i) => i !== index));
@@ -429,11 +431,13 @@ export const useVoucherForm = ({
 
         // Clear opposite field
         const cleared = clearOppositeField(field, value);
+
         Object.assign(newDetail, cleared);
 
         // Get gauge from account when acc_id is selected
         if (field === "acc_id" && value) {
           const gauge = getAccountGauge(value, accounts, caratTypes);
+
           newDetail.gauge = gauge;
         }
 
@@ -462,25 +466,30 @@ export const useVoucherForm = ({
 
     const voucherDate = new Date(voucher.vouch_date);
     const today = new Date();
+
     today.setHours(23, 59, 59, 999);
 
     if (voucherDate > today) {
       toast.error("لا يمكن إنشاء قيد بتاريخ أكبر من تاريخ اليوم");
+
       return;
     }
 
     if (!isCashBalanced) {
       toast.error("يجب أن يكون إجمالي المدين مساوي لإجمالي الدائن (نقداً)");
+
       return;
     }
 
     if (!isGoldBalanced) {
       toast.error("يجب أن يكون إجمالي المدين مساوي لإجمالي الدائن (ذهباً)");
+
       return;
     }
 
     if (details.length === 0) {
       toast.error("يجب إضافة تفاصيل للقيد");
+
       return;
     }
 
@@ -490,6 +499,7 @@ export const useVoucherForm = ({
 
     if (emptyAccountDetails.length > 0) {
       toast.error("يرجى اختيار حساب لجميع الصفوف قبل الحفظ");
+
       return;
     }
 
@@ -499,6 +509,7 @@ export const useVoucherForm = ({
 
     if (validDetails.length === 0) {
       toast.error("يرجى إدخال حساب صحيح على الأقل");
+
       return;
     }
 
@@ -508,6 +519,7 @@ export const useVoucherForm = ({
       !isFinite(voucher.vouch_id)
     ) {
       toast.error("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
+
       return;
     }
 
@@ -578,10 +590,12 @@ export const useVoucherForm = ({
         } else if (vouchId) {
           try {
             const vouchersResponse = await voucherService.getAll();
+
             if (vouchersResponse.success && vouchersResponse.data) {
               const foundVoucher = vouchersResponse.data.find(
                 (v: any) => v.vouch_id === vouchId,
               );
+
               if (foundVoucher?.id) {
                 router.push(`/forms/voucher/${foundVoucher.id}?mode=preview`);
               } else {
@@ -833,6 +847,7 @@ export const useVoucherForm = ({
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
       toast.error("يرجى إدخال رقم القيد للبحث");
+
       return;
     }
 
@@ -868,12 +883,15 @@ export const useVoucherForm = ({
         if (foundVoucher) {
           // استخدام id (primary key) أولاً، ثم vouch_id كحل بديل
           const targetId = foundVoucher.id || foundVoucher.vouch_id;
+
           if (targetId) {
             // تأكد من استخدام id (primary key) بدلاً من vouch_id إذا كان متاحاً
             const finalId = foundVoucher.id || targetId;
+
             router.push(`/forms/voucher/${finalId}?mode=preview`);
             router.refresh(); // إجبار Next.js على إعادة جلب البيانات
             setSearchTerm("");
+
             return;
           }
         }
@@ -902,17 +920,21 @@ export const useVoucherForm = ({
             toast.error(
               `القيد الموجود (${foundAny.vouch_id}) ليس من نوع قيد تسوية`,
             );
+
             return;
           }
 
           // استخدام id (primary key) أولاً، ثم vouch_id كحل بديل
           const targetId = foundAny.id || foundAny.vouch_id;
+
           if (targetId) {
             // تأكد من استخدام id (primary key) بدلاً من vouch_id إذا كان متاحاً
             const finalId = foundAny.id || targetId;
+
             router.push(`/forms/voucher/${finalId}?mode=preview`);
             router.refresh(); // إجبار Next.js على إعادة جلب البيانات
             setSearchTerm("");
+
             return;
           }
         }
@@ -930,6 +952,7 @@ export const useVoucherForm = ({
 
     if (!voucherToUse || !voucherToUse.id) {
       toast.error("يرجى اختيار قيد سابق");
+
       return;
     }
 
@@ -974,6 +997,7 @@ export const useVoucherForm = ({
         const nextId = await voucherService.getNextNumber(
           voucherToUse.vouch_type,
         );
+
         setVoucher((prev) => ({
           ...prev,
           vouch_id: nextId,
@@ -1004,8 +1028,12 @@ export const useVoucherForm = ({
 
       const options = filteredAccounts
         .map((acc: any) => {
-          const accountCode = String(acc.acc_code ?? acc.code ?? "").toLowerCase();
-          const accountName = String(acc.acc_name ?? acc.name ?? "").toLowerCase();
+          const accountCode = String(
+            acc.acc_code ?? acc.code ?? "",
+          ).toLowerCase();
+          const accountName = String(
+            acc.acc_name ?? acc.name ?? "",
+          ).toLowerCase();
           const codeMatch = accountCode.indexOf(term);
           const nameMatch = accountName.indexOf(term);
 
@@ -1021,9 +1049,11 @@ export const useVoucherForm = ({
         .sort((a, b) => {
           const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
           const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+
           if (aCode !== bCode) return aCode - bCode;
           const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
           const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+
           return aName - bName;
         })
         .map(({ value, label, account }) => ({ value, label, account }));
@@ -1031,6 +1061,7 @@ export const useVoucherForm = ({
       return options;
     } catch (e) {
       console.error("Error loading account options:", e);
+
       return [];
     }
   };
@@ -1046,6 +1077,7 @@ export const useVoucherForm = ({
     }
 
     const account = accounts.find((acc) => acc.id === detail.acc_id);
+
     if (account) {
       return {
         value: detail.acc_id,
@@ -1113,4 +1145,3 @@ export const useVoucherForm = ({
     getAccountSelectValue,
   };
 };
-

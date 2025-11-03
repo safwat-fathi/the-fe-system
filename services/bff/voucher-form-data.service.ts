@@ -21,68 +21,70 @@ export interface VoucherFormData {
 }
 
 // خدمة محسّنة للقيد الافتتاحي - تجلب البيانات الضرورية فقط
-const getBalanceVoucherFormData = cache(async (): Promise<Omit<VoucherFormData, "items" | "customers" | "boxes">> => {
-  const [
-    accountsResponse,
-    costCentersResponse,
-    voucherTypesResponse,
-    voucherStagesResponse,
-    caratTypesResponse,
-  ] = await Promise.all([
-    accountService.getAllAccounts(),
-    costCenterService.getAllCostCenters(),
-    voucherService.getVoucherTypes({ com: "1", year: "1" }),
-    voucherService.getVoucherStages({ com: "1", year: "1" }),
-    voucherService.getCaratTypes(),
-  ]);
+const getBalanceVoucherFormData = cache(
+  async (): Promise<Omit<VoucherFormData, "items" | "customers" | "boxes">> => {
+    const [
+      accountsResponse,
+      costCentersResponse,
+      voucherTypesResponse,
+      voucherStagesResponse,
+      caratTypesResponse,
+    ] = await Promise.all([
+      accountService.getAllAccounts(),
+      costCenterService.getAllCostCenters(),
+      voucherService.getVoucherTypes({ com: "1", year: "1" }),
+      voucherService.getVoucherStages({ com: "1", year: "1" }),
+      voucherService.getCaratTypes(),
+    ]);
 
-  // معالجة الحسابات
-  let accounts: any[] = [];
+    // معالجة الحسابات
+    let accounts: any[] = [];
 
-  if (accountsResponse && Array.isArray(accountsResponse)) {
-    accounts = accountsResponse.filter(
-      (account: any) => account.acc_level === 5,
-    );
-  }
+    if (accountsResponse && Array.isArray(accountsResponse)) {
+      accounts = accountsResponse.filter(
+        (account: any) => account.acc_level === 5,
+      );
+    }
 
-  // معالجة مراكز التكلفة
-  const costCenters = Array.isArray(costCentersResponse)
-    ? costCentersResponse
-    : [];
-
-  // معالجة أنواع السندات
-  const voucherTypes =
-    voucherTypesResponse.success && voucherTypesResponse.data
-      ? Array.isArray(voucherTypesResponse.data)
-        ? voucherTypesResponse.data
-        : []
+    // معالجة مراكز التكلفة
+    const costCenters = Array.isArray(costCentersResponse)
+      ? costCentersResponse
       : [];
 
-  // معالجة حالات السندات
-  const voucherStatuses =
-    voucherStagesResponse.success && voucherStagesResponse.data
-      ? Array.isArray(voucherStagesResponse.data)
-        ? voucherStagesResponse.data
-        : []
-      : [];
+    // معالجة أنواع السندات
+    const voucherTypes =
+      voucherTypesResponse.success && voucherTypesResponse.data
+        ? Array.isArray(voucherTypesResponse.data)
+          ? voucherTypesResponse.data
+          : []
+        : [];
 
-  // معالجة أنواع المعايرة
-  const caratTypes =
-    caratTypesResponse.success && caratTypesResponse.data
-      ? Array.isArray(caratTypesResponse.data)
-        ? caratTypesResponse.data
-        : []
-      : [];
+    // معالجة حالات السندات
+    const voucherStatuses =
+      voucherStagesResponse.success && voucherStagesResponse.data
+        ? Array.isArray(voucherStagesResponse.data)
+          ? voucherStagesResponse.data
+          : []
+        : [];
 
-  return {
-    accounts,
-    costCenters,
-    voucherTypes,
-    voucherStatuses,
-    caratTypes,
-    boxes: [], // فارغ للقيد الافتتاحي
-  };
-});
+    // معالجة أنواع المعايرة
+    const caratTypes =
+      caratTypesResponse.success && caratTypesResponse.data
+        ? Array.isArray(caratTypesResponse.data)
+          ? caratTypesResponse.data
+          : []
+        : [];
+
+    return {
+      accounts,
+      costCenters,
+      voucherTypes,
+      voucherStatuses,
+      caratTypes,
+      boxes: [], // فارغ للقيد الافتتاحي
+    };
+  },
+);
 
 const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
   const [
@@ -150,17 +152,13 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
   let items: any[] = [];
 
   if (itemsResponse && itemsResponse.results) {
-    items = Array.isArray(itemsResponse.results)
-      ? itemsResponse.results
-      : [];
+    items = Array.isArray(itemsResponse.results) ? itemsResponse.results : [];
   } else if (Array.isArray(itemsResponse)) {
     items = itemsResponse;
   }
 
   // معالجة العملاء
-  const customers = Array.isArray(customersResponse)
-    ? customersResponse
-    : [];
+  const customers = Array.isArray(customersResponse) ? customersResponse : [];
 
   return {
     accounts,

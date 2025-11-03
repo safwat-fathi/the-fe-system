@@ -14,15 +14,15 @@ import {
   TagIcon,
   UserGroupIcon,
   LinkIcon,
+  ShieldCheckIcon,
+  SignalIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@heroui/react";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-
-import LogoutButton from "@/components/LogoutButton";
+import { useEffect, useState } from "react";
 
 const mainLinks = [
   {
@@ -37,6 +37,11 @@ const settingsLinks = [
     name: "إعدادات النظام",
     href: "/settings",
     icon: <Cog6ToothIcon className="h-5 w-5" />,
+  },
+  {
+    name: "الصلاحيات",
+    href: "/settings/permissions",
+    icon: <ShieldCheckIcon className="h-5 w-5" />,
   },
   {
     name: "الضرائب",
@@ -210,6 +215,8 @@ const goldReportLinks = [
 
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isOnline, setIsOnline] = useState(true);
+  const [version] = useState("ver.251103");
 
   // نظام الحسابات
   const [showAccountingSystem, setShowAccountingSystem] = useState(true);
@@ -226,6 +233,21 @@ const Sidebar = () => {
   const [showSettingsLinks, setShowSettingsLinks] = useState(true);
   const pathname = usePathname();
 
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   const animationVariants = {
     hidden: { clipPath: "inset(0% 0% 100% 0%)", opacity: 0 },
     visible: { clipPath: "inset(0% 0% 0% 0%)", opacity: 1 },
@@ -235,25 +257,71 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`bg-gradient-to-b from-gray-800 to-gray-900 text-white transition-all duration-300 ease-in-out flex flex-col ${
+      className={`bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white transition-all duration-300 ease-in-out flex flex-col ${
         isSidebarOpen ? "w-72 px-6" : "w-20 px-3"
-      } min-h-screen shadow-xl`}
+      } min-h-screen shadow-[4px_0_20px_rgba(0,0,0,0.4)] border-r border-amber-900/20`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between h-16 mb-8 relative border-b border-gray-700 pb-4">
+      <div className="relative border-b border-amber-900/30 bg-gradient-to-r from-amber-950/20 via-transparent to-transparent rounded-b-xl">
+        <div className="flex items-center justify-between h-16 mb-3">
+          {isSidebarOpen && (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 flex items-center justify-center shadow-lg ring-2 ring-amber-500/30">
+                <span className="text-xl font-bold text-white drop-shadow-md">ن</span>
+              </div>
+              <h2 className="text-xl font-bold whitespace-nowrap text-amber-50 drop-shadow-sm">
+                نفيس
+              </h2>
+            </div>
+          )}
+          <Button
+            className="text-white hover:bg-white/10 rounded-lg transition-all duration-200"
+            size="sm"
+            variant="light"
+            onPress={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <Bars3Icon className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Status and Version */}
         {isSidebarOpen && (
-          <h2 className="text-xl font-bold whitespace-nowrap text-white">
-            لوحة التحكم
-          </h2>
+          <div className="pb-4 px-1">
+            <div className="flex items-center justify-center gap-3 px-3 py-2 rounded-lg bg-white/5 backdrop-blur-sm border border-amber-900/20">
+              <div className="relative flex items-center gap-2">
+                <div className="relative w-2 h-2 rounded-full">
+                  <div className={`absolute inset-0 rounded-full ${isOnline ? "bg-green-400" : "bg-red-400"} ${isOnline ? "animate-soft-pulse" : ""}`}></div>
+                  {isOnline && (
+                    <>
+                      <div className="absolute inset-0 rounded-full bg-green-400 animate-soft-ping"></div>
+                      <div className="absolute inset-0 rounded-full bg-green-400 animate-soft-ping" style={{ animationDelay: "1.5s" }}></div>
+                    </>
+                  )}
+                </div>
+                <span className={`text-xs font-semibold ${isOnline ? "text-green-300" : "text-red-300"}`}>
+                  {isOnline ? "متصل" : "غير متصل"}
+                </span>
+              </div>
+              <div className="w-px h-4 bg-slate-600"></div>
+              <span className="text-[10px] text-slate-400 font-mono tracking-wider">
+                {version}
+              </span>
+            </div>
+          </div>
         )}
-        <Button
-          className="text-white hover:bg-gray-700"
-          size="sm"
-          variant="light"
-          onPress={() => setIsSidebarOpen(!isSidebarOpen)}
-        >
-          <Bars3Icon className="h-5 w-5" />
-        </Button>
+        {!isSidebarOpen && (
+          <div className="pb-2 flex justify-center">
+            <div className="relative w-2 h-2 rounded-full">
+              <div className={`absolute inset-0 rounded-full ${isOnline ? "bg-green-400" : "bg-red-400"} ${isOnline ? "animate-soft-pulse" : ""}`}></div>
+              {isOnline && (
+                <>
+                  <div className="absolute inset-0 rounded-full bg-green-400 animate-soft-ping"></div>
+                  <div className="absolute inset-0 rounded-full bg-green-400 animate-soft-ping" style={{ animationDelay: "1.5s" }}></div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
@@ -263,18 +331,18 @@ const Sidebar = () => {
           <Link
             key={link.href}
             className={clsx(
-              "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group",
+              "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
               {
-                "bg-blue-600 shadow-lg": pathname === link.href,
-                "hover:bg-gray-700 hover:shadow-md": pathname !== link.href,
+                "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30": pathname === link.href,
+                "hover:bg-white/5 hover:shadow-sm": pathname !== link.href,
               },
             )}
             href={link.href}
           >
             <div
-              className={clsx("text-lg", {
-                "text-white": pathname === link.href,
-                "text-gray-300 group-hover:text-white": pathname !== link.href,
+              className={clsx("text-lg transition-all", {
+                "text-white drop-shadow-lg": pathname === link.href,
+                "text-slate-300 group-hover:text-white": pathname !== link.href,
               })}
             >
               {link.icon}
@@ -291,16 +359,16 @@ const Sidebar = () => {
         ))}
 
         {/* نظام الحسابات */}
-        <div className="mt-6">
+        <div className="mt-4">
           <div
-            className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
+            className="px-3 py-2.5 text-sm font-semibold text-slate-200 cursor-pointer flex justify-between items-center hover:text-white hover:bg-white/5 rounded-lg transition-all"
             onClick={() => setShowAccountingSystem(!showAccountingSystem)}
           >
             <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
               نظام الحسابات
             </span>
             {isSidebarOpen && (
-              <div className="text-gray-400">
+              <div className="text-slate-400">
                 {showAccountingSystem ? (
                   <ChevronUpIcon className="h-4 w-4" />
                 ) : (
@@ -322,7 +390,7 @@ const Sidebar = () => {
               >
                 {/* البيانات الأساسية - نظام الحسابات */}
                 <div
-                  className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                  className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                   onClick={() => setShowAccountingBasic(!showAccountingBasic)}
                 >
                   <span
@@ -334,7 +402,7 @@ const Sidebar = () => {
                     البيانات الأساسية
                   </span>
                   {isSidebarOpen && (
-                    <div className="text-gray-500">
+                    <div className="text-slate-500">
                       {showAccountingBasic ? (
                         <ChevronUpIcon className="h-4 w-4" />
                       ) : (
@@ -357,10 +425,10 @@ const Sidebar = () => {
                       {accountingBasicLinks.map((link) => (
                         <Link
                           key={link.href}
-                          className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                          className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
                             pathname === link.href
-                              ? "bg-blue-600/20 text-blue-300"
-                              : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                              ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                              : "hover:bg-white/5 text-slate-300 hover:text-white hover:border-transparent"
                           }`}
                           href={link.href}
                           prefetch={true}
@@ -368,9 +436,9 @@ const Sidebar = () => {
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm">{link.icon}</div>
+                          <div className="text-sm transition-all">{link.icon}</div>
                           <span
-                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                           >
                             {link.name}
                           </span>
@@ -384,7 +452,7 @@ const Sidebar = () => {
                 {accountingFormLinks.length > 0 && (
                   <>
                     <div
-                      className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                      className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                       onClick={() =>
                         setShowAccountingForms(!showAccountingForms)
                       }
@@ -393,7 +461,7 @@ const Sidebar = () => {
                         النماذج
                       </span>
                       {isSidebarOpen && (
-                        <div className="text-gray-500">
+                        <div className="text-slate-500">
                           {showAccountingForms ? (
                             <ChevronUpIcon className="h-4 w-4" />
                           ) : (
@@ -416,10 +484,10 @@ const Sidebar = () => {
                           {accountingFormLinks.map((link) => (
                             <Link
                               key={link.href}
-                              className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                              className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
                                 pathname === link.href
-                                  ? "bg-blue-600/20 text-blue-300"
-                                  : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                                  ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                                  : "hover:bg-white/5 text-slate-300 hover:text-white"
                               }`}
                               href={link.href}
                               style={{
@@ -428,9 +496,9 @@ const Sidebar = () => {
                                   : "0.75rem",
                               }}
                             >
-                              <div className="text-sm">{link.icon}</div>
+                              <div className="text-sm transition-all">{link.icon}</div>
                               <span
-                                className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                                className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                               >
                                 {link.name}
                               </span>
@@ -446,7 +514,7 @@ const Sidebar = () => {
                 {accountingReportLinks.length > 0 && (
                   <>
                     <div
-                      className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                      className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                       onClick={() =>
                         setShowAccountingReports(!showAccountingReports)
                       }
@@ -455,7 +523,7 @@ const Sidebar = () => {
                         التقارير
                       </span>
                       {isSidebarOpen && (
-                        <div className="text-gray-500">
+                        <div className="text-slate-500">
                           {showAccountingReports ? (
                             <ChevronUpIcon className="h-4 w-4" />
                           ) : (
@@ -478,10 +546,10 @@ const Sidebar = () => {
                           {accountingReportLinks.map((link) => (
                             <Link
                               key={link.href}
-                              className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                              className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
                                 pathname === link.href
-                                  ? "bg-blue-600/20 text-blue-300"
-                                  : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                                  ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                                  : "hover:bg-white/5 text-slate-300 hover:text-white"
                               }`}
                               href={link.href}
                               style={{
@@ -490,9 +558,9 @@ const Sidebar = () => {
                                   : "0.75rem",
                               }}
                             >
-                              <div className="text-sm">{link.icon}</div>
+                              <div className="text-sm transition-all">{link.icon}</div>
                               <span
-                                className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                                className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                               >
                                 {link.name}
                               </span>
@@ -509,16 +577,16 @@ const Sidebar = () => {
         </div>
 
         {/* نظام الذهب */}
-        <div className="mt-6">
+        <div className="mt-4">
           <div
-            className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
+            className="px-3 py-2.5 text-sm font-semibold text-slate-200 cursor-pointer flex justify-between items-center hover:text-white hover:bg-white/5 rounded-lg transition-all"
             onClick={() => setShowGoldSystem(!showGoldSystem)}
           >
             <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
               نظام الذهب
             </span>
             {isSidebarOpen && (
-              <div className="text-gray-400">
+              <div className="text-slate-400">
                 {showGoldSystem ? (
                   <ChevronUpIcon className="h-4 w-4" />
                 ) : (
@@ -540,14 +608,14 @@ const Sidebar = () => {
               >
                 {/* البيانات الأساسية - نظام الذهب */}
                 <div
-                  className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                  className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                   onClick={() => setShowGoldBasic(!showGoldBasic)}
                 >
                   <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                     البيانات الأساسية
                   </span>
                   {isSidebarOpen && (
-                    <div className="text-gray-500">
+                    <div className="text-slate-500">
                       {showGoldBasic ? (
                         <ChevronUpIcon className="h-4 w-4" />
                       ) : (
@@ -570,10 +638,10 @@ const Sidebar = () => {
                       {goldBasicLinks.map((link) => (
                         <Link
                           key={link.href}
-                          className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                          className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
                             pathname === link.href
-                              ? "bg-blue-600/20 text-blue-300"
-                              : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                              ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                              : "hover:bg-white/5 text-slate-300 hover:text-white"
                           }`}
                           href={link.href}
                           prefetch={true}
@@ -581,10 +649,10 @@ const Sidebar = () => {
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm">{link.icon}</div>
+                          <div className="text-sm transition-all">{link.icon}</div>
 
                           <span
-                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                           >
                             {link.name}
                           </span>
@@ -596,14 +664,14 @@ const Sidebar = () => {
 
                 {/* النماذج - نظام الذهب */}
                 <div
-                  className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                  className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                   onClick={() => setShowGoldForms(!showGoldForms)}
                 >
                   <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                     النماذج
                   </span>
                   {isSidebarOpen && (
-                    <div className="text-gray-500">
+                    <div className="text-slate-500">
                       {showGoldForms ? (
                         <ChevronUpIcon className="h-4 w-4" />
                       ) : (
@@ -626,19 +694,19 @@ const Sidebar = () => {
                       {goldFormLinks.map((link) => (
                         <Link
                           key={link.href}
-                          className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                          className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
                             pathname === link.href
-                              ? "bg-blue-600/20 text-blue-300"
-                              : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                              ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                              : "hover:bg-white/5 text-slate-300 hover:text-white"
                           }`}
                           href={link.href}
                           style={{
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm">{link.icon}</div>
+                          <div className="text-sm transition-all">{link.icon}</div>
                           <span
-                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                           >
                             {link.name}
                           </span>
@@ -650,14 +718,14 @@ const Sidebar = () => {
 
                 {/* التقارير - نظام الذهب */}
                 <div
-                  className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                  className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                   onClick={() => setShowGoldReports(!showGoldReports)}
                 >
                   <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                     التقارير
                   </span>
                   {isSidebarOpen && (
-                    <div className="text-gray-500">
+                    <div className="text-slate-500">
                       {showGoldReports ? (
                         <ChevronUpIcon className="h-4 w-4" />
                       ) : (
@@ -680,19 +748,19 @@ const Sidebar = () => {
                       {goldReportLinks.map((link) => (
                         <Link
                           key={link.href}
-                          className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                          className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
                             pathname === link.href
-                              ? "bg-blue-600/20 text-blue-300"
-                              : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                              ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                              : "hover:bg-white/5 text-slate-300 hover:text-white"
                           }`}
                           href={link.href}
                           style={{
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm">{link.icon}</div>
+                          <div className="text-sm transition-all">{link.icon}</div>
                           <span
-                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                           >
                             {link.name}
                           </span>
@@ -707,16 +775,16 @@ const Sidebar = () => {
         </div>
 
         {/* الإعدادات */}
-        <div className="mt-6">
+        <div className="mt-4">
           <div
-            className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
+            className="px-3 py-2.5 text-sm font-semibold text-slate-200 cursor-pointer flex justify-between items-center hover:text-white hover:bg-white/5 rounded-lg transition-all"
             onClick={() => setShowSettingsLinks(!showSettingsLinks)}
           >
             <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
               الإعدادات
             </span>
             {isSidebarOpen && (
-              <div className="text-gray-400">
+              <div className="text-slate-400">
                 {showSettingsLinks ? (
                   <ChevronUpIcon className="h-4 w-4" />
                 ) : (
@@ -739,15 +807,15 @@ const Sidebar = () => {
                 {settingsLinks.map((link) => (
                   <Link
                     key={link.href}
-                    className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
+                    className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm ${
                       pathname === link.href
-                        ? "bg-blue-600 shadow-lg"
-                        : "hover:bg-gray-700 hover:shadow-md"
+                        ? "bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/20"
+                        : "hover:bg-white/5 hover:shadow-sm"
                     }`}
                     href={link.href}
                   >
                     <div
-                      className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
+                      className={`text-lg transition-all ${pathname === link.href ? "text-white drop-shadow-lg" : "text-slate-300 group-hover:text-white"}`}
                     >
                       {link.icon}
                     </div>
@@ -763,12 +831,6 @@ const Sidebar = () => {
           </AnimatePresence>
         </div>
 
-        {/* زر الخروج */}
-        <div className="mt-auto pt-6 border-t border-gray-700">
-          <div className="flex justify-center">
-            <LogoutButton />
-          </div>
-        </div>
       </nav>
     </aside>
   );

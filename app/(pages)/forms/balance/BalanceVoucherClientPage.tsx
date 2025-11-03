@@ -102,8 +102,8 @@ export default function BalanceVoucherClientPage({
             <div>
               <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-4">
                 <span>
-                  {voucherTypes.find((t) => t.id === voucher.vouch_type)?.name ||
-                    "قيد افتتاحي"}
+                  {voucherTypes.find((t) => t.id === voucher.vouch_type)
+                    ?.name || "قيد افتتاحي"}
                 </span>
                 <span className="text-slate-600 font-medium">
                   #
@@ -267,7 +267,9 @@ export default function BalanceVoucherClientPage({
 
             {/* البيان */}
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-slate-700">البيان</label>
+              <label className="text-sm font-medium text-slate-700">
+                البيان
+              </label>
               <input
                 className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                 disabled={!isEditing}
@@ -490,6 +492,7 @@ export default function BalanceVoucherClientPage({
                         value={detail.debit ? String(detail.debit) : ""}
                         onChange={(e) => {
                           const val = e.target.value;
+
                           if (!val || parseFloat(val) >= 0) {
                             updateDetail(
                               index,
@@ -524,6 +527,7 @@ export default function BalanceVoucherClientPage({
                         value={detail.credit ? String(detail.credit) : ""}
                         onChange={(e) => {
                           const val = e.target.value;
+
                           if (!val || parseFloat(val) >= 0) {
                             updateDetail(
                               index,
@@ -556,9 +560,12 @@ export default function BalanceVoucherClientPage({
                           appearance: "none",
                         }}
                         type="number"
-                        value={detail.base_debit ? String(detail.base_debit) : ""}
+                        value={
+                          detail.base_debit ? String(detail.base_debit) : ""
+                        }
                         onChange={(e) => {
                           const val = e.target.value;
+
                           if (!val || parseFloat(val) >= 0) {
                             updateDetail(
                               index,
@@ -590,9 +597,12 @@ export default function BalanceVoucherClientPage({
                           appearance: "none",
                         }}
                         type="number"
-                        value={detail.base_credit ? String(detail.base_credit) : ""}
+                        value={
+                          detail.base_credit ? String(detail.base_credit) : ""
+                        }
                         onChange={(e) => {
                           const val = e.target.value;
+
                           if (!val || parseFloat(val) >= 0) {
                             updateDetail(
                               index,
@@ -628,6 +638,7 @@ export default function BalanceVoucherClientPage({
                         value={detail.gauge ? String(detail.gauge) : "875"}
                         onChange={(e) => {
                           const val = e.target.value;
+
                           if (!val || parseFloat(val) >= 0) {
                             updateDetail(
                               index,
@@ -659,10 +670,12 @@ export default function BalanceVoucherClientPage({
                           WebkitAppearance: "none",
                           appearance: "none",
                         }}
+                        title="يُحسب تلقائياً من: مدين ذهب قائم × (المعايرة / 875)"
                         type="number"
                         value={detail.debit_g ? String(detail.debit_g) : ""}
                         onChange={(e) => {
                           const val = e.target.value;
+
                           if (!val || parseFloat(val) >= 0) {
                             updateDetail(
                               index,
@@ -677,7 +690,6 @@ export default function BalanceVoucherClientPage({
                           }
                         }}
                         onWheel={(e) => e.currentTarget.blur()}
-                        title="يُحسب تلقائياً من: مدين ذهب قائم × (المعايرة / 875)"
                       />
                     </td>
 
@@ -694,10 +706,12 @@ export default function BalanceVoucherClientPage({
                           WebkitAppearance: "none",
                           appearance: "none",
                         }}
+                        title="يُحسب تلقائياً من: دائن ذهب قائم × (المعايرة / 875)"
                         type="number"
                         value={detail.credit_g ? String(detail.credit_g) : ""}
                         onChange={(e) => {
                           const val = e.target.value;
+
                           if (!val || parseFloat(val) >= 0) {
                             updateDetail(
                               index,
@@ -712,7 +726,6 @@ export default function BalanceVoucherClientPage({
                           }
                         }}
                         onWheel={(e) => e.currentTarget.blur()}
-                        title="يُحسب تلقائياً من: دائن ذهب قائم × (المعايرة / 875)"
                       />
                     </td>
 
@@ -844,4 +857,3 @@ export default function BalanceVoucherClientPage({
     </div>
   );
 }
-

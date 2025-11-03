@@ -124,11 +124,11 @@ export default async function VoucherPage({
 
     // ✅ جلب السند مباشرة بالـ ID (مثل الفواتير) - سريع جداً
     // البحث أولاً في جميع الأنواع (xvouch_type="0") ثم في النوع المحدد إذا لزم الأمر
-    let targetVoucher = await getVoucherById(lookupId); // بدون تحديد النوع = جميع الأنواع
+    const targetVoucher = await getVoucherById(lookupId); // بدون تحديد النوع = جميع الأنواع
 
     if (targetVoucher) {
       const targetVoucherWithId = targetVoucher as any; // API response contains additional fields
-      
+
       voucherData = {
         ...targetVoucher,
         vouch_date: targetVoucher.vouch_date
@@ -144,12 +144,10 @@ export default async function VoucherPage({
 
       // جلب تفاصيل السند
       const voucherRecordId = targetVoucherWithId.id || parseInt(lookupId);
-      const branchId =
-        Number(targetVoucherWithId.com_id ?? 1) || 1;
-      const detailsResponse = await voucherService.getDetails(
-        voucherRecordId,
-        { com: branchId },
-      );
+      const branchId = Number(targetVoucherWithId.com_id ?? 1) || 1;
+      const detailsResponse = await voucherService.getDetails(voucherRecordId, {
+        com: branchId,
+      });
 
       if (
         detailsResponse.success &&

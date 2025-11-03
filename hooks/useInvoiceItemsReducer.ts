@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useReducer } from "react";
+
 import {
   normalizeRowIdentifier,
   type InvoiceItemRow,
@@ -24,7 +25,11 @@ function reducer(state: State, action: Action): State {
     case "SET_ALL":
       return { ...state, items: action.payload };
     case "RESET_FROM_SERVER":
-      return { items: action.payload, original: action.payload, deletedIds: [] };
+      return {
+        items: action.payload,
+        original: action.payload,
+        deletedIds: [],
+      };
     case "SET_ORIGINAL":
       return { ...state, original: action.payload };
     case "MARK_DELETED":
@@ -38,9 +43,7 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-export default function useInvoiceItemsReducer(
-  initial: InvoiceItemRow[],
-) {
+export default function useInvoiceItemsReducer(initial: InvoiceItemRow[]) {
   const [state, dispatch] = useReducer(reducer, {
     items: initial,
     original: initial,
@@ -76,10 +79,13 @@ export default function useInvoiceItemsReducer(
 
   const originalInvoiceItemMap = useMemo(() => {
     const map = new Map<string, InvoiceItemRow>();
+
     for (const item of state.original) {
       const key = normalizeRowIdentifier(item.id);
+
       if (key) map.set(key, item);
     }
+
     return map;
   }, [state.original]);
 
@@ -95,4 +101,3 @@ export default function useInvoiceItemsReducer(
     originalInvoiceItemMap,
   } as const;
 }
-

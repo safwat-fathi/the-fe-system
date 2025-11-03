@@ -393,4 +393,3 @@ export function getCurrencyOptions() {
     ...currency,
   }));
 }
-

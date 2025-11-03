@@ -1,13 +1,9 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import type { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-import type { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { voucherService, itemService, customerService } from "@/services/api";
 import {
   createVoucherAction,
@@ -86,9 +82,13 @@ export const useReceiptDeliveryVoucherForm = ({
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>([]);
+  const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>(
+    [],
+  );
   const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
-  const [originalGoldDetails, setOriginalGoldDetails] = useState<GVoucherDetail[]>([]);
+  const [originalGoldDetails, setOriginalGoldDetails] = useState<
+    GVoucherDetail[]
+  >([]);
 
   const hasGeneratedVoucherNumber = useRef(false);
 
@@ -142,9 +142,10 @@ export const useReceiptDeliveryVoucherForm = ({
     } else {
       setOriginalBoxes(initialVoucherBoxes || []);
       setOriginalGoldDetails(initialGoldDetails || []);
-      
+
       if (voucherData?.cust_id) {
         const customer = customers.find((c) => c.id === voucherData.cust_id);
+
         if (customer) {
           setSelectedCustomer(customer);
         }
@@ -157,18 +158,24 @@ export const useReceiptDeliveryVoucherForm = ({
         label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
         customer: customer,
       }));
+
       setDefaultCustomerOptions(options);
     }
   }, []);
 
   useEffect(() => {
-    if (initialCustomers && initialCustomers.length > 0 && customers.length === 0) {
+    if (
+      initialCustomers &&
+      initialCustomers.length > 0 &&
+      customers.length === 0
+    ) {
       setCustomers(initialCustomers);
       const options = initialCustomers.map((customer: any) => ({
         value: customer.id,
         label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
         customer: customer,
       }));
+
       setDefaultCustomerOptions(options);
     }
   }, [initialCustomers]);
@@ -186,18 +193,21 @@ export const useReceiptDeliveryVoucherForm = ({
   useEffect(() => {
     if (!isClient) return;
     const interval = setInterval(updateCurrentTime, 1000);
+
     return () => clearInterval(interval);
   }, [isClient]);
 
   // Helper Functions
   const updateCurrentTime = () => {
     const now = new Date();
+
     setCurrentTime(now.toLocaleTimeString("ar-EG"));
   };
 
   const generateNextVoucherNumber = async () => {
     try {
       const nextId = await voucherService.getNextNumber(vouchType);
+
       setVoucher((prev) => ({
         ...prev,
         vouch_id: nextId,
@@ -239,7 +249,8 @@ export const useReceiptDeliveryVoucherForm = ({
         item_name: item.item_name ?? item.name ?? "",
         item_price: item.item_price ?? item.price ?? 0,
         item_weight: item.item_weight ?? item.weight ?? 0,
-        item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+        item_g_weight:
+          item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
         work_price: item.work_price ?? item.price_w ?? 0,
         purity: item.purity ?? item.k ?? "",
         stones: item.stones ?? item.stone ?? null,
@@ -252,6 +263,7 @@ export const useReceiptDeliveryVoucherForm = ({
         const additions = normalizedResults.filter(
           (item) => !existingIds.has(item.id),
         );
+
         return additions.length > 0 ? [...prev, ...additions] : prev;
       });
 
@@ -275,9 +287,11 @@ export const useReceiptDeliveryVoucherForm = ({
         .sort((a, b) => {
           const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
           const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+
           if (aCode !== bCode) return aCode - bCode;
           const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
           const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+
           return aName - bName;
         })
         .map(({ value, label, item }) => ({ value, label, item }));
@@ -289,6 +303,7 @@ export const useReceiptDeliveryVoucherForm = ({
       };
     } catch (e) {
       console.error("Error loading item options:", e);
+
       return { options: [], hasMore: false, additional: { page: 1 } };
     }
   };
@@ -296,10 +311,14 @@ export const useReceiptDeliveryVoucherForm = ({
   // Load customer options
   const loadCustomerOptions = async (search: string = ""): Promise<any[]> => {
     try {
-      let allCustomers = customers.length > 0 ? customers : initialCustomers || [];
-      
+      let allCustomers =
+        customers.length > 0 ? customers : initialCustomers || [];
+
       if (allCustomers.length === 0) {
-        const apiCustomers = await customerService.getAllCustomers({ xcom_id: 1 });
+        const apiCustomers = await customerService.getAllCustomers({
+          xcom_id: 1,
+        });
+
         if (Array.isArray(apiCustomers) && apiCustomers.length > 0) {
           allCustomers = apiCustomers;
           setCustomers(apiCustomers);
@@ -308,13 +327,12 @@ export const useReceiptDeliveryVoucherForm = ({
 
       const term = search.trim().toLowerCase();
       const filteredCustomers = term
-        ? allCustomers.filter(
-            (customer: any) => {
-              const custCode = String(customer.cust_code ?? "").toLowerCase();
-              const custName = String(customer.cust_name ?? "").toLowerCase();
-              return custCode.includes(term) || custName.includes(term);
-            },
-          )
+        ? allCustomers.filter((customer: any) => {
+            const custCode = String(customer.cust_code ?? "").toLowerCase();
+            const custName = String(customer.cust_name ?? "").toLowerCase();
+
+            return custCode.includes(term) || custName.includes(term);
+          })
         : allCustomers;
 
       const options = filteredCustomers.map((customer: any) => ({
@@ -326,6 +344,7 @@ export const useReceiptDeliveryVoucherForm = ({
       return options;
     } catch (e) {
       console.error("Error loading customer options:", e);
+
       return [];
     }
   };
@@ -339,6 +358,7 @@ export const useReceiptDeliveryVoucherForm = ({
     }
     if (voucher.cust_id) {
       const customer = customers.find((c) => c.id === voucher.cust_id);
+
       if (customer) {
         return {
           value: customer.id,
@@ -346,6 +366,7 @@ export const useReceiptDeliveryVoucherForm = ({
         };
       }
     }
+
     return null;
   };
 
@@ -358,12 +379,14 @@ export const useReceiptDeliveryVoucherForm = ({
       };
     }
     const item = items.find((itm) => itm.id === goldDetail.item_id);
+
     if (item) {
       return {
         value: goldDetail.item_id,
         label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
       };
     }
+
     return null;
   };
 
@@ -373,10 +396,12 @@ export const useReceiptDeliveryVoucherForm = ({
       const updated = prev.map((box, i) => {
         if (i === index) {
           const updatedBox = { ...box, [field]: value };
+
           if (field === "box_id" && (!value || value === 0)) {
             updatedBox.box = undefined;
           } else if (field === "box_id" && value && value > 0) {
             const selectedBox = boxes.find((b) => b.id === value);
+
             if (selectedBox) {
               updatedBox.box = {
                 id: selectedBox.id,
@@ -386,10 +411,13 @@ export const useReceiptDeliveryVoucherForm = ({
               };
             }
           }
+
           return updatedBox;
         }
+
         return box;
       });
+
       return updated;
     });
   };
@@ -428,12 +456,12 @@ export const useReceiptDeliveryVoucherForm = ({
 
         // حساب تلقائي للوزن المعاير: g_weight = weight * (k / 875)
         if (field === "weight" || field === "k") {
-          const weight = field === "weight" 
-            ? parseNumber(value) 
-            : parseNumber(newDetail.weight);
-          const k = field === "k" 
-            ? parseNumber(value) 
-            : parseNumber(newDetail.k);
+          const weight =
+            field === "weight"
+              ? parseNumber(value)
+              : parseNumber(newDetail.weight);
+          const k =
+            field === "k" ? parseNumber(value) : parseNumber(newDetail.k);
 
           if (weight > 0 && k > 0) {
             newDetail.g_weight = calculateCalibratedGold(weight, k, 875);
@@ -444,12 +472,14 @@ export const useReceiptDeliveryVoucherForm = ({
 
         // حساب تلقائي للأجور: total_work = work_amt * weight
         if (field === "work_amt" || field === "weight") {
-          const workAmt = field === "work_amt" 
-            ? parseNumber(value) 
-            : parseNumber(newDetail.work_amt);
-          const weight = field === "weight" 
-            ? parseNumber(value) 
-            : parseNumber(newDetail.weight);
+          const workAmt =
+            field === "work_amt"
+              ? parseNumber(value)
+              : parseNumber(newDetail.work_amt);
+          const weight =
+            field === "weight"
+              ? parseNumber(value)
+              : parseNumber(newDetail.weight);
 
           if (workAmt > 0 && weight > 0) {
             newDetail.total_work = parseFloat((workAmt * weight).toFixed(2));
@@ -460,6 +490,7 @@ export const useReceiptDeliveryVoucherForm = ({
 
         return newDetail;
       });
+
       return updated;
     });
   };
@@ -524,15 +555,18 @@ export const useReceiptDeliveryVoucherForm = ({
   const saveVoucher = async () => {
     const voucherDate = new Date(voucher.vouch_date);
     const today = new Date();
+
     today.setHours(23, 59, 59, 999);
 
     if (voucherDate > today) {
       toast.error("لا يمكن إنشاء قيد بتاريخ أكبر من تاريخ اليوم");
+
       return;
     }
 
     if (!voucher.cust_id || voucher.cust_id === 0) {
       toast.error("يرجى اختيار العميل");
+
       return;
     }
 
@@ -542,6 +576,7 @@ export const useReceiptDeliveryVoucherForm = ({
 
     if (validBoxes.length === 0) {
       toast.error("يرجى إدخال صندوق واحد على الأقل");
+
       return;
     }
 
@@ -595,9 +630,7 @@ export const useReceiptDeliveryVoucherForm = ({
           qty: detail.qty,
         }));
 
-      const currentBoxIds = boxesData
-        .map((b) => b.id)
-        .filter((id) => id > 0);
+      const currentBoxIds = boxesData.map((b) => b.id).filter((id) => id > 0);
       const originalBoxIds = originalBoxes
         .map((b) => b.id)
         .filter((id) => id && id > 0) as number[];
@@ -627,7 +660,12 @@ export const useReceiptDeliveryVoucherForm = ({
               goldDetailsData,
               deletedGoldDetailIds,
             )
-          : await createVoucherAction(voucherData, [], boxesData, goldDetailsData);
+          : await createVoucherAction(
+              voucherData,
+              [],
+              boxesData,
+              goldDetailsData,
+            );
 
       if (result.success && result.data) {
         const realId = result.data.id;
@@ -664,9 +702,11 @@ export const useReceiptDeliveryVoucherForm = ({
     setIsPrinting(true);
     try {
       const printWindow = window.open("", "_blank");
+
       if (printWindow) {
         // Note: Full HTML/CSS will be moved to a separate utility function
         const voucherTypeName = vouchType === 111 ? "سند استلام" : "سند تسليم";
+
         printWindow.document.write(`
           <html dir="rtl">
             <head>
@@ -739,4 +779,3 @@ export const useReceiptDeliveryVoucherForm = ({
     printVoucher,
   };
 };
-

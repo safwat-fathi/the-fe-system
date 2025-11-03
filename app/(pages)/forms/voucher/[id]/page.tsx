@@ -135,14 +135,23 @@ export default async function VoucherEditPage({
 
     // معالجة cost_id - قد يكون cost أو cost_id، وأحياناً يكون null
     let costId: number | undefined = undefined;
+
     if (detail.hasOwnProperty("cost")) {
       // الحقل cost موجود في الاستجابة (حتى لو null)
-      if (detail.cost !== null && detail.cost !== undefined && detail.cost !== "") {
+      if (
+        detail.cost !== null &&
+        detail.cost !== undefined &&
+        detail.cost !== ""
+      ) {
         costId = Number(detail.cost);
       }
     } else if (detail.hasOwnProperty("cost_id")) {
       // الحقل cost_id موجود في الاستجابة
-      if (detail.cost_id !== null && detail.cost_id !== undefined && detail.cost_id !== "") {
+      if (
+        detail.cost_id !== null &&
+        detail.cost_id !== undefined &&
+        detail.cost_id !== ""
+      ) {
         costId = Number(detail.cost_id);
       }
     }

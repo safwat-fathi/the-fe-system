@@ -117,6 +117,7 @@ export default function ReceiptVoucherClientPage({
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
       toast.error("يرجى إدخال رقم السند للبحث");
+
       return;
     }
 
@@ -152,9 +153,11 @@ export default function ReceiptVoucherClientPage({
 
         if (foundVoucher) {
           const targetId = foundVoucher.id || foundVoucher.vouch_id;
+
           if (targetId) {
             router.push(`/forms/receipt/${targetId}?mode=preview`);
             setSearchTerm("");
+
             return;
           }
         }
@@ -369,15 +372,19 @@ export default function ReceiptVoucherClientPage({
             العميل
           </label>
           <AsyncCreatableSelectRegular
+            cacheOptions
             isClearable
             isSearchable
             className="text-xs"
             classNamePrefix="select"
+            defaultOptions={
+              defaultCustomerOptions.length > 0 ? defaultCustomerOptions : true
+            }
             isDisabled={!isEditing}
             loadOptions={loadCustomerOptions}
-            defaultOptions={defaultCustomerOptions.length > 0 ? defaultCustomerOptions : true}
-            cacheOptions
-            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+            menuPortalTarget={
+              typeof window !== "undefined" ? document.body : null
+            }
             menuPosition="fixed"
             placeholder="اختر العميل..."
             styles={{
@@ -425,12 +432,13 @@ export default function ReceiptVoucherClientPage({
               const selected =
                 opt?.customer ||
                 customers.find((cust) => cust.id === opt?.value);
-              
+
               setSelectedCustomer(selected || null);
-              
+
               const handling = selected?.handling?.toString() || "";
-              setVoucher((prev) => ({ 
-                ...prev, 
+
+              setVoucher((prev) => ({
+                ...prev,
                 cust_id: selected?.id ?? null,
                 handling: handling,
               }));
@@ -445,13 +453,13 @@ export default function ReceiptVoucherClientPage({
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            placeholder="مناولة"
             readOnly={!isEditing}
             type="text"
             value={voucher.handling || ""}
             onChange={(e) =>
               setVoucher((prev) => ({ ...prev, handling: e.target.value }))
             }
-            placeholder="مناولة"
           />
         </div>
 
@@ -513,16 +521,16 @@ export default function ReceiptVoucherClientPage({
                   <tr key={index} className="border-b">
                     <td className="p-0 border">
                       <AsyncPaginateCreatableSelect
+                        defaultOptions
                         isClearable
                         isSearchable
+                        additional={{ page: 1 }}
                         className="text-xs"
                         classNamePrefix="select"
                         components={{ IndicatorSeparator: () => null }}
                         instanceId={`item-select-${index}`}
                         isDisabled={!isEditing}
                         loadOptions={loadItemOptions}
-                        defaultOptions
-                        additional={{ page: 1 }}
                         menuPortalTarget={
                           typeof window !== "undefined" ? document.body : null
                         }
@@ -565,7 +573,11 @@ export default function ReceiptVoucherClientPage({
 
                           if (!selected) return;
 
-                          updateGoldDetail(index, "item_id", selected.id ?? null);
+                          updateGoldDetail(
+                            index,
+                            "item_id",
+                            selected.id ?? null,
+                          );
                           updateGoldDetail(
                             index,
                             "item_code",
@@ -576,7 +588,7 @@ export default function ReceiptVoucherClientPage({
                             "item_name",
                             selected.item_name ?? "",
                           );
-                          
+
                           // تحديث k إذا كان موجوداً في الصنف
                           if (selected.k !== undefined && selected.k !== null) {
                             updateGoldDetail(index, "k", selected.k);
@@ -600,7 +612,9 @@ export default function ReceiptVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "k",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -627,7 +641,9 @@ export default function ReceiptVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "weight",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -654,7 +670,9 @@ export default function ReceiptVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "g_weight",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -671,19 +689,21 @@ export default function ReceiptVoucherClientPage({
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
                         disabled={!isEditing}
                         readOnly={!isEditing}
+                        step="0.01"
                         style={{
                           MozAppearance: "textfield",
                           WebkitAppearance: "none",
                           appearance: "none",
                         }}
                         type="number"
-                        step="0.01"
                         value={detail.work_amt || ""}
                         onChange={(e) =>
                           updateGoldDetail(
                             index,
                             "work_amt",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -700,15 +720,15 @@ export default function ReceiptVoucherClientPage({
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-yellow-50"
                         disabled={true}
                         readOnly={true}
+                        step="0.01"
                         style={{
                           MozAppearance: "textfield",
                           WebkitAppearance: "none",
                           appearance: "none",
                         }}
-                        type="number"
-                        step="0.01"
-                        value={detail.total_work || ""}
                         title="يُحسب تلقائياً من: معدل الأجور × الوزن القائم"
+                        type="number"
+                        value={detail.total_work || ""}
                       />
                     </td>
                     <td className="p-0 border">
@@ -720,7 +740,9 @@ export default function ReceiptVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "box_id",
-                            e.target.value ? parseInt(e.target.value) : undefined,
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
                           )
                         }
                       >
@@ -760,7 +782,9 @@ export default function ReceiptVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "diff",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -787,7 +811,9 @@ export default function ReceiptVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "close_amt",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -814,7 +840,9 @@ export default function ReceiptVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "close_weight",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -842,7 +870,9 @@ export default function ReceiptVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "inv_id",
-                            e.target.value ? parseInt(e.target.value) : undefined,
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -862,14 +892,18 @@ export default function ReceiptVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "cost_id",
-                            e.target.value ? parseInt(e.target.value) : undefined,
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
                           )
                         }
                       >
                         <option value="">مركز التكلفة</option>
                         {costCenters.map((center) => (
                           <option key={center.id} value={center.id}>
-                            {center.name || center.cost_name || `مركز ${center.id}`}
+                            {center.name ||
+                              center.cost_name ||
+                              `مركز ${center.id}`}
                           </option>
                         ))}
                       </select>
@@ -955,16 +989,24 @@ export default function ReceiptVoucherClientPage({
                       <select
                         className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
                         disabled={!isEditing}
-                        value={box.box_id && box.box_id > 0 ? String(box.box_id) : ""}
+                        value={
+                          box.box_id && box.box_id > 0 ? String(box.box_id) : ""
+                        }
                         onChange={(e) => {
-                          const selectedBoxId = e.target.value ? parseInt(e.target.value) : 0;
+                          const selectedBoxId = e.target.value
+                            ? parseInt(e.target.value)
+                            : 0;
+
                           updateVoucherBox(index, "box_id", selectedBoxId);
                         }}
                       >
                         <option value="">اختر الصندوق</option>
                         {boxes.map((b) => (
                           <option key={b.id} value={String(b.id)}>
-                            {b.cust_name || b.name || box.box?.cust_name || `صندوق ${b.id}`}
+                            {b.cust_name ||
+                              b.name ||
+                              box.box?.cust_name ||
+                              `صندوق ${b.id}`}
                           </option>
                         ))}
                       </select>
@@ -997,7 +1039,9 @@ export default function ReceiptVoucherClientPage({
                           updateVoucherBox(
                             index,
                             "close_weight",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -1025,7 +1069,9 @@ export default function ReceiptVoucherClientPage({
                           updateVoucherBox(
                             index,
                             "inv_id",
-                            e.target.value ? parseInt(e.target.value) : undefined,
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -1052,7 +1098,9 @@ export default function ReceiptVoucherClientPage({
                         <option value="">مركز التكلفة</option>
                         {costCenters.map((center) => (
                           <option key={center.id} value={center.id}>
-                            {center.name || center.cost_name || `مركز ${center.id}`}
+                            {center.name ||
+                              center.cost_name ||
+                              `مركز ${center.id}`}
                           </option>
                         ))}
                       </select>
@@ -1078,14 +1126,18 @@ export default function ReceiptVoucherClientPage({
       <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
         <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">إجمالي الذهب (القائم):</span>
+            <span className="text-gray-700 font-medium">
+              إجمالي الذهب (القائم):
+            </span>
             <span className="font-semibold text-yellow-600">
               {totals.totalGoldWeight.toFixed(5)} جم
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-amber-800 font-medium">إجمالي الذهب (المعاير):</span>
+            <span className="text-amber-800 font-medium">
+              إجمالي الذهب (المعاير):
+            </span>
             <span className="font-semibold text-yellow-600">
               {totals.totalGoldGWeight.toFixed(5)} جم
             </span>
@@ -1111,4 +1163,3 @@ export default function ReceiptVoucherClientPage({
     </div>
   );
 }
-

@@ -155,7 +155,7 @@ export default async function InvoicePage({
       }
     }
   }
-		console.log("🚀 ~ :144 ~ InvoicePage ~ invoiceDetails:", invoiceDetails);
+  console.log("🚀 ~ :144 ~ InvoicePage ~ invoiceDetails:", invoiceDetails);
 
   const formData = await getInvoiceFormData();
 
@@ -168,7 +168,10 @@ export default async function InvoicePage({
       <Breadcrumb
         items={[
           { name: "الفواتير", href: "/reports/invoices" },
-          { name: INVOICE_TYPE_CONFIG[invoiceType].title, href: newInvoiceHref },
+          {
+            name: INVOICE_TYPE_CONFIG[invoiceType].title,
+            href: newInvoiceHref,
+          },
           {
             name:
               mode === "new"

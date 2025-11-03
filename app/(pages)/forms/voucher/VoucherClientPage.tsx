@@ -96,7 +96,7 @@ export default function VoucherClientPage({
     updateAccountsList,
     navigateToVoucher,
   } = useVoucherForm({
-              voucherData,
+    voucherData,
     voucherDetailsData,
     isNewVoucher,
     voucherRecordId,
@@ -243,16 +243,16 @@ export default function VoucherClientPage({
               </button>
 
               {/* زر "جديد" */}
-                <button
-                  className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-                  onClick={() => {
+              <button
+                className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+                onClick={() => {
                   // الانتقال إلى صفحة جديدة
                   router.push(newVoucherHref || "/forms/voucher");
-                  }}
-                >
-                  <i className="bi bi-plus-circle w-4 h-4 me-1" />
-                  جديد
-                </button>
+                }}
+              >
+                <i className="bi bi-plus-circle w-4 h-4 me-1" />
+                جديد
+              </button>
 
               <button
                 className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm disabled:opacity-50"
@@ -409,20 +409,27 @@ export default function VoucherClientPage({
                     }))
                   }
                 >
-                  {voucherStatuses && Array.isArray(voucherStatuses) && voucherStatuses.length > 0 ? (
+                  {voucherStatuses &&
+                  Array.isArray(voucherStatuses) &&
+                  voucherStatuses.length > 0 ? (
                     voucherStatuses.map((status) => {
-                      const statusValue = status.code_id !== undefined && status.code_id !== null 
-                        ? String(status.code_id) 
-                        : String(status.id || status.Id || "");
-                      const statusLabel = status.code_desc || status["Code Desc"] || status.name || `حالة ${status.code_id ?? (status.id || status.Id)}`;
-                      
+                      const statusValue =
+                        status.code_id !== undefined && status.code_id !== null
+                          ? String(status.code_id)
+                          : String(status.id || status.Id || "");
+                      const statusLabel =
+                        status.code_desc ||
+                        status["Code Desc"] ||
+                        status.name ||
+                        `حالة ${status.code_id ?? (status.id || status.Id)}`;
+
                       return (
-                      <option
+                        <option
                           key={status.id || status.Id}
                           value={statusValue}
-                      >
+                        >
                           {statusLabel}
-                      </option>
+                        </option>
                       );
                     })
                   ) : (
@@ -951,8 +958,7 @@ export default function VoucherClientPage({
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-            </div>
+            <div className="flex items-center gap-2" />
           </div>
         </div>
 
@@ -1033,9 +1039,12 @@ export default function VoucherClientPage({
                               >
                                 {(() => {
                                   const vouchStatusNum = Number(v.vouch_status);
-                                  
+
                                   // خريطة افتراضية للحالات
-                                  const defaultStatusMap: Record<number, string> = {
+                                  const defaultStatusMap: Record<
+                                    number,
+                                    string
+                                  > = {
                                     0: "ملغي",
                                     1: "فعال",
                                     2: "معلق",
@@ -1043,35 +1052,65 @@ export default function VoucherClientPage({
                                   };
 
                                   // إذا لم توجد حالات محملة، استخدم الخريطة الافتراضية
-                                  if (!voucherStatuses || !Array.isArray(voucherStatuses) || voucherStatuses.length === 0) {
-                                    return defaultStatusMap[vouchStatusNum] || (isNaN(vouchStatusNum) ? "غير محدد" : `حالة ${vouchStatusNum}`);
+                                  if (
+                                    !voucherStatuses ||
+                                    !Array.isArray(voucherStatuses) ||
+                                    voucherStatuses.length === 0
+                                  ) {
+                                    return (
+                                      defaultStatusMap[vouchStatusNum] ||
+                                      (isNaN(vouchStatusNum)
+                                        ? "غير محدد"
+                                        : `حالة ${vouchStatusNum}`)
+                                    );
                                   }
 
                                   // البحث عن الحالة باستخدام code_id (من getVoucherStageList)
                                   // البيانات المتوقعة: { id: 102, code_id: 0, code_desc: "ملغي", ... }
-                                  const status = voucherStatuses.find((s: any) => {
-                                    // محاولة قراءة code_id من عدة مصادر محتملة
-                                    const statusCodeId = s.code_id !== undefined && s.code_id !== null 
-                                      ? Number(s.code_id)
-                                      : s.Id !== undefined && s.Id !== null
-                                        ? Number(s.Id)
-                                        : s.id !== undefined && s.id !== null
-                                          ? Number(s.id)
-                                          : null;
-                                    
-                                    return statusCodeId !== null && statusCodeId === vouchStatusNum;
-                                  });
+                                  const status = voucherStatuses.find(
+                                    (s: any) => {
+                                      // محاولة قراءة code_id من عدة مصادر محتملة
+                                      const statusCodeId =
+                                        s.code_id !== undefined &&
+                                        s.code_id !== null
+                                          ? Number(s.code_id)
+                                          : s.Id !== undefined && s.Id !== null
+                                            ? Number(s.Id)
+                                            : s.id !== undefined &&
+                                                s.id !== null
+                                              ? Number(s.id)
+                                              : null;
+
+                                      return (
+                                        statusCodeId !== null &&
+                                        statusCodeId === vouchStatusNum
+                                      );
+                                    },
+                                  );
 
                                   if (status) {
                                     // محاولة قراءة النص من عدة مصادر محتملة
-                                    const statusText = status.code_desc || status["Code Desc"] || status.name || status.code_desc_l;
-                                    if (statusText && statusText.trim() !== "") {
+                                    const statusText =
+                                      status.code_desc ||
+                                      status["Code Desc"] ||
+                                      status.name ||
+                                      status.code_desc_l;
+
+                                    if (
+                                      statusText &&
+                                      statusText.trim() !== ""
+                                    ) {
                                       return statusText;
                                     }
                                   }
 
                                   // Fallback: استخدام الخريطة الافتراضية
-                                  return defaultStatusMap[vouchStatusNum] || (isNaN(vouchStatusNum) ? "غير محدد" : `حالة ${vouchStatusNum}`);
+                                  return (
+                                    defaultStatusMap[vouchStatusNum] ||
+                                    (isNaN(vouchStatusNum)
+                                      ? "غير محدد"
+                                      : `حالة ${vouchStatusNum}`)
+                                  );
                                 })()}
                               </span>
                             </td>

@@ -9,14 +9,10 @@ class TaxService extends HttpService<Tax> {
 
   async getAllTaxes(): Promise<Tax[]> {
     try {
-      const response = await this.get<Tax[]>(
-        "getTaxPrcList",
-        undefined,
-        {
-          cache: "force-cache",
-          next: { tags: ["taxes"] },
-        },
-      );
+      const response = await this.get<Tax[]>("getTaxPrcList", undefined, {
+        cache: "force-cache",
+        next: { tags: ["taxes"] },
+      });
 
       if (response.success) {
         if (Array.isArray(response.data)) {
@@ -47,4 +43,3 @@ class TaxService extends HttpService<Tax> {
 }
 
 export default new TaxService();
-

@@ -62,6 +62,7 @@ class CostCenterService extends HttpService<CostCenter> {
         const branchParams = await import("@/app/actions/branch-params").then(
           (m) => m.getBranchParams(),
         );
+
         companyId = branchParams.com || "1";
       } catch {
         companyId = "1";
@@ -106,6 +107,7 @@ class CostCenterService extends HttpService<CostCenter> {
         const branchParams = await import("@/app/actions/branch-params").then(
           (m) => m.getBranchParams(),
         );
+
         companyId = branchParams.com || "1";
       } catch {
         companyId = "1";
@@ -140,13 +142,9 @@ class CostCenterService extends HttpService<CostCenter> {
 
   async deleteCostCenter(id: number): Promise<boolean> {
     try {
-      const response = await this.delete(
-        `api_delete_cost/${id}`,
-        undefined,
-        {
-          cache: "no-store",
-        },
-      );
+      const response = await this.delete(`api_delete_cost/${id}`, undefined, {
+        cache: "no-store",
+      });
 
       return response.success;
     } catch (error) {

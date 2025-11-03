@@ -1,14 +1,9 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import type { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { withAsyncPaginate } from "react-select-async-paginate";
 
-import type { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { voucherService, itemService, customerService } from "@/services/api";
 import {
   createVoucherAction,
@@ -87,9 +82,13 @@ export const useCustomerGoldVoucherForm = ({
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>([]);
+  const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>(
+    [],
+  );
   const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
-  const [originalGoldDetails, setOriginalGoldDetails] = useState<GVoucherDetail[]>([]);
+  const [originalGoldDetails, setOriginalGoldDetails] = useState<
+    GVoucherDetail[]
+  >([]);
 
   const hasGeneratedVoucherNumber = useRef(false);
 
@@ -143,9 +142,10 @@ export const useCustomerGoldVoucherForm = ({
     } else {
       setOriginalBoxes(initialVoucherBoxes || []);
       setOriginalGoldDetails(initialGoldDetails || []);
-      
+
       if (voucherData?.cust_id) {
         const customer = customers.find((c) => c.id === voucherData.cust_id);
+
         if (customer) {
           setSelectedCustomer(customer);
         }
@@ -158,18 +158,24 @@ export const useCustomerGoldVoucherForm = ({
         label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
         customer: customer,
       }));
+
       setDefaultCustomerOptions(options);
     }
   }, []);
 
   useEffect(() => {
-    if (initialCustomers && initialCustomers.length > 0 && customers.length === 0) {
+    if (
+      initialCustomers &&
+      initialCustomers.length > 0 &&
+      customers.length === 0
+    ) {
       setCustomers(initialCustomers);
       const options = initialCustomers.map((customer: any) => ({
         value: customer.id,
         label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
         customer: customer,
       }));
+
       setDefaultCustomerOptions(options);
     }
   }, [initialCustomers]);
@@ -187,18 +193,21 @@ export const useCustomerGoldVoucherForm = ({
   useEffect(() => {
     if (!isClient) return;
     const interval = setInterval(updateCurrentTime, 1000);
+
     return () => clearInterval(interval);
   }, [isClient]);
 
   // Helper Functions
   const updateCurrentTime = () => {
     const now = new Date();
+
     setCurrentTime(now.toLocaleTimeString("ar-EG"));
   };
 
   const generateNextVoucherNumber = async () => {
     try {
       const nextId = await voucherService.getNextNumber(vouchType);
+
       setVoucher((prev) => ({
         ...prev,
         vouch_id: nextId,
@@ -240,7 +249,8 @@ export const useCustomerGoldVoucherForm = ({
         item_name: item.item_name ?? item.name ?? "",
         item_price: item.item_price ?? item.price ?? 0,
         item_weight: item.item_weight ?? item.weight ?? 0,
-        item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+        item_g_weight:
+          item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
         work_price: item.work_price ?? item.price_w ?? 0,
         purity: item.purity ?? item.k ?? "",
         stones: item.stones ?? item.stone ?? null,
@@ -253,6 +263,7 @@ export const useCustomerGoldVoucherForm = ({
         const additions = normalizedResults.filter(
           (item) => !existingIds.has(item.id),
         );
+
         return additions.length > 0 ? [...prev, ...additions] : prev;
       });
 
@@ -276,9 +287,11 @@ export const useCustomerGoldVoucherForm = ({
         .sort((a, b) => {
           const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
           const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+
           if (aCode !== bCode) return aCode - bCode;
           const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
           const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+
           return aName - bName;
         })
         .map(({ value, label, item }) => ({ value, label, item }));
@@ -290,6 +303,7 @@ export const useCustomerGoldVoucherForm = ({
       };
     } catch (e) {
       console.error("Error loading item options:", e);
+
       return { options: [], hasMore: false, additional: { page: 1 } };
     }
   };
@@ -297,10 +311,14 @@ export const useCustomerGoldVoucherForm = ({
   // Load customer options
   const loadCustomerOptions = async (search: string = ""): Promise<any[]> => {
     try {
-      let allCustomers = customers.length > 0 ? customers : initialCustomers || [];
-      
+      let allCustomers =
+        customers.length > 0 ? customers : initialCustomers || [];
+
       if (allCustomers.length === 0) {
-        const apiCustomers = await customerService.getAllCustomers({ xcom_id: 1 });
+        const apiCustomers = await customerService.getAllCustomers({
+          xcom_id: 1,
+        });
+
         if (Array.isArray(apiCustomers) && apiCustomers.length > 0) {
           allCustomers = apiCustomers;
           setCustomers(apiCustomers);
@@ -309,13 +327,12 @@ export const useCustomerGoldVoucherForm = ({
 
       const term = search.trim().toLowerCase();
       const filteredCustomers = term
-        ? allCustomers.filter(
-            (customer: any) => {
-              const custCode = String(customer.cust_code ?? "").toLowerCase();
-              const custName = String(customer.cust_name ?? "").toLowerCase();
-              return custCode.includes(term) || custName.includes(term);
-            },
-          )
+        ? allCustomers.filter((customer: any) => {
+            const custCode = String(customer.cust_code ?? "").toLowerCase();
+            const custName = String(customer.cust_name ?? "").toLowerCase();
+
+            return custCode.includes(term) || custName.includes(term);
+          })
         : allCustomers;
 
       const options = filteredCustomers.map((customer: any) => ({
@@ -327,6 +344,7 @@ export const useCustomerGoldVoucherForm = ({
       return options;
     } catch (e) {
       console.error("Error loading customer options:", e);
+
       return [];
     }
   };
@@ -340,6 +358,7 @@ export const useCustomerGoldVoucherForm = ({
     }
     if (voucher.cust_id) {
       const customer = customers.find((c) => c.id === voucher.cust_id);
+
       if (customer) {
         return {
           value: customer.id,
@@ -347,6 +366,7 @@ export const useCustomerGoldVoucherForm = ({
         };
       }
     }
+
     return null;
   };
 
@@ -359,12 +379,14 @@ export const useCustomerGoldVoucherForm = ({
       };
     }
     const item = items.find((itm) => itm.id === goldDetail.item_id);
+
     if (item) {
       return {
         value: goldDetail.item_id,
         label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
       };
     }
+
     return null;
   };
 
@@ -374,10 +396,12 @@ export const useCustomerGoldVoucherForm = ({
       const updated = prev.map((box, i) => {
         if (i === index) {
           const updatedBox = { ...box, [field]: value };
+
           if (field === "box_id" && (!value || value === 0)) {
             updatedBox.box = undefined;
           } else if (field === "box_id" && value && value > 0) {
             const selectedBox = boxes.find((b) => b.id === value);
+
             if (selectedBox) {
               updatedBox.box = {
                 id: selectedBox.id,
@@ -387,10 +411,13 @@ export const useCustomerGoldVoucherForm = ({
               };
             }
           }
+
           return updatedBox;
         }
+
         return box;
       });
+
       return updated;
     });
   };
@@ -430,12 +457,12 @@ export const useCustomerGoldVoucherForm = ({
         // حساب تلقائي للوزن المعاير: g_weight = weight * (k / 875)
         // نفس منطق التسليم والاستلام بالضبط
         if (field === "weight" || field === "k") {
-          const weight = field === "weight" 
-            ? parseNumber(value) 
-            : parseNumber(newDetail.weight);
-          const k = field === "k" 
-            ? parseNumber(value) 
-            : parseNumber(newDetail.k);
+          const weight =
+            field === "weight"
+              ? parseNumber(value)
+              : parseNumber(newDetail.weight);
+          const k =
+            field === "k" ? parseNumber(value) : parseNumber(newDetail.k);
 
           if (weight > 0 && k > 0) {
             newDetail.g_weight = calculateCalibratedGold(weight, k, 875);
@@ -448,18 +475,27 @@ export const useCustomerGoldVoucherForm = ({
         // ثم حساب g_weight إذا كان weight و k موجودان
         if (field === "item_id" && value) {
           const selectedItem = items.find((item) => item.id === value);
+
           if (selectedItem) {
             // تحديث k من الصنف
             if (selectedItem.k !== undefined && selectedItem.k !== null) {
               const itemK = parseNumber(selectedItem.k);
+
               if (itemK > 0) {
                 newDetail.k = itemK;
               }
             }
             // تحديث weight من الصنف إذا كان موجوداً ولم يكن المستخدم قد أدخل وزن
-            if (selectedItem.item_weight !== undefined && selectedItem.item_weight !== null) {
+            if (
+              selectedItem.item_weight !== undefined &&
+              selectedItem.item_weight !== null
+            ) {
               const itemWeight = parseNumber(selectedItem.item_weight);
-              if (itemWeight > 0 && (!newDetail.weight || newDetail.weight === 0)) {
+
+              if (
+                itemWeight > 0 &&
+                (!newDetail.weight || newDetail.weight === 0)
+              ) {
                 newDetail.weight = itemWeight;
               }
             }
@@ -468,6 +504,7 @@ export const useCustomerGoldVoucherForm = ({
           // حساب g_weight بعد تحديث k و weight من الصنف (نفس المنطق أعلاه)
           const weight = parseNumber(newDetail.weight);
           const k = parseNumber(newDetail.k);
+
           if (weight > 0 && k > 0) {
             newDetail.g_weight = calculateCalibratedGold(weight, k, 875);
           } else {
@@ -477,6 +514,7 @@ export const useCustomerGoldVoucherForm = ({
 
         return newDetail;
       });
+
       return updated;
     });
   };
@@ -536,15 +574,18 @@ export const useCustomerGoldVoucherForm = ({
   const saveVoucher = async () => {
     const voucherDate = new Date(voucher.vouch_date);
     const today = new Date();
+
     today.setHours(23, 59, 59, 999);
 
     if (voucherDate > today) {
       toast.error("لا يمكن إنشاء قيد بتاريخ أكبر من تاريخ اليوم");
+
       return;
     }
 
     if (!voucher.cust_id || voucher.cust_id === 0) {
       toast.error("يرجى اختيار العميل");
+
       return;
     }
 
@@ -554,6 +595,7 @@ export const useCustomerGoldVoucherForm = ({
 
     if (validBoxes.length === 0) {
       toast.error("يرجى إدخال صندوق واحد على الأقل");
+
       return;
     }
 
@@ -613,9 +655,7 @@ export const useCustomerGoldVoucherForm = ({
           qty: detail.qty,
         }));
 
-      const currentBoxIds = boxesData
-        .map((b) => b.id)
-        .filter((id) => id > 0);
+      const currentBoxIds = boxesData.map((b) => b.id).filter((id) => id > 0);
       const originalBoxIds = originalBoxes
         .map((b) => b.id)
         .filter((id) => id && id > 0) as number[];
@@ -654,7 +694,12 @@ export const useCustomerGoldVoucherForm = ({
               goldDetailsData,
               deletedGoldDetailIds,
             )
-          : await createVoucherAction(voucherData, [], boxesData, goldDetailsData);
+          : await createVoucherAction(
+              voucherData,
+              [],
+              boxesData,
+              goldDetailsData,
+            );
 
       console.log("📥 Client - بعد استدعاء updateVoucherAction:", result);
 
@@ -693,6 +738,7 @@ export const useCustomerGoldVoucherForm = ({
     setIsPrinting(true);
     try {
       const printWindow = window.open("", "_blank");
+
       if (printWindow) {
         // Note: Full HTML/CSS will be moved to a separate utility function
         printWindow.document.write(`
@@ -767,4 +813,3 @@ export const useCustomerGoldVoucherForm = ({
     printVoucher,
   };
 };
-

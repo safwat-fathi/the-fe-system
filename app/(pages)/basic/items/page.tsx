@@ -38,21 +38,23 @@ export default async function ItemsPage({
       ? parsedCompanyId
       : 1;
 
-  const [itemsData, categoriesData, itemTypesData, unitsData] = await Promise.all([
-    itemService
-      .searchItems({ page: currentPage, query: searchQuery, companyId })
-      .catch(
-        (): IPaginatedResponse<Item> => ({
-          count: 0,
-          next: null,
-          previous: null,
-          results: [],
-        }),
-      ),
-    helperService.getCategories().catch(() => []),
-    helperService.getItemTypes().catch(() => []),
-    helperService.getUnits().catch(() => []),
-  ]);
+  const [itemsData, categoriesData, itemTypesData, unitsData] =
+    await Promise.all([
+      itemService
+        .searchItems({ page: currentPage, query: searchQuery, companyId })
+        .catch(
+          (): IPaginatedResponse<Item> => ({
+            count: 0,
+            next: null,
+            previous: null,
+            results: [],
+          }),
+        ),
+      helperService.getCategories().catch(() => []),
+      helperService.getItemTypes().catch(() => []),
+      helperService.getUnits().catch(() => []),
+    ]);
+
   console.log("🚀 ~ :55 ~ ItemsPage ~ itemsData:", itemsData);
 
   const itemsPerPage =

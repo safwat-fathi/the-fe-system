@@ -1,13 +1,9 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import type { Voucher, VoucherDetail } from "@/types/voucher";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-import type { Voucher, VoucherDetail } from "@/types/voucher";
 import { getNextVoucherNumber } from "@/utilities/numbering";
 import { voucherService } from "@/services/api";
 import {
@@ -15,7 +11,6 @@ import {
   updateVoucherAction,
 } from "@/app/actions/voucher.action";
 import { searchAccountsAction } from "@/app/actions/accounts.action";
-import { formatAmount } from "@/utilities/formatAmount";
 import { generateBalanceVoucherPrintHTML } from "@/utilities/voucherPrint";
 import {
   parseNumber,
@@ -77,7 +72,9 @@ export const useBalanceVoucherForm = ({
   const [voucherStatuses, setVoucherStatuses] = useState<any[]>(
     formData.voucherStatuses || [],
   );
-  const [caratTypes, setCaratTypes] = useState<any[]>(formData.caratTypes || []);
+  const [caratTypes, setCaratTypes] = useState<any[]>(
+    formData.caratTypes || [],
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(propStartInEditMode || false);
@@ -111,6 +108,7 @@ export const useBalanceVoucherForm = ({
         vouch_notes: "",
         cr_date: new Date().toISOString(),
       };
+
       setDetails([newDetail]);
     }
 
@@ -118,7 +116,11 @@ export const useBalanceVoucherForm = ({
       setOriginalDetails([...voucherDetailsData]);
     }
 
-    if (isNewVoucher && !hasGeneratedVoucherNumber.current && (!voucher.vouch_id || voucher.vouch_id === 0)) {
+    if (
+      isNewVoucher &&
+      !hasGeneratedVoucherNumber.current &&
+      (!voucher.vouch_id || voucher.vouch_id === 0)
+    ) {
       hasGeneratedVoucherNumber.current = true;
       generateNextVoucherNumber().catch((error) => {
         console.error("خطأ في توليد رقم القيد:", error);
@@ -130,6 +132,7 @@ export const useBalanceVoucherForm = ({
   useEffect(() => {
     if (!isClient) return;
     const interval = setInterval(updateCurrentTime, 60000);
+
     return () => clearInterval(interval);
   }, [isClient]);
 
@@ -152,6 +155,7 @@ export const useBalanceVoucherForm = ({
         if (!detail.vouch_notes || detail.vouch_notes === previousNotes) {
           return { ...detail, vouch_notes: currentNotes };
         }
+
         return detail;
       });
     });
@@ -160,6 +164,7 @@ export const useBalanceVoucherForm = ({
   // Helper Functions
   const updateCurrentTime = () => {
     const now = new Date();
+
     setCurrentTime(
       now.toLocaleTimeString("ar-SA", {
         hour12: true,
@@ -179,6 +184,7 @@ export const useBalanceVoucherForm = ({
   const loadAccountOptions = async (search: string): Promise<any[]> => {
     try {
       const result = await searchAccountsAction(search);
+
       if (!result.success) return [];
 
       const filteredAccounts = result.data;
@@ -186,8 +192,12 @@ export const useBalanceVoucherForm = ({
 
       const options = filteredAccounts
         .map((acc: any) => {
-          const accountCode = String(acc.acc_code ?? acc.code ?? "").toLowerCase();
-          const accountName = String(acc.acc_name ?? acc.name ?? "").toLowerCase();
+          const accountCode = String(
+            acc.acc_code ?? acc.code ?? "",
+          ).toLowerCase();
+          const accountName = String(
+            acc.acc_name ?? acc.name ?? "",
+          ).toLowerCase();
           const codeMatch = accountCode.indexOf(term);
           const nameMatch = accountName.indexOf(term);
 
@@ -202,9 +212,11 @@ export const useBalanceVoucherForm = ({
         .sort((a: any, b: any) => {
           const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
           const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+
           if (aCode !== bCode) return aCode - bCode;
           const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
           const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+
           return aName - bName;
         })
         .map(({ value, label, account }: any) => ({ value, label, account }));
@@ -212,6 +224,7 @@ export const useBalanceVoucherForm = ({
       return options;
     } catch (e) {
       console.error("failed to load accounts", e);
+
       return [];
     }
   };
@@ -227,6 +240,7 @@ export const useBalanceVoucherForm = ({
     }
 
     const account = accounts.find((acc) => acc.id === detail.acc_id);
+
     if (account) {
       return {
         value: detail.acc_id,
@@ -243,6 +257,7 @@ export const useBalanceVoucherForm = ({
   const generateNextVoucherNumber = async () => {
     try {
       const nextId = await getNextVoucherNumber(0);
+
       setVoucher((prev) => ({
         ...prev,
         vouch_id: nextId,
@@ -278,6 +293,7 @@ export const useBalanceVoucherForm = ({
       vouch_notes: "",
       cr_date: new Date().toISOString(),
     };
+
     setDetails((prev) => [...prev, newDetail]);
   };
 
@@ -298,13 +314,16 @@ export const useBalanceVoucherForm = ({
 
         // Clear opposite field
         const cleared = clearOppositeField(field, value);
+
         Object.assign(newDetail, cleared);
 
         // Get gauge from account when acc_id is selected
         if (field === "acc_id" && value) {
           const selectedAccount = accounts.find((acc) => acc.id === value);
+
           if (selectedAccount) {
             const gauge = getAccountGauge(selectedAccount, caratTypes);
+
             newDetail.gauge = gauge;
           }
         }
@@ -315,33 +334,65 @@ export const useBalanceVoucherForm = ({
 
         // حساب debit_g من base_debit
         if (field === "base_debit") {
-          const baseDebit = value !== undefined && value !== null ? parseNumber(value) : 0;
+          const baseDebit =
+            value !== undefined && value !== null ? parseNumber(value) : 0;
+
           if (baseDebit > 0 && currentGauge > 0) {
-            newDetail.debit_g = calculateCalibratedGold(baseDebit, currentGauge, baseGauge);
+            newDetail.debit_g = calculateCalibratedGold(
+              baseDebit,
+              currentGauge,
+              baseGauge,
+            );
           } else {
             newDetail.debit_g = undefined;
           }
-        } else if (field === "gauge" && newDetail.base_debit !== undefined && newDetail.base_debit !== null && newDetail.base_debit > 0) {
+        } else if (
+          field === "gauge" &&
+          newDetail.base_debit !== undefined &&
+          newDetail.base_debit !== null &&
+          newDetail.base_debit > 0
+        ) {
           const newGauge = parseNumber(value) || 875;
           const baseDebit = parseNumber(newDetail.base_debit);
+
           if (baseDebit > 0 && newGauge > 0) {
-            newDetail.debit_g = calculateCalibratedGold(baseDebit, newGauge, baseGauge);
+            newDetail.debit_g = calculateCalibratedGold(
+              baseDebit,
+              newGauge,
+              baseGauge,
+            );
           }
         }
 
         // حساب credit_g من base_credit
         if (field === "base_credit") {
-          const baseCredit = value !== undefined && value !== null ? parseNumber(value) : 0;
+          const baseCredit =
+            value !== undefined && value !== null ? parseNumber(value) : 0;
+
           if (baseCredit > 0 && currentGauge > 0) {
-            newDetail.credit_g = calculateCalibratedGold(baseCredit, currentGauge, baseGauge);
+            newDetail.credit_g = calculateCalibratedGold(
+              baseCredit,
+              currentGauge,
+              baseGauge,
+            );
           } else {
             newDetail.credit_g = undefined;
           }
-        } else if (field === "gauge" && newDetail.base_credit !== undefined && newDetail.base_credit !== null && newDetail.base_credit > 0) {
+        } else if (
+          field === "gauge" &&
+          newDetail.base_credit !== undefined &&
+          newDetail.base_credit !== null &&
+          newDetail.base_credit > 0
+        ) {
           const newGauge = parseNumber(value) || 875;
           const baseCredit = parseNumber(newDetail.base_credit);
+
           if (baseCredit > 0 && newGauge > 0) {
-            newDetail.credit_g = calculateCalibratedGold(baseCredit, newGauge, baseGauge);
+            newDetail.credit_g = calculateCalibratedGold(
+              baseCredit,
+              newGauge,
+              baseGauge,
+            );
           }
         }
 
@@ -353,7 +404,10 @@ export const useBalanceVoucherForm = ({
   };
 
   // Calculate totals with base_debit and base_credit included
-  const totals = useMemo(() => calculateVoucherTotals(details, true), [details]);
+  const totals = useMemo(
+    () => calculateVoucherTotals(details, true),
+    [details],
+  );
   const cashBalance = totals.totalDebit - totals.totalCredit;
   const goldBalance = totals.totalDebitG - totals.totalCreditG;
   const isCashBalanced = Math.abs(cashBalance) < 0.01;
@@ -374,6 +428,7 @@ export const useBalanceVoucherForm = ({
 
         if (vouchers.length > 0 && isNewVoucher) {
           const existingId = vouchers[0].id || vouchers[0].vouch_id;
+
           return existingId || null;
         }
       }
@@ -381,6 +436,7 @@ export const useBalanceVoucherForm = ({
       return null;
     } catch (error) {
       console.error("Error checking existing balance voucher:", error);
+
       return null;
     }
   };
@@ -388,22 +444,26 @@ export const useBalanceVoucherForm = ({
   const saveVoucher = async () => {
     if (isNewVoucher) {
       const existingId = await checkExistingBalanceVoucher();
+
       if (existingId) {
         toast.error(
           "⚠️ يوجد قيد افتتاحي موجود مسبقاً. يرجى تعديل القيد الموجود بدلاً من إنشاء قيد جديد.",
           { duration: 6000 },
         );
         router.push(`/forms/balance/${existingId}`);
+
         return;
       }
     }
 
     const voucherDate = new Date(voucher.vouch_date);
     const today = new Date();
+
     today.setHours(23, 59, 59, 999);
 
     if (voucherDate > today) {
       toast.error("لا يمكن إنشاء قيد بتاريخ أكبر من تاريخ اليوم");
+
       return;
     }
 
@@ -435,11 +495,16 @@ export const useBalanceVoucherForm = ({
 
     if (detailsWithAccounts.length > 0 && detailsWithoutAccounts.length > 0) {
       toast.error("يرجى اختيار حساب لجميع الصفوف التي تحتوي على بيانات");
+
       return;
     }
 
     let finalVouchId = voucher.vouch_id;
-    if (isNewVoucher && (!finalVouchId || finalVouchId <= 0 || !isFinite(finalVouchId))) {
+
+    if (
+      isNewVoucher &&
+      (!finalVouchId || finalVouchId <= 0 || !isFinite(finalVouchId))
+    ) {
       try {
         finalVouchId = await getNextVoucherNumber(0);
         setVoucher((prev) => ({
@@ -449,12 +514,14 @@ export const useBalanceVoucherForm = ({
       } catch (error) {
         console.error("خطأ في توليد رقم القيد:", error);
         toast.error("❌ فشل في توليد رقم القيد. يرجى المحاولة مرة أخرى.");
+
         return;
       }
     }
 
     if (!finalVouchId || finalVouchId <= 0 || !isFinite(finalVouchId)) {
       toast.error("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
+
       return;
     }
 
@@ -558,6 +625,7 @@ export const useBalanceVoucherForm = ({
           accounts,
           totals,
         );
+
         printWindow.document.write(html);
         printWindow.document.close();
         printWindow.print();
@@ -625,4 +693,3 @@ export const useBalanceVoucherForm = ({
     handleEditClick,
   };
 };
-

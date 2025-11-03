@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import CreatableSelect from "react-select/creatable";
 import AsyncCreatableSelectRegular from "react-select/async-creatable";
@@ -93,10 +93,14 @@ export default function CustomerGoldVoucherClientPage({
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
-  const [originalGoldDetails, setOriginalGoldDetails] = useState<GVoucherDetail[]>([]);
+  const [originalGoldDetails, setOriginalGoldDetails] = useState<
+    GVoucherDetail[]
+  >([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>([]);
+  const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>(
+    [],
+  );
 
   // Initialize component
   useEffect(() => {
@@ -149,10 +153,11 @@ export default function CustomerGoldVoucherClientPage({
     } else {
       setOriginalBoxes(initialVoucherBoxes || []);
       setOriginalGoldDetails(initialGoldDetails || []);
-      
+
       // تعيين العميل المختار
       if (voucherData?.cust_id) {
         const customer = customers.find((c) => c.id === voucherData.cust_id);
+
         if (customer) {
           setSelectedCustomer(customer);
         }
@@ -166,19 +171,25 @@ export default function CustomerGoldVoucherClientPage({
         label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
         customer: customer,
       }));
+
       setDefaultCustomerOptions(options);
     }
   }, []);
 
   // تحميل العملاء عند تغيير initialCustomers
   useEffect(() => {
-    if (initialCustomers && initialCustomers.length > 0 && customers.length === 0) {
+    if (
+      initialCustomers &&
+      initialCustomers.length > 0 &&
+      customers.length === 0
+    ) {
       setCustomers(initialCustomers);
       const options = initialCustomers.map((customer: any) => ({
         value: customer.id,
         label: `${customer.cust_code || ""} - ${customer.cust_name || ""}`,
         customer: customer,
       }));
+
       setDefaultCustomerOptions(options);
     }
   }, [initialCustomers]);
@@ -195,17 +206,20 @@ export default function CustomerGoldVoucherClientPage({
 
   const updateCurrentTime = () => {
     const now = new Date();
+
     setCurrentTime(now.toLocaleTimeString("ar-EG"));
   };
 
   useEffect(() => {
     const interval = setInterval(updateCurrentTime, 1000);
+
     return () => clearInterval(interval);
   }, []);
 
   const generateNextVoucherNumber = async () => {
     try {
       const nextId = await voucherService.getNextNumber(vouchType);
+
       setVoucher((prev) => ({
         ...prev,
         vouch_id: nextId,
@@ -228,12 +242,14 @@ export default function CustomerGoldVoucherClientPage({
       const updated = prev.map((box, i) => {
         if (i === index) {
           const updatedBox = { ...box, [field]: value };
+
           // إذا تم تحديث box_id وكان 0، احذف box object
           if (field === "box_id" && (!value || value === 0)) {
             updatedBox.box = undefined;
           } else if (field === "box_id" && value && value > 0) {
             // عند اختيار صندوق، احفظ معلوماته في box object
             const selectedBox = boxes.find((b) => b.id === value);
+
             if (selectedBox) {
               updatedBox.box = {
                 id: selectedBox.id,
@@ -243,10 +259,13 @@ export default function CustomerGoldVoucherClientPage({
               };
             }
           }
+
           return updatedBox;
         }
+
         return box;
       });
+
       return updated;
     });
   };
@@ -262,16 +281,27 @@ export default function CustomerGoldVoucherClientPage({
         // حساب تلقائي للوزن المعاير: g_weight = weight * (k / 875)
         // نفس منطق التسليم والاستلام بالضبط
         if (field === "weight" || field === "k") {
-          const weight = field === "weight" 
-            ? (typeof value === "number" ? value : parseFloat(String(value || "0")) || 0)
-            : (typeof newDetail.weight === "number" ? newDetail.weight : parseFloat(String(newDetail.weight || "0")) || 0);
-          const k = field === "k" 
-            ? (typeof value === "number" ? value : parseFloat(String(value || "0")) || 0)
-            : (typeof newDetail.k === "number" ? newDetail.k : parseFloat(String(newDetail.k || "0")) || 0);
+          const weight =
+            field === "weight"
+              ? typeof value === "number"
+                ? value
+                : parseFloat(String(value || "0")) || 0
+              : typeof newDetail.weight === "number"
+                ? newDetail.weight
+                : parseFloat(String(newDetail.weight || "0")) || 0;
+          const k =
+            field === "k"
+              ? typeof value === "number"
+                ? value
+                : parseFloat(String(value || "0")) || 0
+              : typeof newDetail.k === "number"
+                ? newDetail.k
+                : parseFloat(String(newDetail.k || "0")) || 0;
 
           if (weight > 0 && k > 0) {
             // حساب الوزن المعاير: g_weight = weight * (k / 875)
             const calculatedGWeight = (weight * k) / 875;
+
             newDetail.g_weight = parseFloat(calculatedGWeight.toFixed(5));
           } else {
             newDetail.g_weight = undefined;
@@ -282,29 +312,52 @@ export default function CustomerGoldVoucherClientPage({
         // ثم حساب g_weight إذا كان weight و k موجودان
         if (field === "item_id" && value) {
           const selectedItem = items.find((item) => item.id === value);
+
           if (selectedItem) {
             // تحديث k من الصنف
             if (selectedItem.k !== undefined && selectedItem.k !== null) {
-              const itemK = typeof selectedItem.k === "number" ? selectedItem.k : parseFloat(String(selectedItem.k || "0")) || 0;
+              const itemK =
+                typeof selectedItem.k === "number"
+                  ? selectedItem.k
+                  : parseFloat(String(selectedItem.k || "0")) || 0;
+
               if (itemK > 0) {
                 newDetail.k = itemK;
               }
             }
             // تحديث weight من الصنف إذا كان موجوداً ولم يكن المستخدم قد أدخل وزن
-            if (selectedItem.item_weight !== undefined && selectedItem.item_weight !== null) {
-              const itemWeight = typeof selectedItem.item_weight === "number" ? selectedItem.item_weight : parseFloat(String(selectedItem.item_weight || "0")) || 0;
-              if (itemWeight > 0 && (!newDetail.weight || newDetail.weight === 0)) {
+            if (
+              selectedItem.item_weight !== undefined &&
+              selectedItem.item_weight !== null
+            ) {
+              const itemWeight =
+                typeof selectedItem.item_weight === "number"
+                  ? selectedItem.item_weight
+                  : parseFloat(String(selectedItem.item_weight || "0")) || 0;
+
+              if (
+                itemWeight > 0 &&
+                (!newDetail.weight || newDetail.weight === 0)
+              ) {
                 newDetail.weight = itemWeight;
               }
             }
           }
 
           // حساب g_weight بعد تحديث k و weight من الصنف
-          const weight = typeof newDetail.weight === "number" ? newDetail.weight : parseFloat(String(newDetail.weight || "0")) || 0;
-          const k = typeof newDetail.k === "number" ? newDetail.k : parseFloat(String(newDetail.k || "0")) || 0;
+          const weight =
+            typeof newDetail.weight === "number"
+              ? newDetail.weight
+              : parseFloat(String(newDetail.weight || "0")) || 0;
+          const k =
+            typeof newDetail.k === "number"
+              ? newDetail.k
+              : parseFloat(String(newDetail.k || "0")) || 0;
+
           if (weight > 0 && k > 0) {
             // حساب الوزن المعاير: g_weight = weight * (k / 875)
             const calculatedGWeight = (weight * k) / 875;
+
             newDetail.g_weight = parseFloat(calculatedGWeight.toFixed(5));
           } else {
             newDetail.g_weight = undefined;
@@ -313,6 +366,7 @@ export default function CustomerGoldVoucherClientPage({
 
         return newDetail;
       });
+
       return updated;
     });
   };
@@ -408,7 +462,8 @@ export default function CustomerGoldVoucherClientPage({
           item_name: item.item_name ?? item.name ?? "",
           item_price: item.item_price ?? item.price ?? 0,
           item_weight: item.item_weight ?? item.weight ?? 0,
-          item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+          item_g_weight:
+            item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
           work_price: item.work_price ?? item.price_w ?? 0,
           purity: item.purity ?? item.k ?? "",
           stones: item.stones ?? item.stone ?? null,
@@ -422,6 +477,7 @@ export default function CustomerGoldVoucherClientPage({
           const additions = normalizedResults.filter(
             (item) => !existingIds.has(item.id),
           );
+
           return additions.length > 0 ? [...prev, ...additions] : prev;
         });
 
@@ -459,7 +515,8 @@ export default function CustomerGoldVoucherClientPage({
         item_name: item.item_name ?? item.name ?? "",
         item_price: item.item_price ?? item.price ?? 0,
         item_weight: item.item_weight ?? item.weight ?? 0,
-        item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+        item_g_weight:
+          item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
         work_price: item.work_price ?? item.price_w ?? 0,
         purity: item.purity ?? item.k ?? "",
         stones: item.stones ?? item.stone ?? null,
@@ -473,6 +530,7 @@ export default function CustomerGoldVoucherClientPage({
         const additions = normalizedResults.filter(
           (item) => !existingIds.has(item.id),
         );
+
         return additions.length > 0 ? [...prev, ...additions] : prev;
       });
 
@@ -496,9 +554,11 @@ export default function CustomerGoldVoucherClientPage({
         .sort((a, b) => {
           const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
           const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+
           if (aCode !== bCode) return aCode - bCode;
           const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
           const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+
           return aName - bName;
         })
         .map(({ value, label, item }) => ({ value, label, item }));
@@ -510,6 +570,7 @@ export default function CustomerGoldVoucherClientPage({
       };
     } catch (e) {
       console.error("Error loading item options:", e);
+
       return { options: [], hasMore: false, additional: { page: 1 } };
     }
   };
@@ -518,11 +579,15 @@ export default function CustomerGoldVoucherClientPage({
   const loadCustomerOptions = async (search: string = ""): Promise<any[]> => {
     try {
       // استخدام customers من state أو initialCustomers
-      let allCustomers = customers.length > 0 ? customers : initialCustomers || [];
-      
+      let allCustomers =
+        customers.length > 0 ? customers : initialCustomers || [];
+
       // إذا كانت القائمة فارغة، جلب من API
       if (allCustomers.length === 0) {
-        const apiCustomers = await customerService.getAllCustomers({ xcom_id: 1 });
+        const apiCustomers = await customerService.getAllCustomers({
+          xcom_id: 1,
+        });
+
         if (Array.isArray(apiCustomers) && apiCustomers.length > 0) {
           allCustomers = apiCustomers;
           setCustomers(apiCustomers);
@@ -532,13 +597,12 @@ export default function CustomerGoldVoucherClientPage({
       // فلترة العملاء بناءً على البحث
       const term = search.trim().toLowerCase();
       const filteredCustomers = term
-        ? allCustomers.filter(
-            (customer: any) => {
-              const custCode = String(customer.cust_code ?? "").toLowerCase();
-              const custName = String(customer.cust_name ?? "").toLowerCase();
-              return custCode.includes(term) || custName.includes(term);
-            },
-          )
+        ? allCustomers.filter((customer: any) => {
+            const custCode = String(customer.cust_code ?? "").toLowerCase();
+            const custName = String(customer.cust_name ?? "").toLowerCase();
+
+            return custCode.includes(term) || custName.includes(term);
+          })
         : allCustomers;
 
       // تحويل العملاء إلى خيارات
@@ -551,6 +615,7 @@ export default function CustomerGoldVoucherClientPage({
       return options;
     } catch (e) {
       console.error("Error loading customer options:", e);
+
       return [];
     }
   };
@@ -565,6 +630,7 @@ export default function CustomerGoldVoucherClientPage({
     }
     if (voucher.cust_id) {
       const customer = customers.find((c) => c.id === voucher.cust_id);
+
       if (customer) {
         return {
           value: customer.id,
@@ -572,6 +638,7 @@ export default function CustomerGoldVoucherClientPage({
         };
       }
     }
+
     return null;
   };
 
@@ -585,12 +652,14 @@ export default function CustomerGoldVoucherClientPage({
       };
     }
     const item = items.find((itm) => itm.id === goldDetail.item_id);
+
     if (item) {
       return {
         value: goldDetail.item_id,
         label: `${item.item_code ?? ""} - ${item.item_name ?? ""}`,
       };
     }
+
     return null;
   };
 
@@ -619,16 +688,19 @@ export default function CustomerGoldVoucherClientPage({
     // التحقق من التاريخ
     const voucherDate = new Date(voucher.vouch_date);
     const today = new Date();
+
     today.setHours(23, 59, 59, 999);
 
     if (voucherDate > today) {
       toast.error("لا يمكن إنشاء قيد بتاريخ أكبر من تاريخ اليوم");
+
       return;
     }
 
     // التحقق من العميل
     if (!voucher.cust_id || voucher.cust_id === 0) {
       toast.error("يرجى اختيار العميل");
+
       return;
     }
 
@@ -639,6 +711,7 @@ export default function CustomerGoldVoucherClientPage({
 
     if (validBoxes.length === 0) {
       toast.error("يرجى إدخال صندوق واحد على الأقل");
+
       return;
     }
 
@@ -647,9 +720,10 @@ export default function CustomerGoldVoucherClientPage({
     try {
       // التأكد من وجود cust_id من voucher أو selectedCustomer
       const custId = voucher.cust_id || selectedCustomer?.id || null;
-      
+
       if (!custId || custId === 0) {
         toast.error("يرجى اختيار العميل");
+
         return;
       }
 
@@ -710,9 +784,7 @@ export default function CustomerGoldVoucherClientPage({
       }));
 
       // تحديد الصناديق والذهب المحذوفة
-      const currentBoxIds = boxesData
-        .map((b) => b.id)
-        .filter((id) => id > 0);
+      const currentBoxIds = boxesData.map((b) => b.id).filter((id) => id > 0);
       const originalBoxIds = originalBoxes
         .map((b) => b.id)
         .filter((id) => id && id > 0) as number[];
@@ -812,17 +884,20 @@ export default function CustomerGoldVoucherClientPage({
           }
           // البحث في قائمة الصناديق
           const box = boxes.find((b) => b.id === boxId);
+
           return box?.cust_name || box?.name || `صندوق ${boxId}`;
         };
 
         const getCostCenterName = (costId: number | null | undefined) => {
           if (!costId || costId === 0) return "-";
           const center = costCenters.find((c) => c.id === costId);
+
           return center?.name || center?.cost_name || `مركز ${costId}`;
         };
 
         const getItemName = (itemId: number) => {
           const item = items.find((itm) => itm.id === itemId);
+
           return item?.item_name || `صنف ${itemId}`;
         };
 
@@ -832,13 +907,16 @@ export default function CustomerGoldVoucherClientPage({
           }
           if (voucher.cust_id) {
             const customer = customers.find((c) => c.id === voucher.cust_id);
+
             return customer?.cust_name || "";
           }
+
           return "-";
         };
 
         // تحديد نوع السند
-        const voucherTypeName = vouchType === 4 ? "سند قبض عميل" : "سند صرف عميل";
+        const voucherTypeName =
+          vouchType === 4 ? "سند قبض عميل" : "سند صرف عميل";
 
         printWindow.document.write(`
           <html dir="rtl">
@@ -1159,8 +1237,12 @@ export default function CustomerGoldVoucherClientPage({
                   <tbody>
                     ${validGoldDetails
                       .map((detail) => {
-                        const item = items.find((itm) => itm.id === detail.item_id);
-                        const boxName = detail.box_id ? getBoxName(detail.box_id) : "-";
+                        const item = items.find(
+                          (itm) => itm.id === detail.item_id,
+                        );
+                        const boxName = detail.box_id
+                          ? getBoxName(detail.box_id)
+                          : "-";
                         const costName = getCostCenterName(detail.cost_id);
 
                         return `
@@ -1303,6 +1385,7 @@ export default function CustomerGoldVoucherClientPage({
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
       toast.error("يرجى إدخال رقم السند للبحث");
+
       return;
     }
 
@@ -1338,10 +1421,14 @@ export default function CustomerGoldVoucherClientPage({
 
         if (foundVoucher) {
           const targetId = foundVoucher.id || foundVoucher.vouch_id;
+
           if (targetId) {
-            const basePath = vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+            const basePath =
+              vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+
             router.push(`${basePath}/${targetId}?mode=preview`);
             setSearchTerm("");
+
             return;
           }
         }
@@ -1368,24 +1455,32 @@ export default function CustomerGoldVoucherClientPage({
 
         if (foundAny) {
           if (foundAny.vouch_type !== vouchType) {
-            const voucherTypeName = vouchType === 4 ? "سند قبض عميل" : "سند صرف عميل";
+            const voucherTypeName =
+              vouchType === 4 ? "سند قبض عميل" : "سند صرف عميل";
+
             toast.error(
               `السند الموجود (${foundAny.vouch_id}) ليس من نوع ${voucherTypeName}`,
             );
+
             return;
           }
 
           const targetId = foundAny.id || foundAny.vouch_id;
+
           if (targetId) {
-            const basePath = vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+            const basePath =
+              vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+
             router.push(`${basePath}/${targetId}?mode=preview`);
             setSearchTerm("");
+
             return;
           }
         }
       }
 
       const voucherTypeName = vouchType === 4 ? "سند قبض عميل" : "سند صرف عميل";
+
       toast.error(`لم يتم العثور على ${voucherTypeName} برقم: ${searchValue}`);
     } catch (error) {
       console.error("Error searching voucher:", error);
@@ -1401,7 +1496,9 @@ export default function CustomerGoldVoucherClientPage({
     }));
 
     if (pathname && voucherRecordId) {
-      const basePath = vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+      const basePath =
+        vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+
       router.push(`${basePath}/${voucherRecordId}?mode=edit`);
     }
   };
@@ -1502,7 +1599,9 @@ export default function CustomerGoldVoucherClientPage({
             <button
               className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
               onClick={() => {
-                const newPath = vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+                const newPath =
+                  vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+
                 router.push(newPath);
               }}
             >
@@ -1600,15 +1699,19 @@ export default function CustomerGoldVoucherClientPage({
             العميل
           </label>
           <AsyncCreatableSelectRegular
+            cacheOptions
             isClearable
             isSearchable
             className="text-xs"
             classNamePrefix="select"
+            defaultOptions={
+              defaultCustomerOptions.length > 0 ? defaultCustomerOptions : true
+            }
             isDisabled={!isEditing}
             loadOptions={loadCustomerOptions}
-            defaultOptions={defaultCustomerOptions.length > 0 ? defaultCustomerOptions : true}
-            cacheOptions
-            menuPortalTarget={typeof window !== "undefined" ? document.body : null}
+            menuPortalTarget={
+              typeof window !== "undefined" ? document.body : null
+            }
             menuPosition="fixed"
             placeholder="اختر العميل..."
             styles={{
@@ -1656,13 +1759,14 @@ export default function CustomerGoldVoucherClientPage({
               const selected =
                 opt?.customer ||
                 customers.find((cust) => cust.id === opt?.value);
-              
+
               setSelectedCustomer(selected || null);
-              
+
               // نسخ المناولة من العميل تلقائياً (مثل الفواتير)
               const handling = selected?.handling?.toString() || "";
-              setVoucher((prev) => ({ 
-                ...prev, 
+
+              setVoucher((prev) => ({
+                ...prev,
                 cust_id: selected?.id ?? null,
                 handling: handling,
               }));
@@ -1677,13 +1781,13 @@ export default function CustomerGoldVoucherClientPage({
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            placeholder="مناولة"
             readOnly={!isEditing}
             type="text"
             value={voucher.handling || ""}
             onChange={(e) =>
               setVoucher((prev) => ({ ...prev, handling: e.target.value }))
             }
-            placeholder="مناولة"
           />
         </div>
 
@@ -1743,16 +1847,16 @@ export default function CustomerGoldVoucherClientPage({
                   <tr key={index} className="border-b">
                     <td className="p-0 border">
                       <AsyncPaginateCreatableSelect
+                        defaultOptions
                         isClearable
                         isSearchable
+                        additional={{ page: 1 }}
                         className="text-xs"
                         classNamePrefix="select"
                         components={{ IndicatorSeparator: () => null }}
                         instanceId={`item-select-${index}`}
                         isDisabled={!isEditing}
                         loadOptions={loadItemOptions}
-                        defaultOptions
-                        additional={{ page: 1 }}
                         menuPortalTarget={
                           typeof window !== "undefined" ? document.body : null
                         }
@@ -1795,7 +1899,11 @@ export default function CustomerGoldVoucherClientPage({
 
                           if (!selected) return;
 
-                          updateGoldDetail(index, "item_id", selected.id ?? null);
+                          updateGoldDetail(
+                            index,
+                            "item_id",
+                            selected.id ?? null,
+                          );
                           updateGoldDetail(
                             index,
                             "item_code",
@@ -1806,7 +1914,7 @@ export default function CustomerGoldVoucherClientPage({
                             "item_name",
                             selected.item_name ?? "",
                           );
-                          
+
                           // تحديث k إذا كان موجوداً في الصنف
                           if (selected.k !== undefined && selected.k !== null) {
                             updateGoldDetail(index, "k", selected.k);
@@ -1830,7 +1938,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "k",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -1857,7 +1967,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "weight",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -1884,7 +1996,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "g_weight",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -1904,7 +2018,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "box_id",
-                            e.target.value ? parseInt(e.target.value) : undefined,
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
                           )
                         }
                       >
@@ -1944,7 +2060,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "diff",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -1971,7 +2089,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "close_amt",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -1998,7 +2118,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "close_weight",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -2026,7 +2148,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "inv_id",
-                            e.target.value ? parseInt(e.target.value) : undefined,
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -2046,14 +2170,18 @@ export default function CustomerGoldVoucherClientPage({
                           updateGoldDetail(
                             index,
                             "cost_id",
-                            e.target.value ? parseInt(e.target.value) : undefined,
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
                           )
                         }
                       >
                         <option value="">مركز التكلفة</option>
                         {costCenters.map((center) => (
                           <option key={center.id} value={center.id}>
-                            {center.name || center.cost_name || `مركز ${center.id}`}
+                            {center.name ||
+                              center.cost_name ||
+                              `مركز ${center.id}`}
                           </option>
                         ))}
                       </select>
@@ -2139,16 +2267,24 @@ export default function CustomerGoldVoucherClientPage({
                       <select
                         className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
                         disabled={!isEditing}
-                        value={box.box_id && box.box_id > 0 ? String(box.box_id) : ""}
+                        value={
+                          box.box_id && box.box_id > 0 ? String(box.box_id) : ""
+                        }
                         onChange={(e) => {
-                          const selectedBoxId = e.target.value ? parseInt(e.target.value) : 0;
+                          const selectedBoxId = e.target.value
+                            ? parseInt(e.target.value)
+                            : 0;
+
                           updateVoucherBox(index, "box_id", selectedBoxId);
                         }}
                       >
                         <option value="">اختر الصندوق</option>
                         {boxes.map((b) => (
                           <option key={b.id} value={String(b.id)}>
-                            {b.cust_name || b.name || box.box?.cust_name || `صندوق ${b.id}`}
+                            {b.cust_name ||
+                              b.name ||
+                              box.box?.cust_name ||
+                              `صندوق ${b.id}`}
                           </option>
                         ))}
                       </select>
@@ -2181,7 +2317,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateVoucherBox(
                             index,
                             "close_weight",
-                            e.target.value ? parseFloat(e.target.value) : undefined,
+                            e.target.value
+                              ? parseFloat(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -2209,7 +2347,9 @@ export default function CustomerGoldVoucherClientPage({
                           updateVoucherBox(
                             index,
                             "inv_id",
-                            e.target.value ? parseInt(e.target.value) : undefined,
+                            e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
                           )
                         }
                         onKeyDown={(e) => {
@@ -2236,7 +2376,9 @@ export default function CustomerGoldVoucherClientPage({
                         <option value="">مركز التكلفة</option>
                         {costCenters.map((center) => (
                           <option key={center.id} value={center.id}>
-                            {center.name || center.cost_name || `مركز ${center.id}`}
+                            {center.name ||
+                              center.cost_name ||
+                              `مركز ${center.id}`}
                           </option>
                         ))}
                       </select>
@@ -2262,14 +2404,18 @@ export default function CustomerGoldVoucherClientPage({
       <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-200">
         <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-amber-800 font-medium">إجمالي الذهب (القائم):</span>
+            <span className="text-amber-800 font-medium">
+              إجمالي الذهب (القائم):
+            </span>
             <span className="font-semibold text-yellow-600">
               {totals.totalGoldWeight.toFixed(5)} جم
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-amber-800 font-medium">إجمالي الذهب (المعاير):</span>
+            <span className="text-amber-800 font-medium">
+              إجمالي الذهب (المعاير):
+            </span>
             <span className="font-semibold text-yellow-600">
               {totals.totalGoldGWeight.toFixed(5)} جم
             </span>
@@ -2287,4 +2433,3 @@ export default function CustomerGoldVoucherClientPage({
     </div>
   );
 }
-

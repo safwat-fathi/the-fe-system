@@ -11,3 +11,7 @@ export { default as genericService } from "./generic.service";
 export { default as voucherService } from "./voucher.service";
 export { default as accountService } from "./account.service";
 export { default as costCenterService } from "./cost-center.service";
+export { default as menuService } from "./menu.service";
+export { default as permissionService } from "./permission.service";
+export { default as userService } from "./user.service";
+export { default as glTransactionService } from "./gl-transaction.service";

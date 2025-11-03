@@ -41,6 +41,7 @@ class CurrencyExchangeService {
           `⚠️ فشل جلب سعر الصرف للعملة ${currencyCode}:`,
           response.status,
         );
+
         return null;
       }
 
@@ -58,10 +59,8 @@ class CurrencyExchangeService {
 
       return null;
     } catch (error) {
-      console.error(
-        `❌ خطأ في جلب سعر الصرف للعملة ${currencyCode}:`,
-        error,
-      );
+      console.error(`❌ خطأ في جلب سعر الصرف للعملة ${currencyCode}:`, error);
+
       return null;
     }
   }
@@ -106,10 +105,10 @@ class CurrencyExchangeService {
       return null;
     } catch (error) {
       console.error("❌ خطأ في جلب سعر الصرف:", error);
+
       return null;
     }
   }
 }
 
 export default new CurrencyExchangeService();
-

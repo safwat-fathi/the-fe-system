@@ -69,10 +69,12 @@ class BoxService extends HttpService<Box> {
     try {
       // جلب معاملات الفرع لإضافة com
       let companyId = "1";
+
       try {
         const branchParams = await import("@/app/actions/branch-params").then(
           (m) => m.getBranchParams(),
         );
+
         companyId = branchParams.com || "1";
       } catch {
         companyId = "1";
@@ -111,6 +113,7 @@ class BoxService extends HttpService<Box> {
 
       // استخراج رسائل الخطأ من API response
       let errorMessage = "حدث خطأ أثناء إنشاء الصندوق";
+
       if (response.data && typeof response.data === "object") {
         const errorData = response.data as any;
         const errorMessages: string[] = [];
@@ -119,10 +122,13 @@ class BoxService extends HttpService<Box> {
           const messages = Array.isArray(errorData.cust_code)
             ? errorData.cust_code
             : [errorData.cust_code];
+
           if (messages.some((msg: string) => msg.includes("already exists"))) {
             errorMessages.push("❌ كود الصندوق موجود مسبقاً");
           } else {
-            errorMessages.push(...messages.map((msg: string) => `كود الصندوق: ${msg}`));
+            errorMessages.push(
+              ...messages.map((msg: string) => `كود الصندوق: ${msg}`),
+            );
           }
         }
 
@@ -130,10 +136,13 @@ class BoxService extends HttpService<Box> {
           const messages = Array.isArray(errorData.cust_name)
             ? errorData.cust_name
             : [errorData.cust_name];
+
           if (messages.some((msg: string) => msg.includes("already exists"))) {
             errorMessages.push("❌ اسم الصندوق موجود مسبقاً");
           } else {
-            errorMessages.push(...messages.map((msg: string) => `اسم الصندوق: ${msg}`));
+            errorMessages.push(
+              ...messages.map((msg: string) => `اسم الصندوق: ${msg}`),
+            );
           }
         }
 
@@ -143,7 +152,10 @@ class BoxService extends HttpService<Box> {
             const messages = Array.isArray(errorData[key])
               ? errorData[key]
               : [errorData[key]];
-            errorMessages.push(...messages.map((msg: string) => `${key}: ${msg}`));
+
+            errorMessages.push(
+              ...messages.map((msg: string) => `${key}: ${msg}`),
+            );
           }
         });
 
@@ -166,10 +178,12 @@ class BoxService extends HttpService<Box> {
     try {
       // جلب معاملات الفرع لإضافة com
       let companyId = "1";
+
       try {
         const branchParams = await import("@/app/actions/branch-params").then(
           (m) => m.getBranchParams(),
         );
+
         companyId = branchParams.com || "1";
       } catch {
         companyId = "1";
@@ -183,10 +197,11 @@ class BoxService extends HttpService<Box> {
         cust_type: 99, // Ensure it remains a box
         cust_code: box.cust_code || String(id),
         cust_status: box.cust_status || 1,
-        acc: box.acc !== undefined ? (Number(box.acc) || null) : undefined,
-        vat_no: box.vat_no !== undefined ? (Number(box.vat_no) || null) : undefined,
-        cr_no: box.cr_no !== undefined ? (Number(box.cr_no) || null) : undefined,
-        perc: box.perc !== undefined ? (Number(box.perc) || null) : undefined,
+        acc: box.acc !== undefined ? Number(box.acc) || null : undefined,
+        vat_no:
+          box.vat_no !== undefined ? Number(box.vat_no) || null : undefined,
+        cr_no: box.cr_no !== undefined ? Number(box.cr_no) || null : undefined,
+        perc: box.perc !== undefined ? Number(box.perc) || null : undefined,
         expt: box.expt !== undefined ? !!box.expt : undefined,
         hide: box.hide !== undefined ? !!box.hide : undefined,
         post_code: box.post_code || "",
@@ -208,6 +223,7 @@ class BoxService extends HttpService<Box> {
 
       // استخراج رسائل الخطأ من API response
       let errorMessage = "حدث خطأ أثناء تحديث الصندوق";
+
       if (response.data && typeof response.data === "object") {
         const errorData = response.data as any;
         const errorMessages: string[] = [];
@@ -216,10 +232,13 @@ class BoxService extends HttpService<Box> {
           const messages = Array.isArray(errorData.cust_code)
             ? errorData.cust_code
             : [errorData.cust_code];
+
           if (messages.some((msg: string) => msg.includes("already exists"))) {
             errorMessages.push("❌ كود الصندوق موجود مسبقاً");
           } else {
-            errorMessages.push(...messages.map((msg: string) => `كود الصندوق: ${msg}`));
+            errorMessages.push(
+              ...messages.map((msg: string) => `كود الصندوق: ${msg}`),
+            );
           }
         }
 
@@ -227,10 +246,13 @@ class BoxService extends HttpService<Box> {
           const messages = Array.isArray(errorData.cust_name)
             ? errorData.cust_name
             : [errorData.cust_name];
+
           if (messages.some((msg: string) => msg.includes("already exists"))) {
             errorMessages.push("❌ اسم الصندوق موجود مسبقاً");
           } else {
-            errorMessages.push(...messages.map((msg: string) => `اسم الصندوق: ${msg}`));
+            errorMessages.push(
+              ...messages.map((msg: string) => `اسم الصندوق: ${msg}`),
+            );
           }
         }
 
@@ -240,7 +262,10 @@ class BoxService extends HttpService<Box> {
             const messages = Array.isArray(errorData[key])
               ? errorData[key]
               : [errorData[key]];
-            errorMessages.push(...messages.map((msg: string) => `${key}: ${msg}`));
+
+            errorMessages.push(
+              ...messages.map((msg: string) => `${key}: ${msg}`),
+            );
           }
         });
 
@@ -262,9 +287,13 @@ class BoxService extends HttpService<Box> {
   async deleteBox(id: number): Promise<boolean> {
     try {
       // استخدام api_delete_customer لأن الصناديق هي نوع من العملاء
-      const response = await this.delete(`api_delete_customer/${id}`, undefined, {
-        cache: "no-store",
-      });
+      const response = await this.delete(
+        `api_delete_customer/${id}`,
+        undefined,
+        {
+          cache: "no-store",
+        },
+      );
 
       return response.success;
     } catch (error) {

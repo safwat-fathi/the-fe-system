@@ -74,19 +74,23 @@ export const parseNumber = (value: unknown): number => {
   if (typeof value === "string") {
     const cleaned = value.replace(/,/g, "").trim();
     const parsed = Number(cleaned);
+
     return Number.isFinite(parsed) ? parsed : 0;
   }
   const numeric = Number(value ?? 0);
+
   return Number.isFinite(numeric) ? numeric : 0;
 };
 
 export const ensurePositiveNumber = (value: unknown): number | null => {
   const numeric = parseNumber(value);
+
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
 export const formatDecimalString = (value: number, digits: number): string => {
   const normalized = Number.isFinite(value) ? value : 0;
+
   return normalized.toFixed(digits);
 };
 
@@ -96,23 +100,30 @@ export const formatNumber = (value: number, digits: number): number =>
 // Identity helpers
 export const getItemIdFromRow = (row: InvoiceItemRow): number | null => {
   const primary =
-    typeof row.item === "number" ? row.item : parseNumber((row.item as any) ?? 0);
+    typeof row.item === "number"
+      ? row.item
+      : parseNumber((row.item as any) ?? 0);
   const fallback = parseNumber((row.item_id as any) ?? 0);
-  const candidate = Number.isFinite(primary) && primary > 0 ? primary : fallback;
+  const candidate =
+    Number.isFinite(primary) && primary > 0 ? primary : fallback;
   const parsed = parseNumber(candidate);
+
   return parsed > 0 ? parsed : null;
 };
 
 export const getNumericRowId = (id: unknown): number | null => {
   const numeric = Number(id);
+
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
 export const normalizeRowIdentifier = (id: unknown): string | null => {
   if (id === null || id === undefined) return null;
   const numeric = getNumericRowId(id);
+
   if (numeric !== null) return `num:${numeric}`;
   const stringValue = String(id).trim();
+
   return stringValue.length > 0 ? `str:${stringValue}` : null;
 };
 
@@ -122,6 +133,7 @@ export const mapDetailToRow = (
   fallbackTransType: number,
 ): InvoiceItemRow => {
   const itemId = Number(detail.item);
+
   return {
     id: Number(detail.id),
     item_id: Number.isFinite(itemId) ? itemId : null,
@@ -164,6 +176,7 @@ export const normalizeRowForComparison = (
   fallbackTransType: number,
 ): ComparableRow | null => {
   if (!row) return null;
+
   return {
     itemId: getItemIdFromRow(row),
     qty: parseNumber(row.qty),
@@ -190,7 +203,8 @@ export const normalizeRowForComparison = (
         ? Number(row.trans_type)
         : fallbackTransType,
     karat: row.k !== undefined && row.k !== null ? String(row.k).trim() : "",
-    box: row.box !== undefined && row.box !== null ? parseNumber(row.box) : null,
+    box:
+      row.box !== undefined && row.box !== null ? parseNumber(row.box) : null,
   };
 };
 
@@ -207,6 +221,7 @@ export const hasRowChanged = (
     currentRow,
     fallbackTransType,
   );
+
   if (!currentComparable) return false;
   if (!originalComparable) return true;
 
@@ -225,8 +240,12 @@ export const hasRowChanged = (
     "discountAmount",
     "discountRate",
   ];
+
   for (const key of numericKeys) {
-    if (Number(originalComparable[key] ?? 0) !== Number(currentComparable[key] ?? 0)) {
+    if (
+      Number(originalComparable[key] ?? 0) !==
+      Number(currentComparable[key] ?? 0)
+    ) {
       return true;
     }
   }
@@ -238,12 +257,14 @@ export const hasRowChanged = (
     "itemDesc",
     "karat",
   ];
+
   for (const key of stringKeys) {
     if (originalComparable[key] !== currentComparable[key]) return true;
   }
   if (originalComparable.box !== currentComparable.box) return true;
   if (originalComparable.transType !== currentComparable.transType) return true;
   if (originalComparable.stones !== currentComparable.stones) return true;
+
   return false;
 };
 
@@ -252,14 +273,21 @@ export function mapRowToApiPayload(
   invoicePrimaryKey: number,
   companyId: number,
   yearId: number,
-  cfg: { defaultTaxPrc: number; defaultTransType: number; payType: InvoicePayType },
+  cfg: {
+    defaultTaxPrc: number;
+    defaultTransType: number;
+    payType: InvoicePayType;
+  },
 ): Partial<InvoiceDetail> | null {
   const itemId = getItemIdFromRow(row);
+
   if (!itemId) return null;
 
   const resolvedCompanyId =
     ensurePositiveNumber(row.com) ?? ensurePositiveNumber(companyId);
-  const resolvedYearId = ensurePositiveNumber(row.year) ?? ensurePositiveNumber(yearId);
+  const resolvedYearId =
+    ensurePositiveNumber(row.year) ?? ensurePositiveNumber(yearId);
+
   if (!resolvedCompanyId || !resolvedYearId) {
     throw new Error("تعذر تحديد بيانات الفرع أو السنة لسطر الفاتورة");
   }
@@ -271,7 +299,9 @@ export function mapRowToApiPayload(
   const priceW = parseNumber(row.price_w);
   const itemDiscountAmount = parseNumber(row.item_disc_amt ?? 0);
   const taxRate =
-    row.tax_prc !== undefined ? parseNumber(row.tax_prc) : cfg.defaultTaxPrc ?? 15;
+    row.tax_prc !== undefined
+      ? parseNumber(row.tax_prc)
+      : (cfg.defaultTaxPrc ?? 15);
 
   const computedTotalW =
     row.total_w !== undefined ? parseNumber(row.total_w) : weight * priceW;
@@ -302,11 +332,15 @@ export function mapRowToApiPayload(
 
   const normalizedRowId = getNumericRowId(row.id);
   let normalizedKValue: number | null = null;
+
   if (row.k !== undefined && row.k !== null) {
     const rawK = String(row.k).trim();
+
     if (rawK.length > 0) {
       const numericK = parseNumber(row.k);
-      normalizedKValue = Number.isFinite(numericK) && numericK > 0 ? numericK : null;
+
+      normalizedKValue =
+        Number.isFinite(numericK) && numericK > 0 ? numericK : null;
     }
   }
 
@@ -330,7 +364,9 @@ export function mapRowToApiPayload(
     item_disc_amt: itemDiscountAmount,
     sn: row.sn ?? "",
     item_desc: row.item_desc ?? row.item_name ?? "",
-    item_code: (row.item_code && String(row.item_code)) || (itemId ? String(itemId) : ""),
+    item_code:
+      (row.item_code && String(row.item_code)) ||
+      (itemId ? String(itemId) : ""),
     inv_notes: normalizedNote,
     cr_date: row.cr_date ?? new Date().toISOString(),
     cr_user: row.cr_user ?? "",
@@ -343,4 +379,3 @@ export function mapRowToApiPayload(
     box: row.box ?? null,
   } as Partial<InvoiceDetail>;
 }
-
