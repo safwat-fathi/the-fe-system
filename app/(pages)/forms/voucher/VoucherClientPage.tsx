@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 
@@ -7,6 +8,9 @@ import { useVoucherForm } from "@/hooks/useVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 import { formatDateTime } from "@/utilities/dateUtils";
+import { glTransactionService } from "@/services/api";
+import { GLTransaction } from "@/types/models/gl-transaction";
+import GLTransactionModal from "../components/GLTransactionModal";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -45,6 +49,11 @@ export default function VoucherClientPage({
 }: VoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
+
+  // State للمودال والقيد المحاسبي
+  const [isGLModalOpen, setIsGLModalOpen] = useState(false);
+  const [glTransactions, setGlTransactions] = useState<GLTransaction[]>([]);
+  const [loadingGLTransactions, setLoadingGLTransactions] = useState(false);
 
   // Use the hook for all state management and business logic
   const {
@@ -96,7 +105,7 @@ export default function VoucherClientPage({
     updateAccountsList,
     navigateToVoucher,
   } = useVoucherForm({
-    voucherData,
+              voucherData,
     voucherDetailsData,
     isNewVoucher,
     voucherRecordId,
@@ -110,6 +119,47 @@ export default function VoucherClientPage({
     formMode,
     newVoucherHref,
   });
+
+  // دالة جلب القيد المحاسبي (فقط للحركة الحالية)
+  const loadGLTransactions = async () => {
+    if (!voucher.vouch_id || voucher.vouch_id <= 0) {
+            return;
+    }
+
+    setLoadingGLTransactions(true);
+    try {
+      const response = await glTransactionService.getAll({
+        xtrans_id: voucher.vouch_id,
+        xtrans_type: 3, // قيد التسوية
+        xcom_id: 1,
+        xyear_id: 0,
+        xfrom_date: 0,
+        xto_date: 0,
+      });
+
+      if (response.success && response.data) {
+        const transactions = Array.isArray(response.data) ? response.data : [];
+        const filteredTransactions = transactions.filter(
+          (trans: GLTransaction) =>
+            trans.trans_id === voucher.vouch_id && trans.trans_type === 3,
+        );
+        setGlTransactions(filteredTransactions);
+      } else {
+        setGlTransactions([]);
+      }
+    } catch (error) {
+      console.error("Error loading GL transactions:", error);
+      setGlTransactions([]);
+    } finally {
+      setLoadingGLTransactions(false);
+    }
+  };
+
+  // فتح المودال عند الضغط على الزر
+  const handleViewGLTransactions = async () => {
+    setIsGLModalOpen(true);
+    await loadGLTransactions();
+  };
 
   if (!isClient) {
     return (
@@ -243,16 +293,16 @@ export default function VoucherClientPage({
               </button>
 
               {/* زر "جديد" */}
-              <button
-                className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-                onClick={() => {
+                <button
+                  className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+                  onClick={() => {
                   // الانتقال إلى صفحة جديدة
                   router.push(newVoucherHref || "/forms/voucher");
-                }}
-              >
-                <i className="bi bi-plus-circle w-4 h-4 me-1" />
-                جديد
-              </button>
+                  }}
+                >
+                  <i className="bi bi-plus-circle w-4 h-4 me-1" />
+                  جديد
+                </button>
 
               <button
                 className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm disabled:opacity-50"
@@ -278,6 +328,18 @@ export default function VoucherClientPage({
               >
                 <i className="bi bi-files w-4 h-4 text-slate-500 me-1" />
                 انشاء من قيد سابق
+              </button>
+
+              <button
+                className="h-7 px-3 text-xs bg-indigo-600 text-white hover:bg-indigo-700 border border-indigo-600 rounded-md shadow-sm disabled:opacity-50"
+                disabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+                onClick={handleViewGLTransactions}
+                title="عرض القيد المحاسبي"
+              >
+                <span className="flex items-center gap-1">
+                  <i className="bi bi-list-check w-4 h-4 me-1" />
+                  القيد المحاسبي
+                </span>
               </button>
 
               {/* أزرار التنقل */}
@@ -424,12 +486,12 @@ export default function VoucherClientPage({
                         `حالة ${status.code_id ?? (status.id || status.Id)}`;
 
                       return (
-                        <option
+                      <option
                           key={status.id || status.Id}
                           value={statusValue}
-                        >
+                      >
                           {statusLabel}
-                        </option>
+                      </option>
                       );
                     })
                   ) : (
