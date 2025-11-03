@@ -16,7 +16,7 @@ export default function DashboardLayout({
       {/* Main Content */}
       <main className="flex-1 w-full min-h-screen overflow-auto">
         <UserHeader />
-        <div className="p-8">
+        <div className="md:p-4 lg:p-8">
           <Suspense fallback={<LoadingSkeleton />}>{children}</Suspense>
         </div>
       </main>

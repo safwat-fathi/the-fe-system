@@ -333,24 +333,25 @@ export default function InvoicePaymentPage() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-cairo overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4 font-cairo">
       <div className="h-full max-w-7xl mx-auto flex flex-col">
         {/* الهيدر المدمج */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h1 className="text-xl font-bold text-gray-800">دفع الفاتورة</h1>
-              <div className="flex gap-4 text-sm text-gray-600 mt-1">
+        <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4 mb-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex-1 w-full">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800">دفع الفاتورة</h1>
+              <div className="flex flex-col sm:flex-row gap-2 text-xs sm:text-sm text-gray-600 mt-1">
                 {invoiceNumber && <span>رقم الفاتورة: {invoiceNumber}</span>}
                 {customerName && <span>العميل: {customerName}</span>}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto justify-end">
               <Button
                 color="default"
                 size="sm"
                 variant="bordered"
                 onClick={() => router.back()}
+                className="flex-1"
               >
                 العودة
               </Button>
@@ -360,6 +361,7 @@ export default function InvoicePaymentPage() {
                 isLoading={isSaving}
                 size="sm"
                 onClick={handleSave}
+                className="flex-1"
               >
                 {isSaving ? "جاري الحفظ..." : "حفظ الدفع"}
               </Button>
@@ -368,44 +370,44 @@ export default function InvoicePaymentPage() {
         </div>
 
         {/* المحتوى الرئيسي */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
+        <div className="flex-1 grid grid-cols-1 gap-3 sm:gap-4">
           {/* الجانب الأيسر - ملخص الدفع */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="space-y-3">
             {/* ملخص الدفع */}
-            <Card className="p-4 h-fit">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+            <Card className="p-3 sm:p-4 h-fit">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
                 ملخص الدفع
               </h3>
 
-              <div className="space-y-3">
-                <div className="bg-green-50 rounded-lg p-3 text-center">
-                  <p className="text-sm text-green-600">قيمة الفاتورة</p>
-                  <p className="text-xl font-bold text-green-700">
+              <div className="space-y-2 sm:space-y-3">
+                <div className="bg-green-50 rounded-lg p-2 sm:p-3 text-center">
+                  <p className="text-xs sm:text-sm text-green-600">قيمة الفاتورة</p>
+                  <p className="text-lg sm:text-xl font-bold text-green-700">
                     {invoiceTotal.toFixed(frac)} ريال
                   </p>
                 </div>
 
-                <div className="bg-blue-50 rounded-lg p-3 text-center">
-                  <p className="text-sm text-blue-600">المبلغ المدفوع</p>
-                  <p className="text-xl font-bold text-blue-700">
+                <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
+                  <p className="text-xs sm:text-sm text-blue-600">المبلغ المدفوع</p>
+                  <p className="text-lg sm:text-xl font-bold text-blue-700">
                     {paidAmount.toFixed(frac)} ريال
                   </p>
                 </div>
 
                 <div
-                  className={`rounded-lg p-3 text-center ${
+                  className={`rounded-lg p-2 sm:p-3 text-center ${
                     remainingAmount > 0 ? "bg-red-50" : "bg-emerald-50"
                   }`}
                 >
                   <p
-                    className={`text-sm ${
+                    className={`text-xs sm:text-sm ${
                       remainingAmount > 0 ? "text-red-600" : "text-emerald-600"
                     }`}
                   >
                     {remainingAmount > 0 ? "المتبقي" : "المدفوع بالكامل"}
                   </p>
                   <p
-                    className={`text-xl font-bold ${
+                    className={`text-lg sm:text-xl font-bold ${
                       remainingAmount > 0 ? "text-red-700" : "text-emerald-700"
                     }`}
                   >
@@ -416,7 +418,7 @@ export default function InvoicePaymentPage() {
 
               <Divider className="my-3" />
 
-              <div className="space-y-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button
                   className="w-full"
                   color="success"
@@ -458,12 +460,12 @@ export default function InvoicePaymentPage() {
           </div>
 
           {/* الجانب الأيمن - جدول الدفع والكيباد */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="space-y-3">
             {/* جدول الدفع */}
-            <Card className="p-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            <Card className="p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
                 طرق الدفع
-                <span className="text-sm text-gray-500 mr-2">
+                <span className="text-xs sm:text-sm text-gray-500 mr-2 block sm:inline">
                   (اضغط على الصف لتحديده)
                 </span>
               </h3>
@@ -482,9 +484,9 @@ export default function InvoicePaymentPage() {
                     initial={{ opacity: 0, y: 20 }}
                     onClick={() => setSelectedRowIndex(index)}
                   >
-                    <div className="grid grid-cols-12 gap-3 items-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2 sm:gap-3 items-center">
                       {/* الصندوق */}
-                      <div className="col-span-3">
+                      <div className="md:col-span-3">
                         <Select
                           isDisabled={isLoading}
                           label="الصندوق"
@@ -510,7 +512,7 @@ export default function InvoicePaymentPage() {
                       </div>
 
                       {/* المبلغ */}
-                      <div className="col-span-2">
+                      <div className="md:col-span-2">
                         <Input
                           label="المبلغ"
                           placeholder="0"
@@ -531,7 +533,7 @@ export default function InvoicePaymentPage() {
                       </div>
 
                       {/* طريقة الدفع */}
-                      <div className="col-span-2">
+                      <div className="md:col-span-2">
                         <Select
                           label="طريقة الدفع"
                           selectedKeys={[row.paymentMethod]}
@@ -554,7 +556,7 @@ export default function InvoicePaymentPage() {
                       </div>
 
                       {/* البيان */}
-                      <div className="col-span-3">
+                      <div className="md:col-span-3">
                         <Input
                           label="البيان"
                           placeholder="ملاحظات الدفع"
@@ -567,7 +569,7 @@ export default function InvoicePaymentPage() {
                       </div>
 
                       {/* حذف */}
-                      <div className="col-span-2 flex justify-center">
+                      <div className="md:col-span-2 flex justify-center mt-2 md:mt-0">
                         <Button
                           isIconOnly
                           color="danger"
@@ -589,21 +591,21 @@ export default function InvoicePaymentPage() {
             </Card>
 
             {/* الكيباد المبسط */}
-            <Card className="p-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+            <Card className="p-3 sm:p-4">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
                 لوحة المفاتيح الرقمية
                 {selectedRowIndex !== null && (
-                  <span className="text-sm text-gray-500 mr-2">
+                  <span className="text-xs sm:text-sm text-gray-500 mr-2 block sm:inline">
                     (الصف {selectedRowIndex + 1})
                   </span>
                 )}
               </h3>
 
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1 sm:gap-2">
                 {KEYPAD_BUTTONS.flat().map((button, index) => (
                   <motion.button
                     key={index}
-                    className={`p-3 rounded-lg text-lg font-semibold transition-all duration-200 ${
+                    className={`p-2 sm:p-3 rounded-lg text-base sm:text-lg font-semibold transition-all duration-200 ${
                       button === "C" || button === "⌫"
                         ? "bg-gray-100 border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-200 text-gray-700"
                         : button.startsWith("+")
@@ -620,7 +622,7 @@ export default function InvoicePaymentPage() {
               </div>
 
               {selectedRowIndex === null && (
-                <p className="text-center text-gray-500 mt-3 text-sm">
+                <p className="text-center text-gray-500 mt-3 text-xs sm:text-sm">
                   اختر صف الدفع لاستخدام لوحة المفاتيح
                 </p>
               )}

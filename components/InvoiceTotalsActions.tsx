@@ -132,30 +132,31 @@ export default function InvoiceTotalsActions({
   const invoiceTitle = getInvoiceTitle();
 
   return (
-    <div className="p-3 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="p-2 sm:p-3 max-w-full mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* رأس الفاتورة المرتب */}
-      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-3 mb-4 border border-slate-200">
+      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 border border-slate-200">
         {/* الصف الأول: معلومات الفاتورة */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-4">
+              <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-4">
                 <span>فاتورة {invoiceTitle}</span>
-                <span className="text-slate-600 font-medium">
+                <span className="text-slate-600 font-medium text-sm sm:text-base">
                   #{invoiceNumber}
                 </span>
-                <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
+                <div className="flex items-center gap-1 text-sm text-slate-600 font-medium">
                   <CalendarIcon className="w-4 h-4 text-slate-500" />
                   {formattedDateTime}
-                </span>
+                </div>
               </h1>
             </div>
           </div>
 
           {/* البحث */}
-          <div className="flex items-center gap-2">
-            <Input
-              className="w-32 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+          <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
+            <input
+              className="flex-1 ps-2 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-0 focus:outline-none"
+              // placeholder="بحث..."
               placeholder="بحث برقم الفاتورة..."
               type="number"
               value={searchNumber}
@@ -172,15 +173,15 @@ export default function InvoiceTotalsActions({
         </div>
 
         {/* الصف الثاني: الأزرار والحالة */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           {/* الأزرار من اليسار لليمين */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1 ">
             <Button
               className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
               onClick={saveInvoice}
             >
               <CheckCircleIcon className="w-4 h-4 " />
-              حفظ
+              <span className="hidden sm:inline">حفظ</span>
             </Button>
 
             {!isEditing && canEdit && (
@@ -189,7 +190,7 @@ export default function InvoiceTotalsActions({
                 onClick={onEdit}
               >
                 <PencilIcon className="w-4 h-4 text-slate-500" />
-                تعديل
+                <span className="hidden sm:inline">تعديل</span>
               </Button>
             )}
 
@@ -197,29 +198,26 @@ export default function InvoiceTotalsActions({
               className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
               onClick={() => router.push(newInvoiceHref)}
             >
-              {/* <i className="bi bi-plus-circle me-1"></i> */}
               <PlusCircleIcon className="w-4 h-4 " />
-              جديد
+              <span className="hidden sm:inline">جديد</span>
             </Button>
 
             <Button
               className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
               onClick={previewInvoice}
             >
-              {/* <i className="bi bi-printer me-1"></i> */}
               <PrinterIcon className="w-4 h-4 " />
-              طباعة
+              <span className="hidden sm:inline">طباعة</span>
             </Button>
 
             {/* أزرار التنقل */}
-            {navigateToInvoice && (
-              <div className="flex items-center gap-1 mr-2">
+            {/* {navigateToInvoice && (
+              <div className="hidden md:flex items-center gap-1 mr-2">
                 <Button
                   className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
                   size="sm"
                   onClick={() => navigateToInvoice("first")}
                 >
-                  {/* <i className="bi bi-chevron-double-right text-xs"></i> */}
                   <ChevronDoubleRightIcon className="w-4 h-4 " />
                 </Button>
                 <Button
@@ -247,39 +245,41 @@ export default function InvoiceTotalsActions({
                   <ChevronDoubleLeftIcon className="w-4 h-4 " />
                 </Button>
               </div>
-            )}
+            )} */}
           </div>
 
           {/* حالة الفاتورة */}
-          <div className="flex items-center gap-3">
-            <Checkbox
-              color="success"
-              isDisabled={!isEditing}
-              isSelected={commit}
-              size="sm"
-              onValueChange={setCommit}
-            >
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1">
+              <Checkbox
+                color="success"
+                isDisabled={!isEditing}
+                isSelected={commit}
+                size="sm"
+                onValueChange={setCommit}
+              />
               <span className="text-xs text-slate-600">حُفظ</span>
-            </Checkbox>
+            </div>
 
-            <Checkbox
-              color="warning"
-              isDisabled={!isEditing}
-              isSelected={print}
-              size="sm"
-              onValueChange={setPrint}
-            >
+            <div className="flex items-center gap-1">
+              <Checkbox
+                color="warning"
+                isDisabled={!isEditing}
+                isSelected={print}
+                size="sm"
+                onValueChange={setPrint}
+              />
               <span className="text-xs text-slate-600">طُبع</span>
-            </Checkbox>
+            </div>
           </div>
         </div>
       </div>
       {children}
 
-      {/* شريط الإجماليات في سطر واحد */}
-      <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-200">
-        <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
-          <div className="flex items-center gap-2">
+      {/* شريط الإجماليات - محاذاة متجاوبة */}
+      <div className="mt-3 sm:mt-4 bg-gray-50 rounded-lg p-2 sm:p-3 border border-gray-200">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch justify-between gap-2 sm:gap-3 text-xs sm:text-sm">
+          <div className="flex-1 min-w-[150px] flex items-center justify-between p-1 sm:p-2">
             <span className="text-gray-700 font-medium">الإجمالي:</span>
             <span className="font-semibold text-blue-800 flex items-center gap-1">
               {Number(totalAmount).toFixed(fractions.frac)}
@@ -287,7 +287,7 @@ export default function InvoiceTotalsActions({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-[150px] flex items-center justify-between p-1 sm:p-2">
             <span className="text-gray-700 font-medium">إجمالي الخصم:</span>
             <span className="font-semibold text-red-800 flex items-center gap-1">
               {Number(totalDiscount).toFixed(fractions.frac)}
@@ -295,33 +295,15 @@ export default function InvoiceTotalsActions({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">
-              إجمالي الوزن المعاير:
-            </span>
+          <div className="flex-1 min-w-[150px] flex items-center justify-between p-1 sm:p-2">
+            <span className="text-gray-700 font-medium">الوزن المعاير:</span>
             <span className="font-semibold text-amber-800 flex items-center gap-1">
               {Number(totalGWeight).toFixed(fractions.frac2)}
-              <span className="text-xs text-amber-800">جم</span>
+              <span className="text-xs">جم</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">ضريبة القيمة:</span>
-            <span className="font-semibold text-green-800 flex items-center gap-1">
-              {Number(totalValueTax).toFixed(fractions.frac)}
-              <RiyalIcon color="currentColor" />
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">ضريبة الأجور:</span>
-            <span className="font-semibold text-green-800 flex items-center gap-1">
-              {Number(totalWagesTax).toFixed(fractions.frac)}
-              <RiyalIcon color="currentColor" />
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-[150px] flex items-center justify-between p-1 sm:p-2">
             <span className="text-gray-700 font-medium">الضريبة:</span>
             <span className="font-semibold text-green-800 flex items-center gap-1">
               {Number(taxAmount).toFixed(fractions.frac)}
@@ -329,10 +311,8 @@ export default function InvoiceTotalsActions({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-gray-800 font-semibold">
-              الإجمالي شامل الضريبة:
-            </span>
+          <div className="flex-1 min-w-[150px] flex items-center justify-between p-1 sm:p-2">
+            <span className="text-gray-800 font-semibold">الإجمالي:</span>
             <span className="font-bold text-blue-900 flex items-center gap-1">
               {Number(netAmount).toFixed(fractions.frac)}
               <RiyalIcon color="currentColor" />

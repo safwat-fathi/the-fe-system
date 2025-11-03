@@ -1,18 +1,20 @@
 "use client";
 
+import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { HTMLAttributes } from "react";
 
 interface BreadcrumbItem {
   name: string;
   href?: string;
 }
 
-interface BreadcrumbProps {
+type BreadcrumbProps = HTMLAttributes<HTMLBaseElement> & {
   items?: BreadcrumbItem[];
-}
+};
 
-const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
+const Breadcrumb = ({ items = [], className, ...props }: BreadcrumbProps) => {
   const pathname = usePathname();
 
   // Generate breadcrumbs from the current pathname if no items are provided
@@ -37,7 +39,11 @@ const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
   if (breadcrumbs.length === 0) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="flex mb-4">
+    <nav
+      aria-label="Breadcrumb"
+      className={clsx("flex my-4 sm:ps-2 md:ps-0", className)}
+      {...props}
+    >
       <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
         <li className="inline-flex items-center">
           <Link
