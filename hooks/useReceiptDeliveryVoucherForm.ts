@@ -669,12 +669,20 @@ export const useReceiptDeliveryVoucherForm = ({
 
       if (result.success && result.data) {
         const realId = result.data.id;
+        const realVouchId = result.data.vouch_id;
+
+        console.log("Voucher saved successfully:", {
+          realId,
+          realVouchId,
+          resultData: result.data,
+          vouchType,
+        });
 
         setVoucher((prev) => ({
           ...prev,
           commit: true,
           id: realId,
-          vouch_id: result.data.vouch_id || voucher.vouch_id,
+          vouch_id: realVouchId || voucher.vouch_id,
         }));
 
         toast.success(result.message);
@@ -682,9 +690,20 @@ export const useReceiptDeliveryVoucherForm = ({
         const basePath =
           vouchType === 111 ? "/forms/receipt" : "/forms/delivery";
 
-        if (realId) {
-          router.push(`${basePath}/${realId}?mode=preview`);
+        // استخدام id أولاً، وإذا لم يكن موجوداً، استخدام vouch_id
+        const targetId = realId || realVouchId;
+        
+        console.log("Redirecting to:", `${basePath}/${targetId}?mode=preview`);
+        
+        if (targetId) {
+          // إضافة delay صغير للتأكد من أن البيانات تم حفظها في قاعدة البيانات
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          
+          router.push(`${basePath}/${targetId}?mode=preview`);
           router.refresh(); // إجبار Next.js على إعادة جلب البيانات من الخادم
+        } else {
+          console.error("No ID returned from save action:", result.data);
+          toast.error("تم الحفظ ولكن لم يتم العثور على معرف السند");
         }
       } else {
         toast.error(result.message || "حدث خطأ أثناء الحفظ");

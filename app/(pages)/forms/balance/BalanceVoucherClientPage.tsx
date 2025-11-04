@@ -110,14 +110,14 @@ export default function BalanceVoucherClientPage({
   }
 
   return (
-    <div className="p-3 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="p-2 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header - رأس القيد مع الأزرار */}
-      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-3 mb-4 border border-slate-200">
+      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 mb-2 border border-slate-200">
         {/* الصف الأول: معلومات القيد */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-4">
+              <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <span>
                   {voucherTypes.find((t) => t.id === voucher.vouch_type)
                     ?.name || "قيد افتتاحي"}
@@ -142,9 +142,9 @@ export default function BalanceVoucherClientPage({
         </div>
 
         {/* الصف الثاني: الأزرار والحالة */}
-        <div className="flex items-center justify-between">
-          {/* الأزرار من اليسار لليمين */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mt-1">
+            {/* الأزرار من اليسار لليمين */}
+            <div className="flex items-center gap-2">
             <button
               className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm disabled:opacity-50"
               disabled={isLoading || !isEditing}
@@ -250,9 +250,9 @@ export default function BalanceVoucherClientPage({
       </div>
 
       {/* Form - نموذج بيانات القيد */}
-      <div className="bg-white rounded-lg border border-slate-200 mb-4">
-        <div className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="bg-white rounded-lg border border-slate-200 mb-2">
+        <div className="p-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {/* رقم المرجع */}
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-slate-700">
@@ -318,9 +318,9 @@ export default function BalanceVoucherClientPage({
       </div>
 
       {/* Details Table - جدول تفاصيل القيد */}
-      <div className="bg-white rounded-lg border border-slate-200 mb-4">
-        <div className="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-slate-800">تفاصيل القيد</h3>
+      <div className="bg-white rounded-lg border border-slate-200 mb-2">
+        <div className="p-1.5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+          <h3 className="text-sm font-semibold text-slate-800">تفاصيل القيد</h3>
           <div className="flex items-center gap-2">
             <span
               className={`text-xs px-2 py-1 rounded-full font-bold ${
@@ -337,8 +337,8 @@ export default function BalanceVoucherClientPage({
           </div>
         </div>
 
-        <div className="p-2">
-          <div className="flex justify-between mb-2">
+          <div className="p-1">
+            <div className="flex justify-between mb-1">
             <button
               className="btn"
               disabled={!isEditing}
@@ -348,8 +348,8 @@ export default function BalanceVoucherClientPage({
               + صف
             </button>
           </div>
-          <div className="overflow-x-auto overflow-y-auto mb-3 max-w-full max-h-[600px]">
-            <table className="min-w-[1400px] border text-sm text-center table-fixed">
+          <div className="overflow-x-auto overflow-y-auto mb-1 max-w-full max-h-[600px]">
+            <table className="min-w-[1400px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
                   <th
@@ -818,8 +818,8 @@ export default function BalanceVoucherClientPage({
       </div>
 
       {/* Totals - شريط الإجماليات */}
-      <div className="mt-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
-        <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
+      <div className="mt-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <span className="text-gray-700 font-medium">إجمالي المدين:</span>
             <span className="font-semibold text-emerald-700 flex items-center gap-1">

@@ -141,14 +141,14 @@ export default function VoucherClientPage({
 
   return (
     <>
-      <div className="p-3 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="p-2 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
         {/* رأس القيد المرتب مثل الفواتير */}
-        <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-3 mb-4 border border-slate-200">
+        <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 mb-2 border border-slate-200">
           {/* الصف الأول: معلومات القيد */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-4">
+                <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                   <span>
                     {voucherTypes.find(
                       (t) => (t.Id || t.id) === voucher.vouch_type,
@@ -377,12 +377,12 @@ export default function VoucherClientPage({
         </div>
 
         {/* نموذج بيانات القيد */}
-        <div className="bg-white rounded-lg border border-slate-200 mb-4">
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg border border-slate-200 mb-2">
+          <div className="p-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
               {/* رقم المرجع */}
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-slate-700">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-medium text-slate-700">
                   رقم المرجع
                 </label>
                 <input
@@ -398,8 +398,8 @@ export default function VoucherClientPage({
               </div>
 
               {/* تاريخ ووقت القيد */}
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-slate-700">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-medium text-slate-700">
                   تاريخ ووقت القيد
                 </label>
                 <input
@@ -423,8 +423,8 @@ export default function VoucherClientPage({
               </div>
 
               {/* حالة القيد */}
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-slate-700">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-medium text-slate-700">
                   حالة القيد
                 </label>
                 <select
@@ -473,8 +473,8 @@ export default function VoucherClientPage({
               </div>
 
               {/* نوع القيد */}
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-slate-700">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-medium text-slate-700">
                   نوع القيد
                 </label>
                 <select
@@ -509,8 +509,8 @@ export default function VoucherClientPage({
               </div>
 
               {/* البيان */}
-              <div className="flex flex-col gap-1 lg:col-span-2">
-                <label className="text-sm font-medium text-slate-700">
+              <div className="flex flex-col gap-0.5 lg:col-span-2">
+                <label className="text-xs font-medium text-slate-700">
                   البيان
                 </label>
                 <input
@@ -532,9 +532,9 @@ export default function VoucherClientPage({
         </div>
 
         {/* جدول تفاصيل القيد */}
-        <div className="bg-white rounded-lg border border-slate-200 mb-4">
-          <div className="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-slate-800">
+        <div className="bg-white rounded-lg border border-slate-200 mb-2">
+          <div className="p-1.5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+            <h3 className="text-sm font-semibold text-slate-800">
               تفاصيل القيد
             </h3>
             <div className="flex items-center gap-2">
@@ -560,8 +560,8 @@ export default function VoucherClientPage({
             </div>
           </div>
 
-          <div className="p-2">
-            <div className="flex justify-between mb-2">
+          <div className="p-1">
+            <div className="flex justify-between mb-1">
               <button
                 className="btn"
                 disabled={!isEditing}
@@ -576,13 +576,13 @@ export default function VoucherClientPage({
               details.some(
                 (detail) => !detail.acc_id || detail.acc_id === 0,
               ) && (
-                <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                <div className="mb-1 p-1.5 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
                   ⚠️ يرجى اختيار حساب لجميع الصفوف قبل الحفظ
                 </div>
               )}
 
-            <div className="overflow-x-auto mb-3 max-w-full">
-              <table className="min-w-[1200px] border text-sm text-center table-fixed">
+            <div className="overflow-x-auto mb-1 max-w-full">
+              <table className="min-w-[1200px] border text-xs text-center table-fixed">
                 <thead className="bg-gray-100 text-xs font-bold">
                   <tr>
                     <th
@@ -949,8 +949,8 @@ export default function VoucherClientPage({
         </div>
 
         {/* شريط الإجماليات */}
-        <div className="mt-1 bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
+        <div className="mt-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
               <span className="text-gray-700 font-medium">إجمالي المدين:</span>
               <span className="font-semibold text-emerald-700 flex items-center gap-1">

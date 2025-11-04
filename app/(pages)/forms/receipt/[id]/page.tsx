@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { cache } from "react";
 
 import ReceiptVoucherClientPage from "../ReceiptVoucherClientPage";
 
@@ -14,38 +13,46 @@ export const metadata: Metadata = {
   description: "عرض وتعديل سند الاستلام",
 };
 
-const getVoucherById = cache(async (voucherId: number) => {
+const getVoucherById = async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
       return null;
     }
 
-    const vouchersResponse = await voucherService.getAll({
+    console.log("getVoucherById called with:", voucherId);
+
+    // محاولة البحث أولاً مع xvouch_type محددة
+    let voucher = await voucherService.getVoucherById(voucherId, {
       xvouch_type: "111", // سند الاستلام فقط
     });
 
-    if (!vouchersResponse.success || !vouchersResponse.data) {
-      return null;
+    console.log("getVoucherById with xvouch_type=111 result:", voucher);
+
+    // إذا لم يتم العثور عليه، محاولة البحث بدون تحديد نوع السند (لأن السند الجديد قد لا يكون مفهرساً بعد)
+    if (!voucher) {
+      console.log("Not found with xvouch_type=111, trying without type filter...");
+      voucher = await voucherService.getVoucherById(voucherId, {
+        xvouch_type: "0", // البحث في جميع الأنواع
+      });
+      console.log("getVoucherById without type filter result:", voucher);
     }
 
-    const vouchers = Array.isArray(vouchersResponse.data)
-      ? vouchersResponse.data
-      : [];
+    // التحقق من أن السند من نوع 111 (سند الاستلام)
+    if (voucher && voucher.vouch_type === 111) {
+      console.log("Found voucher with type 111:", voucher);
+      return voucher;
+    }
 
-    const foundVoucher = vouchers.find(
-      (v: any) => v.id === voucherId || v.vouch_id === voucherId,
-    );
-
-    return foundVoucher;
+    console.log("Voucher not found or wrong type");
+    return null;
   } catch (error) {
     console.error("Error fetching voucher:", error);
 
     return null;
   }
-});
+};
 
-const getGoldDetails = cache(
-  async (voucherId: number, branchId?: number | string) => {
+const getGoldDetails = async (voucherId: number, branchId?: number | string) => {
     try {
       if (!voucherId || isNaN(voucherId)) {
         return [];
@@ -72,11 +79,9 @@ const getGoldDetails = cache(
 
       return [];
     }
-  },
-);
+};
 
-const getVoucherBoxes = cache(
-  async (voucherId: number, branchId?: number | string) => {
+const getVoucherBoxes = async (voucherId: number, branchId?: number | string) => {
     try {
       if (!voucherId || isNaN(voucherId)) {
         return [];
@@ -100,8 +105,7 @@ const getVoucherBoxes = cache(
 
       return [];
     }
-  },
-);
+};
 
 export default async function ReceiptVoucherEditPage({
   params,
@@ -125,19 +129,70 @@ export default async function ReceiptVoucherEditPage({
     notFound();
   }
 
-  const [targetVoucher, formData] = await Promise.all([
-    getVoucherById(voucherId),
-    voucherFormDataService.getVoucherFormData(),
-  ]);
-
+  // إعادة التحقق من البيانات بعد الحفظ
+  console.log("Fetching voucher with ID:", voucherId);
+  
+  let targetVoucher = await getVoucherById(voucherId);
+  console.log("First attempt result:", targetVoucher ? "Found" : "Not found");
+  
+  // إذا لم يتم العثور على السند، إعادة المحاولة بدون cache
   if (!targetVoucher) {
-    notFound();
+    // محاولة البحث بدون تحديد نوع السند
+    console.log("Retrying with voucherService.getVoucherById without type filter...");
+    targetVoucher = await voucherService.getVoucherById(voucherId, {
+      xvouch_type: "0", // البحث في جميع الأنواع
+    });
+    console.log("Second attempt result:", targetVoucher ? "Found" : "Not found");
+    
+    // إذا لم يتم العثور عليه، محاولة البحث في جميع السندات
+    if (!targetVoucher || targetVoucher.vouch_type !== 111) {
+      console.log("Trying getAll with xvouch_type: 111...");
+      const allVouchersResponse = await voucherService.getAll({
+        xvouch_type: "111",
+        page: "1",
+      });
+      
+      if (allVouchersResponse.success && allVouchersResponse.data) {
+        const vouchers = Array.isArray(allVouchersResponse.data)
+          ? allVouchersResponse.data
+          : [];
+        
+        console.log(`Found ${vouchers.length} vouchers, searching for ID: ${voucherId}`);
+        
+        const foundVoucher = vouchers.find(
+          (v: any) => {
+            const matchesId = v.id && Number(v.id) === voucherId;
+            const matchesVouchId = v.vouch_id && Number(v.vouch_id) === voucherId;
+            console.log(`Voucher ${v.id || v.vouch_id}: id=${matchesId}, vouch_id=${matchesVouchId}, type=${v.vouch_type}`);
+            return matchesId || matchesVouchId;
+          }
+        );
+        
+        if (foundVoucher && foundVoucher.vouch_type === 111) {
+          console.log("Found voucher in getAll response:", foundVoucher);
+          targetVoucher = foundVoucher;
+        } else {
+          console.log("Voucher not found in getAll response");
+        }
+      }
+    }
+    
+    if (!targetVoucher || targetVoucher.vouch_type !== 111) {
+      console.error("Voucher not found after all attempts. ID:", voucherId);
+      notFound();
+    }
   }
+  
+  console.log("Final targetVoucher:", targetVoucher);
+
+  const formData = await voucherFormDataService.getVoucherFormData();
 
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
+  const voucherIdForDetails = targetVoucher.id || voucherId;
+  
   const [goldDetailsData, boxesData] = await Promise.all([
-    getGoldDetails(targetVoucher.id, branchId),
-    getVoucherBoxes(targetVoucher.id, branchId),
+    getGoldDetails(voucherIdForDetails, branchId),
+    getVoucherBoxes(voucherIdForDetails, branchId),
   ]);
 
   const goldDetails: GVoucherDetail[] = goldDetailsData.map((detail: any) => {
@@ -153,7 +208,7 @@ export default async function ReceiptVoucherEditPage({
 
     return {
       id: detail.id || 0,
-      vouch_id: targetVoucher.vouch_id || 0,
+      vouch_id: targetVoucher?.vouch_id || 0,
       item_id: detail.item_id || detail.item || 0,
       item_code: item?.item_code || detail.item_code || "",
       item_name: item?.item_name || detail.item_name || "",
@@ -259,7 +314,7 @@ export default async function ReceiptVoucherEditPage({
 
     return {
       id: boxData.id || 0,
-      vouch_id: boxData.vouch || boxData.vouch_id || targetVoucher.id || 0,
+      vouch_id: boxData.vouch || boxData.vouch_id || targetVoucher?.id || 0,
       box_id: boxId,
       box: boxObject,
       amount: parseFloat(String(boxData.vouch_amt || boxData.amount || 0)),
@@ -274,21 +329,21 @@ export default async function ReceiptVoucherEditPage({
 
   const formattedVoucher: Voucher = {
     ...targetVoucher,
-    vouch_date: targetVoucher.vouch_date || new Date().toISOString(),
-    cr_date: targetVoucher.cr_date || new Date().toISOString(),
-    vouch_id: targetVoucher.vouch_id || 0,
-    ref_no: targetVoucher.ref_no || "",
-    vouch_notes: targetVoucher.vouch_notes || "",
-    vouch_status: targetVoucher.vouch_status || 1,
-    pay_type: targetVoucher.pay_type || 1,
-    commit: targetVoucher.commit || false,
-    post: targetVoucher.post || false,
-    handling: (targetVoucher as any).handling || "",
-    print: targetVoucher.print || false,
+    vouch_date: targetVoucher?.vouch_date || new Date().toISOString(),
+    cr_date: targetVoucher?.cr_date || new Date().toISOString(),
+    vouch_id: targetVoucher?.vouch_id || 0,
+    ref_no: targetVoucher?.ref_no || "",
+    vouch_notes: targetVoucher?.vouch_notes || "",
+    vouch_status: targetVoucher?.vouch_status || 1,
+    pay_type: targetVoucher?.pay_type || 1,
+    commit: targetVoucher?.commit || false,
+    post: targetVoucher?.post || false,
+    handling: (targetVoucher as any)?.handling || "",
+    print: targetVoucher?.print || false,
     // معالجة cust - قد يكون cust أو cust_id في API
     cust_id:
-      targetVoucher.cust_id ||
-      (targetVoucher as any).cust ||
+      targetVoucher?.cust_id ||
+      (targetVoucher as any)?.cust ||
       undefined,
   };
 
@@ -296,12 +351,11 @@ export default async function ReceiptVoucherEditPage({
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "القيود", href: "/forms/voucher?type=adjustment" },
           { name: "سند استلام", href: "/forms/receipt" },
           {
             name:
               formMode === "edit"
-                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
+                ? `تعديل ${targetVoucher?.vouch_id || targetVoucher?.id || ""}`
                 : "معاينة",
           },
         ]}
@@ -319,7 +373,7 @@ export default async function ReceiptVoucherEditPage({
         vouchType={111}
         voucherBoxes={boxes}
         voucherData={formattedVoucher}
-        voucherRecordId={targetVoucher.id}
+        voucherRecordId={targetVoucher?.id || voucherId}
         voucherTypes={formData.voucherTypes}
       />
     </div>
