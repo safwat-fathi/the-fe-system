@@ -84,9 +84,9 @@ export default function DynamicSidebar({
           <div className="mt-6">
             {menuTree.map((item) => (
               <MenuItem
+                key={item.id}
                 isOpen={isSidebarOpen}
                 item={item}
-                key={item.id}
                 pathname={pathname}
               />
             ))}

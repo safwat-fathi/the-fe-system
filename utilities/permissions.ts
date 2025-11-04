@@ -60,6 +60,7 @@ export const mergePermissions = (
   userPermissions: Record<string, (PermissionType | string)[]>,
 ): MergedPermissions => {
   const merged: MergedPermissions = {};
+
   Object.entries(groupPermissions).forEach(([key, value]) => {
     merged[key] = value as string[];
   });

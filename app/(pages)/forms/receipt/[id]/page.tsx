@@ -285,7 +285,11 @@ export default async function ReceiptVoucherEditPage({
     post: targetVoucher.post || false,
     handling: (targetVoucher as any).handling || "",
     print: targetVoucher.print || false,
-    cust_id: targetVoucher.cust_id || undefined,
+    // معالجة cust - قد يكون cust أو cust_id في API
+    cust_id:
+      targetVoucher.cust_id ||
+      (targetVoucher as any).cust ||
+      undefined,
   };
 
   return (

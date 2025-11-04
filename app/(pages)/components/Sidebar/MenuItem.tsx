@@ -112,9 +112,9 @@ export default function MenuItem({
             >
               {item.children?.map((child) => (
                 <MenuItem
+                  key={child.id}
                   isOpen={isOpen}
                   item={child}
-                  key={child.id}
                   pathname={pathname}
                 />
               ))}

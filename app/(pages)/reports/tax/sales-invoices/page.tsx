@@ -1,7 +1,8 @@
 import { Metadata } from "next";
-import Breadcrumb from "@/components/Breadcrumb";
 import { Card, CardBody } from "@heroui/react";
 import { LockClosedIcon } from "@heroicons/react/24/outline";
+
+import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "تقرير فواتير المبيعات الضريبية - NafeesWeb",

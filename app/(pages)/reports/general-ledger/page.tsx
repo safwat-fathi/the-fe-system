@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import GeneralLedgerClient from "./components/GeneralLedgerClient";
+
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {

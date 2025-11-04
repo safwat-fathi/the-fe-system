@@ -2,8 +2,8 @@ import { Suspense } from "react";
 
 import InvoiceClient from "./components/InvoiceClient";
 import InvoicesHeader from "./components/InvoicesHeader";
-import Breadcrumb from "@/components/Breadcrumb";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import invoiceService, {
   GetAllInvoicesParams,
 } from "@/services/api/invoice.service";

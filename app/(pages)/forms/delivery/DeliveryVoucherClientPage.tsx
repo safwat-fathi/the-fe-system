@@ -9,12 +9,13 @@ import toast from "react-hot-toast";
 
 const AsyncPaginateCreatableSelect = withAsyncPaginate(CreatableSelect);
 
+import GLTransactionModal from "../components/GLTransactionModal";
+
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { useReceiptDeliveryVoucherForm } from "@/hooks/useReceiptDeliveryVoucherForm";
 import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
-import GLTransactionModal from "../components/GLTransactionModal";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -54,11 +55,6 @@ export default function DeliveryVoucherClientPage({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  // State للمودال والقيد المحاسبي
-  const [isGLModalOpen, setIsGLModalOpen] = useState(false);
-  const [glTransactions, setGlTransactions] = useState<GLTransaction[]>([]);
-  const [loadingGLTransactions, setLoadingGLTransactions] = useState(false);
 
   // Use the hook for all state management and business logic
   const {
@@ -314,8 +310,8 @@ export default function DeliveryVoucherClientPage({
             <button
               className="h-7 px-3 text-xs bg-indigo-600 text-white hover:bg-indigo-700 border border-indigo-600 rounded-md shadow-sm disabled:opacity-50"
               disabled={!voucher.vouch_id || voucher.vouch_id <= 0}
-              onClick={handleViewGLTransactions}
               title="عرض القيد المحاسبي"
+              onClick={handleViewGLTransactions}
             >
               <span className="flex items-center gap-1">
                 <i className="bi bi-list-check w-4 h-4 me-1" />
@@ -1195,13 +1191,13 @@ export default function DeliveryVoucherClientPage({
 
       {/* مودال عرض القيد المحاسبي */}
       <GLTransactionModal
+        getAccountName={getAccountName}
         isOpen={isGLModalOpen}
-        onClose={() => setIsGLModalOpen(false)}
         loading={loadingGLTransactions}
+        refNo={voucher.ref_no}
         transactions={glTransactions}
         voucherId={voucher.vouch_id || 0}
-        refNo={voucher.ref_no}
-        getAccountName={getAccountName}
+        onClose={() => setIsGLModalOpen(false)}
       />
     </div>
   );

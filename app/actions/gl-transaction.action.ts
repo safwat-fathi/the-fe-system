@@ -1,8 +1,15 @@
 "use server";
 
-import { glTransactionService, voucherService, genericService } from "@/services/api";
 import { revalidatePath } from "next/cache";
-import { getCurrentUsername, createGLTransactionRecords } from "./voucher.action";
+
+import { createGLTransactionRecords } from "./voucher.action";
+import { getCurrentUsername } from "./voucher/helpers/common";
+
+import {
+  glTransactionService,
+  voucherService,
+  genericService,
+} from "@/services/api";
 
 /**
  * حذف جميع الحركات من جدول gl_transaction
@@ -12,19 +19,26 @@ export async function deleteAllGLTransactions() {
     // جلب جميع الحركات من gl_transaction
     // استخدام genericService بدلاً من glTransactionService مباشرة
     let response;
-    
+
     try {
       // المحاولة الأولى: استخدام genericService مع gl_transaction_list
-      const genericResponse = await genericService.getTableData("gl_transaction_list", {
-        xcom_id: "1",
-        xyear_id: "0",
-        xfrom_date: "0",
-        xto_date: "0",
-        xtrans_id: "0", // 0 = جميع الحركات
-        xtrans_type: "0", // 0 = جميع الأنواع
-      });
+      const genericResponse = await genericService.getTableData(
+        "gl_transaction_list",
+        {
+          xcom_id: "1",
+          xyear_id: "0",
+          xfrom_date: "0",
+          xto_date: "0",
+          xtrans_id: "0", // 0 = جميع الحركات
+          xtrans_type: "0", // 0 = جميع الأنواع
+        },
+      );
 
-      if (genericResponse.success && genericResponse.data && Array.isArray(genericResponse.data)) {
+      if (
+        genericResponse.success &&
+        genericResponse.data &&
+        Array.isArray(genericResponse.data)
+      ) {
         response = {
           success: true,
           data: genericResponse.data,
@@ -53,7 +67,7 @@ export async function deleteAllGLTransactions() {
     }
 
     const transactions = response.data || [];
-    
+
     if (!Array.isArray(transactions)) {
       return {
         success: false,
@@ -68,7 +82,7 @@ export async function deleteAllGLTransactions() {
       // إرجاع رسالة تشخيصية
       return {
         success: false,
-        message: `لا توجد حركات للحذف. الاستجابة: success=${response.success}, data type=${typeof response.data}, data length=${Array.isArray(response.data) ? response.data.length : 'N/A'}`,
+        message: `لا توجد حركات للحذف. الاستجابة: success=${response.success}, data type=${typeof response.data}, data length=${Array.isArray(response.data) ? response.data.length : "N/A"}`,
         deletedCount: 0,
         failedCount: 0,
         totalFound: 0,
@@ -83,10 +97,12 @@ export async function deleteAllGLTransactions() {
     for (const transaction of transactions) {
       // التحقق من وجود id
       const transactionId = transaction.id;
-      
+
       if (!transactionId) {
         failedCount++;
-        errors.push(`حركة بدون id: ${JSON.stringify(transaction).substring(0, 50)}`);
+        errors.push(
+          `حركة بدون id: ${JSON.stringify(transaction).substring(0, 50)}`,
+        );
         continue;
       }
 
@@ -98,14 +114,19 @@ export async function deleteAllGLTransactions() {
 
         // التحقق من الاستجابة
         if (deleteResponse) {
-          if (deleteResponse.success === true || deleteResponse.success === undefined) {
+          if (
+            deleteResponse.success === true ||
+            deleteResponse.success === undefined
+          ) {
             // إذا كانت success true أو undefined، نعتبرها نجاح
             deletedCount++;
           } else {
             failedCount++;
-            const errorMsg = (deleteResponse as any)?.message || 
-                           (deleteResponse as any)?.errors?.[0] || 
-                           "خطأ غير معروف";
+            const errorMsg =
+              (deleteResponse as any)?.message ||
+              (deleteResponse as any)?.errors?.[0] ||
+              "خطأ غير معروف";
+
             errors.push(`فشل حذف الحركة ${transactionId}: ${errorMsg}`);
           }
         } else {
@@ -115,6 +136,7 @@ export async function deleteAllGLTransactions() {
       } catch (error) {
         failedCount++;
         const errorMsg = error instanceof Error ? error.message : String(error);
+
         errors.push(`خطأ في حذف الحركة ${transactionId}: ${errorMsg}`);
       }
     }
@@ -188,30 +210,32 @@ export async function reTransferAllVouchers() {
               xcom_id: 1,
             });
 
-            const details = detailsResponse.success && detailsResponse.data
-              ? Array.isArray(detailsResponse.data)
-                ? detailsResponse.data
-                : []
-              : [];
+            const details =
+              detailsResponse.success && detailsResponse.data
+                ? Array.isArray(detailsResponse.data)
+                  ? detailsResponse.data
+                  : []
+                : [];
 
             // جلب الصناديق (إذا كان السند يحتوي صناديق)
             let boxes: any[] = [];
+
             if ([1, 2, 4, 5, 111, 222].includes(voucher.vouch_type)) {
               try {
                 const boxesResponse = await voucherService.getBoxes(voucherId, {
                   xcom_id: 1,
                 });
 
-                boxes = boxesResponse.success && boxesResponse.data
-                  ? Array.isArray(boxesResponse.data)
-                    ? boxesResponse.data
-                    : []
-                  : [];
+                boxes =
+                  boxesResponse.success && boxesResponse.data
+                    ? Array.isArray(boxesResponse.data)
+                      ? boxesResponse.data
+                      : []
+                    : [];
               } catch (error) {
                 // تجاهل الخطأ في جلب الصناديق
               }
             }
-
 
             // تحويل التفاصيل إلى الصيغة المطلوبة
             const mappedDetails = details.map((detail: any) => ({
@@ -223,7 +247,8 @@ export async function reTransferAllVouchers() {
               debit_g: detail.debit_g || 0,
               credit_g: detail.credit_g || 0,
               cost_id: detail.cost_id || detail.cost || null,
-              vouch_notes: detail.notes || detail.vouch_notes || detail.note || "",
+              vouch_notes:
+                detail.notes || detail.vouch_notes || detail.note || "",
             }));
 
             // تحويل الصناديق إلى الصيغة المطلوبة
@@ -242,7 +267,8 @@ export async function reTransferAllVouchers() {
                 vouch_date: voucher.vouch_date,
                 ref_no: voucher.ref_no || "",
                 vouch_notes: voucher.vouch_notes || "",
-                cust_id: (voucher as any).cust_id || (voucher as any).cust || null,
+                cust_id:
+                  (voucher as any).cust_id || (voucher as any).cust || null,
               },
               mappedDetails,
               voucher.vouch_id,
@@ -282,8 +308,8 @@ export async function reTransferAllVouchers() {
   } catch (error) {
     return {
       success: false,
-      message: error instanceof Error ? error.message : "حدث خطأ أثناء إعادة الترحيل",
+      message:
+        error instanceof Error ? error.message : "حدث خطأ أثناء إعادة الترحيل",
     };
   }
 }
-

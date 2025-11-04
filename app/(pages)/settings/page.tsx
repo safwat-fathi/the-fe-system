@@ -11,14 +11,15 @@ import {
   Divider,
 } from "@heroui/react";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import { API_ENDPOINTS, apiFetch } from "@/utilities/api";
 import homeService from "@/services/api/home.service";
 import {
   deleteAllGLTransactions,
   reTransferAllVouchers,
 } from "@/app/actions/gl-transaction.action";
-import { useRouter } from "next/navigation";
 
 interface HomeSettings {
   [key: string]: any;
@@ -36,12 +37,6 @@ const SECTIONS = [
     label: "إعدادات الحسابات",
     icon: "💰",
     description: "السنة المالية والحسابات والضرائب",
-  },
-  {
-    id: "zatca",
-    label: "ربط هيئة الزكاة",
-    icon: "🔗",
-    description: "إعدادات الربط الإلكتروني",
   },
   {
     id: "database",
@@ -231,21 +226,29 @@ export default function SettingsPage() {
     JSON.stringify(settings) !== JSON.stringify(originalSettings);
 
   const handleDeleteAllGLTransactions = async () => {
-    if (!confirm("⚠️ هل أنت متأكد من حذف جميع الحركات من جدول gl_transaction؟\n\nهذه العملية لا يمكن التراجع عنها!")) {
+    if (
+      !confirm(
+        "⚠️ هل أنت متأكد من حذف جميع الحركات من جدول gl_transaction؟\n\nهذه العملية لا يمكن التراجع عنها!",
+      )
+    ) {
       return;
     }
 
     setIsDeleting(true);
     try {
       const result = await deleteAllGLTransactions();
+
       if (result.success) {
         const message = result.message || "تم حذف جميع الحركات بنجاح";
+
         toast.success(message);
-        
+
         // عرض الأخطاء إن وجدت
         if (result.errors && result.errors.length > 0) {
           console.warn("أخطاء أثناء الحذف:", result.errors);
-          toast.error(`تم الحذف مع ${result.errors.length} خطأ. تحقق من console.`);
+          toast.error(
+            `تم الحذف مع ${result.errors.length} خطأ. تحقق من console.`,
+          );
         }
       } else {
         toast.error(result.message || "فشل حذف الحركات");
@@ -259,13 +262,18 @@ export default function SettingsPage() {
   };
 
   const handleReTransferAll = async () => {
-    if (!confirm("⚠️ هل أنت متأكد من إعادة ترحيل جميع الحركات؟\n\nهذه العملية قد تستغرق وقتاً طويلاً!")) {
+    if (
+      !confirm(
+        "⚠️ هل أنت متأكد من إعادة ترحيل جميع الحركات؟\n\nهذه العملية قد تستغرق وقتاً طويلاً!",
+      )
+    ) {
       return;
     }
 
     setIsReTransferring(true);
     try {
       const result = await reTransferAllVouchers();
+
       if (result.success) {
         toast.success(result.message || "تم إعادة ترحيل جميع الحركات بنجاح");
         if (result.errors && result.errors.length > 0) {
@@ -555,8 +563,6 @@ export default function SettingsPage() {
         return GENERAL_FIELDS;
       case "accounts":
         return ACCOUNT_FIELDS;
-      case "zatca":
-        return ZATCA_FIELDS;
       default:
         return GENERAL_FIELDS;
     }
@@ -564,6 +570,7 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 font-cairo">
+      <Breadcrumb />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">إعدادات النظام</h1>
         {hasChanges && (
@@ -616,7 +623,8 @@ export default function SettingsPage() {
                       تحذير: أدوات تجريبية
                     </h3>
                     <p className="text-sm text-yellow-700">
-                      هذه الأدوات مخصصة للاختبار فقط. استخدمها بحذر وتأكد من عمل نسخة احتياطية من قاعدة البيانات قبل الاستخدام.
+                      هذه الأدوات مخصصة للاختبار فقط. استخدمها بحذر وتأكد من عمل
+                      نسخة احتياطية من قاعدة البيانات قبل الاستخدام.
                     </p>
                   </div>
                 </div>
@@ -629,16 +637,17 @@ export default function SettingsPage() {
                         حذف جميع الحركات
                       </h3>
                       <p className="text-sm text-gray-600 mb-4">
-                        يحذف جميع السجلات من جدول gl_transaction. هذه العملية لا يمكن التراجع عنها.
+                        يحذف جميع السجلات من جدول gl_transaction. هذه العملية لا
+                        يمكن التراجع عنها.
                       </p>
                     </div>
                     <Button
+                      className="w-full"
                       color="danger"
-                      size="lg"
                       isDisabled={isDeleting || isReTransferring}
                       isLoading={isDeleting}
+                      size="lg"
                       onPress={handleDeleteAllGLTransactions}
-                      className="w-full"
                     >
                       {isDeleting ? "جاري الحذف..." : "🗑️ حذف جميع الحركات"}
                     </Button>
@@ -651,18 +660,21 @@ export default function SettingsPage() {
                         إعادة ترحيل جميع الحركات
                       </h3>
                       <p className="text-sm text-gray-600 mb-4">
-                        يجمع جميع الحركات من جميع القيود والسندات ويرحلها من جديد إلى جدول gl_transaction.
+                        يجمع جميع الحركات من جميع القيود والسندات ويرحلها من
+                        جديد إلى جدول gl_transaction.
                       </p>
                     </div>
                     <Button
+                      className="w-full"
                       color="primary"
-                      size="lg"
                       isDisabled={isDeleting || isReTransferring}
                       isLoading={isReTransferring}
+                      size="lg"
                       onPress={handleReTransferAll}
-                      className="w-full"
                     >
-                      {isReTransferring ? "جاري الترحيل..." : "🔄 إعادة ترحيل جميع الحركات"}
+                      {isReTransferring
+                        ? "جاري الترحيل..."
+                        : "🔄 إعادة ترحيل جميع الحركات"}
                     </Button>
                   </CardBody>
                 </Card>
@@ -673,14 +685,15 @@ export default function SettingsPage() {
                         عرض جميع الحركات
                       </h3>
                       <p className="text-sm text-gray-600 mb-4">
-                        عرض جميع القيود المحاسبية مع إمكانية الانتقال للحركة الأصلية والتحقق من التوازن.
+                        عرض جميع القيود المحاسبية مع إمكانية الانتقال للحركة
+                        الأصلية والتحقق من التوازن.
                       </p>
                     </div>
                     <Button
+                      className="w-full"
                       color="success"
                       size="lg"
                       onPress={() => router.push("/settings/gl-transactions")}
-                      className="w-full"
                     >
                       <i className="bi bi-list-check w-4 h-4 me-1" />
                       عرض القيود المحاسبية

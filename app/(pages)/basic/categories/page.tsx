@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import CategoriesClient from "./components/CategoriesClient";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import categoryService from "@/services/api/category.service";
 import helperService from "@/services/api/helper.service";
 
@@ -19,6 +20,7 @@ export default async function CategoriesPage() {
 
   return (
     <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <h1 className="responsive-text-xl font-bold mb-6">الفئات</h1>
 
       <CategoriesClient

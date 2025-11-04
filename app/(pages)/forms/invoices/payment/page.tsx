@@ -6,6 +6,7 @@ import { Button, Input, Select, SelectItem, Divider } from "@heroui/react";
 import { motion } from "framer-motion";
 
 import Card from "@/components/Card";
+import Breadcrumb from "@/components/Breadcrumb";
 import { API_ENDPOINTS } from "@/utilities/api";
 import useFractions from "@/utilities/useFractions";
 import { toast } from "@/utilities/toast";
@@ -335,6 +336,7 @@ export default function InvoicePaymentPage() {
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-cairo overflow-hidden">
       <div className="h-full max-w-7xl mx-auto flex flex-col">
+        <Breadcrumb />
         {/* الهيدر المدمج */}
         <div className="bg-white rounded-2xl shadow-lg p-4 mb-4">
           <div className="flex items-center justify-between">

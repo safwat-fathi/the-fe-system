@@ -1,6 +1,9 @@
 import { Metadata } from "next";
-import { glTransactionService } from "@/services/api";
+
 import GLTransactionsClient from "./components/GLTransactionsClient";
+
+import Breadcrumb from "@/components/Breadcrumb";
+import { glTransactionService } from "@/services/api";
 
 export const metadata: Metadata = {
   title: "القيد المحاسبي - NafeesWeb",
@@ -20,16 +23,17 @@ export default async function GLTransactionsPage() {
     xtrans_type: "0",
   });
 
-  const transactions = response.success && response.data
-    ? Array.isArray(response.data)
-      ? response.data
-      : []
-    : [];
+  const transactions =
+    response.success && response.data
+      ? Array.isArray(response.data)
+        ? response.data
+        : []
+      : [];
 
   return (
     <div className="font-cairo space-y-4 p-4">
+      <Breadcrumb />
       <GLTransactionsClient initialTransactions={transactions} />
     </div>
   );
 }
-

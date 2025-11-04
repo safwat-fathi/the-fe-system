@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import AccountsClient from "./components/AccountsClient";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import accountService from "@/services/api/account.service";
 
 export const metadata: Metadata = {
@@ -42,6 +43,7 @@ export default async function AccountsPage() {
 
   return (
     <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <h1 className="responsive-text-xl font-bold mb-6">دليل الحسابات</h1>
 
       {/* Client Component للتفاعل */}

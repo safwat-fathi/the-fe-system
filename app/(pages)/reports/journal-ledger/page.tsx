@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import JournalLedgerClient from "./components/JournalLedgerClient";
+
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {

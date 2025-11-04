@@ -39,26 +39,29 @@ export default function UserHeader() {
   useEffect(() => {
     setIsMounted(true);
     setCurrentTime(new Date());
-    
+
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
+
     return () => clearInterval(timer);
   }, []);
 
   const formatTime = (date: Date | null) => {
     if (!date) return "--:--:--";
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+
     return `${hours}:${minutes}:${seconds}`;
   };
 
   const formatDate = (date: Date | null) => {
     if (!date) return "--/--/----";
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
+
     return `${day}/${month}/${year}`;
   };
 
@@ -71,8 +74,11 @@ export default function UserHeader() {
   };
 
   return (
-    <Navbar className="bg-gradient-to-r from-white via-slate-50 to-white shadow-md border-b border-slate-200/50 backdrop-blur-sm" maxWidth="full">
-      <NavbarContent justify="start" className="hidden md:flex">
+    <Navbar
+      className="bg-gradient-to-r from-white via-slate-50 to-white shadow-md border-b border-slate-200/50 backdrop-blur-sm"
+      maxWidth="full"
+    >
+      <NavbarContent className="hidden md:flex" justify="start">
         <NavbarItem>
           <div className="flex items-center gap-2 px-3 py-2">
             <div className="text-right">
@@ -88,7 +94,10 @@ export default function UserHeader() {
         <NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <Button className="flex items-center gap-2 px-3 hover:bg-slate-100 rounded-full transition-all duration-200" variant="light">
+              <Button
+                className="flex items-center gap-2 px-3 hover:bg-slate-100 rounded-full transition-all duration-200"
+                variant="light"
+              >
                 <Avatar
                   className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-sm"
                   name={
