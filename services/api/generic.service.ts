@@ -151,8 +151,11 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
       xyear_id: params.xyear_id || params.year || "0",
       xfrom_date: params.xfrom_date || params.from_date || "0",
       xto_date: params.xto_date || params.to_date || "0",
-      xtrans_id: params.xtrans_id || params.trans_id || "0",
       xtrans_type: params.xtrans_type || params.trans_type || "0",
+      xtrans_id: params.xtrans_id || params.trans_id || "0",
+      xcost_id: params.xcost_id || "0", // مركز التكلفة
+      xcust_id: params.xcust_id || "0", // رقم العميل
+      xacc_id: params.xacc_id || "0", // رقم الحساب
     }),
   },
 };

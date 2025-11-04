@@ -109,7 +109,23 @@ export default function GLTransactionsClient({
     return account ? account.acc_name || "" : "";
   };
 
-  // حساب التوازن لكل حركة
+  // ترتيب الحركات حسب trans_id ثم seq
+  const sortedTransactions = useMemo(() => {
+    return [...transactions].sort((a, b) => {
+      // أولاً حسب trans_id
+      const transIdA = a.trans_id || 0;
+      const transIdB = b.trans_id || 0;
+      if (transIdA !== transIdB) {
+        return transIdB - transIdA; // ترتيب تنازلي
+      }
+      // ثم حسب seq
+      const seqA = a.seq || 0;
+      const seqB = b.seq || 0;
+      return seqA - seqB; // ترتيب تصاعدي
+    });
+  }, [transactions]);
+
+  // حساب التوازن لكل حركة (للتأكد من التوازن)
   const transactionBalances = useMemo(() => {
     const balances: Record<number, {
       totalDebitBase: number;
@@ -148,33 +164,6 @@ export default function GLTransactionsClient({
     return balances;
   }, [transactions]);
 
-  // تجميع الحركات حسب trans_id
-  const groupedTransactions = useMemo(() => {
-    const grouped: Record<number, GLTransaction[]> = {};
-
-    transactions.forEach((trans) => {
-      const transId = trans.trans_id || 0;
-      if (!grouped[transId]) {
-        grouped[transId] = [];
-      }
-      grouped[transId].push(trans);
-    });
-
-    return grouped;
-  }, [transactions]);
-
-  // تحويل إلى array وترتيب حسب trans_id
-  const groupedArray = useMemo(() => {
-    return Object.entries(groupedTransactions)
-      .map(([transId, transList]) => ({
-        transId: Number(transId),
-        transactions: transList,
-        firstTransaction: transList[0],
-        balance: transactionBalances[Number(transId)],
-      }))
-      .sort((a, b) => b.transId - a.transId); // ترتيب تنازلي
-  }, [groupedTransactions, transactionBalances]);
-
   const handleViewVoucher = (vouchType: number, vouchId: number) => {
     const route = getVoucherRoute(vouchType, vouchId);
     router.push(route);
@@ -187,7 +176,7 @@ export default function GLTransactionsClient({
         <div>
           <h1 className="text-2xl font-bold text-gray-900">جميع القيود المحاسبية</h1>
           <p className="text-sm text-gray-600 mt-1">
-            إجمالي الحركات: {groupedArray.length} | إجمالي السجلات: {transactions.length}
+            إجمالي السجلات: {sortedTransactions.length}
           </p>
         </div>
       </div>
@@ -206,16 +195,16 @@ export default function GLTransactionsClient({
               <TableColumn className="text-center">رقم الحركة</TableColumn>
               <TableColumn className="text-center">المرجع</TableColumn>
               <TableColumn className="text-center">التاريخ</TableColumn>
-              <TableColumn className="text-center">عدد السجلات</TableColumn>
+              <TableColumn className="text-center">التسلسل</TableColumn>
+              <TableColumn className="text-center">الحساب</TableColumn>
               <TableColumn className="text-center">مدين أساس</TableColumn>
               <TableColumn className="text-center">دائن أساس</TableColumn>
               <TableColumn className="text-center">مدين ذهب معاير (جم)</TableColumn>
               <TableColumn className="text-center">دائن ذهب معاير (جم)</TableColumn>
-              <TableColumn className="text-center">التوازن</TableColumn>
               <TableColumn className="text-center">الإجراءات</TableColumn>
             </TableHeader>
             <TableBody>
-              {groupedArray.length === 0 ? (
+              {sortedTransactions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={12} className="text-center py-12 text-gray-500">
                     <i className="bi bi-info-circle text-4xl mb-3 block text-gray-400" />
@@ -223,32 +212,51 @@ export default function GLTransactionsClient({
                   </TableCell>
                 </TableRow>
               ) : (
-                groupedArray.map((group, index) => {
-                  const { transId, transactions: transList, firstTransaction, balance } = group;
-                  const debitBase = balance.totalDebitBase;
-                  const creditBase = balance.totalCreditBase;
-                  const gDebitBase = balance.totalGDebitBase;
-                  const gCreditBase = balance.totalGCreditBase;
+                sortedTransactions.map((transaction, index) => {
+                  const transId = transaction.trans_id || 0;
+                  const balance = transactionBalances[transId];
+                  const debitBase = Number(transaction.debit_base || 0);
+                  const creditBase = Number(transaction.credit_base || 0);
+                  const gDebitBase = Number(transaction.g_debit_base || 0);
+                  const gCreditBase = Number(transaction.g_credit_base || 0);
 
                   return (
-                    <TableRow key={transId} className={!balance.isBalanced ? "bg-red-50" : ""}>
+                    <TableRow 
+                      key={transaction.id || index} 
+                      className={balance && !balance.isBalanced ? "bg-red-50" : ""}
+                    >
                       <TableCell className="text-center text-sm">
                         {index + 1}
                       </TableCell>
                       <TableCell className="text-center text-sm font-medium">
-                        {getVoucherTypeName(firstTransaction.trans_type)}
+                        {getVoucherTypeName(transaction.trans_type)}
                       </TableCell>
                       <TableCell className="text-center text-sm font-semibold">
                         {transId}
                       </TableCell>
                       <TableCell className="text-center text-sm">
-                        {firstTransaction.ref || "-"}
+                        {transaction.ref || "-"}
                       </TableCell>
                       <TableCell className="text-center text-sm">
-                        {formatDate(firstTransaction.d)}
+                        {formatDate(transaction.d)}
                       </TableCell>
                       <TableCell className="text-center text-sm">
-                        {transList.length}
+                        {transaction.seq || index + 1}
+                      </TableCell>
+                      <TableCell className="text-center text-sm font-medium">
+                        {transaction.acc ? (
+                          <span>
+                            {transaction.acc}
+                            {getAccountName(transaction.acc) && (
+                              <span className="text-gray-500 mr-1">
+                                {" - "}
+                                {getAccountName(transaction.acc)}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         {debitBase > 0 ? (
@@ -287,22 +295,11 @@ export default function GLTransactionsClient({
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        {balance.isBalanced ? (
-                          <Chip color="success" size="sm" variant="flat">
-                            متزن
-                          </Chip>
-                        ) : (
-                          <Chip color="danger" size="sm" variant="flat">
-                            غير متزن
-                          </Chip>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
                         <Button
                           size="sm"
                           color="primary"
                           variant="light"
-                          onPress={() => handleViewVoucher(firstTransaction.trans_type, transId)}
+                          onPress={() => handleViewVoucher(transaction.trans_type, transId)}
                         >
                           <i className="bi bi-eye w-4 h-4 me-1" />
                           عرض

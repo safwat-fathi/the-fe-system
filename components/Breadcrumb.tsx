@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import clsx from "clsx";
 
 interface BreadcrumbItem {
   name: string;
@@ -10,9 +12,33 @@ interface BreadcrumbItem {
 
 interface BreadcrumbProps {
   items?: BreadcrumbItem[];
+  showHome?: boolean;
+  className?: string;
 }
 
-const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
+// Mapping for better Arabic names
+const pathNameMap: Record<string, string> = {
+  reports: "تقارير",
+  "account-statement": "كشف حساب",
+  vouchers: "تقرير السندات",
+  "income-statement": "قائمة الدخل",
+  "trial-balance": "ميزان المراجعة",
+  "balance-sheet": "الميزانية العمومية",
+  "journal-ledger": "دفتر القيود",
+  "general-ledger": "دفتر الأستاذ",
+  invoices: "قائمة الفواتير",
+  vat: "تقرير الضريبة",
+  tax: "التقارير الضريبية",
+  "daily-journal": "دفتر اليومية الضريبية",
+  basic: "القوائم الأساسية",
+  accounts: "الحسابات",
+  customers: "العملاء",
+  items: "الأصناف",
+  forms: "النماذج",
+  settings: "الإعدادات",
+};
+
+const Breadcrumb = ({ items = [], showHome = true, className }: BreadcrumbProps) => {
   const pathname = usePathname();
 
   // Generate breadcrumbs from the current pathname if no items are provided
@@ -23,7 +49,8 @@ const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
 
     return pathSegments.map((segment, index) => {
       const href = "/" + pathSegments.slice(0, index + 1).join("/");
-      const name = segment.charAt(0).toUpperCase() + segment.slice(1);
+      // Use mapped name if available, otherwise capitalize
+      const name = pathNameMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
 
       return {
         name,
@@ -34,36 +61,42 @@ const Breadcrumb = ({ items = [] }: BreadcrumbProps) => {
 
   const breadcrumbs = generateBreadcrumbs();
 
-  if (breadcrumbs.length === 0) return null;
+  if (breadcrumbs.length === 0 && !showHome) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className="flex mb-4">
-      <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
-        <li className="inline-flex items-center">
-          <Link
-            className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600"
-            href="/"
-          >
-            الرئيسية
-          </Link>
-        </li>
+    <nav 
+      aria-label="Breadcrumb" 
+      className={clsx("flex items-center mb-4 text-sm text-gray-600", className)}
+    >
+      <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse flex-wrap">
+        {showHome && (
+          <li className="inline-flex items-center">
+            <Link
+              className="inline-flex items-center font-medium text-gray-700 hover:text-blue-600 transition-colors"
+              href="/"
+            >
+              الرئيسية
+            </Link>
+          </li>
+        )}
 
         {breadcrumbs.map((item, index) => (
           <li
             key={index}
             aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}
+            className="inline-flex items-center"
           >
             <div className="flex items-center">
-              <span className="mx-2 text-gray-400">/</span>
+              <ChevronRightIcon className="h-4 w-4 text-gray-400 mx-2 rtl:rotate-180" />
               {item.href ? (
                 <Link
-                  className="text-sm font-medium text-gray-700 hover:text-primary-600"
+                  className="font-medium text-gray-700 hover:text-blue-600 transition-colors"
                   href={item.href}
                 >
                   {item.name}
                 </Link>
               ) : (
-                <span className="text-sm font-medium text-gray-500">
+                <span className="font-medium text-gray-500">
                   {item.name}
                 </span>
               )}

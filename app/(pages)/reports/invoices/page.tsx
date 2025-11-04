@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import InvoiceClient from "./components/InvoiceClient";
 import InvoicesHeader from "./components/InvoicesHeader";
+import Breadcrumb from "@/components/Breadcrumb";
 
 import invoiceService, {
   GetAllInvoicesParams,
@@ -31,6 +32,7 @@ export default async function InvoicesPage({
 
   return (
     <div className="font-cairo space-y-4 p-4">
+      <Breadcrumb />
       <InvoicesHeader />
 
       <Suspense

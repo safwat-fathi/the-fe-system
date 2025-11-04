@@ -45,19 +45,18 @@ class GLTransactionService extends HttpService<GLTransaction> {
   async getAll(params?: IParams): Promise<IPaginatedResponse<GLTransaction> | { success: boolean; data?: GLTransaction[]; message?: string }> {
     try {
       // إضافة xcom_id إذا لم يكن موجوداً
-      // ملاحظة: gl_transaction_list قد يحتاج معاملات محددة
+      // ملاحظة: gl_transaction_list يحتاج معاملات محددة
       // تحويل جميع القيم إلى strings لأن API يتوقع strings
       const queryParams: IParams = {
         xcom_id: String(params?.xcom_id || params?.com || "1"),
         xyear_id: String(params?.xyear_id || params?.year || "0"),
         xfrom_date: String(params?.xfrom_date || params?.from_date || "0"),
         xto_date: String(params?.xto_date || params?.to_date || "0"),
-        // إضافة معاملات اختيارية إذا كانت موجودة (تحويل إلى strings)
-        ...(params?.xtrans_id !== undefined && params?.xtrans_id !== null && { xtrans_id: String(params.xtrans_id) }),
-        ...(params?.xtrans_type !== undefined && params?.xtrans_type !== null && { xtrans_type: String(params.xtrans_type) }),
-        // إضافة معامل تصفية الحساب (acc أو acc_id)
-        ...(params?.acc !== undefined && params?.acc !== null && { acc: String(params.acc) }),
-        ...(params?.acc_id !== undefined && params?.acc_id !== null && { acc_id: String(params.acc_id) }),
+        xtrans_type: String(params?.xtrans_type || "0"),
+        xtrans_id: String(params?.xtrans_id || "0"),
+        xcost_id: String(params?.xcost_id || "0"), // مركز التكلفة
+        xcust_id: String(params?.xcust_id || "0"), // رقم العميل
+        xacc_id: String(params?.xacc_id || "0"), // رقم الحساب
       };
 
       // إزالة undefined/null values

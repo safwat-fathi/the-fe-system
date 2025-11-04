@@ -122,6 +122,44 @@ export async function createGLTransactionRecords(
     return;
   }
 
+  // ⚠️ حماية مهمة: التحقق من عدم وجود سجلات مسبقة قبل الإنشاء
+  // هذا يمنع التكرار في حال فشل الحذف أو في حال الاستدعاء المزدوج
+  try {
+    const existingTransactionsResponse = await glTransactionService.getAll({
+      xtrans_id: String(voucherData.vouch_id),
+      xtrans_type: String(voucherData.vouch_type),
+      xcom_id: "1",
+      xyear_id: "0",
+      xfrom_date: "0",
+      xto_date: "0",
+    });
+
+    if (
+      existingTransactionsResponse.success &&
+      existingTransactionsResponse.data &&
+      Array.isArray(existingTransactionsResponse.data) &&
+      existingTransactionsResponse.data.length > 0
+    ) {
+      console.warn(
+        `[SERVER] ⚠️ تم العثور على ${existingTransactionsResponse.data.length} سجل موجود في gl_transaction`,
+        `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
+        `سيتم حذفها أولاً قبل إنشاء السجلات الجديدة`,
+      );
+
+      // حذف السجلات الموجودة أولاً
+      await deleteGLTransactionRecords(
+        voucherData.vouch_id,
+        voucherData.vouch_type,
+      );
+    }
+  } catch (error) {
+    console.error(
+      `[SERVER] ❌ خطأ في التحقق من السجلات الموجودة:`,
+      error instanceof Error ? error.message : String(error),
+    );
+    // نتابع العملية حتى لو فشل التحقق
+  }
+
   // فلترة التفاصيل الصحيحة فقط (يجب أن تحتوي على acc_id صحيح)
   const validDetails = details.filter(
     (detail) => detail && detail.acc_id && detail.acc_id > 0,

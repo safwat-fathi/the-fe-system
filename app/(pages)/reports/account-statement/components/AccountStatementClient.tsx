@@ -22,6 +22,7 @@ import toast from "react-hot-toast";
 
 import { accountService, glTransactionService } from "@/services/api";
 import { formatAmount } from "@/utilities/formatAmount";
+import Breadcrumb from "@/components/Breadcrumb";
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
@@ -222,15 +223,24 @@ export default function AccountStatementClient() {
 
     setLoading(true);
     try {
-      // استخدام acc_id للتصفية
-      // قد يحتاج الـ backend إلى acc_id (string) أو acc (number) حسب الـ API
+      // استخدام xacc_id للتصفية حسب الحساب
+      // acc_id في Account هو رقم الحساب (string مثل "1131324")
+      // acc في GLTransaction هو رقم الحساب أيضاً (number أو string)
       const accountIdToFilter = selectedAccount.acc_id || String(selectedAccount.id);
+      
+      console.log("[Account Statement] Account Info:", {
+        selectedAccountId: selectedAccountId,
+        accountIdToFilter: accountIdToFilter,
+        acc_id: selectedAccount.acc_id,
+        id: selectedAccount.id,
+        acc_name: selectedAccount.acc_name,
+      });
       
       // تحويل التواريخ من YYYY-MM-DD إلى timestamp أو format مناسب للـ API
       const startDateFormatted = startDate ? new Date(startDate).toISOString().split('T')[0] : '';
       const endDateFormatted = endDate ? new Date(endDate).toISOString().split('T')[0] : '';
 
-      // بناء المعاملات مع إرسال كل من acc و acc_id للتوافق
+      // بناء المعاملات - جميع المعاملات مطلوبة الآن
       const apiParams: any = {
         xcom_id: 1,
         xyear_id: 0,
@@ -238,14 +248,10 @@ export default function AccountStatementClient() {
         xtrans_id: 0, // 0 = جميع القيود
         xfrom_date: startDateFormatted || "0",
         xto_date: endDateFormatted || "0",
+        xcost_id: 0, // 0 = جميع مراكز التكلفة
+        xcust_id: 0, // 0 = جميع العملاء
+        xacc_id: accountIdToFilter || "0", // رقم الحساب للتصفية
       };
-
-      // إضافة معامل تصفية الحساب - جرب acc_id أولاً (عادة يكون هذا هو المطلوب)
-      if (accountIdToFilter) {
-        apiParams.acc_id = accountIdToFilter;
-        // أيضاً أضف acc كبديل في حالة كان الـ backend يحتاجه
-        apiParams.acc = accountIdToFilter;
-      }
 
       console.log("[Account Statement] API Request Params:", apiParams);
 
@@ -258,6 +264,12 @@ export default function AccountStatementClient() {
         : Array.isArray((response as any)?.results)
           ? (response as any).results
           : [];
+
+      console.log("[Account Statement] Raw API Response:", {
+        totalTransactions: glTransactions.length,
+        sampleTransaction: glTransactions[0] || null,
+        allFieldNames: glTransactions.length > 0 ? Object.keys(glTransactions[0]) : [],
+      });
 
       // تحويل البيانات من gl_transaction إلى AccountStatementTransaction
       const convertedTransactions: AccountStatementTransaction[] = glTransactions
@@ -273,9 +285,47 @@ export default function AccountStatementClient() {
           }
           return true;
         })
-        .map((transaction: any) => {
-          const debitValue = parseFloat(String(transaction.debit || 0));
-          const creditValue = parseFloat(String(transaction.credit || 0));
+        .map((transaction: any, index: number) => {
+          // استخدام debit_base و credit_base فقط (للنقد الأساسي)
+          // debit_base و credit_base هي المبالغ الصحيحة حسب نوع GLTransaction
+          const debitValue = parseFloat(String(transaction.debit_base || 0));
+          const creditValue = parseFloat(String(transaction.credit_base || 0));
+
+          // التحقق من أن الحركة للحساب المحدد (استخدام acc الذي هو رقم الحساب في GLTransaction)
+          // acc في GLTransaction قد يكون number أو string
+          const transAccId = String(transaction.acc || transaction.acc_id || "").trim();
+          const targetAccId = String(accountIdToFilter).trim();
+
+          // Log تفصيلي لكل حركة
+          if (process.env.NODE_ENV === "development") {
+            console.log(`[Transaction ${index + 1}]:`, {
+              date: transaction.d || transaction.cr_date || transaction.date,
+              acc: transaction.acc,
+              acc_id: transaction.acc_id,
+              target_acc_id: targetAccId,
+              matches: transAccId === targetAccId,
+              debit_base: transaction.debit_base,
+              credit_base: transaction.credit_base,
+              debit: transaction.debit, // للتوثيق فقط
+              credit: transaction.credit, // للتوثيق فقط
+              final_debit: debitValue,
+              final_credit: creditValue,
+              ref: transaction.ref || transaction.reference,
+              note: transaction.note || transaction.description,
+              trans_id: transaction.trans_id || transaction.id,
+              trans_type: transaction.trans_type,
+            });
+          }
+
+          // التحقق من أن الحركة للحساب المحدد فقط
+          if (transAccId !== targetAccId) {
+            console.warn(`[Transaction ${index + 1}] Skipped - Wrong Account:`, {
+              transaction_acc: transAccId,
+              target_acc: targetAccId,
+            });
+            // إرجاع null ليتم فلترتها لاحقاً
+            return null;
+          }
 
           return {
             date: transaction.d || transaction.cr_date || "",
@@ -288,6 +338,7 @@ export default function AccountStatementClient() {
             project: transaction.cost ? `مركز تكلفة ${transaction.cost}` : "",
           };
         })
+        .filter((transaction: AccountStatementTransaction | null): transaction is AccountStatementTransaction => transaction !== null) // إزالة الحركات المفلترة
         .sort((a: AccountStatementTransaction, b: AccountStatementTransaction) => {
           // ترتيب حسب التاريخ
           const dateA = new Date(a.date).getTime();
@@ -304,52 +355,163 @@ export default function AccountStatementClient() {
       setTransactions(convertedTransactions);
       
       // حساب الرصيد الافتتاحي
-      if (selectedAccountId && startDate) {
+      // الرصيد الافتتاحي = مجموع جميع الحركات قبل تاريخ البداية
+      // ولكن فقط إذا كان تاريخ البداية يسبق تاريخ أول حركة في الحساب
+      if (selectedAccountId && startDate && accountIdToFilter) {
         try {
-          const openingBalanceDate = new Date(startDate);
-          openingBalanceDate.setDate(openingBalanceDate.getDate() - 1);
-          const openingDateStr = openingBalanceDate.toISOString().split('T')[0];
-
-          const openingApiParams: any = {
+          // أولاً: جلب تاريخ أول حركة للحساب (للتأكد من وجود رصيد افتتاحي)
+          const firstTransactionParams: any = {
             xcom_id: 1,
             xyear_id: 0,
             xtrans_type: 0,
             xtrans_id: 0,
-            xfrom_date: "0",
-            xto_date: openingDateStr,
+            xfrom_date: "0", // من بداية النظام
+            xto_date: "9999-12-31", // حتى نهاية النظام
+            xcost_id: 0,
+            xcust_id: 0,
+            xacc_id: accountIdToFilter,
           };
 
-          if (accountIdToFilter) {
-            openingApiParams.acc_id = accountIdToFilter;
-            openingApiParams.acc = accountIdToFilter;
-          }
-
-          const openingResponse = await glTransactionService.getAll(openingApiParams);
-
-          // Handle different response types
-          const openingResponseData =
-            (openingResponse as any)?.data || openingResponse || [];
-          const openingTransactions = Array.isArray(openingResponseData)
-            ? openingResponseData
-            : Array.isArray((openingResponse as any)?.results)
-              ? (openingResponse as any).results
+          const firstTransactionResponse = await glTransactionService.getAll(firstTransactionParams);
+          const firstTransactionData = (firstTransactionResponse as any)?.data || firstTransactionResponse || [];
+          const allTransactions = Array.isArray(firstTransactionData)
+            ? firstTransactionData
+            : Array.isArray((firstTransactionResponse as any)?.results)
+              ? (firstTransactionResponse as any).results
               : [];
 
-          if (openingTransactions.length > 0) {
-
-            let balance = 0;
-            openingTransactions.forEach((trans: any) => {
-              const debit = parseFloat(String(trans.debit || 0));
-              const credit = parseFloat(String(trans.credit || 0));
-              balance += credit - debit;
+          // فلترة الحركات للحساب المحدد فقط وترتيبها حسب التاريخ
+          const validTransactions = allTransactions
+            .filter((trans: any) => {
+              const transAccId = String(trans.acc || trans.acc_id || "").trim();
+              return transAccId === String(accountIdToFilter).trim() && trans.d;
+            })
+            .sort((a: any, b: any) => {
+              const dateA = new Date(a.d).getTime();
+              const dateB = new Date(b.d).getTime();
+              return dateA - dateB;
             });
-            
-            setOpeningBalance(balance);
-          } else {
+
+          // إذا كانت هناك حركات، نحصل على تاريخ أول حركة
+          let firstTransactionDate: Date | null = null;
+          if (validTransactions.length > 0) {
+            firstTransactionDate = new Date(validTransactions[0].d);
+            firstTransactionDate.setHours(0, 0, 0, 0);
+          }
+
+          const startDateObj = new Date(startDate);
+          startDateObj.setHours(0, 0, 0, 0);
+
+          console.log("[Account Statement] First Transaction Check:", {
+            hasTransactions: validTransactions.length > 0,
+            firstTransactionDate: firstTransactionDate?.toISOString().split('T')[0] || "No transactions",
+            startDate: startDateObj.toISOString().split('T')[0],
+            shouldCalculateOpeningBalance: firstTransactionDate ? startDateObj > firstTransactionDate : false,
+          });
+
+          // إذا كان تاريخ البداية يسبق أو يساوي تاريخ أول حركة، لا يوجد رصيد افتتاحي
+          if (!firstTransactionDate || startDateObj <= firstTransactionDate) {
+            console.log("[Account Statement] No opening balance - start date is before or equal to first transaction date");
             setOpeningBalance(0);
+          } else {
+            // حساب الرصيد الافتتاحي من الحركات قبل تاريخ البداية
+            const openingBalanceDate = new Date(startDate);
+            openingBalanceDate.setDate(openingBalanceDate.getDate() - 1);
+            const openingDateStr = openingBalanceDate.toISOString().split('T')[0];
+
+            const openingApiParams: any = {
+              xcom_id: 1,
+              xyear_id: 0, // 0 = جميع السنوات (لضمان حساب الرصيد من جميع السنوات السابقة)
+              xtrans_type: 0, // 0 = جميع الأنواع
+              xtrans_id: 0, // 0 = جميع القيود
+              xfrom_date: "0", // من بداية النظام
+              xto_date: openingDateStr, // حتى يوم قبل تاريخ البداية
+              xcost_id: 0, // 0 = جميع مراكز التكلفة
+              xcust_id: 0, // 0 = جميع العملاء
+              xacc_id: accountIdToFilter, // رقم الحساب المحدد فقط
+            };
+
+            console.log("[Account Statement] Opening Balance Request:", {
+              accountId: accountIdToFilter,
+              accountName: selectedAccount.acc_name,
+              openingDate: openingDateStr,
+              params: openingApiParams,
+            });
+
+            const openingResponse = await glTransactionService.getAll(openingApiParams);
+
+            // Handle different response types
+            const openingResponseData =
+              (openingResponse as any)?.data || openingResponse || [];
+            const openingTransactions = Array.isArray(openingResponseData)
+              ? openingResponseData
+              : Array.isArray((openingResponse as any)?.results)
+                ? (openingResponse as any).results
+                : [];
+
+            console.log("[Account Statement] Opening Balance Transactions:", {
+              count: openingTransactions.length,
+              transactions: openingTransactions.slice(0, 5), // أول 5 حركات للفحص
+            });
+
+            if (openingTransactions.length > 0) {
+              let balance = 0;
+              let filteredCount = 0;
+              
+              openingTransactions.forEach((trans: any) => {
+                // التحقق من أن الحركة للحساب المحدد فقط
+                // استخدام acc (رقم الحساب في GLTransaction) وليس acc_id
+                // acc قد يكون number أو string
+                const transAccId = String(trans.acc || trans.acc_id || "").trim();
+                const targetAccId = String(accountIdToFilter).trim();
+                
+                // إذا كانت الحركة للحساب المحدد
+                if (transAccId === targetAccId) {
+                  // استخدام debit_base و credit_base فقط (للنقد الأساسي)
+                  const debit = parseFloat(String(trans.debit_base || 0));
+                  const credit = parseFloat(String(trans.credit_base || 0));
+                  balance += credit - debit;
+                  filteredCount++;
+                  
+                  // Log للتحقق من الحركات
+                  if (process.env.NODE_ENV === "development") {
+                    console.log("[Opening Balance] Valid Transaction:", {
+                      date: trans.d || trans.cr_date,
+                      debit,
+                      credit,
+                      acc_id: transAccId,
+                      note: trans.note,
+                      balanceAfter: balance,
+                    });
+                  }
+                } else {
+                  // Log للحركات التي تم تجاهلها
+                  if (process.env.NODE_ENV === "development") {
+                    console.warn("[Opening Balance] Filtered Out Transaction (Wrong Account):", {
+                      date: trans.d || trans.cr_date,
+                      trans_acc_id: transAccId,
+                      target_acc_id: targetAccId,
+                      note: trans.note,
+                    });
+                  }
+                }
+              });
+              
+              console.log("[Account Statement] Opening Balance Filtering:", {
+                totalTransactions: openingTransactions.length,
+                filteredTransactions: filteredCount,
+                finalBalance: balance,
+              });
+              
+              console.log("[Account Statement] Calculated Opening Balance:", balance);
+              setOpeningBalance(balance);
+            } else {
+              console.log("[Account Statement] No opening transactions found, balance = 0");
+              setOpeningBalance(0);
+            }
           }
         } catch (error) {
-          console.warn("Error calculating opening balance:", error);
+          console.error("Error calculating opening balance:", error);
           setOpeningBalance(0);
         }
       } else {
@@ -383,8 +545,30 @@ export default function AccountStatementClient() {
 
 
 
+  // بناء breadcrumb items مع تفاصيل الحساب إذا كان محدداً
+  const breadcrumbItems = useMemo(() => {
+    const items = [
+      { name: "تقارير", href: "/reports" },
+      { 
+        name: selectedAccount 
+          ? `كشف حساب ${selectedAccount.acc_id} - ${selectedAccount.acc_name}`
+          : "كشف حساب"
+      },
+    ];
+    return items;
+  }, [selectedAccount]);
+
   return (
     <>
+      {/* Breadcrumb with account details */}
+      {selectedAccount && (
+        <Breadcrumb 
+          items={breadcrumbItems} 
+          showHome={false}
+          className="mb-4"
+        />
+      )}
+
       {/* Filters */}
       <div className="mb-6">
         <Card className="overflow-visible">

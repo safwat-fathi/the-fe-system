@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Breadcrumb from "@/components/Breadcrumb";
 import {
   Table,
   TableHeader,
@@ -295,6 +296,7 @@ export default function VATReportPage() {
 
   return (
     <div className="font-cairo space-y-4 p-4">
+      <Breadcrumb />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
