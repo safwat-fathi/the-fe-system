@@ -1,15 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 
 import { useVoucherForm } from "@/hooks/useVoucherForm";
+import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 import { formatDateTime } from "@/utilities/dateUtils";
-import { glTransactionService } from "@/services/api";
-import { GLTransaction } from "@/types/models/gl-transaction";
 import GLTransactionModal from "../components/GLTransactionModal";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -50,10 +48,6 @@ export default function VoucherClientPage({
   const router = useRouter();
   const pathname = usePathname();
 
-  // State للمودال والقيد المحاسبي
-  const [isGLModalOpen, setIsGLModalOpen] = useState(false);
-  const [glTransactions, setGlTransactions] = useState<GLTransaction[]>([]);
-  const [loadingGLTransactions, setLoadingGLTransactions] = useState(false);
 
   // Use the hook for all state management and business logic
   const {
@@ -120,46 +114,19 @@ export default function VoucherClientPage({
     newVoucherHref,
   });
 
-  // دالة جلب القيد المحاسبي (فقط للحركة الحالية)
-  const loadGLTransactions = async () => {
-    if (!voucher.vouch_id || voucher.vouch_id <= 0) {
-            return;
-    }
-
-    setLoadingGLTransactions(true);
-    try {
-      const response = await glTransactionService.getAll({
-        xtrans_id: voucher.vouch_id,
-        xtrans_type: 3, // قيد التسوية
-        xcom_id: 1,
-        xyear_id: 0,
-        xfrom_date: 0,
-        xto_date: 0,
-      });
-
-      if (response.success && response.data) {
-        const transactions = Array.isArray(response.data) ? response.data : [];
-        const filteredTransactions = transactions.filter(
-          (trans: GLTransaction) =>
-            trans.trans_id === voucher.vouch_id && trans.trans_type === 3,
-        );
-        setGlTransactions(filteredTransactions);
-      } else {
-        setGlTransactions([]);
-      }
-    } catch (error) {
-      console.error("Error loading GL transactions:", error);
-      setGlTransactions([]);
-    } finally {
-      setLoadingGLTransactions(false);
-    }
-  };
-
-  // فتح المودال عند الضغط على الزر
-  const handleViewGLTransactions = async () => {
-    setIsGLModalOpen(true);
-    await loadGLTransactions();
-  };
+  // استخدام hook موحد لحركة الترحيل
+  const {
+    isGLModalOpen,
+    setIsGLModalOpen,
+    glTransactions,
+    loadingGLTransactions,
+    handleViewGLTransactions,
+    getAccountName,
+  } = useGLTransactions({
+    vouchId: voucher.vouch_id || 0,
+    vouchType: 3, // قيد التسوية
+    refNo: voucher.ref_no,
+  });
 
   if (!isClient) {
     return (
@@ -1205,6 +1172,17 @@ export default function VoucherClientPage({
           </div>
         )}
       </div>
+
+      {/* مودال عرض القيد المحاسبي */}
+      <GLTransactionModal
+        isOpen={isGLModalOpen}
+        onClose={() => setIsGLModalOpen(false)}
+        loading={loadingGLTransactions}
+        transactions={glTransactions}
+        voucherId={voucher.vouch_id || 0}
+        refNo={voucher.ref_no}
+        getAccountName={getAccountName}
+      />
     </>
   );
 }

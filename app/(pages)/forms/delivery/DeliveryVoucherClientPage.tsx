@@ -11,10 +11,9 @@ const AsyncPaginateCreatableSelect = withAsyncPaginate(CreatableSelect);
 
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { useReceiptDeliveryVoucherForm } from "@/hooks/useReceiptDeliveryVoucherForm";
+import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
-import { glTransactionService } from "@/services/api";
-import { GLTransaction } from "@/types/models/gl-transaction";
 import GLTransactionModal from "../components/GLTransactionModal";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -122,46 +121,19 @@ export default function DeliveryVoucherClientPage({
   // Handle search
   const [searchTerm, setSearchTerm] = useState("");
 
-  // دالة جلب القيد المحاسبي (فقط للحركة الحالية)
-  const loadGLTransactions = async () => {
-    if (!voucher.vouch_id || voucher.vouch_id <= 0) {
-      return;
-    }
-
-    setLoadingGLTransactions(true);
-    try {
-      const response = await glTransactionService.getAll({
-        xtrans_id: voucher.vouch_id,
-        xtrans_type: vouchType, // 222 للتسليم
-        xcom_id: 1,
-        xyear_id: 0,
-        xfrom_date: 0,
-        xto_date: 0,
-      });
-
-      if (response.success && response.data) {
-        const transactions = Array.isArray(response.data) ? response.data : [];
-        const filteredTransactions = transactions.filter(
-          (trans: GLTransaction) =>
-            trans.trans_id === voucher.vouch_id && trans.trans_type === vouchType,
-        );
-        setGlTransactions(filteredTransactions);
-      } else {
-        setGlTransactions([]);
-      }
-    } catch (error) {
-      console.error("Error loading GL transactions:", error);
-      setGlTransactions([]);
-    } finally {
-      setLoadingGLTransactions(false);
-    }
-  };
-
-  // فتح المودال عند الضغط على الزر
-  const handleViewGLTransactions = async () => {
-    setIsGLModalOpen(true);
-    await loadGLTransactions();
-  };
+  // استخدام hook موحد لحركة الترحيل
+  const {
+    isGLModalOpen,
+    setIsGLModalOpen,
+    glTransactions,
+    loadingGLTransactions,
+    handleViewGLTransactions,
+    getAccountName,
+  } = useGLTransactions({
+    vouchId: voucher.vouch_id || 0,
+    vouchType: vouchType,
+    refNo: voucher.ref_no,
+  });
 
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
@@ -1229,6 +1201,7 @@ export default function DeliveryVoucherClientPage({
         transactions={glTransactions}
         voucherId={voucher.vouch_id || 0}
         refNo={voucher.ref_no}
+        getAccountName={getAccountName}
       />
     </div>
   );

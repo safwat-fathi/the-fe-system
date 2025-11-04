@@ -14,8 +14,6 @@ import {
 } from "@heroui/react";
 import { formatAmount } from "@/utilities/formatAmount";
 import { GLTransaction } from "@/types/models/gl-transaction";
-import { accountService } from "@/services/api";
-import { useEffect, useState, useMemo } from "react";
 
 interface GLTransactionModalProps {
   isOpen: boolean;
@@ -24,6 +22,7 @@ interface GLTransactionModalProps {
   transactions: GLTransaction[];
   voucherId: number;
   refNo?: string;
+  getAccountName: (accId: number | string | null | undefined) => string;
 }
 
 export default function GLTransactionModal({
@@ -33,31 +32,8 @@ export default function GLTransactionModal({
   transactions,
   voucherId,
   refNo,
+  getAccountName,
 }: GLTransactionModalProps) {
-  const [accounts, setAccounts] = useState<any[]>([]);
-
-  // جلب الحسابات عند فتح المودال
-  useEffect(() => {
-    if (isOpen && accounts.length === 0) {
-      const loadAccounts = async () => {
-        try {
-          const accountsData = await accountService.getAllAccounts();
-          setAccounts(accountsData || []);
-        } catch (error) {
-          console.error("Error loading accounts:", error);
-        }
-      };
-      loadAccounts();
-    }
-  }, [isOpen, accounts.length]);
-
-  // دالة للحصول على اسم الحساب
-  const getAccountName = (accId: number | string | null | undefined): string => {
-    if (!accId) return "";
-    const account = accounts.find((acc) => acc.id === Number(accId) || acc.acc_id === String(accId));
-    return account ? account.acc_name || "" : "";
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -101,8 +77,6 @@ export default function GLTransactionModal({
                     <TableHeader>
                       <TableColumn className="text-center">#</TableColumn>
                       <TableColumn className="text-center">الحساب</TableColumn>
-                      <TableColumn className="text-center">مدين (ر.س)</TableColumn>
-                      <TableColumn className="text-center">دائن (ر.س)</TableColumn>
                       <TableColumn className="text-center">مدين أساس</TableColumn>
                       <TableColumn className="text-center">دائن أساس</TableColumn>
                       <TableColumn className="text-center">مدين ذهب معاير (جم)</TableColumn>
@@ -110,8 +84,6 @@ export default function GLTransactionModal({
                     </TableHeader>
                   <TableBody>
                       {transactions.map((transaction, index) => {
-                        const debit = Number(transaction.debit || 0);
-                        const credit = Number(transaction.credit || 0);
                         const debitBase = Number(transaction.debit_base || 0);
                         const creditBase = Number(transaction.credit_base || 0);
                         const gDebitBase = Number(transaction.g_debit_base || 0);
@@ -139,34 +111,40 @@ export default function GLTransactionModal({
                               )}
                             </TableCell>
                             <TableCell className="text-center">
-                              {debit > 0 ? (
+                              {debitBase > 0 ? (
                                 <span className="font-semibold text-gray-800">
-                                  {formatAmount(debit)}
+                                  {formatAmount(debitBase)}
                                 </span>
                               ) : (
                                 <span className="text-gray-400">-</span>
                               )}
                             </TableCell>
                             <TableCell className="text-center">
-                              {credit > 0 ? (
+                              {creditBase > 0 ? (
                                 <span className="font-semibold text-green-600">
-                                  {formatAmount(credit)}
+                                  {formatAmount(creditBase)}
                                 </span>
                               ) : (
                                 <span className="text-gray-400">-</span>
                               )}
                             </TableCell>
                             <TableCell className="text-center text-sm">
-                              {debitBase > 0 ? formatAmount(debitBase) : "-"}
+                              {gDebitBase > 0 ? (
+                                <span className="font-semibold text-yellow-600">
+                                  {formatAmount(gDebitBase)}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-center text-sm">
-                              {creditBase > 0 ? formatAmount(creditBase) : "-"}
-                            </TableCell>
-                            <TableCell className="text-center text-sm">
-                              {gDebitBase > 0 ? formatAmount(gDebitBase) : "-"}
-                            </TableCell>
-                            <TableCell className="text-center text-sm">
-                              {gCreditBase > 0 ? formatAmount(gCreditBase) : "-"}
+                              {gCreditBase > 0 ? (
+                                <span className="font-semibold text-yellow-600">
+                                  {formatAmount(gCreditBase)}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
@@ -175,8 +153,6 @@ export default function GLTransactionModal({
                       {(() => {
                         const totals = transactions.reduce(
                           (acc, trans) => {
-                            acc.totalDebit += Number(trans.debit || 0);
-                            acc.totalCredit += Number(trans.credit || 0);
                             acc.totalDebitBase += Number(trans.debit_base || 0);
                             acc.totalCreditBase += Number(trans.credit_base || 0);
                             acc.totalGDebitBase += Number(trans.g_debit_base || 0);
@@ -184,8 +160,6 @@ export default function GLTransactionModal({
                             return acc;
                           },
                           {
-                            totalDebit: 0,
-                            totalCredit: 0,
                             totalDebitBase: 0,
                             totalCreditBase: 0,
                             totalGDebitBase: 0,
@@ -203,21 +177,11 @@ export default function GLTransactionModal({
                             </TableCell>
                             <TableCell className="text-center">
                               <span className="font-bold text-gray-900">
-                                {formatAmount(totals.totalDebit)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="font-bold text-green-700">
-                                {formatAmount(totals.totalCredit)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="font-semibold text-gray-700">
                                 {formatAmount(totals.totalDebitBase)}
                               </span>
                             </TableCell>
                             <TableCell className="text-center">
-                              <span className="font-semibold text-gray-700">
+                              <span className="font-bold text-green-700">
                                 {formatAmount(totals.totalCreditBase)}
                               </span>
                             </TableCell>

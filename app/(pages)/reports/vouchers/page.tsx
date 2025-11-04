@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import VouchersReportClient from "./components/VouchersReportClient";
 
 import AppLoading from "@/components/AppLoading";
+import Breadcrumb from "@/components/Breadcrumb";
 import { voucherService } from "@/services/api";
 import { IParams } from "@/types/services/base";
 
@@ -48,6 +49,7 @@ export default async function VoucherReportsPage({
 
   return (
     <div className="font-cairo space-y-4 p-4">
+      <Breadcrumb />
       <Suspense
         key={JSON.stringify(queryParams)}
         fallback={

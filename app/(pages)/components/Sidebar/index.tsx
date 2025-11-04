@@ -16,6 +16,7 @@ import {
   LinkIcon,
   ShieldCheckIcon,
   SignalIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@heroui/react";
 import clsx from "clsx";
@@ -126,27 +127,7 @@ const accountingFormLinks: Array<{
   },
 ];
 
-const accountingReportLinks: Array<{
-  name: string;
-  href: string;
-  icon: React.ReactNode;
-}> = [
-  {
-    name: "تقرير السندات",
-    href: "/reports/vouchers",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-  {
-    name: "كشف حساب",
-    href: "/reports/account-statement",
-    icon: <CalculatorIcon className="h-5 w-5" />,
-  },
-  {
-    name: "قائمة الدخل",
-    href: "/reports/income-statement",
-    icon: <CalculatorIcon className="h-5 w-5" />,
-  },
-];
+// تم نقل جميع التقارير إلى قسم منفصل في المنتصف
 
 // نظام الذهب
 const goldBasicLinks = [
@@ -200,18 +181,7 @@ const goldFormLinks = [
   },
 ];
 
-const goldReportLinks = [
-  {
-    name: "قائمة الفواتير",
-    href: "/reports/invoices",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-  {
-    name: "تقرير الضريبة",
-    href: "/reports/vat",
-    icon: <CalculatorIcon className="h-5 w-5" />,
-  },
-];
+// تم نقل جميع التقارير إلى قسم منفصل في المنتصف
 
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -222,13 +192,11 @@ const Sidebar = () => {
   const [showAccountingSystem, setShowAccountingSystem] = useState(true);
   const [showAccountingBasic, setShowAccountingBasic] = useState(true);
   const [showAccountingForms, setShowAccountingForms] = useState(true);
-  const [showAccountingReports, setShowAccountingReports] = useState(false);
 
   // نظام الذهب
   const [showGoldSystem, setShowGoldSystem] = useState(true);
   const [showGoldBasic, setShowGoldBasic] = useState(true);
   const [showGoldForms, setShowGoldForms] = useState(true);
-  const [showGoldReports, setShowGoldReports] = useState(true);
 
   const [showSettingsLinks, setShowSettingsLinks] = useState(true);
   const pathname = usePathname();
@@ -510,70 +478,41 @@ const Sidebar = () => {
                   </>
                 )}
 
-                {/* التقارير - نظام الحسابات */}
-                {accountingReportLinks.length > 0 && (
-                  <>
-                    <div
-                      className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
-                      onClick={() =>
-                        setShowAccountingReports(!showAccountingReports)
-                      }
-                    >
-                      <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                        التقارير
-                      </span>
-                      {isSidebarOpen && (
-                        <div className="text-slate-500">
-                          {showAccountingReports ? (
-                            <ChevronUpIcon className="h-4 w-4" />
-                          ) : (
-                            <ChevronDownIcon className="h-4 w-4" />
-                          )}
-                        </div>
-                      )}
-                    </div>
 
-                    <AnimatePresence initial={false}>
-                      {showAccountingReports && (
-                        <motion.div
-                          animate="visible"
-                          className="flex flex-col overflow-hidden"
-                          exit="hidden"
-                          initial="hidden"
-                          transition={transition}
-                          variants={animationVariants}
-                        >
-                          {accountingReportLinks.map((link) => (
-                            <Link
-                              key={link.href}
-                              className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
-                                pathname === link.href
-                                  ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
-                                  : "hover:bg-white/5 text-slate-300 hover:text-white"
-                              }`}
-                              href={link.href}
-                              style={{
-                                paddingLeft: isSidebarOpen
-                                  ? "2.5rem"
-                                  : "0.75rem",
-                              }}
-                            >
-                              <div className="text-sm transition-all">{link.icon}</div>
-                              <span
-                                className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
-                              >
-                                {link.name}
-                              </span>
-                            </Link>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+
+        {/* التقارير - قسم منفصل في المنتصف */}
+        <div className="mt-4">
+          <Link
+            className={clsx(
+              "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
+              {
+                "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30": pathname.startsWith("/reports"),
+                "hover:bg-white/5 hover:shadow-sm": !pathname.startsWith("/reports"),
+              },
+            )}
+            href="/reports"
+          >
+            <div
+              className={clsx("text-lg transition-all", {
+                "text-white drop-shadow-lg": pathname.startsWith("/reports"),
+                "text-slate-300 group-hover:text-white": !pathname.startsWith("/reports"),
+              })}
+            >
+              <ChartBarIcon className="h-5 w-5" />
+            </div>
+            <span
+              className={clsx("font-medium", {
+                block: isSidebarOpen,
+                hidden: !isSidebarOpen,
+              })}
+            >
+              التقارير
+            </span>
+          </Link>
         </div>
 
         {/* نظام الذهب */}
@@ -716,59 +655,7 @@ const Sidebar = () => {
                   )}
                 </AnimatePresence>
 
-                {/* التقارير - نظام الذهب */}
-                <div
-                  className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
-                  onClick={() => setShowGoldReports(!showGoldReports)}
-                >
-                  <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                    التقارير
-                  </span>
-                  {isSidebarOpen && (
-                    <div className="text-slate-500">
-                      {showGoldReports ? (
-                        <ChevronUpIcon className="h-4 w-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-4 w-4" />
-                      )}
-                    </div>
-                  )}
-                </div>
 
-                <AnimatePresence initial={false}>
-                  {showGoldReports && (
-                    <motion.div
-                      animate="visible"
-                      className="flex flex-col overflow-hidden"
-                      exit="hidden"
-                      initial="hidden"
-                      transition={transition}
-                      variants={animationVariants}
-                    >
-                      {goldReportLinks.map((link) => (
-                        <Link
-                          key={link.href}
-                          className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
-                            pathname === link.href
-                              ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
-                              : "hover:bg-white/5 text-slate-300 hover:text-white"
-                          }`}
-                          href={link.href}
-                          style={{
-                            paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
-                          }}
-                        >
-                          <div className="text-sm transition-all">{link.icon}</div>
-                          <span
-                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
-                          >
-                            {link.name}
-                          </span>
-                        </Link>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>
