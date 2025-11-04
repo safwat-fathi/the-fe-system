@@ -12,7 +12,7 @@ import { STORAGE_KEYS, VOUCHER_TYPE_NAMES } from "@/constants";
 import { GLTransaction } from "@/types/models/gl-transaction";
 
 // Helper function to get current user username
-async function getCurrentUsername(): Promise<string | null> {
+export async function getCurrentUsername(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
     const userData = cookieStore.get(STORAGE_KEYS.USER_DATA)?.value;
@@ -104,7 +104,7 @@ async function getBoxAccountId(boxId: number): Promise<number | null> {
 }
 
 // Helper function to create GL transaction records
-async function createGLTransactionRecords(
+export async function createGLTransactionRecords(
   voucherData: SaveVoucherData,
   details: VoucherDetailData[],
   masterId: number,
@@ -169,11 +169,26 @@ async function createGLTransactionRecords(
       continue;
     }
 
+    // للنقد فقط: debit و credit يجب أن يساويا debit_base و credit_base
+    // للذهب: debit_base و credit_base للذهب القائم، و debit_g و credit_g للذهب المعاير
+    const debitValue = detail.debit || 0;
+    const creditValue = detail.credit || 0;
+    const debitBaseValue = detail.base_debit || 0;
+    const creditBaseValue = detail.base_credit || 0;
+    
+    // إذا كان هناك نقد (debit أو credit > 0) وليس هناك ذهب (base_debit و base_credit = 0)
+    // فإن debit_base و credit_base يجب أن تساوي debit و credit
+    const isCashOnly = (debitValue > 0 || creditValue > 0) && 
+                       debitBaseValue === 0 && creditBaseValue === 0;
+    
+    const finalDebitBase = isCashOnly ? debitValue : debitBaseValue;
+    const finalCreditBase = isCashOnly ? creditValue : creditBaseValue;
+
     const glTransactionData: Partial<GLTransaction> = {
-      debit: String(detail.debit || 0),
-      credit: String(detail.credit || 0),
-      debit_base: String(detail.base_debit || 0),
-      credit_base: String(detail.base_credit || 0),
+      debit: String(debitValue),
+      credit: String(creditValue),
+      debit_base: String(finalDebitBase),
+      credit_base: String(finalCreditBase),
       g_debit: String(detail.debit_g || 0),
       g_credit: String(detail.credit_g || 0),
       g_debit_base: String(detail.debit_g || 0), // نفس القيمة
@@ -225,29 +240,31 @@ async function createGLTransactionRecords(
 
   // ترحيل الصناديق (النقدية) إذا كانت موجودة
   if (voucherBoxes && voucherBoxes.length > 0) {
-    console.log(
-      `[SERVER] 📝 بدء ترحيل ${voucherBoxes.length} صندوق إلى gl_transaction`,
-      `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-    );
+      // تحديد نوع الحركة للصندوق حسب نوع السند
+      // سند قبض (1): debit للصندوق (نحصل على المبلغ)
+      // سند صرف (2): credit للصندوق (ندفع المبلغ)
+      // سند قبض عميل (4): debit للصندوق
+      // سند صرف عميل (5): credit للصندوق
+      // استلام (111): debit للصندوق
+      // تسليم (222): credit للصندوق
+      const isReceipt = 
+        voucherData.vouch_type === 1 || // سند قبض
+        voucherData.vouch_type === 4 || // سند قبض عميل
+        voucherData.vouch_type === 111; // استلام
+      const isPayment = 
+        voucherData.vouch_type === 2 || // سند صرف
+        voucherData.vouch_type === 5 || // سند صرف عميل
+        voucherData.vouch_type === 222; // تسليم
 
-    // تحديد نوع الحركة للصندوق حسب نوع السند
-    // سند قبض (1): debit للصندوق (نحصل على المبلغ)
-    // سند صرف (2): credit للصندوق (ندفع المبلغ)
-    // سند قبض عميل (4): debit للصندوق
-    // سند صرف عميل (5): credit للصندوق
-    // استلام (111): debit للصندوق
-    // تسليم (222): credit للصندوق
-    const isReceipt = 
-      voucherData.vouch_type === 1 || // سند قبض
-      voucherData.vouch_type === 4 || // سند قبض عميل
-      voucherData.vouch_type === 111; // استلام
-    const isPayment = 
-      voucherData.vouch_type === 2 || // سند صرف
-      voucherData.vouch_type === 5 || // سند صرف عميل
-      voucherData.vouch_type === 222; // تسليم
+      console.log(
+        `[SERVER] 📝 بدء ترحيل ${voucherBoxes.length} صندوق إلى gl_transaction`,
+        `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
+        `isReceipt: ${isReceipt}, isPayment: ${isPayment}`,
+      );
 
-    // ترحيل الصناديق لجميع السندات التي تحتوي صناديق
-    if (isReceipt || isPayment) {
+      // ترحيل الصناديق لجميع السندات التي تحتوي صناديق
+      // تأكد من أن الشرط يعمل لسند الصرف أيضاً
+      if (isReceipt || isPayment) {
       for (let i = 0; i < voucherBoxes.length; i++) {
         const box = voucherBoxes[i];
 
@@ -269,11 +286,12 @@ async function createGLTransactionRecords(
         const debit = isReceipt ? box.amount : 0; // سند قبض: debit للصندوق
         const credit = isPayment ? box.amount : 0; // سند صرف: credit للصندوق
 
+        // للنقد: debit_base و credit_base يجب أن تساوي debit و credit
         const glTransactionData: Partial<GLTransaction> = {
           debit: String(debit),
           credit: String(credit),
-          debit_base: String(debit),
-          credit_base: String(credit),
+          debit_base: String(debit), // للنقد: نفس debit
+          credit_base: String(credit), // للنقد: نفس credit
           g_debit: "0",
           g_credit: "0",
           g_debit_base: "0",

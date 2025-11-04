@@ -4,9 +4,6 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Button,
   Input,
-  Switch,
-  Select,
-  SelectItem,
   Card,
   CardBody,
   Table,
@@ -15,13 +12,13 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Autocomplete,
+  AutocompleteItem,
 } from "@heroui/react";
 import {
   MagnifyingGlassIcon,
-  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import AsyncCreatableSelect from "react-select/async-creatable";
 
 import { accountService, glTransactionService } from "@/services/api";
 import { formatAmount } from "@/utilities/formatAmount";
@@ -66,20 +63,17 @@ const getYearStartDate = (): string => {
 };
 
 export default function AccountStatementClient() {
-  const [advancedAnalysis, setAdvancedAnalysis] = useState(true);
   const [startDate, setStartDate] = useState(getYearStartDate());
   const [endDate, setEndDate] = useState(getCurrentDate());
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [selectedAccount, setSelectedAccount] = useState<any | null>(null);
-  const [filterType, setFilterType] = useState<string>("");
-  const [filterOptions, setFilterOptions] = useState<string>("");
-  const [project, setProject] = useState<string>("");
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [transactions, setTransactions] = useState<
     AccountStatementTransaction[]
   >([]);
   const [openingBalance, setOpeningBalance] = useState<number>(0);
+  const [accountSearchValue, setAccountSearchValue] = useState<string>("");
 
   // جلب قائمة الحسابات الأولية
   useEffect(() => {
@@ -96,41 +90,53 @@ export default function AccountStatementClient() {
     loadAccounts();
   }, []);
 
-  // دالة البحث في الحسابات
-  const loadAccountOptions = useCallback(
-    async (inputValue: string): Promise<any[]> => {
-      try {
-        // إذا لم يكن هناك بحث، إرجاع أول 20 حساب
-        if (!inputValue || inputValue.trim().length === 0) {
-          const accountsToShow = accounts.slice(0, 20);
-          return accountsToShow.map((acc) => ({
-            value: String(acc.id),
-            label: `${acc.acc_id} - ${acc.acc_name}`,
-            account: acc,
-          }));
-        }
+  // فلترة الحسابات حسب البحث (للعرض في Autocomplete)
+  const accountOptions = useMemo(() => {
+    if (!accountSearchValue.trim()) {
+      return accounts.map((acc: any) => ({
+        key: String(acc.id),
+        id: acc.id,
+        acc_id: acc.acc_id,
+        acc_name: acc.acc_name,
+        label: `${acc.acc_id} - ${acc.acc_name}`,
+      }));
+    }
 
-        // البحث في الحسابات المحلية فقط (أسرع وأكثر موثوقية)
-        const term = inputValue.trim().toLowerCase();
-        const localMatches = accounts.filter((acc: any) => {
-          const accountCode = (acc.acc_id ?? "").toString().toLowerCase();
-          const accountName = (acc.acc_name ?? "").toLowerCase();
+    const searchTerm = accountSearchValue.toLowerCase().trim();
+    return accounts
+      .filter((acc: any) => {
+        const accountCode = (acc.acc_id ?? "").toString().toLowerCase();
+        const accountName = (acc.acc_name ?? "").toLowerCase();
 
-          return accountCode.includes(term) || accountName.includes(term);
-        });
+        return accountCode.includes(searchTerm) || accountName.includes(searchTerm);
+      })
+      .map((acc: any) => ({
+        key: String(acc.id),
+        id: acc.id,
+        acc_id: acc.acc_id,
+        acc_name: acc.acc_name,
+        label: `${acc.acc_id} - ${acc.acc_name}`,
+      }));
+  }, [accounts, accountSearchValue]);
 
-        return localMatches.map((acc: any) => ({
-          value: String(acc.id),
-          label: `${acc.acc_id} - ${acc.acc_name}`,
-          account: acc,
-        }));
-      } catch (error) {
-        console.error("Error in loadAccountOptions:", error);
-        return [];
-      }
-    },
-    [accounts],
-  );
+  // اختيار حساب
+  const handleAccountSelection = useCallback((key: React.Key | null) => {
+    if (!key) {
+      setSelectedAccount(null);
+      setSelectedAccountId("");
+      setAccountSearchValue("");
+      return;
+    }
+
+    const selectedKey = String(key);
+    const account = accounts.find((acc: any) => String(acc.id) === selectedKey);
+    
+    if (account) {
+      setSelectedAccount(account);
+      setSelectedAccountId(selectedKey);
+      setAccountSearchValue(`${account.acc_id} - ${account.acc_name}`);
+    }
+  }, [accounts]);
 
   // حساب الرصيد
   const calculateBalance = useCallback(() => {
@@ -208,7 +214,7 @@ export default function AccountStatementClient() {
 
   // البحث عن كشف الحساب
   const handleSearch = async () => {
-    if (!selectedAccountId) {
+    if (!selectedAccountId || !selectedAccount) {
       toast.error("يرجى اختيار الحساب");
 
       return;
@@ -216,30 +222,42 @@ export default function AccountStatementClient() {
 
     setLoading(true);
     try {
-      // جلب البيانات من gl_transaction
-      const accountId = parseInt(selectedAccountId);
+      // استخدام acc_id للتصفية
+      // قد يحتاج الـ backend إلى acc_id (string) أو acc (number) حسب الـ API
+      const accountIdToFilter = selectedAccount.acc_id || String(selectedAccount.id);
       
       // تحويل التواريخ من YYYY-MM-DD إلى timestamp أو format مناسب للـ API
       const startDateFormatted = startDate ? new Date(startDate).toISOString().split('T')[0] : '';
       const endDateFormatted = endDate ? new Date(endDate).toISOString().split('T')[0] : '';
 
-      const response = await glTransactionService.getAll({
+      // بناء المعاملات مع إرسال كل من acc و acc_id للتوافق
+      const apiParams: any = {
         xcom_id: 1,
         xyear_id: 0,
         xtrans_type: 0, // 0 = جميع الأنواع
         xtrans_id: 0, // 0 = جميع القيود
-        xfrom_date: startDateFormatted || 0,
-        xto_date: endDateFormatted || 0,
-        acc: accountId, // رقم الحساب
-      });
+        xfrom_date: startDateFormatted || "0",
+        xto_date: endDateFormatted || "0",
+      };
 
-      if (!response.success || !response.data) {
-        toast.error("فشل جلب بيانات كشف الحساب");
-        setTransactions([]);
-        return;
+      // إضافة معامل تصفية الحساب - جرب acc_id أولاً (عادة يكون هذا هو المطلوب)
+      if (accountIdToFilter) {
+        apiParams.acc_id = accountIdToFilter;
+        // أيضاً أضف acc كبديل في حالة كان الـ backend يحتاجه
+        apiParams.acc = accountIdToFilter;
       }
 
-      const glTransactions = Array.isArray(response.data) ? response.data : [];
+      console.log("[Account Statement] API Request Params:", apiParams);
+
+      const response = await glTransactionService.getAll(apiParams);
+
+      // Handle different response types
+      const responseData = (response as any)?.data || response || [];
+      const glTransactions = Array.isArray(responseData)
+        ? responseData
+        : Array.isArray((response as any)?.results)
+          ? (response as any).results
+          : [];
 
       // تحويل البيانات من gl_transaction إلى AccountStatementTransaction
       const convertedTransactions: AccountStatementTransaction[] = glTransactions
@@ -270,7 +288,7 @@ export default function AccountStatementClient() {
             project: transaction.cost ? `مركز تكلفة ${transaction.cost}` : "",
           };
         })
-        .sort((a, b) => {
+        .sort((a: AccountStatementTransaction, b: AccountStatementTransaction) => {
           // ترتيب حسب التاريخ
           const dateA = new Date(a.date).getTime();
           const dateB = new Date(b.date).getTime();
@@ -288,25 +306,36 @@ export default function AccountStatementClient() {
       // حساب الرصيد الافتتاحي
       if (selectedAccountId && startDate) {
         try {
-          const accountId = parseInt(selectedAccountId);
           const openingBalanceDate = new Date(startDate);
           openingBalanceDate.setDate(openingBalanceDate.getDate() - 1);
           const openingDateStr = openingBalanceDate.toISOString().split('T')[0];
 
-          const openingResponse = await glTransactionService.getAll({
+          const openingApiParams: any = {
             xcom_id: 1,
             xyear_id: 0,
             xtrans_type: 0,
             xtrans_id: 0,
-            xfrom_date: 0,
+            xfrom_date: "0",
             xto_date: openingDateStr,
-            acc: accountId,
-          });
+          };
 
-          if (openingResponse.success && openingResponse.data) {
-            const openingTransactions = Array.isArray(openingResponse.data) 
-              ? openingResponse.data 
+          if (accountIdToFilter) {
+            openingApiParams.acc_id = accountIdToFilter;
+            openingApiParams.acc = accountIdToFilter;
+          }
+
+          const openingResponse = await glTransactionService.getAll(openingApiParams);
+
+          // Handle different response types
+          const openingResponseData =
+            (openingResponse as any)?.data || openingResponse || [];
+          const openingTransactions = Array.isArray(openingResponseData)
+            ? openingResponseData
+            : Array.isArray((openingResponse as any)?.results)
+              ? (openingResponse as any).results
               : [];
+
+          if (openingTransactions.length > 0) {
 
             let balance = 0;
             openingTransactions.forEach((trans: any) => {
@@ -334,169 +363,107 @@ export default function AccountStatementClient() {
       }
     } catch (error) {
       console.error("Error loading account statement:", error);
-      toast.error("حدث خطأ أثناء جلب كشف الحساب");
+      
+      // رسالة خطأ أكثر تفصيلاً
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "حدث خطأ أثناء جلب كشف الحساب";
+      
+      toast.error(
+        errorMessage.includes("500") || errorMessage.includes("Internal Server Error")
+          ? "خطأ في الخادم: يرجى التحقق من معاملات API أو التواصل مع المطور"
+          : errorMessage
+      );
+      
       setTransactions([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const resetFilters = () => {
-    setAdvancedAnalysis(true);
-    setStartDate(getYearStartDate());
-    setEndDate(getCurrentDate());
-    setSelectedAccountId("");
-    setSelectedAccount(null);
-    setFilterType("");
-    setFilterOptions("");
-    setProject("");
-    setTransactions([]);
-    setOpeningBalance(0);
-  };
+
 
   return (
     <>
       {/* Filters */}
-      <div className="responsive-filters mb-6">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Switch
-              isSelected={advancedAnalysis}
-              size="sm"
-              onValueChange={setAdvancedAnalysis}
-            />
-            <span className="text-sm">تحليل متقدم</span>
-          </div>
+      <div className="mb-6">
+        <Card className="overflow-visible">
+          <CardBody className="p-4 overflow-visible">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  من تاريخ
+                </label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  size="sm"
+                  className="w-full"
+                />
+              </div>
 
-          <Input
-            className="min-w-[150px]"
-            size="sm"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  إلى تاريخ
+                </label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  size="sm"
+                  className="w-full"
+                />
+              </div>
 
-          <Input
-            className="min-w-[150px]"
-            size="sm"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-
-          <div className="min-w-[250px]">
-            <AsyncCreatableSelect
-              cacheOptions
-              defaultOptions={accounts.slice(0, 20).map((acc) => ({
-                value: String(acc.id),
-                label: `${acc.acc_id} - ${acc.acc_name}`,
-                account: acc,
-              }))}
-              loadOptions={loadAccountOptions}
-              placeholder="ابحث عن الحساب..."
-              isClearable
-              isSearchable
-              value={
-                selectedAccount
-                  ? {
-                      value: String(selectedAccount.id),
-                      label: `${selectedAccount.acc_id} - ${selectedAccount.acc_name}`,
-                      account: selectedAccount,
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  رقم الحساب واسم الحساب
+                </label>
+                <Autocomplete
+                  placeholder="ابحث عن الحساب (رقم الحساب أو الاسم)..."
+                  size="sm"
+                  className="w-full"
+                  items={accountOptions}
+                  selectedKey={selectedAccountId || null}
+                  inputValue={accountSearchValue}
+                  onInputChange={(value) => {
+                    setAccountSearchValue(value);
+                    // إذا تم مسح النص، إلغاء اختيار الحساب
+                    if (!value) {
+                      setSelectedAccount(null);
+                      setSelectedAccountId("");
                     }
-                  : null
-              }
-              onChange={(selected: any) => {
-                if (selected && selected.account) {
-                  setSelectedAccount(selected.account);
-                  setSelectedAccountId(String(selected.account.id));
-                } else {
-                  setSelectedAccount(null);
-                  setSelectedAccountId("");
-                }
-              }}
-              formatCreateLabel={(inputValue) => `استخدم "${inputValue}"`}
-              noOptionsMessage={({ inputValue }) =>
-                inputValue
-                  ? `لا توجد نتائج للبحث "${inputValue}"`
-                  : "ابدأ بالكتابة للبحث..."
-              }
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  minHeight: "32px",
-                  height: "32px",
-                  fontSize: "14px",
-                }),
-                valueContainer: (base) => ({
-                  ...base,
-                  height: "32px",
-                  padding: "0 8px",
-                }),
-                input: (base) => ({
-                  ...base,
-                  margin: "0px",
-                }),
-                indicatorsContainer: (base) => ({
-                  ...base,
-                  height: "32px",
-                }),
-              }}
-            />
-          </div>
+                  }}
+                  onSelectionChange={handleAccountSelection}
+                  inputProps={{
+                    startContent: <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />,
+                  }}
+                  allowsCustomValue={false}
+                  menuTrigger="input"
+                  variant="bordered"
+                >
+                  {(account) => (
+                    <AutocompleteItem key={account.key} textValue={account.label}>
+                      {account.label}
+                    </AutocompleteItem>
+                  )}
+                </Autocomplete>
+              </div>
 
-          <Select
-            className="min-w-[150px]"
-            placeholder="نوع التصفية"
-            selectedKeys={filterType ? [filterType] : []}
-            size="sm"
-            onSelectionChange={(keys) => {
-              const val = Array.from(keys)[0] as string;
-
-              setFilterType(val || "");
-            }}
-          >
-            <SelectItem key="all" value="all">
-              الكل
-            </SelectItem>
-          </Select>
-
-          <Select
-            className="min-w-[150px]"
-            placeholder="خيارات التصفية"
-            selectedKeys={filterOptions ? [filterOptions] : []}
-            size="sm"
-            onSelectionChange={(keys) => {
-              const val = Array.from(keys)[0] as string;
-
-              setFilterOptions(val || "");
-            }}
-          >
-            <SelectItem key="all" value="all">
-              الكل
-            </SelectItem>
-          </Select>
-
-          <Input
-            className="min-w-[200px]"
-            placeholder="مشروع: خيارات التصفية"
-            size="sm"
-            value={project}
-            onChange={(e) => setProject(e.target.value)}
-          />
-
-          <Button
-            className="btn-secondary"
-            isLoading={loading}
-            size="sm"
-            onPress={handleSearch}
-          >
-            <MagnifyingGlassIcon className="h-4 w-4" /> بحث
-          </Button>
-
-          <Button className="btn-secondary" size="sm" onPress={resetFilters}>
-            <ArrowPathIcon className="h-4 w-4" /> إعادة تعيين
-          </Button>
-        </div>
+              <div>
+                <Button
+                  className="btn-secondary w-full"
+                  isLoading={loading}
+                  size="md"
+                  onPress={handleSearch}
+                >
+                  <MagnifyingGlassIcon className="h-4 w-4" /> بحث
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
       </div>
 
       {/* Report Content */}

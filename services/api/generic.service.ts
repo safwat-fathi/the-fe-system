@@ -142,6 +142,19 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
       // لا يحتاج year parameter
     }),
   },
+
+  // GL Transactions (القيود المحاسبية)
+  gl_transaction_list: {
+    endpoint: "gl_transaction_list",
+    paramTransform: (params) => ({
+      xcom_id: params.xcom_id || params.com || "1",
+      xyear_id: params.xyear_id || params.year || "0",
+      xfrom_date: params.xfrom_date || params.from_date || "0",
+      xto_date: params.xto_date || params.to_date || "0",
+      xtrans_id: params.xtrans_id || params.trans_id || "0",
+      xtrans_type: params.xtrans_type || params.trans_type || "0",
+    }),
+  },
 };
 
 class GenericService extends HttpService<any> {
