@@ -332,8 +332,7 @@ export default async function CustomerPaymentVoucherEditPage({
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "القيود", href: "/forms/voucher?type=adjustment" },
-          { name: "الصرف عملاء", href: "/forms/gvoucher5" },
+          { name: "سند صرف عميل", href: "/forms/gvoucher5" },
           {
             name:
               formMode === "edit"

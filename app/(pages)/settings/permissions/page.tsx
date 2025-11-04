@@ -13,8 +13,6 @@ export default async function PermissionsPage() {
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-6">إدارة الصلاحيات</h1>
-
       <PermissionsClient />
     </div>
   );

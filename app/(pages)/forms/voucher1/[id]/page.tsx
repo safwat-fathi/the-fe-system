@@ -333,7 +333,6 @@ export default async function ReceiptVoucherEditPage({
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "القيود", href: "/forms/voucher?type=adjustment" },
           { name: "سند قبض", href: "/forms/voucher1" },
           {
             name:

@@ -20,7 +20,7 @@ export default function DashboardLayout({
         <div className="flex-shrink-0">
           <UserHeader />
         </div>
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto px-1.5 py-0.5">
           <Suspense fallback={<LoadingSkeleton />}>{children}</Suspense>
         </div>
       </main>

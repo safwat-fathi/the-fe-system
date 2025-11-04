@@ -165,7 +165,6 @@ export default async function BalanceVoucherPage({
       <div className="container mx-auto p-4">
         <Breadcrumb
           items={[
-            { name: "القيود", href: "/forms/voucher?type=adjustment" },
             { name: "قيد افتتاحي", href: "/forms/balance" },
             {
               name:

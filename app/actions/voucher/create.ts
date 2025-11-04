@@ -94,8 +94,15 @@ export async function createVoucherAction(
     const savedVoucher = voucherResponse.data;
     let masterId = (savedVoucher as any)?.id;
 
+    console.log("[createVoucherAction] Saved voucher response:", {
+      savedVoucher,
+      id: masterId,
+      vouch_id: (savedVoucher as any)?.vouch_id,
+    });
+
     // Fallback: البحث عن القيد إذا لم يكن id موجوداً
     if (!masterId || masterId <= 0) {
+      console.log("[createVoucherAction] ID not found, trying lookup by vouch_id...");
       if (savedVoucher && (savedVoucher as any).vouch_id) {
         const lookupResponse = await voucherService.getVoucherById(
           (savedVoucher as any).vouch_id,
@@ -104,18 +111,24 @@ export async function createVoucherAction(
           },
         );
 
+        console.log("[createVoucherAction] Lookup response:", lookupResponse);
+
         if (lookupResponse && (lookupResponse as any)?.id) {
           masterId = (lookupResponse as any).id;
+          console.log("[createVoucherAction] Found ID from lookup:", masterId);
         }
       }
     }
 
     if (!masterId || masterId <= 0) {
+      console.error("[createVoucherAction] No ID found after all attempts");
       return {
         success: false,
         message: "لم يتم الحصول على رقم القيد من الخادم",
       };
     }
+
+    console.log("[createVoucherAction] Final masterId:", masterId);
 
     // حفظ الصناديق
     const boxesResult = await processVoucherBoxes(

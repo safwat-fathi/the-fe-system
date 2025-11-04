@@ -19,7 +19,6 @@ export default async function DeliveryVoucherPage() {
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "القيود", href: "/forms/voucher?type=adjustment" },
           { name: "سند تسليم", href: "/forms/delivery" },
           { name: "جديدة" },
         ]}

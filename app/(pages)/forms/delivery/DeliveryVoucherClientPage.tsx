@@ -214,12 +214,12 @@ export default function DeliveryVoucherClientPage({
     voucherTypes.find((t) => (t.Id || t.id) === vouchType)?.name || "سند تسليم";
 
   return (
-    <div className="p-3 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="p-2 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-3 mb-4 border border-slate-200">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 mb-2 border border-slate-200">
+        <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-4">
+            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
                 #
@@ -257,7 +257,7 @@ export default function DeliveryVoucherClientPage({
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-1">
           <div className="flex items-center gap-2">
             <button
               className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm disabled:opacity-50"
@@ -355,9 +355,9 @@ export default function DeliveryVoucherClientPage({
       </div>
 
       {/* Form Fields */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-medium text-slate-700 mb-0.5">
             رقم المرجع
           </label>
           <input
@@ -373,7 +373,7 @@ export default function DeliveryVoucherClientPage({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-medium text-slate-700 mb-0.5">
             التاريخ والوقت
           </label>
           <input
@@ -396,7 +396,7 @@ export default function DeliveryVoucherClientPage({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-medium text-slate-700 mb-0.5">
             العميل
           </label>
           <AsyncCreatableSelectRegular
@@ -475,7 +475,7 @@ export default function DeliveryVoucherClientPage({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-medium text-slate-700 mb-0.5">
             مناولة
           </label>
           <input
@@ -492,7 +492,7 @@ export default function DeliveryVoucherClientPage({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">
+          <label className="block text-xs font-medium text-slate-700 mb-0.5">
             البيان
           </label>
           <input
@@ -509,12 +509,12 @@ export default function DeliveryVoucherClientPage({
       </div>
 
       {/* Gold Table */}
-      <div className="bg-white rounded-lg border border-slate-200 mb-4">
-        <div className="p-3 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-base font-semibold text-slate-800">الذهب</h3>
+      <div className="bg-white rounded-lg border border-slate-200 mb-2">
+        <div className="p-1.5 border-b border-slate-200 bg-slate-50">
+          <h3 className="text-sm font-semibold text-slate-800">الذهب</h3>
         </div>
-        <div className="p-2">
-          <div className="flex justify-between mb-2">
+        <div className="p-1">
+          <div className="flex justify-between mb-1">
             <button
               className="btn"
               disabled={!isEditing}
@@ -524,24 +524,24 @@ export default function DeliveryVoucherClientPage({
               + صف
             </button>
           </div>
-          <div className="overflow-x-auto mb-3 max-w-full">
-            <table className="min-w-[1400px] border text-sm text-center table-fixed">
+          <div className="overflow-x-auto mb-1 max-w-full">
+            <table className="min-w-[1400px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-48 p-2 border">رقم الصنف</th>
-                  <th className="w-32 p-2 border">معايرة</th>
-                  <th className="w-32 p-2 border">الوزن القائم</th>
-                  <th className="w-32 p-2 border">الوزن المعاير</th>
-                  <th className="w-32 p-2 border">معدل الأجور</th>
-                  <th className="w-32 p-2 border">الأجور</th>
-                  <th className="w-48 p-2 border">الصندوق</th>
-                  <th className="w-80 p-2 border">البيان</th>
-                  <th className="w-32 p-2 border">فرق عيار</th>
-                  <th className="w-32 p-2 border">مبلغ التسكير</th>
-                  <th className="w-32 p-2 border">وزن التسكير</th>
-                  <th className="w-32 p-2 border">رقم الفاتورة</th>
-                  <th className="w-48 p-2 border">مركز التكلفة</th>
-                  <th className="w-12 p-2 border">حذف</th>
+                  <th className="w-48 p-1 border">رقم الصنف</th>
+                  <th className="w-32 p-1 border">معايرة</th>
+                  <th className="w-32 p-1 border">الوزن القائم</th>
+                  <th className="w-32 p-1 border">الوزن المعاير</th>
+                  <th className="w-32 p-1 border">معدل الأجور</th>
+                  <th className="w-32 p-1 border">الأجور</th>
+                  <th className="w-48 p-1 border">الصندوق</th>
+                  <th className="w-80 p-1 border">البيان</th>
+                  <th className="w-32 p-1 border">فرق عيار</th>
+                  <th className="w-32 p-1 border">مبلغ التسكير</th>
+                  <th className="w-32 p-1 border">وزن التسكير</th>
+                  <th className="w-32 p-1 border">رقم الفاتورة</th>
+                  <th className="w-48 p-1 border">مركز التكلفة</th>
+                  <th className="w-12 p-1 border">حذف</th>
                 </tr>
               </thead>
               <tbody>
@@ -954,12 +954,12 @@ export default function DeliveryVoucherClientPage({
       </div>
 
       {/* Cash Table */}
-      <div className="bg-white rounded-lg border border-slate-200 mb-4">
-        <div className="p-3 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-base font-semibold text-slate-800">النقدية</h3>
+      <div className="bg-white rounded-lg border border-slate-200 mb-2">
+        <div className="p-1.5 border-b border-slate-200 bg-slate-50">
+          <h3 className="text-sm font-semibold text-slate-800">النقدية</h3>
         </div>
-        <div className="p-2">
-          <div className="flex justify-between mb-2">
+        <div className="p-1">
+          <div className="flex justify-between mb-1">
             <button
               className="btn"
               disabled={!isEditing}
@@ -969,17 +969,17 @@ export default function DeliveryVoucherClientPage({
               + صف
             </button>
           </div>
-          <div className="overflow-x-auto mb-3 max-w-full">
-            <table className="min-w-[1000px] border text-sm text-center table-fixed">
+          <div className="overflow-x-auto mb-1 max-w-full">
+            <table className="min-w-[1000px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-32 p-2 border">المبلغ</th>
-                  <th className="w-48 p-2 border">الصندوق</th>
-                  <th className="w-80 p-2 border">البيان</th>
-                  <th className="w-32 p-2 border">وزن التسكير</th>
-                  <th className="w-32 p-2 border">رقم الفاتورة</th>
-                  <th className="w-48 p-2 border">مركز التكلفة</th>
-                  <th className="w-12 p-2 border">حذف</th>
+                  <th className="w-32 p-1 border">المبلغ</th>
+                  <th className="w-48 p-1 border">الصندوق</th>
+                  <th className="w-80 p-1 border">البيان</th>
+                  <th className="w-32 p-1 border">وزن التسكير</th>
+                  <th className="w-32 p-1 border">رقم الفاتورة</th>
+                  <th className="w-48 p-1 border">مركز التكلفة</th>
+                  <th className="w-12 p-1 border">حذف</th>
                 </tr>
               </thead>
               <tbody>
@@ -1151,8 +1151,8 @@ export default function DeliveryVoucherClientPage({
       </div>
 
       {/* Totals */}
-      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-        <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
+      <div className="bg-gray-50 rounded-lg p-2 border border-gray-200 mt-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <span className="text-gray-700 font-medium">
               إجمالي الذهب (القائم):

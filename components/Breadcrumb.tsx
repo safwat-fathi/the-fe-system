@@ -131,15 +131,15 @@ const Breadcrumb = ({
     <nav
       aria-label="Breadcrumb"
       className={clsx(
-        "flex items-center mb-4 text-sm text-gray-600",
+        "flex items-center mb-2 text-xs text-gray-600",
         className,
       )}
     >
-      <ol className="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse flex-wrap">
+      <ol className="inline-flex items-center space-x-0.5 md:space-x-1 rtl:space-x-reverse flex-wrap">
         {showHome && (
           <li className="inline-flex items-center">
             <Link
-              className="inline-flex items-center font-medium text-gray-700 hover:text-blue-600 transition-colors"
+              className="inline-flex items-center font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
               href="/"
             >
               الرئيسية
@@ -157,13 +157,13 @@ const Breadcrumb = ({
               <ChevronRightIcon className="h-4 w-4 text-gray-400 mx-2 rtl:rotate-180" />
               {item.href ? (
                 <Link
-                  className="font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                  className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
                   href={item.href}
                 >
                   {item.name}
                 </Link>
               ) : (
-                <span className="font-medium text-gray-500">{item.name}</span>
+                <span className="font-medium text-gray-500 leading-none">{item.name}</span>
               )}
             </div>
           </li>

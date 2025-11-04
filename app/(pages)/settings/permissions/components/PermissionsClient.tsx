@@ -1,170 +1,246 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Card,
-  CardBody,
-  CardHeader,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
   Button,
   Chip,
-  Spinner,
-  Badge,
-  Checkbox,
+  Input,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
   Modal,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
-  useDisclosure,
-  Divider,
+  Spinner,
+  Checkbox,
 } from "@heroui/react";
 import {
   ShieldCheckIcon,
-  UserGroupIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+  ArrowDownTrayIcon,
+  FunnelIcon,
+  PencilIcon,
+  TrashIcon,
   UserIcon,
   LockClosedIcon,
-  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import { userService } from "@/services/api";
+import { Group } from "../types/groups";
+import { User } from "../types/users";
+import { SYSTEM_MAP } from "../utils/system-map";
+import { PERMISSION_TYPES } from "../types/permissions";
+import {
+  getPermissionLabel,
+  getPermissionColor,
+  getPermissionIcon,
+} from "../utils/permission-formatters";
+import { groupService, userService } from "../services/index";
+import PermissionsTree from "./GroupsManager/PermissionsTree";
 
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  is_staff: boolean;
-  is_active: boolean;
-  user_permissions: Array<{
-    codename: string;
-    name: string;
-    content_type: number;
-  }>;
-}
-
-interface Permission {
-  codename: string;
-  name: string;
-  group: string;
-}
-
-// Group permissions by content type for better organization
-const PERMISSION_GROUPS = {
-  currencies: {
-    name: "العملات",
-    permissions: [
-      "add_currencies",
-      "change_currencies",
-      "delete_currencies",
-      "view_currencies",
-    ],
-  },
-  customers: {
-    name: "العملاء",
-    permissions: [
-      "add_customers",
-      "change_customers",
-      "delete_customers",
-      "view_customers",
-    ],
-  },
-  invoices: {
-    name: "الفواتير",
-    permissions: [
-      "add_invoices",
-      "change_invoices",
-      "delete_invoices",
-      "view_invoices",
-    ],
-  },
-} as const;
+type ViewMode = "groups" | "users";
 
 export default function PermissionsClient() {
+  const [viewMode, setViewMode] = useState<ViewMode>("groups");
+  const [groups, setGroups] = useState<Group[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedItem, setSelectedItem] = useState<Group | User | null>(null);
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
+  const [permissions, setPermissions] = useState<Record<string, string[]>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    loadData();
+  }, [viewMode]);
 
-  const loadUsers = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const response = await userService.getAllUsers();
-
-      if (response.success && Array.isArray(response.data)) {
-        setUsers(response.data);
+      if (viewMode === "groups") {
+        // Mock data for groups until API is ready
+        const mockGroups: Group[] = [
+          {
+            id: 1,
+            name: "مديرين",
+            name_en: "Administrators",
+            description: "مجموعة المديرين - صلاحيات كاملة",
+            is_active: true,
+          },
+          {
+            id: 2,
+            name: "محاسبين",
+            name_en: "Accountants",
+            description: "مجموعة المحاسبين - صلاحيات الحسابات",
+            is_active: true,
+          },
+          {
+            id: 3,
+            name: "مستخدمين عاديين",
+            name_en: "Regular Users",
+            description: "مجموعة المستخدمين العاديين - صلاحيات محدودة",
+            is_active: true,
+          },
+          {
+            id: 4,
+            name: "مشرفين",
+            name_en: "Supervisors",
+            description: "مجموعة المشرفين - صلاحيات متوسطة",
+            is_active: true,
+          },
+        ];
+        setGroups(mockGroups);
       } else {
-        toast.error("فشل جلب بيانات المستخدمين");
+        try {
+          const usersData = await userService.getAll();
+          setUsers(Array.isArray(usersData) ? usersData : []);
+        } catch {
+          const { userService: globalUserService } = await import("@/services/api");
+          const response = await globalUserService.getAllUsers();
+          if (response.success && Array.isArray(response.data)) {
+            setUsers(response.data);
+          } else {
+            setUsers([]);
+          }
+        }
       }
     } catch (error) {
-      console.error("Error loading users:", error);
-      toast.error("حدث خطأ أثناء جلب البيانات");
+      console.error("Error loading data:", error);
+      if (viewMode === "groups") {
+        setGroups([]);
+      } else {
+        setUsers([]);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUserClick = (user: User) => {
-    setSelectedUser(user);
-    onOpen();
-  };
-
-  const handleSavePermissions = async () => {
-    if (!selectedUser) return;
-
+  const handleOpenPermissions = async (item: Group | User) => {
+    setSelectedItem(item);
+    setPermissionsModalOpen(true);
+    
     try {
-      // TODO: Save permissions via API
-      toast.success("تم حفظ الصلاحيات بنجاح");
-      await loadUsers(); // Reload to get updated data
-      onClose();
+      if (viewMode === "groups") {
+        const groupPerms = await groupService.getPermissions((item as Group).id);
+        const formatted: Record<string, string[]> = {};
+        groupPerms.forEach((perm: any) => {
+          formatted[perm.object_id || perm.screen_id] = perm.permissions || [];
+        });
+        setPermissions(formatted);
+      } else {
+        const userPerms = await userService.getPermissions((item as User).id);
+        const formatted: Record<string, string[]> = {};
+        userPerms.forEach((perm: any) => {
+          formatted[perm.object_id || perm.screen_id] = perm.permissions || [];
+        });
+        setPermissions(formatted);
+      }
     } catch (error) {
-      console.error("Error saving permissions:", error);
-      toast.error("فشل حفظ الصلاحيات");
+      console.error("Error loading permissions:", error);
+      setPermissions({});
     }
   };
 
-  const getPermissionBadge = (permission: string) => {
-    const action = permission.split("_")[0]; // Get action (add, change, delete, view)
+  const handleSavePermissions = async () => {
+    if (!selectedItem) return;
 
-    const colors: Record<string, string> = {
-      add: "success",
-      change: "primary",
-      delete: "danger",
-      view: "default",
-    };
+    try {
+      setSaving(true);
+      const permissionsArray = Object.entries(permissions).map(
+        ([screenId, perms]) => ({
+          object_id: parseInt(screenId),
+          screen_id: screenId,
+          permissions: perms,
+        }),
+      );
 
-    const icons: Record<string, string> = {
-      add: "+",
-      change: "✏️",
-      delete: "🗑️",
-      view: "👁️",
-    };
+      if (viewMode === "groups") {
+        await groupService.updatePermissions((selectedItem as Group).id, permissionsArray);
+      } else {
+        await userService.updatePermissions((selectedItem as User).id, permissionsArray);
+      }
 
-    return (
-      <Chip
-        key={permission}
-        color={colors[action] as any}
-        size="sm"
-        startContent={<span>{icons[action]}</span>}
-        variant="flat"
-      >
-        {action === "add" && "إضافة"}
-        {action === "change" && "تعديل"}
-        {action === "delete" && "حذف"}
-        {action === "view" && "عرض"}
-      </Chip>
-    );
+      toast.success("تم حفظ الصلاحيات بنجاح");
+      setPermissionsModalOpen(false);
+      setSelectedItem(null);
+      loadData();
+    } catch (error) {
+      console.error("Error saving permissions:", error);
+      toast.error("حدث خطأ أثناء حفظ الصلاحيات");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const hasPermissions = (
-    userPermissions: string[],
-    groupPermissions: string[],
-  ) => {
-    return groupPermissions.every((perm) => userPermissions.includes(perm));
+  const handleDelete = async (item: Group | User) => {
+    if (!confirm(`هل أنت متأكد من الحذف؟`)) return;
+
+    try {
+      if (viewMode === "groups") {
+        await groupService.delete((item as Group).id);
+      } else {
+        await userService.delete((item as User).id);
+      }
+      toast.success("تم الحذف بنجاح");
+      loadData();
+    } catch (error) {
+      console.error("Error deleting:", error);
+      toast.error("حدث خطأ أثناء الحذف");
+    }
   };
+
+  const togglePermission = (screenId: string, permission: string) => {
+    setPermissions((prev) => {
+      const current = prev[screenId] || [];
+      const updated = current.includes(permission)
+        ? current.filter((p) => p !== permission)
+        : [...current, permission];
+      return {
+        ...prev,
+        [screenId]: updated,
+      };
+    });
+  };
+
+  const toggleAllPermissions = (screenId: string, checked: boolean) => {
+    setPermissions((prev) => {
+      if (checked) {
+        return {
+          ...prev,
+          [screenId]: Object.values(PERMISSION_TYPES),
+        };
+      } else {
+        const updated = { ...prev };
+        delete updated[screenId];
+        return updated;
+      }
+    });
+  };
+
+  const filteredItems =
+    viewMode === "groups"
+      ? groups.filter(
+          (g) =>
+            g.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            g.name_en?.toLowerCase().includes(searchTerm.toLowerCase()),
+        )
+      : users.filter(
+          (u) =>
+            u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+        );
 
   if (loading) {
     return (
@@ -176,247 +252,288 @@ export default function PermissionsClient() {
 
   return (
     <div className="space-y-6">
-      {/* Header Info */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
-        <CardBody className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold text-gray-900 mb-2">
-                نظام إدارة الصلاحيات
-              </h2>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                هنا يمكنك إدارة صلاحيات المستخدمين وتحديد ما يمكن لكل مستخدم
-                الوصول إليه في النظام. المستخدمين مع صلاحيات Admin يتمتعون بكامل
-                الصلاحيات تلقائياً.
-              </p>
-            </div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <ShieldCheckIcon className="h-6 w-6 text-white" />
           </div>
-        </CardBody>
-      </Card>
-
-      {/* Users List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {users.map((user) => (
-          <Card
-            key={user.id}
-            className="transition-all duration-200 hover:shadow-lg"
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">إدارة الصلاحيات</h1>
+            <p className="text-sm text-gray-500">
+              {viewMode === "groups" ? "المجموعات" : "المستخدمين"}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant={viewMode === "groups" ? "solid" : "bordered"}
+            color={viewMode === "groups" ? "primary" : "default"}
+            onPress={() => setViewMode("groups")}
           >
-            <CardBody className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      user.is_staff ? "bg-purple-100" : "bg-blue-100"
-                    }`}
-                  >
-                    {user.is_staff ? (
-                      <LockClosedIcon className="h-5 w-5 text-purple-600" />
-                    ) : (
-                      <UserIcon className="h-5 w-5 text-blue-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {user.username}
-                    </h3>
-                    {user.email && (
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                    )}
-                  </div>
-                </div>
-                {user.is_staff && (
-                  <Badge color="secondary" content="Admin" variant="solid">
-                    <Chip color="secondary" size="sm" variant="flat">
-                      مدير
-                    </Chip>
-                  </Badge>
-                )}
-              </div>
-
-              {user.is_staff ? (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <CheckCircleIcon className="h-4 w-4 text-green-500" />
-                  <span>صلاحيات كاملة</span>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                    <span>الصلاحيات:</span>
-                    <span className="font-medium">
-                      {user.user_permissions.length} صلاحية
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {user.user_permissions
-                      .slice(0, 6)
-                      .map((perm) => getPermissionBadge(perm.codename))}
-                    {user.user_permissions.length > 6 && (
-                      <Chip size="sm" variant="flat">
-                        +{user.user_permissions.length - 6}
-                      </Chip>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <Divider className="my-4" />
-
-              <div className="flex items-center justify-between text-xs">
-                <Chip
-                  color={user.is_active ? "success" : "danger"}
-                  size="sm"
-                  variant="flat"
-                >
-                  {user.is_active ? "نشط" : "غير نشط"}
-                </Chip>
-                <Button
-                  size="sm"
-                  variant="light"
-                  onPress={() => handleUserClick(user)}
-                >
-                  تعديل
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-        ))}
+            المجموعات
+          </Button>
+          <Button
+            variant={viewMode === "users" ? "solid" : "bordered"}
+            color={viewMode === "users" ? "primary" : "default"}
+            onPress={() => setViewMode("users")}
+          >
+            المستخدمين
+          </Button>
+        </div>
       </div>
 
-      {/* Permission Details Modal */}
+      {/* Action Bar */}
+      <div className="flex items-center gap-3">
+        <Button
+          color="success"
+          startContent={<PlusIcon className="h-5 w-5" />}
+          onPress={() => {
+            // TODO: Open add modal
+            toast.info("ميزة الإضافة قيد التطوير");
+          }}
+        >
+          إضافة جديد
+        </Button>
+        <Button
+          variant="bordered"
+          startContent={<ArrowDownTrayIcon className="h-5 w-5" />}
+        >
+          تصدير
+        </Button>
+        <Input
+          placeholder="ابحث..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+          variant="bordered"
+          className="flex-1 max-w-xs"
+        />
+        <Dropdown>
+          <DropdownTrigger>
+            <Button variant="bordered" startContent={<FunnelIcon className="h-5 w-5" />}>
+              ترتيب
+            </Button>
+          </DropdownTrigger>
+          <DropdownMenu aria-label="Sort options">
+            <DropdownItem key="name">حسب الاسم</DropdownItem>
+            <DropdownItem key="level">حسب المستوى</DropdownItem>
+            <DropdownItem key="status">حسب الحالة</DropdownItem>
+          </DropdownMenu>
+        </Dropdown>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <Table
+          aria-label={`${viewMode === "groups" ? "Groups" : "Users"} table`}
+          classNames={{
+            wrapper: "min-h-[400px]",
+          }}
+        >
+          <TableHeader>
+            <TableColumn>
+              {viewMode === "groups" ? "اسم المجموعة" : "اسم المستخدم"}
+            </TableColumn>
+            <TableColumn>المستوى</TableColumn>
+            <TableColumn>الحالة</TableColumn>
+            <TableColumn className={viewMode === "groups" ? "hidden" : ""}>
+              النوع
+            </TableColumn>
+            <TableColumn>الإجراءات</TableColumn>
+          </TableHeader>
+          <TableBody 
+            emptyContent={`لا يوجد ${viewMode === "groups" ? "مجموعات" : "مستخدمين"}`}
+          >
+            {filteredItems.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={viewMode === "users" ? 5 : 4} className="text-center py-8">
+                  لا يوجد {viewMode === "groups" ? "مجموعات" : "مستخدمين"}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        {viewMode === "groups" ? (
+                          <ShieldCheckIcon className="h-5 w-5 text-white" />
+                        ) : (item as User).is_staff ? (
+                          <LockClosedIcon className="h-5 w-5 text-white" />
+                        ) : (
+                          <UserIcon className="h-5 w-5 text-white" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {viewMode === "groups"
+                            ? (item as Group).name
+                            : (item as User).username}
+                        </p>
+                        {viewMode === "groups" && (item as Group).name_en && (
+                          <p className="text-xs text-gray-500">
+                            {(item as Group).name_en}
+                          </p>
+                        )}
+                        {viewMode === "users" && (item as User).email && (
+                          <p className="text-xs text-gray-500">
+                            {(item as User).email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      color="secondary"
+                      className="font-medium"
+                    >
+                      المستوى {item.id || 1}
+                    </Chip>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      color={
+                        viewMode === "groups"
+                          ? (item as Group).is_active !== false
+                            ? "success"
+                            : "danger"
+                          : (item as User).is_active
+                            ? "success"
+                            : "danger"
+                      }
+                      size="sm"
+                      variant="flat"
+                    >
+                      {viewMode === "groups"
+                        ? (item as Group).is_active !== false
+                          ? "نشط"
+                          : "غير نشط"
+                        : (item as User).is_active
+                          ? "نشط"
+                          : "غير نشط"}
+                    </Chip>
+                  </TableCell>
+                  <TableCell className={viewMode === "groups" ? "hidden" : ""}>
+                    {viewMode === "users" && (
+                      <>
+                        {(item as User).is_staff ? (
+                          <Chip size="sm" color="secondary" variant="flat">
+                            مدير
+                          </Chip>
+                        ) : (
+                          <Chip size="sm" variant="flat">
+                            مستخدم
+                          </Chip>
+                        )}
+                      </>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="flat"
+                        color="primary"
+                        size="sm"
+                        startContent={<ShieldCheckIcon className="h-4 w-4" />}
+                        onPress={() => handleOpenPermissions(item)}
+                      >
+                        الصلاحيات
+                      </Button>
+                      <Button
+                        variant="light"
+                        color="default"
+                        size="sm"
+                        isIconOnly
+                        onPress={() => {
+                          toast.info("ميزة التعديل قيد التطوير");
+                        }}
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="light"
+                        color="danger"
+                        size="sm"
+                        isIconOnly
+                        onPress={() => handleDelete(item)}
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Permissions Modal */}
       <Modal
-        isOpen={isOpen}
+        isOpen={permissionsModalOpen}
+        onClose={() => {
+          setPermissionsModalOpen(false);
+          setSelectedItem(null);
+          setPermissions({});
+        }}
+        size="5xl"
         scrollBehavior="inside"
-        size="2xl"
-        onClose={onClose}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <UserIcon className="h-5 w-5" />
-              <span>إدارة صلاحيات: {selectedUser?.username}</span>
+          <ModalHeader>
+            <div className="flex items-center gap-3">
+              <ShieldCheckIcon className="h-6 w-6 text-primary" />
+              <div>
+                <h3 className="text-lg font-bold">
+                  إدارة الصلاحيات:{" "}
+                  {selectedItem &&
+                    (viewMode === "groups"
+                      ? (selectedItem as Group).name
+                      : (selectedItem as User).username)}
+                </h3>
+                <p className="text-sm text-gray-500 font-normal">
+                  حدد الصلاحيات المسموحة
+                </p>
+              </div>
             </div>
-            <p className="text-sm font-normal text-gray-500">
-              {selectedUser?.is_staff
-                ? "هذا المستخدم لديه صلاحيات Admin - صلاحيات كاملة"
-                : "حدد الصلاحيات المطلوبة لكل عنصر"}
-            </p>
           </ModalHeader>
           <ModalBody>
-            {selectedUser?.is_staff ? (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="bg-purple-100 p-6 rounded-full mb-4">
-                  <LockClosedIcon className="h-16 w-16 text-purple-600" />
-                </div>
+            {selectedItem && (selectedItem as User).is_staff && viewMode === "users" ? (
+              <div className="text-center py-8">
+                <LockClosedIcon className="h-16 w-16 text-purple-600 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
                   صلاحيات كاملة
                 </h3>
                 <p className="text-gray-600">
-                  المستخدمين مع صلاحيات Admin يتمتعون بوصول كامل لجميع أجزاء
-                  النظام ولا يمكن تعديل صلاحياتهم من هذه الشاشة.
+                  هذا المستخدم لديه صلاحيات Admin - صلاحيات كاملة لجميع الشاشات
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {Object.entries(PERMISSION_GROUPS).map(([key, group]) => (
-                  <Card key={key} className="shadow-sm">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-blue-100 p-2 rounded-lg">
-                          <UserGroupIcon className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <h3 className="font-semibold text-gray-900">
-                          {group.name}
-                        </h3>
-                        <div className="flex-1" />
-                        {hasPermissions(
-                          selectedUser?.user_permissions.map(
-                            (p) => p.codename,
-                          ) || [],
-                          group.permissions,
-                        ) && (
-                          <Chip color="success" size="sm" variant="flat">
-                            <CheckCircleIcon className="h-4 w-4" />
-                            كامل
-                          </Chip>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <Divider />
-                    <CardBody className="pt-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        {group.permissions.map((permission) => (
-                          <div
-                            key={permission}
-                            className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                isReadOnly
-                                isSelected={selectedUser?.user_permissions.some(
-                                  (p) => p.codename === permission,
-                                )}
-                              />
-                              <span className="text-sm font-medium text-gray-700">
-                                {permission === "add_currencies" &&
-                                  "إضافة عملات"}
-                                {permission === "change_currencies" &&
-                                  "تعديل عملات"}
-                                {permission === "delete_currencies" &&
-                                  "حذف عملات"}
-                                {permission === "view_currencies" &&
-                                  "عرض عملات"}
-                                {permission === "add_customers" &&
-                                  "إضافة عملاء"}
-                                {permission === "change_customers" &&
-                                  "تعديل عملاء"}
-                                {permission === "delete_customers" &&
-                                  "حذف عملاء"}
-                                {permission === "view_customers" && "عرض عملاء"}
-                                {permission === "add_invoices" &&
-                                  "إضافة فواتير"}
-                                {permission === "change_invoices" &&
-                                  "تعديل فواتير"}
-                                {permission === "delete_invoices" &&
-                                  "حذف فواتير"}
-                                {permission === "view_invoices" && "عرض فواتير"}
-                              </span>
-                            </div>
-                            {getPermissionBadge(permission)}
-                          </div>
-                        ))}
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))}
-
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="text-2xl">ℹ️</div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-amber-900 mb-1">
-                        ملاحظة مهمة
-                      </h4>
-                      <p className="text-sm text-amber-800">
-                        الصلاحيات مُعطاة حالياً من النظام. عند ربط جدول objects
-                        والـ API الجديد، سيتم تفعيل نظام الصلاحيات الديناميكي
-                        الكامل وسيمكن تعديل الصلاحيات من هنا.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <PermissionsTree
+                permissions={permissions}
+                onPermissionChange={togglePermission}
+                onSelectAll={toggleAllPermissions}
+              />
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={() => {
+                setPermissionsModalOpen(false);
+                setSelectedItem(null);
+                setPermissions({});
+              }}
+            >
               إلغاء
             </Button>
-            {!selectedUser?.is_staff && (
-              <Button color="primary" onPress={handleSavePermissions}>
-                حفظ التغييرات
+            {!(selectedItem && (selectedItem as User).is_staff && viewMode === "users") && (
+              <Button color="primary" onPress={handleSavePermissions} isLoading={saving}>
+                حفظ الصلاحيات
               </Button>
             )}
           </ModalFooter>
