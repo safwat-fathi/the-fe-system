@@ -17,7 +17,7 @@ export interface GLTransaction {
   note: string;
   source: string;
   seq: number; // تسلسل الحركة
-  cust2?: string | null; // اسم العميل
+  cust2?: number | null; // رقم العميل (ID)
   cr_date: string;
   cr_user: string | null;
   upd_date?: string | null;
@@ -28,4 +28,3 @@ export interface GLTransaction {
   cust?: number | null; // رقم العميل
   cost?: number | null; // مركز التكلفة
 }
-

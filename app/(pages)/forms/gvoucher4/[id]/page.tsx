@@ -321,6 +321,12 @@ export default async function CustomerReceiptVoucherEditPage({
   });
 
   // تنسيق بيانات القيد
+  // معالجة cust - قد يكون cust أو cust_id في API
+  const custValue =
+    targetVoucher.cust_id ||
+    (targetVoucher as any).cust ||
+    undefined;
+
   const formattedVoucher: Voucher = {
     ...targetVoucher,
     vouch_date: targetVoucher.vouch_date || new Date().toISOString(),
@@ -334,7 +340,7 @@ export default async function CustomerReceiptVoucherEditPage({
     post: targetVoucher.post || false,
     handling: (targetVoucher as any).handling || "",
     print: targetVoucher.print || false,
-    cust_id: targetVoucher.cust_id || undefined,
+    cust_id: custValue,
   };
 
   return (

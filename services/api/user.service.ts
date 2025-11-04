@@ -1,5 +1,4 @@
 import HttpService from "../base/http.service";
-import { UserPermissions } from "@/types/models/menu";
 
 class UserService extends HttpService {
   constructor() {
@@ -75,6 +74,7 @@ class UserService extends HttpService {
       return null;
     } catch (error) {
       console.error("Error fetching current user:", error);
+
       return null;
     }
   }

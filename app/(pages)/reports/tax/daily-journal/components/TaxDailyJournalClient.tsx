@@ -16,13 +16,13 @@ import {
   Checkbox,
 } from "@heroui/react";
 import {
-  MagnifyingGlassIcon,
   ArrowPathIcon,
   PrinterIcon,
   EyeIcon,
   FunnelIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+
 import { formatAmount } from "@/utilities/formatAmount";
 import { formatDate } from "@/utilities/dateUtils";
 
@@ -31,6 +31,7 @@ const getCurrentDate = (): string => {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 };
 
@@ -38,6 +39,7 @@ const getMonthStartDate = (): string => {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
+
   return `${year}-${month}-01`;
 };
 
@@ -100,7 +102,7 @@ export default function TaxDailyJournalClient() {
         standardRate: 0,
         zeroRate: 0,
         exempt: 0,
-      }
+      },
     );
   }, [entries]);
 
@@ -110,6 +112,7 @@ export default function TaxDailyJournalClient() {
     if (type.includes("Invoice")) return "primary";
     if (type.includes("Credit")) return "warning";
     if (type.includes("Debit")) return "danger";
+
     return "default";
   };
 
@@ -120,36 +123,36 @@ export default function TaxDailyJournalClient() {
         <CardBody className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Input
-              type="date"
               label="من تاريخ"
+              size="sm"
+              type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              size="sm"
             />
             <Input
-              type="date"
               label="إلى تاريخ"
+              size="sm"
+              type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              size="sm"
             />
             <div className="flex gap-2">
               <Button
+                className="flex-1"
                 color="primary"
-                startContent={<FunnelIcon className="h-4 w-4" />}
-                onPress={handleSearch}
                 isLoading={loading}
                 size="md"
-                className="flex-1"
+                startContent={<FunnelIcon className="h-4 w-4" />}
+                onPress={handleSearch}
               >
                 تصفية
               </Button>
               <Button
-                variant="bordered"
                 color="danger"
-                startContent={<ArrowPathIcon className="h-4 w-4" />}
-                onPress={handleReset}
                 size="md"
+                startContent={<ArrowPathIcon className="h-4 w-4" />}
+                variant="bordered"
+                onPress={handleReset}
               >
                 إعادة تعيين
               </Button>
@@ -174,11 +177,9 @@ export default function TaxDailyJournalClient() {
           <div className="overflow-x-auto">
             <Table
               aria-label="Tax Daily Journal Table"
-              selectionMode="multiple"
               selectedKeys={selectedRows}
-              onSelectionChange={(keys) =>
-                setSelectedRows(keys as Set<string>)
-              }
+              selectionMode="multiple"
+              onSelectionChange={(keys) => setSelectedRows(keys as Set<string>)}
             >
               <TableHeader>
                 <TableColumn>رقم المستند التجاري</TableColumn>
@@ -196,7 +197,9 @@ export default function TaxDailyJournalClient() {
                 {entries.map((entry, index) => (
                   <TableRow key={entry.documentNumber}>
                     <TableCell>
-                      <Checkbox isSelected={selectedRows.has(entry.documentNumber)} />
+                      <Checkbox
+                        isSelected={selectedRows.has(entry.documentNumber)}
+                      />
                       {entry.documentNumber}
                     </TableCell>
                     <TableCell>
@@ -263,7 +266,9 @@ export default function TaxDailyJournalClient() {
               <div className="flex justify-between items-center text-sm font-medium text-gray-700">
                 <span>إجماليات الصفحة</span>
                 <div className="flex gap-8">
-                  <span className={pageTotals.credit > 0 ? "text-green-600" : ""}>
+                  <span
+                    className={pageTotals.credit > 0 ? "text-green-600" : ""}
+                  >
                     {formatAmount(pageTotals.credit, 2)}
                   </span>
                   <span className={pageTotals.debit > 0 ? "text-red-600" : ""}>
@@ -282,8 +287,12 @@ export default function TaxDailyJournalClient() {
           <CardBody className="p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
-                <p className="text-sm text-gray-600 mb-1">صافي ضريبة القيمة المضافة المستحقة</p>
-                <p className={`text-xl font-bold ${netVAT < 0 ? "text-red-600" : "text-green-600"}`}>
+                <p className="text-sm text-gray-600 mb-1">
+                  صافي ضريبة القيمة المضافة المستحقة
+                </p>
+                <p
+                  className={`text-xl font-bold ${netVAT < 0 ? "text-red-600" : "text-green-600"}`}
+                >
                   {formatAmount(netVAT, 2)}
                 </p>
               </div>

@@ -52,15 +52,30 @@ interface Permission {
 const PERMISSION_GROUPS = {
   currencies: {
     name: "العملات",
-    permissions: ["add_currencies", "change_currencies", "delete_currencies", "view_currencies"],
+    permissions: [
+      "add_currencies",
+      "change_currencies",
+      "delete_currencies",
+      "view_currencies",
+    ],
   },
   customers: {
     name: "العملاء",
-    permissions: ["add_customers", "change_customers", "delete_customers", "view_customers"],
+    permissions: [
+      "add_customers",
+      "change_customers",
+      "delete_customers",
+      "view_customers",
+    ],
   },
   invoices: {
     name: "الفواتير",
-    permissions: ["add_invoices", "change_invoices", "delete_invoices", "view_invoices"],
+    permissions: [
+      "add_invoices",
+      "change_invoices",
+      "delete_invoices",
+      "view_invoices",
+    ],
   },
 } as const;
 
@@ -144,7 +159,10 @@ export default function PermissionsClient() {
     );
   };
 
-  const hasPermissions = (userPermissions: string[], groupPermissions: string[]) => {
+  const hasPermissions = (
+    userPermissions: string[],
+    groupPermissions: string[],
+  ) => {
     return groupPermissions.every((perm) => userPermissions.includes(perm));
   };
 
@@ -191,9 +209,7 @@ export default function PermissionsClient() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`p-2 rounded-lg ${
-                      user.is_staff
-                        ? "bg-purple-100"
-                        : "bg-blue-100"
+                      user.is_staff ? "bg-purple-100" : "bg-blue-100"
                     }`}
                   >
                     {user.is_staff ? (
@@ -203,14 +219,16 @@ export default function PermissionsClient() {
                     )}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{user.username}</h3>
+                    <h3 className="font-semibold text-gray-900">
+                      {user.username}
+                    </h3>
                     {user.email && (
                       <p className="text-xs text-gray-500">{user.email}</p>
                     )}
                   </div>
                 </div>
                 {user.is_staff && (
-                  <Badge content="Admin" color="secondary" variant="solid">
+                  <Badge color="secondary" content="Admin" variant="solid">
                     <Chip color="secondary" size="sm" variant="flat">
                       مدير
                     </Chip>
@@ -270,9 +288,9 @@ export default function PermissionsClient() {
       {/* Permission Details Modal */}
       <Modal
         isOpen={isOpen}
-        onClose={onClose}
-        size="2xl"
         scrollBehavior="inside"
+        size="2xl"
+        onClose={onClose}
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
@@ -309,10 +327,14 @@ export default function PermissionsClient() {
                         <div className="bg-blue-100 p-2 rounded-lg">
                           <UserGroupIcon className="h-5 w-5 text-blue-600" />
                         </div>
-                        <h3 className="font-semibold text-gray-900">{group.name}</h3>
+                        <h3 className="font-semibold text-gray-900">
+                          {group.name}
+                        </h3>
                         <div className="flex-1" />
                         {hasPermissions(
-                          selectedUser?.user_permissions.map((p) => p.codename) || [],
+                          selectedUser?.user_permissions.map(
+                            (p) => p.codename,
+                          ) || [],
                           group.permissions,
                         ) && (
                           <Chip color="success" size="sm" variant="flat">
@@ -332,23 +354,33 @@ export default function PermissionsClient() {
                           >
                             <div className="flex items-center gap-2">
                               <Checkbox
+                                isReadOnly
                                 isSelected={selectedUser?.user_permissions.some(
                                   (p) => p.codename === permission,
                                 )}
-                                isReadOnly
                               />
                               <span className="text-sm font-medium text-gray-700">
-                                {permission === "add_currencies" && "إضافة عملات"}
-                                {permission === "change_currencies" && "تعديل عملات"}
-                                {permission === "delete_currencies" && "حذف عملات"}
-                                {permission === "view_currencies" && "عرض عملات"}
-                                {permission === "add_customers" && "إضافة عملاء"}
-                                {permission === "change_customers" && "تعديل عملاء"}
-                                {permission === "delete_customers" && "حذف عملاء"}
+                                {permission === "add_currencies" &&
+                                  "إضافة عملات"}
+                                {permission === "change_currencies" &&
+                                  "تعديل عملات"}
+                                {permission === "delete_currencies" &&
+                                  "حذف عملات"}
+                                {permission === "view_currencies" &&
+                                  "عرض عملات"}
+                                {permission === "add_customers" &&
+                                  "إضافة عملاء"}
+                                {permission === "change_customers" &&
+                                  "تعديل عملاء"}
+                                {permission === "delete_customers" &&
+                                  "حذف عملاء"}
                                 {permission === "view_customers" && "عرض عملاء"}
-                                {permission === "add_invoices" && "إضافة فواتير"}
-                                {permission === "change_invoices" && "تعديل فواتير"}
-                                {permission === "delete_invoices" && "حذف فواتير"}
+                                {permission === "add_invoices" &&
+                                  "إضافة فواتير"}
+                                {permission === "change_invoices" &&
+                                  "تعديل فواتير"}
+                                {permission === "delete_invoices" &&
+                                  "حذف فواتير"}
                                 {permission === "view_invoices" && "عرض فواتير"}
                               </span>
                             </div>
@@ -369,8 +401,8 @@ export default function PermissionsClient() {
                       </h4>
                       <p className="text-sm text-amber-800">
                         الصلاحيات مُعطاة حالياً من النظام. عند ربط جدول objects
-                        والـ API الجديد، سيتم تفعيل نظام الصلاحيات الديناميكي الكامل
-                        وسيمكن تعديل الصلاحيات من هنا.
+                        والـ API الجديد، سيتم تفعيل نظام الصلاحيات الديناميكي
+                        الكامل وسيمكن تعديل الصلاحيات من هنا.
                       </p>
                     </div>
                   </div>
@@ -393,4 +425,3 @@ export default function PermissionsClient() {
     </div>
   );
 }
-

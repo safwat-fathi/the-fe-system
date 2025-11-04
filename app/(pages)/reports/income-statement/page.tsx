@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import IncomeStatementClient from "./components/IncomeStatementClient";
+
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {

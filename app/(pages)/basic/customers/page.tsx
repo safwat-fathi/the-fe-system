@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import CustomersClient from "./components/CustomersClient";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import customerService from "@/services/api/customer.service";
 import helperService from "@/services/api/helper.service";
 import accountService from "@/services/api/account.service";
@@ -35,6 +36,7 @@ export default async function CustomersPage() {
 
   return (
     <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <h1 className="responsive-text-xl font-bold mb-6">العملاء</h1>
 
       <CustomersClient

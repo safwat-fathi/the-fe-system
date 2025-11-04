@@ -19,6 +19,37 @@ const nextConfig = {
       exclude: ['error', 'warn'],
     } : false,
   },
+  
+  // Webpack configuration for better chunk handling
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Optimize chunk splitting for client-side
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Separate vendor chunks for better caching
+            heroui: {
+              name: 'heroui',
+              test: /[\\/]node_modules[\\/]@heroui[\\/]/,
+              priority: 30,
+              reuseExistingChunk: true,
+            },
+            vendor: {
+              name: 'vendor',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 20,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;

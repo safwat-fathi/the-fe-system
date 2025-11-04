@@ -9,16 +9,13 @@ import toast from "react-hot-toast";
 
 const AsyncPaginateCreatableSelect = withAsyncPaginate(CreatableSelect);
 
+import GLTransactionModal from "../components/GLTransactionModal";
+
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { voucherService, itemService, customerService } from "@/services/api";
-import {
-  createVoucherAction,
-  updateVoucherAction,
-} from "@/app/actions/voucher.action";
 import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
-import GLTransactionModal from "../components/GLTransactionModal";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -802,6 +799,11 @@ export default function CustomerGoldVoucherClientPage({
         .filter((id) => id && id > 0) as number[];
       const deletedGoldDetailIds = originalGoldDetailIds.filter(
         (id) => !currentGoldDetailIds.includes(id),
+      );
+
+      // Dynamic import for server actions to avoid bundling in client
+      const { createVoucherAction, updateVoucherAction } = await import(
+        "@/app/actions/voucher.action"
       );
 
       const result =
@@ -1633,6 +1635,18 @@ export default function CustomerGoldVoucherClientPage({
               <i className="bi bi-printer w-4 h-4 me-1" />
               طباعة
             </button>
+
+            <button
+              className="h-7 px-3 text-xs bg-indigo-600 text-white hover:bg-indigo-700 border border-indigo-600 rounded-md shadow-sm disabled:opacity-50"
+              disabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              title="عرض القيد المحاسبي"
+              onClick={handleViewGLTransactions}
+            >
+              <span className="flex items-center gap-1">
+                <i className="bi bi-list-check w-4 h-4 me-1" />
+                القيد المحاسبي
+              </span>
+            </button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -2449,13 +2463,13 @@ export default function CustomerGoldVoucherClientPage({
 
       {/* مودال عرض القيد المحاسبي */}
       <GLTransactionModal
+        getAccountName={getAccountName}
         isOpen={isGLModalOpen}
-        onClose={() => setIsGLModalOpen(false)}
         loading={loadingGLTransactions}
+        refNo={voucher.ref_no}
         transactions={glTransactions}
         voucherId={voucher.vouch_id || 0}
-        refNo={voucher.ref_no}
-        getAccountName={getAccountName}
+        onClose={() => setIsGLModalOpen(false)}
       />
     </div>
   );

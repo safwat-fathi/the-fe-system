@@ -4,6 +4,7 @@ import TokenDisplay from "./components/TokenDisplay";
 import DynamicDataTable from "./components/DynamicDataTable";
 import TableSelector from "./components/TableSelector";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import genericService from "@/services/api/generic.service";
 import { getCookieAction } from "@/app/actions/cookie-store";
 import { getBranchParams } from "@/app/actions/branch-params";
@@ -52,6 +53,7 @@ export default async function TestServicePage({
 
   return (
     <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <h1 className="responsive-text-xl font-bold mb-6">
         اختبار نظام HttpService الجديد - الجدول الديناميكي
       </h1>

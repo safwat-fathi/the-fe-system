@@ -5,6 +5,7 @@ import { Metadata } from "next";
 import ItemsClient from "./components/ItemsClient";
 
 import AppPagination from "@/components/AppPagination";
+import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
 import helperService from "@/services/api/helper.service";
 import itemService from "@/services/api/item.service";
@@ -64,6 +65,7 @@ export default async function ItemsPage({
 
   return (
     <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <h1 className="responsive-text-xl font-bold mb-6">الأصناف</h1>
 
       <ItemsClient

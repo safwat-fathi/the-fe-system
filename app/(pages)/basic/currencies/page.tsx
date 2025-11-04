@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import CurrenciesClient from "./components/CurrenciesClient";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import genericService from "@/services/api/generic.service";
 import { getBranchParams } from "@/app/actions/branch-params";
 
@@ -49,6 +50,7 @@ export default async function CurrenciesPage() {
 
   return (
     <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <h1 className="responsive-text-xl font-bold mb-6">العملات</h1>
 
       {/* عرض حالة الطلب */}

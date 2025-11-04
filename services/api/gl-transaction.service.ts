@@ -26,23 +26,31 @@ class GLTransactionService extends HttpService<GLTransaction> {
    */
   async deleteTransaction(id: number, params?: IParams) {
     // استخدام delete المحمي من HttpService (مثل voucher.service.ts)
-    const response = await this.delete(`api_delete_gl_transaction/${id}`, params);
-    
+    const response = await this.delete(
+      `api_delete_gl_transaction/${id}`,
+      params,
+    );
+
     // إذا كانت الاستجابة لا تحتوي على success، نضيفها
-    if (response && typeof response.success === 'undefined') {
+    if (response && typeof response.success === "undefined") {
       return {
         ...response,
         success: true, // نعتبر الحذف نجح إذا لم يكن هناك خطأ
       };
     }
-    
+
     return response;
   }
 
   /**
    * جلب جميع سجلات الترحيل
    */
-  async getAll(params?: IParams): Promise<IPaginatedResponse<GLTransaction> | { success: boolean; data?: GLTransaction[]; message?: string }> {
+  async getAll(
+    params?: IParams,
+  ): Promise<
+    | IPaginatedResponse<GLTransaction>
+    | { success: boolean; data?: GLTransaction[]; message?: string }
+  > {
     try {
       // إضافة xcom_id إذا لم يكن موجوداً
       // ملاحظة: gl_transaction_list يحتاج معاملات محددة
@@ -60,19 +68,21 @@ class GLTransactionService extends HttpService<GLTransaction> {
       };
 
       // إزالة undefined/null values
-      Object.keys(queryParams).forEach(key => {
-        if (queryParams[key] === undefined || queryParams[key] === null || queryParams[key] === "") {
+      Object.keys(queryParams).forEach((key) => {
+        if (
+          queryParams[key] === undefined ||
+          queryParams[key] === null ||
+          queryParams[key] === ""
+        ) {
           delete queryParams[key];
         }
       });
 
-      const response = await this.get<IPaginatedResponse<GLTransaction> | GLTransaction[]>(
-        "gl_transaction_list",
-        queryParams,
-        {
-          cache: "no-store", // عدم استخدام cache للحصول على البيانات الحالية
-        },
-      );
+      const response = await this.get<
+        IPaginatedResponse<GLTransaction> | GLTransaction[]
+      >("gl_transaction_list", queryParams, {
+        cache: "no-store", // عدم استخدام cache للحصول على البيانات الحالية
+      });
 
       // Logging مؤقت للتشخيص
       if (process.env.NODE_ENV === "development") {
@@ -81,7 +91,9 @@ class GLTransactionService extends HttpService<GLTransaction> {
           hasData: !!response.data,
           dataType: typeof response.data,
           isArray: Array.isArray(response.data),
-          dataLength: Array.isArray(response.data) ? response.data.length : "N/A",
+          dataLength: Array.isArray(response.data)
+            ? response.data.length
+            : "N/A",
           message: response.message,
         });
       }
@@ -104,7 +116,11 @@ class GLTransactionService extends HttpService<GLTransaction> {
       }
 
       // إذا كان paginated response
-      if (response.data && typeof response.data === "object" && (response.data as any).results) {
+      if (
+        response.data &&
+        typeof response.data === "object" &&
+        (response.data as any).results
+      ) {
         return {
           success: true,
           data: (response.data as any).results,
@@ -112,7 +128,11 @@ class GLTransactionService extends HttpService<GLTransaction> {
       }
 
       // إذا كان response.data object مباشر (وليس array)
-      if (response.data && typeof response.data === "object" && !Array.isArray(response.data)) {
+      if (
+        response.data &&
+        typeof response.data === "object" &&
+        !Array.isArray(response.data)
+      ) {
         // قد يكون object واحد، نجعله array
         return {
           success: true,
@@ -137,5 +157,5 @@ class GLTransactionService extends HttpService<GLTransaction> {
 }
 
 const glTransactionService = new GLTransactionService();
-export default glTransactionService;
 
+export default glTransactionService;

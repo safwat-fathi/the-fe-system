@@ -31,6 +31,23 @@ interface IntegrationConfig {
   enabled: boolean;
 }
 
+interface FatooraConfig {
+  name: string;
+  description: string;
+  status: IntegrationStatus;
+  enableEInvoice: boolean;
+  connectionType: string;
+  activationDate: string;
+  xmlPath: string;
+  username: string;
+  password: string;
+  certificate: string;
+  privateKey: string;
+  lastPIH: string;
+  lastICV: string;
+  enabled: boolean;
+}
+
 export default function IntegrationsClient() {
   // حالة جيديا
   const [geideaConfig, setGeideaConfig] = useState<IntegrationConfig>({
@@ -45,9 +62,32 @@ export default function IntegrationsClient() {
     enabled: false,
   });
 
+  // حالة فاتورة
+  const [fatooraConfig, setFatooraConfig] = useState<FatooraConfig>({
+    name: "فاتورة - الزكاة والدخل",
+    description:
+      "خدمة ربط فاتورة الإلكترونية لإدارة الزكاة والدخل بشكل متكامل",
+    status: "disconnected",
+    enableEInvoice: false,
+    connectionType: "",
+    activationDate: "",
+    xmlPath: "",
+    username: "",
+    password: "",
+    certificate: "",
+    privateKey: "",
+    lastPIH: "",
+    lastICV: "",
+    enabled: false,
+  });
+
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [showGeideaSetup, setShowGeideaSetup] = useState(false);
+  
+  const [isSavingFatoora, setIsSavingFatoora] = useState(false);
+  const [isTestingFatoora, setIsTestingFatoora] = useState(false);
+  const [showFatooraSetup, setShowFatooraSetup] = useState(false);
 
   // بدء إدخال المعلومات لجيديا
   const handleStartGeideaSetup = () => {
@@ -118,6 +158,54 @@ export default function IntegrationsClient() {
       toast.success("تم تفعيل خدمة جيديا");
     } else {
       toast.success("تم إلغاء تفعيل خدمة جيديا");
+    }
+  };
+
+  // حفظ إعدادات فاتورة
+  const handleSaveFatoora = async () => {
+    setIsSavingFatoora(true);
+    try {
+      // TODO: حفظ الإعدادات في قاعدة البيانات
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      
+      setFatooraConfig((prev) => ({ ...prev, status: "connected" }));
+      toast.success("تم حفظ إعدادات فاتورة بنجاح");
+    } catch (error) {
+      toast.error("حدث خطأ أثناء حفظ الإعدادات");
+    } finally {
+      setIsSavingFatoora(false);
+    }
+  };
+
+  // اختبار الاتصال مع فاتورة
+  const handleTestFatoora = async () => {
+    setIsTestingFatoora(true);
+    try {
+      // TODO: اختبار الاتصال مع API فاتورة
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      
+      toast.success("تم الاتصال بنجاح مع فاتورة");
+      setFatooraConfig((prev) => ({ ...prev, status: "connected" }));
+    } catch (error) {
+      toast.error("فشل الاتصال مع فاتورة. يرجى التحقق من بيانات الاتصال");
+      setFatooraConfig((prev) => ({ ...prev, status: "disconnected" }));
+    } finally {
+      setIsTestingFatoora(false);
+    }
+  };
+
+  // تبديل تفعيل/إلغاء تفعيل خدمة فاتورة
+  const handleToggleFatoora = (enabled: boolean) => {
+    setFatooraConfig((prev) => ({
+      ...prev,
+      enabled,
+      status: enabled ? prev.status : "disconnected",
+    }));
+    
+    if (enabled) {
+      toast.success("تم تفعيل خدمة فاتورة");
+    } else {
+      toast.success("تم إلغاء تفعيل خدمة فاتورة");
     }
   };
 
@@ -355,14 +443,303 @@ export default function IntegrationsClient() {
         )}
       </Card>
 
-      {/* مكان لخدمات الربط الأخرى في المستقبل */}
-      <Card className="shadow-md border-dashed border-2 border-gray-300">
-        <CardBody className="text-center py-8">
-          <p className="text-slate-500 text-sm">
-            خدمات ربط إضافية ستُضاف هنا لاحقاً
-          </p>
+      {/* فاتورة - الزكاة والدخل */}
+      <Card className="shadow-md">
+        {/* إذا لم تكن هناك بيانات ولم يتم الضغط على "ابدأ الربط" */}
+        {!showFatooraSetup ? (
+          <CardBody className="p-6">
+            {/* بانر فاتورة */}
+            <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+              {/* الجانب الأيسر: المعلومات */}
+              <div className="flex-1 flex items-center gap-4">
+                {/* شعار فاتورة */}
+                <div className="flex-shrink-0">
+                  <div className="rounded-lg p-3 flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-slate-800 mb-1">
+                        فاتورة
+                      </div>
+                      <div className="text-xs font-semibold text-slate-600">
+                        Fatoora
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* النص */}
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-slate-800 mb-1">
+                    فاتورة - الزكاة والدخل
+                  </h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    خدمة ربط فاتورة الإلكترونية لإدارة الزكاة والدخل بشكل متكامل
+                  </p>
+                </div>
+              </div>
+
+              {/* الجانب الأيمن: زر "ابدأ الربط" */}
+              <div className="flex-shrink-0">
+                <Button
+                  color="primary"
+                  onPress={() => setShowFatooraSetup(true)}
+                  className="btn-primary border-2 border-blue-600 bg-white text-blue-600 hover:bg-blue-50 font-semibold px-6 py-3"
+                  size="lg"
+                >
+                  ابدأ الربط
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        ) : (
+          <>
+            <CardHeader className="flex justify-between items-center pb-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg p-2 flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50">
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-slate-800">
+                      فاتورة
+                    </div>
+                    <div className="text-xs font-semibold text-slate-600">
+                      Fatoora
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">
+                    فاتورة - الزكاة والدخل
+                  </h2>
+                  <p className="text-sm text-slate-600 mt-1">
+                    خدمة ربط فاتورة الإلكترونية لإدارة الزكاة والدخل بشكل متكامل
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(fatooraConfig.status)}
+                  <span className="text-sm text-slate-600">
+                    {getStatusText(fatooraConfig.status)}
+                  </span>
+                </div>
+                <Switch
+                  isSelected={fatooraConfig.enabled}
+                  onValueChange={handleToggleFatoora}
+                  color="success"
+                >
+                  <span className="text-sm font-medium text-slate-700">
+                    {fatooraConfig.enabled ? "مفعل" : "معطل"}
+                  </span>
+                </Switch>
+              </div>
+            </CardHeader>
+            <Divider />
+            <CardBody className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* تفعيل الفاتورة الإلكترونية */}
+                <div className="flex items-center gap-3">
+                  <Switch
+                    isSelected={fatooraConfig.enableEInvoice}
+                    onValueChange={(val) =>
+                      setFatooraConfig((prev) => ({
+                        ...prev,
+                        enableEInvoice: val,
+                      }))
+                    }
+                    color="success"
+                  >
+                    <span className="text-sm font-medium text-slate-700">
+                      تفعيل الفاتورة الإلكترونية
+                    </span>
+                  </Switch>
+                </div>
+
+                {/* نوع الربط */}
+                <Input
+                  label="نوع الربط"
+                  placeholder="أدخل نوع الربط"
+                  value={fatooraConfig.connectionType || ""}
+                  onChange={(e) =>
+                    setFatooraConfig((prev) => ({
+                      ...prev,
+                      connectionType: e.target.value,
+                    }))
+                  }
+                  isDisabled={!fatooraConfig.enabled}
+                  variant="bordered"
+                  description="نوع الربط مع نظام فاتورة"
+                />
+
+                {/* تاريخ تفعيل الربط */}
+                <Input
+                  label="تاريخ تفعيل الربط"
+                  placeholder="تاريخ تفعيل الربط"
+                  type="date"
+                  value={fatooraConfig.activationDate || ""}
+                  onChange={(e) =>
+                    setFatooraConfig((prev) => ({
+                      ...prev,
+                      activationDate: e.target.value,
+                    }))
+                  }
+                  isDisabled={!fatooraConfig.enabled}
+                  variant="bordered"
+                />
+
+                {/* مسار ملفات XML */}
+                <Input
+                  label="مسار ملفات XML"
+                  placeholder="أدخل مسار ملفات XML"
+                  value={fatooraConfig.xmlPath || ""}
+                  onChange={(e) =>
+                    setFatooraConfig((prev) => ({
+                      ...prev,
+                      xmlPath: e.target.value,
+                    }))
+                  }
+                  isDisabled={!fatooraConfig.enabled}
+                  variant="bordered"
+                  description="مسار مجلد ملفات XML"
+                />
+
+                {/* اسم المستخدم */}
+                <Input
+                  label="اسم المستخدم"
+                  placeholder="أدخل اسم المستخدم"
+                  value={fatooraConfig.username || ""}
+                  onChange={(e) =>
+                    setFatooraConfig((prev) => ({
+                      ...prev,
+                      username: e.target.value,
+                    }))
+                  }
+                  isDisabled={!fatooraConfig.enabled}
+                  variant="bordered"
+                />
+
+                {/* كلمة المرور */}
+                <Input
+                  label="كلمة المرور"
+                  placeholder="أدخل كلمة المرور"
+                  type="password"
+                  value={fatooraConfig.password || ""}
+                  onChange={(e) =>
+                    setFatooraConfig((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
+                  isDisabled={!fatooraConfig.enabled}
+                  variant="bordered"
+                />
+
+                {/* الشهادة */}
+                <Input
+                  label="الشهادة"
+                  placeholder="أدخل الشهادة"
+                  value={fatooraConfig.certificate || ""}
+                  onChange={(e) =>
+                    setFatooraConfig((prev) => ({
+                      ...prev,
+                      certificate: e.target.value,
+                    }))
+                  }
+                  isDisabled={!fatooraConfig.enabled}
+                  variant="bordered"
+                  description="شهادة SSL"
+                />
+
+                {/* المفتاح الخاص */}
+                <Input
+                  label="المفتاح الخاص"
+                  placeholder="أدخل المفتاح الخاص"
+                  type="password"
+                  value={fatooraConfig.privateKey || ""}
+                  onChange={(e) =>
+                    setFatooraConfig((prev) => ({
+                      ...prev,
+                      privateKey: e.target.value,
+                    }))
+                  }
+                  isDisabled={!fatooraConfig.enabled}
+                  variant="bordered"
+                  description="المفتاح الخاص للشهادة"
+                />
+
+                {/* آخر PIH */}
+                <Input
+                  label="آخر PIH"
+                  placeholder="أدخل آخر PIH"
+                  value={fatooraConfig.lastPIH || ""}
+                  onChange={(e) =>
+                    setFatooraConfig((prev) => ({
+                      ...prev,
+                      lastPIH: e.target.value,
+                    }))
+                  }
+                  isDisabled={!fatooraConfig.enabled}
+                  variant="bordered"
+                />
+
+                {/* آخر ICV */}
+                <Input
+                  label="آخر ICV"
+                  placeholder="أدخل آخر ICV"
+                  value={fatooraConfig.lastICV || ""}
+                  onChange={(e) =>
+                    setFatooraConfig((prev) => ({
+                      ...prev,
+                      lastICV: e.target.value,
+                    }))
+                  }
+                  isDisabled={!fatooraConfig.enabled}
+                  variant="bordered"
+                />
+              </div>
+
+              {/* معلومات إضافية */}
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                  معلومات مهمة:
+                </h3>
+                <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                  <li>
+                    تأكد من تفعيل الفاتورة الإلكترونية قبل إعداد باقي الخدمات
+                  </li>
+                  <li>
+                    احفظ بيانات الاتصال والشهادة بشكل آمن
+                  </li>
+                  <li>
+                    تأكد من صحة مسار ملفات XML
+                  </li>
+                </ul>
+              </div>
+
+              {/* الأزرار */}
+              <div className="flex gap-3 mt-6">
+                <Button
+                  color="primary"
+                  onPress={handleSaveFatoora}
+                  isLoading={isSavingFatoora}
+                  isDisabled={!fatooraConfig.enabled}
+                  className="btn-primary"
+                >
+                  {isSavingFatoora ? "جاري الحفظ..." : "حفظ الإعدادات"}
+                </Button>
+                <Button
+                  color="default"
+                  variant="bordered"
+                  onPress={handleTestFatoora}
+                  isLoading={isTestingFatoora}
+                  isDisabled={!fatooraConfig.enabled}
+                  className="btn-secondary"
+                >
+                  {isTestingFatoora ? "جاري الاختبار..." : "اختبار الاتصال"}
+                </Button>
+              </div>
         </CardBody>
+          </>
+        )}
       </Card>
     </div>
   );
+}
 

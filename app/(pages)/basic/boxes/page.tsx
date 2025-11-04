@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import BoxesClient from "./components/BoxesClient";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
 import { boxesService } from "@/services/api";
 
@@ -53,6 +54,7 @@ export default async function BoxesPage() {
 
   return (
     <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <h1 className="responsive-text-xl font-bold mb-6">الصناديق</h1>
       {/* Client Component للتفاعل */}
       <BoxesClient error={null} initialData={response as any[]} />

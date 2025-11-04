@@ -9,7 +9,7 @@ import {
   CurrencyDollarIcon,
   ReceiptPercentIcon,
 } from "@heroicons/react/24/outline";
-import { Button, Card, CardBody, Input } from "@heroui/react";
+import { Button, Input } from "@heroui/react";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 
@@ -126,15 +126,14 @@ export default function ReportsClient() {
     }
 
     const term = searchTerm.toLowerCase().trim();
-    return reports.filter((report) =>
-      report.name.toLowerCase().includes(term)
-    );
+
+    return reports.filter((report) => report.name.toLowerCase().includes(term));
   }, [searchTerm]);
 
   const categorizedReports = useMemo(() => {
     const financial = filteredReports.filter((r) => r.category === "financial");
     const operational = filteredReports.filter(
-      (r) => r.category === "operational"
+      (r) => r.category === "operational",
     );
     const sales = filteredReports.filter((r) => r.category === "sales");
     const tax = filteredReports.filter((r) => r.category === "tax");
@@ -150,14 +149,14 @@ export default function ReportsClient() {
     return (
       <Link
         key={report.id}
+        className="flex items-center gap-3 p-2.5 rounded-lg bg-white border border-gray-200 hover:border-amber-400/40 hover:shadow-md hover:bg-gradient-to-r hover:from-amber-600/10 hover:to-amber-700/5 transition-all duration-200 group backdrop-blur-sm"
         href={report.href}
-        className="flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md hover:bg-gray-50 transition-all duration-200 group"
       >
-        <div className="text-gray-500 group-hover:text-gray-700 flex-shrink-0 transition-colors duration-200">
+        <div className="text-slate-500 group-hover:text-amber-600 flex-shrink-0 transition-colors duration-200">
           {report.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200">
+          <p className="text-sm font-medium text-slate-700 group-hover:text-amber-700 transition-colors duration-200">
             {report.name}
           </p>
         </div>
@@ -167,7 +166,7 @@ export default function ReportsClient() {
 
   const renderCategoryColumn = (
     category: keyof typeof categoryConfig,
-    categoryReports: Report[]
+    categoryReports: Report[],
   ) => {
     if (categoryReports.length === 0) {
       return null;
@@ -178,12 +177,14 @@ export default function ReportsClient() {
     return (
       <div className="flex flex-col h-full group/category border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 bg-white">
         {/* Category Header */}
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 border-b border-gray-200 p-4">
+        <div className="bg-gradient-to-br from-amber-50/80 via-amber-100/40 to-amber-50/60 border-b border-amber-200/50 p-4">
           <div className="flex items-center justify-center gap-3">
-            <div className="flex-shrink-0 text-gray-600 group-hover/category:text-gray-700 transition-colors duration-300">
+            <div className="flex-shrink-0 text-amber-600 group-hover/category:text-amber-700 transition-colors duration-300">
               {config.icon}
             </div>
-            <h2 className="text-lg font-semibold text-gray-800">{config.title}</h2>
+            <h2 className="text-lg font-semibold text-amber-700">
+              {config.title}
+            </h2>
           </div>
         </div>
 
@@ -201,28 +202,28 @@ export default function ReportsClient() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">التقارير</h1>
-          <p className="text-gray-500 mt-1">
-            جميع التقارير المتاحة في النظام
-          </p>
+          <p className="text-gray-500 mt-1">جميع التقارير المتاحة في النظام</p>
         </div>
 
         {/* Search and Reset */}
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Input
-            placeholder="البحث حسب الاسم"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            startContent={<MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />}
             className="flex-1 sm:min-w-[300px]"
+            placeholder="البحث حسب الاسم"
             size="md"
+            startContent={
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            }
+            value={searchTerm}
             variant="bordered"
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
           <Button
             isIconOnly
+            aria-label="إعادة تعيين"
+            className="border-gray-300"
             variant="bordered"
             onPress={handleReset}
-            className="border-gray-300"
-            aria-label="إعادة تعيين"
           >
             <ArrowPathIcon className="h-5 w-5" />
           </Button>

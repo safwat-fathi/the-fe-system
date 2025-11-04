@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 
 import ReportsClient from "./components/ReportsClient";
+
 import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {

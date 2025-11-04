@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import TaxesClient from "./components/TaxesClient";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import taxService from "@/services/api/tax.service";
 import accountService from "@/services/api/account.service";
 
@@ -19,6 +20,7 @@ export default async function TaxesPage() {
 
   return (
     <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <h1 className="responsive-text-xl font-bold mb-6">الضرائب</h1>
 
       <TaxesClient

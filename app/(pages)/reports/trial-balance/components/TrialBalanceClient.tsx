@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Button,
   Card,
@@ -23,21 +23,29 @@ import {
   ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import glTransactionService from "@/services/api/gl-transaction.service";
-import accountService from "@/services/api/account.service";
+
 import { formatAmount } from "@/utilities/formatAmount";
+import { accountService } from "@/services/api";
+import {
+  fetchGLTransactions,
+  groupTransactionsByAccount,
+  calculateAccountBalance,
+  calculateOpeningBalance,
+} from "@/utilities/reports/gl-transaction-helpers";
 
 const getCurrentDate = (): string => {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 };
 
 const getYearStartDate = (): string => {
   const now = new Date();
   const year = now.getFullYear();
+
   return `${year}-01-01`;
 };
 
@@ -54,6 +62,13 @@ interface TrialBalanceRow {
   closingCredit: number;
 }
 
+interface Account {
+  id: number;
+  acc_id: string;
+  acc_name: string;
+  acc_level: number;
+}
+
 export default function TrialBalanceClient() {
   const [startDate, setStartDate] = useState(getYearStartDate());
   const [endDate, setEndDate] = useState(getCurrentDate());
@@ -61,18 +76,138 @@ export default function TrialBalanceClient() {
   const [filterType, setFilterType] = useState("");
   const [showDetailed, setShowDetailed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [trialBalanceData, setTrialBalanceData] = useState<TrialBalanceRow[]>([]);
+  const [trialBalanceData, setTrialBalanceData] = useState<TrialBalanceRow[]>(
+    [],
+  );
+  const [accounts, setAccounts] = useState<Account[]>([]);
+
+  // جلب الحسابات عند تحميل الصفحة
+  useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const accountsData = await accountService.getAllAccounts();
+
+        setAccounts(accountsData || []);
+      } catch (error) {
+        console.error("Error loading accounts:", error);
+      }
+    };
+
+    loadAccounts();
+  }, []);
 
   const handleSearch = async () => {
+    if (!startDate || !endDate) {
+      toast.error("يرجى اختيار تاريخ البداية والنهاية");
+
+      return;
+    }
+
     setLoading(true);
     try {
-      // TODO: جلب البيانات من API
-      toast.success("تم جلب البيانات بنجاح");
-      // مؤقتاً بيانات تجريبية
-      setTrialBalanceData([]);
+      // جلب الحركات للفترة المحددة
+      const periodTransactions = await fetchGLTransactions({
+        fromDate: startDate,
+        toDate: endDate,
+        com: 1,
+      });
+
+      // جلب جميع الحركات حتى تاريخ النهاية (للرصيد الإغلاقي)
+      const closingTransactions = await fetchGLTransactions({
+        fromDate: "0", // من بداية النظام
+        toDate: endDate,
+        com: 1,
+      });
+
+      if (periodTransactions.length === 0 && closingTransactions.length === 0) {
+        toast.info("لا توجد حركات في الفترة المحددة");
+        setTrialBalanceData([]);
+
+        return;
+      }
+
+      // تجميع الحركات حسب الحساب
+      const groupedPeriod = groupTransactionsByAccount(periodTransactions);
+      const groupedClosing = groupTransactionsByAccount(closingTransactions);
+
+      // الحصول على الحسابات حسب المستوى المحدد
+      const targetLevel = parseInt(level || "7");
+      const filteredAccounts = accounts.filter(
+        (acc) => acc.acc_level <= targetLevel,
+      );
+
+      // إنشاء بيانات ميزان المراجعة
+      const trialBalanceRows: TrialBalanceRow[] = [];
+
+      for (const account of filteredAccounts) {
+        const accountId = account.acc_id;
+
+        // حساب الرصيد الافتتاحي (من بداية السنة حتى startDate)
+        const openingBalance = await calculateOpeningBalance(
+          accountId,
+          startDate,
+          1,
+        );
+
+        // حساب الحركات في الفترة
+        const periodAccountTransactions =
+          groupedPeriod.get(String(accountId)) || [];
+        const periodBalance = calculateAccountBalance(periodAccountTransactions);
+
+        // حساب الرصيد الإغلاقي (من بداية النظام حتى endDate)
+        const closingAccountTransactions =
+          groupedClosing.get(String(accountId)) || [];
+        const closingBalance = calculateAccountBalance(closingAccountTransactions);
+
+        // فقط نعرض الحسابات التي لديها حركات
+        if (
+          periodAccountTransactions.length > 0 ||
+          closingAccountTransactions.length > 0
+        ) {
+          trialBalanceRows.push({
+            accountCode: account.acc_id,
+            accountName: account.acc_name,
+            openingDebit: openingBalance.totalDebit,
+            openingCredit: openingBalance.totalCredit,
+            movementDebit: periodBalance.totalDebit,
+            movementCredit: periodBalance.totalCredit,
+            netDebit:
+              openingBalance.totalDebit + periodBalance.totalDebit -
+              openingBalance.totalCredit -
+              periodBalance.totalCredit > 0
+                ? openingBalance.totalDebit +
+                  periodBalance.totalDebit -
+                  openingBalance.totalCredit -
+                  periodBalance.totalCredit
+                : 0,
+            netCredit:
+              openingBalance.totalDebit + periodBalance.totalDebit -
+              openingBalance.totalCredit -
+              periodBalance.totalCredit < 0
+                ? Math.abs(
+                    openingBalance.totalDebit +
+                      periodBalance.totalDebit -
+                      openingBalance.totalCredit -
+                      periodBalance.totalCredit,
+                  )
+                : 0,
+            closingDebit: closingBalance.totalDebit,
+            closingCredit: closingBalance.totalCredit,
+          });
+        }
+      }
+
+      // ترتيب حسب رقم الحساب
+      trialBalanceRows.sort((a, b) =>
+        String(a.accountCode).localeCompare(String(b.accountCode)),
+      );
+
+      setTrialBalanceData(trialBalanceRows);
+      toast.success(`تم جلب ${trialBalanceRows.length} حساب بنجاح`);
     } catch (error) {
       console.error("Error loading trial balance:", error);
       toast.error("حدث خطأ أثناء جلب البيانات");
+      setTrialBalanceData([]);
     } finally {
       setLoading(false);
     }
@@ -116,7 +251,7 @@ export default function TrialBalanceClient() {
         netCredit: 0,
         closingDebit: 0,
         closingCredit: 0,
-      }
+      },
     );
   }, [trialBalanceData]);
 
@@ -127,26 +262,26 @@ export default function TrialBalanceClient() {
         <CardBody className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <Input
-              type="date"
               label="من تاريخ"
+              size="sm"
+              type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              size="sm"
             />
             <Input
-              type="date"
               label="إلى تاريخ"
+              size="sm"
+              type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              size="sm"
             />
             <Select
               label="المستوى"
               selectedKeys={level ? [level] : []}
+              size="sm"
               onSelectionChange={(keys) =>
                 setLevel(Array.from(keys)[0] as string)
               }
-              size="sm"
             >
               <SelectItem key="7">المستوى 7</SelectItem>
               <SelectItem key="6">المستوى 6</SelectItem>
@@ -155,38 +290,38 @@ export default function TrialBalanceClient() {
             <Select
               label="نوع التصفية"
               selectedKeys={filterType ? [filterType] : []}
+              size="sm"
               onSelectionChange={(keys) =>
                 setFilterType(Array.from(keys)[0] as string)
               }
-              size="sm"
             >
               <SelectItem key="all">الكل</SelectItem>
             </Select>
             <div className="flex items-center gap-2">
               <Switch
                 isSelected={showDetailed}
-                onValueChange={setShowDetailed}
                 size="sm"
+                onValueChange={setShowDetailed}
               >
                 <span className="text-sm">إظهار التفاصيل</span>
               </Switch>
             </div>
             <div className="flex gap-2">
               <Button
+                className="flex-1"
                 color="primary"
-                startContent={<MagnifyingGlassIcon className="h-4 w-4" />}
-                onPress={handleSearch}
                 isLoading={loading}
                 size="md"
-                className="flex-1"
+                startContent={<MagnifyingGlassIcon className="h-4 w-4" />}
+                onPress={handleSearch}
               >
                 بحث
               </Button>
               <Button
-                variant="bordered"
-                startContent={<ArrowPathIcon className="h-4 w-4" />}
-                onPress={handleReset}
                 size="md"
+                startContent={<ArrowPathIcon className="h-4 w-4" />}
+                variant="bordered"
+                onPress={handleReset}
               >
                 إعادة تعيين
               </Button>
@@ -211,8 +346,8 @@ export default function TrialBalanceClient() {
           {/* Actions */}
           <div className="flex justify-end gap-3 mb-4">
             <Button
-              variant="bordered"
               startContent={<PrinterIcon className="h-4 w-4" />}
+              variant="bordered"
               onPress={handlePrint}
             >
               طباعة
@@ -236,7 +371,7 @@ export default function TrialBalanceClient() {
                 <TableColumn>صافي الحركة</TableColumn>
                 <TableColumn>الرصيد الختامي</TableColumn>
               </TableHeader>
-              <TableBody emptyContent="لا توجد بيانات">
+              <TableBody emptyContent="لا توجد بيانات - اضغط على زر 'بحث' لتحميل البيانات">
                 {trialBalanceData.map((row, index) => (
                   <TableRow key={index}>
                     <TableCell>
@@ -244,40 +379,64 @@ export default function TrialBalanceClient() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-4">
-                        <span className={row.openingDebit > 0 ? "text-red-600" : ""}>
+                        <span
+                          className={row.openingDebit > 0 ? "text-red-600" : ""}
+                        >
                           {formatAmount(row.openingDebit, 2)}
                         </span>
-                        <span className={row.openingCredit > 0 ? "text-green-600" : ""}>
+                        <span
+                          className={
+                            row.openingCredit > 0 ? "text-green-600" : ""
+                          }
+                        >
                           {formatAmount(row.openingCredit, 2)}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-4">
-                        <span className={row.movementDebit > 0 ? "text-red-600" : ""}>
+                        <span
+                          className={
+                            row.movementDebit > 0 ? "text-red-600" : ""
+                          }
+                        >
                           {formatAmount(row.movementDebit, 2)}
                         </span>
-                        <span className={row.movementCredit > 0 ? "text-green-600" : ""}>
+                        <span
+                          className={
+                            row.movementCredit > 0 ? "text-green-600" : ""
+                          }
+                        >
                           {formatAmount(row.movementCredit, 2)}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-4">
-                        <span className={row.netDebit > 0 ? "text-red-600" : ""}>
+                        <span
+                          className={row.netDebit > 0 ? "text-red-600" : ""}
+                        >
                           {formatAmount(row.netDebit, 2)}
                         </span>
-                        <span className={row.netCredit > 0 ? "text-green-600" : ""}>
+                        <span
+                          className={row.netCredit > 0 ? "text-green-600" : ""}
+                        >
                           {formatAmount(row.netCredit, 2)}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-4">
-                        <span className={row.closingDebit > 0 ? "text-red-600" : ""}>
+                        <span
+                          className={row.closingDebit > 0 ? "text-red-600" : ""}
+                        >
                           {formatAmount(row.closingDebit, 2)}
                         </span>
-                        <span className={row.closingCredit > 0 ? "text-green-600" : ""}>
+                        <span
+                          className={
+                            row.closingCredit > 0 ? "text-green-600" : ""
+                          }
+                        >
                           {formatAmount(row.closingCredit, 2)}
                         </span>
                       </div>

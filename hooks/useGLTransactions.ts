@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { glTransactionService, accountService, genericService } from "@/services/api";
+
+import {
+  glTransactionService,
+  accountService,
+  genericService,
+} from "@/services/api";
 import { GLTransaction } from "@/types/models/gl-transaction";
 
 interface UseGLTransactionsProps {
@@ -36,11 +41,13 @@ export function useGLTransactions({
       const loadAccounts = async () => {
         try {
           const accountsData = await accountService.getAllAccounts();
+
           setAccountsList(accountsData || []);
         } catch (error) {
           console.error("Error loading accounts:", error);
         }
       };
+
       loadAccounts();
     }
   }, [isGLModalOpen, accountsList.length]);
@@ -56,18 +63,25 @@ export function useGLTransactions({
       // استخدام genericService أولاً (مثل gl-transaction.action.ts)
       // لأنه يعمل بشكل أفضل مع gl_transaction_list
       let response: any;
-      
-      try {
-        const genericResponse = await genericService.getTableData("gl_transaction_list", {
-          xcom_id: "1",
-          xyear_id: "0",
-          xfrom_date: "0",
-          xto_date: "0",
-          xtrans_id: "0", // 0 = جميع الحركات
-          xtrans_type: "0", // 0 = جميع الأنواع
-        });
 
-        if (genericResponse.success && genericResponse.data && Array.isArray(genericResponse.data)) {
+      try {
+        const genericResponse = await genericService.getTableData(
+          "gl_transaction_list",
+          {
+            xcom_id: "1",
+            xyear_id: "0",
+            xfrom_date: "0",
+            xto_date: "0",
+            xtrans_id: "0", // 0 = جميع الحركات
+            xtrans_type: "0", // 0 = جميع الأنواع
+          },
+        );
+
+        if (
+          genericResponse.success &&
+          genericResponse.data &&
+          Array.isArray(genericResponse.data)
+        ) {
           response = {
             success: true,
             data: genericResponse.data,
@@ -82,7 +96,10 @@ export function useGLTransactions({
           });
         }
       } catch (error) {
-        console.error("Error in genericService, trying glTransactionService:", error);
+        console.error(
+          "Error in genericService, trying glTransactionService:",
+          error,
+        );
         // المحاولة الثانية: استخدام glTransactionService مباشرة
         response = await glTransactionService.getAll({
           xcom_id: "1",
@@ -97,8 +114,10 @@ export function useGLTransactions({
         // تصفية الحركات حسب vouchId و vouchType على Client side
         const filteredTransactions = transactions.filter(
           (trans: GLTransaction) =>
-            Number(trans.trans_id) === vouchId && Number(trans.trans_type) === vouchType,
+            Number(trans.trans_id) === vouchId &&
+            Number(trans.trans_type) === vouchType,
         );
+
         setGlTransactions(filteredTransactions);
       } else {
         setGlTransactions([]);
@@ -124,6 +143,7 @@ export function useGLTransactions({
       const account = accountsList.find(
         (acc) => acc.id === Number(accId) || acc.acc_id === String(accId),
       );
+
       return account ? account.acc_name || "" : "";
     },
     [accountsList],
@@ -138,4 +158,3 @@ export function useGLTransactions({
     getAccountName,
   };
 }
-

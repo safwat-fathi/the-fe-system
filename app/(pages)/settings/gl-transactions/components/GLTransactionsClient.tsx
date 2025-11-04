@@ -10,81 +10,29 @@ import {
   TableRow,
   TableCell,
   Button,
-  Chip,
 } from "@heroui/react";
+
 import { formatAmount } from "@/utilities/formatAmount";
 import { GLTransaction } from "@/types/models/gl-transaction";
 import { accountService } from "@/services/api";
+import {
+  getVoucherRoute,
+  getVoucherTypeName,
+} from "@/utilities/voucher/routing";
+import { formatVoucherDate } from "@/utilities/voucher/formatting";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-// دالة لتنسيق التاريخ
-function formatDate(dateString: string): string {
-  if (!dateString) return "-";
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    
-    const dd = String(date.getDate()).padStart(2, "0");
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const yyyy = date.getFullYear();
-    
-    return `${dd}/${mm}/${yyyy}`;
-  } catch {
-    return dateString;
-  }
-}
-
 interface GLTransactionsClientProps {
   initialTransactions: GLTransaction[];
-}
-
-// دالة للحصول على رابط الحركة حسب نوعها
-// نستخدم trans_id (vouch_id) للبحث في الجداول ثم نستخدم id (primary key) للتنقل
-function getVoucherRoute(vouchType: number, vouchId: number): string {
-  // للتنقل، نستخدم vouch_id مباشرة لأن صفحات [id] تستطيع البحث بـ id أو vouch_id
-  switch (vouchType) {
-    case 0:
-      return `/forms/balance?mode=preview`; // قيد افتتاحي
-    case 1:
-      return `/forms/voucher1/${vouchId}?mode=preview`; // سند قبض
-    case 2:
-      return `/forms/voucher1/${vouchId}?mode=preview`; // سند صرف
-    case 3:
-      return `/forms/voucher/${vouchId}?mode=preview`; // قيد تسوية
-    case 4:
-      return `/forms/gvoucher4/${vouchId}?mode=preview`; // سند قبض عميل
-    case 5:
-      return `/forms/gvoucher4/${vouchId}?mode=preview`; // سند صرف عميل
-    case 111:
-      return `/forms/receipt/${vouchId}?mode=preview`; // استلام
-    case 222:
-      return `/forms/delivery/${vouchId}?mode=preview`; // تسليم
-    default:
-      return "#";
-  }
-}
-
-// دالة للحصول على اسم نوع الحركة
-function getVoucherTypeName(vouchType: number): string {
-  const typeNames: Record<number, string> = {
-    0: "قيد افتتاحي",
-    1: "سند قبض",
-    2: "سند صرف",
-    3: "قيد تسوية",
-    4: "سند قبض عميل",
-    5: "سند صرف عميل",
-    111: "استلام",
-    222: "تسليم",
-  };
-  return typeNames[vouchType] || "غير محدد";
 }
 
 export default function GLTransactionsClient({
   initialTransactions,
 }: GLTransactionsClientProps) {
   const router = useRouter();
-  const [transactions, setTransactions] = useState<GLTransaction[]>(initialTransactions);
+  const [transactions, setTransactions] =
+    useState<GLTransaction[]>(initialTransactions);
   const [accounts, setAccounts] = useState<any[]>([]);
 
   // جلب الحسابات
@@ -92,20 +40,25 @@ export default function GLTransactionsClient({
     const loadAccounts = async () => {
       try {
         const accountsData = await accountService.getAllAccounts();
+
         setAccounts(accountsData || []);
       } catch (error) {
         console.error("Error loading accounts:", error);
       }
     };
+
     loadAccounts();
   }, []);
 
   // دالة للحصول على اسم الحساب
-  const getAccountName = (accId: number | string | null | undefined): string => {
+  const getAccountName = (
+    accId: number | string | null | undefined,
+  ): string => {
     if (!accId) return "";
     const account = accounts.find(
       (acc) => acc.id === Number(accId) || acc.acc_id === String(accId),
     );
+
     return account ? account.acc_name || "" : "";
   };
 
@@ -115,28 +68,34 @@ export default function GLTransactionsClient({
       // أولاً حسب trans_id
       const transIdA = a.trans_id || 0;
       const transIdB = b.trans_id || 0;
+
       if (transIdA !== transIdB) {
         return transIdB - transIdA; // ترتيب تنازلي
       }
       // ثم حسب seq
       const seqA = a.seq || 0;
       const seqB = b.seq || 0;
+
       return seqA - seqB; // ترتيب تصاعدي
     });
   }, [transactions]);
 
   // حساب التوازن لكل حركة (للتأكد من التوازن)
   const transactionBalances = useMemo(() => {
-    const balances: Record<number, {
-      totalDebitBase: number;
-      totalCreditBase: number;
-      totalGDebitBase: number;
-      totalGCreditBase: number;
-      isBalanced: boolean;
-    }> = {};
+    const balances: Record<
+      number,
+      {
+        totalDebitBase: number;
+        totalCreditBase: number;
+        totalGDebitBase: number;
+        totalGCreditBase: number;
+        isBalanced: boolean;
+      }
+    > = {};
 
     transactions.forEach((trans) => {
       const transId = trans.trans_id || 0;
+
       if (!balances[transId]) {
         balances[transId] = {
           totalDebitBase: 0,
@@ -156,8 +115,11 @@ export default function GLTransactionsClient({
     // التحقق من التوازن
     Object.keys(balances).forEach((key) => {
       const balance = balances[Number(key)];
-      const cashBalanced = Math.abs(balance.totalDebitBase - balance.totalCreditBase) < 0.01;
-      const goldBalanced = Math.abs(balance.totalGDebitBase - balance.totalGCreditBase) < 0.01;
+      const cashBalanced =
+        Math.abs(balance.totalDebitBase - balance.totalCreditBase) < 0.01;
+      const goldBalanced =
+        Math.abs(balance.totalGDebitBase - balance.totalGCreditBase) < 0.01;
+
       balance.isBalanced = cashBalanced && goldBalanced;
     });
 
@@ -165,7 +127,8 @@ export default function GLTransactionsClient({
   }, [transactions]);
 
   const handleViewVoucher = (vouchType: number, vouchId: number) => {
-    const route = getVoucherRoute(vouchType, vouchId);
+    const route = getVoucherRoute(vouchType, vouchId, "preview");
+
     router.push(route);
   };
 
@@ -174,7 +137,9 @@ export default function GLTransactionsClient({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">جميع القيود المحاسبية</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            جميع القيود المحاسبية
+          </h1>
           <p className="text-sm text-gray-600 mt-1">
             إجمالي السجلات: {sortedTransactions.length}
           </p>
@@ -185,9 +150,9 @@ export default function GLTransactionsClient({
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <div className="overflow-x-auto">
           <Table
+            removeWrapper
             aria-label="GL Transactions Table"
             className="min-w-full"
-            removeWrapper
           >
             <TableHeader>
               <TableColumn className="text-center">#</TableColumn>
@@ -199,14 +164,21 @@ export default function GLTransactionsClient({
               <TableColumn className="text-center">الحساب</TableColumn>
               <TableColumn className="text-center">مدين أساس</TableColumn>
               <TableColumn className="text-center">دائن أساس</TableColumn>
-              <TableColumn className="text-center">مدين ذهب معاير (جم)</TableColumn>
-              <TableColumn className="text-center">دائن ذهب معاير (جم)</TableColumn>
+              <TableColumn className="text-center">
+                مدين ذهب معاير (جم)
+              </TableColumn>
+              <TableColumn className="text-center">
+                دائن ذهب معاير (جم)
+              </TableColumn>
               <TableColumn className="text-center">الإجراءات</TableColumn>
             </TableHeader>
             <TableBody>
               {sortedTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-12 text-gray-500">
+                  <TableCell
+                    className="text-center py-12 text-gray-500"
+                    colSpan={12}
+                  >
                     <i className="bi bi-info-circle text-4xl mb-3 block text-gray-400" />
                     <p className="text-lg">لا توجد حركات محاسبية</p>
                   </TableCell>
@@ -221,9 +193,11 @@ export default function GLTransactionsClient({
                   const gCreditBase = Number(transaction.g_credit_base || 0);
 
                   return (
-                    <TableRow 
-                      key={transaction.id || index} 
-                      className={balance && !balance.isBalanced ? "bg-red-50" : ""}
+                    <TableRow
+                      key={transaction.id || index}
+                      className={
+                        balance && !balance.isBalanced ? "bg-red-50" : ""
+                      }
                     >
                       <TableCell className="text-center text-sm">
                         {index + 1}
@@ -238,7 +212,7 @@ export default function GLTransactionsClient({
                         {transaction.ref || "-"}
                       </TableCell>
                       <TableCell className="text-center text-sm">
-                        {formatDate(transaction.d)}
+                        {formatVoucherDate(transaction.d)}
                       </TableCell>
                       <TableCell className="text-center text-sm">
                         {transaction.seq || index + 1}
@@ -296,10 +270,12 @@ export default function GLTransactionsClient({
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
-                          size="sm"
                           color="primary"
+                          size="sm"
                           variant="light"
-                          onPress={() => handleViewVoucher(transaction.trans_type, transId)}
+                          onPress={() =>
+                            handleViewVoucher(transaction.trans_type, transId)
+                          }
                         >
                           <i className="bi bi-eye w-4 h-4 me-1" />
                           عرض
@@ -316,4 +292,3 @@ export default function GLTransactionsClient({
     </div>
   );
 }
-

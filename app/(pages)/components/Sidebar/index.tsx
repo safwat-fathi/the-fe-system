@@ -15,14 +15,13 @@ import {
   UserGroupIcon,
   LinkIcon,
   ShieldCheckIcon,
-  SignalIcon,
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@heroui/react";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const mainLinks = [
@@ -185,7 +184,6 @@ const goldFormLinks = [
 
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isOnline, setIsOnline] = useState(true);
   const [version] = useState("ver.251103");
 
   // نظام الحسابات
@@ -200,21 +198,44 @@ const Sidebar = () => {
 
   const [showSettingsLinks, setShowSettingsLinks] = useState(true);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
+  // Helper function to check if a link is active
+  const isLinkActive = (href: string): boolean => {
+    try {
+      // Extract path and query from href
+      const [linkPath, linkQuery] = href.split("?");
+      
+      // Check if pathname matches exactly
+      if (pathname === linkPath) {
+        // If href has query params, check them
+        if (linkQuery && searchParams) {
+          const linkParams = new URLSearchParams(linkQuery);
+          
+          // Check if all query params in href exist in current params with matching values
+          for (const [key, value] of linkParams.entries()) {
+            const currentValue = searchParams.get(key);
+            // If query param value doesn't match, link is not active
+            if (currentValue !== value) {
+              return false;
+            }
+          }
+        }
+        // Pathname matches exactly and query params (if any) match, link is active
+        return true;
+      }
 
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
-    
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
+      // If pathname doesn't match exactly, link is not active
+      // This ensures that parent links (like /settings) are not active when on child pages (like /settings/permissions)
+      return false;
+    } catch (error) {
+      console.warn("Error checking link active state:", error);
+      // Fallback to simple pathname comparison
+      const [linkPath] = href.split("?");
+      return pathname === linkPath;
+    }
+  };
+
 
   const animationVariants = {
     hidden: { clipPath: "inset(0% 0% 100% 0%)", opacity: 0 },
@@ -225,17 +246,19 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white transition-all duration-300 ease-in-out flex flex-col ${
+      className={`bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white transition-all duration-300 ease-in-out flex flex-col h-screen ${
         isSidebarOpen ? "w-72 px-6" : "w-20 px-3"
-      } min-h-screen shadow-[4px_0_20px_rgba(0,0,0,0.4)] border-r border-amber-900/20`}
+      } shadow-[4px_0_20px_rgba(0,0,0,0.4)] border-r border-amber-900/20`}
     >
       {/* Header */}
       <div className="relative border-b border-amber-900/30 bg-gradient-to-r from-amber-950/20 via-transparent to-transparent rounded-b-xl">
-        <div className="flex items-center justify-between h-16 mb-3">
+        <div className={`flex items-center h-16 mb-3 ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
           {isSidebarOpen && (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 flex items-center justify-center shadow-lg ring-2 ring-amber-500/30">
-                <span className="text-xl font-bold text-white drop-shadow-md">ن</span>
+                <span className="text-xl font-bold text-white drop-shadow-md">
+                  ن
+                </span>
               </div>
               <h2 className="text-xl font-bold whitespace-nowrap text-amber-50 drop-shadow-sm">
                 نفيس
@@ -243,57 +266,29 @@ const Sidebar = () => {
             </div>
           )}
           <Button
-            className="text-white hover:bg-white/10 rounded-lg transition-all duration-200"
+            className={`text-white hover:bg-white/10 rounded-lg transition-all duration-200 ${!isSidebarOpen ? "min-w-0 flex items-center justify-center" : ""}`}
             size="sm"
             variant="light"
             onPress={() => setIsSidebarOpen(!isSidebarOpen)}
+            style={
+              !isSidebarOpen
+                ? {
+                    padding: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }
+                : undefined
+            }
           >
             <Bars3Icon className="h-5 w-5" />
           </Button>
         </div>
 
-        {/* Status and Version */}
-        {isSidebarOpen && (
-          <div className="pb-4 px-1">
-            <div className="flex items-center justify-center gap-3 px-3 py-2 rounded-lg bg-white/5 backdrop-blur-sm border border-amber-900/20">
-              <div className="relative flex items-center gap-2">
-                <div className="relative w-2 h-2 rounded-full">
-                  <div className={`absolute inset-0 rounded-full ${isOnline ? "bg-green-400" : "bg-red-400"} ${isOnline ? "animate-soft-pulse" : ""}`}></div>
-                  {isOnline && (
-                    <>
-                      <div className="absolute inset-0 rounded-full bg-green-400 animate-soft-ping"></div>
-                      <div className="absolute inset-0 rounded-full bg-green-400 animate-soft-ping" style={{ animationDelay: "1.5s" }}></div>
-                    </>
-                  )}
-                </div>
-                <span className={`text-xs font-semibold ${isOnline ? "text-green-300" : "text-red-300"}`}>
-                  {isOnline ? "متصل" : "غير متصل"}
-                </span>
-              </div>
-              <div className="w-px h-4 bg-slate-600"></div>
-              <span className="text-[10px] text-slate-400 font-mono tracking-wider">
-                {version}
-              </span>
-            </div>
-          </div>
-        )}
-        {!isSidebarOpen && (
-          <div className="pb-2 flex justify-center">
-            <div className="relative w-2 h-2 rounded-full">
-              <div className={`absolute inset-0 rounded-full ${isOnline ? "bg-green-400" : "bg-red-400"} ${isOnline ? "animate-soft-pulse" : ""}`}></div>
-              {isOnline && (
-                <>
-                  <div className="absolute inset-0 rounded-full bg-green-400 animate-soft-ping"></div>
-                  <div className="absolute inset-0 rounded-full bg-green-400 animate-soft-ping" style={{ animationDelay: "1.5s" }}></div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 flex-1">
+      <nav className="flex flex-col gap-1 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Main Links */}
         {mainLinks.map((link) => (
           <Link
@@ -301,16 +296,17 @@ const Sidebar = () => {
             className={clsx(
               "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
               {
-                "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30": pathname === link.href,
-                "hover:bg-white/5 hover:shadow-sm": pathname !== link.href,
+                "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30":
+                  isLinkActive(link.href),
+                "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40": !isLinkActive(link.href),
               },
             )}
             href={link.href}
           >
             <div
               className={clsx("text-lg transition-all", {
-                "text-white drop-shadow-lg": pathname === link.href,
-                "text-slate-300 group-hover:text-white": pathname !== link.href,
+                "text-white drop-shadow-lg": isLinkActive(link.href),
+                "text-slate-300 group-hover:text-white": !isLinkActive(link.href),
               })}
             >
               {link.icon}
@@ -394,9 +390,9 @@ const Sidebar = () => {
                         <Link
                           key={link.href}
                           className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
-                            pathname === link.href
+                            isLinkActive(link.href)
                               ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
-                              : "hover:bg-white/5 text-slate-300 hover:text-white hover:border-transparent"
+                              : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                           }`}
                           href={link.href}
                           prefetch={true}
@@ -404,7 +400,9 @@ const Sidebar = () => {
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm transition-all">{link.icon}</div>
+                          <div className="text-sm transition-all">
+                            {link.icon}
+                          </div>
                           <span
                             className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                           >
@@ -455,7 +453,7 @@ const Sidebar = () => {
                               className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
                                 pathname === link.href
                                   ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
-                                  : "hover:bg-white/5 text-slate-300 hover:text-white"
+                                  : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                               }`}
                               href={link.href}
                               style={{
@@ -464,7 +462,9 @@ const Sidebar = () => {
                                   : "0.75rem",
                               }}
                             >
-                              <div className="text-sm transition-all">{link.icon}</div>
+                              <div className="text-sm transition-all">
+                                {link.icon}
+                              </div>
                               <span
                                 className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                               >
@@ -477,8 +477,6 @@ const Sidebar = () => {
                     </AnimatePresence>
                   </>
                 )}
-
-
               </motion.div>
             )}
           </AnimatePresence>
@@ -490,8 +488,10 @@ const Sidebar = () => {
             className={clsx(
               "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
               {
-                "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30": pathname.startsWith("/reports"),
-                "hover:bg-white/5 hover:shadow-sm": !pathname.startsWith("/reports"),
+                "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30":
+                  pathname.startsWith("/reports"),
+                "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40":
+                  !pathname.startsWith("/reports"),
               },
             )}
             href="/reports"
@@ -499,7 +499,8 @@ const Sidebar = () => {
             <div
               className={clsx("text-lg transition-all", {
                 "text-white drop-shadow-lg": pathname.startsWith("/reports"),
-                "text-slate-300 group-hover:text-white": !pathname.startsWith("/reports"),
+                "text-slate-300 group-hover:text-white":
+                  !pathname.startsWith("/reports"),
               })}
             >
               <ChartBarIcon className="h-5 w-5" />
@@ -578,9 +579,9 @@ const Sidebar = () => {
                         <Link
                           key={link.href}
                           className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
-                            pathname === link.href
+                            isLinkActive(link.href)
                               ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
-                              : "hover:bg-white/5 text-slate-300 hover:text-white"
+                              : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                           }`}
                           href={link.href}
                           prefetch={true}
@@ -588,7 +589,9 @@ const Sidebar = () => {
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm transition-all">{link.icon}</div>
+                          <div className="text-sm transition-all">
+                            {link.icon}
+                          </div>
 
                           <span
                             className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
@@ -634,16 +637,18 @@ const Sidebar = () => {
                         <Link
                           key={link.href}
                           className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
-                            pathname === link.href
+                            isLinkActive(link.href)
                               ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
-                              : "hover:bg-white/5 text-slate-300 hover:text-white"
+                              : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                           }`}
                           href={link.href}
                           style={{
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm transition-all">{link.icon}</div>
+                          <div className="text-sm transition-all">
+                            {link.icon}
+                          </div>
                           <span
                             className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                           >
@@ -654,8 +659,6 @@ const Sidebar = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
-
-
               </motion.div>
             )}
           </AnimatePresence>
@@ -694,20 +697,21 @@ const Sidebar = () => {
                 {settingsLinks.map((link) => (
                   <Link
                     key={link.href}
-                    className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm ${
-                      pathname === link.href
-                        ? "bg-gradient-to-r from-blue-600 to-blue-500 shadow-lg shadow-blue-500/20"
-                        : "hover:bg-white/5 hover:shadow-sm"
+                    className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
+                      isLinkActive(link.href)
+                        ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                        : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                     }`}
                     href={link.href}
+                    style={{
+                      paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                    }}
                   >
-                    <div
-                      className={`text-lg transition-all ${pathname === link.href ? "text-white drop-shadow-lg" : "text-slate-300 group-hover:text-white"}`}
-                    >
+                    <div className="text-sm transition-all">
                       {link.icon}
                     </div>
                     <span
-                      className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
+                      className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                     >
                       {link.name}
                     </span>
@@ -717,7 +721,6 @@ const Sidebar = () => {
             )}
           </AnimatePresence>
         </div>
-
       </nav>
     </aside>
   );

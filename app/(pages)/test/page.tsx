@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 
+import Breadcrumb from "@/components/Breadcrumb";
+
 export const metadata: Metadata = {
   title: "صفحة اختبار - NafeesWeb",
   description: "صفحة اختبار النظام",
@@ -8,6 +10,7 @@ export const metadata: Metadata = {
 export default function TestPage() {
   return (
     <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">صفحة اختبار</h1>
         <div className="space-y-4">
