@@ -601,7 +601,7 @@ export default function VoucherClientPage({
                       className="w-40 p-0.5 font-bold text-slate-700 border"
                       colSpan={2}
                     >
-                      ذهب
+                      ذهب (جم)
                     </th>
                     <th
                       className="w-20 p-0.5 font-bold text-slate-700 border"
@@ -636,10 +636,10 @@ export default function VoucherClientPage({
                       دائن
                     </th>
                     <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                      مدين
+                      مدين (جم)
                     </th>
                     <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                      دائن
+                      دائن (جم)
                     </th>
                   </tr>
                 </thead>
@@ -803,9 +803,9 @@ export default function VoucherClientPage({
                         />
                       </td>
 
-                      <td className="p-0 border">
+                      <td className="p-0 border bg-amber-50">
                         <input
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
                           disabled={!isEditing}
                           min="0"
                           placeholder="0.00"
@@ -817,14 +817,14 @@ export default function VoucherClientPage({
                             appearance: "none",
                           }}
                           type="number"
-                          value={detail.debit_g ? String(detail.debit_g) : ""}
+                          value={detail.g_debit ? String(detail.g_debit) : ""}
                           onChange={(e) => {
                             const val = e.target.value;
 
                             if (!val || parseFloat(val) >= 0) {
                               updateDetail(
                                 index,
-                                "debit_g",
+                                "g_debit",
                                 val ? parseFloat(val) : undefined,
                               );
                             }
@@ -838,9 +838,9 @@ export default function VoucherClientPage({
                         />
                       </td>
 
-                      <td className="p-0 border">
+                      <td className="p-0 border bg-amber-50">
                         <input
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
                           disabled={!isEditing}
                           min="0"
                           placeholder="0.00"
@@ -852,14 +852,14 @@ export default function VoucherClientPage({
                             appearance: "none",
                           }}
                           type="number"
-                          value={detail.credit_g ? String(detail.credit_g) : ""}
+                          value={detail.g_credit ? String(detail.g_credit) : ""}
                           onChange={(e) => {
                             const val = e.target.value;
 
                             if (!val || parseFloat(val) >= 0) {
                               updateDetail(
                                 index,
-                                "credit_g",
+                                "g_credit",
                                 val ? parseFloat(val) : undefined,
                               );
                             }

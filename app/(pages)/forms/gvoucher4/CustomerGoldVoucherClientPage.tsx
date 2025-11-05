@@ -740,12 +740,6 @@ export default function CustomerGoldVoucherClientPage({
         handling: voucher.handling || null,
       };
 
-      console.log("📤 Client - بيانات السند قبل الإرسال:", {
-        cust_id: voucherData.cust_id,
-        selectedCustomer: selectedCustomer?.id,
-        voucher_cust_id: voucher.cust_id,
-      });
-
       // تحضير بيانات الصناديق
       const boxesData = validBoxes.map((box) => ({
         id: box.id || 0,

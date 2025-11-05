@@ -124,11 +124,6 @@ export async function updateGoldDetails(
 
   // حذف السجلات المحذوفة
   if (deletedGoldDetailIds && deletedGoldDetailIds.length > 0) {
-    console.log(
-      `[SERVER] 🗑️ حذف ${deletedGoldDetailIds.length} تفصيل ذهب`,
-      `vouch_id: ${realVoucherId}`,
-    );
-
     for (const detailId of deletedGoldDetailIds) {
       if (!detailId || detailId <= 0) {
         continue;
@@ -144,18 +139,12 @@ export async function updateGoldDetails(
             `[SERVER] ❌ فشل حذف تفصيل الذهب ${detailId}:`,
             deleteResponse.message || "خطأ غير معروف",
           );
-          // لا نوقف العملية، نكمل مع البقية
-        } else {
-          console.log(
-            `[SERVER] ✅ تم حذف تفصيل الذهب ${detailId} بنجاح`,
-          );
         }
       } catch (error) {
         console.error(
           `[SERVER] ❌ خطأ في حذف تفصيل الذهب ${detailId}:`,
           error instanceof Error ? error.message : String(error),
         );
-        // لا نوقف العملية، نكمل مع البقية
       }
     }
   }
@@ -230,10 +219,6 @@ export async function updateGoldDetails(
 
     // إذا كان السجل موجوداً (له id)، قم بتحديثه
     if (goldDetail.id && goldDetail.id > 0) {
-      console.log(
-        `[SERVER] 📝 تحديث تفصيل ذهب موجود ${goldDetail.id}`,
-      );
-
       const updateResponse = await voucherService.updateGoldDetail(
         goldDetail.id,
         goldDetailData,
@@ -247,10 +232,6 @@ export async function updateGoldDetails(
       }
     } else {
       // سجل جديد، قم بإنشائه
-      console.log(
-        `[SERVER] ➕ إنشاء تفصيل ذهب جديد`,
-        `item_id: ${goldDetail.item_id}`,
-      );
 
       goldDetailData.cr_date = currentDate;
       goldDetailData.cr_user = currentUsername || null;

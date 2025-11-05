@@ -33,11 +33,6 @@ export async function deleteGLTransactionRecords(
   transType: number,
 ): Promise<void> {
   try {
-    console.log(
-      `[SERVER] 🗑️ بدء حذف سجلات gl_transaction القديمة`,
-      `trans_id: ${transId}, trans_type: ${transType}`,
-    );
-
     const response = await glTransactionService.getAll({
       xtrans_id: transId,
       xtrans_type: transType,
@@ -50,19 +45,9 @@ export async function deleteGLTransactionRecords(
     if (response.success && response.data && Array.isArray(response.data)) {
       const transactions = response.data;
 
-      console.log(
-        `[SERVER] 📋 تم العثور على ${transactions.length} سجل للحذف`,
-        `trans_id: ${transId}, trans_type: ${transType}`,
-      );
-
       for (const transaction of transactions) {
         if (transaction.id) {
           try {
-            console.log(
-              `[SERVER] 🗑️ محاولة حذف سجل gl_transaction ${transaction.id}`,
-              `trans_id: ${transId}, trans_type: ${transType}`,
-            );
-
             const deleteResponse = await glTransactionService.deleteTransaction(
               transaction.id,
               { com: 1 },
@@ -72,12 +57,6 @@ export async function deleteGLTransactionRecords(
               console.error(
                 `[SERVER] ❌ فشل حذف سجل gl_transaction ${transaction.id}:`,
                 deleteResponse.message || "خطأ غير معروف",
-                `\nالاستجابة:`,
-                JSON.stringify(deleteResponse, null, 2),
-              );
-            } else {
-              console.log(
-                `[SERVER] ✅ تم حذف سجل gl_transaction ${transaction.id} بنجاح`,
               );
             }
           } catch (error) {
@@ -95,11 +74,6 @@ export async function deleteGLTransactionRecords(
           );
         }
       }
-    } else {
-      console.warn(
-        `[SERVER] ⚠️ لم يتم العثور على سجلات gl_transaction للحذف`,
-        `trans_id: ${transId}, trans_type: ${transType}`,
-      );
     }
   } catch (error) {
     console.error(
@@ -132,10 +106,10 @@ async function createGLTransactionForDetail(
 
   const debitValue = detail.debit || 0;
   const creditValue = detail.credit || 0;
-  const debitBaseValue = detail.base_debit || 0;
-  const creditBaseValue = detail.base_credit || 0;
+  const debitBaseValue = detail.debit_base !== undefined ? detail.debit_base : (detail.base_debit || 0);
+  const creditBaseValue = detail.credit_base !== undefined ? detail.credit_base : (detail.base_credit || 0);
 
-  // إذا كان هناك نقد (debit أو credit > 0) وليس هناك ذهب (base_debit و base_credit = 0)
+  // إذا كان هناك نقد (debit أو credit > 0) وليس هناك ذهب (debit_base و credit_base = 0)
   // فإن debit_base و credit_base يجب أن تساوي debit و credit
   const isCashOnly =
     (debitValue > 0 || creditValue > 0) &&
@@ -145,15 +119,20 @@ async function createGLTransactionForDetail(
   const finalDebitBase = isCashOnly ? debitValue : debitBaseValue;
   const finalCreditBase = isCashOnly ? creditValue : creditBaseValue;
 
+  const gDebitValue = detail.g_debit !== undefined ? detail.g_debit : (detail.debit_g || 0);
+  const gCreditValue = detail.g_credit !== undefined ? detail.g_credit : (detail.credit_g || 0);
+  const gDebitBaseValue = detail.g_debit_base !== undefined ? detail.g_debit_base : gDebitValue;
+  const gCreditBaseValue = detail.g_credit_base !== undefined ? detail.g_credit_base : gCreditValue;
+
   const glTransactionData: Partial<GLTransaction> = {
     debit: String(debitValue),
     credit: String(creditValue),
     debit_base: String(finalDebitBase),
     credit_base: String(finalCreditBase),
-    g_debit: String(detail.debit_g || 0),
-    g_credit: String(detail.credit_g || 0),
-    g_debit_base: String(detail.debit_g || 0),
-    g_credit_base: String(detail.credit_g || 0),
+    g_debit: String(gDebitValue),
+    g_credit: String(gCreditValue),
+    g_debit_base: String(gDebitBaseValue),
+    g_credit_base: String(gCreditBaseValue),
     type: voucherTypeName,
     d: transactionDate,
     t: transactionTime,
@@ -183,11 +162,6 @@ async function createGLTransactionForDetail(
         "\nالبيانات المرسلة:",
         JSON.stringify(glTransactionData, null, 2),
       );
-    } else {
-      console.log(
-        `[SERVER] ✅ تم ترحيل gl_transaction للتفصيل ${seq} بنجاح`,
-        `vouch_id: ${voucherData.vouch_id}, acc_id: ${detail.acc_id}`,
-      );
     }
   } catch (error) {
     console.error(
@@ -215,35 +189,17 @@ async function createGLTransactionForBox(
   customerName: string | null,
   seq: number,
 ): Promise<void> {
-  console.log(
-    `[SERVER] 📦 فحص صندوق للترحيل:`,
-    `box_id: ${box.box_id}, amount: ${box.amount}`,
-    `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-  );
-
   if (!box.box_id || box.box_id <= 0) {
-    console.warn(
-      `[SERVER] ⚠️ تخطي ترحيل صندوق: box_id غير موجود أو = 0`,
-      `amount: ${box.amount}`,
-    );
-
     return;
   }
 
   if (!box.amount || box.amount <= 0) {
-    console.warn(
-      `[SERVER] ⚠️ تخطي ترحيل صندوق ${box.box_id}: amount غير موجود أو = 0`,
-      `amount: ${box.amount}`,
-    );
-
     return;
   }
 
   const boxAccountId = await getBoxAccountId(box.box_id);
 
   if (!boxAccountId || boxAccountId <= 0) {
-    console.warn(`[SERVER] ⚠️ لا يمكن العثور على حساب الصندوق ${box.box_id}`);
-
     return;
   }
 
@@ -288,13 +244,6 @@ async function createGLTransactionForBox(
       console.error(
         `[SERVER] ❌ فشل ترحيل gl_transaction للصندوق:`,
         response.message || "خطأ غير معروف",
-        "\nالبيانات المرسلة:",
-        JSON.stringify(glTransactionData, null, 2),
-      );
-    } else {
-      console.log(
-        `[SERVER] ✅ تم ترحيل gl_transaction للصندوق بنجاح`,
-        `vouch_id: ${voucherData.vouch_id}, box_id: ${box.box_id}, acc_id: ${boxAccountId}`,
       );
     }
   } catch (error) {
@@ -325,10 +274,6 @@ async function createGLTransactionForGoldBox(
   seq: number,
 ): Promise<void> {
   if (!goldDetail.box_id || goldDetail.box_id <= 0) {
-    console.warn(
-      `[SERVER] ⚠️ تخطي ترحيل صندوق الذهب: box_id غير موجود أو = 0`,
-      `item_id: ${goldDetail.item_id}`,
-    );
     return;
   }
 
@@ -364,22 +309,12 @@ async function createGLTransactionForGoldBox(
 
   // إذا لم يكن هناك مبلغ ولا وزن، لا حاجة للترحيل
   if (amount <= 0 && goldWeight <= 0) {
-    console.warn(
-      `[SERVER] ⚠️ تخطي ترحيل صندوق الذهب: لا يوجد مبلغ ولا وزن`,
-      `item_id: ${goldDetail.item_id}, box_id: ${goldDetail.box_id}`,
-      `vouch_type: ${voucherData.vouch_type}, amount: ${amount}, goldWeight: ${goldWeight}`,
-      `close_amt: ${goldDetail.close_amt}, work_amt: ${goldDetail.work_amt}`,
-    );
     return;
   }
 
   const boxAccountId = await getBoxAccountId(goldDetail.box_id);
 
   if (!boxAccountId || boxAccountId <= 0) {
-    console.warn(
-      `[SERVER] ⚠️ لا يمكن العثور على حساب الصندوق ${goldDetail.box_id}`,
-    );
-
     return;
   }
 
@@ -424,13 +359,6 @@ async function createGLTransactionForGoldBox(
       console.error(
         `[SERVER] ❌ فشل ترحيل gl_transaction لصندوق الذهب:`,
         response.message || "خطأ غير معروف",
-        "\nالبيانات المرسلة:",
-        JSON.stringify(glTransactionData, null, 2),
-      );
-    } else {
-      console.log(
-        `[SERVER] ✅ تم ترحيل gl_transaction لصندوق الذهب بنجاح`,
-        `vouch_id: ${voucherData.vouch_id}, box_id: ${goldDetail.box_id}, acc_id: ${boxAccountId}`,
       );
     }
   } catch (error) {
@@ -457,18 +385,8 @@ export async function createGLTransactionRecords(
   voucherBoxes: VoucherBoxData[] = [],
   goldDetails: GVoucherDetailData[] = [],
 ): Promise<void> {
-  console.log(
-    `[SERVER] 🚀 بدء createGLTransactionRecords`,
-    `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-    `details: ${details?.length || 0}, voucherBoxes: ${voucherBoxes?.length || 0}, goldDetails: ${goldDetails?.length || 0}`,
-  );
-
   // سندات الذهب (4, 5, 111, 222): استخدام goldDetails و voucherBoxes
   const isGoldVoucher = [4, 5, 111, 222].includes(voucherData.vouch_type || 0);
-
-  console.log(
-    `[SERVER] 🔍 isGoldVoucher: ${isGoldVoucher}, vouch_type: ${voucherData.vouch_type}`,
-  );
 
   // التحقق من وجود سجلات مسبقة وحذفها
   try {
@@ -487,12 +405,6 @@ export async function createGLTransactionRecords(
       Array.isArray(existingTransactionsResponse.data) &&
       existingTransactionsResponse.data.length > 0
     ) {
-      console.warn(
-        `[SERVER] ⚠️ تم العثور على ${existingTransactionsResponse.data.length} سجل موجود في gl_transaction`,
-        `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-        `سيتم حذفها أولاً قبل إنشاء السجلات الجديدة`,
-      );
-
       await deleteGLTransactionRecords(
         voucherData.vouch_id,
         voucherData.vouch_type,
@@ -532,20 +444,9 @@ export async function createGLTransactionRecords(
 
   // لسندات الذهب: ترحيل الصناديق النقدية والذهبية
   if (isGoldVoucher) {
-    console.log(
-      `[SERVER] 📝 بدء ترحيل سند ذهب (${voucherData.vouch_type}) إلى gl_transaction`,
-      `vouch_id: ${voucherData.vouch_id}`,
-      `voucherBoxes: ${voucherBoxes?.length || 0}, goldDetails: ${goldDetails?.length || 0}`,
-    );
-
     // ترحيل الصناديق النقدية
     // في سندات الذهب (4, 5, 111, 222)، يجب ترحيل الصناديق النقدية دائماً
     if (voucherBoxes && voucherBoxes.length > 0) {
-      console.log(
-        `[SERVER] 📝 ترحيل ${voucherBoxes.length} صندوق نقدي`,
-        `vouch_type: ${voucherData.vouch_type}`,
-      );
-
       for (let i = 0; i < voucherBoxes.length; i++) {
         seq++;
         await createGLTransactionForBox(
@@ -562,19 +463,10 @@ export async function createGLTransactionRecords(
           seq,
         );
       }
-    } else {
-      console.warn(
-        `[SERVER] ⚠️ لا توجد صناديق نقدية للترحيل`,
-        `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-      );
     }
 
     // ترحيل صناديق الذهب من goldDetails
     if (goldDetails && goldDetails.length > 0) {
-      console.log(
-        `[SERVER] 📝 فحص ${goldDetails.length} تفصيل ذهب للترحيل`,
-      );
-
       const validGoldDetails = goldDetails.filter(
         (detail) =>
           detail &&
@@ -584,17 +476,7 @@ export async function createGLTransactionRecords(
           detail.box_id > 0,
       );
 
-      console.log(
-        `[SERVER] 📝 ${validGoldDetails.length} تفصيل ذهب صالح للترحيل`,
-        `من ${goldDetails.length} إجمالي`,
-      );
-
       if (validGoldDetails.length > 0) {
-        console.log(
-          `[SERVER] 📝 بدء ترحيل ${validGoldDetails.length} صندوق ذهب إلى gl_transaction`,
-          `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-        );
-
         for (let i = 0; i < validGoldDetails.length; i++) {
           seq++;
           await createGLTransactionForGoldBox(
@@ -611,24 +493,8 @@ export async function createGLTransactionRecords(
             seq,
           );
         }
-      } else {
-        console.warn(
-          `[SERVER] ⚠️ لا توجد تفاصيل ذهب صالحة للترحيل`,
-          `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-          `عدد التفاصيل: ${goldDetails.length}`,
-        );
       }
-    } else {
-      console.warn(
-        `[SERVER] ⚠️ لا توجد تفاصيل ذهب للترحيل`,
-        `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-      );
     }
-
-    console.log(
-      `[SERVER] ✅ انتهاء ترحيل سند الذهب`,
-      `vouch_id: ${voucherData.vouch_id}, تم ترحيل ${seq} سجل`,
-    );
 
     return;
   }
@@ -636,11 +502,6 @@ export async function createGLTransactionRecords(
   // للسندات الأخرى: استخدام details العادية
   // التحقق من وجود التفاصيل
   if (!details || details.length === 0) {
-    console.warn(
-      "[SERVER] ⚠️ لا توجد تفاصيل لترحيلها إلى gl_transaction",
-      `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-    );
-
     return;
   }
 
@@ -650,19 +511,8 @@ export async function createGLTransactionRecords(
   );
 
   if (validDetails.length === 0) {
-    console.warn(
-      "[SERVER] ⚠️ لا توجد تفاصيل صحيحة لترحيلها إلى gl_transaction",
-      `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-      `عدد التفاصيل: ${details.length}`,
-    );
-
     return;
   }
-
-  console.log(
-    `[SERVER] 📝 بدء ترحيل ${validDetails.length} تفصيل إلى gl_transaction`,
-    `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-  );
 
   // إنشاء سجلات GL transaction للتفاصيل
   for (let i = 0; i < validDetails.length; i++) {
@@ -688,12 +538,6 @@ export async function createGLTransactionRecords(
     const isPayment = isPaymentType(voucherData.vouch_type);
 
     if (isReceipt || isPayment) {
-      console.log(
-        `[SERVER] 📝 بدء ترحيل ${voucherBoxes.length} صندوق إلى gl_transaction`,
-        `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-        `isReceipt: ${isReceipt}, isPayment: ${isPayment}`,
-      );
-
       for (let i = 0; i < voucherBoxes.length; i++) {
         seq++;
         await createGLTransactionForBox(

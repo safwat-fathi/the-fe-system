@@ -181,14 +181,30 @@ export const useVoucherForm = ({
                   detail.credit !== undefined && detail.credit !== null
                     ? Number(detail.credit)
                     : undefined,
-                debit_g:
-                  detail.debit_g !== undefined && detail.debit_g !== null
-                    ? Number(detail.debit_g)
-                    : undefined,
-                credit_g:
-                  detail.credit_g !== undefined && detail.credit_g !== null
-                    ? Number(detail.credit_g)
-                    : undefined,
+                g_debit:
+                  detail.g_debit !== undefined && detail.g_debit !== null
+                    ? Number(detail.g_debit)
+                    : (detail.debit_g !== undefined && detail.debit_g !== null
+                      ? Number(detail.debit_g)
+                      : undefined),
+                g_credit:
+                  detail.g_credit !== undefined && detail.g_credit !== null
+                    ? Number(detail.g_credit)
+                    : (detail.credit_g !== undefined && detail.credit_g !== null
+                      ? Number(detail.credit_g)
+                      : undefined),
+                debit_base: detail.debit_base !== undefined && detail.debit_base !== null
+                  ? Number(detail.debit_base)
+                  : (detail.debit !== undefined && detail.debit !== null ? Number(detail.debit) : undefined),
+                credit_base: detail.credit_base !== undefined && detail.credit_base !== null
+                  ? Number(detail.credit_base)
+                  : (detail.credit !== undefined && detail.credit !== null ? Number(detail.credit) : undefined),
+                g_debit_base: detail.g_debit_base !== undefined && detail.g_debit_base !== null
+                  ? Number(detail.g_debit_base)
+                  : undefined,
+                g_credit_base: detail.g_credit_base !== undefined && detail.g_credit_base !== null
+                  ? Number(detail.g_credit_base)
+                  : undefined,
                 gauge: Number(detail.gauge) || 875,
                 vouch_notes: detail.vouch_notes || "",
               };
@@ -324,8 +340,12 @@ export const useVoucherForm = ({
           cost_id: detail.cost_id || 0,
           debit: Number(detail.debit) || 0,
           credit: Number(detail.credit) || 0,
-          debit_g: Number(detail.debit_g) || 0,
-          credit_g: Number(detail.credit_g) || 0,
+          debit_base: detail.debit_base !== undefined ? Number(detail.debit_base) : (Number(detail.debit) || 0),
+          credit_base: detail.credit_base !== undefined ? Number(detail.credit_base) : (Number(detail.credit) || 0),
+          g_debit: detail.g_debit !== undefined ? Number(detail.g_debit) : (Number(detail.debit_g) || 0),
+          g_credit: detail.g_credit !== undefined ? Number(detail.g_credit) : (Number(detail.credit_g) || 0),
+          g_debit_base: detail.g_debit_base !== undefined ? Number(detail.g_debit_base) : 0,
+          g_credit_base: detail.g_credit_base !== undefined ? Number(detail.g_credit_base) : 0,
           gauge: Number(detail.gauge) || 875,
           vouch_notes: detail.vouch_notes || "",
           cr_date: new Date().toISOString(),

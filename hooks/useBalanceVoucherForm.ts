@@ -328,68 +328,68 @@ export const useBalanceVoucherForm = ({
           }
         }
 
-        // حساب الذهب المعاير تلقائياً من base_debit/base_credit و gauge
+        // حساب الذهب المعاير تلقائياً من g_debit/g_credit و gauge
         const baseGauge = 875;
         const currentGauge = newDetail.gauge || 875;
 
-        // حساب debit_g من base_debit
-        if (field === "base_debit") {
-          const baseDebit =
+        // حساب g_debit_base من g_debit
+        if (field === "g_debit") {
+          const gDebitValue =
             value !== undefined && value !== null ? parseNumber(value) : 0;
 
-          if (baseDebit > 0 && currentGauge > 0) {
-            newDetail.debit_g = calculateCalibratedGold(
-              baseDebit,
+          if (gDebitValue > 0 && currentGauge > 0) {
+            newDetail.g_debit_base = calculateCalibratedGold(
+              gDebitValue,
               currentGauge,
               baseGauge,
             );
           } else {
-            newDetail.debit_g = undefined;
+            newDetail.g_debit_base = undefined;
           }
         } else if (
           field === "gauge" &&
-          newDetail.base_debit !== undefined &&
-          newDetail.base_debit !== null &&
-          newDetail.base_debit > 0
+          newDetail.g_debit !== undefined &&
+          newDetail.g_debit !== null &&
+          newDetail.g_debit > 0
         ) {
           const newGauge = parseNumber(value) || 875;
-          const baseDebit = parseNumber(newDetail.base_debit);
+          const gDebitValue = parseNumber(newDetail.g_debit);
 
-          if (baseDebit > 0 && newGauge > 0) {
-            newDetail.debit_g = calculateCalibratedGold(
-              baseDebit,
+          if (gDebitValue > 0 && newGauge > 0) {
+            newDetail.g_debit_base = calculateCalibratedGold(
+              gDebitValue,
               newGauge,
               baseGauge,
             );
           }
         }
 
-        // حساب credit_g من base_credit
-        if (field === "base_credit") {
-          const baseCredit =
+        // حساب g_credit_base من g_credit
+        if (field === "g_credit") {
+          const gCreditValue =
             value !== undefined && value !== null ? parseNumber(value) : 0;
 
-          if (baseCredit > 0 && currentGauge > 0) {
-            newDetail.credit_g = calculateCalibratedGold(
-              baseCredit,
+          if (gCreditValue > 0 && currentGauge > 0) {
+            newDetail.g_credit_base = calculateCalibratedGold(
+              gCreditValue,
               currentGauge,
               baseGauge,
             );
           } else {
-            newDetail.credit_g = undefined;
+            newDetail.g_credit_base = undefined;
           }
         } else if (
           field === "gauge" &&
-          newDetail.base_credit !== undefined &&
-          newDetail.base_credit !== null &&
-          newDetail.base_credit > 0
+          newDetail.g_credit !== undefined &&
+          newDetail.g_credit !== null &&
+          newDetail.g_credit > 0
         ) {
           const newGauge = parseNumber(value) || 875;
-          const baseCredit = parseNumber(newDetail.base_credit);
+          const gCreditValue = parseNumber(newDetail.g_credit);
 
-          if (baseCredit > 0 && newGauge > 0) {
-            newDetail.credit_g = calculateCalibratedGold(
-              baseCredit,
+          if (gCreditValue > 0 && newGauge > 0) {
+            newDetail.g_credit_base = calculateCalibratedGold(
+              gCreditValue,
               newGauge,
               baseGauge,
             );
@@ -547,11 +547,13 @@ export const useBalanceVoucherForm = ({
           acc_id: detail.acc_id,
           debit: detail.debit,
           credit: detail.credit,
-          base_debit: detail.base_debit,
-          base_credit: detail.base_credit,
+          debit_base: detail.debit_base !== undefined ? detail.debit_base : detail.debit,
+          credit_base: detail.credit_base !== undefined ? detail.credit_base : detail.credit,
           gauge: detail.gauge,
-          debit_g: detail.debit_g,
-          credit_g: detail.credit_g,
+          g_debit: detail.g_debit !== undefined ? detail.g_debit : detail.debit_g,
+          g_credit: detail.g_credit !== undefined ? detail.g_credit : detail.credit_g,
+          g_debit_base: detail.g_debit_base,
+          g_credit_base: detail.g_credit_base,
           vouch_notes: detail.vouch_notes || "",
           cost_id: detail.cost_id || null,
           tax: 0,
