@@ -74,7 +74,7 @@ export default async function ItemsPage({
     );
 
   const [categoriesData, itemTypesData, unitsData] = await Promise.all([
-    helperService.getCategories().catch(() => []),
+    helperService.getCategories(companyId).catch(() => []),
     helperService.getItemTypes().catch(() => []),
     helperService.getUnits().catch(() => []),
   ]);

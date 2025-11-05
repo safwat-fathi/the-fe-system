@@ -18,6 +18,7 @@ import {
   getAccountGauge,
   calculateVoucherTotals,
   calculateCalibratedGold,
+  calculateReverseCalibratedGold,
 } from "@/utilities/voucherForm";
 
 interface UseBalanceVoucherFormProps {
@@ -81,9 +82,11 @@ export const useBalanceVoucherForm = ({
   const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>(
     voucherDetailsData || [],
   );
+  const [showUnbalancedModal, setShowUnbalancedModal] = useState(false);
 
   const previousVouchNotesRef = useRef<string>(voucherData?.vouch_notes || "");
   const hasGeneratedVoucherNumber = useRef(false);
+  const isSavingUnbalancedRef = useRef(false);
 
   // Initialize component
   useEffect(() => {
@@ -332,7 +335,7 @@ export const useBalanceVoucherForm = ({
         const baseGauge = 875;
         const currentGauge = newDetail.gauge || 875;
 
-        // حساب g_debit_base من g_debit
+        // حساب g_debit_base من g_debit (منزلتان عشريتان فقط حسب متطلبات الـ backend)
         if (field === "g_debit") {
           const gDebitValue =
             value !== undefined && value !== null ? parseNumber(value) : 0;
@@ -342,29 +345,14 @@ export const useBalanceVoucherForm = ({
               gDebitValue,
               currentGauge,
               baseGauge,
+              2, // منزلتان عشريتان فقط
             );
           } else {
             newDetail.g_debit_base = undefined;
           }
-        } else if (
-          field === "gauge" &&
-          newDetail.g_debit !== undefined &&
-          newDetail.g_debit !== null &&
-          newDetail.g_debit > 0
-        ) {
-          const newGauge = parseNumber(value) || 875;
-          const gDebitValue = parseNumber(newDetail.g_debit);
-
-          if (gDebitValue > 0 && newGauge > 0) {
-            newDetail.g_debit_base = calculateCalibratedGold(
-              gDebitValue,
-              newGauge,
-              baseGauge,
-            );
-          }
         }
 
-        // حساب g_credit_base من g_credit
+        // حساب g_credit_base من g_credit (منزلتان عشريتان فقط حسب متطلبات الـ backend)
         if (field === "g_credit") {
           const gCreditValue =
             value !== undefined && value !== null ? parseNumber(value) : 0;
@@ -374,26 +362,85 @@ export const useBalanceVoucherForm = ({
               gCreditValue,
               currentGauge,
               baseGauge,
+              2, // منزلتان عشريتان فقط
             );
           } else {
             newDetail.g_credit_base = undefined;
           }
-        } else if (
-          field === "gauge" &&
-          newDetail.g_credit !== undefined &&
-          newDetail.g_credit !== null &&
-          newDetail.g_credit > 0
-        ) {
-          const newGauge = parseNumber(value) || 875;
-          const gCreditValue = parseNumber(newDetail.g_credit);
+        }
 
-          if (gCreditValue > 0 && newGauge > 0) {
-            newDetail.g_credit_base = calculateCalibratedGold(
-              gCreditValue,
-              newGauge,
+        // حساب g_debit من g_debit_base (الحساب العكسي)
+        if (field === "g_debit_base") {
+          const gDebitBaseValue =
+            value !== undefined && value !== null ? parseNumber(value) : 0;
+
+          if (gDebitBaseValue > 0 && currentGauge > 0) {
+            newDetail.g_debit = calculateReverseCalibratedGold(
+              gDebitBaseValue,
+              currentGauge,
               baseGauge,
             );
+          } else {
+            newDetail.g_debit = undefined;
           }
+        }
+
+        // حساب g_credit من g_credit_base (الحساب العكسي)
+        if (field === "g_credit_base") {
+          const gCreditBaseValue =
+            value !== undefined && value !== null ? parseNumber(value) : 0;
+
+          if (gCreditBaseValue > 0 && currentGauge > 0) {
+            newDetail.g_credit = calculateReverseCalibratedGold(
+              gCreditBaseValue,
+              currentGauge,
+              baseGauge,
+            );
+          } else {
+            newDetail.g_credit = undefined;
+          }
+        }
+
+        // إعادة حساب g_debit_base و g_credit_base عند تغيير gauge إذا كان g_debit أو g_credit موجود
+        // عند تعديل العيار، يتغير الوزن المعاير فقط (g_debit_base/g_credit_base)
+        // ولا يتغير الوزن القائم (g_debit/g_credit)
+        if (field === "gauge") {
+          const newGauge = parseNumber(value) || 875;
+
+          // إعادة حساب g_debit_base إذا كان g_debit موجود (من الوزن القائم)
+          // منزلتان عشريتان فقط حسب متطلبات الـ backend
+          if (
+            newDetail.g_debit !== undefined &&
+            newDetail.g_debit !== null &&
+            newDetail.g_debit > 0 &&
+            newGauge > 0
+          ) {
+            newDetail.g_debit_base = calculateCalibratedGold(
+              newDetail.g_debit,
+              newGauge,
+              baseGauge,
+              2, // منزلتان عشريتان فقط
+            );
+          }
+
+          // إعادة حساب g_credit_base إذا كان g_credit موجود (من الوزن القائم)
+          // منزلتان عشريتان فقط حسب متطلبات الـ backend
+          if (
+            newDetail.g_credit !== undefined &&
+            newDetail.g_credit !== null &&
+            newDetail.g_credit > 0 &&
+            newGauge > 0
+          ) {
+            newDetail.g_credit_base = calculateCalibratedGold(
+              newDetail.g_credit,
+              newGauge,
+              baseGauge,
+              2, // منزلتان عشريتان فقط
+            );
+          }
+
+          // لا نقوم بالحساب العكسي عند تغيير gauge
+          // الاحتساب العكسي يعمل فقط عند إدخال الوزن المعاير مباشرة (g_debit_base/g_credit_base)
         }
 
         return newDetail;
@@ -467,25 +514,20 @@ export const useBalanceVoucherForm = ({
       return;
     }
 
+    // إظهار مودال تحذيري عند عدم التوازن (القيد الافتتاحي)
+    // انتظار قرار المستخدم قبل الحفظ
     if (!isBalanced) {
-      const proceed = window.confirm(
-        "⚠️ القيد غير متزن!\n\nإجمالي المدين: " +
-          totals.totalDebit.toFixed(2) +
-          "\nإجمالي الدائن: " +
-          totals.totalCredit.toFixed(2) +
-          "\n\nهل تريد المتابعة والحفظ رغم ذلك؟",
-      );
-
-      if (!proceed) {
-        return;
-      }
-
-      toast("تم حفظ القيد رغم عدم التوازن", {
-        icon: "⚠️",
-        duration: 4000,
-      });
+      isSavingUnbalancedRef.current = true;
+      setShowUnbalancedModal(true);
+      return; // انتظار قرار المستخدم من المودال
     }
 
+    // إذا كان القيد متزن، متابعة الحفظ مباشرة
+    await proceedWithSave();
+  };
+
+
+  const proceedWithSave = async () => {
     const detailsWithAccounts = details.filter(
       (detail) => detail.acc_id && detail.acc_id > 0,
     );
@@ -552,8 +594,16 @@ export const useBalanceVoucherForm = ({
           gauge: detail.gauge,
           g_debit: detail.g_debit !== undefined ? detail.g_debit : detail.debit_g,
           g_credit: detail.g_credit !== undefined ? detail.g_credit : detail.credit_g,
-          g_debit_base: detail.g_debit_base,
-          g_credit_base: detail.g_credit_base,
+          // التأكد من أن g_debit_base و g_credit_base موجودة أو تساوي 0
+          // تقريب إلى منزلتين عشريتين حسب متطلبات الـ backend
+          g_debit_base:
+            detail.g_debit_base !== undefined && detail.g_debit_base !== null
+              ? parseFloat(detail.g_debit_base.toFixed(2))
+              : 0,
+          g_credit_base:
+            detail.g_credit_base !== undefined && detail.g_credit_base !== null
+              ? parseFloat(detail.g_credit_base.toFixed(2))
+              : 0,
           vouch_notes: detail.vouch_notes || "",
           cost_id: detail.cost_id || null,
           tax: 0,
@@ -598,10 +648,15 @@ export const useBalanceVoucherForm = ({
         toast.success(result.message);
 
         if (realId) {
+          // إعادة التوجيه السلسة مع تحديث البيانات
           router.push(`/forms/balance/${realId}?mode=preview`);
+          router.refresh();
+        } else if (vouchId) {
+          router.push(`/forms/balance?mode=preview`);
           router.refresh();
         } else {
           router.push(`/forms/balance`);
+          router.refresh();
         }
       } else {
         toast.error(result.message);
@@ -656,6 +711,7 @@ export const useBalanceVoucherForm = ({
     }
   };
 
+
   return {
     // State
     voucher,
@@ -672,6 +728,7 @@ export const useBalanceVoucherForm = ({
     isPrinting,
     currentTime,
     isClient,
+    showUnbalancedModal,
 
     // Totals and balances
     totals,
@@ -693,5 +750,18 @@ export const useBalanceVoucherForm = ({
     saveVoucher,
     printVoucher,
     handleEditClick,
+    handleUnbalancedConfirm: async () => {
+      // المستخدم وافق على المتابعة رغم عدم التوازن
+      setShowUnbalancedModal(false);
+      isSavingUnbalancedRef.current = false;
+      // حفظ القيد بشكل طبيعي تماماً كما لو كان متزناً
+      // استدعاء proceedWithSave مباشرة (التحقق من الشروط تم بالفعل في saveVoucher)
+      await proceedWithSave();
+    },
+    handleUnbalancedCancel: () => {
+      // المستخدم ألغى العملية
+      setShowUnbalancedModal(false);
+      isSavingUnbalancedRef.current = false;
+    },
   };
 };

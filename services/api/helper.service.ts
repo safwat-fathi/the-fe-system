@@ -61,14 +61,31 @@ class HelperService extends HttpService {
   }
 
   // جلب الفئات
-  async getCategories(): Promise<Category[]> {
+  async getCategories(xcom_id?: string | number): Promise<Category[]> {
     try {
+      // جلب companyId من branch-params إذا لم يتم توفيره
+      let companyId = xcom_id;
+
+      if (!companyId) {
+        try {
+          const { getBranchParams } = await import("@/app/actions/branch-params");
+          const branchParams = await getBranchParams();
+          companyId = branchParams.com || "1";
+        } catch (error) {
+          // إذا فشل جلب branch params، استخدم القيمة الافتراضية
+          companyId = "1";
+        }
+      }
+
+      // التأكد من أن companyId هو string
+      const companyIdString = String(companyId || "1");
+
       const response = await this.get<Category[]>(
         "categories_list",
-        undefined,
+        { xcom_id: companyIdString },
         {
           cache: "no-store",
-          next: { tags: ["categories"] },
+          next: { tags: ["categories", `categories-company-${companyIdString}`] },
         },
       );
 
@@ -83,7 +100,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching categories:", error);
-
+      // في حالة الخطأ، إرجاع مصفوفة فارغة بدلاً من رمي الخطأ
       return [];
     }
   }

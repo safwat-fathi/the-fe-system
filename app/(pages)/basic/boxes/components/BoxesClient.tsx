@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -12,24 +13,17 @@ import {
   Button,
   Checkbox,
   Pagination,
-  Select,
-  SelectItem,
 } from "@heroui/react";
 import {
   PlusIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import {
-  HeroModal as Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@/components/Modal";
+import { ConfirmationModal } from "@/components/Modal";
 import boxService from "@/services/api/box.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
 
@@ -80,13 +74,13 @@ const columns = [
 ];
 
 export default function BoxesClient({ initialData, error }: BoxesClientProps) {
+  const router = useRouter();
   const [boxes, setBoxes] = useState<CustomerBox[]>(initialData);
   const [boxTypes, setBoxTypes] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
-  const [currentBox, setCurrentBox] = useState<Partial<CustomerBox>>({});
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [boxToDelete, setBoxToDelete] = useState<CustomerBox | null>(null);
 
   const rowsPerPage = 10;
 
@@ -119,96 +113,30 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
     loadBoxTypes();
   }, []);
 
-  // تحميل البيانات عند فتح المودال (لتأكيد التحديث)
-  React.useEffect(() => {
-    if (isModalOpen) {
-      loadBoxTypes();
+  const handleDeleteClick = (box: CustomerBox) => {
+    if (!box.id) {
+      toast.error("❌ لا يمكن حذف صندوق بدون معرف");
+      return;
     }
-  }, [isModalOpen]);
 
-  const handleSave = async () => {
-    const previousBoxes = [...boxes];
-
-    try {
-      let result: CustomerBox | null = null;
-
-      // Optimistic update for create
-      if (modalMode === "add") {
-        const optimisticId = Date.now();
-        const optimisticBox = {
-          ...currentBox,
-          id: optimisticId,
-          cust_status: 1,
-        } as CustomerBox;
-
-        setBoxes([...boxes, optimisticBox]);
-      }
-
-      if (modalMode === "edit" && currentBox.id) {
-        result = await boxService.updateBox(currentBox.id, currentBox);
-      } else {
-        result = await boxService.createBox(
-          currentBox as Omit<CustomerBox, "id">,
-        );
-      }
-
-      if (result) {
-        toast.success(
-          modalMode === "edit"
-            ? "✅ تم تعديل الصندوق بنجاح"
-            : "✅ تم إضافة الصندوق بنجاح",
-        );
-
-        // Revalidate cache
-        await revalidateTableData("boxes_list");
-
-        setIsModalOpen(false);
-        // loadBoxes();
-      } else {
-        // Rollback on failure
-        setBoxes(previousBoxes);
-        toast.error("❌ فشل في العملية");
-      }
-    } catch (error) {
-      // Rollback on error
-      setBoxes(previousBoxes);
-
-      // عرض رسالة الخطأ الواضحة للمستخدم
-      let errorMessage = "❌ حدث خطأ أثناء حفظ الصندوق";
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
-      }
-
-      // تقسيم الرسائل المتعددة وعرضها
-      const messages = errorMessage.split("\n");
-
-      if (messages.length > 1) {
-        // إذا كانت هناك رسائل متعددة، عرض الأولى كرسالة رئيسية والباقي كرسائل منفصلة
-        toast.error(messages[0], { duration: 5000 });
-        messages.slice(1).forEach((msg) => {
-          if (msg.trim()) {
-            toast.error(msg.trim(), { duration: 4000 });
-          }
-        });
-      } else {
-        toast.error(errorMessage, { duration: 5000 });
-      }
-    }
+    setBoxToDelete(box);
+    setDeleteModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("هل تريد حذف هذا الصندوق؟")) return;
+  const handleDeleteConfirm = async () => {
+    if (!boxToDelete?.id) {
+      setDeleteModalOpen(false);
+      setBoxToDelete(null);
+      return;
+    }
 
     // Optimistic delete
-    const previousBoxes = [...boxes];
-
-    setBoxes(boxes.filter((box) => box.id !== id));
+    setBoxes((prevBoxes) =>
+      prevBoxes.filter((b) => b.id !== boxToDelete.id)
+    );
 
     try {
-      const result = await boxService.deleteBox(id);
+      const result = await boxService.deleteBox(boxToDelete.id);
 
       if (result) {
         toast.success("✅ تم حذف الصندوق بنجاح");
@@ -216,15 +144,21 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         // Revalidate cache
         await revalidateTableData("boxes_list");
       } else {
-        // Rollback on failure
-        setBoxes(previousBoxes);
         toast.error("❌ فشل في حذف الصندوق");
+        router.refresh();
       }
     } catch (error) {
-      // Rollback on error
-      setBoxes(previousBoxes);
       toast.error("❌ حدث خطأ أثناء الحذف");
+      router.refresh();
+    } finally {
+      setDeleteModalOpen(false);
+      setBoxToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setBoxToDelete(null);
   };
 
   const filtered = useMemo(() => {
@@ -242,24 +176,13 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
-  const openModal = (
-    mode: "add" | "edit" | "view",
-    box: Partial<CustomerBox> = {},
-  ) => {
-    setModalMode(mode);
-    setCurrentBox(box);
-    setIsModalOpen(true);
-  };
-
-  const isViewMode = modalMode === "view";
-
   const renderActions = (box: CustomerBox) => (
     <div className="flex gap-2">
       <Button
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("view", box)}
+        onPress={() => router.push(`/basic/boxes/${box.id}`)}
       >
         <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
@@ -267,7 +190,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("edit", box)}
+        onPress={() => router.push(`/basic/boxes/${box.id}?mode=edit`)}
       >
         <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
@@ -276,7 +199,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         color="danger"
         size="sm"
         variant="light"
-        onPress={() => handleDelete(box.id)}
+        onPress={() => handleDeleteClick(box)}
       >
         <TrashIcon className="h-4 w-4" />
       </Button>
@@ -294,16 +217,27 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
   return (
     <>
-      <div className="flex justify-between mb-4">
-        <Button className="btn-primary" onPress={() => openModal("add")}>
-          <PlusIcon className="h-4 w-4" /> إضافة صندوق
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <h2 className="text-base font-semibold">إدارة الصناديق</h2>
+        <div className="h-8 w-px bg-gray-300" />
+        <Button
+          variant="bordered"
+          className="bg-gray-100"
+          onPress={() => router.push("/basic/boxes/new")}
+        >
+          <PlusIcon className="h-3 w-3" />
+          إضافة صندوق
         </Button>
-        <Input
-          className="w-60"
-          placeholder="بحث بالاسم أو الكود..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="h-8 w-px bg-gray-300" />
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="بحث بالاسم أو الكود..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+            size="sm"
+          />
+        </div>
       </div>
 
       <Table aria-label="جدول الصناديق">
@@ -346,219 +280,17 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         />
       </div>
 
-      <Modal
-        isDismissable={false}
-        isOpen={isModalOpen}
-        scrollBehavior="inside"
-        size="5xl"
-        onClose={() => setIsModalOpen(false)}
-      >
-        <ModalContent className="font-cairo">
-          <ModalHeader>
-            {modalMode === "add" && "إضافة صندوق"}
-            {modalMode === "edit" && "تعديل صندوق"}
-            {modalMode === "view" && "عرض بيانات الصندوق"}
-          </ModalHeader>
-
-          <ModalBody className="grid grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto pr-2">
-            <Input
-              isDisabled={isViewMode}
-              label="كود الصندوق"
-              value={currentBox.cust_code || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, cust_code: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="اسم الصندوق"
-              value={currentBox.cust_name || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, cust_name: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الاسم بالإنجليزي"
-              value={currentBox.cust_name_e || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, cust_name_e: e.target.value })
-              }
-            />
-            <Select
-              isDisabled={isViewMode}
-              label="نوع الصندوق"
-              popoverProps={{
-                shouldBlockScroll: false,
-              }}
-              selectedKeys={
-                currentBox.box_type ? [String(currentBox.box_type)] : []
-              }
-              onSelectionChange={(keys) => {
-                const selectedKey = Array.from(keys)[0];
-
-                setCurrentBox({
-                  ...currentBox,
-                  box_type: String(selectedKey),
-                });
-              }}
-            >
-              {boxTypes.map((type) => (
-                <SelectItem
-                  key={String(type.code_id)}
-                  textValue={type.code_desc || ""}
-                >
-                  {type.code_desc}
-                </SelectItem>
-              ))}
-            </Select>
-            <Input
-              isDisabled={isViewMode}
-              label="الجوال"
-              value={currentBox.mobile?.toString() || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, mobile: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="البريد الإلكتروني"
-              value={currentBox.email || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, email: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="العنوان"
-              value={currentBox.address || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, address: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="المحافظة"
-              value={currentBox.gov || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, gov: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="المدينة"
-              value={currentBox.city || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, city: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="المنطقة"
-              value={currentBox.area || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, area: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الشارع"
-              value={currentBox.street || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, street: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="المبنى"
-              value={currentBox.build_no || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, build_no: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الرمز البريدي"
-              value={currentBox.post_code || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, post_code: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الهاتف"
-              value={currentBox.phone || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, phone: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الفاكس"
-              value={currentBox.fax || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, fax: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="المحصل"
-              value={currentBox.handling || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, handling: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="المحصل (بالإنجليزي)"
-              value={currentBox.handling_e || ""}
-              onChange={(e) =>
-                setCurrentBox({ ...currentBox, handling_e: e.target.value })
-              }
-            />
-            <div className="col-span-2 flex gap-6 items-center">
-              <Checkbox
-                isDisabled={isViewMode}
-                isSelected={Boolean(currentBox.cust_status)}
-                onValueChange={(val) =>
-                  setCurrentBox({ ...currentBox, cust_status: val ? 1 : 0 })
-                }
-              >
-                مفعلة
-              </Checkbox>
-              <Checkbox
-                isDisabled={isViewMode}
-                isSelected={Boolean(currentBox.expt)}
-                onValueChange={(val) =>
-                  setCurrentBox({ ...currentBox, expt: val })
-                }
-              >
-                مستثنى من كشف الأرصدة
-              </Checkbox>
-              <Checkbox
-                isDisabled={isViewMode}
-                isSelected={Boolean(currentBox.hide)}
-                onValueChange={(val) =>
-                  setCurrentBox({ ...currentBox, hide: val })
-                }
-              >
-                مخفي
-              </Checkbox>
-            </div>
-          </ModalBody>
-
-          {modalMode !== "view" && (
-            <ModalFooter className="flex justify-end gap-2">
-              <Button color="danger" onPress={() => setIsModalOpen(false)}>
-                إلغاء
-              </Button>
-              <Button color="success" onPress={handleSave}>
-                {modalMode === "edit" ? "تحديث" : "حفظ"}
-              </Button>
-            </ModalFooter>
-          )}
-        </ModalContent>
-      </Modal>
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="تأكيد الحذف"
+        message={`هل أنت متأكد من حذف الصندوق "${boxToDelete?.cust_name}"؟`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        confirmColor="danger"
+        size="md"
+      />
     </>
   );
 }

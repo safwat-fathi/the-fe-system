@@ -32,8 +32,13 @@ export async function processVoucherDetails(
       gauge: detail.gauge || 875,
       g_debit: detail.g_debit !== undefined ? detail.g_debit : (detail.debit_g || 0),
       g_credit: detail.g_credit !== undefined ? detail.g_credit : (detail.credit_g || 0),
-      g_debit_base: detail.g_debit_base !== undefined ? detail.g_debit_base : 0,
-      g_credit_base: detail.g_credit_base !== undefined ? detail.g_credit_base : 0,
+      // تقريب g_debit_base و g_credit_base إلى منزلتين عشريتين فقط (متطلبات الـ backend)
+      g_debit_base: detail.g_debit_base !== undefined && detail.g_debit_base !== null
+        ? parseFloat(detail.g_debit_base.toFixed(2))
+        : 0,
+      g_credit_base: detail.g_credit_base !== undefined && detail.g_credit_base !== null
+        ? parseFloat(detail.g_credit_base.toFixed(2))
+        : 0,
       vouch_notes: detail.vouch_notes || "",
       com: 1,
       year: 1,
@@ -127,8 +132,13 @@ export async function updateVoucherDetails(
       gauge: detail.gauge || 875,
       g_debit: detail.g_debit !== undefined ? detail.g_debit : (detail.debit_g || 0),
       g_credit: detail.g_credit !== undefined ? detail.g_credit : (detail.credit_g || 0),
-      g_debit_base: detail.g_debit_base !== undefined ? detail.g_debit_base : 0,
-      g_credit_base: detail.g_credit_base !== undefined ? detail.g_credit_base : 0,
+      // تقريب g_debit_base و g_credit_base إلى منزلتين عشريتين فقط (متطلبات الـ backend)
+      g_debit_base: detail.g_debit_base !== undefined && detail.g_debit_base !== null
+        ? parseFloat(detail.g_debit_base.toFixed(2))
+        : 0,
+      g_credit_base: detail.g_credit_base !== undefined && detail.g_credit_base !== null
+        ? parseFloat(detail.g_credit_base.toFixed(2))
+        : 0,
       vouch_notes: detail.vouch_notes || "",
       com: 1,
       year: 1,

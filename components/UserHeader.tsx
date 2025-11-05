@@ -11,7 +11,12 @@ import {
   DropdownItem,
   Button,
 } from "@heroui/react";
-import { UserIcon, BeakerIcon } from "@heroicons/react/24/outline";
+import {
+  BeakerIcon,
+  ClockIcon,
+  CalendarIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -73,46 +78,70 @@ export default function UserHeader() {
     router.push("/test-service");
   };
 
+  if (!isMounted) {
+    return (
+      <Navbar
+        className="bg-gradient-to-r from-white via-slate-50 to-white shadow-sm border-b border-slate-200"
+        maxWidth="full"
+        classNames={{
+          wrapper: "px-4 py-2 min-h-[48px]",
+        }}
+      >
+        <NavbarContent className="hidden md:flex" justify="start">
+          <NavbarItem>
+            <div className="h-5 w-32 bg-slate-200 rounded animate-pulse" />
+          </NavbarItem>
+        </NavbarContent>
+      </Navbar>
+    );
+  }
+
   return (
     <Navbar
-      className="bg-gradient-to-r from-white via-slate-50 to-white shadow-sm border-b border-slate-200/50 backdrop-blur-sm"
+      className="bg-gradient-to-r from-white via-slate-50 to-white shadow-sm border-b border-slate-200"
       maxWidth="full"
       classNames={{
-        wrapper: "px-1.5 py-0 min-h-[28px]",
+        wrapper: "px-4 py-2 min-h-[48px]",
       }}
     >
       <NavbarContent className="hidden md:flex" justify="start">
         <NavbarItem>
-          <div className="flex items-center gap-0.5 px-0.5 py-0">
-            <div className="text-right">
-              <div className="text-xs font-medium text-slate-800 font-mono tracking-tighter">
-                {formatDate(currentTime)} | {formatTime(currentTime)}
-              </div>
+          <div className="flex items-center gap-3 text-sm text-slate-600">
+            <div className="flex items-center gap-1.5">
+              <CalendarIcon className="h-4 w-4 text-slate-400" />
+              <span className="font-medium">{formatDate(currentTime)}</span>
+            </div>
+            <span className="text-slate-300">|</span>
+            <div className="flex items-center gap-1.5">
+              <ClockIcon className="h-4 w-4 text-slate-400" />
+              <span className="font-mono font-semibold text-slate-700">
+                {formatTime(currentTime)}
+              </span>
             </div>
           </div>
         </NavbarItem>
       </NavbarContent>
+
       <NavbarContent justify="end">
-        {/* أيقونة المستخدم مع اسمه وقائمة منسدلة */}
         <NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <Button
-                className="flex items-center gap-0 px-0.5 py-0 hover:bg-slate-100 rounded-full transition-all duration-200"
                 variant="light"
+                className="flex items-center gap-2 px-2 py-1"
               >
                 <Avatar
-                  className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-sm w-4 h-4 text-[10px]"
+                  className="bg-gradient-to-br from-amber-500 to-amber-600 text-white w-8 h-8 text-xs"
                   name={
                     STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username
                   }
                   size="sm"
                 />
                 <div className="hidden md:flex flex-col items-start">
-                  <span className="text-[11px] font-medium text-slate-900 leading-none">
+                  <span className="text-sm font-medium text-slate-700 leading-tight">
                     {STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username}
                   </span>
-                  <span className="text-[9px] text-slate-600 leading-none">
+                  <span className="text-xs text-slate-500 leading-tight">
                     {STATIC_USER_INFO?.role || "مستخدم"}
                   </span>
                 </div>
@@ -123,15 +152,17 @@ export default function UserHeader() {
                 key="test"
                 className="text-blue-600"
                 startContent={<BeakerIcon className="w-4 h-4" />}
-                onClick={handleNavigateToTest}
+                onPress={handleNavigateToTest}
               >
                 صفحة اختبار
               </DropdownItem>
               <DropdownItem
                 key="logout"
                 className="text-red-600"
-                startContent={<UserIcon className="w-4 h-4" />}
-                onClick={handleLogout}
+                startContent={
+                  <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                }
+                onPress={handleLogout}
               >
                 تسجيل الخروج
               </DropdownItem>

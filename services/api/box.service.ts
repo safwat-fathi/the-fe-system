@@ -302,11 +302,45 @@ class BoxService extends HttpService<Box> {
     }
   }
 
-  async getBoxById(id: number): Promise<Box | null> {
+  async getBoxById(id: number, xcom_id?: number | string): Promise<Box | null> {
     try {
-      const boxes = await this.getAllBoxes();
+      // جلب معاملات الفرع إذا لم يتم توفيرها
+      let companyId = xcom_id;
 
-      return boxes.find((box) => box.id === id) || null;
+      if (!companyId) {
+        try {
+          const branchParams = await import("@/app/actions/branch-params").then(
+            (m) => m.getBranchParams(),
+          );
+
+          companyId = branchParams.com || "1";
+        } catch {
+          companyId = "1";
+        }
+      }
+
+      const response = await this.get<Box[]>(
+        "boxes_list",
+        { xcom_id: companyId },
+        {
+          cache: "no-store",
+          next: { tags: ["boxes"] },
+        },
+      );
+
+      if (response.success) {
+        let boxes: Box[] = [];
+
+        if (Array.isArray(response.data)) {
+          boxes = response.data;
+        } else if (Array.isArray((response.data as any)?.results)) {
+          boxes = (response.data as any).results;
+        }
+
+        return boxes.find((box) => box.id === id) || null;
+      }
+
+      return null;
     } catch (error) {
       console.error("Error fetching box by ID:", error);
 

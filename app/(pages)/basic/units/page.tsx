@@ -17,7 +17,7 @@ export default async function UnitsPage() {
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-6">الوحدات</h1>
+      <h1 className="responsive-text-xl font-bold mb-2">الوحدات</h1>
 
       <UnitsClient initialUnits={unitsData} />
     </div>

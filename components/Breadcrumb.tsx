@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
+import type { ReactNode } from "react";
 
 interface BreadcrumbItem {
   name: string;
@@ -147,27 +148,83 @@ const Breadcrumb = ({
           </li>
         )}
 
-        {breadcrumbs.map((item, index) => (
-          <li
-            key={index}
-            aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}
-            className="inline-flex items-center"
-          >
-            <div className="flex items-center">
-              <ChevronRightIcon className="h-4 w-4 text-gray-400 mx-2 rtl:rotate-180" />
-              {item.href ? (
-                <Link
-                  className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
-                  href={item.href}
-                >
-                  {item.name}
-                </Link>
-              ) : (
-                <span className="font-medium text-gray-500 leading-none">{item.name}</span>
-              )}
-            </div>
-          </li>
-        ))}
+        {breadcrumbs.map((item, index) => {
+          // تحديد إذا كان النص يحتوي على "عرض" أو "تعديل"
+          const name = item.name;
+          const hasView = name.includes("عرض");
+          const hasEdit = name.includes("تعديل");
+          
+          // استخراج الكلمة والبقية من النص
+          let renderName: React.ReactNode = name;
+          
+          if (hasView || hasEdit) {
+            const parts: React.ReactNode[] = [];
+            let remainingText = name;
+            
+            if (hasView) {
+              const viewIndex = remainingText.indexOf("عرض");
+              if (viewIndex !== -1) {
+                // إضافة النص قبل "عرض"
+                if (viewIndex > 0) {
+                  parts.push(remainingText.substring(0, viewIndex));
+                }
+                // إضافة "عرض" باللون الأزرق
+                parts.push(
+                  <span key="view" className="text-blue-600 font-semibold">
+                    عرض
+                  </span>
+                );
+                // البقية بعد "عرض"
+                remainingText = remainingText.substring(viewIndex + 3);
+              }
+            } else if (hasEdit) {
+              const editIndex = remainingText.indexOf("تعديل");
+              if (editIndex !== -1) {
+                // إضافة النص قبل "تعديل"
+                if (editIndex > 0) {
+                  parts.push(remainingText.substring(0, editIndex));
+                }
+                // إضافة "تعديل" باللون الأصفر
+                parts.push(
+                  <span key="edit" className="text-yellow-600 font-semibold">
+                    تعديل
+                  </span>
+                );
+                // البقية بعد "تعديل"
+                remainingText = remainingText.substring(editIndex + 5);
+              }
+            }
+            
+            // إضافة البقية إذا كان هناك نص متبقي
+            if (remainingText) {
+              parts.push(remainingText);
+            }
+            
+            renderName = <>{parts}</>;
+          }
+          
+          return (
+            <li
+              key={index}
+              aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}
+              className="inline-flex items-center"
+            >
+              <div className="flex items-center">
+                <ChevronRightIcon className="h-4 w-4 text-gray-400 mx-2 rtl:rotate-180" />
+                {item.href ? (
+                  <Link
+                    className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
+                    href={item.href}
+                  >
+                    {renderName}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-gray-500 leading-none">{renderName}</span>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ol>
     </nav>
   );

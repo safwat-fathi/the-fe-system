@@ -65,7 +65,7 @@ export default async function CostCentersPage() {
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-6">مراكز التكلفة</h1>
+      <h1 className="responsive-text-xl font-bold mb-2">مراكز التكلفة</h1>
 
       {/* عرض حالة الطلب */}
       {error && (

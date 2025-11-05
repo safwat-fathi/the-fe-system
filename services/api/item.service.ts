@@ -214,6 +214,68 @@ class ItemService extends HttpService<Item> {
     }
   }
 
+  async searchItemsVoucherList({
+    query = "",
+    page = 1,
+    companyId = 1,
+  }: {
+    query?: string;
+    page?: number;
+    companyId?: number;
+  } = {}): Promise<IPaginatedResponse<Item>> {
+    const emptyResponse: IPaginatedResponse<Item> = {
+      results: [],
+      count: 0,
+      next: null,
+      previous: null,
+    };
+
+    try {
+      const response = await this.get<IPaginatedResponse<Item>>(
+        "SearchItemsVoucherList",
+        {
+          xcom_id: companyId,
+          query: query || "0",
+          page,
+        },
+        {
+          cache: "force-cache",
+          next: {
+            tags: [
+              "items-voucher",
+              `items-voucher-company-${companyId}`,
+              `items-voucher-page-${page}`,
+              `items-voucher-query-${query}`,
+            ],
+            revalidate: 300,
+          },
+        },
+      );
+
+      if (!response.success || !response.data) {
+        return emptyResponse;
+      }
+
+      const { results, count, next, previous } = response.data;
+
+      return {
+        results: Array.isArray(results) ? results : [],
+        count:
+          typeof count === "number"
+            ? count
+            : Array.isArray(results)
+              ? results.length
+              : 0,
+        next: typeof next === "string" || next === null ? next : null,
+        previous:
+          typeof previous === "string" || previous === null ? previous : null,
+      };
+    } catch (error) {
+      console.error("Error fetching items for voucher:", error);
+      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
+    }
+  }
+
   async createItem(item: ItemForm): Promise<Item | null> {
     try {
       const companyId = Number(item.com);
@@ -274,14 +336,34 @@ class ItemService extends HttpService<Item> {
 
   async deleteItem(id: number): Promise<boolean> {
     try {
+      // نفس الطريقة المستخدمة في deleteCostCenter و deleteCategory
       const response = await this.delete(`api_delete_item/${id}`, undefined, {
         cache: "no-store",
       });
 
-      return Boolean(response.success);
-    } catch (error) {
+      if (response.success) {
+        return true;
+      }
+
+      // إذا كان الـ response غير ناجح
+      const errorMessage = response.message || "حدث خطأ أثناء حذف الصنف";
+      
+      // إذا كان الخطأ 500 من الخادم، نعطي رسالة أوضح
+      if (errorMessage.includes("500") || errorMessage.includes("Internal Server Error")) {
+        throw new Error("لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام");
+      }
+      
+      return false;
+    } catch (error: any) {
       console.error("Error deleting item:", error);
-      throw new Error("حدث خطأ أثناء حذف الصنف");
+      
+      // إذا كان الخطأ 500 من الخادم، نعطي رسالة أوضح
+      if (error?.status === 500 || error?.message?.includes("500") || error?.message?.includes("Internal Server Error")) {
+        throw new Error("لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام");
+      }
+      
+      // إذا كان الخطأ من نوع آخر، نعرض الرسالة الأصلية
+      throw new Error(error?.message || "حدث خطأ أثناء حذف الصنف");
     }
   }
 }

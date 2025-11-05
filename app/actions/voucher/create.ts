@@ -79,6 +79,22 @@ export async function createVoucherAction(
         voucherPayload.cust = custValue;
       }
       delete voucherPayload.cust_id;
+
+      // إضافة cost للسندات الذهبية (مطلوب دائماً)
+      const costValue =
+        voucherData.cost_id !== undefined &&
+        voucherData.cost_id !== null &&
+        voucherData.cost_id > 0
+          ? voucherData.cost_id
+          : voucherPayload.cost !== undefined &&
+              voucherPayload.cost !== null &&
+              voucherPayload.cost > 0
+            ? voucherPayload.cost
+            : null;
+
+      // إرسال cost دائماً حتى لو كان null (لأن API يتطلبه)
+      voucherPayload.cost = costValue;
+      delete voucherPayload.cost_id;
     }
 
     // حفظ السند الرئيسي

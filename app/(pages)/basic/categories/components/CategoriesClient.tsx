@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -12,23 +13,18 @@ import {
   Button,
   Checkbox,
   Pagination,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Select,
-  SelectItem,
 } from "@heroui/react";
 import {
   PlusIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import categoryService from "@/services/api/category.service";
+import { ConfirmationModal } from "@/components/Modal";
 
 const columns = [
   { name: "رقم الفئة", uid: "id" },
@@ -57,17 +53,18 @@ interface Category {
   cat_status: boolean;
 }
 
-type ModalMode = "add" | "edit" | "view";
-
 interface CategoriesClientProps {
+  companyId: number;
   initialCategories: Category[];
   initialBoxes: { id: number; box_name: string }[];
 }
 
 export default function CategoriesClient({
+  companyId,
   initialCategories,
   initialBoxes,
 }: CategoriesClientProps) {
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -76,23 +73,10 @@ export default function CategoriesClient({
     column: "id",
     direction: "ascending",
   });
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<ModalMode>("add");
-  const [boxes, setBoxes] =
+  const [boxes] =
     useState<{ id: number; box_name: string }[]>(initialBoxes);
-
-  const [newCategory, setNewCategory] = useState<Category>({
-    id: 0,
-    cat_name: "",
-    cat_name_e: "",
-    k: "",
-    purity: "",
-    box: null,
-    tax_type: false,
-    tax: 0,
-    cat_type: "",
-    cat_status: true,
-  });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
   const sanitizeCategory = (cat: any): Category => ({
     id: cat.id ?? 0,
@@ -109,7 +93,7 @@ export default function CategoriesClient({
 
   const loadData = async () => {
     try {
-      const categoriesList = await categoryService.getAllCategories();
+      const categoriesList = await categoryService.getAllCategories(companyId);
       const sanitized = categoriesList.map(sanitizeCategory);
 
       setCategories(sanitized);
@@ -129,104 +113,53 @@ export default function CategoriesClient({
     );
   }, [searchQuery, categories]);
 
-  const handleAddCategory = async () => {
-    try {
-      const result = await categoryService.createCategory(newCategory);
 
-      if (result) {
-        toast.success("تمت إضافة الفئة بنجاح ✅");
-        setIsAddModalOpen(false);
-        setNewCategory({
-          id: 0,
-          cat_name: "",
-          cat_name_e: "",
-          k: "",
-          purity: "",
-          box: null,
-          tax_type: false,
-          tax: 0,
-          cat_type: "",
-          cat_status: true,
-        });
-        loadData();
-      } else {
-        toast.error("فشل في إضافة الفئة ❌");
-      }
-    } catch (error) {
-      toast.error("حدث خطأ أثناء الاتصال بالسيرفر");
+  const handleDeleteClick = (category: Category) => {
+    if (!category.id) {
+      toast.error("❌ لا يمكن حذف فئة بدون معرف");
+      return;
     }
+
+    setCategoryToDelete(category);
+    setDeleteModalOpen(true);
   };
 
-  const handleUpdateCategory = async () => {
-    try {
-      const updatedCategory = {
-        ...newCategory,
-        tax: isNaN(Number(newCategory.tax)) ? 0 : Number(newCategory.tax),
-        k: newCategory.k ?? "",
-        purity: newCategory.purity ?? "",
-      };
-
-      const result = await categoryService.updateCategory(
-        newCategory.id,
-        updatedCategory,
-      );
-
-      if (result) {
-        toast.success("تم تعديل الفئة بنجاح ✅");
-        setIsAddModalOpen(false);
-        loadData();
-      } else {
-        toast.error("فشل في تعديل الفئة ❌");
-      }
-    } catch (error) {
-      toast.error("حدث خطأ أثناء الاتصال بالسيرفر");
+  const handleDeleteConfirm = async () => {
+    if (!categoryToDelete?.id) {
+      setDeleteModalOpen(false);
+      setCategoryToDelete(null);
+      return;
     }
-  };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("هل تريد حذف هذه الفئة؟")) return;
+    // Optimistic delete
+    setCategories((prevCategories) =>
+      prevCategories.filter((c) => c.id !== categoryToDelete.id)
+    );
+
     try {
-      const result = await categoryService.deleteCategory(id);
+      const result = await categoryService.deleteCategory(categoryToDelete.id);
 
       if (result) {
         toast.success("تم حذف الفئة بنجاح ✅");
         loadData();
       } else {
         toast.error("فشل في الحذف ❌");
+        loadData();
       }
     } catch (error) {
       toast.error("خطأ أثناء الاتصال بالسيرفر");
+      loadData();
+    } finally {
+      setDeleteModalOpen(false);
+      setCategoryToDelete(null);
     }
   };
 
-  const openAddModal = () => {
-    setModalMode("add");
-    setNewCategory({
-      id: 0,
-      cat_name: "",
-      cat_name_e: "",
-      k: "",
-      purity: "",
-      box: null,
-      tax_type: false,
-      tax: 0,
-      cat_type: "",
-      cat_status: true,
-    });
-    setIsAddModalOpen(true);
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setCategoryToDelete(null);
   };
 
-  const openViewModal = (cat: Category) => {
-    setModalMode("view");
-    setNewCategory(cat);
-    setIsAddModalOpen(true);
-  };
-
-  const openEditModal = (cat: Category) => {
-    setModalMode("edit");
-    setNewCategory({ ...cat });
-    setIsAddModalOpen(true);
-  };
 
   const sortedCategories = useMemo(() => {
     return [...filteredCategories].sort((a, b) => {
@@ -255,7 +188,7 @@ export default function CategoriesClient({
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openViewModal(cat)}
+        onPress={() => router.push(`/basic/categories/${cat.id}`)}
       >
         <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
@@ -263,7 +196,7 @@ export default function CategoriesClient({
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openEditModal(cat)}
+        onPress={() => router.push(`/basic/categories/${cat.id}?mode=edit`)}
       >
         <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
@@ -272,7 +205,7 @@ export default function CategoriesClient({
         color="danger"
         size="sm"
         variant="light"
-        onPress={() => handleDelete(cat.id)}
+        onPress={() => handleDeleteClick(cat)}
       >
         <TrashIcon className="h-4 w-4" />
       </Button>
@@ -281,16 +214,27 @@ export default function CategoriesClient({
 
   return (
     <div className="responsive-container font-cairo">
-      <div className="responsive-filters">
-        <Button className="btn-primary" onPress={openAddModal}>
-          <PlusIcon className="h-4 w-4" /> إضافة فئة
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <h2 className="text-base font-semibold">إدارة الفئات</h2>
+        <div className="h-8 w-px bg-gray-300" />
+        <Button
+          variant="bordered"
+          className="bg-gray-100"
+          onPress={() => router.push("/basic/categories/new")}
+        >
+          <PlusIcon className="h-3 w-3" />
+          إضافة فئة
         </Button>
-        <Input
-          className="responsive-search"
-          placeholder="بحث بالاسم..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <div className="h-8 w-px bg-gray-300" />
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="بحث بالاسم..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+            size="sm"
+          />
+        </div>
       </div>
 
       <div className="responsive-table">
@@ -336,130 +280,17 @@ export default function CategoriesClient({
         />
       </div>
 
-      <Modal
-        isDismissable={false}
-        isOpen={isAddModalOpen}
-        shouldBlockScroll={false}
-        onClose={() => setIsAddModalOpen(false)}
-      >
-        <ModalContent className="font-cairo">
-          <ModalHeader>
-            {modalMode === "add" && "إضافة فئة جديدة"}
-            {modalMode === "edit" && "تعديل فئة"}
-            {modalMode === "view" && "عرض الفئة"}
-          </ModalHeader>
-          <ModalBody className="grid grid-cols-2 gap-4">
-            <Input
-              isDisabled={modalMode === "view"}
-              label="اسم الفئة"
-              value={newCategory.cat_name}
-              onChange={(e) =>
-                setNewCategory({ ...newCategory, cat_name: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={modalMode === "view"}
-              label="الاسم بالإنجليزي"
-              value={newCategory.cat_name_e}
-              onChange={(e) =>
-                setNewCategory({ ...newCategory, cat_name_e: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={modalMode === "view"}
-              label="العيار"
-              value={newCategory.k}
-              onChange={(e) =>
-                setNewCategory({ ...newCategory, k: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={modalMode === "view"}
-              label="المعيارية"
-              value={newCategory.purity}
-              onChange={(e) =>
-                setNewCategory({ ...newCategory, purity: e.target.value })
-              }
-            />
-            <Select
-              isDisabled={modalMode === "view"}
-              label="الصندوق"
-              popoverProps={{ shouldBlockScroll: false }}
-              selectedKeys={
-                newCategory.box !== null ? [String(newCategory.box)] : []
-              }
-              onSelectionChange={(keys) => {
-                const id = Number(Array.from(keys)[0]);
-
-                setNewCategory({ ...newCategory, box: id });
-              }}
-            >
-              {boxes.map((b) => (
-                <SelectItem key={b.id} textValue={b.box_name}>
-                  {b.box_name}
-                </SelectItem>
-              ))}
-            </Select>
-            <Input
-              isDisabled={modalMode === "view"}
-              label="نسبة الضريبة"
-              type="number"
-              value={String(newCategory.tax)}
-              onChange={(e) =>
-                setNewCategory({
-                  ...newCategory,
-                  tax: parseFloat(e.target.value),
-                })
-              }
-            />
-            <Input
-              isDisabled={modalMode === "view"}
-              label="النوع"
-              value={newCategory.cat_type}
-              onChange={(e) =>
-                setNewCategory({ ...newCategory, cat_type: e.target.value })
-              }
-            />
-            <div className="col-span-2 flex gap-4">
-              <Checkbox
-                isDisabled={modalMode === "view"}
-                isSelected={newCategory.tax_type}
-                onValueChange={(val) =>
-                  setNewCategory({ ...newCategory, tax_type: val })
-                }
-              >
-                خاضعة للضريبة
-              </Checkbox>
-              <Checkbox
-                isDisabled={modalMode === "view"}
-                isSelected={newCategory.cat_status}
-                onValueChange={(val) =>
-                  setNewCategory({ ...newCategory, cat_status: val })
-                }
-              >
-                مفعّلة
-              </Checkbox>
-            </div>
-          </ModalBody>
-          {modalMode !== "view" && (
-            <ModalFooter>
-              <Button color="danger" onPress={() => setIsAddModalOpen(false)}>
-                إلغاء
-              </Button>
-              {modalMode === "add" && (
-                <Button color="success" onPress={handleAddCategory}>
-                  حفظ
-                </Button>
-              )}
-              {modalMode === "edit" && (
-                <Button color="primary" onPress={handleUpdateCategory}>
-                  تحديث
-                </Button>
-              )}
-            </ModalFooter>
-          )}
-        </ModalContent>
-      </Modal>
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="تأكيد الحذف"
+        message={`هل أنت متأكد من حذف الفئة "${categoryToDelete?.cat_name}"؟`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        confirmColor="danger"
+        size="md"
+      />
     </div>
   );
 }

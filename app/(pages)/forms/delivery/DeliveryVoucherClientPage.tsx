@@ -6,6 +6,15 @@ import CreatableSelect from "react-select/creatable";
 import AsyncCreatableSelectRegular from "react-select/async-creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 import toast from "react-hot-toast";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Button } from "@heroui/react";
+import {
+  CheckIcon,
+  PencilIcon,
+  PrinterIcon,
+  DocumentTextIcon,
+  PlusIcon,
+  ArrowsPointingOutIcon,
+} from "@heroicons/react/24/outline";
 
 const AsyncPaginateCreatableSelect = withAsyncPaginate(CreatableSelect);
 
@@ -116,6 +125,7 @@ export default function DeliveryVoucherClientPage({
 
   // Handle search
   const [searchTerm, setSearchTerm] = useState("");
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
 
   // استخدام hook موحد لحركة الترحيل
   const {
@@ -258,66 +268,70 @@ export default function DeliveryVoucherClientPage({
         </div>
 
           <div className="flex items-center justify-between mt-1">
-          <div className="flex items-center gap-2">
-            <button
-              className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm disabled:opacity-50"
-              disabled={isLoading || !isEditing}
-              onClick={saveVoucher}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant="solid"
+              isLoading={isLoading}
+              isDisabled={!isEditing}
+              onPress={saveVoucher}
+              startContent={
+                !isLoading ? (
+                  <CheckIcon className="h-4 w-4" />
+                ) : undefined
+              }
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
             >
-              {isLoading ? (
-                <span className="flex items-center gap-1">
-                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  حفظ...
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <i className="bi bi-check-circle w-4 h-4" />
-                  حفظ
-                </span>
-              )}
-            </button>
+              حفظ
+            </Button>
 
-            <button
-              className={`h-7 px-3 text-xs border rounded-md shadow-sm ${
-                formMode === "new" || isEditing
-                  ? "bg-gray-400 text-white border-gray-400 cursor-not-allowed opacity-50"
-                  : "bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
-              }`}
-              disabled={formMode === "new" || isEditing || isLoading}
-              onClick={handleEditClick}
+            <Button
+              size="sm"
+              variant="solid"
+              isDisabled={formMode === "new" || isEditing || isLoading}
+              onPress={handleEditClick}
+              startContent={<PencilIcon className="h-4 w-4" />}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
             >
-              <i className="bi bi-pencil-square w-4 h-4 me-1" />
               تعديل
-            </button>
+            </Button>
 
-            <button
-              className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-              onClick={() => router.push("/forms/delivery")}
+            <Button
+              size="sm"
+              variant="solid"
+              onPress={() => router.push("/forms/delivery")}
+              startContent={<PlusIcon className="h-4 w-4" />}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
             >
-              <i className="bi bi-plus-circle w-4 h-4 me-1" />
               جديد
-            </button>
+            </Button>
 
-            <button
-              className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm disabled:opacity-50"
-              disabled={isPrinting}
-              onClick={printVoucher}
+            <Button
+              size="sm"
+              variant="solid"
+              isLoading={isPrinting}
+              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              onPress={printVoucher}
+              startContent={
+                !isPrinting ? (
+                  <PrinterIcon className="h-4 w-4" />
+                ) : undefined
+              }
+              className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
             >
-              <i className="bi bi-printer w-4 h-4 me-1" />
               طباعة
-            </button>
+            </Button>
 
-            <button
-              className="h-7 px-3 text-xs bg-indigo-600 text-white hover:bg-indigo-700 border border-indigo-600 rounded-md shadow-sm disabled:opacity-50"
-              disabled={!voucher.vouch_id || voucher.vouch_id <= 0}
-              title="عرض القيد المحاسبي"
-              onClick={handleViewGLTransactions}
+            <Button
+              size="sm"
+              variant="solid"
+              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              onPress={handleViewGLTransactions}
+              startContent={<DocumentTextIcon className="h-4 w-4" />}
+              className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[140px]"
             >
-              <span className="flex items-center gap-1">
-                <i className="bi bi-list-check w-4 h-4 me-1" />
-                القيد المحاسبي
-              </span>
-            </button>
+              القيد المحاسبي
+            </Button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -354,9 +368,10 @@ export default function DeliveryVoucherClientPage({
         </div>
       </div>
 
-      {/* Form Fields */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
-        <div>
+      {/* Form Fields - Row 1 */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
+        {/* رقم المرجع - أضيق */}
+        <div className="md:col-span-2">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
             رقم المرجع
           </label>
@@ -372,7 +387,8 @@ export default function DeliveryVoucherClientPage({
           />
         </div>
 
-        <div>
+        {/* التاريخ والوقت - توسع قليلاً */}
+        <div className="md:col-span-3">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
             التاريخ والوقت
           </label>
@@ -395,7 +411,46 @@ export default function DeliveryVoucherClientPage({
           />
         </div>
 
-        <div>
+        {/* البيان - أوسع مع زر توسيع */}
+        <div className="md:col-span-7">
+          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+            البيان
+          </label>
+          <div className="relative">
+            <input
+              className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
+              disabled={!isEditing}
+              readOnly={!isEditing}
+              type="text"
+              placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
+              value={voucher.vouch_notes || ""}
+              onChange={(e) =>
+                setVoucher((prev) => ({ ...prev, vouch_notes: e.target.value }))
+              }
+              onDoubleClick={() => {
+                if (isEditing) {
+                  setIsNotesModalOpen(true);
+                }
+              }}
+            />
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => setIsNotesModalOpen(true)}
+                className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
+                title="توسيع البيان"
+              >
+                <ArrowsPointingOutIcon className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Form Fields - Row 2: العميل، مناولة، مركز التكلفة */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
+        {/* العميل */}
+        <div className="md:col-span-4">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
             العميل
           </label>
@@ -474,7 +529,8 @@ export default function DeliveryVoucherClientPage({
           />
         </div>
 
-        <div>
+        {/* مناولة */}
+        <div className="md:col-span-3">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
             مناولة
           </label>
@@ -491,20 +547,31 @@ export default function DeliveryVoucherClientPage({
           />
         </div>
 
-        <div>
+        {/* مركز التكلفة */}
+        <div className="md:col-span-5">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
-            البيان
+            مركز التكلفة
           </label>
-          <input
-            className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
+          <select
+            className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 bg-white"
             disabled={!isEditing}
-            readOnly={!isEditing}
-            type="text"
-            value={voucher.vouch_notes || ""}
+            value={voucher.cost_id || ""}
             onChange={(e) =>
-              setVoucher((prev) => ({ ...prev, vouch_notes: e.target.value }))
+              setVoucher((prev) => ({
+                ...prev,
+                cost_id: e.target.value ? parseInt(e.target.value) : null,
+              }))
             }
-          />
+          >
+            <option value="">اختر مركز التكلفة...</option>
+            {costCenters.map((center) => (
+              <option key={center.id} value={center.id}>
+                {center.name ||
+                  center.cost_name ||
+                  `مركز ${center.id}`}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -528,9 +595,9 @@ export default function DeliveryVoucherClientPage({
             <table className="min-w-[1400px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-48 p-1 border">رقم الصنف</th>
-                  <th className="w-32 p-1 border">معايرة</th>
+                  <th className="w-72 p-1 border">رقم الصنف</th>
                   <th className="w-32 p-1 border">الوزن القائم</th>
+                  <th className="w-32 p-1 border">معايرة</th>
                   <th className="w-32 p-1 border">الوزن المعاير</th>
                   <th className="w-32 p-1 border">معدل الأجور</th>
                   <th className="w-32 p-1 border">الأجور</th>
@@ -635,11 +702,11 @@ export default function DeliveryVoucherClientPage({
                           appearance: "none",
                         }}
                         type="number"
-                        value={detail.k || ""}
+                        value={detail.weight || ""}
                         onChange={(e) =>
                           updateGoldDetail(
                             index,
-                            "k",
+                            "weight",
                             e.target.value
                               ? parseFloat(e.target.value)
                               : undefined,
@@ -664,11 +731,11 @@ export default function DeliveryVoucherClientPage({
                           appearance: "none",
                         }}
                         type="number"
-                        value={detail.weight || ""}
+                        value={detail.k || ""}
                         onChange={(e) =>
                           updateGoldDetail(
                             index,
-                            "weight",
+                            "k",
                             e.target.value
                               ? parseFloat(e.target.value)
                               : undefined,
@@ -1199,6 +1266,47 @@ export default function DeliveryVoucherClientPage({
         voucherId={voucher.vouch_id || 0}
         onClose={() => setIsGLModalOpen(false)}
       />
+
+      {/* مودال توسيع البيان */}
+      <Modal
+        isOpen={isNotesModalOpen}
+        onClose={() => setIsNotesModalOpen(false)}
+        size="2xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <p className="text-lg font-semibold">البيان</p>
+          </ModalHeader>
+          <ModalBody>
+            <Textarea
+              placeholder="أدخل بيان القيد..."
+              value={voucher.vouch_notes || ""}
+              onChange={(e) =>
+                setVoucher((prev) => ({
+                  ...prev,
+                  vouch_notes: e.target.value,
+                }))
+              }
+              disabled={!isEditing}
+              minRows={6}
+              maxRows={12}
+              classNames={{
+                input: "resize-none",
+              }}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              color="primary"
+              variant="solid"
+              onPress={() => setIsNotesModalOpen(false)}
+            >
+              حفظ
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
