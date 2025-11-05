@@ -40,7 +40,6 @@ class BoxesService extends HttpService<Box> {
 
       return [];
     } catch (error) {
-      console.error("Error fetching boxes:", error);
       throw new Error("حدث خطأ أثناء جلب بيانات الصناديق");
     }
   }

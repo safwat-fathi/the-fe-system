@@ -131,7 +131,7 @@ const Breadcrumb = ({
     <nav
       aria-label="Breadcrumb"
       className={clsx(
-        "flex items-center mb-2 text-xs text-gray-600",
+        "flex items-center pt-3 pb-1 mb-2 text-xs text-gray-600",
         className,
       )}
     >

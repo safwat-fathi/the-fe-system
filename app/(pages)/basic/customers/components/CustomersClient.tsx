@@ -211,11 +211,15 @@ export default function CustomersClient({
         c.handling,
       ];
 
+      // فلترة حسب نوع العميل - تحويل القيم إلى أرقام للمقارنة
+      const customerTypeMatch =
+        !custTypeFilter ||
+        Number(c.cust_type) === Number(custTypeFilter);
+
       return (
         fieldsToSearch.some((field) =>
           field?.toString().toLowerCase().includes(searchLower),
-        ) &&
-        (!custTypeFilter || c.cust_type === custTypeFilter)
+        ) && customerTypeMatch
       );
     });
   }, [customers, search, custTypeFilter]);

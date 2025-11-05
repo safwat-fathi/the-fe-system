@@ -87,7 +87,7 @@ export default function AppDataTable<TData>({
   };
 
   return (
-    <div className={`p-4 space-y-4 ${className}`}>
+    <div className={`p-0.5 space-y-0.5 ${className}`}>
       {title && (
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
@@ -124,13 +124,13 @@ export default function AppDataTable<TData>({
         </div>
       )}
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-hidden p-0">
         <Table
           aria-label={title || "جدول البيانات"}
           classNames={{
             wrapper: "shadow-none",
-            th: "bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-200",
-            td: "border-b border-gray-100 text-sm",
+            th: "bg-gray-50 text-gray-700 font-semibold text-xs border-b border-gray-200 p-1",
+            td: "border-b border-gray-100 text-xs p-1",
             tr: "hover:bg-gray-50 transition-colors",
           }}
         >
@@ -166,7 +166,7 @@ export default function AppDataTable<TData>({
             {table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  className="text-center py-8 text-gray-500"
+                  className="text-center py-4 text-gray-500"
                   colSpan={table.getAllLeafColumns().length || 1}
                 >
                   {emptyContent}
@@ -190,7 +190,7 @@ export default function AppDataTable<TData>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-gray-500">
+      <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
         <span>إجمالي النتائج: {table.getFilteredRowModel().rows.length}</span>
         {globalFilter && <span>نتائج البحث عن: "{globalFilter}"</span>}
       </div>

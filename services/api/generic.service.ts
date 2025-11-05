@@ -192,14 +192,6 @@ class GenericService extends HttpService<any> {
         finalParams = undefined;
       }
 
-      logger.debug("🔍 GenericService Request:", {
-        table: tableName,
-        endpoint,
-        originalParams: params,
-        finalParams,
-        baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-      });
-
       const startTime = Date.now();
 
       // Optimize caching based on table type
@@ -238,13 +230,6 @@ class GenericService extends HttpService<any> {
 
       const endTime = Date.now();
 
-      logger.debug(`⏱️ Request took: ${endTime - startTime}ms`);
-      logger.debug("✅ GenericService Response:", {
-        success: response.success,
-        dataType: typeof response.data,
-        isArray: Array.isArray(response.data),
-      });
-
       // Check if response data is HTML (404 error) - BEFORE any other checks
       const responseDataStr = String(response.data || "");
 
@@ -261,20 +246,11 @@ class GenericService extends HttpService<any> {
         };
       }
 
-      logger.debug(
-        "📊 Has results?:",
-        response.data &&
-          typeof response.data === "object" &&
-          "results" in response.data,
-      );
-
       if (response.success) {
         // Handle different response structures
 
         // Case 1: Direct array
         if (Array.isArray(response.data)) {
-          logger.debug("✅ Handling as direct array");
-
           return {
             success: true,
             data: response.data,
@@ -288,7 +264,6 @@ class GenericService extends HttpService<any> {
           typeof response.data === "object" &&
           Array.isArray((response.data as any).results)
         ) {
-          logger.debug("✅ Handling as paginated response (results)");
           const results = (response.data as any).results;
 
           return {
@@ -300,8 +275,6 @@ class GenericService extends HttpService<any> {
 
         // Case 3: Single object
         else if (response.data && typeof response.data === "object") {
-          logger.debug("✅ Handling as single object");
-
           return {
             success: true,
             data: [response.data],

@@ -108,10 +108,54 @@ class ItemService extends HttpService<Item> {
     }
   }
 
+  async getItemById(id: number, companyId: number = 1): Promise<Item | null> {
+    try {
+      // البحث عن الصنف في جميع الصفحات
+      // نبدأ بصفحة واحدة ثم نبحث في النتائج
+      let page = 1;
+      let found: Item | null = null;
+
+      while (!found && page <= 10) {
+        // نحد بحد أقصى 10 صفحات للبحث
+        const response = await this.get<IPaginatedResponse<Item>>(
+          "items_list",
+          {
+            xcom_id: companyId,
+            xcat_id: "0",
+            xtype_id: "0",
+            xitem_status: "0",
+            page,
+          },
+          {
+            cache: "force-cache",
+          },
+        );
+
+        if (response.success && response.data?.results) {
+          found =
+            response.data.results.find((item) => item.id === id) || null;
+          if (found) break;
+        }
+
+        // إذا لم تكن هناك صفحة تالية، توقف
+        if (!response.data?.next) break;
+
+        page++;
+      }
+
+      return found;
+    } catch (error) {
+      console.error("Error fetching item by id:", error);
+      return null;
+    }
+  }
+
   async searchItems({
-    query = "",
     page = 1,
     companyId = 1,
+    categoryId = 0,
+    itemTypeId = 0,
+    itemStatus = 0,
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
     const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
@@ -122,10 +166,12 @@ class ItemService extends HttpService<Item> {
 
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
-        "SearchItemsList",
+        "items_list",
         {
           xcom_id: companyId,
-          q: query || "0",
+          xcat_id: categoryId || "0",
+          xtype_id: itemTypeId || "0",
+          xitem_status: itemStatus || "0",
           page,
         },
         {
@@ -134,8 +180,12 @@ class ItemService extends HttpService<Item> {
             tags: [
               "items",
               `items-company-${companyId}`,
-              `items-search-${companyId}-${query}-${page}`,
+              `items-page-${page}`,
+              `items-cat-${categoryId}`,
+              `items-type-${itemTypeId}`,
+              `items-status-${itemStatus}`,
             ],
+            revalidate: 300,
           },
         },
       );
@@ -159,8 +209,8 @@ class ItemService extends HttpService<Item> {
           typeof previous === "string" || previous === null ? previous : null,
       };
     } catch (error) {
-      console.error("Error searching items:", error);
-      throw new Error("حدث خطأ أثناء البحث عن الأصناف");
+      console.error("Error fetching items:", error);
+      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
     }
   }
 
@@ -172,9 +222,7 @@ class ItemService extends HttpService<Item> {
         throw new Error("رمز الفرع مطلوب قبل إنشاء الصنف");
       }
 
-      if (typeof File !== "undefined" && !(item.item_img instanceof File)) {
-        throw new Error("صورة الصنف مطلوبة قبل الإنشاء");
-      }
+      // الصورة غير إجبارية
 
       const formData = this.buildItemFormData({
         ...item,

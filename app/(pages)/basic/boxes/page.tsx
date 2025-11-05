@@ -50,8 +50,6 @@ export default async function BoxesPage() {
 
   const response = await boxesService.getBoxes({ xcom_id: branchParams.com });
 
-  console.log("🚀 ~ :55 ~ BoxesPage ~ response:", response);
-
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />

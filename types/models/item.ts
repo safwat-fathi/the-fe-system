@@ -24,7 +24,9 @@ export type Item = {
 };
 
 export type SearchItemsParams = {
-  query?: string;
   page?: number;
   companyId?: number | string;
+  categoryId?: number | string;
+  itemTypeId?: number | string;
+  itemStatus?: number | string;
 };

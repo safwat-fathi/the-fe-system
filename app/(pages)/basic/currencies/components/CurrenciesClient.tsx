@@ -396,7 +396,6 @@ export default function CurrenciesClient({
                               );
                             }
                           } catch (error) {
-                            console.error("خطأ في جلب سعر الصرف:", error);
                             toast.success(
                               `تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`,
                             );
