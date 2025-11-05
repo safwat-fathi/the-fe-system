@@ -1,7 +1,8 @@
 "use client";
-import type { ChangeEvent, Dispatch, SetStateAction } from "react";
+import type { ChangeEvent, Dispatch, DragEvent, SetStateAction } from "react";
 import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
 
+import { useState, useRef } from "react";
 import {
   Button,
   Input,
@@ -9,6 +10,7 @@ import {
   SelectItem,
   type Selection,
 } from "@heroui/react";
+import { CloudArrowUpIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 import {
   HeroModal as Modal,
@@ -46,6 +48,8 @@ const AddItem = ({
   onUpdate,
 }: AddItemProps) => {
   const isViewMode = mode === "view";
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange =
     (key: keyof ItemForm) => (event: ChangeEvent<HTMLInputElement>) => {
@@ -69,11 +73,74 @@ const AddItem = ({
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
 
+    if (file && file.type.startsWith("image/")) {
+      onChange({
+        ...item,
+        item_img: file,
+      });
+    }
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!isViewMode) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+
+    if (isViewMode) return;
+
+    const file = event.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      onChange({
+        ...item,
+        item_img: file,
+      });
+    }
+  };
+
+  const handleBrowseClick = () => {
+    if (!isViewMode && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleRemoveImage = () => {
     onChange({
       ...item,
-      item_img: file,
+      item_img: null,
     });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
+
+  const getImageSrc = () => {
+    if (item.item_img instanceof File) {
+      return URL.createObjectURL(item.item_img);
+    }
+    if ((item as any).item_img_url) {
+      return `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${(item as any).item_img_url}`;
+    }
+    if (typeof item.item_img === "string") {
+      return `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${item.item_img}`;
+    }
+    return null;
+  };
+
+  const imageSrc = getImageSrc();
 
   return (
     <Modal
@@ -252,30 +319,102 @@ const AddItem = ({
             </div>
           </fieldset>
 
-          <fieldset className="rounded-2xl border border-dashed border-gray-300 bg-white/60 p-6 text-center shadow-sm backdrop-blur-sm">
+          <fieldset className="rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
             <legend className="px-2 text-base font-semibold text-gray-800">
               صورة الصنف
             </legend>
-            <p className="mb-4 text-sm text-gray-500">
-              ارفع صورة واضحة للصنف لسهولة تمييزه داخل النظام.
-            </p>
-            <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
-              <input
-                accept="image/*"
-                className="input-field w-full md:max-w-md"
-                disabled={isViewMode}
-                required={!isViewMode && mode === "add"}
-                type="file"
-                onChange={handleFileChange}
-              />
-              {item.item_img && item.item_img instanceof File && (
-                <img
-                  alt="معاينة الصورة"
-                  className="h-24 w-24 rounded-xl border border-gray-200 object-cover shadow-sm"
-                  src={URL.createObjectURL(item.item_img)}
+
+            {imageSrc ? (
+              <div className="relative">
+                <div className="relative inline-block">
+                  <img
+                    alt="معاينة الصورة"
+                    className="h-48 w-48 rounded-xl border-2 border-gray-200 object-cover shadow-md mx-auto"
+                    src={imageSrc}
+                  />
+                  {!isViewMode && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"
+                      aria-label="حذف الصورة"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {!isViewMode && (
+                  <div className="mt-4 text-center">
+                    <Button
+                      size="sm"
+                      variant="bordered"
+                      onPress={handleBrowseClick}
+                      className="border-gray-300"
+                    >
+                      تغيير الصورة
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`relative border-2 border-dashed rounded-xl p-8 transition-all ${
+                  isDragging
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-300 bg-gray-50/50"
+                } ${isViewMode ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-gray-400"}`}
+              >
+                <input
+                  ref={fileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  disabled={isViewMode}
+                  type="file"
+                  onChange={handleFileChange}
                 />
-              )}
-            </div>
+
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <div
+                    className={`rounded-full p-4 transition-colors ${
+                      isDragging
+                        ? "bg-blue-100"
+                        : "bg-gray-100"
+                    }`}
+                  >
+                    <CloudArrowUpIcon
+                      className={`h-12 w-12 ${
+                        isDragging ? "text-blue-500" : "text-gray-400"
+                      }`}
+                    />
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-base font-medium text-gray-700 mb-1">
+                      اختر ملف أو اسحبه وأفلته هنا
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      صيغ مدعومة: JPEG, PNG, GIF, WebP
+                      <br />
+                      حجم أقصى: 10MB
+                    </p>
+                  </div>
+
+                  {!isViewMode && (
+                    <Button
+                      size="sm"
+                      variant="bordered"
+                      onPress={handleBrowseClick}
+                      className="border-gray-300 bg-white hover:bg-gray-50"
+                    >
+                      تصفح الملفات
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </fieldset>
         </ModalBody>
 
