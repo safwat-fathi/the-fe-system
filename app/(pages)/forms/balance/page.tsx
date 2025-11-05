@@ -48,26 +48,22 @@ const getExistingBalanceVoucher = cache(async () => {
 // Cache the voucher details for better performance
 const getVoucherDetails = cache(
   async (voucherId: number, branchId?: number | string) => {
-    try {
-      if (!voucherId || isNaN(voucherId)) {
-        console.warn("Invalid voucherId:", voucherId);
+      try {
+        if (!voucherId || isNaN(voucherId)) {
+          return [];
+        }
 
-        return [];
-      }
+        const parsedBranchId = Number(branchId ?? 1) || 1;
 
-      const parsedBranchId = Number(branchId ?? 1) || 1;
+        const detailsResponse = await voucherService.getDetails(voucherId, {
+          xcom_id: parsedBranchId,
+        });
 
-      const detailsResponse = await voucherService.getDetails(voucherId, {
-        xcom_id: parsedBranchId,
-      });
+        if (!detailsResponse.success || !detailsResponse.data) {
+          return [];
+        }
 
-      if (!detailsResponse.success || !detailsResponse.data) {
-        console.warn("Failed to fetch voucher details:", detailsResponse);
-
-        return [];
-      }
-
-      return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
+        return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
     } catch (error) {
       console.error("Error fetching voucher details:", error);
 
@@ -123,22 +119,38 @@ export default async function BalanceVoucherPage({
           detail.credit !== undefined && detail.credit !== null
             ? parseFloat(String(detail.credit))
             : undefined,
-        base_debit:
-          detail.base_debit !== undefined && detail.base_debit !== null
-            ? parseFloat(String(detail.base_debit))
-            : undefined,
-        base_credit:
-          detail.base_credit !== undefined && detail.base_credit !== null
-            ? parseFloat(String(detail.base_credit))
-            : undefined,
+        debit_base:
+          detail.debit_base !== undefined && detail.debit_base !== null
+            ? parseFloat(String(detail.debit_base))
+            : (detail.debit !== undefined && detail.debit !== null
+              ? parseFloat(String(detail.debit))
+              : undefined),
+        credit_base:
+          detail.credit_base !== undefined && detail.credit_base !== null
+            ? parseFloat(String(detail.credit_base))
+            : (detail.credit !== undefined && detail.credit !== null
+              ? parseFloat(String(detail.credit))
+              : undefined),
         gauge: parseFloat(detail.gauge) || 875,
-        debit_g:
-          detail.debit_g !== undefined && detail.debit_g !== null
-            ? parseFloat(String(detail.debit_g))
+        g_debit:
+          detail.g_debit !== undefined && detail.g_debit !== null
+            ? parseFloat(String(detail.g_debit))
+            : (detail.debit_g !== undefined && detail.debit_g !== null
+              ? parseFloat(String(detail.debit_g))
+              : undefined),
+        g_credit:
+          detail.g_credit !== undefined && detail.g_credit !== null
+            ? parseFloat(String(detail.g_credit))
+            : (detail.credit_g !== undefined && detail.credit_g !== null
+              ? parseFloat(String(detail.credit_g))
+              : undefined),
+        g_debit_base:
+          detail.g_debit_base !== undefined && detail.g_debit_base !== null
+            ? parseFloat(String(detail.g_debit_base))
             : undefined,
-        credit_g:
-          detail.credit_g !== undefined && detail.credit_g !== null
-            ? parseFloat(String(detail.credit_g))
+        g_credit_base:
+          detail.g_credit_base !== undefined && detail.g_credit_base !== null
+            ? parseFloat(String(detail.g_credit_base))
             : undefined,
         vouch_notes: detail.vouch_notes || "",
         cr_date: detail.cr_date || new Date().toISOString(),

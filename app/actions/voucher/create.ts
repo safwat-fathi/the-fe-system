@@ -94,15 +94,8 @@ export async function createVoucherAction(
     const savedVoucher = voucherResponse.data;
     let masterId = (savedVoucher as any)?.id;
 
-    console.log("[createVoucherAction] Saved voucher response:", {
-      savedVoucher,
-      id: masterId,
-      vouch_id: (savedVoucher as any)?.vouch_id,
-    });
-
     // Fallback: البحث عن القيد إذا لم يكن id موجوداً
     if (!masterId || masterId <= 0) {
-      console.log("[createVoucherAction] ID not found, trying lookup by vouch_id...");
       if (savedVoucher && (savedVoucher as any).vouch_id) {
         const lookupResponse = await voucherService.getVoucherById(
           (savedVoucher as any).vouch_id,
@@ -111,11 +104,8 @@ export async function createVoucherAction(
           },
         );
 
-        console.log("[createVoucherAction] Lookup response:", lookupResponse);
-
         if (lookupResponse && (lookupResponse as any)?.id) {
           masterId = (lookupResponse as any).id;
-          console.log("[createVoucherAction] Found ID from lookup:", masterId);
         }
       }
     }
@@ -127,8 +117,6 @@ export async function createVoucherAction(
         message: "لم يتم الحصول على رقم القيد من الخادم",
       };
     }
-
-    console.log("[createVoucherAction] Final masterId:", masterId);
 
     // حفظ الصناديق
     const boxesResult = await processVoucherBoxes(
@@ -162,13 +150,6 @@ export async function createVoucherAction(
     }
 
     // ترحيل سجلات gl_transaction
-    console.log(
-      `[SERVER] 🔄 بدء الترحيل للـ GL`,
-      `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-      `masterId: ${masterId}`,
-      `voucherBoxes: ${voucherBoxes?.length || 0}, goldDetails: ${goldDetails?.length || 0}`,
-    );
-
     await createGLTransactionRecords(
       voucherData,
       details,
@@ -178,11 +159,6 @@ export async function createVoucherAction(
       voucherPayload,
       voucherBoxes,
       goldDetails,
-    );
-
-    console.log(
-      `[SERVER] ✅ انتهى الترحيل للـ GL`,
-      `vouch_id: ${voucherData.vouch_id}`,
     );
 
     // حفظ تفاصيل الذهب

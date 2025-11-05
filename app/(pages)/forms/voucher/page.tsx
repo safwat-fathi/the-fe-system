@@ -162,9 +162,13 @@ export default async function VoucherPage({
           cost_id: detail.cost_id || 0,
           debit: detail.debit || 0,
           credit: detail.credit || 0,
-          debit_g: detail.debit_g || 0,
-          credit_g: detail.credit_g || 0,
+          debit_base: detail.debit_base || detail.debit || 0,
+          credit_base: detail.credit_base || detail.credit || 0,
+          g_debit: detail.g_debit || detail.debit_g || 0,
+          g_credit: detail.g_credit || detail.credit_g || 0,
           gauge: detail.gauge || 875,
+          g_debit_base: detail.g_debit_base || 0,
+          g_credit_base: detail.g_credit_base || 0,
           vouch_notes: detail.vouch_notes || "",
         }));
       }

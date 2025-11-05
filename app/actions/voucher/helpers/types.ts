@@ -22,11 +22,15 @@ export interface VoucherDetailData {
   acc_id: number;
   debit: number | undefined;
   credit: number | undefined;
-  base_debit?: number | undefined;
-  base_credit?: number | undefined;
+  debit_base?: number | undefined;
+  credit_base?: number | undefined;
+  p_debit?: number | undefined;
+  p_credit?: number | undefined;
   gauge: number | undefined;
-  debit_g: number | undefined;
-  credit_g: number | undefined;
+  g_debit: number | undefined;
+  g_credit: number | undefined;
+  g_debit_base?: number | undefined;
+  g_credit_base?: number | undefined;
   vouch_notes?: string;
   cost_id?: number | null;
 }

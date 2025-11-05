@@ -19,31 +19,22 @@ const getVoucherById = async (voucherId: number) => {
       return null;
     }
 
-    console.log("getVoucherById called with:", voucherId);
-
     // محاولة البحث أولاً مع xvouch_type محددة
     let voucher = await voucherService.getVoucherById(voucherId, {
       xvouch_type: "111", // سند الاستلام فقط
     });
 
-    console.log("getVoucherById with xvouch_type=111 result:", voucher);
-
     // إذا لم يتم العثور عليه، محاولة البحث بدون تحديد نوع السند (لأن السند الجديد قد لا يكون مفهرساً بعد)
     if (!voucher) {
-      console.log("Not found with xvouch_type=111, trying without type filter...");
       voucher = await voucherService.getVoucherById(voucherId, {
         xvouch_type: "0", // البحث في جميع الأنواع
       });
-      console.log("getVoucherById without type filter result:", voucher);
     }
 
     // التحقق من أن السند من نوع 111 (سند الاستلام)
     if (voucher && voucher.vouch_type === 111) {
-      console.log("Found voucher with type 111:", voucher);
       return voucher;
     }
-
-    console.log("Voucher not found or wrong type");
     return null;
   } catch (error) {
     console.error("Error fetching voucher:", error);
@@ -129,24 +120,17 @@ export default async function ReceiptVoucherEditPage({
     notFound();
   }
 
-  // إعادة التحقق من البيانات بعد الحفظ
-  console.log("Fetching voucher with ID:", voucherId);
-  
   let targetVoucher = await getVoucherById(voucherId);
-  console.log("First attempt result:", targetVoucher ? "Found" : "Not found");
   
-  // إذا لم يتم العثور على السند، إعادة المحاولة بدون cache
+  // إذا لم يتم العثور على السند، إعادة المحاولة
   if (!targetVoucher) {
     // محاولة البحث بدون تحديد نوع السند
-    console.log("Retrying with voucherService.getVoucherById without type filter...");
     targetVoucher = await voucherService.getVoucherById(voucherId, {
       xvouch_type: "0", // البحث في جميع الأنواع
     });
-    console.log("Second attempt result:", targetVoucher ? "Found" : "Not found");
     
     // إذا لم يتم العثور عليه، محاولة البحث في جميع السندات
     if (!targetVoucher || targetVoucher.vouch_type !== 111) {
-      console.log("Trying getAll with xvouch_type: 111...");
       const allVouchersResponse = await voucherService.getAll({
         xvouch_type: "111",
         page: "1",
@@ -157,33 +141,24 @@ export default async function ReceiptVoucherEditPage({
           ? allVouchersResponse.data
           : [];
         
-        console.log(`Found ${vouchers.length} vouchers, searching for ID: ${voucherId}`);
-        
         const foundVoucher = vouchers.find(
           (v: any) => {
             const matchesId = v.id && Number(v.id) === voucherId;
             const matchesVouchId = v.vouch_id && Number(v.vouch_id) === voucherId;
-            console.log(`Voucher ${v.id || v.vouch_id}: id=${matchesId}, vouch_id=${matchesVouchId}, type=${v.vouch_type}`);
             return matchesId || matchesVouchId;
           }
         );
         
         if (foundVoucher && foundVoucher.vouch_type === 111) {
-          console.log("Found voucher in getAll response:", foundVoucher);
           targetVoucher = foundVoucher;
-        } else {
-          console.log("Voucher not found in getAll response");
         }
       }
     }
     
     if (!targetVoucher || targetVoucher.vouch_type !== 111) {
-      console.error("Voucher not found after all attempts. ID:", voucherId);
       notFound();
     }
   }
-  
-  console.log("Final targetVoucher:", targetVoucher);
 
   const formData = await voucherFormDataService.getVoucherFormData();
 

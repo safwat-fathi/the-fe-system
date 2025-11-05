@@ -186,9 +186,6 @@ export default function CashReceiptVoucherClientPage({
       }
 
       // إذا لم نجد في السندات من نفس النوع، نبحث في جميع أنواع السندات
-      console.log(
-        "لم يتم العثور على سند من نفس النوع، البحث في جميع السندات...",
-      );
       const allVouchersResponse = await voucherService.getAll({
         xvouch_type: "0", // جميع الأنواع
         xvouch_id: searchValue,

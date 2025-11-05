@@ -124,8 +124,12 @@ export const useVoucherActions = ({
           acc_id: detail.acc_id,
           debit: detail.debit,
           credit: detail.credit,
-          debit_g: detail.debit_g,
-          credit_g: detail.credit_g,
+          debit_base: detail.debit_base !== undefined ? detail.debit_base : detail.debit,
+          credit_base: detail.credit_base !== undefined ? detail.credit_base : detail.credit,
+          g_debit: detail.g_debit !== undefined ? detail.g_debit : detail.debit_g,
+          g_credit: detail.g_credit !== undefined ? detail.g_credit : detail.credit_g,
+          g_debit_base: detail.g_debit_base,
+          g_credit_base: detail.g_credit_base,
           gauge: detail.gauge,
           vouch_notes: detail.vouch_notes || "",
           cost_id: detail.cost_id || null,
@@ -376,8 +380,8 @@ export const useVoucherActions = ({
                       );
                       const debit = detail.debit || 0;
                       const credit = detail.credit || 0;
-                      const debitG = detail.debit_g || 0;
-                      const creditG = detail.credit_g || 0;
+                      const debitG = detail.g_debit !== undefined ? detail.g_debit : (detail.debit_g || 0);
+                      const creditG = detail.g_credit !== undefined ? detail.g_credit : (detail.credit_g || 0);
                       const gauge = detail.gauge || 875;
 
                       return `

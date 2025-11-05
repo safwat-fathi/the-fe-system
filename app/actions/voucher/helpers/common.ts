@@ -97,8 +97,6 @@ export function extractDateAndTime(dateString: string): {
  */
 export async function getBoxAccountId(boxId: number): Promise<number | null> {
   if (!boxId || boxId <= 0) {
-    console.warn(`[SERVER] ⚠️ getBoxAccountId: boxId غير صحيح: ${boxId}`);
-
     return null;
   }
 
@@ -106,33 +104,17 @@ export async function getBoxAccountId(boxId: number): Promise<number | null> {
     const { boxesService } = await import("@/services/api");
     const boxes = await boxesService.getBoxes({ xcom_id: 1 });
 
-    console.log(
-      `[SERVER] 📦 جلب ${boxes.length} صندوق للبحث عن حساب الصندوق ${boxId}`,
-    );
-
     const box = boxes.find((b) => b.id === boxId);
 
     if (!box) {
-      console.warn(
-        `[SERVER] ⚠️ لم يتم العثور على الصندوق ${boxId} في قائمة الصناديق`,
-      );
-
       return null;
     }
 
     const accId = box?.acc ? Number(box.acc) : null;
 
     if (!accId || accId <= 0) {
-      console.warn(
-        `[SERVER] ⚠️ الصندوق ${boxId} لا يحتوي على حساب (acc: ${box?.acc})`,
-      );
-
       return null;
     }
-
-    console.log(
-      `[SERVER] ✅ تم العثور على حساب الصندوق ${boxId}: acc_id = ${accId}`,
-    );
 
     return accId;
   } catch (error) {

@@ -155,7 +155,6 @@ export default async function InvoicePage({
       }
     }
   }
-  console.log("🚀 ~ :144 ~ InvoicePage ~ invoiceDetails:", invoiceDetails);
 
   const formData = await getInvoiceFormData();
 

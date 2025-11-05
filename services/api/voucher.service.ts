@@ -23,10 +23,17 @@ export interface VoucherDetail {
   acc_name?: string;
   cost_id?: number;
   cost_name?: string;
-  debit?: number;
-  credit?: number;
-  debit_g?: number;
-  credit_g?: number;
+  debit?: number; // مدين (نقد)
+  credit?: number; // دائن (نقد)
+  debit_base?: number; // مدين اساس
+  credit_base?: number; // دائن اساس
+  p_debit?: number; // مدين مدفوع (غير مستخدم حالياً)
+  p_credit?: number; // دائن مدفوع (غير مستخدم حالياً)
+  gauge?: number; // العيار
+  g_debit?: number; // مدين (ذهب)
+  g_credit?: number; // دائن (ذهب)
+  g_debit_base?: number; // مدين معاير (ذهب)
+  g_credit_base?: number; // دائن معاير (ذهب)
   tax?: number;
   tax_prc?: number;
   notes?: string;

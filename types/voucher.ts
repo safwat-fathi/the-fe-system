@@ -47,20 +47,20 @@ export interface VoucherDetail {
   upd_date?: string;
   upd_user?: string;
   vouch_id: number;
-  base_credit?: number;
-  base_debit?: number;
-  p_credit?: number;
-  p_debit?: number;
+  credit_base?: number; // دائن اساس
+  debit_base?: number; // مدين اساس
+  p_credit?: number; // دائن مدفوع (غير مستخدم حالياً)
+  p_debit?: number; // مدين مدفوع (غير مستخدم حالياً)
   change?: number;
   com_id?: number;
   cost_id?: number;
-  credit_g?: number | undefined;
+  g_credit?: number | undefined; // دائن (ذهب)
   cur_id?: number;
   cust_id?: number;
-  debit_g?: number | undefined;
-  g_credit?: number;
-  g_debit?: number;
-  gauge?: number;
+  g_debit?: number | undefined; // مدين (ذهب)
+  gauge?: number; // العيار
+  g_credit_base?: number; // دائن معاير (ذهب)
+  g_debit_base?: number; // مدين معاير (ذهب)
   inv_id?: number;
   vat_no?: number;
 }

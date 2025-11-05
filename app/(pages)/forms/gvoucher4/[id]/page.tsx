@@ -18,8 +18,6 @@ export const metadata: Metadata = {
 const getVoucherById = cache(async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
-      console.warn("Invalid voucherId:", voucherId);
-
       return null;
     }
 
@@ -28,8 +26,6 @@ const getVoucherById = cache(async (voucherId: number) => {
     });
 
     if (!vouchersResponse.success || !vouchersResponse.data) {
-      console.warn("Failed to fetch vouchers:", vouchersResponse);
-
       return null;
     }
 
@@ -42,11 +38,7 @@ const getVoucherById = cache(async (voucherId: number) => {
       (v: any) => v.id === voucherId || v.vouch_id === voucherId,
     );
 
-    if (!foundVoucher) {
-      console.warn("Voucher not found with id or vouch_id:", voucherId);
-    }
-
-    return foundVoucher;
+    return foundVoucher || null;
   } catch (error) {
     console.error("Error fetching voucher:", error);
 
@@ -59,8 +51,6 @@ const getGoldDetails = cache(
   async (voucherId: number, branchId?: number | string) => {
     try {
       if (!voucherId || isNaN(voucherId)) {
-        console.warn("Invalid voucherId:", voucherId);
-
         return [];
       }
 
@@ -74,8 +64,6 @@ const getGoldDetails = cache(
       );
 
       if (!goldDetailsResponse.success || !goldDetailsResponse.data) {
-        console.warn("Failed to fetch gold details:", goldDetailsResponse);
-
         return [];
       }
 
@@ -95,8 +83,6 @@ const getVoucherBoxes = cache(
   async (voucherId: number, branchId?: number | string) => {
     try {
       if (!voucherId || isNaN(voucherId)) {
-        console.warn("Invalid voucherId:", voucherId);
-
         return [];
       }
 
@@ -107,25 +93,10 @@ const getVoucherBoxes = cache(
       });
 
       if (!boxesResponse.success || !boxesResponse.data) {
-        console.warn("Failed to fetch voucher boxes:", boxesResponse);
-
         return [];
       }
 
       const boxes = Array.isArray(boxesResponse.data) ? boxesResponse.data : [];
-
-      // تسجيل البيانات للتصحيح
-      if (boxes.length > 0) {
-        console.log(
-          `✅ تم جلب ${boxes.length} صندوق للسند ${voucherId}:`,
-          boxes,
-        );
-      } else {
-        console.warn(
-          `⚠️ لم يتم جلب أي صناديق للسند ${voucherId}. Response:`,
-          boxesResponse,
-        );
-      }
 
       return boxes;
     } catch (error) {

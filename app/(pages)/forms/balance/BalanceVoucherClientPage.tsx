@@ -368,7 +368,7 @@ export default function BalanceVoucherClientPage({
                     className="w-40 p-0.5 font-bold text-slate-700 border"
                     colSpan={2}
                   >
-                    ذهب قائم
+                    ذهب قائم (جم)
                   </th>
                   <th
                     className="w-20 p-0.5 font-bold text-slate-700 border"
@@ -380,7 +380,7 @@ export default function BalanceVoucherClientPage({
                     className="w-40 p-0.5 font-bold text-slate-700 border"
                     colSpan={2}
                   >
-                    ذهب معاير
+                    ذهب معاير (جم)
                   </th>
                   {costCenters.length > 0 && (
                     <th
@@ -411,16 +411,16 @@ export default function BalanceVoucherClientPage({
                     دائن
                   </th>
                   <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                    مدين
+                    مدين (جم)
                   </th>
                   <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                    دائن
+                    دائن (جم)
                   </th>
                   <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                    مدين
+                    مدين (جم)
                   </th>
                   <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                    دائن
+                    دائن (جم)
                   </th>
                 </tr>
               </thead>
@@ -574,10 +574,10 @@ export default function BalanceVoucherClientPage({
                       />
                     </td>
 
-                    {/* حقول ذهب (base_debit/base_credit) */}
-                    <td className="p-0 border">
+                    {/* حقول ذهب قائم (g_debit/g_credit) */}
+                    <td className="p-0 border bg-amber-50">
                       <input
-                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
                         disabled={!isEditing}
                         min="0"
                         placeholder="0.00"
@@ -590,7 +590,7 @@ export default function BalanceVoucherClientPage({
                         }}
                         type="number"
                         value={
-                          detail.base_debit ? String(detail.base_debit) : ""
+                          detail.g_debit ? String(detail.g_debit) : ""
                         }
                         onChange={(e) => {
                           const val = e.target.value;
@@ -598,7 +598,7 @@ export default function BalanceVoucherClientPage({
                           if (!val || parseFloat(val) >= 0) {
                             updateDetail(
                               index,
-                              "base_debit",
+                              "g_debit",
                               val ? parseFloat(val) : undefined,
                             );
                           }
@@ -612,9 +612,9 @@ export default function BalanceVoucherClientPage({
                       />
                     </td>
 
-                    <td className="p-0 border">
+                    <td className="p-0 border bg-amber-50">
                       <input
-                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
                         disabled={!isEditing}
                         min="0"
                         placeholder="0.00"
@@ -627,7 +627,7 @@ export default function BalanceVoucherClientPage({
                         }}
                         type="number"
                         value={
-                          detail.base_credit ? String(detail.base_credit) : ""
+                          detail.g_credit ? String(detail.g_credit) : ""
                         }
                         onChange={(e) => {
                           const val = e.target.value;
@@ -635,7 +635,7 @@ export default function BalanceVoucherClientPage({
                           if (!val || parseFloat(val) >= 0) {
                             updateDetail(
                               index,
-                              "base_credit",
+                              "g_credit",
                               val ? parseFloat(val) : undefined,
                             );
                           }
@@ -685,14 +685,14 @@ export default function BalanceVoucherClientPage({
                       />
                     </td>
 
-                    {/* حقول ذهب معاير (debit_g/credit_g) */}
-                    <td className="p-0 border">
+                    {/* حقول ذهب معاير (g_debit_base/g_credit_base) - للقراءة فقط */}
+                    <td className="p-0 border bg-amber-50">
                       <input
-                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed bg-gray-50" : "bg-yellow-50"}`}
-                        disabled={!isEditing}
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 cursor-not-allowed bg-amber-50`}
+                        disabled={true}
                         min="0"
                         placeholder="0.00"
-                        readOnly={!isEditing}
+                        readOnly={true}
                         step="0.000001"
                         style={{
                           MozAppearance: "textfield",
@@ -701,34 +701,17 @@ export default function BalanceVoucherClientPage({
                         }}
                         title="يُحسب تلقائياً من: مدين ذهب قائم × (المعايرة / 875)"
                         type="number"
-                        value={detail.debit_g ? String(detail.debit_g) : ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-
-                          if (!val || parseFloat(val) >= 0) {
-                            updateDetail(
-                              index,
-                              "debit_g",
-                              val ? parseFloat(val) : undefined,
-                            );
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            e.preventDefault();
-                          }
-                        }}
-                        onWheel={(e) => e.currentTarget.blur()}
+                        value={detail.g_debit_base ? String(detail.g_debit_base) : ""}
                       />
                     </td>
 
-                    <td className="p-0 border">
+                    <td className="p-0 border bg-amber-50">
                       <input
-                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed bg-gray-50" : "bg-yellow-50"}`}
-                        disabled={!isEditing}
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 cursor-not-allowed bg-amber-50`}
+                        disabled={true}
                         min="0"
                         placeholder="0.00"
-                        readOnly={!isEditing}
+                        readOnly={true}
                         step="0.000001"
                         style={{
                           MozAppearance: "textfield",
@@ -737,24 +720,7 @@ export default function BalanceVoucherClientPage({
                         }}
                         title="يُحسب تلقائياً من: دائن ذهب قائم × (المعايرة / 875)"
                         type="number"
-                        value={detail.credit_g ? String(detail.credit_g) : ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-
-                          if (!val || parseFloat(val) >= 0) {
-                            updateDetail(
-                              index,
-                              "credit_g",
-                              val ? parseFloat(val) : undefined,
-                            );
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            e.preventDefault();
-                          }
-                        }}
-                        onWheel={(e) => e.currentTarget.blur()}
+                        value={detail.g_credit_base ? String(detail.g_credit_base) : ""}
                       />
                     </td>
 

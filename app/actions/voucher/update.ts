@@ -186,13 +186,6 @@ export async function updateVoucherAction(
     }
 
     // ترحيل سجلات gl_transaction الجديدة
-    console.log(
-      `[SERVER] 🔄 بدء الترحيل للـ GL (تحديث)`,
-      `vouch_id: ${voucherData.vouch_id}, vouch_type: ${voucherData.vouch_type}`,
-      `realVoucherId: ${realVoucherId}`,
-      `voucherBoxes: ${voucherBoxes?.length || 0}, goldDetails: ${goldDetails?.length || 0}`,
-    );
-
     await createGLTransactionRecords(
       voucherData,
       details,
@@ -202,11 +195,6 @@ export async function updateVoucherAction(
       voucherPayload,
       voucherBoxes,
       goldDetails,
-    );
-
-    console.log(
-      `[SERVER] ✅ انتهى الترحيل للـ GL (تحديث)`,
-      `vouch_id: ${voucherData.vouch_id}`,
     );
 
     // تحديث تفاصيل الذهب
