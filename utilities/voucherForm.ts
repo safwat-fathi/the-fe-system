@@ -270,10 +270,20 @@ export const calculateVoucherTotals = (
         includeBaseDebitCredit && detail.base_credit !== undefined
           ? parseNumber(detail.base_credit)
           : 0;
+      // استخدام g_debit_base و g_credit_base بدلاً من debit_g و credit_g
+      // لأن هذه هي القيم التي يتم ترحيلها إلى GL
       const debitG =
-        detail.debit_g !== undefined ? parseNumber(detail.debit_g) : 0;
+        detail.g_debit_base !== undefined
+          ? parseNumber(detail.g_debit_base)
+          : detail.debit_g !== undefined
+            ? parseNumber(detail.debit_g)
+            : 0;
       const creditG =
-        detail.credit_g !== undefined ? parseNumber(detail.credit_g) : 0;
+        detail.g_credit_base !== undefined
+          ? parseNumber(detail.g_credit_base)
+          : detail.credit_g !== undefined
+            ? parseNumber(detail.credit_g)
+            : 0;
 
       return {
         totalDebit: totals.totalDebit + debit + baseDebit,
@@ -292,12 +302,26 @@ export const calculateVoucherTotals = (
 };
 
 // Helper function to calculate calibrated gold from base gold and gauge
+// حساب الذهب المعاير من الذهب القائم والمعيار
 export const calculateCalibratedGold = (
   baseValue: number,
   gauge: number,
   baseGauge: number = 875,
+  decimalPlaces: number = 2,
 ): number => {
   if (!baseValue || baseValue <= 0 || !gauge || gauge <= 0) return 0;
 
-  return parseFloat(((baseValue * gauge) / baseGauge).toFixed(6));
+  return parseFloat(((baseValue * gauge) / baseGauge).toFixed(decimalPlaces));
+};
+
+// Helper function to calculate reverse calibrated gold (from calibrated to base)
+// حساب الذهب القائم من الذهب المعاير (الحساب العكسي)
+export const calculateReverseCalibratedGold = (
+  calibratedValue: number,
+  gauge: number,
+  baseGauge: number = 875,
+): number => {
+  if (!calibratedValue || calibratedValue <= 0 || !gauge || gauge <= 0) return 0;
+
+  return parseFloat(((calibratedValue * baseGauge) / gauge).toFixed(6));
 };

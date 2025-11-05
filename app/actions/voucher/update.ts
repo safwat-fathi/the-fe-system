@@ -127,6 +127,17 @@ export async function updateVoucherAction(
       }
       // لا تحذف cust_id إذا كان موجوداً في voucherPayload، فقط أضف cust
       // delete voucherPayload.cust_id; // تم إزالة هذا السطر لأنه يحذف العميل
+
+      // إضافة cost للسندات الذهبية (مطلوب دائماً)
+      const costValue =
+        voucherData.cost_id !== undefined &&
+        voucherData.cost_id !== null &&
+        voucherData.cost_id > 0
+          ? voucherData.cost_id
+          : null;
+
+      // إرسال cost دائماً حتى لو كان null (لأن API يتطلبه)
+      voucherPayload.cost = costValue;
     }
 
     // تحديث السند الرئيسي

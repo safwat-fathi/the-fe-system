@@ -20,6 +20,7 @@ import useFractions, { Fractions } from "@/utilities/useFractions";
 import itemService from "@/services/api/item.service";
 import { createItemColumns } from "@/components/items/itemColumns";
 import { revalidateItemsDataAction } from "@/app/actions/item";
+import { ConfirmationModal } from "@/components/Modal";
 
 
 type ItemsClientProps = {
@@ -68,12 +69,14 @@ export default function ItemsClient({
 }: ItemsClientProps) {
   const [items, setItems] = useState<ItemModel[]>(initialItems);
   const [itemsCount, setItemsCount] = useState(totalItems);
-  const [categories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [itemTypesState] = useState<ItemType[]>(initialItemTypes);
   const [units] = useState<Unit[]>(initialUnits);
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
   const [, startTransition] = useTransition();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
 
   const fractions = useFractions() as Fractions;
 
@@ -150,35 +153,66 @@ export default function ItemsClient({
   useEffect(() => {
     setItems(initialItems);
     setItemsCount(totalItems);
-  }, [initialItems, totalItems]);
+    setCategories(initialCategories);
+  }, [initialItems, totalItems, initialCategories]);
 
   const handleOpenAddModal = () => {
     router.push("/basic/items/new");
   };
 
 
-  const handleDeleteItem = async (item: ItemModel) => {
+  const handleDeleteClick = (item: ItemModel) => {
     if (!item.id) {
       toast.error("❌ لا يمكن حذف صنف بدون معرف");
       return;
     }
 
-    if (!confirm(`هل أنت متأكد من حذف الصنف "${item.item_name}"؟`)) {
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete?.id) {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
       return;
     }
 
+    // Optimistic delete
+    setItems((prevItems) => prevItems.filter((i) => i.id !== itemToDelete.id));
+    setItemsCount((prevCount) => Math.max(0, prevCount - 1));
+
     try {
-      const result = await itemService.deleteItem(item.id);
+      const result = await itemService.deleteItem(itemToDelete.id);
 
       if (result) {
         toast.success("✅ تم حذف الصنف بنجاح");
-        await revalidateItemsDataAction();
+        
+        // إعادة التحقق من البيانات في الخلفية
+        router.refresh();
       } else {
         toast.error("❌ فشل في حذف الصنف");
+        // إعادة تحميل البيانات في حالة الفشل
+        router.refresh();
       }
-    } catch (error) {
-      toast.error("❌ حدث خطأ أثناء حذف الصنف");
+    } catch (error: any) {
+      console.error("Error deleting item:", error);
+      
+      // عرض رسالة خطأ واضحة
+      const errorMessage = error?.message || "❌ حدث خطأ أثناء حذف الصنف";
+      toast.error(errorMessage);
+      
+      // إعادة تحميل البيانات في حالة الخطأ
+      router.refresh();
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setItemToDelete(null);
   };
 
   // Server-side pagination: API يعيد 20 صنف لكل صفحة
@@ -270,9 +304,9 @@ export default function ItemsClient({
           value != null ? (categoryLookup.get(Number(value)) ?? "-") : "-",
         getItemTypeLabel: (value) =>
           value != null ? (itemTypeLookup.get(Number(value)) ?? "-") : "-",
-        onDelete: handleDeleteItem,
+        onDelete: handleDeleteClick,
       }),
-    [fractions, categoryLookup, itemTypeLookup, handleDeleteItem],
+    [fractions, categoryLookup, itemTypeLookup, handleDeleteClick],
   );
 
   const clearFilters = () => {
@@ -417,6 +451,17 @@ export default function ItemsClient({
         </div>
       )}
 
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="تأكيد الحذف"
+        message={`هل أنت متأكد من حذف الصنف "${itemToDelete?.item_name}"؟`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        confirmColor="danger"
+        size="md"
+      />
     </>
   );
 }

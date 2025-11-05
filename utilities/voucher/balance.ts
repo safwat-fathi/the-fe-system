@@ -32,8 +32,22 @@ export function calculateVoucherTotals(
       const credit = parseFloat(String(detail.credit || 0));
       const baseDebit = parseFloat(String(detail.base_debit || 0));
       const baseCredit = parseFloat(String(detail.base_credit || 0));
-      const debitG = parseFloat(String(detail.debit_g || 0));
-      const creditG = parseFloat(String(detail.credit_g || 0));
+      // استخدام g_debit_base و g_credit_base بدلاً من debit_g و credit_g
+      // لأن هذه هي القيم التي يتم ترحيلها إلى GL
+      const debitG = parseFloat(
+        String(
+          detail.g_debit_base !== undefined
+            ? detail.g_debit_base
+            : detail.debit_g || 0,
+        ),
+      );
+      const creditG = parseFloat(
+        String(
+          detail.g_credit_base !== undefined
+            ? detail.g_credit_base
+            : detail.credit_g || 0,
+        ),
+      );
 
       return {
         totalDebit: totals.totalDebit + debit,

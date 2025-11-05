@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -18,16 +19,11 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import {
-  HeroModal as Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@/components/Modal";
+import { ConfirmationModal } from "@/components/Modal";
 import customerTypeService from "@/services/api/customer-type.service";
 
 interface CustomerType {
@@ -48,7 +44,6 @@ const columns = [
   { name: "النوع", uid: "type_name" },
   { name: "النوع بالإنجليزي", uid: "type_name_e" },
   { name: "الوصف", uid: "type_desc" },
-  { name: "التاريخ", uid: "cr_date" },
   { name: "الحالة", uid: "type_status" },
   { name: "", uid: "actions" },
 ];
@@ -56,12 +51,12 @@ const columns = [
 export default function CustomerTypesClient({
   initialTypes,
 }: CustomerTypesClientProps) {
+  const router = useRouter();
   const [types, setTypes] = useState<CustomerType[]>(initialTypes);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
-  const [currentType, setCurrentType] = useState<Partial<CustomerType>>({});
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [typeToDelete, setTypeToDelete] = useState<CustomerType | null>(null);
 
   const rowsPerPage = 12;
 
@@ -76,53 +71,52 @@ export default function CustomerTypesClient({
     }
   };
 
-  const handleSave = async () => {
-    try {
-      let result: CustomerType | null = null;
 
-      if (modalMode === "edit" && currentType.id) {
-        result = await customerTypeService.updateCustomerType(
-          currentType.id,
-          currentType,
-        );
-      } else {
-        result = await customerTypeService.createCustomerType(
-          currentType as Omit<CustomerType, "id">,
-        );
-      }
-
-      if (result) {
-        toast.success(
-          modalMode === "edit"
-            ? "✅ تم تعديل النوع بنجاح"
-            : "✅ تم إضافة النوع بنجاح",
-        );
-        setIsModalOpen(false);
-        loadTypes();
-      } else {
-        toast.error("❌ فشل في العملية");
-      }
-    } catch (error) {
-      console.error("❌ خطأ أثناء الحفظ:", error);
-      toast.error("❌ حدث خطأ أثناء الحفظ");
+  const handleDeleteClick = (type: CustomerType) => {
+    if (!type.id) {
+      toast.error("❌ لا يمكن حذف نوع بدون معرف");
+      return;
     }
+
+    setTypeToDelete(type);
+    setDeleteModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("هل أنت متأكد من حذف نوع العميل؟")) return;
+  const handleDeleteConfirm = async () => {
+    if (!typeToDelete?.id) {
+      setDeleteModalOpen(false);
+      setTypeToDelete(null);
+      return;
+    }
+
+    // Optimistic delete
+    setTypes((prevTypes) =>
+      prevTypes.filter((t) => t.id !== typeToDelete.id)
+    );
+
     try {
-      const result = await customerTypeService.deleteCustomerType(id);
+      const result = await customerTypeService.deleteCustomerType(typeToDelete.id);
 
       if (result) {
         toast.success("✅ تم حذف النوع بنجاح");
         loadTypes();
       } else {
         toast.error("❌ فشل في حذف نوع العميل");
+        loadTypes();
       }
     } catch (error) {
       console.error("❌ خطأ أثناء الحذف:", error);
       toast.error("❌ حدث خطأ أثناء الحذف");
+      loadTypes();
+    } finally {
+      setDeleteModalOpen(false);
+      setTypeToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setTypeToDelete(null);
   };
 
   const renderActions = (type: CustomerType) => (
@@ -131,7 +125,7 @@ export default function CustomerTypesClient({
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("view", type)}
+        onPress={() => router.push(`/basic/cust_type/${type.id}`)}
       >
         <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
@@ -139,7 +133,7 @@ export default function CustomerTypesClient({
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("edit", type)}
+        onPress={() => router.push(`/basic/cust_type/${type.id}?mode=edit`)}
       >
         <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
@@ -148,7 +142,7 @@ export default function CustomerTypesClient({
         color="danger"
         size="sm"
         variant="light"
-        onPress={() => handleDelete(type.id)}
+        onPress={() => handleDeleteClick(type)}
       >
         <TrashIcon className="h-4 w-4" />
       </Button>
@@ -169,29 +163,29 @@ export default function CustomerTypesClient({
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
-  const openModal = (
-    mode: "add" | "edit" | "view",
-    type: Partial<CustomerType> = {},
-  ) => {
-    setModalMode(mode);
-    setCurrentType(type);
-    setIsModalOpen(true);
-  };
-
-  const isViewMode = modalMode === "view";
-
   return (
     <div className="responsive-container font-cairo">
-      <div className="responsive-filters">
-        <Button onPress={() => openModal("add")}>
-          <PlusIcon className="h-4 w-4" /> إضافة نوع
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <h2 className="text-base font-semibold">إدارة أنواع العملاء</h2>
+        <div className="h-8 w-px bg-gray-300" />
+        <Button
+          variant="bordered"
+          className="bg-gray-100"
+          onPress={() => router.push("/basic/cust_type/new")}
+        >
+          <PlusIcon className="h-3 w-3" />
+          إضافة نوع
         </Button>
-        <Input
-          className="responsive-search"
-          placeholder="بحث بالاسم..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="h-8 w-px bg-gray-300" />
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="بحث بالاسم..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+            size="sm"
+          />
+        </div>
       </div>
 
       <div className="responsive-table">
@@ -208,7 +202,6 @@ export default function CustomerTypesClient({
                 <TableCell>{type.type_name}</TableCell>
                 <TableCell>{type.type_name_e}</TableCell>
                 <TableCell>{type.type_desc}</TableCell>
-                <TableCell>{type.cr_date}</TableCell>
                 <TableCell>
                   <Checkbox isReadOnly isSelected={type.type_status} />
                 </TableCell>
@@ -229,74 +222,17 @@ export default function CustomerTypesClient({
         />
       </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        scrollBehavior="inside"
-        size="5xl"
-        onClose={() => setIsModalOpen(false)}
-      >
-        <ModalContent className="font-cairo">
-          <ModalHeader>
-            {modalMode === "add" && "إضافة نوع"}
-            {modalMode === "edit" && "تعديل نوع"}
-            {modalMode === "view" && "عرض النوع"}
-          </ModalHeader>
-
-          <ModalBody className="grid grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto pr-2">
-            <Input
-              isDisabled={isViewMode}
-              label="نوع العميل"
-              value={currentType.type_name || ""}
-              onChange={(e) =>
-                setCurrentType({ ...currentType, type_name: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="نوع العميل بالإنجليزي"
-              value={currentType.type_name_e || ""}
-              onChange={(e) =>
-                setCurrentType({ ...currentType, type_name_e: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الوصف"
-              value={currentType.type_desc || ""}
-              onChange={(e) =>
-                setCurrentType({ ...currentType, type_desc: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={true}
-              label="تاريخ الإنشاء"
-              value={currentType.cr_date || ""}
-            />
-            <div className="col-span-2">
-              <Checkbox
-                isDisabled={isViewMode}
-                isSelected={Boolean(currentType.type_status)}
-                onValueChange={(val) =>
-                  setCurrentType({ ...currentType, type_status: val })
-                }
-              >
-                الحالة مفعلة
-              </Checkbox>
-            </div>
-          </ModalBody>
-
-          {modalMode !== "view" && (
-            <ModalFooter className="flex justify-end gap-2">
-              <Button color="danger" onPress={() => setIsModalOpen(false)}>
-                إلغاء
-              </Button>
-              <Button color="success" onPress={handleSave}>
-                {modalMode === "edit" ? "تحديث" : "حفظ"}
-              </Button>
-            </ModalFooter>
-          )}
-        </ModalContent>
-      </Modal>
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="تأكيد الحذف"
+        message={`هل أنت متأكد من حذف نوع العميل "${typeToDelete?.type_name}"؟`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        confirmColor="danger"
+        size="md"
+      />
     </div>
   );
 }

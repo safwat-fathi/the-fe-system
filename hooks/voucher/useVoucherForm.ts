@@ -44,6 +44,11 @@ export const useVoucherForm = ({
   newVoucherHref,
 }: UseVoucherFormProps) => {
   const hasGeneratedVoucherNumber = useRef(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [vouchersList, setVouchersList] = useState<any[]>([]);
+  const [isCreatedFromPrevious, setIsCreatedFromPrevious] = useState(false);
+  const [originalVoucherData, setOriginalVoucherData] = useState<Voucher | null>(null);
+  const [originalDetailsData, setOriginalDetailsData] = useState<VoucherDetail[]>([]);
 
   // State management
   const state = useVoucherFormState({
@@ -85,10 +90,42 @@ export const useVoucherForm = ({
 
   // Navigation
   const navigation = useVoucherNavigation({
-    vouchersList: [],
+    vouchersList,
     currentVoucher: state.voucher,
     vouchType,
   });
+
+  // Load vouchers list when modal opens
+  useEffect(() => {
+    if (isModalOpen) {
+      const fetchVouchers = async () => {
+        try {
+          state.setIsLoading(true);
+          // Load vouchers of the same type as current voucher
+          const response = await voucherService.getAll({
+            xvouch_type: vouchType.toString(),
+            xcom_id: "1",
+            xyear_id: "0",
+          });
+
+          if (response.success && response.data && Array.isArray(response.data)) {
+            const filteredVouchers = response.data.filter(
+              (v: any) => v.vouch_type === vouchType,
+            );
+            setVouchersList(filteredVouchers || []);
+          } else {
+            setVouchersList([]);
+          }
+        } catch (error) {
+          console.error("Error loading vouchers list:", error);
+          setVouchersList([]);
+        } finally {
+          state.setIsLoading(false);
+        }
+      };
+      fetchVouchers();
+    }
+  }, [isModalOpen, vouchType]);
 
   // Generate next voucher number for new vouchers
   useEffect(() => {
@@ -314,6 +351,10 @@ export const useVoucherForm = ({
     try {
       state.setIsLoading(true);
 
+      // Save original data before creating from previous
+      setOriginalVoucherData({ ...state.voucher });
+      setOriginalDetailsData([...details.details]);
+
       const detailsResponse = await voucherService.getDetails(voucherToUse.id);
 
       if (
@@ -362,11 +403,53 @@ export const useVoucherForm = ({
         }));
         navigation.setSearchTerm("");
         navigation.setSelectedVoucher(null);
+        
+        // Mark as created from previous and close modal
+        setIsCreatedFromPrevious(true);
+        setIsModalOpen(false);
       }
     } catch (error) {
       console.error("Error creating from previous voucher:", error);
     } finally {
       state.setIsLoading(false);
+    }
+  };
+
+  // Reset to new state
+  const resetToNew = async () => {
+    try {
+      if (originalVoucherData && originalDetailsData.length >= 0) {
+        // Restore original data
+        state.setVoucher(originalVoucherData);
+        details.setDetails(originalDetailsData);
+        setIsCreatedFromPrevious(false);
+        setOriginalVoucherData(null);
+        setOriginalDetailsData([]);
+      } else {
+        // If no original data, create a completely new voucher
+        const nextId = await voucherService.getNextNumber(vouchType);
+        state.setVoucher({
+          vouch_id: nextId,
+          vouch_date: new Date().toISOString(),
+          vouch_type: vouchType,
+          vouch_amt: 0,
+          pay_type: 1,
+          cr_date: new Date().toISOString(),
+          vouch_status: 1,
+          commit: false,
+          post: false,
+          print: false,
+          opps_vouch: 0,
+          ref_no: "",
+          vouch_notes: "",
+        });
+        details.setDetails([]);
+        setIsCreatedFromPrevious(false);
+        setOriginalVoucherData(null);
+        setOriginalDetailsData([]);
+      }
+    } catch (error) {
+      console.error("Error resetting to new:", error);
     }
   };
 
@@ -395,9 +478,9 @@ export const useVoucherForm = ({
     setSearchTerm: navigation.setSearchTerm,
     selectedVoucher: navigation.selectedVoucher,
     setSelectedVoucher: navigation.setSelectedVoucher,
-    vouchersList: [],
-    isModalOpen: false,
-    setIsModalOpen: () => {},
+    vouchersList,
+    isModalOpen,
+    setIsModalOpen,
     defaultAccountOptions: state.defaultAccountOptions,
     originalDetails: details.originalDetails,
 
@@ -424,6 +507,8 @@ export const useVoucherForm = ({
     printVoucher: actions.printVoucher,
     handleSearch: navigation.handleSearch,
     createFromPrevious,
+    resetToNew,
+    isCreatedFromPrevious,
     loadAccountOptions,
     getAccountSelectValue,
   };

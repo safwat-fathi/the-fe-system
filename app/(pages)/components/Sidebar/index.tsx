@@ -100,28 +100,8 @@ const accountingFormLinks: Array<{
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {
-    name: "سند قبض عميل",
-    href: "/forms/gvoucher4",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-  {
-    name: "سند صرف عميل",
-    href: "/forms/gvoucher5",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-  {
     name: "قيد تسوية",
     href: "/forms/voucher?mode=new",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-  {
-    name: "سند استلام",
-    href: "/forms/receipt",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-  {
-    name: "سند تسليم",
-    href: "/forms/delivery",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
 ];
@@ -176,6 +156,26 @@ const goldFormLinks = [
   {
     name: "فواتير مردود البيع",
     href: "/forms/invoices?type=sale-return&mode=new",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند قبض عميل",
+    href: "/forms/gvoucher4",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند صرف عميل",
+    href: "/forms/gvoucher5",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند استلام",
+    href: "/forms/receipt",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند تسليم",
+    href: "/forms/delivery",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
 ];
@@ -254,14 +254,16 @@ const Sidebar = () => {
       <div className="relative border-b border-amber-900/30 bg-gradient-to-r from-amber-950/20 via-transparent to-transparent rounded-b-xl">
         <div className={`flex items-center h-16 mb-3 ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
           {isSidebarOpen && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 flex items-center justify-center shadow-lg ring-2 ring-amber-500/30">
-                <span className="text-xl font-bold text-white drop-shadow-md">
-                  ن
+            <div className="flex items-center relative">
+              <h2 className="text-4xl font-black whitespace-nowrap relative">
+                <span 
+                  className="relative inline-block gradient-text-animated"
+                  style={{
+                    filter: 'drop-shadow(0 0 8px rgba(217, 119, 6, 0.6)) drop-shadow(0 0 15px rgba(180, 83, 9, 0.4))',
+                  }}
+                >
+                  نفيس
                 </span>
-              </div>
-              <h2 className="text-xl font-bold whitespace-nowrap text-amber-50 drop-shadow-sm">
-                نفيس
               </h2>
             </div>
           )}

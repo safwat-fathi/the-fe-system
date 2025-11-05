@@ -11,9 +11,11 @@ export async function revalidateItemsDataAction() {
 
     revalidateTag("items");
     revalidateTag(`items-company-${companyId}`);
-    revalidatePath("/basic/items");
+    // إعادة التحقق من جميع صفحات الأصناف
+    revalidatePath("/basic/items", "page");
+    revalidatePath("/basic/items", "layout");
   } catch (error) {
     console.error("Error revalidating items data:", error);
-    throw error;
+    // لا نرمي الخطأ، فقط نطبع رسالة تحذير
   }
 }

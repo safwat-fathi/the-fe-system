@@ -48,20 +48,26 @@ export const useReceiptDeliveryVoucherForm = ({
 
   // State Management
   const [voucher, setVoucher] = useState<Voucher>(
-    voucherData || {
-      vouch_id: 0,
-      vouch_date: new Date().toISOString(),
-      vouch_type: vouchType,
-      vouch_amt: 0,
-      pay_type: 1,
-      cr_date: new Date().toISOString(),
-      vouch_status: 1,
-      commit: false,
-      post: false,
-      print: false,
-      opps_vouch: 0,
-      handling: voucherData?.handling || "",
-    },
+    voucherData
+      ? {
+          ...voucherData,
+          cost_id: voucherData.cost_id ?? null,
+        }
+      : {
+          vouch_id: 0,
+          vouch_date: new Date().toISOString(),
+          vouch_type: vouchType,
+          vouch_amt: 0,
+          pay_type: 1,
+          cr_date: new Date().toISOString(),
+          vouch_status: 1,
+          commit: false,
+          post: false,
+          print: false,
+          opps_vouch: 0,
+          handling: "",
+          cost_id: null,
+        },
   );
 
   const [currentTime, setCurrentTime] = useState("");
@@ -162,6 +168,17 @@ export const useReceiptDeliveryVoucherForm = ({
       setDefaultCustomerOptions(options);
     }
   }, []);
+
+  // تحديث voucher عند تغيير voucherData (خاصة عند تحميل سند موجود)
+  useEffect(() => {
+    if (voucherData && !isNewVoucher) {
+      setVoucher((prev) => ({
+        ...prev,
+        ...voucherData,
+        cost_id: voucherData.cost_id ?? prev.cost_id ?? null,
+      }));
+    }
+  }, [voucherData, isNewVoucher]);
 
   useEffect(() => {
     if (
@@ -595,6 +612,7 @@ export const useReceiptDeliveryVoucherForm = ({
         opps_vouch: voucher.opps_vouch || 0,
         cust_id: voucher.cust_id,
         handling: voucher.handling || "",
+        cost_id: voucher.cost_id || null,
       };
 
       const boxesData = validBoxes.map((box) => ({

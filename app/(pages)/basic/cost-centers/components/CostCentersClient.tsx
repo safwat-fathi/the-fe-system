@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -12,24 +13,19 @@ import {
   Button,
   Checkbox,
   Pagination,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
 } from "@heroui/react";
 import {
   PlusIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import costCenterService from "@/services/api/cost-center.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
+import { ConfirmationModal } from "@/components/Modal";
 
 // Interface for cost centers
 interface CostCenter {
@@ -85,15 +81,13 @@ export default function CostCentersClient({
   initialAccounts,
   error,
 }: CostCentersClientProps) {
+  const router = useRouter();
   const [costCenters, setCostCenters] = useState<CostCenter[]>(initialData);
   const [accounts] = useState<Account[]>(initialAccounts);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
-  const [currentCostCenter, setCurrentCostCenter] = useState<
-    Partial<CostCenter>
-  >({});
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [costCenterToDelete, setCostCenterToDelete] = useState<CostCenter | null>(null);
 
   const rowsPerPage = 10;
 
@@ -109,70 +103,31 @@ export default function CostCentersClient({
     }
   };
 
-  const handleSave = async () => {
-    setCostCenters((prevCenters) => {
-      const previousCostCenters = [...prevCenters];
 
-      // Optimistic update for create
-      if (modalMode === "add") {
-        const optimisticId = Date.now();
-        const optimisticCostCenter = {
-          ...currentCostCenter,
-          id: optimisticId,
-          cr_date: new Date().toISOString(),
-          cost_status: 1,
-        } as CostCenter;
-
-        return [...prevCenters, optimisticCostCenter];
-      }
-
-      return prevCenters;
-    });
-
-    try {
-      let result: CostCenter | null = null;
-
-      if (modalMode === "edit" && currentCostCenter.id) {
-        result = await costCenterService.updateCostCenter(
-          currentCostCenter.id,
-          currentCostCenter,
-        );
-      } else {
-        result = await costCenterService.createCostCenter(
-          currentCostCenter as Omit<CostCenter, "id">,
-        );
-      }
-
-      if (result) {
-        toast.success(
-          modalMode === "edit"
-            ? "✅ تم تعديل مركز التكلفة بنجاح"
-            : "✅ تم إضافة مركز التكلفة بنجاح",
-        );
-
-        // Revalidate cache
-        await revalidateTableData("cost_centers_list");
-
-        setIsModalOpen(false);
-        loadCostCenters();
-      } else {
-        toast.error("❌ فشل في العملية");
-        loadCostCenters();
-      }
-    } catch (error) {
-      toast.error("❌ حدث خطأ أثناء حفظ مركز التكلفة");
-      loadCostCenters();
+  const handleDeleteClick = (costCenter: CostCenter) => {
+    if (!costCenter.id) {
+      toast.error("❌ لا يمكن حذف مركز تكلفة بدون معرف");
+      return;
     }
+
+    setCostCenterToDelete(costCenter);
+    setDeleteModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("هل تريد حذف مركز التكلفة هذا؟")) return;
+  const handleDeleteConfirm = async () => {
+    if (!costCenterToDelete?.id) {
+      setDeleteModalOpen(false);
+      setCostCenterToDelete(null);
+      return;
+    }
 
     // Optimistic delete
-    setCostCenters((prevCenters) => prevCenters.filter((cc) => cc.id !== id));
+    setCostCenters((prevCenters) =>
+      prevCenters.filter((cc) => cc.id !== costCenterToDelete.id)
+    );
 
     try {
-      const result = await costCenterService.deleteCostCenter(id);
+      const result = await costCenterService.deleteCostCenter(costCenterToDelete.id);
 
       if (result) {
         toast.success("✅ تم حذف مركز التكلفة بنجاح");
@@ -188,7 +143,15 @@ export default function CostCentersClient({
     } catch (error) {
       toast.error("❌ حدث خطأ أثناء الحذف");
       loadCostCenters();
+    } finally {
+      setDeleteModalOpen(false);
+      setCostCenterToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setCostCenterToDelete(null);
   };
 
   const filtered = useMemo(() => {
@@ -227,24 +190,13 @@ export default function CostCentersClient({
     return costCentersMap.get(parentId) || `${parentId}`;
   };
 
-  const openModal = (
-    mode: "add" | "edit" | "view",
-    costCenter: Partial<CostCenter> = {},
-  ) => {
-    setModalMode(mode);
-    setCurrentCostCenter(costCenter);
-    setIsModalOpen(true);
-  };
-
-  const isViewMode = modalMode === "view";
-
   const renderActions = (costCenter: CostCenter) => (
     <div className="flex gap-2">
       <Button
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("view", costCenter)}
+        onPress={() => router.push(`/basic/cost-centers/${costCenter.id}`)}
       >
         <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
@@ -252,7 +204,7 @@ export default function CostCentersClient({
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("edit", costCenter)}
+        onPress={() => router.push(`/basic/cost-centers/${costCenter.id}?mode=edit`)}
       >
         <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
@@ -261,7 +213,7 @@ export default function CostCentersClient({
         color="danger"
         size="sm"
         variant="light"
-        onPress={() => handleDelete(costCenter.id)}
+        onPress={() => handleDeleteClick(costCenter)}
       >
         <TrashIcon className="h-4 w-4" />
       </Button>
@@ -281,16 +233,27 @@ export default function CostCentersClient({
 
   return (
     <>
-      <div className="flex justify-between mb-4">
-        <Button onPress={() => openModal("add")}>
-          <PlusIcon className="h-4 w-4" /> إضافة مركز تكلفة
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <h2 className="text-base font-semibold">إدارة مراكز التكلفة</h2>
+        <div className="h-8 w-px bg-gray-300" />
+        <Button
+          variant="bordered"
+          className="bg-gray-100"
+          onPress={() => router.push("/basic/cost-centers/new")}
+        >
+          <PlusIcon className="h-3 w-3" />
+          إضافة مركز تكلفة
         </Button>
-        <Input
-          className="w-60"
-          placeholder="بحث بالاسم..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="h-8 w-px bg-gray-300" />
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="بحث بالاسم..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+            size="sm"
+          />
+        </div>
       </div>
 
       <Table aria-label="جدول مراكز التكلفة">
@@ -331,170 +294,17 @@ export default function CostCentersClient({
         />
       </div>
 
-      <Modal
-        isDismissable={false}
-        isOpen={isModalOpen}
-        scrollBehavior="inside"
-        shouldBlockScroll={false}
-        size="2xl"
-        onClose={() => setIsModalOpen(false)}
-      >
-        <ModalContent className="font-cairo">
-          <ModalHeader>
-            {modalMode === "add" && "إضافة مركز تكلفة"}
-            {modalMode === "edit" && "تعديل مركز تكلفة"}
-            {modalMode === "view" && "عرض بيانات مركز التكلفة"}
-          </ModalHeader>
-
-          <ModalBody className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
-            <Input
-              isDisabled={isViewMode}
-              label="اسم مركز التكلفة"
-              value={currentCostCenter.cost_name || ""}
-              onChange={(e) =>
-                setCurrentCostCenter({
-                  ...currentCostCenter,
-                  cost_name: e.target.value,
-                })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الاسم بالإنجليزي"
-              value={currentCostCenter.cost_name_e || ""}
-              onChange={(e) =>
-                setCurrentCostCenter({
-                  ...currentCostCenter,
-                  cost_name_e: e.target.value,
-                })
-              }
-            />
-            <Select
-              isDisabled={isViewMode}
-              label="نوع مركز التكلفة"
-              placeholder="اختر نوع المركز"
-              popoverProps={{ shouldBlockScroll: false }}
-              selectedKeys={
-                currentCostCenter.cost_type
-                  ? [currentCostCenter.cost_type.toString()]
-                  : []
-              }
-              onSelectionChange={(keys) => {
-                const selectedKey = Array.from(keys)[0];
-
-                setCurrentCostCenter({
-                  ...currentCostCenter,
-                  cost_type: selectedKey ? parseInt(selectedKey as string) : 1,
-                });
-              }}
-            >
-              <SelectItem key="1" textValue="مركز تكلفة رئيسي">
-                مركز تكلفة رئيسي
-              </SelectItem>
-              <SelectItem key="2" textValue="مركز تكلفة فرعي">
-                مركز تكلفة فرعي
-              </SelectItem>
-              <SelectItem key="3" textValue="مركز تكلفة نشاط">
-                مركز تكلفة نشاط
-              </SelectItem>
-            </Select>
-            <Select
-              isDisabled={isViewMode}
-              label="الحساب المرتبط"
-              placeholder={
-                accounts.length > 0
-                  ? "اختر الحساب (اختياري)"
-                  : "لا توجد حسابات متاحة"
-              }
-              popoverProps={{ shouldBlockScroll: false }}
-              selectedKeys={
-                currentCostCenter.acc ? [currentCostCenter.acc.toString()] : []
-              }
-              onSelectionChange={(keys) => {
-                const selectedKey = Array.from(keys)[0];
-
-                setCurrentCostCenter({
-                  ...currentCostCenter,
-                  acc: selectedKey ? parseInt(selectedKey as string) : null,
-                });
-              }}
-            >
-              {accounts.length > 0 ? (
-                accounts.map((account) => (
-                  <SelectItem
-                    key={account.id.toString()}
-                    textValue={`${account.acc_name} - ${account.id}`}
-                  >
-                    {account.acc_name} - {account.id}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem key="no-data" textValue="لا توجد حسابات">
-                  لا توجد حسابات
-                </SelectItem>
-              )}
-            </Select>
-            <Select
-              isDisabled={isViewMode}
-              label="المركز الأب"
-              placeholder="اختر المركز الأب (اختياري)"
-              popoverProps={{ shouldBlockScroll: false }}
-              selectedKeys={
-                currentCostCenter.parent
-                  ? [currentCostCenter.parent.toString()]
-                  : []
-              }
-              onSelectionChange={(keys) => {
-                const selectedKey = Array.from(keys)[0];
-
-                setCurrentCostCenter({
-                  ...currentCostCenter,
-                  parent: selectedKey ? parseInt(selectedKey as string) : null,
-                });
-              }}
-            >
-              {costCenters
-                .filter(
-                  (cc) =>
-                    !currentCostCenter.id || cc.id !== currentCostCenter.id,
-                )
-                .map((cc) => (
-                  <SelectItem
-                    key={cc.id.toString()}
-                    textValue={`${cc.cost_name} - ${cc.id}`}
-                  >
-                    {cc.cost_name} - {cc.id}
-                  </SelectItem>
-                ))}
-            </Select>
-            <div className="col-span-2 flex gap-6 items-center">
-              <Checkbox
-                isDisabled={isViewMode}
-                isSelected={!!currentCostCenter.cost_status}
-                onValueChange={(val) =>
-                  setCurrentCostCenter({
-                    ...currentCostCenter,
-                    cost_status: val ? 1 : 0,
-                  })
-                }
-              >
-                مفعل
-              </Checkbox>
-            </div>
-          </ModalBody>
-
-          {modalMode !== "view" && (
-            <ModalFooter className="flex justify-end gap-2">
-              <Button color="danger" onPress={() => setIsModalOpen(false)}>
-                إلغاء
-              </Button>
-              <Button color="success" onPress={handleSave}>
-                {modalMode === "edit" ? "تحديث" : "حفظ"}
-              </Button>
-            </ModalFooter>
-          )}
-        </ModalContent>
-      </Modal>
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="تأكيد الحذف"
+        message={`هل أنت متأكد من حذف مركز التكلفة "${costCenterToDelete?.cost_name}"؟`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        confirmColor="danger"
+        size="md"
+      />
     </>
   );
 }

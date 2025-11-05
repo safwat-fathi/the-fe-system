@@ -53,7 +53,7 @@ export default async function BoxesPage() {
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-6">الصناديق</h1>
+      <h1 className="responsive-text-xl font-bold mb-2">الصناديق</h1>
       {/* Client Component للتفاعل */}
       <BoxesClient error={null} initialData={response as any[]} />
     </div>

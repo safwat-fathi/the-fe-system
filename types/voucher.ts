@@ -29,6 +29,7 @@ export interface Voucher {
   year_id?: number;
   details?: VoucherDetail[];
   handling?: string; // مناولة
+  cost_id?: number | null; // مركز التكلفة
 }
 
 export interface VoucherDetail {

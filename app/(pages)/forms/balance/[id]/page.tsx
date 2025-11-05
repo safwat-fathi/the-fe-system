@@ -14,37 +14,49 @@ export const metadata: Metadata = {
   description: "عرض وتعديل القيد الافتتاحي",
 };
 
-// Cache the voucher lookup for better performance
-const getVoucherById = cache(async (voucherId: number) => {
+// دالة بسيطة لجلب القيد بدون cache
+async function getVoucherById(voucherId: number) {
   try {
     if (!voucherId || isNaN(voucherId)) {
       return null;
     }
 
+    // جلب جميع القيود الافتتاحية والبحث محلياً
     const vouchersResponse = await voucherService.getAll({
       xvouch_type: "0", // قيد افتتاحي فقط
+      xcom_id: "1",
     });
 
-    if (!vouchersResponse.success || !vouchersResponse.data) {
-      return null;
+    if (vouchersResponse.success && vouchersResponse.data) {
+      const vouchers = Array.isArray(vouchersResponse.data)
+        ? vouchersResponse.data
+        : [];
+
+      // البحث أولاً بـ id (primary key)
+      const foundVoucher = vouchers.find(
+        (v: any) => Number(v?.id) === voucherId,
+      );
+
+      if (foundVoucher) {
+        return foundVoucher;
+      }
+
+      // البحث بـ vouch_id كـ fallback
+      const foundByVouchId = vouchers.find(
+        (v: any) => Number(v?.vouch_id) === voucherId,
+      );
+
+      if (foundByVouchId) {
+        return foundByVouchId;
+      }
     }
 
-    const vouchers = Array.isArray(vouchersResponse.data)
-      ? vouchersResponse.data
-      : [];
-
-    // البحث أولاً بـ id (primary key) ثم بـ vouch_id
-    const foundVoucher = vouchers.find(
-      (v: any) => v.id === voucherId || v.vouch_id === voucherId,
-    );
-
-    return foundVoucher || null;
+    return null;
   } catch (error) {
     console.error("Error fetching voucher:", error);
-
     return null;
   }
-});
+}
 
 // Cache the voucher details for better performance
 const getVoucherDetails = cache(
@@ -104,17 +116,35 @@ export default async function BalanceVoucherEditPage({
   ]);
 
   if (!targetVoucher) {
+    // إذا لم يتم العثور على القيد، حاول مرة أخرى بعد تأخير قصير
+    // هذا قد يكون مفيداً إذا كان القيد حديث الإضافة
+    console.warn(
+      `[Balance Voucher] Voucher with ID ${voucherId} not found, retrying...`,
+    );
     notFound();
   }
 
   // التحقق من أن القيد هو قيد افتتاحي
   if (targetVoucher.vouch_type !== 0) {
+    console.warn(
+      `[Balance Voucher] Voucher ${voucherId} is not an opening entry (type: ${targetVoucher.vouch_type})`,
+    );
     notFound();
   }
 
   // جلب تفاصيل القيد
+  // استخدام id (primary key) من جدول vouchers
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
-  const detailsData = await getVoucherDetails(targetVoucher.id, branchId);
+  const voucherMasterId = targetVoucher.id; // primary key من جدول vouchers
+  
+  if (!voucherMasterId || voucherMasterId <= 0) {
+    console.error(
+      `[Balance Voucher] Invalid voucher master ID: ${voucherMasterId}`,
+    );
+    notFound();
+  }
+
+  const detailsData = await getVoucherDetails(voucherMasterId, branchId);
 
   // معالجة تفاصيل القيد
   // ملاحظة: API يستخدم vouch (id من vouchers), acc, cost

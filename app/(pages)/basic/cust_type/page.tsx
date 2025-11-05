@@ -19,7 +19,7 @@ export default async function CustomerTypesPage() {
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-6">أنواع العملاء</h1>
+      <h1 className="responsive-text-xl font-bold mb-2">أنواع العملاء</h1>
 
       <CustomerTypesClient initialTypes={typesData} />
     </div>

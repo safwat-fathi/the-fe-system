@@ -2,7 +2,7 @@
  * Helper functions for path revalidation
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import { getVoucherRoute } from "@/utilities/voucher/routing";
 
@@ -18,7 +18,12 @@ export function revalidateVoucherPaths(vouchType: number, masterId?: number) {
   revalidatePath("/forms/gvoucher5");
   revalidatePath("/forms/receipt");
   revalidatePath("/forms/delivery");
+  revalidatePath("/forms/balance");
   revalidatePath("/reports/vouchers");
+
+  // Revalidate cache tags
+  revalidateTag("balance-vouchers");
+  revalidateTag("vouchers");
 
   // Revalidate specific voucher path if masterId is provided
   if (masterId) {
@@ -27,5 +32,8 @@ export function revalidateVoucherPaths(vouchType: number, masterId?: number) {
     const basePath = route.split("?")[0];
 
     revalidatePath(basePath);
+    
+    // Revalidate with layout to ensure all cached data is refreshed
+    revalidatePath(basePath, "layout");
   }
 }
