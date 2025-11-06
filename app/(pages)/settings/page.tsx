@@ -1,15 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
-import {
-  Input,
-  Button,
-  Checkbox,
-  Card,
-  CardBody,
-  Image,
-  Divider,
-} from "@heroui/react";
+import React, { useEffect, useState } from "react";
+import { Input, Button, Checkbox, Card, CardBody, Divider } from "@heroui/react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -62,13 +54,6 @@ const GENERAL_FIELDS = [
   { key: "comp_build_no", label: "رقم المبنى" },
   { key: "comp_Post_code", label: "الرمز البريدي" },
   { key: "ver", label: "رقم النسخة" },
-  // إضافة حقول الشعار والعلامة التجارية
-  { key: "company_logo", label: "شعار الشركة", type: "image" },
-  { key: "company_favicon", label: "أيقونة الموقع", type: "image" },
-  { key: "primary_color", label: "اللون الأساسي", type: "color" },
-  { key: "secondary_color", label: "اللون الثانوي", type: "color" },
-  { key: "company_slogan", label: "شعار الشركة (نص)" },
-  { key: "company_description", label: "وصف الشركة", type: "textarea" },
 ];
 
 const ACCOUNT_FIELDS = [
@@ -109,9 +94,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState("general");
   const [settings, setSettings] = useState<HomeSettings>({});
-  const [uploading, setUploading] = useState<string | null>(null);
   const [originalSettings, setOriginalSettings] = useState<HomeSettings>({});
-  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReTransferring, setIsReTransferring] = useState(false);
 
@@ -134,62 +117,6 @@ export default function SettingsPage() {
 
   const handleChange = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleFileUpload = async (key: string, file: File) => {
-    if (!file) return;
-
-    // التحقق من نوع الملف
-    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("يرجى اختيار ملف صورة صالح (JPG, PNG, GIF, WebP)");
-
-      return;
-    }
-
-    // التحقق من حجم الملف (5MB كحد أقصى)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-
-    if (file.size > maxSize) {
-      toast.error("حجم الملف يجب أن يكون أقل من 5 ميجابايت");
-
-      return;
-    }
-
-    setUploading(key);
-
-    try {
-      const formData = new FormData();
-
-      formData.append("file", file);
-      formData.append("type", key);
-
-      const response = await apiFetch("/api/upload-logo", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-
-        handleChange(key, result.url);
-        toast.success("تم رفع الصورة بنجاح");
-      } else {
-        throw new Error("فشل رفع الملف");
-      }
-    } catch (error) {
-      console.error("خطأ في رفع الملف:", error);
-      toast.error("فشل رفع الملف");
-    } finally {
-      setUploading(null);
-    }
-  };
-
-  const handleImageClick = (key: string) => {
-    if (fileInputRefs.current[key]) {
-      fileInputRefs.current[key]?.click();
-    }
   };
 
   const handleSave = async () => {
@@ -290,147 +217,6 @@ export default function SettingsPage() {
     }
   };
 
-  const renderImageField = (field: { key: string; label: string }) => (
-    <div key={field.key} className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
-        {field.label}
-      </label>
-      <div className="flex items-start space-x-4 space-x-reverse">
-        <div className="relative">
-          {settings[field.key] ? (
-            <div className="relative group">
-              <Image
-                alt={field.label}
-                className="w-32 h-32 object-contain rounded-lg border-2 border-gray-200 cursor-pointer hover:border-blue-500 transition-colors bg-gray-50"
-                src={settings[field.key]}
-                onClick={() => handleImageClick(field.key)}
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
-                <span className="text-white opacity-0 group-hover:opacity-100 text-xs font-medium">
-                  تغيير الصورة
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-500 transition-colors bg-gray-50"
-              onClick={() => handleImageClick(field.key)}
-            >
-              <div className="text-center">
-                <svg
-                  className="mx-auto h-10 w-10 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 48 48"
-                >
-                  <path
-                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                  />
-                </svg>
-                <p className="mt-2 text-sm text-gray-500">إضافة صورة</p>
-              </div>
-            </div>
-          )}
-          {uploading === field.key && (
-            <div className="absolute inset-0 bg-white bg-opacity-75 rounded-lg flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
-          )}
-        </div>
-        <div className="flex-1 space-y-2">
-          <input
-            ref={(el) => {
-              fileInputRefs.current[field.key] = el;
-            }}
-            accept="image/*"
-            className="hidden"
-            type="file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-
-              if (file) {
-                handleFileUpload(field.key, file);
-              }
-            }}
-          />
-          <div className="flex gap-2">
-            <Button
-              disabled={uploading === field.key}
-              size="sm"
-              variant="bordered"
-              onPress={() => handleImageClick(field.key)}
-            >
-              {uploading === field.key ? "جاري الرفع..." : "اختيار ملف"}
-            </Button>
-            {settings[field.key] && (
-              <Button
-                color="danger"
-                size="sm"
-                variant="light"
-                onPress={() => handleChange(field.key, "")}
-              >
-                حذف
-              </Button>
-            )}
-          </div>
-          <p className="text-xs text-gray-500">
-            الحد الأقصى: 5MB. الأنواع المدعومة: JPG, PNG, GIF, WebP
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderColorField = (field: { key: string; label: string }) => (
-    <div key={field.key} className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
-        {field.label}
-      </label>
-      <div className="flex items-center space-x-3 space-x-reverse">
-        <div className="relative">
-          <input
-            className="w-14 h-12 border border-gray-300 rounded-lg cursor-pointer"
-            type="color"
-            value={settings[field.key] || "#000000"}
-            onChange={(e) => handleChange(field.key, e.target.value)}
-          />
-          <div
-            className="absolute inset-0 rounded-lg border-2 border-gray-200 pointer-events-none"
-            style={{ backgroundColor: settings[field.key] || "#000000" }}
-          />
-        </div>
-        <Input
-          className="flex-1"
-          placeholder="#000000"
-          value={settings[field.key] || ""}
-          onChange={(e) => handleChange(field.key, e.target.value)}
-        />
-        <div
-          className="w-8 h-8 rounded border border-gray-300"
-          style={{ backgroundColor: settings[field.key] || "#000000" }}
-        />
-      </div>
-    </div>
-  );
-
-  const renderTextareaField = (field: { key: string; label: string }) => (
-    <div key={field.key} className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">
-        {field.label}
-      </label>
-      <textarea
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-        placeholder={`أدخل ${field.label.toLowerCase()}`}
-        rows={4}
-        value={settings[field.key] || ""}
-        onChange={(e) => handleChange(field.key, e.target.value)}
-      />
-    </div>
-  );
-
   const renderFields = (
     fields: { key: string; label: string; type?: string }[],
   ) => (
@@ -446,12 +232,6 @@ export default function SettingsPage() {
               {f.label}
             </Checkbox>
           );
-        } else if (f.type === "image") {
-          return renderImageField(f);
-        } else if (f.type === "color") {
-          return renderColorField(f);
-        } else if (f.type === "textarea") {
-          return renderTextareaField(f);
         } else {
           return (
             <Input
@@ -466,96 +246,6 @@ export default function SettingsPage() {
       })}
     </div>
   );
-
-  const renderBrandingPreview = () => {
-    if (activeSection !== "general") return null;
-
-    return (
-      <Card className="mt-6">
-        <CardBody>
-          <h3 className="text-lg font-semibold mb-4">
-            معاينة العلامة التجارية
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* معاينة الشعار */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-700">معاينة الشعار</h4>
-              <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                {settings.company_logo ? (
-                  <div className="flex items-center space-x-3 space-x-reverse">
-                    <Image
-                      alt="شعار الشركة"
-                      className="w-16 h-16 object-contain"
-                      src={settings.company_logo}
-                    />
-                    <div>
-                      <h5
-                        className="font-semibold"
-                        style={{ color: settings.primary_color || "#000" }}
-                      >
-                        {settings.comp_a_name || "اسم الشركة"}
-                      </h5>
-                      <p className="text-sm text-gray-600">
-                        {settings.company_slogan || "شعار الشركة"}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    <svg
-                      className="mx-auto h-12 w-12 mb-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                      />
-                    </svg>
-                    <p>لم يتم اختيار شعار بعد</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* معاينة الألوان */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-700">معاينة الألوان</h4>
-              <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3 space-x-reverse">
-                    <div
-                      className="w-8 h-8 rounded border border-gray-300"
-                      style={{
-                        backgroundColor: settings.primary_color || "#000000",
-                      }}
-                    />
-                    <span className="text-sm">
-                      اللون الأساسي: {settings.primary_color || "#000000"}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-3 space-x-reverse">
-                    <div
-                      className="w-8 h-8 rounded border border-gray-300"
-                      style={{
-                        backgroundColor: settings.secondary_color || "#666666",
-                      }}
-                    />
-                    <span className="text-sm">
-                      اللون الثانوي: {settings.secondary_color || "#666666"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
-    );
-  };
 
   const getCurrentFields = () => {
     switch (activeSection) {
@@ -581,22 +271,24 @@ export default function SettingsPage() {
       </div>
 
       {/* أزرار الأقسام */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6">
         {SECTIONS.map((section) => (
           <Card
             key={section.id}
             isPressable
-            className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+            className={`cursor-pointer transition-all duration-200 hover:shadow-lg min-h-[140px] ${
               activeSection === section.id
                 ? "ring-2 ring-blue-500 bg-blue-50"
-                : "hover:bg-gray-50"
+                : "bg-white hover:bg-gray-50"
             }`}
             onPress={() => setActiveSection(section.id)}
           >
-            <CardBody className="text-center p-6">
-              <div className="text-4xl mb-3">{section.icon}</div>
-              <h3 className="text-lg font-semibold mb-2">{section.label}</h3>
-              <p className="text-sm text-gray-600">{section.description}</p>
+            <CardBody className="text-center px-4 py-5 flex flex-col items-center justify-center gap-2">
+              <div className="text-3xl">{section.icon}</div>
+              <h3 className="text-base font-semibold">{section.label}</h3>
+              <p className="text-xs text-gray-600 leading-5">
+                {section.description}
+              </p>
             </CardBody>
           </Card>
         ))}
@@ -707,9 +399,6 @@ export default function SettingsPage() {
           )}
         </CardBody>
       </Card>
-
-      {/* معاينة العلامة التجارية */}
-      {renderBrandingPreview()}
 
       <Divider className="my-6" />
 

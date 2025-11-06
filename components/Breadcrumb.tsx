@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
-interface BreadcrumbItem {
+export interface BreadcrumbItem {
   name: string;
   href?: string;
+  onClick?: (event: MouseEvent<HTMLAnchorElement | HTMLButtonElement | HTMLSpanElement>) => void;
 }
 
 interface BreadcrumbProps {
@@ -215,9 +216,18 @@ const Breadcrumb = ({
                   <Link
                     className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
                     href={item.href}
+                    onClick={item.onClick}
                   >
                     {renderName}
                   </Link>
+                ) : item.onClick ? (
+                  <button
+                    type="button"
+                    className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
+                    onClick={item.onClick}
+                  >
+                    {renderName}
+                  </button>
                 ) : (
                   <span className="font-medium text-gray-500 leading-none">{renderName}</span>
                 )}

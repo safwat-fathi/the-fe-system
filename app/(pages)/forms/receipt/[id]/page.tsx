@@ -160,7 +160,7 @@ export default async function ReceiptVoucherEditPage({
     }
   }
 
-  const formData = await voucherFormDataService.getVoucherFormData();
+  const formData = await voucherFormDataService.getVoucherFormData({ goldBoxes: true });
 
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
   const voucherIdForDetails = targetVoucher.id || voucherId;
@@ -356,6 +356,7 @@ export default async function ReceiptVoucherEditPage({
       <ReceiptVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes || []}
+        goldBoxes={formData.goldBoxes || formData.boxes || []}
         costCenters={formData.costCenters}
         customers={formData.customers || []}
         formMode={formMode}

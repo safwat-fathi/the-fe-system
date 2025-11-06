@@ -36,6 +36,7 @@ interface CustomerGoldVoucherClientPageProps {
   voucherRecordId?: number | string | null;
   accounts: any[];
   boxes: any[];
+  goldBoxes?: any[];
   costCenters: any[];
   customers: any[];
   items: any[];
@@ -53,6 +54,7 @@ export default function CustomerGoldVoucherClientPage({
   voucherRecordId,
   accounts: initialAccounts,
   boxes: initialBoxes,
+  goldBoxes: initialGoldBoxes = [],
   costCenters: initialCostCenters,
   customers: initialCustomers,
   items: initialItems,
@@ -101,6 +103,11 @@ export default function CustomerGoldVoucherClientPage({
   );
   const [accounts, setAccounts] = useState<any[]>(initialAccounts);
   const [boxes, setBoxes] = useState<any[]>(initialBoxes);
+  const [goldBoxOptions, setGoldBoxOptions] = useState<any[]>(
+    initialGoldBoxes && initialGoldBoxes.length > 0
+      ? initialGoldBoxes
+      : initialBoxes,
+  );
   const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
   const [customers, setCustomers] = useState<any[]>(initialCustomers);
   const [items, setItems] = useState<any[]>(initialItems);
@@ -190,6 +197,14 @@ export default function CustomerGoldVoucherClientPage({
       setDefaultCustomerOptions(options);
     }
   }, []);
+
+  useEffect(() => {
+    if (initialGoldBoxes && initialGoldBoxes.length > 0) {
+      setGoldBoxOptions(initialGoldBoxes);
+    } else if (!initialGoldBoxes || initialGoldBoxes.length === 0) {
+      setGoldBoxOptions(initialBoxes);
+    }
+  }, [initialGoldBoxes, initialBoxes]);
 
   // تحديث voucher عند تغيير voucherData (خاصة عند تحميل سند موجود)
   useEffect(() => {
@@ -869,7 +884,7 @@ export default function CustomerGoldVoucherClientPage({
             return boxObject.cust_name;
           }
           // البحث في قائمة الصناديق
-          const box = boxes.find((b) => b.id === boxId);
+          const box = goldBoxOptions.find((b) => b.id === boxId);
 
           return box?.cust_name || box?.name || `صندوق ${boxId}`;
         };
@@ -2080,7 +2095,7 @@ export default function CustomerGoldVoucherClientPage({
                         }
                       >
                         <option value="">اختر الصندوق</option>
-                        {boxes.map((b) => (
+                        {goldBoxOptions.map((b) => (
                           <option key={b.id} value={b.id}>
                             {b.cust_name || b.name || `صندوق ${b.id}`}
                           </option>

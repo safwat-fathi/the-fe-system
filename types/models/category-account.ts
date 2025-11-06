@@ -1,0 +1,56 @@
+export type CategoryAccount = {
+  id: number;
+  cat_status: number | boolean | null;
+  cr_date?: string | null;
+  cr_user?: number | null;
+  upd_date?: string | null;
+  upd_user?: number | null;
+  com: number | null;
+  cat: number | null;
+  buy_acc: number | string | null;
+  sell_acc: number | string | null;
+  back_buy: number | string | null;
+  back_sell: number | string | null;
+  buy_acc2: number | string | null;
+  sell_acc2: number | string | null;
+  back_buy2: number | string | null;
+  back_sell2: number | string | null;
+  dist_acc: number | string | null;
+  dist_acc2: number | string | null;
+  back_dist: number | string | null;
+  back_dist2: number | string | null;
+  inv_trans1: number | string | null;
+  inv_trans2: number | string | null;
+  inv_trans3: number | string | null;
+  inv_trans4: number | string | null;
+  inv_acc: number | string | null;
+  inv_acc2: number | string | null;
+  cost_acc: number | string | null;
+  cost_acc2: number | string | null;
+};
+
+export type UpsertCategoryAccountPayload = {
+  com: number | string;
+  cat: number | string;
+  buy_acc?: number | string | null;
+  sell_acc?: number | string | null;
+  back_buy?: number | string | null;
+  back_sell?: number | string | null;
+  buy_acc2?: number | string | null;
+  sell_acc2?: number | string | null;
+  back_buy2?: number | string | null;
+  back_sell2?: number | string | null;
+  dist_acc?: number | string | null;
+  dist_acc2?: number | string | null;
+  back_dist?: number | string | null;
+  back_dist2?: number | string | null;
+  inv_trans1?: number | string | null;
+  inv_trans2?: number | string | null;
+  inv_trans3?: number | string | null;
+  inv_trans4?: number | string | null;
+  inv_acc?: number | string | null;
+  inv_acc2?: number | string | null;
+  cost_acc?: number | string | null;
+  cost_acc2?: number | string | null;
+};
+

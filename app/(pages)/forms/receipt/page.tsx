@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const getVoucherFormData = voucherFormDataService.getVoucherFormData;
 
 export default async function ReceiptVoucherPage() {
-  const formData = await getVoucherFormData();
+  const formData = await getVoucherFormData({ goldBoxes: true });
 
   return (
     <div className="container mx-auto p-4">
@@ -26,6 +26,7 @@ export default async function ReceiptVoucherPage() {
       <ReceiptVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes || []}
+        goldBoxes={formData.goldBoxes || formData.boxes || []}
         costCenters={formData.costCenters}
         customers={formData.customers || []}
         formMode="new"

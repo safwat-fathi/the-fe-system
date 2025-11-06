@@ -127,7 +127,7 @@ export default async function DeliveryVoucherEditPage({
 
   const [targetVoucher, formData] = await Promise.all([
     getVoucherById(voucherId),
-    voucherFormDataService.getVoucherFormData(),
+    voucherFormDataService.getVoucherFormData({ goldBoxes: true }),
   ]);
 
   if (!targetVoucher) {
@@ -326,6 +326,7 @@ export default async function DeliveryVoucherEditPage({
       <DeliveryVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes || []}
+        goldBoxes={formData.goldBoxes || formData.boxes || []}
         costCenters={formData.costCenters}
         customers={formData.customers || []}
         formMode={formMode}

@@ -36,6 +36,7 @@ interface ReceiptVoucherClientPageProps {
   voucherRecordId?: number | string | null;
   accounts: any[];
   boxes: any[];
+  goldBoxes?: any[];
   costCenters: any[];
   customers: any[];
   items: any[];
@@ -53,6 +54,7 @@ export default function ReceiptVoucherClientPage({
   voucherRecordId,
   accounts: initialAccounts,
   boxes: initialBoxes,
+  goldBoxes: initialGoldBoxes = [],
   costCenters: initialCostCenters,
   customers: initialCustomers,
   items: initialItems,
@@ -74,6 +76,7 @@ export default function ReceiptVoucherClientPage({
     goldDetails,
     accounts,
     boxes,
+    goldBoxes,
     costCenters,
     customers,
     setCustomers,
@@ -114,6 +117,7 @@ export default function ReceiptVoucherClientPage({
     voucherRecordId,
     accounts: initialAccounts,
     boxes: initialBoxes,
+    goldBoxes: initialGoldBoxes,
     costCenters: initialCostCenters,
     customers: initialCustomers,
     items: initialItems,
@@ -843,7 +847,7 @@ export default function ReceiptVoucherClientPage({
                         }
                       >
                         <option value="">اختر الصندوق</option>
-                        {boxes.map((b) => (
+                        {goldBoxes.map((b) => (
                           <option key={b.id} value={b.id}>
                             {b.cust_name || b.name || `صندوق ${b.id}`}
                           </option>

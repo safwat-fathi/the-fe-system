@@ -59,6 +59,10 @@ export async function createVoucherAction(
       vouch_amt: 0,
       vouch_status: voucherData.vouch_status || 1,
       opps_vouch: voucherData.opps_vouch || 0,
+      handling:
+        voucherData.handling !== undefined && voucherData.handling !== null
+          ? voucherData.handling
+          : "",
       commit: true,
     };
 
