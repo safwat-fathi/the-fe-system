@@ -19,6 +19,7 @@ interface UseReceiptDeliveryVoucherFormProps {
   voucherRecordId?: number | string | null;
   accounts: any[];
   boxes: any[];
+  goldBoxes?: any[];
   costCenters: any[];
   customers: any[];
   items: any[];
@@ -36,6 +37,7 @@ export const useReceiptDeliveryVoucherForm = ({
   voucherRecordId,
   accounts: initialAccounts,
   boxes: initialBoxes,
+  goldBoxes: initialGoldBoxes = [],
   costCenters: initialCostCenters,
   customers: initialCustomers,
   items: initialItems,
@@ -80,6 +82,11 @@ export const useReceiptDeliveryVoucherForm = ({
   );
   const [accounts, setAccounts] = useState<any[]>(initialAccounts);
   const [boxes, setBoxes] = useState<any[]>(initialBoxes);
+  const [goldBoxes, setGoldBoxes] = useState<any[]>(
+    initialGoldBoxes && initialGoldBoxes.length > 0
+      ? initialGoldBoxes
+      : initialBoxes,
+  );
   const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
   const [customers, setCustomers] = useState<any[]>(initialCustomers);
   const [items, setItems] = useState<any[]>(initialItems);
@@ -196,6 +203,14 @@ export const useReceiptDeliveryVoucherForm = ({
       setDefaultCustomerOptions(options);
     }
   }, [initialCustomers]);
+
+  useEffect(() => {
+    if (initialGoldBoxes && initialGoldBoxes.length > 0) {
+      setGoldBoxes(initialGoldBoxes);
+    } else if (!initialGoldBoxes || initialGoldBoxes.length === 0) {
+      setGoldBoxes(initialBoxes);
+    }
+  }, [initialGoldBoxes, initialBoxes]);
 
   useEffect(() => {
     if (formMode === "preview") {
@@ -780,6 +795,8 @@ export const useReceiptDeliveryVoucherForm = ({
     setGoldDetails,
     accounts,
     boxes,
+    goldBoxes,
+    setGoldBoxes,
     costCenters,
     customers,
     setCustomers,

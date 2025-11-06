@@ -108,6 +108,10 @@ export async function updateVoucherAction(
       ref_no: voucherData.ref_no || "",
       vouch_amt: 0,
       opps_vouch: voucherData.opps_vouch || 0,
+      handling:
+        voucherData.handling !== undefined && voucherData.handling !== null
+          ? voucherData.handling
+          : "",
       commit: true,
       upd_date: currentDate,
       upd_user: currentUsername || null,

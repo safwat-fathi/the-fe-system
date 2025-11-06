@@ -1,116 +1,149 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button, CardBody, Input, Select, SelectItem } from "@heroui/react";
+import Breadcrumb from "@/components/Breadcrumb";
 import {
-  Input,
-  Button,
-  Select,
-  SelectItem,
-  CardBody,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/react";
-import { PlusIcon } from "@heroicons/react/24/outline";
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  FunnelIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import Card from "../../../../../components/Card";
-import { FormModal } from "../../../../../components/Modal";
 
 import accountService from "@/services/api/account.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
+import {
+  findAccountById,
+  flattenAccountTree,
+  generateAccountId,
+  normalizeAccountsTree,
+  removeAccountFromTree,
+} from "../utils/account-tree";
+import { Account } from "@/types/models/account";
+import { Currency } from "@/types/models/currency";
+import type { BreadcrumbItem } from "@/components/Breadcrumb";
 
 // Simple icon components
-const FolderIcon = ({ className }: { className?: string }) => (
+const FolderEmoji = ({ className }: { className?: string }) => (
   <span className={className}>📁</span>
 );
-const DocumentIcon = ({ className }: { className?: string }) => (
+const DocumentEmoji = ({ className }: { className?: string }) => (
   <span className={className}>📄</span>
 );
-const PencilIcon = ({ className }: { className?: string }) => (
-  <span className={className}>✏️</span>
-);
-const EyeIcon = ({ className }: { className?: string }) => (
-  <span className={className}>👁️</span>
-);
-const TrashIcon = ({ className }: { className?: string }) => (
-  <span className={className}>🗑️</span>
-);
-
-interface Account {
-  id: number;
-  acc_id: string;
-  acc_name: string;
-  acc_name_e?: string;
-  acc_type: number; // 1 = رئيسي, 2 = فرعي
-  parent: number | null;
-  acc_level: number;
-  acc_kind: number;
-  acc_rep: number; // 1 = الأرباح والخسائر, 2 = الميزانية العمومية
-  acc_digit: number;
-  acc_priv: number;
-  acc_cat: number;
-  acc_notes?: string;
-  cur?: number;
-  children?: Account[];
-}
-
-interface Currency {
-  id: number;
-  cur_name: string;
-  cur_code: string;
-}
 
 interface AccountsClientProps {
   initialAccounts: Account[];
   initialCurrencies: Currency[];
 }
 
+const ACCOUNT_TYPE_FILTERS: { key: string; label: string }[] = [
+  { key: "all", label: "جميع الحسابات" },
+  { key: "main", label: "الحسابات الرئيسية" },
+  { key: "sub", label: "الحسابات الفرعية" },
+];
+
+const ACCOUNT_REPORT_FILTERS: { key: string; label: string }[] = [
+  { key: "all", label: "كل أنواع التقارير" },
+  { key: "pl", label: "الأرباح والخسائر" },
+  { key: "balance", label: "الميزانية العمومية" },
+];
+
+const CONTENT_HEIGHT_CLASS = "min-h-[500px] h-[calc(100vh-280px)]";
+
 export default function AccountsClient({
   initialAccounts,
   initialCurrencies,
 }: AccountsClientProps) {
-  const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
+  const router = useRouter();
+  const [accounts, setAccounts] = useState<Account[]>(
+    normalizeAccountsTree(initialAccounts),
+  );
   const [currencies, setCurrencies] = useState<Currency[]>(initialCurrencies);
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
+  const [filterReport, setFilterReport] = useState<string>("all");
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [displayAccounts, setDisplayAccounts] = useState<Account[]>(
+    normalizeAccountsTree(initialAccounts),
+  );
+  const [searchResultsCount, setSearchResultsCount] = useState(0);
 
-  // Form states
-  const [formData, setFormData] = useState({
-    acc_id: "",
-    acc_name: "",
-    acc_name_e: "",
-    acc_type: 1,
-    parent: null as number | null,
-    acc_kind: 1,
-    acc_rep: 1,
-    acc_digit: 4,
-    acc_priv: 1,
-    acc_cat: 1,
-    acc_notes: "",
-    cur: 1,
-    acc_level: 1,
-  });
+  const accountBreadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
+    if (!selectedAccount) {
+      return [];
+    }
+
+    const accountPath: Account[] = [];
+    let current: Account | undefined = selectedAccount;
+
+    const accountLookup = new Map(
+      flattenAccountTree(accounts).map((acc) => [acc.id, acc] as const),
+    );
+
+    while (current) {
+      accountPath.unshift(current);
+
+      if (!current.parent) {
+        break;
+      }
+
+      const parentAccount = accountLookup.get(current.parent);
+
+      if (!parentAccount || parentAccount.id === current.id) {
+        break;
+      }
+
+      current = parentAccount;
+    }
+
+    return accountPath.map((acc, index) => {
+      const isLast = index === accountPath.length - 1;
+
+      const item: BreadcrumbItem = {
+        name: acc.acc_name,
+      };
+
+      if (!isLast) {
+        item.onClick = () => setSelectedAccount(acc);
+      }
+
+      return item;
+    });
+  }, [accounts, selectedAccount]);
 
   // Build account tree on mount
   useEffect(() => {
     if (initialAccounts.length > 0) {
-      const accountsWithChildren = buildAccountTree(initialAccounts);
-
-      setAccounts(accountsWithChildren);
+      const normalized = normalizeAccountsTree(initialAccounts);
+      setAccounts(normalized);
+      setDisplayAccounts(normalized);
     }
   }, [initialAccounts]);
 
   const fetchAccounts = async () => {
     try {
-      const allAccountsData = await accountService.getAllAccounts();
+      const rootRequestPayload = {
+        id: 0,
+        acc_id: "0",
+        acc_code: "0",
+        acc_name: "0",
+        acc_name_e: null as string | null,
+        parent: null,
+        acc_level: 1,
+      };
+
+      const allAccountsData = await accountService.getAccountsTree(
+        rootRequestPayload,
+        undefined,
+        true,
+      );
 
       if (!allAccountsData || !Array.isArray(allAccountsData)) {
         toast.error("فشل في تحميل الحسابات");
@@ -118,87 +151,16 @@ export default function AccountsClient({
         return;
       }
 
-      const accountsWithChildren = buildAccountTree(allAccountsData);
+      const accountsWithChildren = normalizeAccountsTree(allAccountsData);
 
       setAccounts(accountsWithChildren);
+      setDisplayAccounts(accountsWithChildren);
 
       // الحسابات الرئيسية مقفلة افتراضياً
       setExpandedNodes(new Set());
     } catch (error) {
       toast.error("فشل في تحميل الحسابات");
     }
-  };
-
-  // Helper: Flatten account tree to array
-  const flattenAccountTree = (tree: Account[]): Account[] => {
-    const result: Account[] = [];
-    const traverse = (nodes: Account[]) => {
-      nodes.forEach((node) => {
-        result.push(node);
-        if (node.children && node.children.length > 0) {
-          traverse(node.children);
-        }
-      });
-    };
-
-    traverse(tree);
-
-    return result;
-  };
-
-  // Helper: Remove account from tree
-  const removeAccountFromTree = (
-    tree: Account[],
-    accountId: number,
-  ): Account[] => {
-    return tree
-      .map((node) => ({
-        ...node,
-        children: node.children
-          ? removeAccountFromTree(
-              node.children.filter((child) => child.id !== accountId),
-              accountId,
-            )
-          : undefined,
-      }))
-      .filter((node) => node.id !== accountId);
-  };
-
-  const buildAccountTree = (flatAccounts: Account[]): Account[] => {
-    const accountMap = new Map<number, Account>();
-    const rootAccounts: Account[] = [];
-
-    // تصفية المستوى 0 والحساب "0" من البداية
-    const filteredAccounts = flatAccounts.filter(
-      (account) => account.acc_level !== 0 && account.acc_id !== "0",
-    );
-
-    // Create a map of all accounts
-    filteredAccounts.forEach((account) => {
-      accountMap.set(account.id, { ...account, children: [] });
-    });
-
-    // Build the tree structure
-    filteredAccounts.forEach((account) => {
-      const accountWithChildren = accountMap.get(account.id)!;
-
-      // إذا كان الحساب له أب هو الحساب "0" أو null، اجعله حساب جذر
-      if (account.parent === null || account.parent === 0) {
-        rootAccounts.push(accountWithChildren);
-      } else {
-        const parent = accountMap.get(account.parent);
-
-        if (parent) {
-          parent.children = parent.children || [];
-          parent.children.push(accountWithChildren);
-        } else {
-          // إذا لم يتم العثور على الأب، اجعله حساب جذر
-          rootAccounts.push(accountWithChildren);
-        }
-      }
-    });
-
-    return rootAccounts;
   };
 
   const toggleNode = (accountId: number) => {
@@ -212,120 +174,67 @@ export default function AccountsClient({
     setExpandedNodes(newExpanded);
   };
 
-  const generateAccountId = (parentId: number | null): string => {
-    const parentAccount = accounts.find((account) => account.id === parentId);
-    const parentAccId = parentAccount ? parentAccount.acc_id : "";
+  const handleAddAccount = () => {
+    const parentId = selectedAccount?.id ?? null;
 
-    // تحقق من المستوى الأب
+    if (parentId) {
+      const parentAccount = findAccountById(accounts, parentId);
+
     if (parentAccount && parentAccount.acc_level >= 5) {
       toast.error("لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.");
 
-      return "";
+        return;
     }
 
-    // إيجاد جميع الحسابات التي لها نفس الأب
-    const siblings = accounts.filter((account) => account.parent === parentId);
-    const siblingCount = siblings.length;
+      const flatAccounts = flattenAccountTree(accounts);
+    const siblings = flatAccounts.filter((account) => account.parent === parentId);
 
-    // تحقق من العدد المسموح به بناءً على المستوى
-    if (parentAccount && parentAccount.acc_level < 5 && siblingCount >= 9) {
+      if (parentAccount && parentAccount.acc_level < 5 && siblings.length >= 9) {
       toast.error("لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.");
-
-      return "";
-    }
-
-    let newSuffix: string;
-
-    if (parentAccount && parentAccount.acc_level < 4) {
-      // للمستويات الأول إلى الثالث، يتم استخدام رقم تسلسلي (1-9)
-      newSuffix = (siblingCount + 1).toString();
-    } else if (parentAccount && parentAccount.acc_level === 4) {
-      // للمستوى الخامس، يتم استخدام أربع خانات تسلسلية
-      const siblingNumbers = siblings.map(
-        (sibling) =>
-          parseInt(sibling.acc_id.substring(parentAccId.length)) || 0,
-      );
-
-      newSuffix = (Math.max(...siblingNumbers, 0) + 1)
-        .toString()
-        .padStart(4, "0");
-    } else {
-      // للمستويات الأخرى
-      newSuffix = (siblingCount + 1).toString();
-    }
-
-    return `${parentAccId}${newSuffix}`;
-  };
-
-  const handleAddAccount = () => {
-    // تعيين الحساب الأب إذا كان محددًا
-    if (selectedAccount) {
-      const parentAccount = accounts.find(
-        (account) => account.id === selectedAccount.id,
-      );
-
-      if (parentAccount && parentAccount.acc_level >= 5) {
-        toast.error("لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.");
 
         return;
       }
-
-      // ضبط الحساب الأب والمستوى
-      setFormData((prev) => ({
-        ...prev,
-        parent: selectedAccount.id,
-        acc_type: 2, // 2 = فرعي
-        acc_level: parentAccount ? parentAccount.acc_level + 1 : 1,
-      }));
-    } else {
-      // إذا لم يتم تحديد حساب أب، يكون الحساب "رئيسي"
-      setFormData((prev) => ({
-        ...prev,
-        parent: null,
-        acc_type: 1, // 1 = رئيسي
-        acc_level: 1,
-      }));
     }
 
-    const newAccountId = generateAccountId(selectedAccount?.id || null);
+    const suggestedAccountId = generateAccountId(accounts, parentId);
 
-    if (!newAccountId) return;
+    if (parentId && !suggestedAccountId) {
+      toast.error("تعذر توليد رقم الحساب الجديد لهذا الحساب الأب.");
 
-    setFormData((prev) => ({ ...prev, acc_id: newAccountId }));
-    setIsAddModalOpen(true);
+      return;
+    }
+
+    const searchParams = new URLSearchParams();
+
+    if (parentId) {
+      searchParams.set("parentId", String(parentId));
+    }
+
+    if (suggestedAccountId) {
+      searchParams.set("suggestedAccId", suggestedAccountId);
+    }
+
+    router.push(
+      searchParams.toString()
+        ? `/basic/accounts/new?${searchParams.toString()}`
+        : "/basic/accounts/new",
+    );
   };
 
   const handleEditAccount = (account: Account) => {
-    setFormData({
-      acc_id: account.acc_id,
-      acc_name: account.acc_name,
-      acc_name_e: account.acc_name_e || "",
-      acc_type: account.acc_type,
-      parent: account.parent,
-      acc_kind: account.acc_kind,
-      acc_rep: account.acc_rep,
-      acc_digit: account.acc_digit,
-      acc_priv: account.acc_priv,
-      acc_cat: account.acc_cat,
-      acc_notes: account.acc_notes || "",
-      cur: account.cur || 1,
-      acc_level: account.acc_level,
-    });
     setSelectedAccount(account);
-    setIsEditModalOpen(true);
+    router.push(`/basic/accounts/${account.id}?mode=edit`);
   };
 
   const handleViewAccount = (account: Account) => {
     setSelectedAccount(account);
-    setIsViewModalOpen(true);
+    router.push(`/basic/accounts/${account.id}`);
   };
 
   const handleDeleteAccount = async (accountId: number) => {
     if (!confirm("هل أنت متأكد أنك تريد حذف هذا الحساب؟")) return;
 
     // Optimistic delete: remove from UI immediately
-    const flatAccounts = flattenAccountTree(accounts);
-    const accountToDelete = flatAccounts.find((acc) => acc.id === accountId);
     const previousAccounts = [...accounts];
 
     // Remove account from tree optimistically
@@ -358,102 +267,13 @@ export default function AccountsClient({
     }
   };
 
-  const handleSubmit = async (isEdit: boolean = false) => {
-    const previousAccounts = [...accounts];
-
-    try {
-      const newAccount: any = {
-        acc_id: formData.acc_id,
-        acc_name: formData.acc_name,
-        acc_name_e: formData.acc_name_e || "Unnamed Account",
-        acc_type: formData.acc_type,
-        parent: formData.parent,
-        acc_kind: formData.acc_kind,
-        acc_rep: formData.acc_rep,
-        acc_digit: formData.acc_digit,
-        acc_priv: formData.acc_priv,
-        acc_cat: formData.acc_cat,
-        acc_notes: formData.acc_notes || "",
-        acc_vat: "0%",
-        cur: formData.cur,
-        acc_level: formData.parent
-          ? (flattenAccountTree(accounts).find((a) => a.id === formData.parent)
-              ?.acc_level || 0) + 1
-          : 1,
-      };
-
-      if (isEdit && selectedAccount) {
-        newAccount.id = selectedAccount.id;
-      }
-
-      // Optimistic update: add/update in UI immediately
-      if (!isEdit) {
-        const optimisticId = Date.now(); // temporary ID
-        const optimisticAccount = {
-          ...newAccount,
-          id: optimisticId,
-          children: [],
-        };
-        const flatAccounts = flattenAccountTree(accounts);
-
-        flatAccounts.push(optimisticAccount);
-        const updatedTree = buildAccountTree(flatAccounts);
-
-        setAccounts(updatedTree);
-      }
-
-      let result: Account | null = null;
-
-      if (isEdit && selectedAccount) {
-        result = await accountService.updateAccount(
-          selectedAccount.id,
-          newAccount,
-        );
-      } else {
-        result = await accountService.createAccount(newAccount);
-      }
-
-      if (!result) {
-        // Rollback on failure
-        setAccounts(previousAccounts);
-        toast.error("حدث خطأ أثناء حفظ الحساب");
-
-        return;
-      }
-
-      toast.success(
-        isEdit ? "تم تحديث الحساب بنجاح" : "تمت إضافة الحساب بنجاح",
-      );
-
-      // Revalidate cache
-      await revalidateTableData("accounts_list");
-
-      setIsAddModalOpen(false);
-      setIsEditModalOpen(false);
-      setFormData({
-        acc_id: "",
-        acc_name: "",
-        acc_name_e: "",
-        acc_type: 1,
-        parent: null,
-        acc_kind: 1,
-        acc_rep: 1,
-        acc_digit: 4,
-        acc_priv: 1,
-        acc_cat: 1,
-        acc_notes: "",
-        cur: 1,
-        acc_level: 1,
-      });
-
-      // Fetch fresh data from server
-      fetchAccounts();
-    } catch (error) {
-      // Rollback on error
-      setAccounts(previousAccounts);
-      toast.error("حدث خطأ أثناء الاتصال بالخادم.");
-    }
+  const clearFilters = () => {
+    setFilterType("all");
+    setFilterReport("all");
+    setSearchTerm("");
+    setExpandedNodes(new Set());
   };
+
 
   const renderAccountTree = (accounts: Account[], level: number = 0) => {
     return accounts.map((account) => {
@@ -471,7 +291,7 @@ export default function AccountsClient({
         <div key={account.id} className="w-full">
           <div
             className={`
-              flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200
+              flex items-center gap-2 p-1.5 text-xs rounded-lg cursor-pointer transition-all duration-200
               ${isSelected ? "bg-blue-50 border border-blue-200" : ""}
               ${matchesSearch ? "bg-yellow-100 border border-yellow-300" : ""}
               ${!isSelected && !matchesSearch ? "hover:bg-gray-50" : ""}
@@ -486,13 +306,13 @@ export default function AccountsClient({
             }}
           >
             {hasChildren ? (
-              <FolderIcon className="w-5 h-5 text-blue-500" />
+              <FolderEmoji className="w-4 h-4 text-blue-500" />
             ) : (
-              <DocumentIcon className="w-5 h-5 text-gray-500" />
+              <DocumentEmoji className="w-4 h-4 text-gray-500" />
             )}
 
             <div className="flex-1 min-w-0 text-right">
-              <div className="font-medium text-gray-900 truncate text-sm">
+              <div className="font-medium text-gray-900 truncate">
                 {account.acc_name}
               </div>
             </div>
@@ -510,191 +330,212 @@ export default function AccountsClient({
 
   // دالة لجلب الحسابات الفرعية المباشرة فقط (المستوى التالي)
   const getDirectSubAccounts = (account: Account): Account[] => {
-    return account.children || [];
+    if (account.children && account.children.length > 0) {
+      return account.children;
+    }
+
+    return [account];
   };
 
-  // دالة للبحث في جميع مستويات الشجرة
-  const searchInTree = (accounts: Account[], searchTerm: string): Account[] => {
-    const results: Account[] = [];
-    const nodesToExpand: number[] = [];
-
-    const searchRecursive = (accountList: Account[]) => {
-      accountList.forEach((account) => {
-        // إخفاء الحساب "0" نهائياً
-        if (account.acc_id === "0") return;
-
-        const matchesSearch =
-          account.acc_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          account.acc_id.toLowerCase().includes(searchTerm.toLowerCase());
-
-        let shouldInclude = false;
-
-        if (filterType === "all") shouldInclude = matchesSearch;
-        else if (filterType === "main")
-          shouldInclude = matchesSearch && account.acc_type === 1;
-        else if (filterType === "sub")
-          shouldInclude = matchesSearch && account.acc_type === 2;
-
-        if (shouldInclude) {
-          results.push(account);
-          // إضافة جميع الأباء للفتح
-          let currentAccount = account;
-
-          while (currentAccount.parent && currentAccount.parent !== 0) {
-            const parent = accounts.find(
-              (acc) => acc.id === currentAccount.parent,
-            );
-
-            if (parent) {
-              nodesToExpand.push(parent.id);
-              currentAccount = parent;
-            } else {
-              break;
-            }
-          }
-        }
-
-        // البحث في الحسابات الفرعية
-        if (account.children && account.children.length > 0) {
-          searchRecursive(account.children);
-        }
-      });
+  useEffect(() => {
+    const applyTypeFilter = (account: Account) => {
+      if (filterType === "main") return account.acc_type === 1;
+      if (filterType === "sub") return account.acc_type === 2;
+      return true;
     };
 
-    searchRecursive(accounts);
+    const applyReportFilter = (account: Account) => {
+      if (filterReport === "pl") return account.acc_rep === 1;
+      if (filterReport === "balance") return account.acc_rep === 2;
+      return true;
+    };
 
-    // فتح العقد التي تحتوي على نتائج البحث
-    if (searchTerm && nodesToExpand.length > 0) {
-      const newExpanded = new Set(expandedNodes);
+    const allAccounts = flattenAccountTree(accounts);
+    const parentMap = new Map<number, number | null>();
 
-      nodesToExpand.forEach((id) => newExpanded.add(id));
-      setExpandedNodes(newExpanded);
+    allAccounts.forEach((account) => {
+      parentMap.set(account.id, account.parent ?? null);
+    });
 
-      // تحديد أول نتيجة تلقائياً إذا كانت في المستوى الأخير
-      if (results.length > 0) {
-        const firstResult = results[0];
+    const trimmedSearch = searchTerm.trim().toLowerCase();
+    const matchingIds = new Set<number>();
 
-        // إذا كان الحساب في المستوى الأخير (لا يحتوي على أطفال) أو المستوى 4 فأعلى
-        if (
-          !firstResult.children ||
-          firstResult.children.length === 0 ||
-          firstResult.acc_level >= 4
-        ) {
-          setSelectedAccount(firstResult);
-        }
+    const matchesFilters = (account: Account) =>
+      applyTypeFilter(account) && applyReportFilter(account);
+
+    allAccounts.forEach((account) => {
+      if (!matchesFilters(account)) {
+        return;
       }
-    }
 
-    return results;
-  };
-
-  const filteredAccounts = searchTerm
-    ? searchInTree(accounts, searchTerm)
-    : accounts.filter((account) => {
-        // إخفاء الحساب "0" نهائياً
-        if (account.acc_id === "0") return false;
-
-        if (filterType === "all") return true;
-        if (filterType === "main") return account.acc_type === 1;
-        if (filterType === "sub") return account.acc_type === 2;
-
-        return true;
-      });
-
-  // دالة لعرض مسار الحساب المحدد
-  const getAccountPath = (account: Account): Account[] => {
-    const path: Account[] = [account];
-    let currentAccount = account;
-
-    while (currentAccount.parent && currentAccount.parent !== 0) {
-      const parent = accounts.find((acc) => acc.id === currentAccount.parent);
-
-      if (parent) {
-        path.unshift(parent);
-        currentAccount = parent;
+      if (trimmedSearch.length === 0) {
+        matchingIds.add(account.id);
       } else {
-        break;
+        const matchesSearch =
+          (account.acc_name || "").toLowerCase().includes(trimmedSearch) ||
+          (account.acc_id || "").toLowerCase().includes(trimmedSearch);
+
+        if (!matchesSearch) {
+          return;
+        }
+
+        matchingIds.add(account.id);
       }
+
+      let ancestorId = parentMap.get(account.id);
+      while (ancestorId) {
+        matchingIds.add(ancestorId);
+        ancestorId = parentMap.get(ancestorId) ?? null;
+      }
+    });
+
+    const rebuildTree = (nodes: Account[]): Account[] =>
+      nodes
+        .map((node) => {
+          const childTree = node.children ? rebuildTree(node.children) : [];
+          const includeSelf = matchingIds.has(node.id);
+
+          if (!includeSelf && childTree.length === 0) {
+            return null;
+          }
+
+          return {
+            ...node,
+            children: childTree,
+          };
+        })
+        .filter(Boolean) as Account[];
+
+    const filteredTree =
+      trimmedSearch.length === 0 && matchingIds.size === 0
+        ? accounts
+        : rebuildTree(accounts);
+
+    setDisplayAccounts(filteredTree);
+    setSearchResultsCount(trimmedSearch.length > 0 ? matchingIds.size : 0);
+
+    if (
+      selectedAccount &&
+      !matchingIds.has(selectedAccount.id) &&
+      trimmedSearch.length > 0
+    ) {
+      setSelectedAccount(null);
     }
 
-    return path;
-  };
+    if (trimmedSearch.length > 0 && matchingIds.size > 0) {
+      setExpandedNodes((prev) => {
+        const merged = new Set(prev);
+        matchingIds.forEach((id) => {
+          const parentId = parentMap.get(id);
+          if (parentId) {
+            merged.add(parentId);
+          }
+        });
+        return merged;
+      });
+    }
+  }, [accounts, searchTerm, filterType, filterReport, selectedAccount]);
 
   return (
-    <div className="accounts-container bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="responsive-grid grid-cols-1 lg:grid-cols-3 gap-3">
+    <div className="accounts-container bg-gray-50">
+      <div className="max-w-7xl mx-auto pb-6">
+        <div className="flex flex-wrap items-center gap-3 mb-2">
+          <Button
+            variant="bordered"
+            startContent={<PlusIcon className="h-4 w-4" />}
+            onPress={handleAddAccount}
+            className="bg-gray-100 hover:bg-gray-200 border-gray-300"
+          >
+            إضافة حساب
+          </Button>
+
+          <div className="h-8 w-px bg-gray-300" />
+
+          <div className="flex flex-wrap items-center gap-2 flex-1">
+            <Select
+              aria-label="تصفية حسب نوع الحساب"
+              className="input-field flex-1 min-w-[140px]"
+              placeholder="نوع الحساب"
+              selectedKeys={[filterType]}
+              size="sm"
+              variant="bordered"
+              onSelectionChange={(keys) =>
+                setFilterType(Array.from(keys)[0] as string)
+              }
+            >
+              {ACCOUNT_TYPE_FILTERS.map((option) => (
+                <SelectItem key={option.key}>{option.label}</SelectItem>
+              ))}
+            </Select>
+
+            <Select
+              aria-label="تصفية حسب نوع التقرير"
+              className="input-field flex-1 min-w-[160px]"
+              placeholder="نوع التقرير"
+              selectedKeys={[filterReport]}
+              size="sm"
+              variant="bordered"
+              onSelectionChange={(keys) =>
+                setFilterReport(Array.from(keys)[0] as string)
+              }
+            >
+              {ACCOUNT_REPORT_FILTERS.map((option) => (
+                <SelectItem key={option.key}>{option.label}</SelectItem>
+              ))}
+            </Select>
+
+            <Button
+              isIconOnly
+              variant="bordered"
+              className="h-10"
+              title="مسح الفلاتر"
+              onPress={clearFilters}
+            >
+              <FunnelIcon className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="h-8 w-px bg-gray-300" />
+
+          <div className="w-48">
+            <Input
+              aria-label="بحث في الحسابات"
+              className="w-full"
+              placeholder="بحث بالاسم..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              startContent={
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              }
+            />
+          </div>
+        </div>
+
+        <div className="responsive-grid grid-cols-1 lg:grid-cols-3 gap-2">
           {/* Tree Panel */}
           <div className="lg:col-span-1">
-            <Card className="h-[700px]">
+            <Card className={CONTENT_HEIGHT_CLASS}>
               <CardBody className="p-2">
-                <div className="responsive-filters mb-2">
-                  <Button
-                    className="btn-primary"
-                    size="sm"
-                    onPress={handleAddAccount}
-                  >
-                    <PlusIcon className="h-4 w-4" /> إضافة حساب
-                  </Button>
-                </div>
-
-                {/* Search and Filters */}
-                <div className="space-y-2 mb-2">
-                  <Input
-                    className="w-full"
-                    endContent={
-                      searchTerm && (
-                        <button
-                          className="text-gray-400 hover:text-gray-600"
-                          title="مسح البحث"
-                          onClick={() => setSearchTerm("")}
-                        >
-                          ✕
-                        </button>
-                      )
-                    }
-                    placeholder="بحث في الحسابات..."
-                    size="sm"
-                    startContent={<i className="bi bi-search text-gray-400" />}
-                    value={searchTerm}
-                    variant="bordered"
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-
-                  <Select
-                    className="w-full"
-                    placeholder="تصفية حسب النوع"
-                    selectedKeys={[filterType]}
-                    size="sm"
-                    variant="bordered"
-                    onSelectionChange={(keys) =>
-                      setFilterType(Array.from(keys)[0] as string)
-                    }
-                  >
-                    <SelectItem key="all">جميع الحسابات</SelectItem>
-                    <SelectItem key="main">الحسابات الرئيسية</SelectItem>
-                    <SelectItem key="sub">الحسابات الفرعية</SelectItem>
-                  </Select>
-                </div>
-
                 {/* Tree View */}
-                <div className="overflow-y-auto max-h-[500px] text-right">
-                  {searchTerm && (
+                <div className="overflow-y-auto max-h-[calc(100vh-320px)] text-right">
+                  {searchTerm.trim().length > 0 && (
                     <div className="text-xs text-gray-500 mb-2 text-center">
-                      تم العثور على {filteredAccounts.length} نتيجة
+                      {searchResultsCount > 0
+                        ? `تم العثور على ${searchResultsCount} نتيجة`
+                        : "لا توجد حسابات تطابق البحث"}
                     </div>
                   )}
-                  {filteredAccounts.length > 0 ? (
-                    renderAccountTree(filteredAccounts)
+                  {displayAccounts.length > 0 ? (
+                    renderAccountTree(displayAccounts)
                   ) : (
                     <div className="text-center text-gray-500 py-8">
-                      <FolderIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                      <FolderEmoji className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                       <p className="text-sm">
-                        {searchTerm
+                        {searchTerm.trim().length > 0
                           ? "لا توجد حسابات تطابق البحث"
                           : "لا توجد حسابات"}
                       </p>
-                      {!searchTerm && (
+                      {searchTerm.trim().length === 0 && (
                         <Button
                           className="mt-2"
                           color="primary"
@@ -714,7 +555,7 @@ export default function AccountsClient({
 
           {/* Details Panel */}
           <div className="lg:col-span-2">
-            <Card className="h-[700px]">
+            <Card className={CONTENT_HEIGHT_CLASS}>
               <CardBody className="p-2">
                 <div className="responsive-filters mb-2">
                   <div className="flex items-center gap-3">
@@ -723,38 +564,14 @@ export default function AccountsClient({
                         ? `حسابات ${selectedAccount.acc_name}`
                         : "تفاصيل الحسابات"}
                     </h2>
-                    {selectedAccount && selectedAccount.parent && (
-                      <button
-                        className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors"
-                        title="العودة للحساب الأب"
-                        onClick={() => {
-                          const parentAccount = accounts.find(
-                            (acc) => acc.id === selectedAccount.parent,
-                          );
-
-                          if (parentAccount) {
-                            setSelectedAccount(parentAccount);
-                          }
-                        }}
-                      >
-                        ← العودة للأب
-                      </button>
-                    )}
                   </div>
                   {selectedAccount && (
-                    <div className="text-xs text-gray-500 mt-1 text-right">
-                      المسار:{" "}
-                      {getAccountPath(selectedAccount).map((acc, index) => (
-                        <span key={acc.id}>
-                          {index > 0 && <span className="mx-1">→</span>}
-                          <span
-                            className="hover:text-blue-600 cursor-pointer"
-                            onClick={() => setSelectedAccount(acc)}
-                          >
-                            {acc.acc_name}
-                          </span>
-                        </span>
-                      ))}
+                    <div className="mt-1">
+                      <Breadcrumb
+                        className="mb-1"
+                        items={accountBreadcrumbItems}
+                        showHome={false}
+                      />
                     </div>
                   )}
                 </div>
@@ -801,7 +618,7 @@ export default function AccountsClient({
                       <h3 className="font-semibold text-gray-900 mb-2 text-sm text-right">
                         الحسابات الفرعية المباشرة
                       </h3>
-                      <div className="responsive-table accounts-table-container overflow-x-auto max-h-[400px] overflow-y-auto">
+                      <div className="responsive-table accounts-table-container overflow-x-auto">
                         <table className="w-full border-collapse border border-gray-300 accounts-table">
                           <thead className="bg-gray-100">
                             <tr>
@@ -826,86 +643,131 @@ export default function AccountsClient({
                             </tr>
                           </thead>
                           <tbody>
-                            {getDirectSubAccounts(selectedAccount).length >
-                            0 ? (
-                              getDirectSubAccounts(selectedAccount).map(
-                                (account) => (
-                                  <tr
-                                    key={account.id}
-                                    className="hover:bg-gray-50 cursor-pointer"
-                                    title="انقر مزدوج للانتقال إلى المستوى التالي"
-                                    onDoubleClick={() =>
-                                      setSelectedAccount(account)
-                                    }
-                                  >
-                                    <td className="border border-gray-300 px-2 py-1 text-xs text-right">
-                                      {account.acc_id}
-                                    </td>
-                                    <td className="border border-gray-300 px-2 py-1 text-xs font-medium text-right">
-                                      {account.acc_name}
-                                    </td>
-                                    <td className="border border-gray-300 px-2 py-1 text-xs text-right">
-                                      {account.acc_type === 1
-                                        ? "رئيسي"
-                                        : "فرعي"}
-                                    </td>
-                                    <td className="border border-gray-300 px-2 py-1 text-xs text-right">
-                                      {account.acc_rep === 1
-                                        ? "الأرباح والخسائر"
-                                        : "الميزانية العمومية"}
-                                    </td>
-                                    <td className="border border-gray-300 px-2 py-1 text-xs text-right">
-                                      {currencies.find(
-                                        (c) => c.id === account.cur,
-                                      )?.cur_name || "غير محددة"}
-                                    </td>
-                                    <td className="border border-gray-300 px-2 py-1 text-xs">
-                                      <div className="flex items-center gap-1 justify-center">
-                                        <button
-                                          className="p-1 hover:bg-blue-100 rounded text-blue-600"
-                                          title="عرض"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleViewAccount(account);
-                                          }}
-                                        >
-                                          <EyeIcon className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          className="p-1 hover:bg-green-100 rounded text-green-600"
-                                          title="تعديل"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleEditAccount(account);
-                                          }}
-                                        >
-                                          <PencilIcon className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          className="p-1 hover:bg-red-100 rounded text-red-600"
-                                          title="حذف"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteAccount(account.id);
-                                          }}
-                                        >
-                                          <TrashIcon className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                ),
-                              )
-                            ) : (
-                              <tr>
-                                <td
-                                  className="border border-gray-300 px-2 py-2 text-center text-gray-500 text-xs"
-                                  colSpan={6}
+                            {getDirectSubAccounts(selectedAccount)
+                              .filter((account) => account.id !== selectedAccount.id)
+                              .map((account) => (
+                                <tr
+                                  key={account.id}
+                                  className="hover:bg-gray-50 cursor-pointer"
+                                  title="انقر مزدوج للانتقال إلى المستوى التالي"
+                                  onDoubleClick={() => setSelectedAccount(account)}
                                 >
-                                  لا توجد حسابات فرعية مباشرة لهذا الحساب
-                                </td>
-                              </tr>
-                            )}
+                                  <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                    {account.acc_id}
+                                  </td>
+                                  <td className="border border-gray-300 px-2 py-1 text-xs font-medium text-right">
+                                    {account.acc_name}
+                                  </td>
+                                  <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                    {account.acc_type === 1 ? "رئيسي" : "فرعي"}
+                                  </td>
+                                  <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                    {account.acc_rep === 1
+                                      ? "الأرباح والخسائر"
+                                      : "الميزانية العمومية"}
+                                  </td>
+                                  <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                    {currencies.find((c) => c.id === account.cur)?.cur_name ||
+                                      "غير محددة"}
+                                  </td>
+                                  <td className="border border-gray-300 px-2 py-1 text-xs">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <Button
+                                        isIconOnly
+                                        size="sm"
+                                        title="عرض"
+                                        variant="light"
+                                        onPress={() => {
+                                          handleViewAccount(account);
+                                        }}
+                                      >
+                                        <EyeIcon className="h-4 w-4 text-blue-500" />
+                                      </Button>
+                                      <Button
+                                        isIconOnly
+                                        size="sm"
+                                        title="تعديل"
+                                        variant="light"
+                                        onPress={() => {
+                                          handleEditAccount(account);
+                                        }}
+                                      >
+                                        <PencilIcon className="h-4 w-4 text-yellow-500" />
+                                      </Button>
+                                      <Button
+                                        isIconOnly
+                                        color="danger"
+                                        size="sm"
+                                        title="حذف"
+                                        variant="light"
+                                        onPress={() => {
+                                          handleDeleteAccount(account.id);
+                                        }}
+                                      >
+                                        <TrashIcon className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            <tr>
+                              <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                {selectedAccount.acc_id}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-1 text-xs font-medium text-right">
+                                {selectedAccount.acc_name}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                {selectedAccount.acc_type === 1 ? "رئيسي" : "فرعي"}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                {selectedAccount.acc_rep === 1
+                                  ? "الأرباح والخسائر"
+                                  : "الميزانية العمومية"}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                {currencies.find((c) => c.id === selectedAccount.cur)?.cur_name ||
+                                  "غير محددة"}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-1 text-xs">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    title="عرض"
+                                    variant="light"
+                                    onPress={() => {
+                                      handleViewAccount(selectedAccount);
+                                    }}
+                                  >
+                                    <EyeIcon className="h-4 w-4 text-blue-500" />
+                                  </Button>
+                                  <Button
+                                    isIconOnly
+                                    size="sm"
+                                    title="تعديل"
+                                    variant="light"
+                                    onPress={() => {
+                                      handleEditAccount(selectedAccount);
+                                    }}
+                                  >
+                                    <PencilIcon className="h-4 w-4 text-yellow-500" />
+                                  </Button>
+                                  <Button
+                                    isIconOnly
+                                    color="danger"
+                                    size="sm"
+                                    title="حذف"
+                                    variant="light"
+                                    onPress={() => {
+                                      handleDeleteAccount(selectedAccount.id);
+                                    }}
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
                           </tbody>
                         </table>
                       </div>
@@ -913,7 +775,7 @@ export default function AccountsClient({
                   </div>
                 ) : (
                   <div className="text-center text-gray-500 py-6">
-                    <DocumentIcon className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    <DocumentEmoji className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                     <p className="text-sm text-right">
                       اختر حساباً لعرض تفاصيله والحسابات الفرعية
                     </p>
@@ -925,368 +787,6 @@ export default function AccountsClient({
         </div>
       </div>
 
-      {/* Add Account Modal */}
-      <FormModal
-        cancelText="إلغاء"
-        isOpen={isAddModalOpen}
-        shouldBlockScroll={false}
-        submitText="إضافة الحساب"
-        title="إضافة حساب جديد"
-        onClose={() => setIsAddModalOpen(false)}
-        onSubmit={() => handleSubmit(false)}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="رقم الحساب"
-            value={formData.acc_id}
-            variant="bordered"
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, acc_id: e.target.value }))
-            }
-          />
-
-          <Input
-            label="اسم الحساب"
-            value={formData.acc_name}
-            variant="bordered"
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, acc_name: e.target.value }))
-            }
-          />
-
-          <Input
-            label="اسم الحساب (إنجليزي)"
-            value={formData.acc_name_e}
-            variant="bordered"
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, acc_name_e: e.target.value }))
-            }
-          />
-
-          <Select
-            disableAnimation
-            label="نوع الحساب"
-            popoverProps={{
-              shouldBlockScroll: false,
-              shouldCloseOnBlur: false,
-            }}
-            selectedKeys={[formData.acc_type.toString()]}
-            variant="bordered"
-            onSelectionChange={(keys) =>
-              setFormData((prev) => ({
-                ...prev,
-                acc_type: parseInt(Array.from(keys)[0] as string),
-              }))
-            }
-          >
-            <SelectItem key="1">رئيسي</SelectItem>
-            <SelectItem key="2">فرعي</SelectItem>
-          </Select>
-
-          <Select
-            disableAnimation
-            label="نوع التقرير"
-            popoverProps={{
-              shouldBlockScroll: false,
-              shouldCloseOnBlur: false,
-            }}
-            selectedKeys={[formData.acc_rep.toString()]}
-            variant="bordered"
-            onSelectionChange={(keys) =>
-              setFormData((prev) => ({
-                ...prev,
-                acc_rep: parseInt(Array.from(keys)[0] as string),
-              }))
-            }
-          >
-            <SelectItem key="1">الأرباح والخسائر</SelectItem>
-            <SelectItem key="2">الميزانية العمومية</SelectItem>
-          </Select>
-
-          <Select
-            disableAnimation
-            label="العملة"
-            popoverProps={{
-              shouldBlockScroll: false,
-              shouldCloseOnBlur: false,
-            }}
-            selectedKeys={[formData.cur.toString()]}
-            variant="bordered"
-            onSelectionChange={(keys) =>
-              setFormData((prev) => ({
-                ...prev,
-                cur: parseInt(Array.from(keys)[0] as string),
-              }))
-            }
-          >
-            {currencies.map((currency) => (
-              <SelectItem key={currency.id.toString()}>
-                {currency.cur_name}
-              </SelectItem>
-            ))}
-          </Select>
-
-          <Input
-            label="عدد الخانات العشرية"
-            type="number"
-            value={formData.acc_digit.toString()}
-            variant="bordered"
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                acc_digit: parseInt(e.target.value),
-              }))
-            }
-          />
-
-          <Input
-            label="ملاحظات"
-            value={formData.acc_notes}
-            variant="bordered"
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, acc_notes: e.target.value }))
-            }
-          />
-        </div>
-      </FormModal>
-
-      {/* Edit Account Modal */}
-      <Modal
-        isDismissable={false}
-        isOpen={isEditModalOpen}
-        shouldBlockScroll={false}
-        size="2xl"
-        onClose={() => setIsEditModalOpen(false)}
-      >
-        <ModalContent>
-          <ModalHeader>تعديل الحساب</ModalHeader>
-          <ModalBody>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="رقم الحساب"
-                value={formData.acc_id}
-                variant="bordered"
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, acc_id: e.target.value }))
-                }
-              />
-
-              <Input
-                label="اسم الحساب"
-                value={formData.acc_name}
-                variant="bordered"
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, acc_name: e.target.value }))
-                }
-              />
-
-              <Input
-                label="اسم الحساب (إنجليزي)"
-                value={formData.acc_name_e}
-                variant="bordered"
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    acc_name_e: e.target.value,
-                  }))
-                }
-              />
-
-              <Select
-                disableAnimation
-                label="نوع الحساب"
-                popoverProps={{
-                  shouldBlockScroll: false,
-                  shouldCloseOnBlur: false,
-                }}
-                selectedKeys={[formData.acc_type.toString()]}
-                variant="bordered"
-                onSelectionChange={(keys) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    acc_type: parseInt(Array.from(keys)[0] as string),
-                  }))
-                }
-              >
-                <SelectItem key="1">رئيسي</SelectItem>
-                <SelectItem key="2">فرعي</SelectItem>
-              </Select>
-
-              <Select
-                disableAnimation
-                label="نوع التقرير"
-                popoverProps={{
-                  shouldBlockScroll: false,
-                  shouldCloseOnBlur: false,
-                }}
-                selectedKeys={[formData.acc_rep.toString()]}
-                variant="bordered"
-                onSelectionChange={(keys) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    acc_rep: parseInt(Array.from(keys)[0] as string),
-                  }))
-                }
-              >
-                <SelectItem key="1">الأرباح والخسائر</SelectItem>
-                <SelectItem key="2">الميزانية العمومية</SelectItem>
-              </Select>
-
-              <Select
-                disableAnimation
-                label="العملة"
-                popoverProps={{
-                  shouldBlockScroll: false,
-                  shouldCloseOnBlur: false,
-                }}
-                selectedKeys={[formData.cur.toString()]}
-                variant="bordered"
-                onSelectionChange={(keys) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    cur: parseInt(Array.from(keys)[0] as string),
-                  }))
-                }
-              >
-                {currencies.map((currency) => (
-                  <SelectItem key={currency.id.toString()}>
-                    {currency.cur_name}
-                  </SelectItem>
-                ))}
-              </Select>
-
-              <Input
-                label="عدد الخانات العشرية"
-                type="number"
-                value={formData.acc_digit.toString()}
-                variant="bordered"
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    acc_digit: parseInt(e.target.value),
-                  }))
-                }
-              />
-
-              <Input
-                label="ملاحظات"
-                value={formData.acc_notes}
-                variant="bordered"
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    acc_notes: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              color="danger"
-              variant="flat"
-              onPress={() => setIsEditModalOpen(false)}
-            >
-              إلغاء
-            </Button>
-            <Button color="primary" onPress={() => handleSubmit(true)}>
-              حفظ التغييرات
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* View Account Modal */}
-      <Modal
-        isDismissable={false}
-        isOpen={isViewModalOpen}
-        size="lg"
-        onClose={() => setIsViewModalOpen(false)}
-      >
-        <ModalContent>
-          <ModalHeader>تفاصيل الحساب</ModalHeader>
-          <ModalBody>
-            {selectedAccount && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      رقم الحساب
-                    </label>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      {selectedAccount.acc_id}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      اسم الحساب
-                    </label>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      {selectedAccount.acc_name}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نوع الحساب
-                    </label>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      {selectedAccount.acc_type === 1 ? "رئيسي" : "فرعي"}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      المستوى
-                    </label>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      {selectedAccount.acc_level}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نوع التقرير
-                    </label>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      {selectedAccount.acc_rep === 1
-                        ? "الأرباح والخسائر"
-                        : "الميزانية العمومية"}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      العملة
-                    </label>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      {currencies.find((c) => c.id === selectedAccount.cur)
-                        ?.cur_name || "غير محددة"}
-                    </div>
-                  </div>
-                </div>
-
-                {selectedAccount.acc_notes && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      الملاحظات
-                    </label>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      {selectedAccount.acc_notes}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button color="primary" onPress={() => setIsViewModalOpen(false)}>
-              إغلاق
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </div>
   );
 }

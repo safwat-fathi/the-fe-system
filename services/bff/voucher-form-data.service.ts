@@ -16,9 +16,14 @@ export interface VoucherFormData {
   voucherStatuses: any[];
   caratTypes: any[];
   boxes: any[];
+  goldBoxes?: any[];
   items?: any[];
   customers?: any[];
 }
+
+type VoucherFormDataOptions = {
+  goldBoxes?: boolean;
+};
 
 // خدمة محسّنة للقيد الافتتاحي - تجلب البيانات الضرورية فقط
 const getBalanceVoucherFormData = cache(
@@ -86,14 +91,23 @@ const getBalanceVoucherFormData = cache(
   },
 );
 
-const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
+const getVoucherFormData = cache(
+  async (options: VoucherFormDataOptions = {}): Promise<VoucherFormData> => {
+    const useGoldBoxes = options.goldBoxes ?? false;
+
+    const boxesPromise = boxesService.getBoxes({ xcom_id: 1 });
+    const goldBoxesPromise = useGoldBoxes
+      ? boxesService.getGoldBoxes({ xcom_id: 1 })
+      : Promise.resolve(null);
+
   const [
     accountsResponse,
     costCentersResponse,
     voucherTypesResponse,
     voucherStagesResponse,
     caratTypesResponse,
-    boxesResponse,
+      boxesResponse,
+      goldBoxesResponse,
     itemsResponse,
     customersResponse,
   ] = await Promise.all([
@@ -102,7 +116,8 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     voucherService.getVoucherTypes({ com: "1", year: "1" }),
     voucherService.getVoucherStages({ com: "1", year: "1" }),
     voucherService.getCaratTypes(),
-    boxesService.getBoxes({ xcom_id: 1 }),
+      boxesPromise,
+      goldBoxesPromise,
     itemService.searchItems({ companyId: 1 }),
     customerService.getAllCustomers({ xcom_id: 1 }),
   ]);
@@ -147,6 +162,10 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
 
   // معالجة الصناديق
   const boxes = Array.isArray(boxesResponse) ? boxesResponse : [];
+  const goldBoxes =
+    useGoldBoxes && Array.isArray(goldBoxesResponse)
+      ? goldBoxesResponse
+      : undefined;
 
   // معالجة الأصناف
   let items: any[] = [];
@@ -160,17 +179,19 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
   // معالجة العملاء
   const customers = Array.isArray(customersResponse) ? customersResponse : [];
 
-  return {
-    accounts,
-    costCenters,
-    voucherTypes,
-    voucherStatuses,
-    caratTypes,
-    boxes,
-    items,
-    customers,
-  };
-});
+    return {
+      accounts,
+      costCenters,
+      voucherTypes,
+      voucherStatuses,
+      caratTypes,
+      boxes,
+    goldBoxes,
+      items,
+      customers,
+    };
+  },
+);
 
 export default {
   getVoucherFormData,
