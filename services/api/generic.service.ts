@@ -76,6 +76,9 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
   // Categories (قوائم أساسية - بدون year)
   categories_list: {
     endpoint: "categories_list",
+    paramTransform: (params) => ({
+      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
+    }),
   },
 
   // Cost Centers (قوائم أساسية - بدون year)

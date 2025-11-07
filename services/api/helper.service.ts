@@ -61,11 +61,22 @@ class HelperService extends HttpService {
   }
 
   // جلب الفئات
-  async getCategories(): Promise<Category[]> {
+  async getCategories(params?: { xcom_id?: number | string }): Promise<Category[]> {
     try {
+      let xcom_id: number | string | undefined = params?.xcom_id;
+      if (xcom_id === undefined) {
+        try {
+          const { getBranchParams } = await import("@/app/actions/branch-params");
+          const branch = await getBranchParams();
+          const parsed = Number(branch?.com ?? 1);
+          xcom_id = Number.isFinite(parsed) ? parsed : 1;
+        } catch {
+          xcom_id = 1;
+        }
+      }
       const response = await this.get<Category[]>(
         "categories_list",
-        undefined,
+        { xcom_id },
         {
           cache: "no-store",
           next: { tags: ["categories"] },

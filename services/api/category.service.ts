@@ -1,4 +1,5 @@
 import { HttpService } from "@/services/base";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 export interface Category {
   id: number;
@@ -18,11 +19,22 @@ class CategoryService extends HttpService<Category> {
     super("");
   }
 
-  async getAllCategories(): Promise<Category[]> {
+  async getAllCategories(params?: { xcom_id?: number | string }): Promise<Category[]> {
     try {
+      // Resolve company/branch id required by API as xcom_id
+      let xcom_id: number | string | undefined = params?.xcom_id;
+      if (xcom_id === undefined) {
+        try {
+          const branch = await getBranchParams();
+          const parsed = Number(branch?.com ?? 1);
+          xcom_id = Number.isFinite(parsed) ? parsed : 1;
+        } catch {
+          xcom_id = 1;
+        }
+      }
       const response = await this.get<Category[]>(
         "categories_list",
-        undefined,
+        { xcom_id },
         {
           cache: "force-cache",
           next: { tags: ["categories"] },
