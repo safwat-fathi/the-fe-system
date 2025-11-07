@@ -108,15 +108,13 @@ class InvoiceService extends HttpService<Invoice> {
         queryParams as GetAllInvoicesParams,
       );
 
-      const response = await this.get<IPaginatedResponse<Invoice> | Invoice | Invoice[]>(
-        "invoices_list",
-        queryParams,
-        {
-          cache: "force-cache", // Disable cache temporarily
-          signal: AbortSignal.timeout(30000), // 30 seconds
-          next: { tags: cacheTags },
-        },
-      );
+      const response = await this.get<
+        IPaginatedResponse<Invoice> | Invoice | Invoice[]
+      >("invoices_list", queryParams, {
+        cache: "force-cache", // Disable cache temporarily
+        signal: AbortSignal.timeout(30000), // 30 seconds
+        next: { tags: cacheTags },
+      });
 
       if (response.success && response.data) {
         const data: any = response.data as any;
@@ -133,20 +131,25 @@ class InvoiceService extends HttpService<Invoice> {
           // Prefer match by inv_id
           const byInvId = list.find(
             (inv: any) =>
-              String(inv?.inv_id ?? "").trim() === requested && matchTransType(inv),
+              String(inv?.inv_id ?? "").trim() === requested &&
+              matchTransType(inv),
           );
+
           if (byInvId) return byInvId as Invoice;
 
           // Fallback to id match if requested looks numeric
           if (requestedIsNumeric) {
             const byId = list.find(
-              (inv: any) => Number(inv?.id) === Number(requested) && matchTransType(inv),
+              (inv: any) =>
+                Number(inv?.id) === Number(requested) && matchTransType(inv),
             );
+
             if (byId) return byId as Invoice;
           }
 
           // As a last resort, return first with transType match if provided
           const byType = list.find((inv: any) => matchTransType(inv));
+
           return (byType ?? list[0]) as Invoice;
         };
 
@@ -160,6 +163,7 @@ class InvoiceService extends HttpService<Invoice> {
 
         if (typeof data === "object" && data !== null) {
           const obj = data as any;
+
           // If single-object response, ensure it matches our request when possible
           if (
             (String(obj?.inv_id ?? "").trim() === requested ||
@@ -192,6 +196,7 @@ class InvoiceService extends HttpService<Invoice> {
         if (Array.isArray(payload)) return payload as InvoiceDetail[];
         if (Array.isArray((payload as any).results))
           return (payload as any).results as InvoiceDetail[];
+
         return [];
       };
 
@@ -216,15 +221,18 @@ class InvoiceService extends HttpService<Invoice> {
             },
             {
               cache: "force-cache",
-              next: { tags: [
-                `invoice-details-${invNo}`,
-                `invoice-details-${requested}`,
-              ] },
+              next: {
+                tags: [
+                  `invoice-details-${invNo}`,
+                  `invoice-details-${requested}`,
+                ],
+              },
             },
           );
 
           if (byInvNoResponse.success) {
             const data = normalize(byInvNoResponse.data);
+
             if (data.length > 0) return data;
           }
         }
@@ -510,6 +518,7 @@ class InvoiceService extends HttpService<Invoice> {
     try {
       // If id is not valid (> 0), create instead of update (server does not upsert on id=0)
       const parsedId = Number(id);
+
       if (!Number.isFinite(parsedId) || parsedId <= 0) {
         return this.createInvoiceDetail(detailData);
       }
@@ -613,6 +622,7 @@ function extractMaxInvoiceId(
 
     if (record.data !== undefined) {
       const nested = extractMaxInvoiceId(record.data as InvoiceMaxIdPayload);
+
       if (nested !== null && nested !== undefined) {
         return nested;
       }
@@ -620,6 +630,7 @@ function extractMaxInvoiceId(
 
     if (record.results !== undefined) {
       const nested = extractMaxInvoiceId(record.results as InvoiceMaxIdPayload);
+
       if (nested !== null && nested !== undefined) {
         return nested;
       }

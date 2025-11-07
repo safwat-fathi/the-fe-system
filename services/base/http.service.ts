@@ -225,7 +225,11 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
             window.location.href = "/auth/login";
           } catch {}
         }
-        return { success: false, message: "Unauthorized" } as ServiceResponse<R>;
+
+        return {
+          success: false,
+          message: "Unauthorized",
+        } as ServiceResponse<R>;
       }
 
       // Parse response

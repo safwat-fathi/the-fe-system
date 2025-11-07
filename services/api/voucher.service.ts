@@ -23,10 +23,17 @@ export interface VoucherDetail {
   acc_name?: string;
   cost_id?: number;
   cost_name?: string;
-  debit?: number;
-  credit?: number;
-  debit_g?: number;
-  credit_g?: number;
+  debit?: number; // مدين (نقد)
+  credit?: number; // دائن (نقد)
+  debit_base?: number; // مدين اساس
+  credit_base?: number; // دائن اساس
+  p_debit?: number; // مدين مدفوع (غير مستخدم حالياً)
+  p_credit?: number; // دائن مدفوع (غير مستخدم حالياً)
+  gauge?: number; // العيار
+  g_debit?: number; // مدين (ذهب)
+  g_credit?: number; // دائن (ذهب)
+  g_debit_base?: number; // مدين معاير (ذهب)
+  g_credit_base?: number; // دائن معاير (ذهب)
   tax?: number;
   tax_prc?: number;
   notes?: string;
@@ -107,6 +114,88 @@ class VoucherService extends HttpService<Voucher> {
    */
   async getByType(voucherType: number, params?: IParams) {
     return this.getAll({ ...params, xvouch_type: voucherType });
+  }
+
+  /**
+   * الحصول على سند واحد بالـ ID (مباشر وسريع - مثل getInvoiceById)
+   */
+  async getVoucherById(
+    id: number | string,
+    params?: IParams,
+  ): Promise<Voucher | null> {
+    try {
+      const branchParam =
+        params?.["xcom_id"] ?? params?.["com_id"] ?? params?.["com"] ?? "1";
+
+      // البحث بالـ ID يمكن أن يكون id (primary key) أو vouch_id (رقم القيد)
+      const requestedId = String(id).trim();
+      const isNumericId = !Number.isNaN(Number(requestedId));
+
+      const queryParams: IParams = {
+        xcom_id: branchParam,
+        xyear_id: params?.xyear_id || "0",
+        xvouch_type: params?.xvouch_type || params?.vouch_type || "0", // "0" = جميع الأنواع
+        xvouch_id: requestedId, // البحث بالـ ID (يمكن أن يكون id أو vouch_id)
+        xfrom_date: "0",
+        xto_date: "0",
+        page: "1", // صفحة واحدة فقط
+      };
+
+      const response = await this.get<IPaginatedResponse<Voucher> | Voucher[]>(
+        "vouchers_list",
+        queryParams,
+      );
+
+      if (response.success && response.data) {
+        const data: any = response.data;
+        const requestedId = Number(id);
+
+        // Helper to pick best match from a list
+        const pickFromList = (list: any[]): Voucher | null => {
+          if (!Array.isArray(list)) return null;
+
+          // البحث أولاً بـ id (primary key)
+          const byId = list.find((v: any) => Number(v?.id) === requestedId);
+
+          if (byId) return byId as Voucher;
+
+          // Fallback إلى vouch_id
+          const byVouchId = list.find(
+            (v: any) => Number(v?.vouch_id) === requestedId,
+          );
+
+          if (byVouchId) return byVouchId as Voucher;
+
+          // آخر حل: أول عنصر في القائمة
+          return (list[0] ?? null) as Voucher;
+        };
+
+        // معالجة paginated response
+        if (Array.isArray(data)) {
+          return pickFromList(data);
+        }
+
+        if (Array.isArray((data as any)?.results)) {
+          return pickFromList((data as any).results);
+        }
+
+        // إذا كان object مباشر
+        if (data && typeof data === "object") {
+          if (
+            Number(data.id) === requestedId ||
+            Number(data.vouch_id) === requestedId
+          ) {
+            return data as Voucher;
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching voucher by ID:", error);
+
+      return null;
+    }
   }
 
   /**
@@ -206,7 +295,7 @@ class VoucherService extends HttpService<Voucher> {
    * تحديث تفصيل سند
    */
   async updateDetail(id: number, detail: any) {
-    return this.put<VoucherDetail>(`api_update_vouch_dtl/${id}`, detail);
+    return this.patch<VoucherDetail>(`api_update_vouch_dtl/${id}`, detail);
   }
 
   /**
@@ -235,7 +324,7 @@ class VoucherService extends HttpService<Voucher> {
 
     const queryParams: IParams = {
       ...cleanParams,
-      xvouch_id: vouchId, // id من جدول vouchers (primary key)
+      xvouch_id: vouchId, // id من جدول vouchers (primary key) - vouchers_box_list يتوقع xvouch_id وليس vouch_id
       xcom_id: branchParam, // رقم الفرع
     };
 
@@ -253,7 +342,7 @@ class VoucherService extends HttpService<Voucher> {
    * تحديث صندوق سند
    */
   async updateBox(id: number, box: Partial<VoucherBox>) {
-    return this.put<VoucherBox>(`api_update_vouch_box/${id}`, box);
+    return this.patch<VoucherBox>(`api_update_vouch_box/${id}`, box);
   }
 
   /**
@@ -426,7 +515,10 @@ class VoucherService extends HttpService<Voucher> {
       page: params?.page || "1", // pagination
     };
 
-    const response = await this.getList<any[]>("gvouchers_dtl_list", queryParams);
+    const response = await this.getList<any[]>(
+      "gvouchers_dtl_list",
+      queryParams,
+    );
 
     // معالجة الاستجابة المُقسّمة (pagination)
     if (response.success && response.data) {
@@ -474,14 +566,21 @@ class VoucherService extends HttpService<Voucher> {
    * تحديث تفصيل سند ذهبي
    */
   async updateGoldDetail(id: number, detail: any) {
-    return this.put<any>(`api_update_gvouch_dtl/${id}`, detail);
+    // استخدام PATCH بدلاً من PUT لأن PUT قد لا يكون مدعوم
+    return this.patch<any>(`api_update_gvouch_dtl/${id}`, detail);
   }
 
   /**
    * حذف تفصيل سند ذهبي
    */
-  async deleteGoldDetail(id: number) {
-    return this.delete(`api_delete_gvouch_dtl/${id}`);
+  async deleteGoldDetail(id: number, params?: IParams) {
+    // إضافة com إذا كان مطلوباً
+    const queryParams: IParams = {
+      ...params,
+      com: params?.com || params?.xcom_id || "1",
+    };
+
+    return this.delete(`api_delete_gvouch_dtl/${id}`, queryParams);
   }
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -12,22 +13,19 @@ import {
   Button,
   Checkbox,
   Pagination,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
 } from "@heroui/react";
 import {
   PlusIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import currencyService from "@/services/api/currency.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
+import { ConfirmationModal } from "@/components/Modal";
 
 interface Currency {
   id: number;
@@ -43,7 +41,6 @@ interface Currency {
 }
 
 const columns = [
-  { name: "ID", uid: "id" },
   { name: "الاسم", uid: "cur_name" },
   { name: "الاسم بالإنجليزي", uid: "cur_name_e" },
   { name: "جزء العملة", uid: "cur_part" },
@@ -51,7 +48,6 @@ const columns = [
   { name: "الرمز", uid: "cur_sign" },
   { name: "السعر", uid: "cur_price" },
   { name: "الوسم", uid: "cur_tag" },
-  { name: "التاريخ", uid: "cr_date" },
   { name: "الحالة", uid: "cur_status" },
   { name: "", uid: "actions" },
 ];
@@ -65,12 +61,12 @@ export default function CurrenciesClient({
   initialData,
   error,
 }: CurrenciesClientProps) {
+  const router = useRouter();
   const [currencies, setCurrencies] = useState<Currency[]>(initialData);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
-  const [currentCurrency, setCurrentCurrency] = useState<Partial<Currency>>({});
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [currencyToDelete, setCurrencyToDelete] = useState<Currency | null>(null);
 
   const rowsPerPage = 12;
 
@@ -111,70 +107,30 @@ export default function CurrenciesClient({
     };
   }, [loadCurrencies]);
 
-  const handleSave = async () => {
-    const previousCurrencies = [...currencies];
-
-    try {
-      let result: Currency | null = null;
-
-      // Optimistic update for create
-      if (modalMode === "add") {
-        const optimisticId = Date.now();
-        const optimisticCurrency = {
-          ...currentCurrency,
-          id: optimisticId,
-          cr_date: new Date().toISOString(),
-          cur_status: true,
-        } as Currency;
-
-        setCurrencies([...currencies, optimisticCurrency]);
-      }
-
-      if (modalMode === "edit" && currentCurrency.id) {
-        result = await currencyService.updateCurrency(
-          currentCurrency.id,
-          currentCurrency,
-        );
-      } else {
-        result = await currencyService.createCurrency(
-          currentCurrency as Omit<Currency, "id">,
-        );
-      }
-
-      if (result) {
-        toast.success(
-          modalMode === "edit"
-            ? "✅ تم تعديل العملة بنجاح"
-            : "✅ تم إضافة العملة بنجاح",
-        );
-
-        // Revalidate cache
-        await revalidateTableData("currencies_list");
-
-        setIsModalOpen(false);
-        loadCurrencies();
-      } else {
-        // Rollback on failure
-        setCurrencies(previousCurrencies);
-        toast.error("❌ فشل في العملية");
-      }
-    } catch (error) {
-      // Rollback on error
-      setCurrencies(previousCurrencies);
-      toast.error("❌ حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا");
+  const handleDeleteClick = (currency: Currency) => {
+    if (!currency.id) {
+      toast.error("❌ لا يمكن حذف عملة بدون معرف");
+      return;
     }
+
+    setCurrencyToDelete(currency);
+    setDeleteModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("هل أنت متأكد أنك تريد حذف هذه العملة؟")) return;
+  const handleDeleteConfirm = async () => {
+    if (!currencyToDelete?.id) {
+      setDeleteModalOpen(false);
+      setCurrencyToDelete(null);
+      return;
+    }
 
     // Optimistic delete
-    const previousCurrencies = [...currencies];
-
-    setCurrencies(currencies.filter((cur) => cur.id !== id));
+    setCurrencies((prevCurrencies) =>
+      prevCurrencies.filter((c) => c.id !== currencyToDelete.id)
+    );
 
     try {
-      const result = await currencyService.deleteCurrency(id);
+      const result = await currencyService.deleteCurrency(currencyToDelete.id);
 
       if (result) {
         toast.success("✅ تم حذف العملة بنجاح");
@@ -184,15 +140,21 @@ export default function CurrenciesClient({
 
         loadCurrencies();
       } else {
-        // Rollback on failure
-        setCurrencies(previousCurrencies);
         toast.error("❌ فشل في حذف العملة");
+        loadCurrencies();
       }
     } catch (error) {
-      // Rollback on error
-      setCurrencies(previousCurrencies);
       toast.error("❌ حدث خطأ أثناء الحذف");
+      loadCurrencies();
+    } finally {
+      setDeleteModalOpen(false);
+      setCurrencyToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setCurrencyToDelete(null);
   };
 
   const renderActions = (cur: Currency) => (
@@ -201,7 +163,7 @@ export default function CurrenciesClient({
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("view", cur)}
+        onPress={() => router.push(`/basic/currencies/${cur.id}`)}
       >
         <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
@@ -209,7 +171,7 @@ export default function CurrenciesClient({
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("edit", cur)}
+        onPress={() => router.push(`/basic/currencies/${cur.id}?mode=edit`)}
       >
         <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
@@ -218,7 +180,7 @@ export default function CurrenciesClient({
         color="danger"
         size="sm"
         variant="light"
-        onPress={() => handleDelete(cur.id)}
+        onPress={() => handleDeleteClick(cur)}
       >
         <TrashIcon className="h-4 w-4" />
       </Button>
@@ -239,29 +201,29 @@ export default function CurrenciesClient({
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
-  const openModal = (
-    mode: "add" | "edit" | "view",
-    currency: Partial<Currency> = {},
-  ) => {
-    setModalMode(mode);
-    setCurrentCurrency(currency);
-    setIsModalOpen(true);
-  };
-
-  const isViewMode = modalMode === "view";
-
   return (
     <>
-      <div className="flex justify-between mb-4">
-        <Button className="btn-primary" onPress={() => openModal("add")}>
-          <PlusIcon className="h-4 w-4" /> إضافة عملة
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <h2 className="text-base font-semibold">إدارة العملات</h2>
+        <div className="h-8 w-px bg-gray-300" />
+        <Button
+          variant="bordered"
+          className="bg-gray-100"
+          onPress={() => router.push("/basic/currencies/new")}
+        >
+          <PlusIcon className="h-3 w-3" />
+          إضافة عملة
         </Button>
-        <Input
-          className="w-60"
-          placeholder="بحث بالاسم..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="h-8 w-px bg-gray-300" />
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="بحث بالاسم..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+            size="sm"
+          />
+        </div>
       </div>
 
       <Table aria-label="جدول العملات">
@@ -273,7 +235,6 @@ export default function CurrenciesClient({
         <TableBody>
           {paginated.map((cur) => (
             <TableRow key={cur.id}>
-              <TableCell>{cur.id}</TableCell>
               <TableCell>{cur.cur_name}</TableCell>
               <TableCell>{cur.cur_name_e}</TableCell>
               <TableCell>{cur.cur_part}</TableCell>
@@ -281,7 +242,6 @@ export default function CurrenciesClient({
               <TableCell>{cur.cur_sign}</TableCell>
               <TableCell>{cur.cur_price}</TableCell>
               <TableCell>{cur.cur_tag}</TableCell>
-              <TableCell>{cur.cr_date}</TableCell>
               <TableCell>
                 <Checkbox isReadOnly isSelected={cur.cur_status} />
               </TableCell>
@@ -301,130 +261,17 @@ export default function CurrenciesClient({
         />
       </div>
 
-      <Modal
-        isDismissable={false}
-        isOpen={isModalOpen}
-        scrollBehavior="inside"
-        size="5xl"
-        onClose={() => setIsModalOpen(false)}
-      >
-        <ModalContent className="font-cairo">
-          <ModalHeader>
-            {modalMode === "add" && "إضافة عملة"}
-            {modalMode === "edit" && "تعديل عملة"}
-            {modalMode === "view" && "عرض بيانات العملة"}
-          </ModalHeader>
-
-          <ModalBody className="grid grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto pr-2">
-            <Input
-              required
-              isDisabled={isViewMode}
-              label="اسم العملة"
-              value={currentCurrency.cur_name || ""}
-              onChange={(e) =>
-                setCurrentCurrency({
-                  ...currentCurrency,
-                  cur_name: e.target.value,
-                })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="اسم العملة بالإنجليزي"
-              value={currentCurrency.cur_name_e || ""}
-              onChange={(e) =>
-                setCurrentCurrency({
-                  ...currentCurrency,
-                  cur_name_e: e.target.value,
-                })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="جزء العملة"
-              value={currentCurrency.cur_part || ""}
-              onChange={(e) =>
-                setCurrentCurrency({
-                  ...currentCurrency,
-                  cur_part: e.target.value,
-                })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="جزء العملة بالإنجليزي"
-              value={currentCurrency.cur_part_e || ""}
-              onChange={(e) =>
-                setCurrentCurrency({
-                  ...currentCurrency,
-                  cur_part_e: e.target.value,
-                })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="رمز العملة"
-              value={currentCurrency.cur_sign || ""}
-              onChange={(e) =>
-                setCurrentCurrency({
-                  ...currentCurrency,
-                  cur_sign: e.target.value,
-                })
-              }
-            />
-            <Input
-              required
-              isDisabled={isViewMode}
-              label="السعر"
-              value={currentCurrency.cur_price || ""}
-              onChange={(e) =>
-                setCurrentCurrency({
-                  ...currentCurrency,
-                  cur_price: e.target.value,
-                })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="الوسم"
-              value={currentCurrency.cur_tag || ""}
-              onChange={(e) =>
-                setCurrentCurrency({
-                  ...currentCurrency,
-                  cur_tag: e.target.value,
-                })
-              }
-            />
-            <Input
-              isDisabled={true}
-              label="تاريخ الإنشاء"
-              value={currentCurrency.cr_date || ""}
-            />
-            <div className="col-span-2">
-              <Checkbox
-                isDisabled={isViewMode}
-                isSelected={Boolean(currentCurrency.cur_status)}
-                onValueChange={(val) =>
-                  setCurrentCurrency({ ...currentCurrency, cur_status: val })
-                }
-              >
-                الحالة مفعلة
-              </Checkbox>
-            </div>
-          </ModalBody>
-
-          {modalMode !== "view" && (
-            <ModalFooter className="flex justify-end gap-2">
-              <Button color="danger" onPress={() => setIsModalOpen(false)}>
-                إلغاء
-              </Button>
-              <Button color="success" onPress={handleSave}>
-                {modalMode === "edit" ? "تحديث" : "حفظ"}
-              </Button>
-            </ModalFooter>
-          )}
-        </ModalContent>
-      </Modal>
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="تأكيد الحذف"
+        message={`هل أنت متأكد من حذف العملة "${currencyToDelete?.cur_name}"؟`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        confirmColor="danger"
+        size="md"
+      />
     </>
   );
 }

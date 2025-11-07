@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import CustomerTypesClient from "./components/CustomerTypesClient";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import customerTypeService from "@/services/api/customer-type.service";
 
 export const metadata: Metadata = {
@@ -17,7 +18,8 @@ export default async function CustomerTypesPage() {
 
   return (
     <div className="responsive-container font-cairo">
-      <h1 className="responsive-text-xl font-bold mb-6">أنواع العملاء</h1>
+      <Breadcrumb />
+      <h1 className="responsive-text-xl font-bold mb-2">أنواع العملاء</h1>
 
       <CustomerTypesClient initialTypes={typesData} />
     </div>

@@ -2,127 +2,67 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cache } from "react";
 
-import BalanceVoucherClientPage from "./BalanceVoucherClientPage";
+import BalanceVoucherClientPage from "../BalanceVoucherClientPage";
 
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
-import { getBranchParams } from "@/app/actions/branch-params";
+import Breadcrumb from "@/components/Breadcrumb";
 
 export const metadata: Metadata = {
   title: "عرض قيد افتتاحي - NafeesWeb",
   description: "عرض وتعديل القيد الافتتاحي",
 };
 
-// Cache the voucher lookup for better performance
-const getVoucherById = cache(async (voucherId: number, branchId?: string) => {
+// دالة بسيطة لجلب القيد بدون cache
+async function getVoucherById(voucherId: number) {
   try {
     if (!voucherId || isNaN(voucherId)) {
-      console.warn("Invalid voucherId:", voucherId);
-
       return null;
     }
 
-    const comId = branchId || "1";
-
-    console.log("🔍 Searching for voucher:", { voucherId, branchId: comId });
-
-    // أولاً: جلب جميع القيود الافتتاحية للفرع (بدون فلتر xvouch_id)
-    // لأن xvouch_id يبحث بـ vouch_id وليس id (primary key)
-    let vouchersResponse = await voucherService.getAll({
-      xvouch_type: "0", // قيد افتتاحي
-      xvouch_id: "0", // "0" يعني جميع القيود
-      xcom_id: comId,
-      xyear_id: "0",
+    // جلب جميع القيود الافتتاحية والبحث محلياً
+    const vouchersResponse = await voucherService.getAll({
+      xvouch_type: "0", // قيد افتتاحي فقط
+      xcom_id: "1",
     });
 
-    let vouchers: any[] = [];
-
     if (vouchersResponse.success && vouchersResponse.data) {
-      vouchers = Array.isArray(vouchersResponse.data)
+      const vouchers = Array.isArray(vouchersResponse.data)
         ? vouchersResponse.data
         : [];
-    }
 
-    console.log("📋 Found vouchers (type 0):", vouchers.length);
+      // البحث أولاً بـ id (primary key)
+      const foundVoucher = vouchers.find(
+        (v: any) => Number(v?.id) === voucherId,
+      );
 
-    // البحث أولاً بـ id (primary key) - هذا الأهم
-    let foundVoucher = vouchers.find(
-      (v: any) => v.id === voucherId && v.vouch_type === 0,
-    );
+      if (foundVoucher) {
+        return foundVoucher;
+      }
 
-    if (foundVoucher) {
-      console.log("✅ Found voucher by id:", foundVoucher.id);
-      return foundVoucher;
-    }
+      // البحث بـ vouch_id كـ fallback
+      const foundByVouchId = vouchers.find(
+        (v: any) => Number(v?.vouch_id) === voucherId,
+      );
 
-    // إذا لم نجد، نجرب البحث بـ vouch_id
-    foundVoucher = vouchers.find(
-      (v: any) => v.vouch_id === voucherId && v.vouch_type === 0,
-    );
-
-    if (foundVoucher) {
-      console.log("✅ Found voucher by vouch_id:", foundVoucher.vouch_id);
-      return foundVoucher;
-    }
-
-    // محاولة ثانية: جلب جميع القيود بدون فلتر النوع
-    if (!foundVoucher) {
-      vouchersResponse = await voucherService.getAll({
-        xcom_id: comId,
-      });
-
-      if (vouchersResponse.success && vouchersResponse.data) {
-        const allVouchers = Array.isArray(vouchersResponse.data)
-          ? vouchersResponse.data
-          : [];
-
-        console.log("📋 Found all vouchers:", allVouchers.length);
-
-        foundVoucher = allVouchers.find(
-          (v: any) => (v.id === voucherId || v.vouch_id === voucherId) && v.vouch_type === 0,
-        );
+      if (foundByVouchId) {
+        return foundByVouchId;
       }
     }
 
-    // محاولة أخيرة: البحث في جميع القيود بدون أي فلتر
-    if (!foundVoucher) {
-      const lastAttempt = await voucherService.getAll();
-
-      if (lastAttempt.success && lastAttempt.data) {
-        const allVouchers = Array.isArray(lastAttempt.data)
-          ? lastAttempt.data
-          : [];
-
-        console.log("📋 Found all vouchers (no filters):", allVouchers.length);
-
-        foundVoucher = allVouchers.find(
-          (v: any) => (v.id === voucherId || v.vouch_id === voucherId) && v.vouch_type === 0,
-        );
-      }
-    }
-
-    if (foundVoucher) {
-      console.log("✅ Found voucher in fallback:", foundVoucher.id || foundVoucher.vouch_id);
-      return foundVoucher;
-    }
-
-    console.warn("❌ Voucher not found:", voucherId);
     return null;
   } catch (error) {
     console.error("Error fetching voucher:", error);
-
     return null;
   }
-});
+}
 
 // Cache the voucher details for better performance
 const getVoucherDetails = cache(
   async (voucherId: number, branchId?: number | string) => {
     try {
       if (!voucherId || isNaN(voucherId)) {
-        console.warn("Invalid voucherId:", voucherId);
-
         return [];
       }
 
@@ -133,8 +73,6 @@ const getVoucherDetails = cache(
       });
 
       if (!detailsResponse.success || !detailsResponse.data) {
-        console.warn("Failed to fetch voucher details:", detailsResponse);
-
         return [];
       }
 
@@ -162,6 +100,7 @@ export default async function BalanceVoucherEditPage({
 
   // تحديد الوضع: preview (افتراضي بعد الحفظ) أو edit
   const formMode = mode === "edit" ? "edit" : "preview";
+  const startInEditMode = mode === "edit";
 
   const voucherId = parseInt(id);
 
@@ -170,31 +109,45 @@ export default async function BalanceVoucherEditPage({
     notFound();
   }
 
-  // الحصول على معاملات الفرع
-  const branchParams = await getBranchParams();
-  const branchId = branchParams.com || "1";
-
   // جلب البيانات بشكل متوازي
   const [targetVoucher, formData] = await Promise.all([
-    getVoucherById(voucherId, branchId),
-    voucherFormDataService.getVoucherFormData(),
+    getVoucherById(voucherId),
+    voucherFormDataService.getBalanceVoucherFormData(),
   ]);
 
   if (!targetVoucher) {
+    // إذا لم يتم العثور على القيد، حاول مرة أخرى بعد تأخير قصير
+    // هذا قد يكون مفيداً إذا كان القيد حديث الإضافة
+    console.warn(
+      `[Balance Voucher] Voucher with ID ${voucherId} not found, retrying...`,
+    );
     notFound();
   }
 
   // التحقق من أن القيد هو قيد افتتاحي
   if (targetVoucher.vouch_type !== 0) {
+    console.warn(
+      `[Balance Voucher] Voucher ${voucherId} is not an opening entry (type: ${targetVoucher.vouch_type})`,
+    );
     notFound();
   }
 
-  // جلب تفاصيل القيد - استخدام id من targetVoucher
-  // استخدام branchId الذي تم تعريفه سابقاً، أو com_id من القيد إذا كان مختلفاً
-  const voucherBranchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? branchId) || branchId;
-  const detailsData = await getVoucherDetails(targetVoucher.id, voucherBranchId);
+  // جلب تفاصيل القيد
+  // استخدام id (primary key) من جدول vouchers
+  const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
+  const voucherMasterId = targetVoucher.id; // primary key من جدول vouchers
+  
+  if (!voucherMasterId || voucherMasterId <= 0) {
+    console.error(
+      `[Balance Voucher] Invalid voucher master ID: ${voucherMasterId}`,
+    );
+    notFound();
+  }
+
+  const detailsData = await getVoucherDetails(voucherMasterId, branchId);
 
   // معالجة تفاصيل القيد
+  // ملاحظة: API يستخدم vouch (id من vouchers), acc, cost
   const details: VoucherDetail[] = detailsData.map((detail: any) => {
     const account = formData.accounts.find(
       (acc: any) => acc.id === (detail.acc_id || detail.acc),
@@ -202,11 +155,11 @@ export default async function BalanceVoucherEditPage({
 
     return {
       id: detail.id || 0,
-      vouch_id: detail.vouch_id || targetVoucher.vouch_id || 0,
-      acc_id: detail.acc_id || detail.acc || 0,
+      vouch_id: targetVoucher.vouch_id || 0, // vouch_id من voucher الرئيسي
+      acc_id: detail.acc_id || detail.acc || 0, // API يعيد acc
       acc_code: (account as any)?.acc_code || detail.acc_code || "",
       acc_name: (account as any)?.acc_name || detail.acc_name || "",
-      cost_id: detail.cost_id || 0,
+      cost_id: detail.cost_id || detail.cost || 0, // API يعيد cost
       debit:
         detail.debit !== undefined && detail.debit !== null
           ? parseFloat(String(detail.debit))
@@ -215,19 +168,39 @@ export default async function BalanceVoucherEditPage({
         detail.credit !== undefined && detail.credit !== null
           ? parseFloat(String(detail.credit))
           : undefined,
-      debit_g:
-        detail.debit_g !== undefined && detail.debit_g !== null
-          ? parseFloat(String(detail.debit_g))
-          : undefined,
-      credit_g:
-        detail.credit_g !== undefined && detail.credit_g !== null
-          ? parseFloat(String(detail.credit_g))
-          : undefined,
+      debit_base:
+        detail.debit_base !== undefined && detail.debit_base !== null
+          ? parseFloat(String(detail.debit_base))
+          : (detail.debit !== undefined && detail.debit !== null
+            ? parseFloat(String(detail.debit))
+            : undefined),
+      credit_base:
+        detail.credit_base !== undefined && detail.credit_base !== null
+          ? parseFloat(String(detail.credit_base))
+          : (detail.credit !== undefined && detail.credit !== null
+            ? parseFloat(String(detail.credit))
+            : undefined),
       gauge: parseFloat(detail.gauge) || 875,
-      // لا توجد ضريبة في القيد الافتتاحي
-      tax: undefined,
-      tax_prc: undefined,
-      vat_no: undefined,
+      g_debit:
+        detail.g_debit !== undefined && detail.g_debit !== null
+          ? parseFloat(String(detail.g_debit))
+          : (detail.debit_g !== undefined && detail.debit_g !== null
+            ? parseFloat(String(detail.debit_g))
+            : undefined),
+      g_credit:
+        detail.g_credit !== undefined && detail.g_credit !== null
+          ? parseFloat(String(detail.g_credit))
+          : (detail.credit_g !== undefined && detail.credit_g !== null
+            ? parseFloat(String(detail.credit_g))
+            : undefined),
+      g_debit_base:
+        detail.g_debit_base !== undefined && detail.g_debit_base !== null
+          ? parseFloat(String(detail.g_debit_base))
+          : undefined,
+      g_credit_base:
+        detail.g_credit_base !== undefined && detail.g_credit_base !== null
+          ? parseFloat(String(detail.g_credit_base))
+          : undefined,
       vouch_notes: detail.vouch_notes || "",
       cr_date: detail.cr_date || new Date().toISOString(),
     };
@@ -250,12 +223,26 @@ export default async function BalanceVoucherEditPage({
   };
 
   return (
-    <BalanceVoucherClientPage
-      formData={formData}
-      formMode={formMode}
-      voucherData={formattedVoucher}
-      voucherDetailsData={details}
-      voucherRecordId={targetVoucher.id}
-    />
+    <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { name: "قيد افتتاحي", href: "/forms/balance" },
+          {
+            name:
+              formMode === "edit"
+                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
+                : "معاينة",
+          },
+        ]}
+      />
+      <BalanceVoucherClientPage
+        formData={formData}
+        formMode={formMode}
+        isNewVoucher={false}
+        voucherData={formattedVoucher}
+        voucherDetailsData={details}
+        voucherRecordId={targetVoucher.id}
+      />
+    </div>
   );
 }

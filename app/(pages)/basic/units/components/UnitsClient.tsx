@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -12,21 +13,18 @@ import {
   Button,
   Checkbox,
   Pagination,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
 } from "@heroui/react";
 import {
   PlusIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import unitService from "@/services/api/unit.service";
+import { ConfirmationModal } from "@/components/Modal";
 
 interface Unit {
   id: number;
@@ -52,12 +50,12 @@ const columns = [
 ];
 
 export default function UnitsClient({ initialUnits }: UnitsClientProps) {
+  const router = useRouter();
   const [units, setUnits] = useState<Unit[]>(initialUnits);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
-  const [currentUnit, setCurrentUnit] = useState<Partial<Unit>>({});
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [unitToDelete, setUnitToDelete] = useState<Unit | null>(null);
 
   const rowsPerPage = 10;
 
@@ -72,48 +70,52 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
     }
   };
 
-  const handleSave = async () => {
-    try {
-      let result: Unit | null = null;
 
-      if (modalMode === "edit" && currentUnit.id) {
-        result = await unitService.updateUnit(currentUnit.id, currentUnit);
-      } else {
-        result = await unitService.createUnit(currentUnit as Omit<Unit, "id">);
-      }
-
-      if (result) {
-        toast.success(
-          modalMode === "edit"
-            ? "✅ تم تعديل الوحدة بنجاح"
-            : "✅ تم إضافة الوحدة بنجاح",
-        );
-        setIsModalOpen(false);
-        loadUnits();
-      } else {
-        toast.error("❌ فشل في العملية");
-      }
-    } catch (error) {
-      console.error("❌ خطأ أثناء الحفظ:", error);
-      toast.error("❌ حدث خطأ أثناء حفظ الوحدة");
+  const handleDeleteClick = (unit: Unit) => {
+    if (!unit.id) {
+      toast.error("❌ لا يمكن حذف وحدة بدون معرف");
+      return;
     }
+
+    setUnitToDelete(unit);
+    setDeleteModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("هل تريد حذف هذه الوحدة؟")) return;
+  const handleDeleteConfirm = async () => {
+    if (!unitToDelete?.id) {
+      setDeleteModalOpen(false);
+      setUnitToDelete(null);
+      return;
+    }
+
+    // Optimistic delete
+    setUnits((prevUnits) =>
+      prevUnits.filter((u) => u.id !== unitToDelete.id)
+    );
+
     try {
-      const result = await unitService.deleteUnit(id);
+      const result = await unitService.deleteUnit(unitToDelete.id);
 
       if (result) {
         toast.success("✅ تم حذف الوحدة بنجاح");
         loadUnits();
       } else {
         toast.error("❌ فشل في حذف الوحدة");
+        loadUnits();
       }
     } catch (error) {
       console.error("❌ خطأ أثناء الحذف:", error);
       toast.error("❌ حدث خطأ أثناء الحذف");
+      loadUnits();
+    } finally {
+      setDeleteModalOpen(false);
+      setUnitToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setUnitToDelete(null);
   };
 
   const filtered = useMemo(() => {
@@ -128,24 +130,13 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
-  const openModal = (
-    mode: "add" | "edit" | "view",
-    unit: Partial<Unit> = {},
-  ) => {
-    setModalMode(mode);
-    setCurrentUnit(unit);
-    setIsModalOpen(true);
-  };
-
-  const isViewMode = modalMode === "view";
-
   const renderActions = (unit: Unit) => (
     <div className="flex gap-2">
       <Button
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("view", unit)}
+        onPress={() => router.push(`/basic/units/${unit.id}`)}
       >
         <EyeIcon className="h-4 w-4 text-blue-500" />
       </Button>
@@ -153,7 +144,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => openModal("edit", unit)}
+        onPress={() => router.push(`/basic/units/${unit.id}?mode=edit`)}
       >
         <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
@@ -162,7 +153,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
         color="danger"
         size="sm"
         variant="light"
-        onPress={() => handleDelete(unit.id)}
+        onPress={() => handleDeleteClick(unit)}
       >
         <TrashIcon className="h-4 w-4" />
       </Button>
@@ -171,16 +162,27 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
 
   return (
     <div className="responsive-container font-cairo">
-      <div className="responsive-filters">
-        <Button onPress={() => openModal("add")}>
-          <PlusIcon className="h-4 w-4" /> إضافة وحدة
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <h2 className="text-base font-semibold">إدارة الوحدات</h2>
+        <div className="h-8 w-px bg-gray-300" />
+        <Button
+          variant="bordered"
+          className="bg-gray-100"
+          onPress={() => router.push("/basic/units/new")}
+        >
+          <PlusIcon className="h-3 w-3" />
+          إضافة وحدة
         </Button>
-        <Input
-          className="responsive-search"
-          placeholder="بحث بالاسم..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="h-8 w-px bg-gray-300" />
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="بحث بالاسم..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
+            size="sm"
+          />
+        </div>
       </div>
 
       <div className="responsive-table">
@@ -220,82 +222,17 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
         />
       </div>
 
-      <Modal
-        isDismissable={false}
-        isOpen={isModalOpen}
-        scrollBehavior="inside"
-        onClose={() => setIsModalOpen(false)}
-      >
-        <ModalContent className="font-cairo">
-          <ModalHeader>
-            {modalMode === "add" && "إضافة وحدة"}
-            {modalMode === "edit" && "تعديل وحدة"}
-            {modalMode === "view" && "عرض بيانات الوحدة"}
-          </ModalHeader>
-
-          <ModalBody className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
-            <Input
-              isDisabled={isViewMode}
-              label="اسم الوحدة"
-              value={currentUnit.unit_name || ""}
-              onChange={(e) =>
-                setCurrentUnit({ ...currentUnit, unit_name: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="اسم الوحدة بالإنجليزي"
-              value={currentUnit.unit_name_e || ""}
-              onChange={(e) =>
-                setCurrentUnit({ ...currentUnit, unit_name_e: e.target.value })
-              }
-            />
-            <Input
-              isDisabled={isViewMode}
-              label="نوع الوحدة"
-              type="number"
-              value={currentUnit.unit_type?.toString() || ""}
-              onChange={(e) =>
-                setCurrentUnit({
-                  ...currentUnit,
-                  unit_type: parseInt(e.target.value),
-                })
-              }
-            />
-            <div className="col-span-2 flex gap-6 items-center">
-              <Checkbox
-                isDisabled={isViewMode}
-                isSelected={Boolean(currentUnit.unit_status)}
-                onValueChange={(val) =>
-                  setCurrentUnit({ ...currentUnit, unit_status: val })
-                }
-              >
-                مفعلة
-              </Checkbox>
-              <Checkbox
-                isDisabled={isViewMode}
-                isSelected={Boolean(currentUnit.unit_default)}
-                onValueChange={(val) =>
-                  setCurrentUnit({ ...currentUnit, unit_default: val })
-                }
-              >
-                افتراضية
-              </Checkbox>
-            </div>
-          </ModalBody>
-
-          {modalMode !== "view" && (
-            <ModalFooter className="flex justify-end gap-2">
-              <Button color="danger" onPress={() => setIsModalOpen(false)}>
-                إلغاء
-              </Button>
-              <Button color="success" onPress={handleSave}>
-                {modalMode === "edit" ? "تحديث" : "حفظ"}
-              </Button>
-            </ModalFooter>
-          )}
-        </ModalContent>
-      </Modal>
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="تأكيد الحذف"
+        message={`هل أنت متأكد من حذف الوحدة "${unitToDelete?.unit_name}"؟`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        confirmColor="danger"
+        size="md"
+      />
     </div>
   );
 }

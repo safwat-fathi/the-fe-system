@@ -66,6 +66,9 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
   // Accounts (قوائم أساسية - بدون year)
   accounts_list: {
     endpoint: "accounts_list",
+    paramTransform: (params) => ({
+      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
+    }),
   },
 
   // Boxes (قوائم أساسية - بدون year)
@@ -133,13 +136,29 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
     }),
   },
 
-  // Voucher Boxes (صناديق القيود - تحتاج vouch_id و xcom_id)
+  // Voucher Boxes (صناديق القيود - تحتاج xvouch_id و xcom_id)
   vouchers_box_list: {
     endpoint: "vouchers_box_list",
     paramTransform: (params) => ({
-      vouch_id: params.vouch_id || params.voucherId || "0",
+      xvouch_id: params.xvouch_id || params.vouch_id || params.voucherId || "0", // API يتوقع xvouch_id (الأولوية لـ xvouch_id)
       xcom_id: params.xcom_id || params.com || "1", // رقم الفرع
       // لا يحتاج year parameter
+    }),
+  },
+
+  // GL Transactions (القيود المحاسبية)
+  gl_transaction_list: {
+    endpoint: "gl_transaction_list",
+    paramTransform: (params) => ({
+      xcom_id: params.xcom_id || params.com || "1",
+      xyear_id: params.xyear_id || params.year || "0",
+      xfrom_date: params.xfrom_date || params.from_date || "0",
+      xto_date: params.xto_date || params.to_date || "0",
+      xtrans_type: params.xtrans_type || params.trans_type || "0",
+      xtrans_id: params.xtrans_id || params.trans_id || "0",
+      xcost_id: params.xcost_id || "0", // مركز التكلفة
+      xcust_id: params.xcust_id || "0", // رقم العميل
+      xacc_id: params.xacc_id || "0", // رقم الحساب
     }),
   },
 };
@@ -175,14 +194,6 @@ class GenericService extends HttpService<any> {
         // Send undefined to let HttpService add branch params automatically
         finalParams = undefined;
       }
-
-      logger.debug("🔍 GenericService Request:", {
-        table: tableName,
-        endpoint,
-        originalParams: params,
-        finalParams,
-        baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-      });
 
       const startTime = Date.now();
 
@@ -222,13 +233,6 @@ class GenericService extends HttpService<any> {
 
       const endTime = Date.now();
 
-      logger.debug(`⏱️ Request took: ${endTime - startTime}ms`);
-      logger.debug("✅ GenericService Response:", {
-        success: response.success,
-        dataType: typeof response.data,
-        isArray: Array.isArray(response.data),
-      });
-
       // Check if response data is HTML (404 error) - BEFORE any other checks
       const responseDataStr = String(response.data || "");
 
@@ -245,20 +249,11 @@ class GenericService extends HttpService<any> {
         };
       }
 
-      logger.debug(
-        "📊 Has results?:",
-        response.data &&
-          typeof response.data === "object" &&
-          "results" in response.data,
-      );
-
       if (response.success) {
         // Handle different response structures
 
         // Case 1: Direct array
         if (Array.isArray(response.data)) {
-          logger.debug("✅ Handling as direct array");
-
           return {
             success: true,
             data: response.data,
@@ -272,7 +267,6 @@ class GenericService extends HttpService<any> {
           typeof response.data === "object" &&
           Array.isArray((response.data as any).results)
         ) {
-          logger.debug("✅ Handling as paginated response (results)");
           const results = (response.data as any).results;
 
           return {
@@ -284,8 +278,6 @@ class GenericService extends HttpService<any> {
 
         // Case 3: Single object
         else if (response.data && typeof response.data === "object") {
-          logger.debug("✅ Handling as single object");
-
           return {
             success: true,
             data: [response.data],

@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   // Items
   ITEMS: "/items/",
   SEARCH_ITEMS: "/SearchItemsList/",
+  SEARCH_ITEMS_VOUCHER: "/SearchItemsVoucherList/",
 
   // Customers
   CUSTOMERS: "/customers/",

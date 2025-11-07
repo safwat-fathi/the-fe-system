@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import UnitsClient from "./components/UnitsClient";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import unitService from "@/services/api/unit.service";
 
 export const metadata: Metadata = {
@@ -15,7 +16,8 @@ export default async function UnitsPage() {
 
   return (
     <div className="responsive-container font-cairo">
-      <h1 className="responsive-text-xl font-bold mb-6">الوحدات</h1>
+      <Breadcrumb />
+      <h1 className="responsive-text-xl font-bold mb-2">الوحدات</h1>
 
       <UnitsClient initialUnits={unitsData} />
     </div>

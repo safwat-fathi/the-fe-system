@@ -32,4 +32,3 @@ const TokenDisplay = ({ accessToken, refreshToken }: TokenDisplayProps) => {
 };
 
 export default TokenDisplay;
-

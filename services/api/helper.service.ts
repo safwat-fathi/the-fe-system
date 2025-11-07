@@ -61,25 +61,31 @@ class HelperService extends HttpService {
   }
 
   // جلب الفئات
-  async getCategories(params?: { xcom_id?: number | string }): Promise<Category[]> {
+  async getCategories(xcom_id?: string | number): Promise<Category[]> {
     try {
-      let xcom_id: number | string | undefined = params?.xcom_id;
-      if (xcom_id === undefined) {
+      // جلب companyId من branch-params إذا لم يتم توفيره
+      let companyId = xcom_id;
+
+      if (!companyId) {
         try {
           const { getBranchParams } = await import("@/app/actions/branch-params");
-          const branch = await getBranchParams();
-          const parsed = Number(branch?.com ?? 1);
-          xcom_id = Number.isFinite(parsed) ? parsed : 1;
-        } catch {
-          xcom_id = 1;
+          const branchParams = await getBranchParams();
+          companyId = branchParams.com || "1";
+        } catch (error) {
+          // إذا فشل جلب branch params، استخدم القيمة الافتراضية
+          companyId = "1";
         }
       }
+
+      // التأكد من أن companyId هو string
+      const companyIdString = String(companyId || "1");
+
       const response = await this.get<Category[]>(
         "categories_list",
-        { xcom_id },
+        { xcom_id: companyIdString },
         {
           cache: "no-store",
-          next: { tags: ["categories"] },
+          next: { tags: ["categories", `categories-company-${companyIdString}`] },
         },
       );
 
@@ -94,7 +100,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching categories:", error);
-
+      // في حالة الخطأ، إرجاع مصفوفة فارغة بدلاً من رمي الخطأ
       return [];
     }
   }
@@ -148,12 +154,31 @@ class HelperService extends HttpService {
   }
 
   // جلب الصناديق
-  async getBoxes(): Promise<Box[]> {
+  async getBoxes(xcom_id?: string | number): Promise<Box[]> {
     try {
-      const response = await this.get<Box[]>("boxes_list", undefined, {
-        cache: "no-store",
-        next: { tags: ["boxes"] },
-      });
+      // جلب companyId من branch-params إذا لم يتم توفيره
+      let companyId = xcom_id;
+
+      if (!companyId) {
+        try {
+          const branchParams = await import("@/app/actions/branch-params").then(
+            (m) => m.getBranchParams(),
+          );
+
+          companyId = branchParams.com || "1";
+        } catch {
+          companyId = "1";
+        }
+      }
+
+      const response = await this.get<Box[]>(
+        "boxes_list",
+        { xcom_id: String(companyId) },
+        {
+          cache: "no-store",
+          next: { tags: ["boxes"] },
+        },
+      );
 
       if (response.success) {
         if (Array.isArray(response.data)) {

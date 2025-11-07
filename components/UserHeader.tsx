@@ -11,8 +11,14 @@ import {
   DropdownItem,
   Button,
 } from "@heroui/react";
-import { UserIcon, BeakerIcon } from "@heroicons/react/24/outline";
+import {
+  BeakerIcon,
+  ClockIcon,
+  CalendarIcon,
+  ArrowRightOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { onLogoutAction } from "@/app/actions/auth";
 
@@ -32,6 +38,37 @@ const STATIC_USER_INFO: UserInfo = {
 
 export default function UserHeader() {
   const router = useRouter();
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setCurrentTime(new Date());
+
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date: Date | null) => {
+    if (!date) return "--:--:--";
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return "--/--/----";
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  };
 
   const handleLogout = async () => {
     await onLogoutAction();
@@ -41,26 +78,70 @@ export default function UserHeader() {
     router.push("/test-service");
   };
 
+  if (!isMounted) {
+    return (
+      <Navbar
+        className="bg-gradient-to-r from-white via-slate-50 to-white shadow-sm border-b border-slate-200"
+        maxWidth="full"
+        classNames={{
+          wrapper: "px-4 py-2 min-h-[48px]",
+        }}
+      >
+        <NavbarContent className="hidden md:flex" justify="start">
+          <NavbarItem>
+            <div className="h-5 w-32 bg-slate-200 rounded animate-pulse" />
+          </NavbarItem>
+        </NavbarContent>
+      </Navbar>
+    );
+  }
+
   return (
-    <Navbar className="bg-white shadow-sm border-b" maxWidth="full">
+    <Navbar
+      className="bg-gradient-to-r from-white via-slate-50 to-white shadow-sm border-b border-slate-200"
+      maxWidth="full"
+      classNames={{
+        wrapper: "px-4 py-2 min-h-[48px]",
+      }}
+    >
+      <NavbarContent className="hidden md:flex" justify="start">
+        <NavbarItem>
+          <div className="flex items-center gap-3 text-sm text-slate-600">
+            <div className="flex items-center gap-1.5">
+              <CalendarIcon className="h-4 w-4 text-slate-400" />
+              <span className="font-medium">{formatDate(currentTime)}</span>
+            </div>
+            <span className="text-slate-300">|</span>
+            <div className="flex items-center gap-1.5">
+              <ClockIcon className="h-4 w-4 text-slate-400" />
+              <span className="font-mono font-semibold text-slate-700">
+                {formatTime(currentTime)}
+              </span>
+            </div>
+          </div>
+        </NavbarItem>
+      </NavbarContent>
+
       <NavbarContent justify="end">
-        {/* أيقونة المستخدم مع اسمه وقائمة منسدلة */}
         <NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <Button className="flex items-center gap-2 px-2" variant="light">
+              <Button
+                variant="light"
+                className="flex items-center gap-2 px-2 py-1"
+              >
                 <Avatar
-                  className="bg-blue-100 text-blue-600"
+                  className="bg-gradient-to-br from-amber-500 to-amber-600 text-white w-8 h-8 text-xs"
                   name={
                     STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username
                   }
                   size="sm"
                 />
                 <div className="hidden md:flex flex-col items-start">
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-slate-700 leading-tight">
                     {STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-slate-500 leading-tight">
                     {STATIC_USER_INFO?.role || "مستخدم"}
                   </span>
                 </div>
@@ -71,15 +152,17 @@ export default function UserHeader() {
                 key="test"
                 className="text-blue-600"
                 startContent={<BeakerIcon className="w-4 h-4" />}
-                onClick={handleNavigateToTest}
+                onPress={handleNavigateToTest}
               >
                 صفحة اختبار
               </DropdownItem>
               <DropdownItem
                 key="logout"
                 className="text-red-600"
-                startContent={<UserIcon className="w-4 h-4" />}
-                onClick={handleLogout}
+                startContent={
+                  <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                }
+                onPress={handleLogout}
               >
                 تسجيل الخروج
               </DropdownItem>

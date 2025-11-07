@@ -28,6 +28,7 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import { API_ENDPOINTS, fetchData } from "@/utilities/api";
 import { formatDateTime } from "@/utilities/dateUtils";
 import { formatAmount } from "@/utilities/formatAmount";
@@ -295,6 +296,7 @@ export default function VATReportPage() {
 
   return (
     <div className="font-cairo space-y-4 p-4">
+      <Breadcrumb />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -1,3 +1,5 @@
+import { Group, MergedPermissions } from "./menu";
+
 export interface User {
   id: string;
   email: string;
@@ -5,4 +7,6 @@ export interface User {
   lastName: string;
   createdAt: string;
   updatedAt: string;
+  groups?: Group[];
+  permissions?: MergedPermissions;
 }

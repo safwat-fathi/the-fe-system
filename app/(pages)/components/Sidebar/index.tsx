@@ -9,18 +9,20 @@ import {
   Cog6ToothIcon,
   CubeIcon,
   DocumentTextIcon,
+  DocumentCheckIcon,
   HomeIcon,
   TagIcon,
   UserGroupIcon,
+  LinkIcon,
+  ShieldCheckIcon,
+  ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@heroui/react";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-
-import LogoutButton from "@/components/LogoutButton";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const mainLinks = [
   {
@@ -35,6 +37,21 @@ const settingsLinks = [
     name: "إعدادات النظام",
     href: "/settings",
     icon: <Cog6ToothIcon className="h-5 w-5" />,
+  },
+  {
+    name: "الصلاحيات",
+    href: "/settings/permissions",
+    icon: <ShieldCheckIcon className="h-5 w-5" />,
+  },
+  {
+    name: "الضرائب",
+    href: "/settings/taxes",
+    icon: <DocumentCheckIcon className="h-5 w-5" />,
+  },
+  {
+    name: "خدمات الربط",
+    href: "/settings/integrations",
+    icon: <LinkIcon className="h-5 w-5" />,
   },
 ];
 
@@ -83,33 +100,13 @@ const accountingFormLinks: Array<{
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {
-    name: "سند قبض عميل",
-    href: "/forms/gvoucher4",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-  {
-    name: "سند صرف عميل",
-    href: "/forms/gvoucher5",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-  {
     name: "قيد تسوية",
     href: "/forms/voucher?mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
 ];
 
-const accountingReportLinks: Array<{
-  name: string;
-  href: string;
-  icon: React.ReactNode;
-}> = [
-  {
-    name: "تقرير السندات",
-    href: "/reports/vouchers",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-];
+// تم نقل جميع التقارير إلى قسم منفصل في المنتصف
 
 // نظام الذهب
 const goldBasicLinks = [
@@ -161,38 +158,84 @@ const goldFormLinks = [
     href: "/forms/invoices?type=sale-return&mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
-];
-
-const goldReportLinks = [
   {
-    name: "قائمة الفواتير",
-    href: "/reports/invoices",
+    name: "سند قبض عميل",
+    href: "/forms/gvoucher4",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {
-    name: "تقرير الضريبة",
-    href: "/reports/vat",
-    icon: <CalculatorIcon className="h-5 w-5" />,
+    name: "سند صرف عميل",
+    href: "/forms/gvoucher5",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند استلام",
+    href: "/forms/receipt",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
+  },
+  {
+    name: "سند تسليم",
+    href: "/forms/delivery",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
   },
 ];
 
+// تم نقل جميع التقارير إلى قسم منفصل في المنتصف
+
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [version] = useState("ver.251103");
 
   // نظام الحسابات
   const [showAccountingSystem, setShowAccountingSystem] = useState(true);
   const [showAccountingBasic, setShowAccountingBasic] = useState(true);
   const [showAccountingForms, setShowAccountingForms] = useState(true);
-  const [showAccountingReports, setShowAccountingReports] = useState(false);
 
   // نظام الذهب
   const [showGoldSystem, setShowGoldSystem] = useState(true);
   const [showGoldBasic, setShowGoldBasic] = useState(true);
   const [showGoldForms, setShowGoldForms] = useState(true);
-  const [showGoldReports, setShowGoldReports] = useState(true);
 
   const [showSettingsLinks, setShowSettingsLinks] = useState(true);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
+  // Helper function to check if a link is active
+  const isLinkActive = (href: string): boolean => {
+    try {
+      // Extract path and query from href
+      const [linkPath, linkQuery] = href.split("?");
+      
+      // Check if pathname matches exactly
+      if (pathname === linkPath) {
+        // If href has query params, check them
+        if (linkQuery && searchParams) {
+          const linkParams = new URLSearchParams(linkQuery);
+          
+          // Check if all query params in href exist in current params with matching values
+          for (const [key, value] of linkParams.entries()) {
+            const currentValue = searchParams.get(key);
+            // If query param value doesn't match, link is not active
+            if (currentValue !== value) {
+              return false;
+            }
+          }
+        }
+        // Pathname matches exactly and query params (if any) match, link is active
+        return true;
+      }
+
+      // If pathname doesn't match exactly, link is not active
+      // This ensures that parent links (like /settings) are not active when on child pages (like /settings/permissions)
+      return false;
+    } catch (error) {
+      console.warn("Error checking link active state:", error);
+      // Fallback to simple pathname comparison
+      const [linkPath] = href.split("?");
+      return pathname === linkPath;
+    }
+  };
+
 
   const animationVariants = {
     hidden: { clipPath: "inset(0% 0% 100% 0%)", opacity: 0 },
@@ -203,46 +246,69 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`bg-gradient-to-b from-gray-800 to-gray-900 text-white transition-all duration-300 ease-in-out flex flex-col ${
+      className={`bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white transition-all duration-300 ease-in-out flex flex-col h-screen ${
         isSidebarOpen ? "w-72 px-6" : "w-20 px-3"
-      } min-h-screen shadow-xl`}
+      } shadow-[4px_0_20px_rgba(0,0,0,0.4)] border-r border-amber-900/20`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between h-16 mb-8 relative border-b border-gray-700 pb-4">
-        {isSidebarOpen && (
-          <h2 className="text-xl font-bold whitespace-nowrap text-white">
-            لوحة التحكم
-          </h2>
-        )}
-        <Button
-          className="text-white hover:bg-gray-700"
-          size="sm"
-          variant="light"
-          onPress={() => setIsSidebarOpen(!isSidebarOpen)}
-        >
-          <Bars3Icon className="h-5 w-5" />
-        </Button>
+      <div className="relative border-b border-amber-900/30 bg-gradient-to-r from-amber-950/20 via-transparent to-transparent rounded-b-xl">
+        <div className={`flex items-center h-16 mb-3 ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
+          {isSidebarOpen && (
+            <div className="flex items-center relative">
+              <h2 className="text-4xl font-black whitespace-nowrap relative">
+                <span 
+                  className="relative inline-block gradient-text-animated"
+                  style={{
+                    filter: 'drop-shadow(0 0 8px rgba(217, 119, 6, 0.6)) drop-shadow(0 0 15px rgba(180, 83, 9, 0.4))',
+                  }}
+                >
+                  نفيس
+                </span>
+              </h2>
+            </div>
+          )}
+          <Button
+            className={`text-white hover:bg-white/10 rounded-lg transition-all duration-200 ${!isSidebarOpen ? "min-w-0 flex items-center justify-center" : ""}`}
+            size="sm"
+            variant="light"
+            onPress={() => setIsSidebarOpen(!isSidebarOpen)}
+            style={
+              !isSidebarOpen
+                ? {
+                    padding: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }
+                : undefined
+            }
+          >
+            <Bars3Icon className="h-5 w-5" />
+          </Button>
+        </div>
+
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 flex-1">
+      <nav className="flex flex-col gap-1 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Main Links */}
         {mainLinks.map((link) => (
           <Link
             key={link.href}
             className={clsx(
-              "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group",
+              "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
               {
-                "bg-blue-600 shadow-lg": pathname === link.href,
-                "hover:bg-gray-700 hover:shadow-md": pathname !== link.href,
+                "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30":
+                  isLinkActive(link.href),
+                "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40": !isLinkActive(link.href),
               },
             )}
             href={link.href}
           >
             <div
-              className={clsx("text-lg", {
-                "text-white": pathname === link.href,
-                "text-gray-300 group-hover:text-white": pathname !== link.href,
+              className={clsx("text-lg transition-all", {
+                "text-white drop-shadow-lg": isLinkActive(link.href),
+                "text-slate-300 group-hover:text-white": !isLinkActive(link.href),
               })}
             >
               {link.icon}
@@ -259,16 +325,16 @@ const Sidebar = () => {
         ))}
 
         {/* نظام الحسابات */}
-        <div className="mt-6">
+        <div className="mt-4">
           <div
-            className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
+            className="px-3 py-2.5 text-sm font-semibold text-slate-200 cursor-pointer flex justify-between items-center hover:text-white hover:bg-white/5 rounded-lg transition-all"
             onClick={() => setShowAccountingSystem(!showAccountingSystem)}
           >
             <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
               نظام الحسابات
             </span>
             {isSidebarOpen && (
-              <div className="text-gray-400">
+              <div className="text-slate-400">
                 {showAccountingSystem ? (
                   <ChevronUpIcon className="h-4 w-4" />
                 ) : (
@@ -290,7 +356,7 @@ const Sidebar = () => {
               >
                 {/* البيانات الأساسية - نظام الحسابات */}
                 <div
-                  className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                  className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                   onClick={() => setShowAccountingBasic(!showAccountingBasic)}
                 >
                   <span
@@ -302,7 +368,7 @@ const Sidebar = () => {
                     البيانات الأساسية
                   </span>
                   {isSidebarOpen && (
-                    <div className="text-gray-500">
+                    <div className="text-slate-500">
                       {showAccountingBasic ? (
                         <ChevronUpIcon className="h-4 w-4" />
                       ) : (
@@ -325,10 +391,10 @@ const Sidebar = () => {
                       {accountingBasicLinks.map((link) => (
                         <Link
                           key={link.href}
-                          className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                            pathname === link.href
-                              ? "bg-blue-600/20 text-blue-300"
-                              : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                          className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
+                            isLinkActive(link.href)
+                              ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                              : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                           }`}
                           href={link.href}
                           prefetch={true}
@@ -336,9 +402,11 @@ const Sidebar = () => {
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm">{link.icon}</div>
+                          <div className="text-sm transition-all">
+                            {link.icon}
+                          </div>
                           <span
-                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                           >
                             {link.name}
                           </span>
@@ -352,7 +420,7 @@ const Sidebar = () => {
                 {accountingFormLinks.length > 0 && (
                   <>
                     <div
-                      className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                      className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                       onClick={() =>
                         setShowAccountingForms(!showAccountingForms)
                       }
@@ -361,7 +429,7 @@ const Sidebar = () => {
                         النماذج
                       </span>
                       {isSidebarOpen && (
-                        <div className="text-gray-500">
+                        <div className="text-slate-500">
                           {showAccountingForms ? (
                             <ChevronUpIcon className="h-4 w-4" />
                           ) : (
@@ -384,10 +452,10 @@ const Sidebar = () => {
                           {accountingFormLinks.map((link) => (
                             <Link
                               key={link.href}
-                              className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
+                              className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
                                 pathname === link.href
-                                  ? "bg-blue-600/20 text-blue-300"
-                                  : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                                  ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                                  : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                               }`}
                               href={link.href}
                               style={{
@@ -396,71 +464,11 @@ const Sidebar = () => {
                                   : "0.75rem",
                               }}
                             >
-                              <div className="text-sm">{link.icon}</div>
+                              <div className="text-sm transition-all">
+                                {link.icon}
+                              </div>
                               <span
-                                className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
-                              >
-                                {link.name}
-                              </span>
-                            </Link>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
-
-                {/* التقارير - نظام الحسابات */}
-                {accountingReportLinks.length > 0 && (
-                  <>
-                    <div
-                      className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
-                      onClick={() =>
-                        setShowAccountingReports(!showAccountingReports)
-                      }
-                    >
-                      <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                        التقارير
-                      </span>
-                      {isSidebarOpen && (
-                        <div className="text-gray-500">
-                          {showAccountingReports ? (
-                            <ChevronUpIcon className="h-4 w-4" />
-                          ) : (
-                            <ChevronDownIcon className="h-4 w-4" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <AnimatePresence initial={false}>
-                      {showAccountingReports && (
-                        <motion.div
-                          animate="visible"
-                          className="flex flex-col overflow-hidden"
-                          exit="hidden"
-                          initial="hidden"
-                          transition={transition}
-                          variants={animationVariants}
-                        >
-                          {accountingReportLinks.map((link) => (
-                            <Link
-                              key={link.href}
-                              className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                                pathname === link.href
-                                  ? "bg-blue-600/20 text-blue-300"
-                                  : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
-                              }`}
-                              href={link.href}
-                              style={{
-                                paddingLeft: isSidebarOpen
-                                  ? "2.5rem"
-                                  : "0.75rem",
-                              }}
-                            >
-                              <div className="text-sm">{link.icon}</div>
-                              <span
-                                className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                                className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                               >
                                 {link.name}
                               </span>
@@ -476,17 +484,51 @@ const Sidebar = () => {
           </AnimatePresence>
         </div>
 
+        {/* التقارير - قسم منفصل في المنتصف */}
+        <div className="mt-4">
+          <Link
+            className={clsx(
+              "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
+              {
+                "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30":
+                  pathname.startsWith("/reports"),
+                "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40":
+                  !pathname.startsWith("/reports"),
+              },
+            )}
+            href="/reports"
+          >
+            <div
+              className={clsx("text-lg transition-all", {
+                "text-white drop-shadow-lg": pathname.startsWith("/reports"),
+                "text-slate-300 group-hover:text-white":
+                  !pathname.startsWith("/reports"),
+              })}
+            >
+              <ChartBarIcon className="h-5 w-5" />
+            </div>
+            <span
+              className={clsx("font-medium", {
+                block: isSidebarOpen,
+                hidden: !isSidebarOpen,
+              })}
+            >
+              التقارير
+            </span>
+          </Link>
+        </div>
+
         {/* نظام الذهب */}
-        <div className="mt-6">
+        <div className="mt-4">
           <div
-            className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
+            className="px-3 py-2.5 text-sm font-semibold text-slate-200 cursor-pointer flex justify-between items-center hover:text-white hover:bg-white/5 rounded-lg transition-all"
             onClick={() => setShowGoldSystem(!showGoldSystem)}
           >
             <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
               نظام الذهب
             </span>
             {isSidebarOpen && (
-              <div className="text-gray-400">
+              <div className="text-slate-400">
                 {showGoldSystem ? (
                   <ChevronUpIcon className="h-4 w-4" />
                 ) : (
@@ -508,14 +550,14 @@ const Sidebar = () => {
               >
                 {/* البيانات الأساسية - نظام الذهب */}
                 <div
-                  className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                  className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                   onClick={() => setShowGoldBasic(!showGoldBasic)}
                 >
                   <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                     البيانات الأساسية
                   </span>
                   {isSidebarOpen && (
-                    <div className="text-gray-500">
+                    <div className="text-slate-500">
                       {showGoldBasic ? (
                         <ChevronUpIcon className="h-4 w-4" />
                       ) : (
@@ -538,10 +580,10 @@ const Sidebar = () => {
                       {goldBasicLinks.map((link) => (
                         <Link
                           key={link.href}
-                          className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                            pathname === link.href
-                              ? "bg-blue-600/20 text-blue-300"
-                              : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                          className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
+                            isLinkActive(link.href)
+                              ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                              : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                           }`}
                           href={link.href}
                           prefetch={true}
@@ -549,10 +591,12 @@ const Sidebar = () => {
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm">{link.icon}</div>
+                          <div className="text-sm transition-all">
+                            {link.icon}
+                          </div>
 
                           <span
-                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                           >
                             {link.name}
                           </span>
@@ -564,14 +608,14 @@ const Sidebar = () => {
 
                 {/* النماذج - نظام الذهب */}
                 <div
-                  className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
+                  className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
                   onClick={() => setShowGoldForms(!showGoldForms)}
                 >
                   <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                     النماذج
                   </span>
                   {isSidebarOpen && (
-                    <div className="text-gray-500">
+                    <div className="text-slate-500">
                       {showGoldForms ? (
                         <ChevronUpIcon className="h-4 w-4" />
                       ) : (
@@ -594,73 +638,21 @@ const Sidebar = () => {
                       {goldFormLinks.map((link) => (
                         <Link
                           key={link.href}
-                          className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                            pathname === link.href
-                              ? "bg-blue-600/20 text-blue-300"
-                              : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
+                          className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
+                            isLinkActive(link.href)
+                              ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                              : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                           }`}
                           href={link.href}
                           style={{
                             paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                           }}
                         >
-                          <div className="text-sm">{link.icon}</div>
+                          <div className="text-sm transition-all">
+                            {link.icon}
+                          </div>
                           <span
-                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
-                          >
-                            {link.name}
-                          </span>
-                        </Link>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* التقارير - نظام الذهب */}
-                <div
-                  className="px-3 py-2 text-xs text-gray-400 cursor-pointer flex justify-between items-center hover:text-gray-200 transition-colors"
-                  onClick={() => setShowGoldReports(!showGoldReports)}
-                >
-                  <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
-                    التقارير
-                  </span>
-                  {isSidebarOpen && (
-                    <div className="text-gray-500">
-                      {showGoldReports ? (
-                        <ChevronUpIcon className="h-4 w-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-4 w-4" />
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <AnimatePresence initial={false}>
-                  {showGoldReports && (
-                    <motion.div
-                      animate="visible"
-                      className="flex flex-col overflow-hidden"
-                      exit="hidden"
-                      initial="hidden"
-                      transition={transition}
-                      variants={animationVariants}
-                    >
-                      {goldReportLinks.map((link) => (
-                        <Link
-                          key={link.href}
-                          className={`flex items-center gap-3 p-2 rounded-lg transition-all text-white no-underline group ${
-                            pathname === link.href
-                              ? "bg-blue-600/20 text-blue-300"
-                              : "hover:bg-gray-700/50 text-gray-300 hover:text-white"
-                          }`}
-                          href={link.href}
-                          style={{
-                            paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
-                          }}
-                        >
-                          <div className="text-sm">{link.icon}</div>
-                          <span
-                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm`}
+                            className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                           >
                             {link.name}
                           </span>
@@ -675,16 +667,16 @@ const Sidebar = () => {
         </div>
 
         {/* الإعدادات */}
-        <div className="mt-6">
+        <div className="mt-4">
           <div
-            className="px-3 py-2 text-sm font-semibold text-gray-300 cursor-pointer flex justify-between items-center hover:text-white transition-colors"
+            className="px-3 py-2.5 text-sm font-semibold text-slate-200 cursor-pointer flex justify-between items-center hover:text-white hover:bg-white/5 rounded-lg transition-all"
             onClick={() => setShowSettingsLinks(!showSettingsLinks)}
           >
             <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
               الإعدادات
             </span>
             {isSidebarOpen && (
-              <div className="text-gray-400">
+              <div className="text-slate-400">
                 {showSettingsLinks ? (
                   <ChevronUpIcon className="h-4 w-4" />
                 ) : (
@@ -707,20 +699,21 @@ const Sidebar = () => {
                 {settingsLinks.map((link) => (
                   <Link
                     key={link.href}
-                    className={`flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group ${
-                      pathname === link.href
-                        ? "bg-blue-600 shadow-lg"
-                        : "hover:bg-gray-700 hover:shadow-md"
+                    className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-white no-underline group backdrop-blur-sm ${
+                      isLinkActive(link.href)
+                        ? "bg-gradient-to-r from-amber-600/30 to-amber-700/20 text-amber-100 border border-amber-600/40 shadow-sm"
+                        : "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40 text-slate-300 hover:text-white hover:border-transparent"
                     }`}
                     href={link.href}
+                    style={{
+                      paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
+                    }}
                   >
-                    <div
-                      className={`text-lg ${pathname === link.href ? "text-white" : "text-gray-300 group-hover:text-white"}`}
-                    >
+                    <div className="text-sm transition-all">
                       {link.icon}
                     </div>
                     <span
-                      className={`${isSidebarOpen ? "block" : "hidden"} font-medium`}
+                      className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                     >
                       {link.name}
                     </span>
@@ -729,13 +722,6 @@ const Sidebar = () => {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-
-        {/* زر الخروج */}
-        <div className="mt-auto pt-6 border-t border-gray-700">
-          <div className="flex justify-center">
-            <LogoutButton />
-          </div>
         </div>
       </nav>
     </aside>

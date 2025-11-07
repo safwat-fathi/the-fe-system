@@ -1,10 +1,10 @@
 "use client";
 
-import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
+import type { Category, ItemType, Unit } from "@/types/items";
 import type { Item as ItemModel } from "@/types/models/item";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { Button, CardBody, Input, Select, SelectItem } from "@heroui/react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Button, Input, Select, SelectItem, Pagination } from "@heroui/react";
 import {
   FunnelIcon,
   MagnifyingGlassIcon,
@@ -12,17 +12,16 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import AddItem from "./AddItem";
+import { useRouter } from "next/navigation";
 
-import Card from "@/components/Card";
 import AppDataTable from "@/components/AppDataTable";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import useFractions, { Fractions } from "@/utilities/useFractions";
 import itemService from "@/services/api/item.service";
 import { createItemColumns } from "@/components/items/itemColumns";
 import { revalidateItemsDataAction } from "@/app/actions/item";
+import { ConfirmationModal } from "@/components/Modal";
 
-type ModalMode = "add" | "edit" | "view";
 
 type ItemsClientProps = {
   initialItems: ItemModel[];
@@ -37,7 +36,6 @@ type ItemsClientProps = {
 };
 
 type FilterParams = {
-  search: string;
   category: string;
   itemType: string;
   status: string;
@@ -51,38 +49,12 @@ const ITEM_STATUS_FILTERS: { key: string; label: string }[] = [
 ];
 
 const DEFAULT_FILTERS: FilterParams = {
-  search: "",
   category: "",
   itemType: "",
   status: "all",
   page: "1",
 };
 
-const createEmptyItem = (companyId: number): ItemForm => ({
-  id: 0,
-  item_name: "",
-  item_name_e: "",
-  item_price: "0.00",
-  item_img: null,
-  item_code: "0000000000000",
-  item_barcode: "",
-  first_cost: "0.00",
-  item_weight: "0.00",
-  item_g_weight: "0.00",
-  stones: "0.00",
-  model: "",
-  k: "0.00",
-  purity: "0.00",
-  item_status: 1,
-  cr_date: "",
-  cr_user: "",
-  upd_date: "",
-  upd_user: "",
-  cat: null,
-  item_type: null,
-  unit: null,
-  com: companyId,
-});
 
 export default function ItemsClient({
   initialItems,
@@ -97,18 +69,14 @@ export default function ItemsClient({
 }: ItemsClientProps) {
   const [items, setItems] = useState<ItemModel[]>(initialItems);
   const [itemsCount, setItemsCount] = useState(totalItems);
-  const [categories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [itemTypesState] = useState<ItemType[]>(initialItemTypes);
   const [units] = useState<Unit[]>(initialUnits);
-  const [searchValue, setSearchValue] = useState(initialQuery);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ItemModel | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<ModalMode>("add");
-  const [newItem, setNewItem] = useState<ItemForm>(() =>
-    createEmptyItem(companyId),
-  );
+  const router = useRouter();
+  const [searchValue, setSearchValue] = useState("");
+  const [, startTransition] = useTransition();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
 
   const fractions = useFractions() as Fractions;
 
@@ -151,15 +119,10 @@ export default function ItemsClient({
   }, [itemTypesState]);
 
   const { params, setParams } = useQueryParams<FilterParams>(
-    ["search", "category", "itemType", "status", "page"],
+    ["category", "itemType", "status", "page"],
     {
       defaultValues: DEFAULT_FILTERS,
       schema: {
-        search: {
-          parse: (value) => value ?? "",
-          serialize: (value) => value ?? "",
-          default: "",
-        },
         category: {
           parse: (value) => value ?? "",
           serialize: (value) => value ?? "",
@@ -182,83 +145,156 @@ export default function ItemsClient({
         },
       },
       pushMode: "replace",
-      refreshOnChange: true,
-      debounce: 350,
+      refreshOnChange: true, // تفعيل refresh عند تغيير الفلاتر
+      debounce: 0, // بدون debounce لأننا لا نستخدم البحث
     },
   );
 
   useEffect(() => {
     setItems(initialItems);
     setItemsCount(totalItems);
-  }, [initialItems, totalItems]);
-
-  useEffect(() => {
-    setSearchValue(params.search ?? "");
-  }, [params.search]);
+    setCategories(initialCategories);
+  }, [initialItems, totalItems, initialCategories]);
 
   const handleOpenAddModal = () => {
-    setModalMode("add");
-    setNewItem(createEmptyItem(companyId));
-    setIsModalOpen(true);
+    router.push("/basic/items/new");
   };
 
-  const handleAddItem = async () => {
-    if (!(newItem.item_img instanceof File)) {
-      toast.error("❌ يجب رفع صورة للصنف قبل الحفظ");
 
+  const handleDeleteClick = (item: ItemModel) => {
+    if (!item.id) {
+      toast.error("❌ لا يمكن حذف صنف بدون معرف");
       return;
     }
 
+    setItemToDelete(item);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete?.id) {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
+      return;
+    }
+
+    // Optimistic delete
+    setItems((prevItems) => prevItems.filter((i) => i.id !== itemToDelete.id));
+    setItemsCount((prevCount) => Math.max(0, prevCount - 1));
+
     try {
-      const result = await itemService.createItem(newItem);
+      const result = await itemService.deleteItem(itemToDelete.id);
 
       if (result) {
-        toast.success("✅ تمت إضافة الصنف بنجاح");
-        setIsModalOpen(false);
-        setNewItem(createEmptyItem(companyId));
-        await revalidateItemsDataAction();
-        // await refreshItems();
+        toast.success("✅ تم حذف الصنف بنجاح");
+        
+        // إعادة التحقق من البيانات في الخلفية
+        router.refresh();
       } else {
-        toast.error("❌ فشل في إضافة الصنف");
+        toast.error("❌ فشل في حذف الصنف");
+        // إعادة تحميل البيانات في حالة الفشل
+        router.refresh();
       }
-    } catch (error) {
-      toast.error("❌ حدث خطأ أثناء إضافة الصنف");
+    } catch (error: any) {
+      console.error("Error deleting item:", error);
+      
+      // عرض رسالة خطأ واضحة
+      const errorMessage = error?.message || "❌ حدث خطأ أثناء حذف الصنف";
+      toast.error(errorMessage);
+      
+      // إعادة تحميل البيانات في حالة الخطأ
+      router.refresh();
+    } finally {
+      setDeleteModalOpen(false);
+      setItemToDelete(null);
     }
   };
 
-  const handleUpdateItem = () => {
-    toast("تعديل الأصناف غير متاح حالياً", { icon: "ℹ️" });
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setItemToDelete(null);
   };
 
-  const filteredItems = useMemo(() => {
-    const term = (params.search ?? "").trim().toLowerCase();
-    const categoryFilter = params.category?.trim();
-    const typeFilter = params.itemType?.trim();
-    const statusFilter = params.status ?? "all";
+  // Server-side pagination: API يعيد 20 صنف لكل صفحة
+  // Client-side pagination: نعرض 10 أصناف من الـ 20 المحملة
+  // حساب صفحة API بناءً على صفحة الجدول
+  const itemsPerTablePage = 10; // عدد الأصناف المعروضة في الجدول
+  const itemsPerApiPage = 20; // عدد الأصناف التي يعيدها API
+  const currentPageNum = Number(params.page ?? "1") || 1;
+  
+  // حساب صفحة API: كل صفحتين من الجدول = صفحة واحدة من API
+  const apiPage = Math.ceil(currentPageNum / 2);
+  // حساب الفهرس داخل صفحة API
+  const indexInApiPage = ((currentPageNum - 1) % 2) * itemsPerTablePage;
+  
+  // جلب البيانات عند تغيير صفحة API أو الفلاتر
+  // لا نجلب في التحميل الأولي لأن البيانات محملة من server component
+  const prevApiPageRef = useRef(0); // تهيئة بـ 0 لتجنب الجلب في التحميل الأولي
+  const prevCategoryRef = useRef(params.category);
+  const prevItemTypeRef = useRef(params.itemType);
+  const prevStatusRef = useRef(params.status);
 
-    return items.filter((item) => {
-      const matchesSearch =
-        term.length === 0 ||
-        (item.item_name ?? "").toLowerCase().includes(term) ||
-        (item.item_code ?? "").toLowerCase().includes(term) ||
-        (item.item_name_e ?? "").toLowerCase().includes(term);
+  useEffect(() => {
+    const apiPageChanged = prevApiPageRef.current !== apiPage;
+    const categoryChanged = prevCategoryRef.current !== params.category;
+    const itemTypeChanged = prevItemTypeRef.current !== params.itemType;
+    const statusChanged = prevStatusRef.current !== params.status;
 
-      const matchesCategory =
-        !categoryFilter || String(item.cat ?? "") === categoryFilter;
+    // فقط إذا تغيرت صفحة API أو الفلاتر (وليس في التحميل الأولي)
+    if (apiPageChanged || categoryChanged || itemTypeChanged || statusChanged) {
+      const fetchItems = async () => {
+        try {
+          const itemsData = await itemService.searchItems({
+            page: apiPage,
+            companyId,
+            categoryId: params.category || "0",
+            itemTypeId: params.itemType || "0",
+            itemStatus:
+              params.status === "active"
+                ? "1"
+                : params.status === "inactive"
+                  ? "2"
+                  : "0",
+          });
 
-      const matchesType =
-        !typeFilter || String(item.item_type ?? "") === typeFilter;
+          if (itemsData.results) {
+            setItems(itemsData.results);
+            setItemsCount(itemsData.count);
+          }
+        } catch (error) {
+          console.error("Error fetching items:", error);
+        }
+      };
 
-      const matchesStatus =
-        statusFilter === "all"
-          ? true
-          : statusFilter === "active"
-            ? Number(item.item_status ?? 0) === 1
-            : Number(item.item_status ?? 0) !== 1;
+      fetchItems();
+    }
 
-      return matchesSearch && matchesCategory && matchesType && matchesStatus;
-    });
-  }, [items, params]);
+    // تحديث المراجع
+    prevApiPageRef.current = apiPage;
+    prevCategoryRef.current = params.category;
+    prevItemTypeRef.current = params.itemType;
+    prevStatusRef.current = params.status;
+  }, [apiPage, companyId, params.category, params.itemType, params.status]);
+
+  // Filter items based on search value (client-side filtering)
+  const filteredItemsBySearch = useMemo(() => {
+    if (!searchValue.trim()) {
+      return items;
+    }
+    const searchTerm = searchValue.trim().toLowerCase();
+    return items.filter(
+      (item) =>
+        (item.item_name || "").toLowerCase().includes(searchTerm) ||
+        (item.item_name_e || "").toLowerCase().includes(searchTerm) ||
+        (item.item_code || "").toLowerCase().includes(searchTerm)
+    );
+  }, [items, searchValue]);
+
+  const paginatedItems = useMemo(() => {
+    const start = indexInApiPage;
+    const end = start + itemsPerTablePage;
+    return filteredItemsBySearch.slice(start, end);
+  }, [filteredItemsBySearch, indexInApiPage]);
 
   const columns = useMemo(
     () =>
@@ -268,26 +304,14 @@ export default function ItemsClient({
           value != null ? (categoryLookup.get(Number(value)) ?? "-") : "-",
         getItemTypeLabel: (value) =>
           value != null ? (itemTypeLookup.get(Number(value)) ?? "-") : "-",
-        onView: (item) => {
-          setSelectedItem(item);
-          setIsDetailsOpen(true);
-        },
-        onEdit: () => {
-          toast("تحرير الأصناف سيضاف لاحقاً", { icon: "ℹ️" });
-        },
-        onDelete: () => {
-          toast("حذف الأصناف غير متاح حالياً", { icon: "ℹ️" });
-        },
+        onDelete: handleDeleteClick,
       }),
-    [fractions, categoryLookup, itemTypeLookup],
+    [fractions, categoryLookup, itemTypeLookup, handleDeleteClick],
   );
 
   const clearFilters = () => {
-    setSearchValue("");
-
     startTransition(() =>
       setParams({
-        search: "",
         category: "",
         itemType: "",
         status: "all",
@@ -296,169 +320,147 @@ export default function ItemsClient({
     );
   };
 
-  const selectedCategoryLabel =
-    selectedItem?.cat != null
-      ? (categoryLookup.get(Number(selectedItem.cat)) ?? "-")
-      : "-";
-
-  const selectedItemTypeLabel =
-    selectedItem?.item_type != null
-      ? (itemTypeLookup.get(Number(selectedItem.item_type)) ?? "-")
-      : "-";
-
   return (
     <>
-      <Card>
-        <CardBody className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl text-right font-semibold text-gray-800">
-                إدارة الأصناف
-              </h2>
-              <p className="text-sm text-gray-500">
-                ابحث، فرّز، وتابع الأصناف المسجلة في النظام.
-              </p>
-            </div>
-            <Button
-              startContent={<PlusIcon className="h-4 w-4" />}
-              onPress={handleOpenAddModal}
-            >
-              إضافة صنف
-            </Button>
-          </div>
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        {/* زر إضافة صنف */}
+        <Button
+          variant="bordered"
+          startContent={<PlusIcon className="h-4 w-4" />}
+          onPress={handleOpenAddModal}
+          className="bg-gray-100 hover:bg-gray-200 border-gray-300"
+        >
+          إضافة صنف
+        </Button>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-            <Input
-              className="input-field"
-              endContent={
-                isPending ? (
-                  <span className="text-xs text-gray-400">جاري التحديث…</span>
-                ) : undefined
-              }
-              placeholder="البحث بالاسم أو الكود..."
-              startContent={<MagnifyingGlassIcon className="h-4 w-4" />}
-              value={searchValue}
-              onChange={(event) => {
-                const value = event.target.value;
+        {/* فاصل خطي */}
+        <div className="h-8 w-px bg-gray-300" />
 
-                setSearchValue(value);
+        {/* حقول الفرز */}
+        <div className="flex flex-wrap items-center gap-2 flex-1">
+          <Select
+            className="input-field flex-1 min-w-[120px]"
+            placeholder="اختر الفئة"
+            selectedKeys={params.category ? [params.category] : []}
+            onSelectionChange={(keys) =>
+              startTransition(() =>
+                setParams({
+                  category: Array.from(keys)[0]?.toString() ?? "",
+                  page: "1",
+                }),
+              )
+            }
+          >
+            {categoryOptions.map((category) => (
+              <SelectItem key={category.key}>{category.label}</SelectItem>
+            ))}
+          </Select>
 
-                startTransition(() => setParams({ page: "1", search: value }));
-              }}
-            />
+          <Select
+            className="input-field flex-1 min-w-[120px]"
+            placeholder="نوع الصنف"
+            selectedKeys={params.itemType ? [params.itemType] : []}
+            onSelectionChange={(keys) =>
+              startTransition(() =>
+                setParams({
+                  itemType: Array.from(keys)[0]?.toString() ?? "",
+                  page: "1",
+                }),
+              )
+            }
+          >
+            {itemTypeOptions.map((type) => (
+              <SelectItem key={type.key}>{type.label}</SelectItem>
+            ))}
+          </Select>
 
-            <Select
-              className="input-field"
-              placeholder="اختر الفئة"
-              selectedKeys={params.category ? [params.category] : []}
-              onSelectionChange={(keys) =>
-                startTransition(() =>
-                  setParams({
-                    category: Array.from(keys)[0]?.toString() ?? "",
-                    page: "1",
-                  }),
-                )
-              }
-            >
-              {categoryOptions.map((category) => (
-                <SelectItem key={category.key}>{category.label}</SelectItem>
-              ))}
-            </Select>
+          <Select
+            className="input-field flex-1 min-w-[120px]"
+            placeholder="حالة الصنف"
+            selectedKeys={[params.status || "all"]}
+            onSelectionChange={(keys) =>
+              startTransition(() =>
+                setParams({
+                  status: Array.from(keys)[0]?.toString() ?? "all",
+                  page: "1",
+                }),
+              )
+            }
+          >
+            {ITEM_STATUS_FILTERS.map((status) => (
+              <SelectItem key={status.key}>{status.label}</SelectItem>
+            ))}
+          </Select>
 
-            <Select
-              className="input-field"
-              placeholder="نوع الصنف"
-              selectedKeys={params.itemType ? [params.itemType] : []}
-              onSelectionChange={(keys) =>
-                startTransition(() =>
-                  setParams({
-                    itemType: Array.from(keys)[0]?.toString() ?? "",
-                    page: "1",
-                  }),
-                )
-              }
-            >
-              {itemTypeOptions.map((type) => (
-                <SelectItem key={type.key}>{type.label}</SelectItem>
-              ))}
-            </Select>
+          <Button
+            isIconOnly
+            variant="bordered"
+            className="h-10"
+            onPress={clearFilters}
+            title="مسح الفلاتر"
+          >
+            <FunnelIcon className="h-4 w-4" />
+          </Button>
+        </div>
 
-            <Select
-              className="input-field"
-              placeholder="حالة الصنف"
-              selectedKeys={[params.status || "all"]}
-              onSelectionChange={(keys) =>
-                startTransition(() =>
-                  setParams({
-                    status: Array.from(keys)[0]?.toString() ?? "all",
-                    page: "1",
-                  }),
-                )
-              }
-            >
-              {ITEM_STATUS_FILTERS.map((status) => (
-                <SelectItem key={status.key}>{status.label}</SelectItem>
-              ))}
-            </Select>
-          </div>
+        {/* فاصل خطي */}
+        <div className="h-8 w-px bg-gray-300" />
 
-          <div>
-            <Button
-              className="btn-secondary"
-              startContent={<FunnelIcon className="h-4 w-4" />}
-              variant="bordered"
-              onPress={clearFilters}
-            >
-              مسح الفلاتر
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
-
-      <div className="my-4 flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          إجمالي الأصناف:{" "}
-          <strong className="font-semibold text-gray-800">{itemsCount}</strong>
-        </span>
-        {/* <span>
-          الصفحة الحالية:{" "}
-          <strong className="font-semibold text-gray-800">
-            {currentPage} / {Math.max(totalPages, 1)}
-          </strong>
-        </span>
-        <span>
-          عناصر الصفحة الحالية:{" "}
-          <strong className="font-semibold text-gray-800">
-            {filteredItems.length}
-          </strong>
-        </span> */}
+        {/* حقل البحث */}
+        <div className="w-48">
+          <Input
+            className="w-full"
+            placeholder="بحث بالاسم..."
+            value={searchValue}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearchValue(value);
+              startTransition(() => setParams({ page: "1", search: value }));
+            }}
+            startContent={
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+            }
+          />
+        </div>
       </div>
 
       <AppDataTable
-        className="card"
+        className=""
         columns={columns}
-        data={filteredItems}
-        emptyContent={
-          params.search
-            ? "لا توجد أصناف مطابقة لبحثك."
-            : "لم يتم العثور على أصناف."
-        }
+        data={paginatedItems}
+        emptyContent="لم يتم العثور على أصناف."
         filterable={false}
         searchable={false}
-        title={`قائمة الأصناف (${itemsCount} صنف)`}
       />
 
-      <AddItem
-        categories={categories}
-        isOpen={isModalOpen}
-        item={newItem}
-        itemTypes={itemTypesState}
-        mode={modalMode}
-        units={units}
-        onAdd={handleAddItem}
-        onChange={setNewItem}
-        onClose={() => setIsModalOpen(false)}
-        onUpdate={handleUpdateItem}
+      {filteredItemsBySearch.length > 0 && (
+        <div className="flex justify-center mt-1">
+          <Pagination
+            showShadow
+            color="primary"
+            page={currentPageNum}
+            total={Math.ceil(filteredItemsBySearch.length / itemsPerTablePage)}
+            onChange={(newPage) => {
+              startTransition(() =>
+                setParams({
+                  page: String(newPage),
+                }),
+              );
+            }}
+          />
+        </div>
+      )}
+
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="تأكيد الحذف"
+        message={`هل أنت متأكد من حذف الصنف "${itemToDelete?.item_name}"؟`}
+        confirmText="حذف"
+        cancelText="إلغاء"
+        confirmColor="danger"
+        size="md"
       />
     </>
   );

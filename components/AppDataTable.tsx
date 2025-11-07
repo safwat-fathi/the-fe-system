@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Table,
   TableHeader,
@@ -19,6 +19,7 @@ import {
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
+  type Table as TanTable,
 } from "@tanstack/react-table";
 import {
   ArrowsUpDownIcon,
@@ -28,6 +29,7 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { printTableInNewWindow } from "@/utilities/table/print";
+import clsx from "clsx";
 
 type AppDataTableProps<TData> = {
   columns: ColumnDef<TData, any>[];
@@ -38,9 +40,9 @@ type AppDataTableProps<TData> = {
   className?: string;
   searchPlaceholder?: string;
   emptyContent?: string;
-  enablePrint?: boolean;
   printTitle?: string;
   printColumnIds?: string[]; // optional allowlist & order
+  onTableReady?: (table: TanTable<TData>) => void;
 };
 
 const DEFAULT_EMPTY_CONTENT = "لا توجد بيانات متاحة";
@@ -57,9 +59,9 @@ export default function AppDataTable<TData>({
   className = "",
   searchPlaceholder = "البحث...",
   emptyContent = DEFAULT_EMPTY_CONTENT,
-  enablePrint = false,
   printTitle,
   printColumnIds,
+  onTableReady,
 }: AppDataTableProps<TData>) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -81,6 +83,14 @@ export default function AppDataTable<TData>({
     globalFilterFn: "includesString",
   });
 
+  // Option B: notify parent when the table instance is ready (and when data/columns identity changes)
+  useEffect(() => {
+		if (!onTableReady) return;
+
+    if (tableColumns.length && data.length) onTableReady(table);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableColumns, data]);
+
   const renderSortIcon = (columnId: string) => {
     const sort = sorting.find((item) => item.id === columnId);
 
@@ -93,66 +103,72 @@ export default function AppDataTable<TData>({
     );
   };
 
+  // const onPrint = (table: TanTable<TData>) => {
+  //   printTableInNewWindow(table, {
+  //     title: printTitle || title || "قائمة",
+  //     direction: "rtl",
+  //     columnIds: printColumnIds,
+  //   });
+  // };
+
   return (
-    <div className={`p-4 space-y-4 ${className}`}>
+    <div className={clsx("p-2 space-y-0.5 flex gap-2 flex-col", className)}>
       {title && (
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
+          <h2 className="text-xl m-0 font-semibold text-gray-800">{title}</h2>
         </div>
       )}
 
-      {(searchable || filterable) && (
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          {searchable && (
-            <div className="relative flex-1 max-w-md">
-              <Input
-                className="input-field"
-                placeholder={searchPlaceholder}
-                startContent={
-                  <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
-                }
-                value={globalFilter}
-                onChange={(e) => setGlobalFilter(e.target.value)}
-              />
-            </div>
-          )}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        {searchable && (
+          <div className="relative flex-1 max-w-md">
+            <Input
+              className="input-field"
+              placeholder={searchPlaceholder}
+              startContent={
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              }
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+            />
+          </div>
+        )}
 
+        <div className="flex gap-2">
           {filterable && (
-            <div className="flex gap-2">
-              <Button
-                className="btn-secondary"
-                startContent={<FunnelIcon className="h-4 w-4" />}
-                variant="bordered"
-              >
-                تصفية
-              </Button>
-              {enablePrint && (
-                <Button
-                  className="btn-secondary"
-                  variant="bordered"
-                  onPress={() =>
-                    printTableInNewWindow(table, {
-                      title: printTitle || title || "قائمة",
-                      direction: "rtl",
-                      columnIds: printColumnIds,
-                    })
-                  }
-                >
-                  طباعة
-                </Button>
-              )}
-            </div>
+            <Button
+              className="btn-secondary"
+              startContent={<FunnelIcon className="h-4 w-4" />}
+              variant="bordered"
+            >
+              تصفية
+            </Button>
           )}
+          {/* {enablePrint && (
+            <Button
+              className="btn-secondary"
+              variant="bordered"
+              onPress={() =>
+                printTableInNewWindow(table, {
+                  title: printTitle || title || "قائمة",
+                  direction: "rtl",
+                  columnIds: printColumnIds,
+                })
+              }
+            >
+              طباعة
+            </Button>
+          )} */}
         </div>
-      )}
+      </div>
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-hidden p-0">
         <Table
           aria-label={title || "جدول البيانات"}
           classNames={{
             wrapper: "shadow-none",
-            th: "bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-200",
-            td: "border-b border-gray-100 text-sm",
+            th: "bg-gray-50 text-gray-700 font-semibold text-xs border-b border-gray-200 p-1",
+            td: "border-b border-gray-100 text-xs p-1",
             tr: "hover:bg-gray-50 transition-colors",
           }}
         >
@@ -188,7 +204,7 @@ export default function AppDataTable<TData>({
             {table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  className="text-center py-8 text-gray-500"
+                  className="text-center py-4 text-gray-500"
                   colSpan={table.getAllLeafColumns().length || 1}
                 >
                   {emptyContent}
@@ -212,7 +228,7 @@ export default function AppDataTable<TData>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-gray-500">
+      <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
         <span>إجمالي النتائج: {table.getFilteredRowModel().rows.length}</span>
         {globalFilter && <span>نتائج البحث عن: "{globalFilter}"</span>}
       </div>

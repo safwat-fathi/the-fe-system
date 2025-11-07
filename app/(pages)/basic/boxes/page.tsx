@@ -2,6 +2,7 @@ import { Metadata } from "next";
 
 import BoxesClient from "./components/BoxesClient";
 
+import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
 import { boxesService } from "@/services/api";
 
@@ -49,11 +50,10 @@ export default async function BoxesPage() {
 
   const response = await boxesService.getBoxes({ xcom_id: branchParams.com });
 
-  console.log("🚀 ~ :55 ~ BoxesPage ~ response:", response);
-
   return (
     <div className="responsive-container font-cairo">
-      <h1 className="responsive-text-xl font-bold mb-6">الصناديق</h1>
+      <Breadcrumb />
+      <h1 className="responsive-text-xl font-bold mb-2">الصناديق</h1>
       {/* Client Component للتفاعل */}
       <BoxesClient error={null} initialData={response as any[]} />
     </div>

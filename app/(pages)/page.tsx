@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import DashboardClient from "./components/DashboardClient";
 
 import { StatCard } from "@/components/Card";
+import Breadcrumb from "@/components/Breadcrumb";
 import dashboardService from "@/services/bff/dashboard.service";
 
 // meta data
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="font-cairo space-y-8">
+      <Breadcrumb showHome={false} />
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-gray-800">لوحة التحكم</h1>

@@ -1187,8 +1187,10 @@ export default function useInvoiceForm({
           .filter((v): v is number => v !== null),
       );
       const originalById = new Map<number, InvoiceItemRow>();
+
       for (const orig of originalInvoiceItems) {
         const idn = getNumericRowId(orig.id);
+
         if (idn !== null) originalById.set(idn, orig);
       }
       const replacementDeletions: number[] = [];
@@ -1217,21 +1219,25 @@ export default function useInvoiceForm({
           originalItemId !== null &&
           currentItemId !== null &&
           originalItemId !== currentItemId;
+
         try {
           if (!isExistingRow) {
             // Create new detail row
             const createPayload = { ...(detailPayload as any) } as any;
+
             delete createPayload.id; // ensure no client id leaks into POST
             await createInvoiceDetailAction(createPayload, resolvedInvoicePk);
           } else if (itemChanged && numericRowId !== null) {
             // Replace: create new detail, then delete original row id
             const createPayload = { ...(detailPayload as any) } as any;
+
             delete createPayload.id;
             await createInvoiceDetailAction(createPayload, resolvedInvoicePk);
             replacementDeletions.push(numericRowId);
           } else if (numericRowId !== null) {
             // Update existing detail row (use path id, not body id)
             const updatePayload = { ...(detailPayload as any) } as any;
+
             delete updatePayload.id;
             await updateInvoiceDetailAction(
               numericRowId,
@@ -1248,6 +1254,7 @@ export default function useInvoiceForm({
       const finalDeletions = Array.from(
         new Set<number>([...baseDeletions, ...replacementDeletions]),
       );
+
       for (const detailId of finalDeletions) {
         if (!detailId || detailId <= 0) continue;
         try {

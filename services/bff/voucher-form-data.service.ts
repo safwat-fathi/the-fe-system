@@ -4,7 +4,6 @@ import {
   voucherService,
   accountService,
   costCenterService,
-  taxRateService,
   boxesService,
   itemService,
   customerService,
@@ -16,21 +15,99 @@ export interface VoucherFormData {
   voucherTypes: any[];
   voucherStatuses: any[];
   caratTypes: any[];
-  taxRates: number[];
   boxes: any[];
+  goldBoxes?: any[];
   items?: any[];
   customers?: any[];
 }
 
-const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
+type VoucherFormDataOptions = {
+  goldBoxes?: boolean;
+};
+
+// خدمة محسّنة للقيد الافتتاحي - تجلب البيانات الضرورية فقط
+const getBalanceVoucherFormData = cache(
+  async (): Promise<Omit<VoucherFormData, "items" | "customers" | "boxes">> => {
+    const [
+      accountsResponse,
+      costCentersResponse,
+      voucherTypesResponse,
+      voucherStagesResponse,
+      caratTypesResponse,
+    ] = await Promise.all([
+      accountService.getAllAccounts(),
+      costCenterService.getAllCostCenters(),
+      voucherService.getVoucherTypes({ com: "1", year: "1" }),
+      voucherService.getVoucherStages({ com: "1", year: "1" }),
+      voucherService.getCaratTypes(),
+    ]);
+
+    // معالجة الحسابات
+    let accounts: any[] = [];
+
+    if (accountsResponse && Array.isArray(accountsResponse)) {
+      accounts = accountsResponse.filter(
+        (account: any) => account.acc_level === 5,
+      );
+    }
+
+    // معالجة مراكز التكلفة
+    const costCenters = Array.isArray(costCentersResponse)
+      ? costCentersResponse
+      : [];
+
+    // معالجة أنواع السندات
+    const voucherTypes =
+      voucherTypesResponse.success && voucherTypesResponse.data
+        ? Array.isArray(voucherTypesResponse.data)
+          ? voucherTypesResponse.data
+          : []
+        : [];
+
+    // معالجة حالات السندات
+    const voucherStatuses =
+      voucherStagesResponse.success && voucherStagesResponse.data
+        ? Array.isArray(voucherStagesResponse.data)
+          ? voucherStagesResponse.data
+          : []
+        : [];
+
+    // معالجة أنواع المعايرة
+    const caratTypes =
+      caratTypesResponse.success && caratTypesResponse.data
+        ? Array.isArray(caratTypesResponse.data)
+          ? caratTypesResponse.data
+          : []
+        : [];
+
+    return {
+      accounts,
+      costCenters,
+      voucherTypes,
+      voucherStatuses,
+      caratTypes,
+      boxes: [], // فارغ للقيد الافتتاحي
+    };
+  },
+);
+
+const getVoucherFormData = cache(
+  async (options: VoucherFormDataOptions = {}): Promise<VoucherFormData> => {
+    const useGoldBoxes = options.goldBoxes ?? false;
+
+    const boxesPromise = boxesService.getBoxes({ xcom_id: 1 });
+    const goldBoxesPromise = useGoldBoxes
+      ? boxesService.getGoldBoxes({ xcom_id: 1 })
+      : Promise.resolve(null);
+
   const [
     accountsResponse,
     costCentersResponse,
     voucherTypesResponse,
     voucherStagesResponse,
     caratTypesResponse,
-    taxRates,
-    boxesResponse,
+      boxesResponse,
+      goldBoxesResponse,
     itemsResponse,
     customersResponse,
   ] = await Promise.all([
@@ -39,8 +116,8 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     voucherService.getVoucherTypes({ com: "1", year: "1" }),
     voucherService.getVoucherStages({ com: "1", year: "1" }),
     voucherService.getCaratTypes(),
-    taxRateService.getTaxRates(),
-    boxesService.getBoxes({ xcom_id: 1 }),
+      boxesPromise,
+      goldBoxesPromise,
     itemService.searchItems({ companyId: 1 }),
     customerService.getAllCustomers({ xcom_id: 1 }),
   ]);
@@ -52,109 +129,71 @@ const getVoucherFormData = cache(async (): Promise<VoucherFormData> => {
     accounts = accountsResponse.filter(
       (account: any) => account.acc_level === 5,
     );
-    console.log("Accounts loaded:", accounts.length);
-  } else {
-    console.warn("Accounts API returned no data");
   }
 
   // معالجة مراكز التكلفة
-  let costCenters: any[] = [];
-
-  if (costCentersResponse && Array.isArray(costCentersResponse)) {
-    costCenters = costCentersResponse;
-    console.log("Cost Centers loaded:", costCenters.length);
-  } else {
-    console.warn("Cost Centers API returned no data");
-  }
+  const costCenters = Array.isArray(costCentersResponse)
+    ? costCentersResponse
+    : [];
 
   // معالجة أنواع السندات
-  let voucherTypes: any[] = [];
-
-  if (voucherTypesResponse.success && voucherTypesResponse.data) {
-    voucherTypes = Array.isArray(voucherTypesResponse.data)
-      ? voucherTypesResponse.data
+  const voucherTypes =
+    voucherTypesResponse.success && voucherTypesResponse.data
+      ? Array.isArray(voucherTypesResponse.data)
+        ? voucherTypesResponse.data
+        : []
       : [];
-    console.log("Voucher Types loaded:", voucherTypes.length);
-    console.log("Voucher Types data:", voucherTypes);
-  } else {
-    console.warn("Voucher Types API returned no data");
-    console.log("Voucher Types response:", voucherTypesResponse);
-  }
 
   // معالجة حالات السندات
-  let voucherStatuses = [];
-
-  if (voucherStagesResponse.success && voucherStagesResponse.data) {
-    voucherStatuses = Array.isArray(voucherStagesResponse.data)
-      ? voucherStagesResponse.data
+  const voucherStatuses =
+    voucherStagesResponse.success && voucherStagesResponse.data
+      ? Array.isArray(voucherStagesResponse.data)
+        ? voucherStagesResponse.data
+        : []
       : [];
-    console.log("Voucher Statuses loaded:", voucherStatuses.length);
-    console.log("Voucher Statuses data:", voucherStatuses);
-  } else {
-    console.warn("Voucher Statuses API returned no data");
-    console.log("Voucher Statuses response:", voucherStagesResponse);
-  }
 
   // معالجة أنواع المعايرة
-  let caratTypes: any[] = [];
-
-  if (caratTypesResponse.success && caratTypesResponse.data) {
-    caratTypes = Array.isArray(caratTypesResponse.data)
-      ? caratTypesResponse.data
+  const caratTypes =
+    caratTypesResponse.success && caratTypesResponse.data
+      ? Array.isArray(caratTypesResponse.data)
+        ? caratTypesResponse.data
+        : []
       : [];
-    console.log("Carat Types loaded:", caratTypes.length);
-  } else {
-    console.warn("Carat Types API returned no data");
-  }
-
-  // معالجة نسب الضرائب
-  const taxRatesList = Array.isArray(taxRates) ? taxRates : [];
-
-  console.log("Tax Rates loaded:", taxRatesList.length);
 
   // معالجة الصناديق
   const boxes = Array.isArray(boxesResponse) ? boxesResponse : [];
-
-  console.log("Boxes loaded:", boxes.length);
+  const goldBoxes =
+    useGoldBoxes && Array.isArray(goldBoxesResponse)
+      ? goldBoxesResponse
+      : undefined;
 
   // معالجة الأصناف
   let items: any[] = [];
 
   if (itemsResponse && itemsResponse.results) {
-    items = Array.isArray(itemsResponse.results)
-      ? itemsResponse.results
-      : [];
-    console.log("Items loaded:", items.length);
+    items = Array.isArray(itemsResponse.results) ? itemsResponse.results : [];
   } else if (Array.isArray(itemsResponse)) {
     items = itemsResponse;
-    console.log("Items loaded:", items.length);
-  } else {
-    console.warn("Items API returned no data");
   }
 
   // معالجة العملاء
-  let customers: any[] = [];
+  const customers = Array.isArray(customersResponse) ? customersResponse : [];
 
-  if (customersResponse && Array.isArray(customersResponse)) {
-    customers = customersResponse;
-    console.log("Customers loaded:", customers.length);
-  } else {
-    console.warn("Customers API returned no data");
-  }
-
-  return {
-    accounts,
-    costCenters,
-    voucherTypes,
-    voucherStatuses,
-    caratTypes,
-    taxRates: taxRatesList,
-    boxes,
-    items,
-    customers,
-  };
-});
+    return {
+      accounts,
+      costCenters,
+      voucherTypes,
+      voucherStatuses,
+      caratTypes,
+      boxes,
+    goldBoxes,
+      items,
+      customers,
+    };
+  },
+);
 
 export default {
   getVoucherFormData,
+  getBalanceVoucherFormData,
 };

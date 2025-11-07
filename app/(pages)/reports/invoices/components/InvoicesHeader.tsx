@@ -1,9 +1,11 @@
 "use client";
 
-import { PrintButton } from "@/components";
-import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { ArrowDownTrayIcon, PrinterIcon } from "@heroicons/react/24/outline";
+import { useReportTableStore } from "@/hooks/useReportTableStore";
 
 const InvoicesHeader = () => {
+  const print = useReportTableStore((s) => s.print);
+
   return (
     <div className="flex items-center justify-between">
       <div>
@@ -19,7 +21,14 @@ const InvoicesHeader = () => {
           <PlusIcon className="h-4 w-4" />
           إضافة فاتورة
         </Link> */}
-        <PrintButton />
+        <button
+          className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700"
+          type="button"
+          onClick={() => print()}
+        >
+          <PrinterIcon className="h-4 w-4" />
+          طباعة
+        </button>
         <button
           className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-gray-700"
           onClick={() => {

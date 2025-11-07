@@ -5,6 +5,7 @@ import itemService from "../api/item.service";
 import goldPriceService from "../api/gold-price.service";
 
 import { HttpService } from "@/services/base";
+import { getBranchParams } from "@/app/actions/branch-params";
 import { Invoice } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 
@@ -24,14 +25,35 @@ class DashboardService extends HttpService<any> {
 
   async getDashboardStats(): Promise<DashboardStats | null> {
     try {
+      // Get company ID
+      const branchParams = await getBranchParams();
+      const parsedCompanyId = Number(branchParams.com ?? "1");
+      const companyId =
+        Number.isFinite(parsedCompanyId) && parsedCompanyId > 0
+          ? parsedCompanyId
+          : 1;
+
       // Fetch all required data in parallel with individual error handling
       const [invoices, customers, categories, items, goldPrice] =
         await Promise.all([
-          invoiceService.getAllInvoices(),
-          customerService.getAllCustomers(),
-          categoryService.getAllCategories(),
-          itemService.searchItems({ query: "", page: 1 }),
-          goldPriceService.getCurrentGoldPrice(),
+          invoiceService.getAllInvoices({
+            xcom_id: companyId,
+            xyear_id: "0",
+          }).catch(() => null),
+          customerService.getAllCustomers({
+            xcom_id: companyId,
+            xcust_type: 0,
+            xcust_code: 0,
+          }).catch(() => []),
+          categoryService.getAllCategories(companyId).catch(() => []),
+          itemService.searchItems({
+            page: 1,
+            companyId,
+            categoryId: "0",
+            itemTypeId: "0",
+            itemStatus: "0",
+          }).catch(() => ({ count: 0, results: [], next: null, previous: null })),
+          goldPriceService.getCurrentGoldPrice().catch(() => null),
         ]);
 
       // console.log(

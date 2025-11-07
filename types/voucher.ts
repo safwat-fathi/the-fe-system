@@ -28,6 +28,8 @@ export interface Voucher {
   com_id?: number;
   year_id?: number;
   details?: VoucherDetail[];
+  handling?: string; // مناولة
+  cost_id?: number | null; // مركز التكلفة
 }
 
 export interface VoucherDetail {
@@ -46,20 +48,20 @@ export interface VoucherDetail {
   upd_date?: string;
   upd_user?: string;
   vouch_id: number;
-  base_credit?: number;
-  base_debit?: number;
-  p_credit?: number;
-  p_debit?: number;
+  credit_base?: number; // دائن اساس
+  debit_base?: number; // مدين اساس
+  p_credit?: number; // دائن مدفوع (غير مستخدم حالياً)
+  p_debit?: number; // مدين مدفوع (غير مستخدم حالياً)
   change?: number;
   com_id?: number;
   cost_id?: number;
-  credit_g?: number | undefined;
+  g_credit?: number | undefined; // دائن (ذهب)
   cur_id?: number;
   cust_id?: number;
-  debit_g?: number | undefined;
-  g_credit?: number;
-  g_debit?: number;
-  gauge?: number;
+  g_debit?: number | undefined; // مدين (ذهب)
+  gauge?: number; // العيار
+  g_credit_base?: number; // دائن معاير (ذهب)
+  g_debit_base?: number; // مدين معاير (ذهب)
   inv_id?: number;
   vat_no?: number;
 }
@@ -68,15 +70,19 @@ export interface VoucherBox {
   id?: number;
   vouch_id: number;
   box_id: number;
+  box?: {
+    id: number;
+    cust_name?: string;
+    name?: string;
+    cust_code?: string;
+    box_type?: number;
+  }; // حقل box من voucher_box (معلومات الصندوق الكاملة)
   amount: number; // vouch_amt في vouchers_box
   amount_g?: number;
-  tax_prc?: number;
-  tax?: number;
   total_amount?: number;
   vouch_notes?: string;
   cost_id?: number; // مركز التكلفة
   inv_id?: number; // رقم الفاتورة
-  vat_no?: number; // الرقم الضريبي
   close_weight?: number; // وزن التسكير
   cr_date: string;
   cr_user?: string;

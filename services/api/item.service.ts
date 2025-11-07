@@ -108,10 +108,54 @@ class ItemService extends HttpService<Item> {
     }
   }
 
+  async getItemById(id: number, companyId: number = 1): Promise<Item | null> {
+    try {
+      // البحث عن الصنف في جميع الصفحات
+      // نبدأ بصفحة واحدة ثم نبحث في النتائج
+      let page = 1;
+      let found: Item | null = null;
+
+      while (!found && page <= 10) {
+        // نحد بحد أقصى 10 صفحات للبحث
+        const response = await this.get<IPaginatedResponse<Item>>(
+          "items_list",
+          {
+            xcom_id: companyId,
+            xcat_id: "0",
+            xtype_id: "0",
+            xitem_status: "0",
+            page,
+          },
+          {
+            cache: "force-cache",
+          },
+        );
+
+        if (response.success && response.data?.results) {
+          found =
+            response.data.results.find((item) => item.id === id) || null;
+          if (found) break;
+        }
+
+        // إذا لم تكن هناك صفحة تالية، توقف
+        if (!response.data?.next) break;
+
+        page++;
+      }
+
+      return found;
+    } catch (error) {
+      console.error("Error fetching item by id:", error);
+      return null;
+    }
+  }
+
   async searchItems({
-    query = "",
     page = 1,
     companyId = 1,
+    categoryId = 0,
+    itemTypeId = 0,
+    itemStatus = 0,
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
     const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
@@ -122,10 +166,12 @@ class ItemService extends HttpService<Item> {
 
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
-        "SearchItemsList",
+        "items_list",
         {
           xcom_id: companyId,
-          q: query || "0",
+          xcat_id: categoryId || "0",
+          xtype_id: itemTypeId || "0",
+          xitem_status: itemStatus || "0",
           page,
         },
         {
@@ -134,8 +180,12 @@ class ItemService extends HttpService<Item> {
             tags: [
               "items",
               `items-company-${companyId}`,
-              `items-search-${companyId}-${query}-${page}`,
+              `items-page-${page}`,
+              `items-cat-${categoryId}`,
+              `items-type-${itemTypeId}`,
+              `items-status-${itemStatus}`,
             ],
+            revalidate: 300,
           },
         },
       );
@@ -159,8 +209,70 @@ class ItemService extends HttpService<Item> {
           typeof previous === "string" || previous === null ? previous : null,
       };
     } catch (error) {
-      console.error("Error searching items:", error);
-      throw new Error("حدث خطأ أثناء البحث عن الأصناف");
+      console.error("Error fetching items:", error);
+      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
+    }
+  }
+
+  async searchItemsVoucherList({
+    query = "",
+    page = 1,
+    companyId = 1,
+  }: {
+    query?: string;
+    page?: number;
+    companyId?: number;
+  } = {}): Promise<IPaginatedResponse<Item>> {
+    const emptyResponse: IPaginatedResponse<Item> = {
+      results: [],
+      count: 0,
+      next: null,
+      previous: null,
+    };
+
+    try {
+      const response = await this.get<IPaginatedResponse<Item>>(
+        "SearchItemsVoucherList",
+        {
+          xcom_id: companyId,
+          query: query || "0",
+          page,
+        },
+        {
+          cache: "force-cache",
+          next: {
+            tags: [
+              "items-voucher",
+              `items-voucher-company-${companyId}`,
+              `items-voucher-page-${page}`,
+              `items-voucher-query-${query}`,
+            ],
+            revalidate: 300,
+          },
+        },
+      );
+
+      if (!response.success || !response.data) {
+        return emptyResponse;
+      }
+
+      const { results, count, next, previous } = response.data;
+
+      return {
+        results: Array.isArray(results) ? results : [],
+        count:
+          typeof count === "number"
+            ? count
+            : Array.isArray(results)
+              ? results.length
+              : 0,
+        next: typeof next === "string" || next === null ? next : null,
+        previous:
+          typeof previous === "string" || previous === null ? previous : null,
+      };
+    } catch (error) {
+      console.error("Error fetching items for voucher:", error);
+      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
     }
   }
 
@@ -172,9 +284,7 @@ class ItemService extends HttpService<Item> {
         throw new Error("رمز الفرع مطلوب قبل إنشاء الصنف");
       }
 
-      if (typeof File !== "undefined" && !(item.item_img instanceof File)) {
-        throw new Error("صورة الصنف مطلوبة قبل الإنشاء");
-      }
+      // الصورة غير إجبارية
 
       const formData = this.buildItemFormData({
         ...item,
@@ -226,14 +336,34 @@ class ItemService extends HttpService<Item> {
 
   async deleteItem(id: number): Promise<boolean> {
     try {
+      // نفس الطريقة المستخدمة في deleteCostCenter و deleteCategory
       const response = await this.delete(`api_delete_item/${id}`, undefined, {
         cache: "no-store",
       });
 
-      return Boolean(response.success);
-    } catch (error) {
+      if (response.success) {
+        return true;
+      }
+
+      // إذا كان الـ response غير ناجح
+      const errorMessage = response.message || "حدث خطأ أثناء حذف الصنف";
+      
+      // إذا كان الخطأ 500 من الخادم، نعطي رسالة أوضح
+      if (errorMessage.includes("500") || errorMessage.includes("Internal Server Error")) {
+        throw new Error("لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام");
+      }
+      
+      return false;
+    } catch (error: any) {
       console.error("Error deleting item:", error);
-      throw new Error("حدث خطأ أثناء حذف الصنف");
+      
+      // إذا كان الخطأ 500 من الخادم، نعطي رسالة أوضح
+      if (error?.status === 500 || error?.message?.includes("500") || error?.message?.includes("Internal Server Error")) {
+        throw new Error("لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام");
+      }
+      
+      // إذا كان الخطأ من نوع آخر، نعرض الرسالة الأصلية
+      throw new Error(error?.message || "حدث خطأ أثناء حذف الصنف");
     }
   }
 }

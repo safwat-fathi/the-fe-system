@@ -19,22 +19,11 @@ class CategoryService extends HttpService<Category> {
     super("");
   }
 
-  async getAllCategories(params?: { xcom_id?: number | string }): Promise<Category[]> {
-    try {
-      // Resolve company/branch id required by API as xcom_id
-      let xcom_id: number | string | undefined = params?.xcom_id;
-      if (xcom_id === undefined) {
-        try {
-          const branch = await getBranchParams();
-          const parsed = Number(branch?.com ?? 1);
-          xcom_id = Number.isFinite(parsed) ? parsed : 1;
-        } catch {
-          xcom_id = 1;
-        }
-      }
+  async getAllCategories(companyId: number | string = 1): Promise<Category[]> {
+    try { 
       const response = await this.get<Category[]>(
         "categories_list",
-        { xcom_id },
+        { xcom_id: String(companyId) },
         {
           cache: "force-cache",
           next: { tags: ["categories"] },
@@ -56,9 +45,9 @@ class CategoryService extends HttpService<Category> {
     }
   }
 
-  async getCategoryCount(): Promise<number> {
+  async getCategoryCount(companyId: number | string = 1): Promise<number> {
     try {
-      const categories = await this.getAllCategories();
+      const categories = await this.getAllCategories(companyId);
 
       return categories.length;
     } catch (error) {
@@ -134,9 +123,12 @@ class CategoryService extends HttpService<Category> {
     }
   }
 
-  async getCategoryById(id: number): Promise<Category | null> {
+  async getCategoryById(
+    id: number,
+    companyId: number | string = 1,
+  ): Promise<Category | null> {
     try {
-      const categories = await this.getAllCategories();
+      const categories = await this.getAllCategories(companyId);
 
       return categories.find((cat) => cat.id === id) || null;
     } catch (error) {
