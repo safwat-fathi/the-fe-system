@@ -162,6 +162,19 @@ const AccountFormClient = ({
     return options;
   }, [excludedParentIds, flattenedAccounts]);
 
+  // Merge a static "no parent" option with computed options to use with Select's items API
+  const parentSelectItems = useMemo(
+    () =>
+      [
+        { id: "null", label: "حساب رئيسي (بدون أب)" },
+        ...parentOptions.map((option) => ({
+          id: String(option.id),
+          label: option.label,
+        })),
+      ],
+    [parentOptions],
+  );
+
   const handleParentChange = (newParentId: number | null) => {
     const parentAccount =
       newParentId !== null ? findAccountById(accounts, newParentId) : null;
@@ -407,19 +420,20 @@ const AccountFormClient = ({
           }
           onSelectionChange={(keys) => {
             const key = Array.from(keys)[0];
-            const parsed = key ? Number(key) : NaN;
-
-            handleParentChange(Number.isNaN(parsed) ? null : parsed);
+            if (key === "null" || !key) {
+              handleParentChange(null);
+            } else {
+              const parsed = Number(key);
+              handleParentChange(Number.isNaN(parsed) ? null : parsed);
+            }
           }}
+          items={parentSelectItems}
         >
-          <SelectItem key="null" textValue="بدون أب">
-            حساب رئيسي (بدون أب)
-          </SelectItem>
-          {parentOptions.map((option) => (
-            <SelectItem key={option.id} textValue={option.label}>
-              {option.label}
+          {(item) => (
+            <SelectItem key={item.id} textValue={item.label}>
+              {item.label}
             </SelectItem>
-          ))}
+          )}
         </Select>
 
         <Select
@@ -513,4 +527,3 @@ const AccountFormClient = ({
 };
 
 export default AccountFormClient;
-
