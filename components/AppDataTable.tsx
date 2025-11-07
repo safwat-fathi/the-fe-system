@@ -27,6 +27,7 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
+import { printTableInNewWindow } from "@/utilities/table/print";
 
 type AppDataTableProps<TData> = {
   columns: ColumnDef<TData, any>[];
@@ -37,6 +38,9 @@ type AppDataTableProps<TData> = {
   className?: string;
   searchPlaceholder?: string;
   emptyContent?: string;
+  enablePrint?: boolean;
+  printTitle?: string;
+  printColumnIds?: string[]; // optional allowlist & order
 };
 
 const DEFAULT_EMPTY_CONTENT = "لا توجد بيانات متاحة";
@@ -53,6 +57,9 @@ export default function AppDataTable<TData>({
   className = "",
   searchPlaceholder = "البحث...",
   emptyContent = DEFAULT_EMPTY_CONTENT,
+  enablePrint = false,
+  printTitle,
+  printColumnIds,
 }: AppDataTableProps<TData>) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -119,6 +126,21 @@ export default function AppDataTable<TData>({
               >
                 تصفية
               </Button>
+              {enablePrint && (
+                <Button
+                  className="btn-secondary"
+                  variant="bordered"
+                  onPress={() =>
+                    printTableInNewWindow(table, {
+                      title: printTitle || title || "قائمة",
+                      direction: "rtl",
+                      columnIds: printColumnIds,
+                    })
+                  }
+                >
+                  طباعة
+                </Button>
+              )}
             </div>
           )}
         </div>

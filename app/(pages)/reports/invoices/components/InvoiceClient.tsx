@@ -206,6 +206,17 @@ export default function InvoiceClient({
             columns={columns}
             data={invoices}
             searchable={false}
+            enablePrint
+            printTitle="تقارير الفواتير"
+            printColumnIds={[
+              "inv_id",
+              "inv_date",
+              "cust_name",
+              "inv_net",
+              "tax",
+              "inv_amt",
+              "type",
+            ]}
             title={`قائمة الفواتير (${totalInvoices} فاتورة)`}
           />
         </Tab>

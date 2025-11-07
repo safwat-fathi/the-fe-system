@@ -1,15 +1,11 @@
 "use client";
 
-import { Button, Checkbox, Input } from "@heroui/react";
+import { Button, Checkbox } from "@heroui/react";
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   CalendarIcon,
   CheckCircleIcon,
-  ChevronDoubleLeftIcon,
-  ChevronDoubleRightIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   CreditCardIcon,
   PencilIcon,
   PlusCircleIcon,
@@ -86,30 +82,30 @@ export default function InvoiceTotalsActions({
   children,
   // نوع الفاتورة
   invoiceType = "sales",
-  // إجماليات قابلة للإدخال
-  autoTotalValue,
-  autoTotalWages,
-  manualTotalValue,
-  manualTotalWages,
-  useManualTotals,
-  onManualTotalChange,
-  onUseManualTotalsChange,
-  onResetManualTotals,
+  // // إجماليات قابلة للإدخال
+  // autoTotalValue,
+  // autoTotalWages,
+  // manualTotalValue,
+  // manualTotalWages,
+  // useManualTotals,
+  // onManualTotalChange,
+  // onUseManualTotalsChange,
+  // onResetManualTotals,
   // البحث برقم الفاتورة
   searchNumber,
   setSearchNumber,
   onInvoiceSearch,
   // إجماليات إضافية جديدة
   totalGWeight = 0,
-  totalValueTax = 0,
-  totalWagesTax = 0,
-  totalTax = 0,
+  // totalValueTax = 0,
+  // totalWagesTax = 0,
+  // totalTax = 0,
   // طريقة الدفع
   paymentMethod = "cash",
-  // أزرار التنقل
-  currentRecord = 1,
-  totalRecords = 1,
-  navigateToInvoice,
+  // // أزرار التنقل
+  // currentRecord = 1,
+  // totalRecords = 1,
+  // navigateToInvoice,
   newInvoiceHref = "/forms/invoices?type=sale&mode=new",
 }: Props) {
   const fractions = useFractions() as { frac: number; frac2: number };
