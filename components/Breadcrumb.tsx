@@ -1,10 +1,11 @@
 "use client";
 
+import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
-import clsx from "clsx";
-import type { MouseEvent, ReactNode } from "react";
+
+import type { HTMLAttributes, MouseEvent, ReactNode } from "react";
 
 export interface BreadcrumbItem {
   name: string;
@@ -12,7 +13,7 @@ export interface BreadcrumbItem {
   onClick?: (event: MouseEvent<HTMLAnchorElement | HTMLButtonElement | HTMLSpanElement>) => void;
 }
 
-interface BreadcrumbProps {
+type BreadcrumbProps = HTMLAttributes<HTMLBaseElement> & {
   items?: BreadcrumbItem[];
   showHome?: boolean;
   className?: string;

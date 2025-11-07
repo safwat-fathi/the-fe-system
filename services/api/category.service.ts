@@ -1,4 +1,5 @@
 import { HttpService } from "@/services/base";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 export interface Category {
   id: number;
@@ -19,7 +20,7 @@ class CategoryService extends HttpService<Category> {
   }
 
   async getAllCategories(companyId: number | string = 1): Promise<Category[]> {
-    try {
+    try { 
       const response = await this.get<Category[]>(
         "categories_list",
         { xcom_id: String(companyId) },

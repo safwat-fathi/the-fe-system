@@ -207,13 +207,13 @@ export default function InvoiceSelectors({
 
   return (
     <div className="mb-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* معلومات الفاتورة الأساسية */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
           <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
             📋 معلومات الفاتورة
           </h3>
-          <div className="grid grid-cols-1 gap-1 text-xs">
+          <div className="grid grid-cols-1 gap-2 text-xs">
             {/* تاريخ ووقت الفاتورة */}
             {invoiceDate !== undefined && setInvoiceDate && (
               <div>
@@ -315,7 +315,7 @@ export default function InvoiceSelectors({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <span className="block mb-1 font-medium text-gray-700 text-xs">
                   طريقة الدفع:
@@ -374,7 +374,7 @@ export default function InvoiceSelectors({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {saleInvoices ? (
                 <div>
                   <label
@@ -479,7 +479,7 @@ export default function InvoiceSelectors({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -513,7 +513,7 @@ export default function InvoiceSelectors({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -568,13 +568,13 @@ export default function InvoiceSelectors({
         </div>
 
         {/* مربع معلومات العنوان والباركود */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
           <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
             📍 معلومات العنوان
           </h3>
           {selectedCustomer ? (
-            <div className="grid grid-cols-1 gap-3">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block mb-1 text-xs font-medium text-gray-600">
                     السجل التجاري:
@@ -600,7 +600,7 @@ export default function InvoiceSelectors({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block mb-1 text-xs font-medium text-gray-600">
                     المدينة:
@@ -626,7 +626,7 @@ export default function InvoiceSelectors({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block mb-1 text-xs font-medium text-gray-600">
                     الشارع:
@@ -652,7 +652,7 @@ export default function InvoiceSelectors({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block mb-1 text-xs font-medium text-gray-600">
                     صندوق البريد:
@@ -680,9 +680,9 @@ export default function InvoiceSelectors({
               </div>
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-gray-500 py-6 md:py-8">
               <div className="text-2xl mb-2">📍</div>
-              <p className="text-sm">
+              <p className="text-xs sm:text-sm">
                 اختر{" "}
                 {invoiceType === "purchase" || invoiceType === "purchase_return"
                   ? "مورداً"
@@ -693,7 +693,7 @@ export default function InvoiceSelectors({
           )}
 
           {/* حقل البحث بالباركود - تحت العنوان */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="mt-3 pt-3 md:mt-4 md:pt-4 border-t border-gray-200">
             <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <svg
                 height="24"
@@ -708,9 +708,9 @@ export default function InvoiceSelectors({
               </svg>
               البحث بالباركود
             </h4>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <input
-                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white flex items-center"
                 disabled={!isEditing}
                 placeholder="أدخل كود الصنف"
                 type="text"
@@ -724,7 +724,7 @@ export default function InvoiceSelectors({
                 }}
               />
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 disabled={!isEditing || !searchValue.trim()}
                 onClick={onBarcodeSearch}
               >

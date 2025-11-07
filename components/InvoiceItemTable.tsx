@@ -522,10 +522,10 @@ export default function InvoiceItemTable({
   };
 
   return (
-    <div className="w-full overflow-x-auto mb-6 max-w-full">
+    <div className="w-full overflow-auto mb-6 max-w-full max-h-[250px]">
       <div className="flex justify-between mb-2">
         <button
-          className="btn"
+          className="btn focus:ring-0 focus:ring-offset-0"
           disabled={!isEditing}
           type="button"
           onClick={addRow}
@@ -730,10 +730,10 @@ export default function InvoiceItemTable({
                   />
                 </td>
 
-                <td>
+                <td className="align-middle">
                   <input
                     ref={(el) => setRef(index, ++col, el)}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center align-middle"
                     disabled={!isEditing}
                     step="1"
                     type="number"
@@ -745,12 +745,12 @@ export default function InvoiceItemTable({
                   />
                 </td>
 
-                <td>
+                <td className="align-middle">
                   <input
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center align-middle"
                     disabled={!isEditing}
                     step="any"
                     type="number"
@@ -762,12 +762,12 @@ export default function InvoiceItemTable({
                   />
                 </td>
 
-                <td>
+                <td className="align-middle">
                   <input
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
-                    className="border w-full p-1 text-xs text-center"
+                    className="border w-full p-1 text-xs text-center align-middle"
                     disabled={!isEditing}
                     step="any"
                     type="number"

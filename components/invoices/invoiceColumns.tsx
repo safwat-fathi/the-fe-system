@@ -54,16 +54,19 @@ export const createInvoiceColumns = (
     cell: (info) => formatAmount(Number(info.getValue() || 0), fractions.frac),
     enableSorting: true,
   }),
-  columnHelper.display({
-    id: "type",
-    header: () => "النوع",
-    cell: ({ row }) => {
-      const transType = Number(row.original.trans_type) as TransTypes;
+  columnHelper.accessor(
+    (row) => {
+      const transType = Number(row.trans_type) as TransTypes;
       const typeMeta = TRANS_TYPE_META[transType];
-
-      return <span>{typeMeta?.label ?? "غير محدد"}</span>;
+      return typeMeta?.label ?? "غير محدد";
     },
-  }),
+    {
+      id: "type",
+      header: () => "النوع",
+      cell: (info) => info.getValue(),
+      enableSorting: false,
+    },
+  ),
   columnHelper.display({
     id: "actions",
     header: () => "الإجراءات",

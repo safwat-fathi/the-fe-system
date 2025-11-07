@@ -19,6 +19,8 @@ import {
 import Card from "@/components/Card";
 import useFractions from "@/utilities/useFractions";
 import AppDataTable from "@/components/AppDataTable";
+import type { Table as TanTable } from "@tanstack/react-table";
+import { useReportTableStore } from "@/hooks/useReportTableStore";
 import InvoiceAnalytics from "@/components/InvoiceAnalytics";
 import { Fractions } from "@/utilities/useFractions";
 import { Invoice } from "@/types/models/invoice";
@@ -91,6 +93,7 @@ export default function InvoiceClient({
   const [, startTransition] = useTransition();
 
   const columns = useMemo(() => createInvoiceColumns(fractions), [fractions]);
+  const setTable = useReportTableStore((s) => s.setTable);
 
   const clearFilters = () => {
     setSearchQ("");
@@ -205,7 +208,19 @@ export default function InvoiceClient({
             className="card"
             columns={columns}
             data={invoices}
+            filterable={false}
             searchable={false}
+            printTitle="تقارير الفواتير"
+            printColumnIds={[
+              "inv_id",
+              "inv_date",
+              "cust_name",
+              "inv_net",
+              "tax",
+              "inv_amt",
+              "type",
+            ]}
+            onTableReady={(t) => setTable(t as TanTable<Invoice>)}
             title={`قائمة الفواتير (${totalInvoices} فاتورة)`}
           />
         </Tab>
@@ -222,6 +237,7 @@ export default function InvoiceClient({
           <InvoiceAnalytics invoices={invoices} />
         </Tab>
       </Tabs>
+      {/* Print action moved to header via global store */}
     </>
   );
 }

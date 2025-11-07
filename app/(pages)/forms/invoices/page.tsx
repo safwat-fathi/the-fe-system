@@ -163,7 +163,7 @@ export default async function InvoicePage({
   )}&mode=new`;
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-2 sm:p-4">
       <Breadcrumb
         items={[
           { name: "الفواتير", href: "/reports/invoices" },

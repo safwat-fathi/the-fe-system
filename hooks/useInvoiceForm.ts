@@ -39,6 +39,7 @@ import {
   formatDecimalString as formatDecimalStringUtil,
   formatNumber as formatNumberUtil,
 } from "@/utilities/invoiceForm";
+import { buildInvoicePrintHtml } from "@/utilities/print/invoicePrint";
 
 type NumericValue = number | string;
 
@@ -974,9 +975,17 @@ export default function useInvoiceForm({
       return;
     }
 
-    const validItems = invoiceItems.filter(
-      (item) => getItemIdFromRow(item) !== null,
-    );
+    const validItems = invoiceItems.filter((item) => {
+      const hasId = getItemIdFromRow(item) !== null;
+      const hasWeight =
+        parseNumber(item.weight) > 0 || parseNumber(item.g_weight) > 0;
+      const hasText =
+        (item.item_code && String(item.item_code).trim().length > 0) ||
+        (item.item_desc && String(item.item_desc).trim().length > 0) ||
+        (item.item_name && String(item.item_name).trim().length > 0);
+
+      return hasId || hasWeight || hasText;
+    });
 
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
@@ -1336,7 +1345,6 @@ export default function useInvoiceForm({
   const previewInvoice = useCallback(() => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
-
       return;
     }
 
@@ -1346,12 +1354,138 @@ export default function useInvoiceForm({
 
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
-
       return;
     }
 
-    toast.success("معاينة الفاتورة");
-  }, [contactLabel, invoiceItems, selectedCustomer]);
+    try {
+      const totals = computeTotals(form.pay_type, validItems);
+
+      const invoiceTitle =
+        context === "purchase"
+          ? "شراء"
+          : context === "purchase_return"
+            ? "مردود شراء"
+            : context === "sale_return"
+              ? "مردود بيع"
+              : "بيع";
+
+      const itemsForPrint = validItems.map((row, idx) => ({
+        index: idx + 1,
+        code: String(row.item_code ?? ""),
+        name: String(row.item_desc ?? row.item_name ?? ""),
+        karat: row.k ?? "",
+        weight: parseNumber(row.weight),
+        gWeight: parseNumber(row.g_weight),
+        price: parseNumber(row.price),
+        wage: parseNumber(row.price_w),
+        discount: parseNumber(row.item_disc_amt ?? 0),
+        tax: parseNumber(row.tax ?? 0),
+        total: parseNumber(row.total ?? 0),
+      }));
+
+      const html = buildInvoicePrintHtml({
+        invoiceTitle,
+        invoiceNumber: form.inv_id ?? null,
+        dateTime: new Date(form.inv_date).toLocaleString("ar-EG"),
+        paymentMethod,
+        goldPrice,
+        customer: {
+          name: selectedCustomer?.cust_name ?? form.cust_name ?? "",
+          code:
+            selectedCustomer?.cust_code ??
+            (selectedCustomer?.id as any) ??
+            (form.cust_code as any),
+          vatNo: form.vat_no ?? selectedCustomer?.vat_no ?? "",
+          crNo: form.cr_no ?? selectedCustomer?.cr_no ?? "",
+          mobile: selectedCustomer?.mobile ?? "",
+          address: {
+            gov: form.gov ?? selectedCustomer?.gov ?? "",
+            city: form.city ?? selectedCustomer?.city ?? "",
+            area: form.area ?? selectedCustomer?.area ?? "",
+            street: form.street ?? selectedCustomer?.street ?? "",
+            buildNo: form.build_no ?? selectedCustomer?.build_no ?? "",
+            postNo: form.post_no ?? selectedCustomer?.post_no ?? "",
+            postCode: form.post_code ?? selectedCustomer?.post_code ?? "",
+          },
+        },
+        items: itemsForPrint,
+        totals: {
+          totalAmount: totals.totalAmount,
+          totalDiscount: totals.totalDiscount,
+          taxAmount: totals.taxAmount,
+          netAmount: totals.netAmount,
+          totalGWeight: (totals as any).totalGWeight,
+        },
+        notes: form.inv_notes ?? null,
+      });
+
+      // Create a new window with proper print settings
+      const printWindow = window.open(
+        "",
+        "_blank",
+        "width=1024,height=768,scrollbars=yes,resizable=yes",
+      );
+
+      if (!printWindow) {
+        toast.error("تعذر فتح نافذة الطباعة");
+        return;
+      }
+
+      // Write the HTML content to the new window
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+
+      // Mark the invoice as printed immediately
+      dispatchForm({ type: "SET_FIELD", field: "print", value: true });
+
+      // Wait for images and content to load before printing
+      if (printWindow.document.readyState === "complete") {
+        // If already loaded, print immediately
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+        }, 250);
+      } else {
+        // Wait for the window to load
+        printWindow.addEventListener("load", () => {
+          setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+          }, 250);
+        });
+      }
+
+      toast.success("تم فتح معاينة الطباعة");
+    } catch (err) {
+      console.error("preview print error", err);
+      toast.error("حدث خطأ أثناء إنشاء نموذج الطباعة");
+    }
+  }, [
+    computeTotals,
+    context,
+    form.inv_date,
+    form.inv_id,
+    form.inv_notes,
+    form.pay_type,
+    form.vat_no,
+    form.cr_no,
+    form.gov,
+    form.city,
+    form.area,
+    form.street,
+    form.build_no,
+    form.post_no,
+    form.post_code,
+    form.cust_name,
+    form.cust_code,
+    goldPrice,
+    invoiceItems,
+    paymentMethod,
+    selectedCustomer,
+    contactLabel,
+    dispatchForm,
+  ]);
 
   // manual totals state
   const [autoTotalValue, setAutoTotalValue] = useState<number>(0);
