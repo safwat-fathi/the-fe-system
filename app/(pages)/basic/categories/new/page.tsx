@@ -4,6 +4,7 @@ import CategoryFormClient from "../components/CategoryFormClient";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
+import accountService from "@/services/api/account.service";
 import helperService from "@/services/api/helper.service";
 
 export const metadata: Metadata = {
@@ -20,7 +21,10 @@ export default async function NewCategoryPage() {
       : 1;
 
   // جلب البيانات الأساسية
-  const boxesData = await helperService.getBoxes(companyId).catch(() => []);
+  const [boxesData, accountsData] = await Promise.all([
+    helperService.getBoxes(companyId).catch(() => []),
+    accountService.getAllAccounts(companyId).catch(() => []),
+  ]);
 
   // إنشاء فئة فارغة
   const emptyCategory = {
@@ -48,6 +52,8 @@ export default async function NewCategoryPage() {
         companyId={companyId}
         boxes={boxesData as any}
         initialCategory={emptyCategory}
+        initialAccounts={accountsData as any}
+        initialCategoryAccount={null}
         mode="add"
       />
     </div>

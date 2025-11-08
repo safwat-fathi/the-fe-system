@@ -14,6 +14,7 @@ export interface SaveVoucherData {
   opps_vouch?: number;
   cust_id?: number | null;
   handling?: string | null;
+  cost_id?: number | null;
 }
 
 export interface VoucherDetailData {

@@ -114,6 +114,10 @@ export const useVoucherActions = ({
         pay_type: voucher.pay_type,
         ref_no: voucher.ref_no || "",
         opps_vouch: voucher.opps_vouch || 0,
+      cost_id:
+        voucher.cost_id !== undefined && voucher.cost_id !== null
+          ? voucher.cost_id
+          : null,
       };
 
       const detailsData = details

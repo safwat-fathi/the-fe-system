@@ -48,6 +48,7 @@ export const useVoucherFormState = ({
       post: false,
       print: false,
       opps_vouch: 0,
+      cost_id: null,
     },
   );
 

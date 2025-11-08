@@ -3,7 +3,17 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
-import { Button } from "@heroui/react";
+import {
+  Button,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Select,
+  SelectItem,
+  Textarea,
+} from "@heroui/react";
 import {
   CheckIcon,
   PencilIcon,
@@ -19,8 +29,6 @@ import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 import { ConfirmationModal } from "@/components/Modal";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea } from "@heroui/react";
-
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 interface BalanceVoucherClientPageProps {
@@ -86,6 +94,7 @@ export default function BalanceVoucherClientPage({
     addDetailRow,
     removeDetailRow,
     updateDetail,
+    handleMasterCostChange,
     saveVoucher,
     printVoucher,
     handleEditClick,
@@ -297,8 +306,55 @@ export default function BalanceVoucherClientPage({
               />
             </div>
 
+            {costCenters.length > 0 && (
+              <div className="flex flex-col gap-1 md:col-span-2">
+                <label className="text-sm font-medium text-slate-700">
+                  مركز التكلفة
+                </label>
+                <Select
+                  isDisabled={!isEditing}
+                  isClearable
+                  placeholder="اختر مركز التكلفة"
+                  selectedKeys={
+                    voucher.cost_id && voucher.cost_id > 0
+                      ? new Set([String(voucher.cost_id)])
+                      : new Set([])
+                  }
+                  onSelectionChange={(keys) => {
+                    const key =
+                      keys instanceof Set
+                        ? Array.from(keys)[0]
+                        : Array.isArray(keys)
+                          ? keys[0]
+                          : null;
+                    const selected = key ? Number(key) : null;
+
+                    handleMasterCostChange(
+                      selected !== null && Number.isFinite(selected)
+                        ? selected
+                        : null,
+                    );
+                  }}
+                  className="text-sm"
+                >
+                  {costCenters.map((center) => (
+                    <SelectItem
+                      key={String(center.id)}
+                      textValue={center.name || center.cost_name || `مركز ${center.id}`}
+                    >
+                      {center.name || center.cost_name || `مركز ${center.id}`}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+            )}
+
             {/* البيان - أوسع مع زر توسيع */}
-            <div className="flex flex-col gap-1 md:col-span-7">
+            <div
+              className={`flex flex-col gap-1 ${
+                costCenters.length > 0 ? "md:col-span-5" : "md:col-span-7"
+              }`}
+            >
               <label className="text-sm font-medium text-slate-700">
                 البيان
               </label>

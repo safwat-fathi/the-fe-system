@@ -46,8 +46,18 @@ export const useCashReceiptVoucherForm = ({
   const router = useRouter();
 
   // State Management
-  const [voucher, setVoucher] = useState<Voucher>(
-    voucherData || {
+  const [voucher, setVoucher] = useState<Voucher>(() => {
+    if (voucherData) {
+      return {
+        ...voucherData,
+        cost_id:
+          voucherData.cost_id ??
+          (voucherData as any).cost ??
+          null,
+      };
+    }
+
+    return {
       vouch_id: 0,
       vouch_date: new Date().toISOString(),
       vouch_type: vouchType,
@@ -59,8 +69,9 @@ export const useCashReceiptVoucherForm = ({
       post: false,
       print: false,
       opps_vouch: 0,
-    },
-  );
+      cost_id: null,
+    };
+  });
 
   const [currentTime, setCurrentTime] = useState("");
   const [isClient, setIsClient] = useState(false);
@@ -102,7 +113,7 @@ export const useCashReceiptVoucherForm = ({
             box_id: 0,
             amount: 0,
             vouch_notes: "",
-            cost_id: null,
+            cost_id: voucher.cost_id ?? null,
             inv_id: undefined,
             cr_date: new Date().toISOString(),
           },
@@ -121,7 +132,7 @@ export const useCashReceiptVoucherForm = ({
             debit_g: undefined,
             credit_g: undefined,
             gauge: 875,
-            cost_id: null,
+            cost_id: voucher.cost_id ?? null,
             vouch_notes: "",
             cr_date: new Date().toISOString(),
           },
@@ -302,7 +313,7 @@ export const useCashReceiptVoucherForm = ({
         box_id: 0,
         amount: 0,
         vouch_notes: "",
-        cost_id: null,
+        cost_id: voucher.cost_id ?? null,
         inv_id: undefined,
         cr_date: new Date().toISOString(),
       },
@@ -342,7 +353,7 @@ export const useCashReceiptVoucherForm = ({
         debit_g: undefined,
         credit_g: undefined,
         gauge: 875,
-        cost_id: null,
+        cost_id: voucher.cost_id ?? null,
         vouch_notes: "",
         cr_date: new Date().toISOString(),
       },
@@ -351,6 +362,60 @@ export const useCashReceiptVoucherForm = ({
 
   const removeDetailRow = (index: number) => {
     setDetails((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleMasterCostChange = (costId: number | null) => {
+    const previousCost =
+      voucher.cost_id !== undefined && voucher.cost_id !== null
+        ? voucher.cost_id
+        : null;
+
+    setVoucher((prev) => ({
+      ...prev,
+      cost_id: costId ?? null,
+    }));
+
+    setDetails((prev) =>
+      prev.map((detail) => {
+        const detailCost =
+          detail.cost_id !== undefined && detail.cost_id !== null
+            ? detail.cost_id
+            : 0;
+
+        if (
+          detailCost > 0 &&
+          previousCost !== null &&
+          detailCost !== previousCost
+        ) {
+          return detail;
+        }
+
+        return {
+          ...detail,
+          cost_id: costId ?? null,
+        };
+      }),
+    );
+
+    setVoucherBoxes((prev) =>
+      prev.map((box) => {
+        const boxCost =
+          box.cost_id !== undefined && box.cost_id !== null ? box.cost_id : 0;
+
+        if (
+          boxCost > 0 &&
+          previousCost !== null &&
+          boxCost !== previousCost
+        ) {
+          return box;
+        }
+
+        return {
+          ...box,
+          cost_id: costId ?? null,
+        };
+      }),
+    );
   };
 
   // Calculate totals
@@ -415,6 +480,13 @@ export const useCashReceiptVoucherForm = ({
     setIsLoading(true);
 
     try {
+      const masterCostId =
+        voucher.cost_id !== undefined &&
+        voucher.cost_id !== null &&
+        voucher.cost_id > 0
+          ? voucher.cost_id
+          : null;
+
       const voucherData = {
         vouch_id: voucher.vouch_id,
         vouch_date: voucher.vouch_date,
@@ -425,6 +497,7 @@ export const useCashReceiptVoucherForm = ({
         pay_type: voucher.pay_type,
         ref_no: voucher.ref_no || "",
         opps_vouch: voucher.opps_vouch || 0,
+        cost_id: masterCostId,
       };
 
       const boxesData = validBoxes.map((box) => ({
@@ -432,7 +505,12 @@ export const useCashReceiptVoucherForm = ({
         box_id: box.box_id,
         amount: box.amount,
         vouch_notes: box.vouch_notes || "",
-        cost_id: box.cost_id || null,
+        cost_id:
+          box.cost_id !== undefined &&
+          box.cost_id !== null &&
+          box.cost_id > 0
+            ? box.cost_id
+            : masterCostId,
         inv_id: box.inv_id || null,
       }));
 
@@ -446,7 +524,12 @@ export const useCashReceiptVoucherForm = ({
         credit_g: 0,
         gauge: detail.gauge || 875,
         vouch_notes: detail.vouch_notes || "",
-        cost_id: detail.cost_id || null,
+        cost_id:
+          detail.cost_id !== undefined &&
+          detail.cost_id !== null &&
+          detail.cost_id > 0
+            ? detail.cost_id
+            : masterCostId,
       }));
 
       const currentDetailIds = detailsData
@@ -622,6 +705,7 @@ export const useCashReceiptVoucherForm = ({
     addVoucherBoxRow,
     removeVoucherBoxRow,
     updateDetail,
+    handleMasterCostChange,
     addDetailRow,
     removeDetailRow,
     saveVoucher,

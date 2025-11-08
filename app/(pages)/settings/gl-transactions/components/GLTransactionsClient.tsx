@@ -126,6 +126,39 @@ export default function GLTransactionsClient({
     return balances;
   }, [transactions]);
 
+  const totals = useMemo(() => {
+    const totalDebit = sortedTransactions.reduce(
+      (sum, trans) => sum + Number(trans.debit_base || 0),
+      0,
+    );
+    const totalCredit = sortedTransactions.reduce(
+      (sum, trans) => sum + Number(trans.credit_base || 0),
+      0,
+    );
+    const totalGoldDebit = sortedTransactions.reduce(
+      (sum, trans) => sum + Number(trans.g_debit_base || 0),
+      0,
+    );
+    const totalGoldCredit = sortedTransactions.reduce(
+      (sum, trans) => sum + Number(trans.g_credit_base || 0),
+      0,
+    );
+
+    const cashDiff = totalDebit - totalCredit;
+    const goldDiff = totalGoldDebit - totalGoldCredit;
+
+    return {
+      totalDebit,
+      totalCredit,
+      totalGoldDebit,
+      totalGoldCredit,
+      cashDiff,
+      goldDiff,
+      cashBalanced: Math.abs(cashDiff) < 0.01,
+      goldBalanced: Math.abs(goldDiff) < 0.01,
+    };
+  }, [sortedTransactions]);
+
   const handleViewVoucher = (vouchType: number, vouchId: number) => {
     const route = getVoucherRoute(vouchType, vouchId, "preview");
 
@@ -140,9 +173,6 @@ export default function GLTransactionsClient({
           <h1 className="text-2xl font-bold text-gray-900">
             جميع القيود المحاسبية
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            إجمالي السجلات: {sortedTransactions.length}
-          </p>
         </div>
       </div>
 
@@ -155,12 +185,10 @@ export default function GLTransactionsClient({
             className="min-w-full"
           >
             <TableHeader>
-              <TableColumn className="text-center">#</TableColumn>
               <TableColumn className="text-center">نوع الحركة</TableColumn>
               <TableColumn className="text-center">رقم الحركة</TableColumn>
               <TableColumn className="text-center">المرجع</TableColumn>
               <TableColumn className="text-center">التاريخ</TableColumn>
-              <TableColumn className="text-center">التسلسل</TableColumn>
               <TableColumn className="text-center">الحساب</TableColumn>
               <TableColumn className="text-center">مدين أساس</TableColumn>
               <TableColumn className="text-center">دائن أساس</TableColumn>
@@ -184,106 +212,169 @@ export default function GLTransactionsClient({
                   </TableCell>
                 </TableRow>
               ) : (
-                sortedTransactions.map((transaction, index) => {
-                  const transId = transaction.trans_id || 0;
-                  const balance = transactionBalances[transId];
-                  const debitBase = Number(transaction.debit_base || 0);
-                  const creditBase = Number(transaction.credit_base || 0);
-                  const gDebitBase = Number(transaction.g_debit_base || 0);
-                  const gCreditBase = Number(transaction.g_credit_base || 0);
+                <>
+                  {sortedTransactions.map((transaction, index) => {
+                    const transId = transaction.trans_id || 0;
+                    const balance = transactionBalances[transId];
+                    const debitBase = Number(transaction.debit_base || 0);
+                    const creditBase = Number(transaction.credit_base || 0);
+                    const gDebitBase = Number(transaction.g_debit_base || 0);
+                    const gCreditBase = Number(transaction.g_credit_base || 0);
 
-                  return (
-                    <TableRow
-                      key={transaction.id || index}
-                      className={
-                        balance && !balance.isBalanced ? "bg-red-50" : ""
-                      }
+                    return (
+                      <TableRow
+                        key={transaction.id || index}
+                        className={
+                          balance && !balance.isBalanced ? "bg-red-50" : ""
+                        }
+                      >
+                        <TableCell className="text-center text-sm font-medium">
+                          {getVoucherTypeName(transaction.trans_type)}
+                        </TableCell>
+                        <TableCell className="text-center text-sm font-semibold">
+                          {transId}
+                        </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {transaction.ref || "-"}
+                        </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {formatVoucherDate(transaction.d)}
+                        </TableCell>
+                        <TableCell className="text-center text-sm font-medium">
+                          {transaction.acc ? (
+                            <span>
+                              {transaction.acc}
+                              {getAccountName(transaction.acc) && (
+                                <span className="text-gray-500 mr-1">
+                                  {" - "}
+                                  {getAccountName(transaction.acc)}
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {debitBase > 0 ? (
+                            <span className="font-semibold text-gray-800">
+                              {formatAmount(debitBase)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {creditBase > 0 ? (
+                            <span className="font-semibold text-green-600">
+                              {formatAmount(creditBase)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {gDebitBase > 0 ? (
+                            <span className="font-semibold text-yellow-600">
+                              {formatAmount(gDebitBase)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {gCreditBase > 0 ? (
+                            <span className="font-semibold text-yellow-600">
+                              {formatAmount(gCreditBase)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            color="primary"
+                            size="sm"
+                            variant="light"
+                            onPress={() =>
+                              handleViewVoucher(transaction.trans_type, transId)
+                            }
+                          >
+                            <i className="bi bi-eye w-4 h-4 me-1" />
+                            عرض
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+
+                  <TableRow className="bg-gray-50">
+                    <TableCell
+                      className="text-center text-sm font-semibold text-gray-700"
+                      colSpan={5}
                     >
-                      <TableCell className="text-center text-sm">
-                        {index + 1}
+                      الإجماليات
+                    </TableCell>
+                    <TableCell className="text-center text-sm font-bold text-emerald-700">
+                      {formatAmount(totals.totalDebit)}
+                    </TableCell>
+                    <TableCell className="text-center text-sm font-bold text-red-600">
+                      {formatAmount(totals.totalCredit)}
+                    </TableCell>
+                    <TableCell className="text-center text-sm font-bold text-amber-600">
+                      {formatAmount(totals.totalGoldDebit)}
+                    </TableCell>
+                    <TableCell className="text-center text-sm font-bold text-amber-600">
+                      {formatAmount(totals.totalGoldCredit)}
+                    </TableCell>
+                    <TableCell className="text-center text-sm text-gray-400">
+                      -
+                    </TableCell>
+                  </TableRow>
+
+                  {(Math.abs(totals.cashDiff) >= 0.01 ||
+                    Math.abs(totals.goldDiff) >= 0.01) && (
+                    <TableRow className="bg-gray-100">
+                      <TableCell
+                        className="text-center text-xs font-semibold text-gray-700"
+                        colSpan={5}
+                      >
+                        الفارق
                       </TableCell>
-                      <TableCell className="text-center text-sm font-medium">
-                        {getVoucherTypeName(transaction.trans_type)}
+                      <TableCell
+                        className={`text-center text-xs font-semibold ${
+                          totals.cashBalanced ? "text-emerald-700" : "text-red-600"
+                        }`}
+                      >
+                        {formatAmount(Math.abs(totals.cashDiff))}
+                        <span className="mr-1 text-[10px]">
+                          ({totals.cashDiff > 0 ? "مدين" : "دائن"})
+                        </span>
                       </TableCell>
-                      <TableCell className="text-center text-sm font-semibold">
-                        {transId}
+                      <TableCell className="text-center text-xs text-gray-400">
+                        -
                       </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {transaction.ref || "-"}
+                      <TableCell className="text-center text-xs text-gray-400">
+                        -
                       </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {formatVoucherDate(transaction.d)}
+                      <TableCell
+                        className={`text-center text-xs font-semibold ${
+                          totals.goldBalanced
+                            ? "text-emerald-700"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {formatAmount(Math.abs(totals.goldDiff))}
+                        <span className="mr-1 text-[10px]">
+                          ({totals.goldDiff > 0 ? "مدين" : "دائن"})
+                        </span>
                       </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {transaction.seq || index + 1}
-                      </TableCell>
-                      <TableCell className="text-center text-sm font-medium">
-                        {transaction.acc ? (
-                          <span>
-                            {transaction.acc}
-                            {getAccountName(transaction.acc) && (
-                              <span className="text-gray-500 mr-1">
-                                {" - "}
-                                {getAccountName(transaction.acc)}
-                              </span>
-                            )}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {debitBase > 0 ? (
-                          <span className="font-semibold text-gray-800">
-                            {formatAmount(debitBase)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {creditBase > 0 ? (
-                          <span className="font-semibold text-green-600">
-                            {formatAmount(creditBase)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {gDebitBase > 0 ? (
-                          <span className="font-semibold text-yellow-600">
-                            {formatAmount(gDebitBase)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center text-sm">
-                        {gCreditBase > 0 ? (
-                          <span className="font-semibold text-yellow-600">
-                            {formatAmount(gCreditBase)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          color="primary"
-                          size="sm"
-                          variant="light"
-                          onPress={() =>
-                            handleViewVoucher(transaction.trans_type, transId)
-                          }
-                        >
-                          <i className="bi bi-eye w-4 h-4 me-1" />
-                          عرض
-                        </Button>
+                      <TableCell className="text-center text-xs text-gray-400">
+                        -
                       </TableCell>
                     </TableRow>
-                  );
-                })
+                  )}
+                </>
               )}
             </TableBody>
           </Table>

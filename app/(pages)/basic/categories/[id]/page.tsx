@@ -5,6 +5,11 @@ import CategoryFormClient from "../components/CategoryFormClient";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
+import {
+  ensureCategoryAccountAction,
+  getCategoryAccountsAction,
+} from "@/app/actions/category-accounts.action";
+import accountService from "@/services/api/account.service";
 import categoryService from "@/services/api/category.service";
 import helperService from "@/services/api/helper.service";
 
@@ -51,7 +56,27 @@ export default async function CategoryDetailPage({
   }
 
   // جلب البيانات الأساسية
-  const boxesData = await helperService.getBoxes(companyId).catch(() => []);
+  const [boxesData, accountsData] = await Promise.all([
+    helperService.getBoxes(companyId).catch(() => []),
+    accountService.getAllAccounts(companyId).catch(() => []),
+  ]);
+
+  const categoryAccount =
+    await ensureCategoryAccountAction({
+      companyId,
+      categoryId,
+    }).catch(async () => {
+      const fallbackAccounts = await getCategoryAccountsAction({
+        companyId,
+        categoryId,
+      }).catch(() => []);
+
+      return (
+        fallbackAccounts.find(
+          (record) => Number(record.cat) === Number(categoryId),
+        ) ?? null
+      );
+    });
 
   return (
     <div className="responsive-container font-cairo">
@@ -70,6 +95,8 @@ export default async function CategoryDetailPage({
         companyId={companyId}
         boxes={boxesData as any}
         initialCategory={category}
+        initialAccounts={accountsData as any}
+        initialCategoryAccount={categoryAccount}
         mode={formMode}
       />
     </div>

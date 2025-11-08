@@ -101,6 +101,13 @@ export async function createVoucherAction(
       delete voucherPayload.cost_id;
     }
 
+    if (![4, 5, 111, 222].includes(voucherData.vouch_type)) {
+      voucherPayload.cost =
+        voucherData.cost_id !== undefined && voucherData.cost_id !== null
+          ? voucherData.cost_id
+          : null;
+    }
+
     // حفظ السند الرئيسي
     const voucherResponse = await voucherService.create(voucherPayload);
 
