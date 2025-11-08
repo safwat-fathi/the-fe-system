@@ -144,6 +144,13 @@ export async function updateVoucherAction(
       voucherPayload.cost = costValue;
     }
 
+    if (![4, 5, 111, 222].includes(voucherData.vouch_type)) {
+      voucherPayload.cost =
+        voucherData.cost_id !== undefined && voucherData.cost_id !== null
+          ? voucherData.cost_id
+          : null;
+    }
+
     // تحديث السند الرئيسي
     const voucherResponse = await voucherService.update(
       realVoucherId,

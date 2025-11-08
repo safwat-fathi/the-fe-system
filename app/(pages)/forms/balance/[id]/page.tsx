@@ -220,6 +220,7 @@ export default async function BalanceVoucherEditPage({
     commit: targetVoucher.commit || false,
     post: targetVoucher.post || false,
     print: targetVoucher.print || false,
+    cost_id: targetVoucher.cost ?? targetVoucher.cost_id ?? null,
   };
 
   return (

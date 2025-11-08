@@ -34,6 +34,7 @@ import toast from "react-hot-toast";
 
 import {
   getCategoryAccountsAction,
+  ensureCategoryAccountAction,
   saveCategoryAccountAction,
 } from "@/app/actions/category-accounts.action";
 import { ConfirmationModal } from "@/components/Modal";
@@ -197,18 +198,46 @@ export default function CategoriesClient({
     () =>
       initialAccounts.map((account) => {
         const code = account.acc_id;
-        const codeLabel = code ? ` (${code})` : "";
+        const label = code ? `${code} - ${account.acc_name}` : account.acc_name;
 
         return {
           id: account.id,
           key: String(account.id),
           name: account.acc_name,
-          code: code,
-          label: `${account.acc_name}${codeLabel}`,
+          code,
+          label,
         };
       }),
     [initialAccounts],
   );
+
+  const getAccountOption = (value: string | null | undefined) => {
+    if (!value) return null;
+    const trimmed = value.trim();
+
+    return (
+      accountOptions.find(
+        (option) =>
+          option.code === trimmed ||
+          option.name === trimmed ||
+          option.key === trimmed ||
+          option.label?.trim() === trimmed,
+      ) ?? null
+    );
+  };
+
+  const getAccountDisplayValue = (value: string | null | undefined) => {
+    if (!value) return "";
+    const option = getAccountOption(value);
+
+    if (option) {
+      const code = option.code ?? option.key;
+
+      return code ? `${code} - ${option.name}` : option.name;
+    }
+
+    return value;
+  };
 
   const sanitizeCategory = (cat: any): Category => ({
     id: cat.id ?? 0,
@@ -345,10 +374,17 @@ export default function CategoriesClient({
           categoryId,
         });
 
-        const record =
+        let record =
           records.find(
             (item) => Number(item.cat) === Number(categoryId),
           ) ?? records[0] ?? null;
+
+        if (!record) {
+          record = await ensureCategoryAccountAction({
+            companyId,
+            categoryId,
+          });
+        }
 
         const formState = mapAccountToFormState(record);
         setAccountForm(formState);
@@ -426,7 +462,17 @@ export default function CategoriesClient({
       const sanitizedPayload = ACCOUNT_KEYS.reduce(
         (acc, key) => {
           const raw = accountForm[key]?.trim();
-          acc[key] = raw ? raw : null;
+          if (!raw) {
+            acc[key] = null;
+
+            return acc;
+          }
+
+          const normalized = raw.includes("-")
+            ? raw.split("-")[0].trim()
+            : raw.trim();
+
+          acc[key] = normalized || null;
 
           return acc;
         },
@@ -630,7 +676,9 @@ export default function CategoriesClient({
                   column: "value" | "wage",
                   text: string,
                 ) => {
-                  const normalizedText = text.trim().toLowerCase();
+                  const normalizedText = getAccountDisplayValue(text)
+                    .trim()
+                    .toLowerCase();
                   const filteredOptions = normalizedText
                     ? accountOptions.filter((option) => {
                         const target = option.label?.toLowerCase() ?? "";
@@ -656,12 +704,23 @@ export default function CategoriesClient({
                         inputWrapper: "min-h-[36px]",
                         listbox: "text-right",
                       }}
-                    inputValue={text}
+                    inputValue={getAccountDisplayValue(text)}
                       items={filteredOptions}
                     menuTrigger="input"
                     selectedKey={null}
                     variant="bordered"
                     onInputChange={(value) => {
+                      const option = getAccountOption(value);
+
+                      if (option) {
+                        handleAccountFieldChange(
+                          key,
+                          option.code || option.name || option.key,
+                        );
+
+                        return;
+                      }
+
                       handleAccountFieldChange(key, value);
                     }}
                     onSelectionChange={(selection) => {

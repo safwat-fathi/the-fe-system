@@ -43,8 +43,18 @@ export const useBalanceVoucherForm = ({
   const router = useRouter();
 
   // State Management
-  const [voucher, setVoucher] = useState<Voucher>(
-    voucherData || {
+  const [voucher, setVoucher] = useState<Voucher>(() => {
+    if (voucherData) {
+      return {
+        ...voucherData,
+        cost_id:
+          voucherData.cost_id ??
+          (voucherData as any).cost ??
+          null,
+      };
+    }
+
+    return {
       vouch_id: 0,
       vouch_date: new Date().toISOString(),
       vouch_type: 0, // قيد افتتاحي
@@ -55,8 +65,9 @@ export const useBalanceVoucherForm = ({
       commit: false,
       post: false,
       print: false,
-    },
-  );
+      cost_id: null,
+    };
+  });
 
   const [currentTime, setCurrentTime] = useState("");
   const [isClient, setIsClient] = useState(false);
@@ -107,7 +118,7 @@ export const useBalanceVoucherForm = ({
         gauge: 875,
         debit_g: undefined,
         credit_g: undefined,
-        cost_id: 0,
+        cost_id: voucher.cost_id ?? 0,
         vouch_notes: "",
         cr_date: new Date().toISOString(),
       };
@@ -292,7 +303,7 @@ export const useBalanceVoucherForm = ({
       gauge: 875,
       debit_g: undefined,
       credit_g: undefined,
-      cost_id: 0,
+      cost_id: voucher.cost_id ?? 0,
       vouch_notes: "",
       cr_date: new Date().toISOString(),
     };
@@ -450,6 +461,40 @@ export const useBalanceVoucherForm = ({
     });
   };
 
+  const handleMasterCostChange = (costId: number | null) => {
+    const previousCost =
+      voucher.cost_id !== undefined && voucher.cost_id !== null
+        ? voucher.cost_id
+        : null;
+
+    setVoucher((prev) => ({
+      ...prev,
+      cost_id: costId ?? null,
+    }));
+
+    setDetails((prev) =>
+      prev.map((detail) => {
+        const detailCost =
+          detail.cost_id !== undefined && detail.cost_id !== null
+            ? detail.cost_id
+            : 0;
+
+        if (
+          detailCost > 0 &&
+          previousCost !== null &&
+          detailCost !== previousCost
+        ) {
+          return detail;
+        }
+
+        return {
+          ...detail,
+          cost_id: costId ?? 0,
+        };
+      }),
+    );
+  };
+
   // Calculate totals with base_debit and base_credit included
   const totals = useMemo(
     () => calculateVoucherTotals(details, true),
@@ -569,6 +614,13 @@ export const useBalanceVoucherForm = ({
 
     setIsLoading(true);
     try {
+      const masterCostId =
+        voucher.cost_id !== undefined &&
+        voucher.cost_id !== null &&
+        voucher.cost_id > 0
+          ? voucher.cost_id
+          : null;
+
       const voucherData = {
         vouch_id: finalVouchId,
         vouch_date: voucher.vouch_date,
@@ -579,6 +631,7 @@ export const useBalanceVoucherForm = ({
         pay_type: voucher.pay_type,
         ref_no: voucher.ref_no || "",
         opps_vouch: voucher.opps_vouch || 0,
+        cost_id: masterCostId,
       };
 
       const detailsData = details
@@ -605,7 +658,12 @@ export const useBalanceVoucherForm = ({
               ? parseFloat(detail.g_credit_base.toFixed(2))
               : 0,
           vouch_notes: detail.vouch_notes || "",
-          cost_id: detail.cost_id || null,
+          cost_id:
+            detail.cost_id !== undefined &&
+            detail.cost_id !== null &&
+            detail.cost_id > 0
+              ? detail.cost_id
+              : masterCostId,
           tax: 0,
           tax_prc: 0,
           vat_no: 0,
@@ -747,6 +805,7 @@ export const useBalanceVoucherForm = ({
     addDetailRow,
     removeDetailRow,
     updateDetail,
+    handleMasterCostChange,
     saveVoucher,
     printVoucher,
     handleEditClick,

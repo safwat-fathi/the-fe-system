@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import toast from "react-hot-toast";
-import { Button } from "@heroui/react";
 import {
   CheckIcon,
   PencilIcon,
@@ -13,7 +12,17 @@ import {
   PlusIcon,
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea } from "@heroui/react";
+import {
+  Button,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Select,
+  SelectItem,
+  Textarea,
+} from "@heroui/react";
 
 import GLTransactionModal from "../components/GLTransactionModal";
 
@@ -97,6 +106,7 @@ export default function CashReceiptVoucherClientPage({
     updateDetail,
     addDetailRow,
     removeDetailRow,
+    handleMasterCostChange,
     saveVoucher,
     printVoucher,
     loadAccountOptions,
@@ -421,9 +431,9 @@ export default function CashReceiptVoucherClientPage({
       </div>
 
       {/* Form Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
-        {/* رقم المرجع - أضيق */}
-        <div className="md:col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
+        {/* رقم المرجع */}
+        <div className="md:col-span-1">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
             رقم المرجع
           </label>
@@ -439,8 +449,8 @@ export default function CashReceiptVoucherClientPage({
           />
         </div>
 
-        {/* التاريخ والوقت - توسع قليلاً */}
-        <div className="md:col-span-3">
+        {/* التاريخ والوقت */}
+        <div className="md:col-span-1">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
             التاريخ والوقت
           </label>
@@ -463,43 +473,40 @@ export default function CashReceiptVoucherClientPage({
           />
         </div>
 
-        {/* البيان - أوسع مع زر توسيع */}
-        <div className="md:col-span-5">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
-            البيان
-          </label>
-          <div className="relative">
-            <input
-              className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
+        {costCenters.length > 0 && (
+          <div className="md:col-span-1">
+            <label className="block text-xs font-medium text-slate-700 mb-0.5">
+              مركز التكلفة
+            </label>
+            <select
+              className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
               disabled={!isEditing}
-              readOnly={!isEditing}
-              type="text"
-              placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
-              value={voucher.vouch_notes || ""}
-              onChange={(e) =>
-                setVoucher((prev) => ({ ...prev, vouch_notes: e.target.value }))
+              value={
+                voucher.cost_id && voucher.cost_id > 0
+                  ? String(voucher.cost_id)
+                  : ""
               }
-              onDoubleClick={() => {
-                if (isEditing) {
-                  setIsNotesModalOpen(true);
-                }
+              onChange={(e) => {
+                const selected = e.target.value ? Number(e.target.value) : null;
+                handleMasterCostChange(
+                  selected !== null && Number.isFinite(selected)
+                    ? selected
+                    : null,
+                );
               }}
-            />
-            {isEditing && (
-              <button
-                type="button"
-                onClick={() => setIsNotesModalOpen(true)}
-                className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
-                title="توسيع البيان"
-              >
-                <ArrowsPointingOutIcon className="h-3 w-3" />
-              </button>
-            )}
+            >
+              <option value="">اختر مركز التكلفة</option>
+              {costCenters.map((center) => (
+                <option key={center.id} value={String(center.id)}>
+                  {center.name || center.cost_name || `مركز ${center.id}`}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
+        )}
 
-        {/* الحالة - أضيق */}
-        <div className="md:col-span-2">
+        {/* الحالة */}
+        <div className="md:col-span-1">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
             الحالة
           </label>
@@ -543,6 +550,41 @@ export default function CashReceiptVoucherClientPage({
               </>
             )}
           </select>
+        </div>
+      </div>
+
+      {/* البيان */}
+      <div className="mb-2">
+        <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          البيان
+        </label>
+        <div className="relative">
+          <input
+            className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
+            disabled={!isEditing}
+            readOnly={!isEditing}
+            type="text"
+            placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
+            value={voucher.vouch_notes || ""}
+            onChange={(e) =>
+              setVoucher((prev) => ({ ...prev, vouch_notes: e.target.value }))
+            }
+            onDoubleClick={() => {
+              if (isEditing) {
+                setIsNotesModalOpen(true);
+              }
+            }}
+          />
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => setIsNotesModalOpen(true)}
+              className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
+              title="توسيع البيان"
+            >
+              <ArrowsPointingOutIcon className="h-3 w-3" />
+            </button>
+          )}
         </div>
       </div>
 

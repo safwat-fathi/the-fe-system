@@ -20,10 +20,11 @@ import {
   getBoxAccountId,
 } from "./common";
 
-import { glTransactionService } from "@/services/api";
+import { glTransactionService, voucherService } from "@/services/api";
 import { GLTransaction } from "@/types/models/gl-transaction";
 import { VOUCHER_TYPE_NAMES } from "@/constants";
 import { isReceiptType, isPaymentType } from "@/utilities/voucher/routing";
+import { parseNumber } from "@/utilities/voucherForm";
 
 /**
  * Delete GL transaction records for a voucher
@@ -104,25 +105,37 @@ async function createGLTransactionForDetail(
     return;
   }
 
-  const debitValue = detail.debit || 0;
-  const creditValue = detail.credit || 0;
-  const debitBaseValue = detail.debit_base !== undefined ? detail.debit_base : (detail.base_debit || 0);
-  const creditBaseValue = detail.credit_base !== undefined ? detail.credit_base : (detail.base_credit || 0);
+  const debitValue =
+    detail.debit !== undefined && detail.debit !== null
+      ? parseNumber(detail.debit)
+      : 0;
+  const creditValue =
+    detail.credit !== undefined && detail.credit !== null
+      ? parseNumber(detail.credit)
+      : 0;
+  const finalDebitBase = detail.debit_base !== undefined && detail.debit_base !== null
+    ? parseNumber(detail.debit_base)
+    : debitValue;
+  const finalCreditBase = detail.credit_base !== undefined && detail.credit_base !== null
+    ? parseNumber(detail.credit_base)
+    : creditValue;
 
-  // إذا كان هناك نقد (debit أو credit > 0) وليس هناك ذهب (debit_base و credit_base = 0)
-  // فإن debit_base و credit_base يجب أن تساوي debit و credit
-  const isCashOnly =
-    (debitValue > 0 || creditValue > 0) &&
-    debitBaseValue === 0 &&
-    creditBaseValue === 0;
-
-  const finalDebitBase = isCashOnly ? debitValue : debitBaseValue;
-  const finalCreditBase = isCashOnly ? creditValue : creditBaseValue;
-
-  const gDebitValue = detail.g_debit !== undefined ? detail.g_debit : (detail.debit_g || 0);
-  const gCreditValue = detail.g_credit !== undefined ? detail.g_credit : (detail.credit_g || 0);
-  const gDebitBaseValue = detail.g_debit_base !== undefined ? detail.g_debit_base : gDebitValue;
-  const gCreditBaseValue = detail.g_credit_base !== undefined ? detail.g_credit_base : gCreditValue;
+  const gDebitValue =
+    detail.g_debit !== undefined && detail.g_debit !== null
+      ? parseNumber(detail.g_debit)
+      : 0;
+  const gCreditValue =
+    detail.g_credit !== undefined && detail.g_credit !== null
+      ? parseNumber(detail.g_credit)
+      : 0;
+  const gDebitBaseValue =
+    detail.g_debit_base !== undefined && detail.g_debit_base !== null
+      ? parseNumber(detail.g_debit_base)
+      : gDebitValue;
+  const gCreditBaseValue =
+    detail.g_credit_base !== undefined && detail.g_credit_base !== null
+      ? parseNumber(detail.g_credit_base)
+      : gCreditValue;
 
   const glTransactionData: Partial<GLTransaction> = {
     debit: String(debitValue),
@@ -499,14 +512,77 @@ export async function createGLTransactionRecords(
     return;
   }
 
-  // للسندات الأخرى: استخدام details العادية
-  // التحقق من وجود التفاصيل
-  if (!details || details.length === 0) {
+  let effectiveDetails = details;
+
+  try {
+    const persistedDetailsResponse = await voucherService.getDetails(masterId, {
+      xcom_id: "1",
+    });
+
+    if (
+      persistedDetailsResponse.success &&
+      Array.isArray(persistedDetailsResponse.data) &&
+      persistedDetailsResponse.data.length > 0
+    ) {
+      effectiveDetails = persistedDetailsResponse.data.map((detail: any) => ({
+        id: detail.id || 0,
+        vouch_id: voucherData.vouch_id,
+        acc_id: detail.acc_id || detail.acc || 0,
+        debit:
+          detail.debit !== undefined && detail.debit !== null
+            ? parseNumber(detail.debit)
+            : undefined,
+        credit:
+          detail.credit !== undefined && detail.credit !== null
+            ? parseNumber(detail.credit)
+            : undefined,
+        debit_base:
+          detail.debit_base !== undefined && detail.debit_base !== null
+            ? parseNumber(detail.debit_base)
+            : undefined,
+        credit_base:
+          detail.credit_base !== undefined && detail.credit_base !== null
+            ? parseNumber(detail.credit_base)
+            : undefined,
+        g_debit:
+          detail.g_debit !== undefined && detail.g_debit !== null
+            ? parseNumber(detail.g_debit)
+            : undefined,
+        g_credit:
+          detail.g_credit !== undefined && detail.g_credit !== null
+            ? parseNumber(detail.g_credit)
+            : undefined,
+        g_debit_base:
+          detail.g_debit_base !== undefined && detail.g_debit_base !== null
+            ? parseNumber(detail.g_debit_base)
+            : undefined,
+        g_credit_base:
+          detail.g_credit_base !== undefined && detail.g_credit_base !== null
+            ? parseNumber(detail.g_credit_base)
+            : undefined,
+        gauge:
+          detail.gauge !== undefined && detail.gauge !== null
+            ? parseNumber(detail.gauge)
+            : 875,
+        vouch_notes: detail.vouch_notes || "",
+        cost_id: detail.cost_id || detail.cost || null,
+        g_debit2: undefined,
+        g_credit2: undefined,
+      }));
+    }
+  } catch (error) {
+    console.error(
+      "[SERVER] ❌ فشل في جلب تفاصيل السند من أجل الترحيل:",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+
+  if (!effectiveDetails || effectiveDetails.length === 0) {
     return;
   }
 
   // فلترة التفاصيل الصحيحة
-  const validDetails = details.filter(
+  const validDetails = effectiveDetails.filter(
     (detail) => detail && detail.acc_id && detail.acc_id > 0,
   );
 

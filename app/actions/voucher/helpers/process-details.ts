@@ -7,6 +7,7 @@
 import type { VoucherDetailData } from "./types";
 
 import { voucherService } from "@/services/api";
+import { parseNumber } from "@/utilities/voucherForm";
 
 /**
  * Process voucher details (create)
@@ -22,23 +23,48 @@ export async function processVoucherDetails(
       continue;
     }
 
+    const debitValue =
+      detail.debit !== undefined && detail.debit !== null
+        ? parseNumber(detail.debit)
+        : 0;
+    const creditValue =
+      detail.credit !== undefined && detail.credit !== null
+        ? parseNumber(detail.credit)
+        : 0;
+    const gaugeValue =
+      detail.gauge !== undefined && detail.gauge !== null
+        ? parseNumber(detail.gauge) || 875
+        : 875;
+    const gDebitValue =
+      detail.g_debit !== undefined && detail.g_debit !== null
+        ? parseNumber(detail.g_debit)
+        : 0;
+    const gCreditValue =
+      detail.g_credit !== undefined && detail.g_credit !== null
+        ? parseNumber(detail.g_credit)
+        : 0;
+    const gDebitBaseValue =
+      detail.g_debit_base !== undefined && detail.g_debit_base !== null
+        ? parseNumber(detail.g_debit_base)
+        : 0;
+    const gCreditBaseValue =
+      detail.g_credit_base !== undefined && detail.g_credit_base !== null
+        ? parseNumber(detail.g_credit_base)
+        : 0;
+
     const detailData: any = {
       vouch: masterId,
       acc: detail.acc_id,
-      debit: detail.debit || 0,
-      credit: detail.credit || 0,
-      debit_base: detail.debit_base !== undefined ? detail.debit_base : (detail.base_debit || detail.debit || 0),
-      credit_base: detail.credit_base !== undefined ? detail.credit_base : (detail.base_credit || detail.credit || 0),
-      gauge: detail.gauge || 875,
-      g_debit: detail.g_debit !== undefined ? detail.g_debit : (detail.debit_g || 0),
-      g_credit: detail.g_credit !== undefined ? detail.g_credit : (detail.credit_g || 0),
+      debit: debitValue,
+      credit: creditValue,
+      debit_base: debitValue,
+      credit_base: creditValue,
+      gauge: gaugeValue,
+      g_debit: gDebitValue,
+      g_credit: gCreditValue,
       // تقريب g_debit_base و g_credit_base إلى منزلتين عشريتين فقط (متطلبات الـ backend)
-      g_debit_base: detail.g_debit_base !== undefined && detail.g_debit_base !== null
-        ? parseFloat(detail.g_debit_base.toFixed(2))
-        : 0,
-      g_credit_base: detail.g_credit_base !== undefined && detail.g_credit_base !== null
-        ? parseFloat(detail.g_credit_base.toFixed(2))
-        : 0,
+      g_debit_base: parseFloat(gDebitBaseValue.toFixed(2)),
+      g_credit_base: parseFloat(gCreditBaseValue.toFixed(2)),
       vouch_notes: detail.vouch_notes || "",
       com: 1,
       year: 1,
@@ -78,7 +104,6 @@ export async function updateVoucherDetails(
   currentUsername: string | null,
   branchId: number = 1,
 ): Promise<{ success: boolean; error?: string }> {
-  // حذف التفاصيل المحذوفة صراحة
   if (deletedDetailIds.length > 0) {
     for (const detailId of deletedDetailIds) {
       if (detailId && detailId > 0) {
@@ -122,23 +147,48 @@ export async function updateVoucherDetails(
       continue;
     }
 
+    const debitValue =
+      detail.debit !== undefined && detail.debit !== null
+        ? parseNumber(detail.debit)
+        : 0;
+    const creditValue =
+      detail.credit !== undefined && detail.credit !== null
+        ? parseNumber(detail.credit)
+        : 0;
+    const gaugeValue =
+      detail.gauge !== undefined && detail.gauge !== null
+        ? parseNumber(detail.gauge) || 875
+        : 875;
+    const gDebitValue =
+      detail.g_debit !== undefined && detail.g_debit !== null
+        ? parseNumber(detail.g_debit)
+        : 0;
+    const gCreditValue =
+      detail.g_credit !== undefined && detail.g_credit !== null
+        ? parseNumber(detail.g_credit)
+        : 0;
+    const gDebitBaseValue =
+      detail.g_debit_base !== undefined && detail.g_debit_base !== null
+        ? parseNumber(detail.g_debit_base)
+        : 0;
+    const gCreditBaseValue =
+      detail.g_credit_base !== undefined && detail.g_credit_base !== null
+        ? parseNumber(detail.g_credit_base)
+        : 0;
+
     const detailData: any = {
       vouch: realVoucherId,
       acc: detail.acc_id,
-      debit: detail.debit || 0,
-      credit: detail.credit || 0,
-      debit_base: detail.debit_base !== undefined ? detail.debit_base : (detail.base_debit || detail.debit || 0),
-      credit_base: detail.credit_base !== undefined ? detail.credit_base : (detail.base_credit || detail.credit || 0),
-      gauge: detail.gauge || 875,
-      g_debit: detail.g_debit !== undefined ? detail.g_debit : (detail.debit_g || 0),
-      g_credit: detail.g_credit !== undefined ? detail.g_credit : (detail.credit_g || 0),
+      debit: debitValue,
+      credit: creditValue,
+      debit_base: debitValue,
+      credit_base: creditValue,
+      gauge: gaugeValue,
+      g_debit: gDebitValue,
+      g_credit: gCreditValue,
       // تقريب g_debit_base و g_credit_base إلى منزلتين عشريتين فقط (متطلبات الـ backend)
-      g_debit_base: detail.g_debit_base !== undefined && detail.g_debit_base !== null
-        ? parseFloat(detail.g_debit_base.toFixed(2))
-        : 0,
-      g_credit_base: detail.g_credit_base !== undefined && detail.g_credit_base !== null
-        ? parseFloat(detail.g_credit_base.toFixed(2))
-        : 0,
+      g_debit_base: parseFloat(gDebitBaseValue.toFixed(2)),
+      g_credit_base: parseFloat(gCreditBaseValue.toFixed(2)),
       vouch_notes: detail.vouch_notes || "",
       com: 1,
       year: 1,

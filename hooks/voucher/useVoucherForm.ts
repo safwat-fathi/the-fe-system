@@ -74,6 +74,88 @@ export const useVoucherForm = ({
     caratTypes: state.caratTypes,
   });
 
+  const previousDetailsLengthRef = useRef(details.details.length);
+  const detailsLength = details.details.length;
+
+  useEffect(() => {
+    const currentLength = detailsLength;
+    const previousLength = previousDetailsLengthRef.current;
+    const masterCost = state.voucher.cost_id;
+
+    if (
+      typeof masterCost === "number" &&
+      masterCost > 0 &&
+      currentLength > previousLength
+    ) {
+      details.setDetails((prevDetails) =>
+        prevDetails.map((detail, index) => {
+          if (index < previousLength) {
+            return detail;
+          }
+
+          const hasDetailCost =
+            detail.cost_id !== undefined &&
+            detail.cost_id !== null &&
+            detail.cost_id > 0;
+
+          if (hasDetailCost) {
+            return detail;
+          }
+
+          return {
+            ...detail,
+            cost_id: masterCost,
+          };
+        }),
+      );
+    }
+
+    previousDetailsLengthRef.current = currentLength;
+  }, [detailsLength, state.voucher.cost_id, details.setDetails]);
+
+  const handleMasterCostChange = (costId: number | null) => {
+    const normalizedCost =
+      costId !== null && Number.isFinite(costId) && costId > 0 ? costId : null;
+    const previousCost =
+      state.voucher.cost_id !== undefined && state.voucher.cost_id !== null
+        ? state.voucher.cost_id
+        : null;
+
+    state.setVoucher((prev) => ({
+      ...prev,
+      cost_id: normalizedCost,
+    }));
+
+    details.setDetails((prevDetails) =>
+      prevDetails.map((detail) => {
+        const detailCost =
+          detail.cost_id !== undefined && detail.cost_id !== null
+            ? detail.cost_id
+            : 0;
+
+        if (
+          detailCost > 0 &&
+          previousCost !== null &&
+          detailCost !== previousCost
+        ) {
+          return detail;
+        }
+
+        if (normalizedCost === null) {
+          return {
+            ...detail,
+            cost_id: 0,
+          };
+        }
+
+        return {
+          ...detail,
+          cost_id: normalizedCost,
+        };
+      }),
+    );
+  };
+
   // Actions
   const actions = useVoucherActions({
     voucher: state.voucher,
@@ -181,6 +263,11 @@ export const useVoucherForm = ({
             vouch_notes: targetVoucher.vouch_notes || "",
             vouch_status: targetVoucher.vouch_status || 1,
             pay_type: targetVoucher.pay_type || 1,
+            cost_id:
+              targetVoucher.cost_id !== undefined &&
+              targetVoucher.cost_id !== null
+                ? Number(targetVoucher.cost_id)
+                : null,
           };
 
           state.setVoucher(formattedVoucher);
@@ -370,6 +457,11 @@ export const useVoucherForm = ({
           commit: false,
           post: false,
           print: false,
+          cost_id:
+            voucherToUse.cost_id !== undefined &&
+            voucherToUse.cost_id !== null
+              ? Number(voucherToUse.cost_id)
+              : null,
         });
 
         const formattedDetails = detailsResponse.data.map((detail: any) => ({
@@ -442,6 +534,7 @@ export const useVoucherForm = ({
           opps_vouch: 0,
           ref_no: "",
           vouch_notes: "",
+          cost_id: null,
         });
         details.setDetails([]);
         setIsCreatedFromPrevious(false);
@@ -511,6 +604,7 @@ export const useVoucherForm = ({
     isCreatedFromPrevious,
     loadAccountOptions,
     getAccountSelectValue,
+    handleMasterCostChange,
   };
 };
 
