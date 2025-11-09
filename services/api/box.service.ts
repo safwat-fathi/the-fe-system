@@ -1,34 +1,5 @@
 import { HttpService } from "@/services/base";
-
-interface Box {
-  id: number;
-  cust_code?: string;
-  cust_name: string;
-  cust_name_e: string;
-  mobile: number | string;
-  email: string;
-  address: string;
-  vat_no: number | null;
-  cr_no: number | null;
-  phone: string;
-  fax: string;
-  gov: string;
-  city: string;
-  area: string;
-  street: string;
-  build_no: string;
-  post_code: string;
-  cust_status: number;
-  acc?: number;
-  acc_name?: string;
-  cust_type?: number;
-  box_type: string;
-  handling: string;
-  handling_e?: string;
-  perc?: number;
-  expt?: boolean;
-  hide?: boolean;
-}
+import type { Box } from "@/types/models/box";
 
 interface BoxType {
   id: number;
@@ -37,6 +8,9 @@ interface BoxType {
   code_desc_l: string | null;
   type_id: number;
 }
+
+type CreateBoxDTO = Omit<Box, "id">;
+type UpdateBoxDTO = Partial<Box>;
 
 class BoxService extends HttpService<Box> {
   constructor() {
@@ -65,7 +39,7 @@ class BoxService extends HttpService<Box> {
     }
   }
 
-  async createBox(box: Omit<Box, "id">): Promise<Box | null> {
+  async createBox(box: CreateBoxDTO): Promise<Box | null> {
     try {
       // جلب معاملات الفرع لإضافة com
       let companyId = "1";
@@ -81,20 +55,20 @@ class BoxService extends HttpService<Box> {
       }
 
       // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
-      const { acc_name, ...rest } = box;
+      const { acc_name, ...rest } = box as any;
       const boxData = {
         ...rest,
         com: companyId, // إضافة حقل com المطلوب
         cust_type: 99, // Set customer type to 99 for boxes
-        cust_code: box.cust_code || "",
-        cust_status: box.cust_status || 1, // Default active status
-        acc: Number(box.acc) || null,
-        vat_no: Number(box.vat_no) || null,
-        cr_no: Number(box.cr_no) || null,
-        perc: Number(box.perc) || null,
-        expt: !!box.expt,
-        hide: !!box.hide,
-        post_code: box.post_code || "",
+        cust_code: (box as any).cust_code || "",
+        cust_status: (box as any).cust_status || 1, // Default active status
+        acc: box.acc !== undefined && box.acc !== null ? Number(box.acc as any) || null : null,
+        vat_no: box.vat_no !== undefined && box.vat_no !== null ? Number(box.vat_no as any) || null : null,
+        cr_no: box.cr_no !== undefined && box.cr_no !== null ? Number(box.cr_no as any) || null : null,
+        perc: box.perc !== undefined && box.perc !== null ? Number(box.perc as any) || null : null,
+        expt: !!(box as any).expt,
+        hide: !!(box as any).hide,
+        post_code: (box as any).post_code || "",
       };
 
       // استخدام api_create_customer لأن الصناديق هي نوع من العملاء
@@ -174,7 +148,7 @@ class BoxService extends HttpService<Box> {
     }
   }
 
-  async updateBox(id: number, box: Partial<Box>): Promise<Box | null> {
+  async updateBox(id: number, box: UpdateBoxDTO): Promise<Box | null> {
     try {
       // جلب معاملات الفرع لإضافة com
       let companyId = "1";
@@ -190,20 +164,34 @@ class BoxService extends HttpService<Box> {
       }
 
       // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
-      const { acc_name, ...rest } = box;
+      const { acc_name, ...rest } = box as any;
       const boxData = {
         ...rest,
         com: companyId, // إضافة حقل com المطلوب
         cust_type: 99, // Ensure it remains a box
         cust_code: box.cust_code || String(id),
         cust_status: box.cust_status || 1,
-        acc: box.acc !== undefined ? Number(box.acc) || null : undefined,
+        acc: box.acc !== undefined ? (box.acc !== null ? Number(box.acc as any) || null : null) : undefined,
         vat_no:
-          box.vat_no !== undefined ? Number(box.vat_no) || null : undefined,
-        cr_no: box.cr_no !== undefined ? Number(box.cr_no) || null : undefined,
-        perc: box.perc !== undefined ? Number(box.perc) || null : undefined,
-        expt: box.expt !== undefined ? !!box.expt : undefined,
-        hide: box.hide !== undefined ? !!box.hide : undefined,
+          box.vat_no !== undefined
+            ? box.vat_no !== null
+              ? Number(box.vat_no as any) || null
+              : null
+            : undefined,
+        cr_no:
+          box.cr_no !== undefined
+            ? box.cr_no !== null
+              ? Number(box.cr_no as any) || null
+              : null
+            : undefined,
+        perc:
+          box.perc !== undefined
+            ? box.perc !== null
+              ? Number(box.perc as any) || null
+              : null
+            : undefined,
+        expt: (box as any).expt !== undefined ? !!(box as any).expt : undefined,
+        hide: (box as any).hide !== undefined ? !!(box as any).hide : undefined,
         post_code: box.post_code || "",
       };
 

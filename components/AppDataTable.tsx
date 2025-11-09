@@ -40,8 +40,6 @@ type AppDataTableProps<TData> = {
   className?: string;
   searchPlaceholder?: string;
   emptyContent?: string;
-  printTitle?: string;
-  printColumnIds?: string[]; // optional allowlist & order
   onTableReady?: (table: TanTable<TData>) => void;
 };
 
@@ -59,8 +57,6 @@ export default function AppDataTable<TData>({
   className = "",
   searchPlaceholder = "البحث...",
   emptyContent = DEFAULT_EMPTY_CONTENT,
-  printTitle,
-  printColumnIds,
   onTableReady,
 }: AppDataTableProps<TData>) {
   const [globalFilter, setGlobalFilter] = useState("");
@@ -85,7 +81,7 @@ export default function AppDataTable<TData>({
 
   // Option B: notify parent when the table instance is ready (and when data/columns identity changes)
   useEffect(() => {
-		if (!onTableReady) return;
+    if (!onTableReady) return;
 
     if (tableColumns.length && data.length) onTableReady(table);
     // eslint-disable-next-line react-hooks/exhaustive-deps
