@@ -170,6 +170,8 @@ export default function InvoiceClientPage({
     return computeTotals(form.pay_type, invoiceItems);
   }, [computeTotals, form.pay_type, invoiceItems]);
 
+
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -273,14 +275,22 @@ export default function InvoiceClientPage({
             setHandlingMethod={setHandlingMethod}
             setMobileMethod={setMobileMethod}
             setNote={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "inv_notes", value: v })
+              dispatchForm({
+                type: "SET_FIELD",
+                field: "inv_notes",
+                value: v,
+              })
             }
             setPayType={(v) =>
               dispatchForm({ type: "SET_FIELD", field: "pay_type", value: v })
             }
             setPaymentMethod={setPaymentMethod}
             setPostCode={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "post_code", value: v })
+              dispatchForm({
+                type: "SET_FIELD",
+                field: "post_code",
+                value: v,
+              })
             }
             setPostNo={(v) =>
               dispatchForm({ type: "SET_FIELD", field: "post_no", value: v })

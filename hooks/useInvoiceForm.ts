@@ -39,11 +39,11 @@ import {
   formatDecimalString as formatDecimalStringUtil,
   formatNumber as formatNumberUtil,
 } from "@/utilities/invoiceForm";
-
+import { buildInvoicePrintHtml } from "@/utilities/table/print";
 
 type NumericValue = number | string;
 
-type InvoiceItemRow = {
+export type InvoiceItemRow = {
   id: number;
   item_id: number | null;
   item?: number | null;
@@ -79,7 +79,7 @@ type InvoiceItemRow = {
   box?: number | null;
 };
 
-type FormState = {
+export type FormState = {
   cust_code: any | null;
   cust_name: string;
   inv_id: number | string | null;
@@ -218,126 +218,6 @@ type ComparableRow = {
   transType: number;
   karat: string;
   box: number | null;
-};
-
-const normalizeRowForComparison = (
-  row: InvoiceItemRow | undefined,
-  fallbackTransType: number,
-): ComparableRow | null => {
-  if (!row) return null;
-
-  return {
-    itemId: getItemIdFromRow(row),
-    qty: parseNumber(row.qty),
-    weight: parseNumber(row.weight),
-    gWeight: parseNumber(row.g_weight),
-    price: parseNumber(row.price),
-    priceW: parseNumber(row.price_w),
-    total: parseNumber(row.total),
-    totalW: parseNumber(row.total_w),
-    totalA: parseNumber(row.total_a),
-    tax: parseNumber(row.tax),
-    taxRate: parseNumber(row.tax_prc),
-    discountAmount: parseNumber(row.item_disc_amt),
-    discountRate: parseNumber(row.item_disc_prc ?? 0),
-    stones:
-      row.stones === null || row.stones === "" ? null : parseNumber(row.stones),
-    purity: row.purity ? String(row.purity).trim() : "",
-    note: row.note ? String(row.note).trim() : "",
-    extraNote: row.inv_notes ? String(row.inv_notes).trim() : "",
-    itemCode: row.item_code ? String(row.item_code).trim() : "",
-    itemDesc: row.item_desc ? String(row.item_desc).trim() : "",
-    transType:
-      row.trans_type !== undefined && row.trans_type !== null
-        ? Number(row.trans_type)
-        : fallbackTransType,
-    karat: row.k !== undefined && row.k !== null ? String(row.k).trim() : "",
-    box:
-      row.box !== undefined && row.box !== null ? parseNumber(row.box) : null,
-  };
-};
-
-const hasRowChanged = (
-  originalRow: InvoiceItemRow | undefined,
-  currentRow: InvoiceItemRow,
-  fallbackTransType: number,
-): boolean => {
-  const originalComparable = normalizeRowForComparison(
-    originalRow,
-    fallbackTransType,
-  );
-  const currentComparable = normalizeRowForComparison(
-    currentRow,
-    fallbackTransType,
-  );
-
-  if (!currentComparable) {
-    return false;
-  }
-
-  if (!originalComparable) {
-    return true;
-  }
-
-  const numericKeys: Array<keyof ComparableRow> = [
-    "itemId",
-    "qty",
-    "weight",
-    "gWeight",
-    "price",
-    "priceW",
-    "total",
-    "totalW",
-    "totalA",
-    "tax",
-    "taxRate",
-    "discountAmount",
-    "discountRate",
-    "stones",
-    "transType",
-    "box",
-  ];
-
-  for (const key of numericKeys) {
-    const originalValue = originalComparable[key];
-    const currentValue = currentComparable[key];
-
-    const originalNumber =
-      originalValue === null || originalValue === undefined
-        ? null
-        : Number(originalValue);
-    const currentNumber =
-      currentValue === null || currentValue === undefined
-        ? null
-        : Number(currentValue);
-
-    if (originalNumber === null && currentNumber === null) continue;
-
-    if (
-      originalNumber === null ||
-      currentNumber === null ||
-      Math.abs(originalNumber - currentNumber) > 1e-6
-    ) {
-      return true;
-    }
-  }
-
-  const stringKeys: Array<keyof ComparableRow> = [
-    "purity",
-    "note",
-    "extraNote",
-    "itemCode",
-    "itemDesc",
-    "karat",
-  ];
-
-  for (const key of stringKeys) {
-    if (originalComparable[key] !== currentComparable[key]) {
-      return true;
-    }
-  }
-
-  return false;
 };
 
 function formReducer(state: FormState, action: FormAction): FormState {
@@ -1361,7 +1241,47 @@ export default function useInvoiceForm({
       // Mark the invoice as printed immediately
       dispatchForm({ type: "SET_FIELD", field: "print", value: true });
 
-      toast.success("تم فتح معاينة الطباعة");
+      // Calculate totals for printing
+      const totals = computeTotals(form.pay_type, invoiceItems);
+
+      // Build the HTML for the printable invoice
+      const html = buildInvoicePrintHtml({
+        invoice: form,
+        invoiceItems: validItems,
+        totals,
+        invoiceType: context,
+        selectedCustomer,
+        fractions: { frac, frac2 },
+      });
+
+      // Open a new window and print the invoice
+      const w = window.open(
+        "",
+        "_blank",
+        "width=1024,height=768,scrollbars=yes,resizable=yes",
+      );
+      if (!w) {
+        toast.error(
+          "لم يتمكن من فتح نافذة الطباعة. يرجى التحقق من إعدادات المتصفح.",
+        );
+        return;
+      }
+
+      w.document.write(html);
+      w.document.close();
+
+      w.onload = () => {
+        try {
+          w.focus();
+          setTimeout(() => {
+            w.print();
+            w.close();
+          }, 500);
+        } catch (err) {
+          console.error("print error", err);
+          toast.error("حدث خطأ أثناء الطباعة");
+        }
+      };
     } catch (err) {
       console.error("preview print error", err);
       toast.error("حدث خطأ أثناء إنشاء نموذج الطباعة");
