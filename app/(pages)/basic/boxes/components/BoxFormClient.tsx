@@ -15,39 +15,13 @@ import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 
 import boxService from "@/services/api/box.service";
+import type { Box as BoxModel } from "@/types/models/box";
 import { getBranchParams } from "@/app/actions/branch-params";
 
 type BoxFormMode = "view" | "edit" | "add";
 
-interface Box {
-  id: number;
-  cust_code?: string;
-  cust_name: string;
-  cust_name_e: string;
-  mobile: number | string;
-  email: string;
-  address: string;
-  vat_no: number | null;
-  cr_no: number | null;
-  phone: string;
-  fax: string;
-  gov: string;
-  city: string;
-  area: string;
-  street: string;
-  build_no: string;
-  post_code: string;
-  cust_status: number;
-  acc?: number;
-  acc_name?: string;
-  cust_type?: number;
-  box_type: string;
-  handling: string;
-  handling_e?: string;
-  perc?: number;
-  expt?: boolean;
-  hide?: boolean;
-}
+// Use shared Box model to avoid type drift
+type Box = BoxModel;
 
 interface BoxType {
   id: number;
@@ -95,13 +69,12 @@ const BoxFormClient = ({
       });
     };
 
-  const handleCheckboxChange =
-    (key: "expt" | "hide") => (value: boolean) => {
-      setBox({
-        ...box,
-        [key]: value,
-      });
-    };
+  const handleCheckboxChange = (key: "expt" | "hide") => (value: boolean) => {
+    setBox({
+      ...box,
+      [key]: value,
+    });
+  };
 
   const handleSave = async () => {
     if (!box.cust_name) {
@@ -115,9 +88,7 @@ const BoxFormClient = ({
       const updatedBox = { ...box };
 
       if (!updatedBox.cust_code) {
-        updatedBox.cust_code = updatedBox.id
-          ? String(updatedBox.id)
-          : "";
+        updatedBox.cust_code = updatedBox.id ? String(updatedBox.id) : "";
       }
 
       const { acc_name, ...rest } = updatedBox;
@@ -147,9 +118,7 @@ const BoxFormClient = ({
       let result: Box | null = null;
 
       if (isAddMode) {
-        result = await boxService.createBox(
-          cleanedBox as Omit<Box, "id">
-        );
+        result = await boxService.createBox(cleanedBox as Omit<Box, "id">);
       } else if (box.id) {
         result = await boxService.updateBox(box.id, cleanedBox);
       }
@@ -224,10 +193,7 @@ const BoxFormClient = ({
           <p className="text-sm text-gray-600 mt-1">{getDescription()}</p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="light"
-            onPress={() => router.push("/basic/boxes")}
-          >
+          <Button variant="light" onPress={() => router.push("/basic/boxes")}>
             <ArrowLeftIcon className="h-4 w-4" />
             رجوع
           </Button>
@@ -244,11 +210,7 @@ const BoxFormClient = ({
               >
                 إلغاء
               </Button>
-              <Button
-                color="success"
-                isLoading={isSaving}
-                onPress={handleSave}
-              >
+              <Button color="success" isLoading={isSaving} onPress={handleSave}>
                 {isAddMode ? "حفظ" : "تحديث"}
               </Button>
             </>
@@ -382,9 +344,7 @@ const BoxFormClient = ({
           <ReactSelect
             isDisabled={isViewMode}
             options={accountOptions}
-            value={accountOptions.find(
-              (opt) => opt.value === String(box.acc),
-            )}
+            value={accountOptions.find((opt) => opt.value === String(box.acc))}
             onChange={(selected) =>
               setBox({ ...box, acc: selected ? Number(selected.value) : null })
             }
@@ -425,4 +385,3 @@ const BoxFormClient = ({
 };
 
 export default BoxFormClient;
-

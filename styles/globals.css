@@ -816,6 +816,44 @@ aside nav {
     font-size: 14px !important;
     margin: 5px 0 0 0 !important;
   }
+  
+  /* Invoice specific styles */
+  .print-container {
+    margin: 0 !important;
+    padding: 10px !important;
+    max-width: 100% !important;
+    font-size: 12px !important;
+  }
+  
+  .print-container h1 {
+    font-size: 18px !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .print-container h2 {
+    font-size: 16px !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .print-container table {
+    font-size: 11px !important;
+  }
+  
+  .print-container th,
+  .print-container td {
+    padding: 4px 6px !important;
+  }
+  
+  .print-container .totals {
+    margin-top: 20px !important;
+    padding: 10px !important;
+  }
+  
+  .print-container .footer {
+    margin-top: 20px !important;
+    padding-top: 10px !important;
+    font-size: 11px !important;
+  }
 }
 
 /* Dark mode support (future) */

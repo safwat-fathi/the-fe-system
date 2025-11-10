@@ -210,16 +210,6 @@ export default function InvoiceClient({
             data={invoices}
             filterable={false}
             searchable={false}
-            printTitle="تقارير الفواتير"
-            printColumnIds={[
-              "inv_id",
-              "inv_date",
-              "cust_name",
-              "inv_net",
-              "tax",
-              "inv_amt",
-              "type",
-            ]}
             onTableReady={(t) => setTable(t as TanTable<Invoice>)}
             title={`قائمة الفواتير (${totalInvoices} فاتورة)`}
           />
