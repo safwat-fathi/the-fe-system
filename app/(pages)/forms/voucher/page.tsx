@@ -119,6 +119,16 @@ export default async function VoucherPage({
   let voucherData: Voucher | null = null;
   let voucherDetailsData: VoucherDetail[] = [];
 
+  const normalizeCost = (value: unknown): number | null => {
+    if (value === undefined || value === null || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  };
+
   if ((mode === "edit" || mode === "preview") && editId) {
     const lookupId = editId ?? "";
 
@@ -128,6 +138,11 @@ export default async function VoucherPage({
 
     if (targetVoucher) {
       const targetVoucherWithId = targetVoucher as any; // API response contains additional fields
+
+      const resolvedVoucherCost =
+        normalizeCost(targetVoucher.cost_id) ??
+        normalizeCost((targetVoucher as any)?.cost) ??
+        null;
 
       voucherData = {
         ...targetVoucher,
@@ -140,6 +155,7 @@ export default async function VoucherPage({
         vouch_notes: targetVoucher.vouch_notes || "",
         vouch_status: targetVoucher.vouch_status || 1,
         pay_type: targetVoucher.pay_type || 1,
+        cost_id: resolvedVoucherCost,
       };
 
       // جلب تفاصيل السند
@@ -159,7 +175,10 @@ export default async function VoucherPage({
           acc_id: detail.acc_id || detail.acc || 0,
           acc_code: detail.acc_code || "",
           acc_name: detail.acc_name || "",
-          cost_id: detail.cost_id || 0,
+          cost_id:
+            normalizeCost(detail.cost_id) ??
+            normalizeCost(detail.cost) ??
+            0,
           debit: detail.debit || 0,
           credit: detail.credit || 0,
           debit_base: detail.debit_base || detail.debit || 0,

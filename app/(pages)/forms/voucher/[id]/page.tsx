@@ -116,6 +116,21 @@ export default async function VoucherEditPage({
 
   // معالجة تفاصيل القيد
   // ملاحظة: API يستخدم vouch (id من vouchers), acc, cost
+  const normalizeCost = (value: unknown): number | undefined => {
+    if (value === undefined || value === null || value === "") {
+      return undefined;
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
+  };
+
+  const resolvedVoucherCost =
+    normalizeCost(targetVoucher.cost_id) ??
+    normalizeCost((targetVoucher as any).cost) ??
+    null;
+
   const details: VoucherDetail[] = detailsData.map((detail: any) => {
     const account = formData.accounts.find(
       (acc: any) => acc.id === (detail.acc_id || detail.acc),
@@ -182,6 +197,34 @@ export default async function VoucherEditPage({
     commit: targetVoucher.commit || false,
     post: targetVoucher.post || false,
     print: targetVoucher.print || false,
+      cost_id: resolvedVoucherCost,
+  };
+
+  const parseNavId = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  };
+
+  const navigationInfo = {
+    previous: parseNavId(
+      (targetVoucher as any).previous_voucher_id ??
+        (targetVoucher as any).previous,
+    ),
+    next: parseNavId(
+      (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
+    ),
+    first: parseNavId(
+      (targetVoucher as any).first_voucher_id ??
+        (targetVoucher as any).first,
+    ),
+    last: parseNavId(
+      (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
+    ),
   };
 
   // تحديد عنوان القيد بناءً على النوع
@@ -229,6 +272,7 @@ export default async function VoucherEditPage({
         newVoucherHref={newVoucherHref}
         startInEditMode={startInEditMode}
         vouchType={formattedVoucher.vouch_type}
+        navigationInfo={navigationInfo}
         voucherData={formattedVoucher}
         voucherDetailsData={details}
         voucherRecordId={targetVoucher.id}

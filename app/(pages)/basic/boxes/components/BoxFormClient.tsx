@@ -91,13 +91,23 @@ const BoxFormClient = ({
         updatedBox.cust_code = updatedBox.id ? String(updatedBox.id) : "";
       }
 
-      const { ...rest } = updatedBox;
+      const { acc_name, ...rest } = updatedBox;
+      const normalizeNumberField = (value: unknown): number | undefined => {
+        if (value === null || value === undefined || value === "") {
+          return undefined;
+        }
+
+        const numeric = Number(value);
+
+        return Number.isFinite(numeric) ? numeric : undefined;
+      };
+
       const cleanedBox = {
         ...rest,
-        acc: Number(updatedBox.acc) || null,
-        vat_no: Number(updatedBox.vat_no) || null,
-        cr_no: Number(updatedBox.cr_no) || null,
-        perc: Number(updatedBox.perc) || null,
+        acc: normalizeNumberField(updatedBox.acc),
+        vat_no: normalizeNumberField(updatedBox.vat_no),
+        cr_no: normalizeNumberField(updatedBox.cr_no),
+        perc: normalizeNumberField(updatedBox.perc),
         cust_type: 99, // Boxes are always cust_type = 99
         expt: !!updatedBox.expt,
         hide: !!updatedBox.hide,

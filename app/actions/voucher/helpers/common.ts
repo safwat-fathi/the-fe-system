@@ -7,6 +7,11 @@ import { cookies } from "next/headers";
 import { STORAGE_KEYS } from "@/constants";
 import { customerService } from "@/services/api";
 
+interface CustomerInfo {
+  name: string | null;
+  accountId: number | null;
+}
+
 /**
  * Get current user username from cookies
  */
@@ -32,11 +37,11 @@ export async function getCurrentUsername(): Promise<string | null> {
 }
 
 /**
- * Get customer name from customer ID
+ * Get customer info (name + account id) from customer ID
  */
-export async function getCustomerName(
+export async function getCustomerInfo(
   custId: number | null | undefined,
-): Promise<string | null> {
+): Promise<CustomerInfo | null> {
   if (!custId || custId <= 0) {
     return null;
   }
@@ -45,10 +50,31 @@ export async function getCustomerName(
     const customers = await customerService.getAllCustomers({ xcom_id: 1 });
     const customer = customers.find((c) => c.id === custId);
 
-    return customer?.cust_name || null;
+    if (!customer) {
+      return null;
+    }
+
+    return {
+      name: customer.cust_name || null,
+      accountId:
+        customer.acc !== undefined && customer.acc !== null
+          ? Number(customer.acc)
+          : null,
+    };
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * Get customer name from customer ID
+ */
+export async function getCustomerName(
+  custId: number | null | undefined,
+): Promise<string | null> {
+  const info = await getCustomerInfo(custId);
+
+  return info?.name || null;
 }
 
 /**
@@ -102,9 +128,14 @@ export async function getBoxAccountId(boxId: number): Promise<number | null> {
 
   try {
     const { boxesService } = await import("@/services/api");
-    const boxes = await boxesService.getBoxes({ xcom_id: 1 });
 
-    const box = boxes.find((b) => b.id === boxId);
+    const boxes = await boxesService.getBoxes({ xcom_id: 1 });
+    let box = boxes.find((b) => b.id === boxId);
+
+    if (!box) {
+      const goldBoxes = await boxesService.getGoldBoxes({ xcom_id: 1 });
+      box = goldBoxes.find((b) => b.id === boxId);
+    }
 
     if (!box) {
       return null;

@@ -252,6 +252,14 @@ export const useVoucherForm = ({
         );
 
         if (targetVoucher) {
+          const resolvedCostValue =
+            targetVoucher.cost_id !== undefined &&
+            targetVoucher.cost_id !== null
+              ? targetVoucher.cost_id
+              : targetVoucher.cost !== undefined &&
+                  targetVoucher.cost !== null
+                ? targetVoucher.cost
+                : null;
           const formattedVoucher = {
             ...targetVoucher,
             vouch_date: targetVoucher.vouch_date
@@ -264,9 +272,8 @@ export const useVoucherForm = ({
             vouch_status: targetVoucher.vouch_status || 1,
             pay_type: targetVoucher.pay_type || 1,
             cost_id:
-              targetVoucher.cost_id !== undefined &&
-              targetVoucher.cost_id !== null
-                ? Number(targetVoucher.cost_id)
+              resolvedCostValue !== undefined && resolvedCostValue !== null
+                ? Number(resolvedCostValue)
                 : null,
           };
 
@@ -296,7 +303,16 @@ export const useVoucherForm = ({
                 acc_id: detail.acc_id || detail.acc || 0,
                 acc_code: (account as any)?.acc_code || detail.acc_code || "",
                 acc_name: (account as any)?.acc_name || detail.acc_name || "",
-                cost_id: detail.cost_id || 0,
+                cost_id:
+                  detail.cost_id !== undefined &&
+                  detail.cost_id !== null &&
+                  Number(detail.cost_id) > 0
+                    ? Number(detail.cost_id)
+                    : detail.cost !== undefined &&
+                        detail.cost !== null &&
+                        Number(detail.cost) > 0
+                      ? Number(detail.cost)
+                      : 0,
                 debit:
                   detail.debit !== undefined && detail.debit !== null
                     ? Number(detail.debit)
@@ -461,6 +477,9 @@ export const useVoucherForm = ({
             voucherToUse.cost_id !== undefined &&
             voucherToUse.cost_id !== null
               ? Number(voucherToUse.cost_id)
+              : voucherToUse.cost !== undefined &&
+                  voucherToUse.cost !== null
+                ? Number(voucherToUse.cost)
               : null,
         });
 
@@ -470,7 +489,16 @@ export const useVoucherForm = ({
           acc_id: detail.acc_id || detail.acc || 0,
           acc_code: detail.acc_code || "",
           acc_name: detail.acc_name || "",
-          cost_id: detail.cost_id || 0,
+          cost_id:
+            detail.cost_id !== undefined &&
+            detail.cost_id !== null &&
+            Number(detail.cost_id) > 0
+              ? Number(detail.cost_id)
+              : detail.cost !== undefined &&
+                  detail.cost !== null &&
+                  Number(detail.cost) > 0
+                ? Number(detail.cost)
+                : 0,
           debit: Number(detail.debit) || 0,
           credit: Number(detail.credit) || 0,
           debit_base: detail.debit_base !== undefined ? Number(detail.debit_base) : (Number(detail.debit) || 0),

@@ -39,17 +39,25 @@ export default async function CostCentersPage() {
   // جلب بيانات مراكز التكلفة والحسابات بالتوازي
   const [costCentersResponse, accountsResponse] = await Promise.all([
     genericService
-      .getTableData("cost_centers_list", branchParams)
+      .getTableData("cost_centers_list", {
+        ...branchParams,
+        xcom_id: branchParams.com || "1",
+      })
       .catch(() => ({
         success: false,
         message: "فشل في جلب مراكز التكلفة",
         data: [],
       })),
-    genericService.getTableData("accounts_list", branchParams).catch(() => ({
-      success: false,
-      message: "فشل في جلب الحسابات",
-      data: [],
-    })),
+    genericService
+      .getTableData("accounts_list", {
+        ...branchParams,
+        xcom_id: branchParams.com || "1",
+      })
+      .catch(() => ({
+        success: false,
+        message: "فشل في جلب الحسابات",
+        data: [],
+      })),
   ]);
 
   const costCentersData: CostCenter[] = costCentersResponse.success

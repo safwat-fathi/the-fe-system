@@ -6,10 +6,21 @@ import { createGLTransactionRecords } from "./voucher.action";
 import { getCurrentUsername } from "./voucher/helpers/common";
 
 import {
+  glAuditLogService,
   glTransactionService,
   voucherService,
   genericService,
 } from "@/services/api";
+import type {
+  CreateGLAuditLogPayload,
+  GLAuditLogIssue,
+  GLAuditLogStatus,
+} from "@/types/models/gl-audit-log";
+import type { GLTransaction } from "@/types/models/gl-transaction";
+import { isReceiptType, isPaymentType } from "@/utilities/voucher/routing";
+import { parseNumber } from "@/utilities/voucherForm";
+
+const NUMERIC_TOLERANCE = 0.01;
 
 /**
  * حذف جميع الحركات من جدول gl_transaction
@@ -170,7 +181,37 @@ export async function reTransferAllVouchers() {
     const currentDate = new Date().toISOString().split("T")[0];
 
     // أنواع السندات المختلفة
-    const voucherTypes = [0, 1, 2, 3, 4, 5, 111, 222];
+    const uniqueVoucherTypes = new Set<number>();
+    const vouchersListResponse = await voucherService.getAll({
+      xcom_id: 1,
+      xyear_id: 0,
+      xvouch_type: "0",
+      xvouch_id: "0",
+      xfrom_date: "0",
+      xto_date: "0",
+      page: "1",
+    });
+
+    if (vouchersListResponse.success && Array.isArray(vouchersListResponse.data)) {
+      for (const voucher of vouchersListResponse.data) {
+        if (voucher?.vouch_type !== undefined && voucher?.vouch_type !== null) {
+          uniqueVoucherTypes.add(Number(voucher.vouch_type));
+        }
+      }
+    }
+
+    if (uniqueVoucherTypes.size === 0) {
+      uniqueVoucherTypes.add(0); // fallback to default types if needed
+      uniqueVoucherTypes.add(1);
+      uniqueVoucherTypes.add(2);
+      uniqueVoucherTypes.add(3);
+      uniqueVoucherTypes.add(4);
+      uniqueVoucherTypes.add(5);
+      uniqueVoucherTypes.add(111);
+      uniqueVoucherTypes.add(222);
+    }
+
+    const voucherTypes = Array.from(uniqueVoucherTypes.values());
 
     let totalProcessed = 0;
     let totalSuccess = 0;
@@ -314,4 +355,347 @@ export async function reTransferAllVouchers() {
         error instanceof Error ? error.message : "حدث خطأ أثناء إعادة الترحيل",
     };
   }
+}
+
+interface GLReconciliationParams {
+  fromDate?: string;
+  toDate?: string;
+  voucherType?: number;
+  costCenterId?: number;
+  customerId?: number;
+}
+
+interface GLReconciliationResult {
+  success: boolean;
+  message: string;
+  status: GLAuditLogStatus;
+  totalVouchers: number;
+  totalIssues: number;
+  issues: GLAuditLogIssue[];
+  logId?: number | null;
+}
+
+function normalizeDateInput(value?: string): string {
+  if (!value) {
+    return new Date().toISOString().split("T")[0];
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().split("T")[0];
+  }
+
+  return date.toISOString().split("T")[0];
+}
+
+function toNumber(value: unknown): number {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  return parseNumber(value);
+}
+
+function classifyStatus(issues: GLAuditLogIssue[]): GLAuditLogStatus {
+  if (issues.length === 0) {
+    return "success";
+  }
+
+  const hasSevere = issues.some(
+    (issue) =>
+      Math.abs(issue.cashDiff) > 1 || Math.abs(issue.goldDiff) > 1,
+  );
+
+  return hasSevere ? "errors" : "warnings";
+}
+
+function summarizeGLTransactions(rows: GLTransaction[]) {
+  return rows.reduce(
+    (acc, trx) => {
+      acc.debit += toNumber(trx.debit_base ?? trx.debit);
+      acc.credit += toNumber(trx.credit_base ?? trx.credit);
+      acc.goldDebit += toNumber(trx.g_debit_base ?? trx.g_debit);
+      acc.goldCredit += toNumber(trx.g_credit_base ?? trx.g_credit);
+
+      return acc;
+    },
+    {
+      debit: 0,
+      credit: 0,
+      goldDebit: 0,
+      goldCredit: 0,
+    },
+  );
+}
+
+function summarizeVoucherDetails(details: any[]) {
+  return details.reduce(
+    (acc, detail) => {
+      acc.debit += toNumber(detail.debit_base ?? detail.debit);
+      acc.credit += toNumber(detail.credit_base ?? detail.credit);
+      acc.goldDebit += toNumber(detail.g_debit_base ?? detail.g_debit);
+      acc.goldCredit += toNumber(detail.g_credit_base ?? detail.g_credit);
+
+      return acc;
+    },
+    {
+      debit: 0,
+      credit: 0,
+      goldDebit: 0,
+      goldCredit: 0,
+    },
+  );
+}
+
+function buildIssueMessage(params: {
+  cashDiff: number;
+  goldDiff: number;
+  detailDiff: number;
+  hasDetails: boolean;
+}): string {
+  const messages: string[] = [];
+
+  if (params.cashDiff > NUMERIC_TOLERANCE) {
+    messages.push(
+      `اختلال توازن نقدي (${params.cashDiff.toFixed(2)})`,
+    );
+  }
+
+  if (params.goldDiff > NUMERIC_TOLERANCE) {
+    messages.push(
+      `اختلال توازن ذهبي (${params.goldDiff.toFixed(2)})`,
+    );
+  }
+
+  if (!params.hasDetails) {
+    messages.push("لا توجد تفاصيل محفوظة في vouchers_dtl");
+  } else if (params.detailDiff > NUMERIC_TOLERANCE) {
+    messages.push(
+      `تفاصيل القيد غير متوازنة (${params.detailDiff.toFixed(2)})`,
+    );
+  }
+
+  if (messages.length === 0) {
+    messages.push("تم رصد اختلاف غير محدد في القيد");
+  }
+
+  return messages.join(" | ");
+}
+
+function extractArrayPayload(payload: any): any[] {
+  if (!payload) {
+    return [];
+  }
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload.results)) {
+    return payload.results;
+  }
+
+  return [];
+}
+
+export async function runGLDailyReconciliation(
+  params: GLReconciliationParams = {},
+): Promise<GLReconciliationResult> {
+  const fromDate = normalizeDateInput(params.fromDate);
+  const toDate = normalizeDateInput(params.toDate);
+
+  const glResponse = await genericService.getTableData(
+    "gl_transaction_list",
+    {
+      xcom_id: "1",
+      xyear_id: "0",
+      xfrom_date: fromDate,
+      xto_date: toDate,
+      xtrans_type: params.voucherType
+        ? String(params.voucherType)
+        : "0",
+      xcost_id: params.costCenterId
+        ? String(params.costCenterId)
+        : "0",
+      xcust_id: params.customerId ? String(params.customerId) : "0",
+    },
+  );
+
+  if (!glResponse.success) {
+    return {
+      success: false,
+      message:
+        glResponse.message ||
+        "فشل في جلب بيانات GL من الخادم",
+      status: "errors",
+      totalVouchers: 0,
+      totalIssues: 0,
+      issues: [],
+    };
+  }
+
+  const transactions = glResponse.data ?? [];
+  const grouped = new Map<
+    string,
+    { transType: number; transId: number; rows: GLTransaction[] }
+  >();
+
+  for (const row of transactions) {
+    const transType = Number(row.trans_type ?? row.transType ?? 0);
+    const transId = Number(row.trans_id ?? row.transId ?? 0);
+
+    if (!Number.isFinite(transType) || !Number.isFinite(transId)) {
+      continue;
+    }
+
+    const key = `${transType}-${transId}`;
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        transType,
+        transId,
+        rows: [],
+      });
+    }
+
+    grouped.get(key)!.rows.push(row as GLTransaction);
+  }
+
+  const issues: GLAuditLogIssue[] = [];
+
+  for (const group of grouped.values()) {
+    const glTotals = summarizeGLTransactions(group.rows);
+    const cashDiff = Math.abs(glTotals.debit - glTotals.credit);
+    const goldDiff = Math.abs(glTotals.goldDebit - glTotals.goldCredit);
+
+    let voucherMasterId = 0;
+    let detailTotals = {
+      debit: 0,
+      credit: 0,
+      goldDebit: 0,
+      goldCredit: 0,
+    };
+    let hasDetails = false;
+    let detailBalanceDiff = 0;
+
+    try {
+      const voucherRecord = await voucherService.getVoucherById(
+        group.transId,
+        {
+          xvouch_type: String(group.transType),
+        },
+      );
+
+      if (voucherRecord && (voucherRecord as any).id) {
+        voucherMasterId = Number((voucherRecord as any).id);
+        const detailsResponse = await voucherService.getDetails(
+          voucherMasterId,
+          { xcom_id: 1 },
+        );
+
+        const details = detailsResponse.success
+          ? extractArrayPayload(detailsResponse.data)
+          : [];
+
+        if (details.length > 0) {
+          hasDetails = true;
+          detailTotals = summarizeVoucherDetails(details);
+          detailBalanceDiff = Math.abs(
+            detailTotals.debit - detailTotals.credit,
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        `[runGLDailyReconciliation] Failed to load details for voucher ${group.transId}:`,
+        error,
+      );
+    }
+
+    const requiresAttention =
+      cashDiff > NUMERIC_TOLERANCE ||
+      goldDiff > NUMERIC_TOLERANCE ||
+      !hasDetails ||
+      detailBalanceDiff > NUMERIC_TOLERANCE;
+
+    if (!requiresAttention) {
+      continue;
+    }
+
+    const message = buildIssueMessage({
+      cashDiff,
+      goldDiff,
+      detailDiff: detailBalanceDiff,
+      hasDetails,
+    });
+
+    issues.push({
+      transType: group.transType,
+      transId: group.transId,
+      voucherMasterId,
+      message,
+      cashDiff: Number(cashDiff.toFixed(4)),
+      goldDiff: Number(goldDiff.toFixed(4)),
+      detailTotals: {
+        debit: Number(detailTotals.debit.toFixed(4)),
+        credit: Number(detailTotals.credit.toFixed(4)),
+        goldDebit: Number(detailTotals.goldDebit.toFixed(4)),
+        goldCredit: Number(detailTotals.goldCredit.toFixed(4)),
+      },
+      glTotals: {
+        debit: Number(glTotals.debit.toFixed(4)),
+        credit: Number(glTotals.credit.toFixed(4)),
+        goldDebit: Number(glTotals.goldDebit.toFixed(4)),
+        goldCredit: Number(glTotals.goldCredit.toFixed(4)),
+      },
+    });
+  }
+
+  const status = classifyStatus(issues);
+  const payload: CreateGLAuditLogPayload = {
+    run_date: new Date().toISOString(),
+    from_date: fromDate,
+    to_date: toDate,
+    voucher_type: params.voucherType ?? null,
+    cost_center_id: params.costCenterId ?? null,
+    customer_id: params.customerId ?? null,
+    status,
+    total_vouchers: grouped.size,
+    total_issues: issues.length,
+    issues,
+    notes:
+      issues.length === 0
+        ? "تمت المراجعة دون ملاحظات"
+        : "تم رصد فروقات في بعض القيود",
+  };
+
+  let logId: number | null = null;
+
+  try {
+    const logResponse = await glAuditLogService.createLog(payload);
+
+    if (logResponse.success && logResponse.data) {
+      logId = Number((logResponse.data as any).id ?? null);
+    }
+  } catch (error) {
+    console.error(
+      "[runGLDailyReconciliation] Failed to persist audit log:",
+      error,
+    );
+  }
+
+  revalidatePath("/settings");
+
+  return {
+    success: true,
+    message:
+      issues.length === 0
+        ? "تم التحقق من القيود دون فروقات"
+        : `تم رصد ${issues.length} فروقات ضمن ${grouped.size} قيد`,
+    status,
+    totalVouchers: grouped.size,
+    totalIssues: issues.length,
+    issues,
+    logId,
+  };
 }

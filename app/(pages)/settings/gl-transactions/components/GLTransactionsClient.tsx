@@ -25,15 +25,47 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 
 interface GLTransactionsClientProps {
   initialTransactions: GLTransaction[];
+  initialHealthSummary?: GLHealthSummary;
 }
+
+interface GLHealthIssue {
+  transId: number;
+  transType: number;
+  cashDiff: number;
+  goldDiff: number;
+  route: string;
+  label: string;
+}
+
+interface GLHealthSummary {
+  totalVouchers: number;
+  balancedCount: number;
+  unbalancedCount: number;
+  issues: GLHealthIssue[];
+  lastAudit?: {
+    runDate: string;
+    status: string;
+    totalIssues: number;
+  } | null;
+}
+
+const statusBadgeClass: Record<string, string> = {
+  success: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+  warnings: "bg-amber-100 text-amber-700 border border-amber-200",
+  errors: "bg-red-100 text-red-700 border border-red-200",
+};
 
 export default function GLTransactionsClient({
   initialTransactions,
+  initialHealthSummary,
 }: GLTransactionsClientProps) {
   const router = useRouter();
   const [transactions, setTransactions] =
     useState<GLTransaction[]>(initialTransactions);
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [healthSummary] = useState<GLHealthSummary | undefined>(
+    initialHealthSummary,
+  );
 
   // جلب الحسابات
   useEffect(() => {
@@ -167,7 +199,6 @@ export default function GLTransactionsClient({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -176,7 +207,98 @@ export default function GLTransactionsClient({
         </div>
       </div>
 
-      {/* Table */}
+      {healthSummary && (
+        <section className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-sm text-gray-500">إجمالي القيود</p>
+            <p className="mt-2 text-2xl font-bold text-gray-900">
+              {healthSummary.totalVouchers.toLocaleString()}
+            </p>
+            <div className="mt-3 flex items-center gap-6 text-sm">
+              <span className="font-semibold text-emerald-600">
+                {healthSummary.balancedCount.toLocaleString()} متوازن
+              </span>
+              <span className="font-semibold text-red-600">
+                {healthSummary.unbalancedCount.toLocaleString()} يحتاج مراجعة
+              </span>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-sm text-gray-500">أحدث فحص ترحيل</p>
+            {healthSummary.lastAudit ? (
+              <div className="mt-2 space-y-2">
+                <p className="text-lg font-semibold text-gray-900">
+                  {formatVoucherDate(healthSummary.lastAudit.runDate)}
+                </p>
+                <span
+                  className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass[healthSummary.lastAudit.status] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}
+                >
+                  {healthSummary.lastAudit.status === "success" && "بدون ملاحظات"}
+                  {healthSummary.lastAudit.status === "warnings" && "تحذيرات"}
+                  {healthSummary.lastAudit.status === "errors" && "أخطاء"}
+                  {!["success", "warnings", "errors"].includes(
+                    healthSummary.lastAudit.status,
+                  ) && healthSummary.lastAudit.status}
+                </span>
+                <p className="text-sm text-gray-500">
+                  {healthSummary.lastAudit.totalIssues} ملاحظة مسجلة
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-gray-500">
+                لم يتم تسجيل فحص سابق للترحيل.
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">قيود تحتاج تدخل</p>
+              <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                {healthSummary.issues.length}
+              </span>
+            </div>
+
+            {healthSummary.issues.length === 0 ? (
+              <p className="mt-3 text-sm font-semibold text-emerald-600">
+                جميع القيود متوازنة ✨
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2 text-sm text-gray-600">
+                {healthSummary.issues.slice(0, 5).map((issue) => (
+                  <li
+                    key={`${issue.transType}-${issue.transId}`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2"
+                  >
+                    <div className="space-y-1">
+                      <p className="font-semibold text-red-700">{issue.label}</p>
+                      <p className="text-xs text-red-600">
+                        فرق نقدي: {issue.cashDiff.toFixed(2)} | فرق ذهب:{" "}
+                        {issue.goldDiff.toFixed(2)}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="light"
+                      color="danger"
+                      onPress={() => router.push(issue.route)}
+                    >
+                      مراجعة
+                    </Button>
+                  </li>
+                ))}
+                {healthSummary.issues.length > 5 && (
+                  <li className="text-xs text-gray-500">
+                    + {healthSummary.issues.length - 5} قيود إضافية تحتاج مراجعة
+                  </li>
+                )}
+              </ul>
+            )}
+          </div>
+        </section>
+      )}
+
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <div className="overflow-x-auto">
           <Table
@@ -198,6 +320,7 @@ export default function GLTransactionsClient({
               <TableColumn className="text-center">
                 دائن ذهب معاير (جم)
               </TableColumn>
+              <TableColumn className="text-center">مركز التكلفة</TableColumn>
               <TableColumn className="text-center">الإجراءات</TableColumn>
             </TableHeader>
             <TableBody>
@@ -205,7 +328,7 @@ export default function GLTransactionsClient({
                 <TableRow>
                   <TableCell
                     className="text-center py-12 text-gray-500"
-                    colSpan={12}
+                    colSpan={11}
                   >
                     <i className="bi bi-info-circle text-4xl mb-3 block text-gray-400" />
                     <p className="text-lg">لا توجد حركات محاسبية</p>
@@ -291,6 +414,9 @@ export default function GLTransactionsClient({
                             <span className="text-gray-400">-</span>
                           )}
                         </TableCell>
+                        <TableCell className="text-center text-sm">
+                          {transaction.cost || "-"}
+                        </TableCell>
                         <TableCell className="text-center">
                           <Button
                             color="primary"
@@ -327,6 +453,9 @@ export default function GLTransactionsClient({
                     <TableCell className="text-center text-sm font-bold text-amber-600">
                       {formatAmount(totals.totalGoldCredit)}
                     </TableCell>
+                    <TableCell className="text-center text-sm text-gray-500">
+                      -
+                    </TableCell>
                     <TableCell className="text-center text-sm text-gray-400">
                       -
                     </TableCell>
@@ -354,9 +483,6 @@ export default function GLTransactionsClient({
                       <TableCell className="text-center text-xs text-gray-400">
                         -
                       </TableCell>
-                      <TableCell className="text-center text-xs text-gray-400">
-                        -
-                      </TableCell>
                       <TableCell
                         className={`text-center text-xs font-semibold ${
                           totals.goldBalanced
@@ -368,6 +494,12 @@ export default function GLTransactionsClient({
                         <span className="mr-1 text-[10px]">
                           ({totals.goldDiff > 0 ? "مدين" : "دائن"})
                         </span>
+                      </TableCell>
+                      <TableCell className="text-center text-xs text-gray-400">
+                        -
+                      </TableCell>
+                      <TableCell className="text-center text-xs text-gray-400">
+                        -
                       </TableCell>
                       <TableCell className="text-center text-xs text-gray-400">
                         -

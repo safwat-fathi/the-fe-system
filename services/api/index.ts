@@ -15,3 +15,4 @@ export { default as menuService } from "./menu.service";
 export { default as permissionService } from "./permission.service";
 export { default as userService } from "./user.service";
 export { default as glTransactionService } from "./gl-transaction.service";
+export { default as glAuditLogService } from "./gl-audit-log.service";

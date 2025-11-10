@@ -48,12 +48,20 @@ export default async function CostCenterDetailPage({
   // جلب جميع مراكز التكلفة والحسابات
   const [costCentersResponse, accountsResponse] = await Promise.all([
     genericService
-      .getTableData("cost_centers_list", branchParams)
+      .getTableData("cost_centers_list", {
+        ...branchParams,
+        xcom_id: branchParams.com || "1",
+      })
       .catch(() => ({ success: false, data: [] })),
-    genericService.getTableData("accounts_list", branchParams).catch(() => ({
-      success: false,
-      data: [],
-    })),
+    genericService
+      .getTableData("accounts_list", {
+        ...branchParams,
+        xcom_id: branchParams.com || "1",
+      })
+      .catch(() => ({
+        success: false,
+        data: [],
+      })),
   ]);
 
   const costCentersData = costCentersResponse.success

@@ -16,6 +16,7 @@ import {
   getVoucherSource,
   getVoucherTypeName,
   extractDateAndTime,
+  getCustomerInfo,
   getCustomerName,
   getBoxAccountId,
 } from "./common";
@@ -25,6 +26,180 @@ import { GLTransaction } from "@/types/models/gl-transaction";
 import { VOUCHER_TYPE_NAMES } from "@/constants";
 import { isReceiptType, isPaymentType } from "@/utilities/voucher/routing";
 import { parseNumber } from "@/utilities/voucherForm";
+
+const NUMERIC_TOLERANCE = 0.01;
+
+interface PostingTotals {
+  debit: number;
+  credit: number;
+  goldDebit: number;
+  goldCredit: number;
+}
+
+interface CustomerPostingEntry {
+  detail: VoucherDetailData;
+}
+
+const ZERO_TOTALS: PostingTotals = {
+  debit: 0,
+  credit: 0,
+  goldDebit: 0,
+  goldCredit: 0,
+};
+
+function toNumber(value: unknown): number {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  return parseNumber(value);
+}
+
+function accumulateTotals(
+  totals: PostingTotals,
+  options: {
+    debit?: number;
+    credit?: number;
+    goldDebit?: number;
+    goldCredit?: number;
+  },
+): void {
+  totals.debit += options.debit ?? 0;
+  totals.credit += options.credit ?? 0;
+  totals.goldDebit += options.goldDebit ?? 0;
+  totals.goldCredit += options.goldCredit ?? 0;
+}
+
+function assertBalancedTotals(
+  context: string,
+  totals: PostingTotals,
+): void {
+  const cashDiff = Math.abs(totals.debit - totals.credit);
+
+  if (cashDiff > NUMERIC_TOLERANCE) {
+    const message = `[SERVER] ❌ اختلال توازن نقدي (${context}): إجمالي المدين ${totals.debit.toFixed(
+      2,
+    )} ≠ إجمالي الدائن ${totals.credit.toFixed(2)}`;
+
+    console.error(message);
+    throw new Error(message);
+  }
+
+  const goldDiff = Math.abs(totals.goldDebit - totals.goldCredit);
+
+  if (goldDiff > NUMERIC_TOLERANCE) {
+    const message = `[SERVER] ❌ اختلال توازن ذهبي (${context}): إجمالي الذهب المدين ${totals.goldDebit.toFixed(
+      2,
+    )} ≠ إجمالي الذهب الدائن ${totals.goldCredit.toFixed(2)}`;
+
+    console.error(message);
+    throw new Error(message);
+  }
+}
+
+function resolveGoldDetailAmounts(
+  goldDetail: GVoucherDetailData,
+  voucherType: number,
+): { amount: number; weight: number } {
+  const isReceiptDelivery = [111, 222].includes(voucherType);
+  const isCustomerReceiptPayment = [4, 5].includes(voucherType);
+
+  let amount = 0;
+
+  if (isReceiptDelivery) {
+    amount =
+      toNumber(goldDetail.work_amt) ||
+      toNumber(goldDetail.total_work) ||
+      toNumber(goldDetail.close_amt);
+  } else if (isCustomerReceiptPayment) {
+    amount = toNumber(goldDetail.close_amt);
+  } else {
+    amount =
+      toNumber(goldDetail.close_amt) ||
+      toNumber(goldDetail.work_amt) ||
+      toNumber(goldDetail.total_work);
+  }
+
+  const weight =
+    toNumber(goldDetail.close_weight) ||
+    toNumber(goldDetail.g_weight) ||
+    toNumber((goldDetail as Record<string, unknown>).g_weight2) ||
+    toNumber((goldDetail as Record<string, unknown>).weight);
+
+  return {
+    amount,
+    weight,
+  };
+}
+
+function normalizeBoxRecord(
+  box: VoucherBoxData | (VoucherBoxData & Record<string, unknown>) | null | undefined,
+): VoucherBoxData | null {
+  if (!box) {
+    return null;
+  }
+
+  const rawId =
+    (box as any).box_id ??
+    (box as any).box ??
+    (box as any).id ??
+    0;
+  const numericBoxId = Number(rawId);
+
+  const amountCandidate =
+    (box as any).amount ??
+    (box as any).vouch_amt ??
+    (box as any).vouch_base_amt ??
+    (box as any).close_amt ??
+    0;
+  const normalizedAmount = toNumber(amountCandidate);
+
+  if (!Number.isFinite(numericBoxId) || numericBoxId <= 0) {
+    return null;
+  }
+
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    return null;
+  }
+
+  const costCandidate =
+    (box as any).cost_id ?? (box as any).cost ?? null;
+  const normalizedCost =
+    costCandidate !== null && costCandidate !== undefined
+      ? toNumber(costCandidate)
+      : null;
+
+  const closeWeightCandidate =
+    (box as any).close_weight ?? (box as any).weight ?? null;
+  const normalizedCloseWeight =
+    closeWeightCandidate !== null && closeWeightCandidate !== undefined
+      ? toNumber(closeWeightCandidate)
+      : undefined;
+
+  return {
+    id: (box as any).id ? Number((box as any).id) : undefined,
+    box_id: numericBoxId,
+    amount: normalizedAmount,
+    vouch_notes:
+      (box as any).vouch_notes ??
+      (box as any).box_note ??
+      (box as any).note ??
+      "",
+    cost_id:
+      normalizedCost !== null && normalizedCost > 0
+        ? normalizedCost
+        : null,
+    inv_id:
+      (box as any).inv_id && Number((box as any).inv_id) > 0
+        ? Number((box as any).inv_id)
+        : undefined,
+    close_weight:
+      normalizedCloseWeight !== undefined &&
+      normalizedCloseWeight > 0
+        ? normalizedCloseWeight
+        : undefined,
+  };
+}
 
 /**
  * Delete GL transaction records for a voucher
@@ -290,35 +465,10 @@ async function createGLTransactionForGoldBox(
     return;
   }
 
-  // حساب المبلغ حسب نوع السند:
-  // - سندات الاستلام والتسليم (111, 222): استخدام work_amt
-  // - سندات قبض وصرف العميل (4, 5): استخدام close_amt فقط
-  const isReceiptDelivery = [111, 222].includes(voucherData.vouch_type);
-  const isCustomerReceiptPayment = [4, 5].includes(voucherData.vouch_type);
-
-  let amount = 0;
-
-  if (isReceiptDelivery) {
-    // سندات الاستلام والتسليم: استخدام work_amt أو total_work
-    amount =
-      goldDetail.work_amt ||
-      goldDetail.total_work ||
-      goldDetail.close_amt ||
-      0;
-  } else if (isCustomerReceiptPayment) {
-    // سندات قبض وصرف العميل: استخدام close_amt فقط (لا work_amt)
-    amount = goldDetail.close_amt || 0;
-  } else {
-    // الأنواع الأخرى: استخدام close_amt أو work_amt
-    amount =
-      goldDetail.close_amt ||
-      goldDetail.work_amt ||
-      goldDetail.total_work ||
-      0;
-  }
-
-  // حساب وزن الذهب
-  const goldWeight = goldDetail.close_weight || goldDetail.g_weight || 0;
+  const { amount, weight: goldWeight } = resolveGoldDetailAmounts(
+    goldDetail,
+    voucherData.vouch_type,
+  );
 
   // إذا لم يكن هناك مبلغ ولا وزن، لا حاجة للترحيل
   if (amount <= 0 && goldWeight <= 0) {
@@ -401,33 +551,47 @@ export async function createGLTransactionRecords(
   // سندات الذهب (4, 5, 111, 222): استخدام goldDetails و voucherBoxes
   const isGoldVoucher = [4, 5, 111, 222].includes(voucherData.vouch_type || 0);
 
-  // التحقق من وجود سجلات مسبقة وحذفها
-  try {
-    const existingTransactionsResponse = await glTransactionService.getAll({
-      xtrans_id: String(voucherData.vouch_id),
-      xtrans_type: String(voucherData.vouch_type),
-      xcom_id: "1",
-      xyear_id: "0",
-      xfrom_date: "0",
-      xto_date: "0",
-    });
+  const normalizedBoxes: VoucherBoxData[] = (Array.isArray(voucherBoxes)
+    ? voucherBoxes
+    : []
+  )
+    .map((box) => normalizeBoxRecord(box))
+    .filter((box): box is VoucherBoxData => box !== null);
 
-    if (
-      existingTransactionsResponse.success &&
-      existingTransactionsResponse.data &&
-      Array.isArray(existingTransactionsResponse.data) &&
-      existingTransactionsResponse.data.length > 0
-    ) {
-      await deleteGLTransactionRecords(
-        voucherData.vouch_id,
-        voucherData.vouch_type,
+  // التحقق من وجود سجلات مسبقة وحذفها
+  const numericTransId = Number(voucherData.vouch_id);
+  const numericTransType = Number(voucherData.vouch_type);
+
+  if (Number.isFinite(numericTransId) && numericTransId > 0) {
+    try {
+      const existingTransactionsResponse = await glTransactionService.getAll({
+        xtrans_id: String(numericTransId),
+        xtrans_type: Number.isFinite(numericTransType)
+          ? String(numericTransType)
+          : "0",
+        xcom_id: "1",
+        xyear_id: "0",
+        xfrom_date: "0",
+        xto_date: "0",
+      });
+
+      if (
+        existingTransactionsResponse.success &&
+        existingTransactionsResponse.data &&
+        Array.isArray(existingTransactionsResponse.data) &&
+        existingTransactionsResponse.data.length > 0
+      ) {
+        await deleteGLTransactionRecords(
+          numericTransId,
+          Number.isFinite(numericTransType) ? numericTransType : 0,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[SERVER] ❌ خطأ في التحقق من السجلات الموجودة:`,
+        error instanceof Error ? error.message : String(error),
       );
     }
-  } catch (error) {
-    console.error(
-      `[SERVER] ❌ خطأ في التحقق من السجلات الموجودة:`,
-      error instanceof Error ? error.message : String(error),
-    );
   }
 
   const { date: transactionDate, time: transactionTime } = extractDateAndTime(
@@ -451,62 +615,199 @@ export async function createGLTransactionRecords(
     (voucherData as any).cust ||
     voucherPayload?.cust ||
     null;
-  const customerName = custValue ? await getCustomerName(custValue) : null;
+  const customerInfo = custValue ? await getCustomerInfo(custValue) : null;
+  const customerName =
+    customerInfo?.name ||
+    (custValue ? await getCustomerName(custValue) : null);
+  const customerAccountId =
+    customerInfo?.accountId !== undefined && customerInfo?.accountId !== null
+      ? customerInfo.accountId
+      : null;
+  const resolvedCostId =
+    voucherData.cost_id !== undefined && voucherData.cost_id !== null
+      ? voucherData.cost_id
+      : voucherPayload?.cost !== undefined && voucherPayload?.cost !== null
+        ? Number(voucherPayload.cost)
+        : null;
 
   let seq = 0;
 
-  // لسندات الذهب: ترحيل الصناديق النقدية والذهبية
+  // لسندات الذهب: ترحيل الصناديق النقدية والذهبية مع حساب العميل
   if (isGoldVoucher) {
-    // ترحيل الصناديق النقدية
-    // في سندات الذهب (4, 5, 111, 222)، يجب ترحيل الصناديق النقدية دائماً
-    if (voucherBoxes && voucherBoxes.length > 0) {
-      for (let i = 0; i < voucherBoxes.length; i++) {
-        seq++;
-        await createGLTransactionForBox(
-          voucherBoxes[i],
-          voucherData,
-          transactionDate,
-          transactionTime,
-          voucherTypeName,
-          source,
-          currentDate,
-          currentUsername,
-          custValue,
-          customerName,
-          seq,
-        );
-      }
-    }
+    const isReceipt = isReceiptType(voucherData.vouch_type);
+    const isPayment = isPaymentType(voucherData.vouch_type);
 
-    // ترحيل صناديق الذهب من goldDetails
-    if (goldDetails && goldDetails.length > 0) {
-      const validGoldDetails = goldDetails.filter(
+    const boxQueue = normalizedBoxes.map((box) => ({
+      box,
+      amount: box.amount,
+    }));
+
+    const goldDetailsList: GVoucherDetailData[] = Array.isArray(goldDetails)
+      ? goldDetails.filter(
+          (detail): detail is GVoucherDetailData =>
+            detail !== undefined && detail !== null,
+        )
+      : [];
+
+    const goldQueue = goldDetailsList
+      .filter(
         (detail) =>
-          detail &&
           detail.item_id &&
           detail.item_id > 0 &&
           detail.box_id &&
           detail.box_id > 0,
+      )
+      .map((detail) => {
+        const { amount, weight } = resolveGoldDetailAmounts(
+          detail,
+          voucherData.vouch_type,
+        );
+
+        return {
+          detail,
+          amount,
+          weight,
+        };
+      })
+      .filter((entry) => entry.amount > 0 || entry.weight > 0);
+
+    const postingTotals: PostingTotals = { ...ZERO_TOTALS };
+
+    for (const entry of boxQueue) {
+      accumulateTotals(postingTotals, {
+        debit: isReceipt ? entry.amount : 0,
+        credit: isPayment ? entry.amount : 0,
+      });
+    }
+
+    for (const entry of goldQueue) {
+      accumulateTotals(postingTotals, {
+        debit: isReceipt ? entry.amount : 0,
+        credit: isPayment ? entry.amount : 0,
+        goldDebit: isReceipt ? entry.weight : 0,
+        goldCredit: isPayment ? entry.weight : 0,
+      });
+    }
+
+    const customerEntries: CustomerPostingEntry[] = [];
+
+    if (customerAccountId) {
+      const customerCostId =
+        resolvedCostId !== undefined && resolvedCostId !== null
+          ? resolvedCostId
+          : null;
+
+      const totalCashAmount = boxQueue.reduce(
+        (sum, entry) => sum + entry.amount,
+        0,
       );
 
-      if (validGoldDetails.length > 0) {
-        for (let i = 0; i < validGoldDetails.length; i++) {
-          seq++;
-          await createGLTransactionForGoldBox(
-            validGoldDetails[i],
-            voucherData,
-            transactionDate,
-            transactionTime,
-            voucherTypeName,
-            source,
-            currentDate,
-            currentUsername,
-            custValue,
-            customerName,
-            seq,
-          );
-        }
+      if (totalCashAmount > 0) {
+        accumulateTotals(postingTotals, {
+          debit: isPayment ? totalCashAmount : 0,
+          credit: isReceipt ? totalCashAmount : 0,
+        });
+
+        customerEntries.push({
+          detail: {
+            vouch_id: voucherData.vouch_id,
+            acc_id: customerAccountId,
+            debit: isPayment ? totalCashAmount : undefined,
+            credit: isReceipt ? totalCashAmount : undefined,
+            debit_base: isPayment ? totalCashAmount : undefined,
+            credit_base: isReceipt ? totalCashAmount : undefined,
+            g_debit: undefined,
+            g_credit: undefined,
+            g_debit_base: undefined,
+            g_credit_base: undefined,
+            vouch_notes: voucherData.vouch_notes || undefined,
+            cost_id: customerCostId,
+          },
+        });
       }
+
+      const totalGoldWeight = goldQueue.reduce(
+        (sum, entry) => sum + entry.weight,
+        0,
+      );
+
+      if (totalGoldWeight > 0) {
+        accumulateTotals(postingTotals, {
+          goldDebit: isPayment ? totalGoldWeight : 0,
+          goldCredit: isReceipt ? totalGoldWeight : 0,
+        });
+
+        customerEntries.push({
+          detail: {
+            vouch_id: voucherData.vouch_id,
+            acc_id: customerAccountId,
+            debit: undefined,
+            credit: undefined,
+            debit_base: undefined,
+            credit_base: undefined,
+            g_debit: isPayment ? totalGoldWeight : undefined,
+            g_credit: isReceipt ? totalGoldWeight : undefined,
+            g_debit_base: isPayment ? totalGoldWeight : undefined,
+            g_credit_base: isReceipt ? totalGoldWeight : undefined,
+            vouch_notes: voucherData.vouch_notes || undefined,
+            cost_id: customerCostId,
+          },
+        });
+      }
+    }
+
+    const contextLabel = `سند نوع ${voucherData.vouch_type} رقم ${voucherData.vouch_id}`;
+    assertBalancedTotals(contextLabel, postingTotals);
+
+    for (const entry of boxQueue) {
+      seq++;
+      await createGLTransactionForBox(
+        entry.box,
+        voucherData,
+        transactionDate,
+        transactionTime,
+        voucherTypeName,
+        source,
+        currentDate,
+        currentUsername,
+        custValue,
+        customerName,
+        seq,
+      );
+    }
+
+    for (const entry of goldQueue) {
+      seq++;
+      await createGLTransactionForGoldBox(
+        entry.detail,
+        voucherData,
+        transactionDate,
+        transactionTime,
+        voucherTypeName,
+        source,
+        currentDate,
+        currentUsername,
+        custValue,
+        customerName,
+        seq,
+      );
+    }
+
+    for (const entry of customerEntries) {
+      seq++;
+      await createGLTransactionForDetail(
+        entry.detail,
+        voucherData,
+        transactionDate,
+        transactionTime,
+        voucherTypeName,
+        source,
+        currentDate,
+        currentUsername,
+        custValue,
+        customerName,
+        seq,
+      );
     }
 
     return;
@@ -590,6 +891,50 @@ export async function createGLTransactionRecords(
     return;
   }
 
+  const postingTotals: PostingTotals = { ...ZERO_TOTALS };
+
+  for (const detail of validDetails) {
+    const debitValue = toNumber(
+      detail.debit_base ?? detail.debit ?? 0,
+    );
+    const creditValue = toNumber(
+      detail.credit_base ?? detail.credit ?? 0,
+    );
+    const goldDebitValue = toNumber(
+      detail.g_debit_base ?? detail.g_debit ?? 0,
+    );
+    const goldCreditValue = toNumber(
+      detail.g_credit_base ?? detail.g_credit ?? 0,
+    );
+
+    accumulateTotals(postingTotals, {
+      debit: debitValue,
+      credit: creditValue,
+      goldDebit: goldDebitValue,
+      goldCredit: goldCreditValue,
+    });
+  }
+
+  const isReceipt = isReceiptType(voucherData.vouch_type);
+  const isPayment = isPaymentType(voucherData.vouch_type);
+
+  const preparedBoxes =
+    normalizedBoxes.length > 0 && (isReceipt || isPayment)
+      ? normalizedBoxes.map((box) => {
+          const amount = box.amount;
+
+          accumulateTotals(postingTotals, {
+            debit: isReceipt ? amount : 0,
+            credit: isPayment ? amount : 0,
+          });
+
+          return { box, amount };
+        })
+      : [];
+
+  const contextLabel = `سند نوع ${voucherData.vouch_type} رقم ${voucherData.vouch_id}`;
+  assertBalancedTotals(contextLabel, postingTotals);
+
   // إنشاء سجلات GL transaction للتفاصيل
   for (let i = 0; i < validDetails.length; i++) {
     seq++;
@@ -609,27 +954,22 @@ export async function createGLTransactionRecords(
   }
 
   // إنشاء سجلات GL transaction للصناديق
-  if (voucherBoxes && voucherBoxes.length > 0) {
-    const isReceipt = isReceiptType(voucherData.vouch_type);
-    const isPayment = isPaymentType(voucherData.vouch_type);
-
-    if (isReceipt || isPayment) {
-      for (let i = 0; i < voucherBoxes.length; i++) {
-        seq++;
-        await createGLTransactionForBox(
-          voucherBoxes[i],
-          voucherData,
-          transactionDate,
-          transactionTime,
-          voucherTypeName,
-          source,
-          currentDate,
-          currentUsername,
-          custValue,
-          customerName,
-          seq,
-        );
-      }
+  if (preparedBoxes.length > 0) {
+    for (const entry of preparedBoxes) {
+      seq++;
+      await createGLTransactionForBox(
+        entry.box,
+        voucherData,
+        transactionDate,
+        transactionTime,
+        voucherTypeName,
+        source,
+        currentDate,
+        currentUsername,
+        custValue,
+        customerName,
+        seq,
+      );
     }
   }
 }

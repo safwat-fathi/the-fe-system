@@ -87,6 +87,9 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
   // Cost Centers (قوائم أساسية - بدون year)
   cost_centers_list: {
     endpoint: "cost_centers_list",
+    paramTransform: (params) => ({
+      xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
+    }),
   },
 
   // Currencies (قوائم أساسية - بدون year)
