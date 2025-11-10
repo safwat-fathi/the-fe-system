@@ -10,6 +10,8 @@ import {
   clearOppositeField,
   getAccountGauge,
   calculateVoucherTotals,
+  calculateCalibratedGold,
+  calculateReverseCalibratedGold,
 } from "@/utilities/voucherForm";
 import { isVoucherBalanced } from "@/utilities/voucher/balance";
 
@@ -142,8 +144,106 @@ export const useVoucherDetails = ({
 
         // Get gauge from account when acc_id is selected
         if (field === "acc_id" && value) {
-          const gauge = getAccountGauge(value, accounts, caratTypes);
+          const selectedAccount = accounts.find((acc) => acc.id === value);
+          const gauge = getAccountGauge(selectedAccount, caratTypes);
           newDetail.gauge = gauge;
+        }
+
+        const baseGauge = 875;
+        const currentGauge = newDetail.gauge || baseGauge;
+
+        if (field === "g_debit") {
+          const gDebitValue =
+            value !== undefined && value !== null ? parseNumber(value) : 0;
+
+          if (gDebitValue > 0 && currentGauge > 0) {
+            newDetail.g_debit_base = calculateCalibratedGold(
+              gDebitValue,
+              currentGauge,
+              baseGauge,
+              2,
+            );
+          } else {
+            newDetail.g_debit_base = undefined;
+          }
+        }
+
+        if (field === "g_credit") {
+          const gCreditValue =
+            value !== undefined && value !== null ? parseNumber(value) : 0;
+
+          if (gCreditValue > 0 && currentGauge > 0) {
+            newDetail.g_credit_base = calculateCalibratedGold(
+              gCreditValue,
+              currentGauge,
+              baseGauge,
+              2,
+            );
+          } else {
+            newDetail.g_credit_base = undefined;
+          }
+        }
+
+        if (field === "g_debit_base") {
+          const gDebitBaseValue =
+            value !== undefined && value !== null ? parseNumber(value) : 0;
+
+          if (gDebitBaseValue > 0 && currentGauge > 0) {
+            newDetail.g_debit = calculateReverseCalibratedGold(
+              gDebitBaseValue,
+              currentGauge,
+              baseGauge,
+            );
+          } else {
+            newDetail.g_debit = undefined;
+          }
+        }
+
+        if (field === "g_credit_base") {
+          const gCreditBaseValue =
+            value !== undefined && value !== null ? parseNumber(value) : 0;
+
+          if (gCreditBaseValue > 0 && currentGauge > 0) {
+            newDetail.g_credit = calculateReverseCalibratedGold(
+              gCreditBaseValue,
+              currentGauge,
+              baseGauge,
+            );
+          } else {
+            newDetail.g_credit = undefined;
+          }
+        }
+
+        if (field === "gauge") {
+          const newGauge = parseNumber(value) || baseGauge;
+
+          if (
+            newDetail.g_debit !== undefined &&
+            newDetail.g_debit !== null &&
+            newDetail.g_debit > 0 &&
+            newGauge > 0
+          ) {
+            newDetail.g_debit_base = calculateCalibratedGold(
+              newDetail.g_debit,
+              newGauge,
+              baseGauge,
+              2,
+            );
+          }
+
+          if (
+            newDetail.g_credit !== undefined &&
+            newDetail.g_credit !== null &&
+            newDetail.g_credit > 0 &&
+            newGauge > 0
+          ) {
+            newDetail.g_credit_base = calculateCalibratedGold(
+              newDetail.g_credit,
+              newGauge,
+              baseGauge,
+              2,
+            );
+          }
         }
 
         return newDetail;

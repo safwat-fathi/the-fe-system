@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import toast from "react-hot-toast";
@@ -25,6 +25,7 @@ import {
 } from "@heroui/react";
 
 import GLTransactionModal from "../components/GLTransactionModal";
+import GLPreviewPanel from "../components/GLPreviewPanel";
 
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 import { useCashReceiptVoucherForm } from "@/hooks/useCashReceiptVoucherForm";
@@ -41,6 +42,12 @@ interface CashReceiptVoucherClientPageProps {
   voucherBoxes?: VoucherBox[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
+  navigationInfo?: {
+    previous?: number | null;
+    next?: number | null;
+    first?: number | null;
+    last?: number | null;
+  };
   accounts: any[];
   boxes: any[];
   costCenters: any[];
@@ -57,6 +64,7 @@ export default function CashReceiptVoucherClientPage({
   voucherBoxes: initialVoucherBoxes = [],
   isNewVoucher = true,
   voucherRecordId,
+  navigationInfo,
   accounts: initialAccounts,
   boxes: initialBoxes,
   costCenters: initialCostCenters,
@@ -141,6 +149,96 @@ export default function CashReceiptVoucherClientPage({
     vouchType: vouchType,
     refNo: voucher.ref_no,
   });
+
+  const navigationTargets = useMemo(() => {
+    return {
+      previous: navigationInfo?.previous ?? -1,
+      next: navigationInfo?.next ?? -1,
+      first: navigationInfo?.first ?? -1,
+      last: navigationInfo?.last ?? -1,
+    };
+  }, [navigationInfo]);
+
+  const handleNavigate = (targetId?: number | null) => {
+    if (!targetId || targetId <= 0) {
+      // fallback to listing page
+      router.push("/forms/voucher1");
+      return;
+    }
+
+    router.push(`/forms/voucher1/${targetId}?mode=preview`);
+  };
+
+  const toAmount = (value: unknown) => {
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) ? numeric : 0;
+  };
+
+const PREVIEW_TOLERANCE = 0.01;
+
+  const getPreviewAccountName = (
+    accId: number | string | null | undefined,
+    fallback?: string | null,
+  ): string => {
+    if (fallback && fallback.trim().length > 0) {
+      return fallback;
+    }
+
+    if (accId === null || accId === undefined || accId === "") {
+      return "";
+    }
+
+    const numericId = Number(accId);
+
+    if (!Number.isFinite(numericId)) {
+      return "";
+    }
+
+    const account = accounts?.find((acc: any) => {
+      const candidate =
+        acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
+
+      return Number(candidate) === numericId;
+    });
+
+    return (
+      account?.acc_name ||
+      account?.name ||
+      account?.label ||
+      ""
+    );
+  };
+
+  const getBoxAccountName = (
+    boxId: number | string | null | undefined,
+  ): { name: string; code: string | number | null } => {
+    if (boxId === null || boxId === undefined || boxId === "") {
+      return { name: "", code: null };
+    }
+
+    const numericId = Number(boxId);
+
+    if (!Number.isFinite(numericId)) {
+      return { name: "", code: boxId };
+    }
+
+    const boxItem = boxes?.find((box: any) => {
+      const candidate =
+        box?.id ?? box?.box_id ?? box?.box;
+
+      return Number(candidate) === numericId;
+    });
+
+    return {
+      name:
+        boxItem?.box_name ||
+        boxItem?.name ||
+        boxItem?.label ||
+        "",
+      code: boxItem?.acc ?? boxItem?.acc_id ?? boxId,
+    };
+  };
 
   if (!isClient) {
     return (
@@ -1017,6 +1115,47 @@ export default function CashReceiptVoucherClientPage({
               {isBalanced ? "متزن" : "غير متزن"}
             </span>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Button
+            size="sm"
+            variant="light"
+            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
+            onPress={() => handleNavigate(navigationTargets.first)}
+          >
+            <i className="bi bi-chevron-double-right ms-1" />
+            أول سند
+          </Button>
+          <Button
+            size="sm"
+            variant="light"
+            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
+            onPress={() => handleNavigate(navigationTargets.next)}
+          >
+            <i className="bi bi-chevron-right ms-1" />
+            التالي
+          </Button>
+          <Button
+            size="sm"
+            variant="light"
+            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
+            onPress={() => handleNavigate(navigationTargets.previous)}
+          >
+            السابق
+            <i className="bi bi-chevron-left me-1" />
+          </Button>
+          <Button
+            size="sm"
+            variant="light"
+            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
+            onPress={() => handleNavigate(navigationTargets.last)}
+          >
+            آخر سند
+            <i className="bi bi-chevron-double-left me-1" />
+          </Button>
         </div>
       </div>
 

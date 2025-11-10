@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import {
@@ -23,6 +23,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 import GLTransactionModal from "../components/GLTransactionModal";
+import GLPreviewPanel from "../components/GLPreviewPanel";
 
 import { useBalanceVoucherForm } from "@/hooks/useBalanceVoucherForm";
 import { useGLTransactions } from "@/hooks/useGLTransactions";
@@ -126,6 +127,47 @@ export default function BalanceVoucherClientPage({
     vouchType: 0, // قيد افتتاحي
     refNo: voucher.ref_no,
   });
+
+  const toAmount = (value: unknown) => {
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) ? numeric : 0;
+  };
+
+const PREVIEW_TOLERANCE = 0.01;
+
+  const getPreviewAccountName = (
+    accId: number | string | null | undefined,
+    fallback?: string | null,
+  ): string => {
+    if (fallback && fallback.trim().length > 0) {
+      return fallback;
+    }
+
+    if (accId === null || accId === undefined || accId === "") {
+      return "";
+    }
+
+    const numericId = Number(accId);
+
+    if (!Number.isFinite(numericId)) {
+      return "";
+    }
+
+    const account = accounts.find((acc: any) => {
+      const candidate =
+        acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
+
+      return Number(candidate) === numericId;
+    });
+
+    return (
+      account?.acc_name ||
+      account?.name ||
+      account?.label ||
+      ""
+    );
+  };
 
   if (!isClient) {
     return (

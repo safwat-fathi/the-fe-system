@@ -38,6 +38,32 @@ export async function updateVoucherAction(
   deletedGoldDetailIds: number[] = [],
 ) {
   try {
+    const normalizeCostValue = (...values: unknown[]): number | null => {
+      for (const value of values) {
+        if (value === undefined || value === null) {
+          continue;
+        }
+
+        const numeric = Number(value);
+
+        if (Number.isFinite(numeric) && numeric > 0) {
+          return numeric;
+        }
+      }
+
+      return null;
+    };
+
+    const normalizeCustomerCostValue = (value: unknown): number | null => {
+      if (value === undefined || value === null) {
+        return null;
+      }
+
+      const numeric = Number(value);
+
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    };
+
     // التحقق من صحة البيانات
     if (!voucherData.vouch_id || voucherData.vouch_id <= 0) {
       return {
@@ -117,6 +143,23 @@ export async function updateVoucherAction(
       upd_user: currentUsername || null,
     };
 
+    const resolvedCost = normalizeCostValue(
+      voucherData.cost_id,
+      (voucherData as any).cost,
+      voucherPayload.cost_id,
+      (voucherPayload as any).cost,
+      voucherRecord?.cost,
+      voucherRecord?.cost_id,
+    );
+
+    if (resolvedCost !== null) {
+      voucherPayload.cost_id = resolvedCost;
+      (voucherPayload as any).cost = resolvedCost;
+    } else {
+      voucherPayload.cost_id = null;
+      (voucherPayload as any).cost = null;
+    }
+
     // إضافة cust للسندات الذهبية
     if ([4, 5, 111, 222].includes(voucherData.vouch_type)) {
       const custValue =
@@ -132,23 +175,6 @@ export async function updateVoucherAction(
       // لا تحذف cust_id إذا كان موجوداً في voucherPayload، فقط أضف cust
       // delete voucherPayload.cust_id; // تم إزالة هذا السطر لأنه يحذف العميل
 
-      // إضافة cost للسندات الذهبية (مطلوب دائماً)
-      const costValue =
-        voucherData.cost_id !== undefined &&
-        voucherData.cost_id !== null &&
-        voucherData.cost_id > 0
-          ? voucherData.cost_id
-          : null;
-
-      // إرسال cost دائماً حتى لو كان null (لأن API يتطلبه)
-      voucherPayload.cost = costValue;
-    }
-
-    if (![4, 5, 111, 222].includes(voucherData.vouch_type)) {
-      voucherPayload.cost =
-        voucherData.cost_id !== undefined && voucherData.cost_id !== null
-          ? voucherData.cost_id
-          : null;
     }
 
     // تحديث السند الرئيسي

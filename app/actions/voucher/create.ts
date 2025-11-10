@@ -31,6 +31,32 @@ export async function createVoucherAction(
   goldDetails: GVoucherDetailData[] = [],
 ) {
   try {
+    const normalizeCostValue = (...values: unknown[]): number | null => {
+      for (const value of values) {
+        if (value === undefined || value === null) {
+          continue;
+        }
+
+        const numeric = Number(value);
+
+        if (Number.isFinite(numeric) && numeric > 0) {
+          return numeric;
+        }
+      }
+
+      return null;
+    };
+
+    const normalizeCustomerCostValue = (value: unknown): number | null => {
+      if (value === undefined || value === null) {
+        return null;
+      }
+
+      const numeric = Number(value);
+
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    };
+
     // التحقق من البيانات - تمرير goldDetails للتحقق في سندات الذهب
     const validation = validateVoucherData(
       voucherData,
@@ -66,6 +92,21 @@ export async function createVoucherAction(
       commit: true,
     };
 
+    const resolvedCost = normalizeCostValue(
+      voucherData.cost_id,
+      (voucherData as any).cost,
+      voucherPayload.cost_id,
+      (voucherPayload as any).cost,
+    );
+
+    if (resolvedCost !== null) {
+      voucherPayload.cost_id = resolvedCost;
+      (voucherPayload as any).cost = resolvedCost;
+    } else {
+      voucherPayload.cost_id = null;
+      (voucherPayload as any).cost = null;
+    }
+
     // إضافة cust للسندات الذهبية
     if ([4, 5, 111, 222].includes(voucherData.vouch_type)) {
       const custValue =
@@ -82,30 +123,6 @@ export async function createVoucherAction(
       if (custValue && custValue > 0) {
         voucherPayload.cust = custValue;
       }
-      delete voucherPayload.cust_id;
-
-      // إضافة cost للسندات الذهبية (مطلوب دائماً)
-      const costValue =
-        voucherData.cost_id !== undefined &&
-        voucherData.cost_id !== null &&
-        voucherData.cost_id > 0
-          ? voucherData.cost_id
-          : voucherPayload.cost !== undefined &&
-              voucherPayload.cost !== null &&
-              voucherPayload.cost > 0
-            ? voucherPayload.cost
-            : null;
-
-      // إرسال cost دائماً حتى لو كان null (لأن API يتطلبه)
-      voucherPayload.cost = costValue;
-      delete voucherPayload.cost_id;
-    }
-
-    if (![4, 5, 111, 222].includes(voucherData.vouch_type)) {
-      voucherPayload.cost =
-        voucherData.cost_id !== undefined && voucherData.cost_id !== null
-          ? voucherData.cost_id
-          : null;
     }
 
     // حفظ السند الرئيسي

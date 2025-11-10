@@ -27,9 +27,23 @@ class CostCenterService extends HttpService<CostCenter> {
 
   async getAllCostCenters(): Promise<CostCenter[]> {
     try {
+      let companyId = "1";
+
+      try {
+        const branchParams = await import("@/app/actions/branch-params").then(
+          (m) => m.getBranchParams(),
+        );
+
+        companyId = branchParams.com || "1";
+      } catch {
+        companyId = "1";
+      }
+
       const response = await this.get<CostCenter[]>(
         "cost_centers_list",
-        undefined,
+        {
+          xcom_id: companyId || "1",
+        },
         {
           cache: "no-store",
           next: { tags: ["cost-centers"] },

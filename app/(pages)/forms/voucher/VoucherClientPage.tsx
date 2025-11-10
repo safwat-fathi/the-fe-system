@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Button } from "@heroui/react";
@@ -15,6 +15,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 import GLTransactionModal from "../components/GLTransactionModal";
+import GLPreviewPanel from "../components/GLPreviewPanel";
 
 import { useVoucherForm } from "@/hooks/useVoucherForm";
 import { useGLTransactions } from "@/hooks/useGLTransactions";
@@ -56,6 +57,7 @@ export default function VoucherClientPage({
   vouchType = 2,
   formMode = "new",
   newVoucherHref,
+  navigationInfo,
 }: VoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -142,6 +144,65 @@ export default function VoucherClientPage({
     vouchType: 3, // قيد التسوية
     refNo: voucher.ref_no,
   });
+
+  const toAmount = (value: unknown) => {
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) ? numeric : 0;
+  };
+
+  const navigationTargets = useMemo(() => {
+    return {
+      previous: navigationInfo?.previous ?? -1,
+      next: navigationInfo?.next ?? -1,
+      first: navigationInfo?.first ?? -1,
+      last: navigationInfo?.last ?? -1,
+    };
+  }, [navigationInfo]);
+
+  const handleNavigate = (targetId?: number | null) => {
+    if (!targetId || targetId <= 0) {
+      router.push("/forms/voucher");
+      return;
+    }
+
+    router.push(`/forms/voucher/${targetId}?mode=preview`);
+  };
+
+const PREVIEW_TOLERANCE = 0.01;
+
+  const getPreviewAccountName = (
+    accId: number | string | null | undefined,
+    fallback?: string | null,
+  ): string => {
+    if (fallback && fallback.trim().length > 0) {
+      return fallback;
+    }
+
+    if (accId === null || accId === undefined || accId === "") {
+      return "";
+    }
+
+    const numericId = Number(accId);
+
+    if (!Number.isFinite(numericId)) {
+      return "";
+    }
+
+    const account = accounts?.find((acc: any) => {
+      const candidate =
+        acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
+
+      return Number(candidate) === numericId;
+    });
+
+    return (
+      account?.acc_name ||
+      account?.name ||
+      account?.label ||
+      ""
+    );
+  };
 
   if (!isClient) {
     return (
@@ -628,7 +689,7 @@ export default function VoucherClientPage({
               )}
 
             <div className="overflow-x-auto mb-1 max-w-full">
-              <table className="min-w-[1200px] border text-xs text-center table-fixed">
+              <table className="min-w-[1350px] border text-xs text-center table-fixed">
                 <thead className="bg-gray-100 text-xs font-bold">
                   <tr>
                     <th
@@ -647,13 +708,19 @@ export default function VoucherClientPage({
                       className="w-40 p-0.5 font-bold text-slate-700 border"
                       colSpan={2}
                     >
-                      ذهب (جم)
+                      ذهب قائم (جم)
                     </th>
                     <th
                       className="w-20 p-0.5 font-bold text-slate-700 border"
                       rowSpan={2}
                     >
                       المعايرة
+                    </th>
+                    <th
+                      className="w-40 p-0.5 font-bold text-slate-700 border"
+                      colSpan={2}
+                    >
+                      ذهب معاير (جم)
                     </th>
                     <th
                       className="w-40 p-0.5 font-bold text-slate-700 border"
@@ -687,6 +754,12 @@ export default function VoucherClientPage({
                     <th className="w-20 p-0.5 font-bold text-slate-700 border">
                       دائن (جم)
                     </th>
+                    <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                      مدين (جم معاير)
+                    </th>
+                    <th className="w-20 p-0.5 font-bold text-slate-700 border">
+                      دائن (جم معاير)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -700,7 +773,7 @@ export default function VoucherClientPage({
                           : ""
                       }`}
                     >
-                      <td className="p-0 border">
+                      <td className="p-0 border bg-white">
                         <AsyncCreatableSelect
                           isClearable
                           isSearchable
@@ -884,6 +957,7 @@ export default function VoucherClientPage({
                         />
                       </td>
 
+
                       <td className="p-0 border bg-amber-50">
                         <input
                           className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
@@ -926,6 +1000,38 @@ export default function VoucherClientPage({
                           placeholder="875"
                           type="text"
                           value={String(detail.gauge || 875)}
+                        />
+                      </td>
+
+                      <td className="p-0 border bg-amber-50">
+                        <input
+                          className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 cursor-not-allowed bg-amber-50"
+                          disabled
+                          placeholder="0.00"
+                          type="number"
+                          step="0.000001"
+                          value={
+                            detail.g_debit_base
+                              ? String(detail.g_debit_base)
+                              : ""
+                          }
+                          title="يُحسب تلقائياً من الذهب القائم × (المعايرة / 875)"
+                        />
+                      </td>
+
+                      <td className="p-0 border bg-amber-50">
+                        <input
+                          className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 cursor-not-allowed bg-amber-50"
+                          disabled
+                          placeholder="0.00"
+                          type="number"
+                          step="0.000001"
+                          value={
+                            detail.g_credit_base
+                              ? String(detail.g_credit_base)
+                              : ""
+                          }
+                          title="يُحسب تلقائياً من الذهب القائم × (المعايرة / 875)"
                         />
                       </td>
 
@@ -1217,6 +1323,47 @@ export default function VoucherClientPage({
             </div>
           </div>
         )}
+      </div>
+
+      <div className="mt-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Button
+            size="sm"
+            variant="light"
+            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
+            onPress={() => handleNavigate(navigationTargets.first)}
+          >
+            <i className="bi bi-chevron-double-right ms-1" />
+            أول قيد
+          </Button>
+          <Button
+            size="sm"
+            variant="light"
+            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
+            onPress={() => handleNavigate(navigationTargets.next)}
+          >
+            <i className="bi bi-chevron-right ms-1" />
+            التالي
+          </Button>
+          <Button
+            size="sm"
+            variant="light"
+            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
+            onPress={() => handleNavigate(navigationTargets.previous)}
+          >
+            السابق
+            <i className="bi bi-chevron-left me-1" />
+          </Button>
+          <Button
+            size="sm"
+            variant="light"
+            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
+            onPress={() => handleNavigate(navigationTargets.last)}
+          >
+            آخر قيد
+            <i className="bi bi-chevron-double-left me-1" />
+          </Button>
+        </div>
       </div>
 
       {/* مودال عرض القيد المحاسبي */}

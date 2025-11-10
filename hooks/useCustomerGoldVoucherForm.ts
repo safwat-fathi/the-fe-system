@@ -602,8 +602,29 @@ export const useCustomerGoldVoucherForm = ({
     setIsLoading(true);
 
     try {
+      let currentVoucherNumber = Number(voucher.vouch_id) || 0;
+
+      if (currentVoucherNumber <= 0 || !hasGeneratedVoucherNumber.current) {
+        try {
+          currentVoucherNumber = await voucherService.getNextNumber(vouchType);
+          setVoucher((prev) => ({
+            ...prev,
+            vouch_id: currentVoucherNumber,
+            vouch_date: prev.vouch_date || new Date().toISOString(),
+            cr_date: prev.cr_date || new Date().toISOString(),
+          }));
+          hasGeneratedVoucherNumber.current = true;
+        } catch (error) {
+          console.error("Error generating voucher number:", error);
+          toast.error("حدث خطأ في توليد رقم السند");
+          setIsLoading(false);
+
+          return;
+        }
+      }
+
       const voucherData = {
-        vouch_id: voucher.vouch_id,
+        vouch_id: currentVoucherNumber,
         vouch_date: voucher.vouch_date,
         vouch_type: vouchType,
         vouch_amt: 0,
@@ -636,7 +657,7 @@ export const useCustomerGoldVoucherForm = ({
         .filter((detail) => detail.item_id && detail.item_id > 0)
         .map((detail) => ({
           id: detail.id || 0,
-          vouch_id: voucher.vouch_id,
+          vouch_id: currentVoucherNumber,
           item_id: detail.item_id,
           k: detail.k,
           weight: detail.weight,
@@ -710,7 +731,7 @@ export const useCustomerGoldVoucherForm = ({
           ...prev,
           commit: true,
           id: realId,
-          vouch_id: result.data.vouch_id || voucher.vouch_id,
+          vouch_id: result.data.vouch_id || currentVoucherNumber,
         }));
 
         toast.success(result.message);
@@ -723,11 +744,56 @@ export const useCustomerGoldVoucherForm = ({
           router.refresh(); // إجبار Next.js على إعادة جلب البيانات من الخادم
         }
       } else {
-        toast.error(result.message || "حدث خطأ أثناء الحفظ");
+        if (
+          result.message &&
+          result.message.includes(
+            "The fields com, vouch_type, vouch_id must make a unique set",
+          )
+        ) {
+          try {
+            const nextNumber = await voucherService.getNextNumber(vouchType);
+            setVoucher((prev) => ({
+              ...prev,
+              vouch_id: nextNumber,
+            }));
+            hasGeneratedVoucherNumber.current = true;
+            toast.error("تم تحديث رقم السند، يرجى إعادة الحفظ");
+            return;
+          } catch (error) {
+            console.error("Error refreshing voucher number:", error);
+            toast.error(result.message || "حدث خطأ أثناء الحفظ");
+          }
+        } else {
+          toast.error(result.message || "حدث خطأ أثناء الحفظ");
+        }
       }
     } catch (error) {
       console.error("Error saving voucher:", error);
-      toast.error("حدث خطأ أثناء الحفظ");
+      const errorMessage =
+        error instanceof Error ? error.message : "حدث خطأ أثناء الحفظ";
+
+      if (
+        typeof errorMessage === "string" &&
+        errorMessage.includes(
+          "The fields com, vouch_type, vouch_id must make a unique set",
+        )
+      ) {
+        try {
+          const nextNumber = await voucherService.getNextNumber(vouchType);
+          setVoucher((prev) => ({
+            ...prev,
+            vouch_id: nextNumber,
+          }));
+          hasGeneratedVoucherNumber.current = true;
+          toast.error("تم تحديث رقم السند، يرجى إعادة الحفظ");
+          return;
+        } catch (numberError) {
+          console.error("Error refreshing voucher number:", numberError);
+          toast.error(errorMessage);
+        }
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }

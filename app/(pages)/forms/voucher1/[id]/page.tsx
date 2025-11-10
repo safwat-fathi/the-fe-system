@@ -317,6 +317,33 @@ export default async function ReceiptVoucherEditPage({
     print: targetVoucher.print || false,
   };
 
+  const parseNavId = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  };
+
+  const navigationInfo = {
+    previous: parseNavId(
+      (targetVoucher as any).previous_voucher_id ??
+        (targetVoucher as any).previous,
+    ),
+    next: parseNavId(
+      (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
+    ),
+    first: parseNavId(
+      (targetVoucher as any).first_voucher_id ??
+        (targetVoucher as any).first,
+    ),
+    last: parseNavId(
+      (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
+    ),
+  };
+
   return (
     <div className="container mx-auto p-4">
       <Breadcrumb
@@ -338,6 +365,7 @@ export default async function ReceiptVoucherEditPage({
         isNewVoucher={false}
         startInEditMode={startInEditMode}
         vouchType={1}
+        navigationInfo={navigationInfo}
         voucherBoxes={boxes}
         voucherData={formattedVoucher}
         voucherDetailsData={details}
