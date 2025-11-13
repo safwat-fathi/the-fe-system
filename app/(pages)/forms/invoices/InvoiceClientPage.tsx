@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import InvoiceSelectors from "@/components/InvoiceSelectors";
 import InvoiceItemTable from "@/components/InvoiceItemTable";
@@ -73,6 +74,9 @@ export default function InvoiceClientPage({
   formMode = "new",
   newInvoiceHref,
 }: InvoiceClientPageProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const {
     // lists
     items,
@@ -165,6 +169,28 @@ export default function InvoiceClientPage({
     newInvoiceHref ??
     `/forms/invoices?type=${encodeURIComponent(invoiceType)}&mode=new`;
 
+  const buildUrl = (updates: Record<string, string | null | undefined>) => {
+    const sp = new URLSearchParams(searchParams?.toString() || "");
+    // apply updates
+    Object.entries(updates).forEach(([k, v]) => {
+      if (v == null || v === "") sp.delete(k);
+      else sp.set(k, v);
+    });
+    // ensure we never keep legacy edit=true when mode is managed
+    if (updates.mode) sp.delete("edit");
+    return `${pathname}?${sp.toString()}`;
+  };
+
+  const handleSaveAndNavigate = async () => {
+    const result = await saveInvoice();
+    if (!result || result.ok !== true) return;
+
+    const invNumber = String(result.invoiceNumber);
+    // Prefer inv_id; also remove id to avoid ambiguity
+    const url = buildUrl({ mode: "preview", inv_id: invNumber, id: null });
+    router.replace(url);
+  };
+
   // join any derived totals via computeTotals (hook exposes computeTotals)
   const totals = useMemo(() => {
     return computeTotals(form.pay_type, invoiceItems);
@@ -190,6 +216,7 @@ export default function InvoiceClientPage({
         autoTotalWages={autoTotalWages}
         canEdit={allowEditing}
         commit={form.commit}
+        isNewInvoice={isNewInvoice}
         currentRecord={currentRecord}
         formattedDateTime={new Date(form.inv_date).toLocaleString("ar-EG")}
         invoiceNumber={form.inv_id}
@@ -203,7 +230,7 @@ export default function InvoiceClientPage({
         paymentMethod={paymentMethod}
         previewInvoice={previewInvoice}
         print={form.print}
-        saveInvoice={saveInvoice}
+        saveInvoice={handleSaveAndNavigate}
         searchNumber={searchNumber}
         setCommit={(value: boolean) =>
           dispatchForm({ type: "SET_FIELD", field: "commit", value })
@@ -222,9 +249,10 @@ export default function InvoiceClientPage({
         totalWagesTax={0}
         useManualTotals={useManualTotals}
         onEdit={() => {
-          if (allowEditing) {
-            setIsEditing(true);
-          }
+          setIsEditing(true);
+          const invId = form.inv_id ? String(form.inv_id) : undefined;
+          const url = buildUrl({ mode: "edit", edit: null, inv_id: invId });
+          router.replace(url);
         }}
         onInvoiceSearch={handleInvoiceSearch}
         onManualTotalChange={handleManualTotalChange}

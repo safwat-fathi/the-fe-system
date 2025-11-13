@@ -20,7 +20,7 @@ import useFractions from "@/utilities/useFractions";
 interface Props {
   invoiceNumber: string;
   formattedDateTime: string;
-  saveInvoice: () => void;
+  saveInvoice: () => void | Promise<any>;
   previewInvoice: () => void;
   totalAmount: number;
   taxAmount: number;
@@ -61,6 +61,8 @@ interface Props {
   totalRecords?: number;
   navigateToInvoice?: (direction: "first" | "prev" | "next" | "last") => void;
   newInvoiceHref?: string;
+  // حالة الفاتورة هل هي جديدة؟
+  isNewInvoice?: boolean;
 }
 
 export default function InvoiceTotalsActions({
@@ -107,6 +109,7 @@ export default function InvoiceTotalsActions({
   // totalRecords = 1,
   // navigateToInvoice,
   newInvoiceHref = "/forms/invoices?type=sale&mode=new",
+  isNewInvoice = false,
 }: Props) {
   const fractions = useFractions() as { frac: number; frac2: number };
   const router = useRouter();
@@ -172,15 +175,17 @@ export default function InvoiceTotalsActions({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           {/* الأزرار من اليسار لليمين */}
           <div className="flex flex-wrap items-center gap-1 ">
-            <Button
-              className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
-              onClick={saveInvoice}
-            >
-              <CheckCircleIcon className="w-4 h-4 " />
-              <span className="hidden sm:inline">حفظ</span>
-            </Button>
+            {isEditing && (
+              <Button
+                className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
+                onClick={saveInvoice}
+              >
+                <CheckCircleIcon className="w-4 h-4 " />
+                <span className="hidden sm:inline">حفظ</span>
+              </Button>
+            )}
 
-            {!isEditing && canEdit && (
+            {!isEditing && (
               <Button
                 className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
                 onClick={onEdit}
@@ -198,13 +203,15 @@ export default function InvoiceTotalsActions({
               <span className="hidden sm:inline">جديد</span>
             </Button>
 
-            <Button
-              className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
-              onClick={previewInvoice}
-            >
-              <PrinterIcon className="w-4 h-4 " />
-              <span className="hidden sm:inline">طباعة</span>
-            </Button>
+            {!isNewInvoice && (
+              <Button
+                className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
+                onClick={previewInvoice}
+              >
+                <PrinterIcon className="w-4 h-4 " />
+                <span className="hidden sm:inline">طباعة</span>
+              </Button>
+            )}
 
             {/* أزرار التنقل */}
             {/* {navigateToInvoice && (
