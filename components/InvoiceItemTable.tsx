@@ -414,7 +414,8 @@ export default function InvoiceItemTable({
   const handleEnter = (
     e: KeyboardEvent,
     rowIndex: number,
-    colIndex: number,
+    _colIndex: number,
+    isLastCol?: boolean,
   ) => {
     // Handle Tab: if on the last input of the last row, add a new row and focus first input
     if (e.key === "Tab" && !e.shiftKey) {
@@ -428,7 +429,12 @@ export default function InvoiceItemTable({
           break;
         }
       }
-      const isLastCol = colIndex >= lastCol;
+      // determine current column index by matching the focused element
+      const target = e.currentTarget as unknown as HTMLInputElement | null;
+      const currentCol = rowRefs.findIndex((el) => el === target);
+      console.log("🚀 ~ :434 ~ handleEnter ~ currentCol:", currentCol);
+      // const isLastCol = currentCol === lastCol;
+      console.log("🚀 ~ :436 ~ handleEnter ~ isLastCol:", isLastCol);
 
       if (isLastRow && isLastCol) {
         e.preventDefault();
@@ -902,9 +908,9 @@ export default function InvoiceItemTable({
                       className="border w-full p-1 text-xs text-center"
                       disabled={!isEditing}
                       required={
-                          payType === INVOICE_PAY_TYPES.WAGES ||
-                          payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
-                        }
+                        payType === INVOICE_PAY_TYPES.WAGES ||
+                        payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
+                      }
                       dir="ltr"
                       inputMode="decimal"
                       type="number"
@@ -1052,7 +1058,7 @@ export default function InvoiceItemTable({
                     onChange={(e) =>
                       handleFieldChange(index, "item_desc", e.target.value)
                     }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
+                    onKeyDown={(e) => handleEnter(e, index, col, true)}
                   />
                 </td>
 
