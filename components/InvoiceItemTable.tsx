@@ -79,6 +79,12 @@ export default function InvoiceItemTable({
   const totalDigits = useFractions("total") as number;
   const taxDigits = useFractions("tax") as number;
 
+  // build numeric step from digits precision (e.g., 2 -> "0.01")
+  const stepFromDigits = (digits: number) => {
+    if (!digits || digits <= 0) return "1";
+    return `0.${"0".repeat(digits - 1)}1`;
+  };
+
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
   const [taxRates, setTaxRates] = useState<number[]>([0, 5, 10, 15, 20]);
@@ -410,6 +416,34 @@ export default function InvoiceItemTable({
     rowIndex: number,
     colIndex: number,
   ) => {
+    // Handle Tab: if on the last input of the last row, add a new row and focus first input
+    if (e.key === "Tab" && !e.shiftKey) {
+      const isLastRow = rowIndex === invoiceItems.length - 1;
+      const rowRefs = inputRefs.current[rowIndex] || [];
+      // find last non-null/defined ref index in the row
+      let lastCol = -1;
+      for (let i = rowRefs.length - 1; i >= 0; i--) {
+        if (rowRefs[i]) {
+          lastCol = i;
+          break;
+        }
+      }
+      const isLastCol = colIndex >= lastCol;
+
+      if (isLastRow && isLastCol) {
+        e.preventDefault();
+        const nextRow = rowIndex + 1;
+        const nextCol = 0;
+        addRow();
+        setTimeout(() => {
+          const newRowInput = inputRefs.current[nextRow]?.[nextCol];
+          if (newRowInput) newRowInput.focus();
+        }, 100);
+        return;
+      }
+      // otherwise, allow default Tab behavior
+    }
+
     if (e.key === "Enter") {
       e.preventDefault();
       const nextRow = rowIndex + 1;
@@ -493,13 +527,6 @@ export default function InvoiceItemTable({
     updated[index].tax = String(tax);
     // total already set to entered
     setInvoiceItems(updated);
-    setTempTotals((prev) => {
-      const copy = { ...prev };
-
-      delete copy[updated[index].id];
-
-      return copy;
-    });
   };
 
   const handleTotalAChange = (index: number, value: any) => {
@@ -621,6 +648,7 @@ export default function InvoiceItemTable({
                       inputRefs.current[index][++col] =
                         el as unknown as HTMLInputElement;
                     }}
+                    inputId={`item-${index}${col + 1}`}
                     isClearable
                     isSearchable
                     additional={{ page: 1 }}
@@ -758,13 +786,15 @@ export default function InvoiceItemTable({
 
                 <td className="align-middle">
                   <input
+                    id={`qty-${index}${col}`}
                     ref={(el) => setRef(index, ++col, el)}
                     className="border w-full p-1 text-xs text-center align-middle"
                     disabled={!isEditing}
                     dir="ltr"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    type="text"
+                    step={1}
+                    type="number"
                     value={String(item.qty ?? "")}
                     onChange={(e) =>
                       handleFieldChange(index, "qty", e.target.value)
@@ -778,11 +808,13 @@ export default function InvoiceItemTable({
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
+                    id={`weight-${index}${col}`}
                     className="border w-full p-1 text-xs text-center align-middle"
                     disabled={!isEditing}
                     dir="ltr"
                     inputMode="decimal"
-                    type="text"
+                    type="number"
+                    step={stepFromDigits(weightDigits)}
                     value={String(item.weight ?? "")}
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
@@ -796,11 +828,13 @@ export default function InvoiceItemTable({
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
+                    id={`gweight-${index}${col}`}
                     className="border w-full p-1 text-xs text-center align-middle"
                     disabled={!isEditing}
                     dir="ltr"
                     inputMode="decimal"
-                    type="text"
+                    type="number"
+                    step={stepFromDigits(gWeightDigits)}
                     value={String(item.g_weight ?? "")}
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
@@ -814,11 +848,21 @@ export default function InvoiceItemTable({
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
+                    id={`stones-${index}${col}`}
                     className="border w-full p-1 text-xs text-center"
                     disabled={!isEditing}
+                    dir="ltr"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    type="number"
+                    step={1}
                     value={String(item.stones ?? "")}
                     onChange={(e) =>
-                      handleFieldChange(index, "stones", e.target.value)
+                      handleFieldChange(
+                        index,
+                        "stones",
+                        sanitizeNumericInput(e.target.value, false),
+                      )
                     }
                     onKeyDown={(e) => handleEnter(e, index, col)}
                   />
@@ -831,11 +875,13 @@ export default function InvoiceItemTable({
                       ref={(el) => {
                         inputRefs.current[index][++col] = el;
                       }}
+                      id={`price-${index}${col}`}
                       className="border w-full p-1 text-xs text-center"
                       disabled={!isEditing}
                       dir="ltr"
                       inputMode="decimal"
-                      type="text"
+                      type="number"
+                      step={stepFromDigits(priceDigits)}
                       value={String(item.price ?? "")}
                       onChange={(e) =>
                         handleFieldChange(index, "price", e.target.value)
@@ -852,15 +898,17 @@ export default function InvoiceItemTable({
                       ref={(el) => {
                         inputRefs.current[index][++col] = el;
                       }}
+                      id={`pricew-${index}${col}`}
                       className="border w-full p-1 text-xs text-center"
                       disabled={!isEditing}
                       required={
-                        payType === INVOICE_PAY_TYPES.WAGES ||
-                        payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
-                      }
+                          payType === INVOICE_PAY_TYPES.WAGES ||
+                          payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
+                        }
                       dir="ltr"
                       inputMode="decimal"
-                      type="text"
+                      type="number"
+                      step={stepFromDigits(priceWDigits)}
                       value={String(item.price_w ?? "")}
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
@@ -877,11 +925,13 @@ export default function InvoiceItemTable({
                       ref={(el) => {
                         inputRefs.current[index][++col] = el;
                       }}
+                      id={`totala-${index}${col}`}
                       className="border w-full p-1 text-xs text-center"
                       disabled={!isEditing}
                       dir="ltr"
                       inputMode="decimal"
-                      type="text"
+                      type="number"
+                      step={stepFromDigits(totalADigits)}
                       value={String(item.total_a ?? "")}
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
@@ -898,11 +948,13 @@ export default function InvoiceItemTable({
                       ref={(el) => {
                         inputRefs.current[index][++col] = el;
                       }}
+                      id={`totalw-${index}${col}`}
                       className="border w-full p-1 text-xs text-center"
                       disabled={!isEditing}
                       dir="ltr"
                       inputMode="decimal"
-                      type="text"
+                      type="number"
+                      step={stepFromDigits(totalWDigits)}
                       value={String(item.total_w ?? "")}
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
@@ -917,11 +969,13 @@ export default function InvoiceItemTable({
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
+                    id={`disc-${index}${col}`}
                     className="border w-full p-1 text-xs text-center"
                     disabled={!isEditing}
                     dir="ltr"
                     inputMode="decimal"
-                    type="text"
+                    type="number"
+                    step={stepFromDigits(itemDiscDigits)}
                     value={String(item.item_disc_amt ?? "")}
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
@@ -935,6 +989,7 @@ export default function InvoiceItemTable({
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
+                    id={`taxprc-${index}${col}`}
                     className="border w-full p-1 text-xs text-center"
                     disabled={!isEditing}
                     value={String(Math.round(toNum(item.tax_prc)))}
@@ -958,21 +1013,21 @@ export default function InvoiceItemTable({
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
+                    id={`total-${index}${col}`}
                     className="border w-full p-1 text-xs text-center"
                     disabled={!isEditing}
+                    type="number"
+                    dir="ltr"
+                    inputMode="decimal"
+                    step={stepFromDigits(totalDigits)}
                     value={
                       tempTotals[item.id] !== undefined
                         ? tempTotals[item.id]
-                        : formatAmount(String(totalWithTax), totalDigits)
+                        : Number.isFinite(totalWithTax)
+                          ? String(Number(totalWithTax.toFixed(totalDigits)))
+                          : ""
                     }
                     onBlur={(e) => {
-                      setTempTotals((prev) => {
-                        const copy = { ...prev };
-
-                        delete copy[item.id];
-
-                        return copy;
-                      });
                       handleTotalChange(index, e.target.value);
                     }}
                     onChange={(e) =>
@@ -990,6 +1045,7 @@ export default function InvoiceItemTable({
                     ref={(el) => {
                       inputRefs.current[index][++col] = el;
                     }}
+                    id={`desc-${index}${col}`}
                     className="border w-full p-1 text-xs text-center"
                     disabled={!isEditing}
                     value={item.item_desc ?? ""}
