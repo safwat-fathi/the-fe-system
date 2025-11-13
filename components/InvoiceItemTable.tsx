@@ -213,6 +213,31 @@ export default function InvoiceItemTable({
     return Number.isNaN(n) ? 0 : n;
   };
 
+  // sanitize numeric inputs: allow digits and a single dot for decimals
+  const sanitizeNumericInput = (raw: string, allowDecimal: boolean) => {
+    let s = String(raw ?? "");
+
+    if (!allowDecimal) {
+      // integers only
+      s = s.replace(/[^\d]/g, "");
+      return s;
+    }
+
+    // keep digits and dots only
+    s = s.replace(/[^\d.]/g, "");
+    // keep only first dot
+    const firstDot = s.indexOf(".");
+    if (firstDot !== -1) {
+      const before = s.slice(0, firstDot + 1);
+      const after = s.slice(firstDot + 1).replace(/\./g, "");
+      s = before + after;
+    }
+    // normalize leading dot
+    if (s.startsWith(".")) s = `0${s}`;
+
+    return s;
+  };
+
   // when a field changed — update invoiceItems and recalc totals/tax
   const handleFieldChange = (
     index: number,
@@ -244,12 +269,13 @@ export default function InvoiceItemTable({
     ] as any;
 
     if (numericStringFields.includes(field)) {
-      // normalize value into string
-      const n = toNum(value);
+      // keep raw string while sanitizing; parse for calculations separately
+      const isInteger = field === "qty";
+      const sanitized = sanitizeNumericInput(String(value), !isInteger);
 
       updated[index] = {
         ...updated[index],
-        [field]: String(n),
+        [field]: sanitized,
       } as InvoiceDetail;
     } else {
       // non-numeric fields (strings)
@@ -735,9 +761,11 @@ export default function InvoiceItemTable({
                     ref={(el) => setRef(index, ++col, el)}
                     className="border w-full p-1 text-xs text-center align-middle"
                     disabled={!isEditing}
-                    step="1"
-                    type="number"
-                    value={Number.parseInt(String(item.qty || "0"), 10) || 0}
+                    dir="ltr"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    type="text"
+                    value={String(item.qty ?? "")}
                     onChange={(e) =>
                       handleFieldChange(index, "qty", e.target.value)
                     }
@@ -752,9 +780,10 @@ export default function InvoiceItemTable({
                     }}
                     className="border w-full p-1 text-xs text-center align-middle"
                     disabled={!isEditing}
-                    step="any"
-                    type="number"
-                    value={toNum(item.weight).toFixed(weightDigits)}
+                    dir="ltr"
+                    inputMode="decimal"
+                    type="text"
+                    value={String(item.weight ?? "")}
                     onChange={(e) =>
                       handleFieldChange(index, "weight", e.target.value)
                     }
@@ -769,9 +798,10 @@ export default function InvoiceItemTable({
                     }}
                     className="border w-full p-1 text-xs text-center align-middle"
                     disabled={!isEditing}
-                    step="any"
-                    type="number"
-                    value={toNum(item.g_weight).toFixed(gWeightDigits)}
+                    dir="ltr"
+                    inputMode="decimal"
+                    type="text"
+                    value={String(item.g_weight ?? "")}
                     onChange={(e) =>
                       handleFieldChange(index, "g_weight", e.target.value)
                     }
@@ -803,9 +833,10 @@ export default function InvoiceItemTable({
                       }}
                       className="border w-full p-1 text-xs text-center"
                       disabled={!isEditing}
-                      step="any"
-                      type="number"
-                      value={toNum(item.price).toFixed(priceDigits)}
+                      dir="ltr"
+                      inputMode="decimal"
+                      type="text"
+                      value={String(item.price ?? "")}
                       onChange={(e) =>
                         handleFieldChange(index, "price", e.target.value)
                       }
@@ -827,9 +858,10 @@ export default function InvoiceItemTable({
                         payType === INVOICE_PAY_TYPES.WAGES ||
                         payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
                       }
-                      step="any"
-                      type="number"
-                      value={toNum(item.price_w).toFixed(priceWDigits)}
+                      dir="ltr"
+                      inputMode="decimal"
+                      type="text"
+                      value={String(item.price_w ?? "")}
                       onChange={(e) =>
                         handleFieldChange(index, "price_w", e.target.value)
                       }
@@ -847,9 +879,10 @@ export default function InvoiceItemTable({
                       }}
                       className="border w-full p-1 text-xs text-center"
                       disabled={!isEditing}
-                      step="any"
-                      type="number"
-                      value={toNum(item.total_a).toFixed(totalADigits)}
+                      dir="ltr"
+                      inputMode="decimal"
+                      type="text"
+                      value={String(item.total_a ?? "")}
                       onChange={(e) =>
                         handleTotalAChange(index, e.target.value)
                       }
@@ -867,9 +900,10 @@ export default function InvoiceItemTable({
                       }}
                       className="border w-full p-1 text-xs text-center"
                       disabled={!isEditing}
-                      step="any"
-                      type="number"
-                      value={toNum(item.total_w).toFixed(totalWDigits)}
+                      dir="ltr"
+                      inputMode="decimal"
+                      type="text"
+                      value={String(item.total_w ?? "")}
                       onChange={(e) =>
                         handleTotalWChange(index, e.target.value)
                       }
@@ -885,9 +919,10 @@ export default function InvoiceItemTable({
                     }}
                     className="border w-full p-1 text-xs text-center"
                     disabled={!isEditing}
-                    step="any"
-                    type="number"
-                    value={toNum(item.item_disc_amt).toFixed(itemDiscDigits)}
+                    dir="ltr"
+                    inputMode="decimal"
+                    type="text"
+                    value={String(item.item_disc_amt ?? "")}
                     onChange={(e) =>
                       handleFieldChange(index, "item_disc_amt", e.target.value)
                     }
@@ -902,7 +937,7 @@ export default function InvoiceItemTable({
                     }}
                     className="border w-full p-1 text-xs text-center"
                     disabled={!isEditing}
-                    value={toNum(item.tax_prc).toFixed(0)}
+                    value={String(Math.round(toNum(item.tax_prc)))}
                     onChange={(e) =>
                       handleFieldChange(index, "tax_prc", e.target.value)
                     }
