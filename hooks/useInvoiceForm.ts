@@ -848,7 +848,10 @@ export default function useInvoiceForm({
     }
   }, [defaultTransType]);
 
-  const saveInvoice = useCallback(async () => {
+  const saveInvoice = useCallback(async (): Promise<
+    | { ok: true; recordId: number; invoiceNumber: number }
+    | { ok: false }
+  > => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
 
@@ -1161,6 +1164,11 @@ export default function useInvoiceForm({
       toast.success(
         isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
       );
+      return {
+        ok: true,
+        recordId: resolvedInvoicePk,
+        invoiceNumber: Number(invoiceNumber),
+      };
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -1177,6 +1185,8 @@ export default function useInvoiceForm({
       }
 
       toast.error(errorMessage);
+
+      return { ok: false };
     } finally {
       setIsLoading(false);
     }
