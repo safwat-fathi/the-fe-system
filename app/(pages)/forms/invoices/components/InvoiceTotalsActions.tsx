@@ -6,18 +6,30 @@ import { useRouter } from "next/navigation";
 import {
   CalendarIcon,
   CheckCircleIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   CreditCardIcon,
   PencilIcon,
   PlusCircleIcon,
   PrinterIcon,
 } from "@heroicons/react/24/outline";
 
-import { RiyalIcon } from "./RiyalIcon";
-import { SearchIcon } from "./icons";
+import { RiyalIcon } from "../../../../../components/RiyalIcon";
+import { SearchIcon } from "../../../../../components/icons";
 
 import useFractions from "@/utilities/useFractions";
+import Link from "next/link";
+import clsx from "clsx";
 
 interface Props {
+  metadata: {
+    nextInvoiceHref: string | null;
+    prevInvoiceHref: string | null;
+    lastInvoiceHref: string | null;
+    firstInvoiceHref: string | null;
+  } | null;
   invoiceNumber: string;
   formattedDateTime: string;
   saveInvoice: () => void | Promise<any>;
@@ -32,7 +44,6 @@ interface Props {
   setPrint: (val: boolean) => void;
   isEditing: boolean;
   onEdit: () => void;
-  canEdit?: boolean;
   children: ReactNode;
   // نوع الفاتورة
   invoiceType?: "sales" | "sales_return" | "purchase" | "purchase_return";
@@ -59,13 +70,14 @@ interface Props {
   // أزرار التنقل
   currentRecord?: number;
   totalRecords?: number;
-  navigateToInvoice?: (direction: "first" | "prev" | "next" | "last") => void;
+  // navigateToInvoice?: (direction: "first" | "prev" | "next" | "last") => void;
   newInvoiceHref?: string;
   // حالة الفاتورة هل هي جديدة؟
   isNewInvoice?: boolean;
 }
 
 export default function InvoiceTotalsActions({
+  metadata,
   invoiceNumber,
   formattedDateTime,
   saveInvoice,
@@ -80,7 +92,6 @@ export default function InvoiceTotalsActions({
   setPrint,
   isEditing,
   onEdit,
-  canEdit = true,
   children,
   // نوع الفاتورة
   invoiceType = "sales",
@@ -105,8 +116,8 @@ export default function InvoiceTotalsActions({
   // طريقة الدفع
   paymentMethod = "cash",
   // // أزرار التنقل
-  // currentRecord = 1,
-  // totalRecords = 1,
+  currentRecord = 1,
+  totalRecords = 1,
   // navigateToInvoice,
   newInvoiceHref = "/forms/invoices?type=sale&mode=new",
   isNewInvoice = false,
@@ -160,6 +171,12 @@ export default function InvoiceTotalsActions({
               type="number"
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onInvoiceSearch();
+                }
+              }}
             />
             <Button
               className="h-7 px-2 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
@@ -214,41 +231,74 @@ export default function InvoiceTotalsActions({
             )}
 
             {/* أزرار التنقل */}
-            {/* {navigateToInvoice && (
+
+            {metadata && (
               <div className="hidden md:flex items-center gap-1 mr-2">
-                <Button
-                  className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                  size="sm"
-                  onClick={() => navigateToInvoice("first")}
+                <Link
+                  // onClick={(e) => handleLinkClick(e, metadata.firstInvoiceHref)}
+                  href={metadata.firstInvoiceHref || ""}
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40 ":
+                        !metadata.firstInvoiceHref,
+                    },
+                  )}
+
+                  // onClick={() => navigateToInvoice("first")}
                 >
                   <ChevronDoubleRightIcon className="w-4 h-4 " />
-                </Button>
-                <Button
-                  className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                  size="sm"
-                  onClick={() => navigateToInvoice("prev")}
+                </Link>
+                <Link
+                  // onClick={(e) => handleLinkClick(e, metadata.prevInvoiceHref)}
+                  href={metadata.prevInvoiceHref || ""}
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40 ":
+                        !metadata.prevInvoiceHref,
+                    },
+                  )}
+
+                  // onClick={() => navigateToInvoice("prev")}
                 >
                   <ChevronRightIcon className="w-4 h-4 " />
-                </Button>
+                </Link>
                 <span className="text-xs text-slate-600 px-2 font-medium">
                   {currentRecord} من {totalRecords}
                 </span>
-                <Button
-                  className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                  size="sm"
-                  onClick={() => navigateToInvoice("next")}
+                <Link
+                  // onClick={(e) => handleLinkClick(e, metadata.nextInvoiceHref)}
+                  href={metadata.nextInvoiceHref || ""}
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40 ":
+                        !metadata.nextInvoiceHref,
+                    },
+                  )}
+
+                  // onClick={() => navigateToInvoice("next")}
                 >
                   <ChevronLeftIcon className="w-4 h-4 " />
-                </Button>
-                <Button
-                  className="h-7 w-7 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                  size="sm"
-                  onClick={() => navigateToInvoice("last")}
+                </Link>
+                <Link
+                  // onClick={(e) => handleLinkClick(e, metadata.lastInvoiceHref)}
+                  href={metadata.lastInvoiceHref || ""}
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40 ":
+                        !metadata.lastInvoiceHref,
+                    },
+                  )}
+
+                  // onClick={() => navigateToInvoice("last")}
                 >
                   <ChevronDoubleLeftIcon className="w-4 h-4 " />
-                </Button>
+                </Link>
               </div>
-            )} */}
+            )}
           </div>
 
           {/* حالة الفاتورة */}

@@ -195,30 +195,6 @@ const getNumericRowId = getNumericRowIdUtil;
 
 const normalizeRowIdentifier = normalizeRowIdentifierUtil;
 
-type ComparableRow = {
-  itemId: number | null;
-  qty: number;
-  weight: number;
-  gWeight: number;
-  price: number;
-  priceW: number;
-  total: number;
-  totalW: number;
-  totalA: number;
-  tax: number;
-  taxRate: number;
-  discountAmount: number;
-  discountRate: number;
-  stones: number | null;
-  purity: string;
-  note: string;
-  extraNote: string;
-  itemCode: string;
-  itemDesc: string;
-  transType: number;
-  karat: string;
-  box: number | null;
-};
 
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
@@ -296,8 +272,7 @@ export default function useInvoiceForm({
   const [mobileMethod, setMobileMethod] = useState<string>("");
   const [searchNumber, setSearchNumber] = useState<string>("");
   const [searchValue, setSearchValue] = useState<string>("");
-  const [currentRecord, setCurrentRecord] = useState<number>(1);
-  const [totalRecords, setTotalRecords] = useState<number>(1);
+
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
 
@@ -849,8 +824,7 @@ export default function useInvoiceForm({
   }, [defaultTransType]);
 
   const saveInvoice = useCallback(async (): Promise<
-    | { ok: true; recordId: number; invoiceNumber: number }
-    | { ok: false }
+    { ok: true; recordId: number; invoiceNumber: number } | { ok: false }
   > => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
@@ -1343,8 +1317,6 @@ export default function useInvoiceForm({
     setMobileMethod("");
     setSearchNumber("");
     setSearchValue("");
-    setCurrentRecord(1);
-    setTotalRecords(1);
     setAutoTotalValue(0);
     setAutoTotalWages(0);
     setManualTotalValue(0);
@@ -1475,12 +1447,6 @@ export default function useInvoiceForm({
     setSearchNumber,
     searchValue,
     setSearchValue,
-
-    // records
-    currentRecord,
-    setCurrentRecord,
-    totalRecords,
-    setTotalRecords,
 
     // helpers & actions
     frac,
