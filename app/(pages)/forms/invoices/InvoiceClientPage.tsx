@@ -205,7 +205,6 @@ export default function InvoiceClientPage({
   }, [computeTotals, form.pay_type, invoiceItems]);
 
   const resolvePaginatedInvoiceHref = (inv_id: string | null) => {
-    console.log("🚀 ~ :195 ~ resolvePaginatedInvoiceHref ~ inv_id:", inv_id);
     if (!inv_id) return null;
 
     const searchParams = new URLSearchParams({

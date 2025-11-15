@@ -408,63 +408,113 @@ export default function InvoiceItemTable({
       box: null,
     };
 
-    setInvoiceItems([...invoiceItems, newItem]);
+    // Use functional update to avoid stale closures when multiple updates queue
+    setInvoiceItems((prev) => [...prev, newItem]);
+  };
+
+  const focusNode = (node: any) => {
+    try {
+      node?.focus?.();
+    } catch {}
+  };
+
+  const focusFirstInRow = (row: number) => {
+    const rowRefs = inputRefs.current[row] || [];
+
+    for (let i = 0; i < rowRefs.length; i++) {
+      const el = rowRefs[i];
+
+      if (el) {
+        focusNode(el);
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  const focusFirstInRowAsync = (row: number, tries = 6) => {
+    const tick = (left: number) => {
+      if (focusFirstInRow(row)) return;
+      if (left <= 0) return;
+      if (typeof requestAnimationFrame !== "undefined") {
+        requestAnimationFrame(() => tick(left - 1));
+      } else {
+        setTimeout(() => tick(left - 1), 16);
+      }
+    };
+    tick(tries);
+  };
+
+  // After adding a row, ensure focus lands on the first cell with retries
+  const focusNewRowFirstCell = (row: number) => {
+    // Immediate attempt
+    focusFirstInRow(row);
+    // Short rAF retry sequence
+    focusFirstInRowAsync(row, 8);
+    // Timed fallbacks in case rAF misses due to async mount
+    setTimeout(() => focusFirstInRow(row), 0);
+    setTimeout(() => focusFirstInRow(row), 40);
+    setTimeout(() => focusFirstInRow(row), 100);
   };
 
   const handleEnter = (
     e: KeyboardEvent,
     rowIndex: number,
-    _colIndex: number,
+    colIndex: number,
     isLastCol?: boolean,
   ) => {
-    // Handle Tab: if on the last input of the last row, add a new row and focus first input
-    if (e.key === "Tab" && !e.shiftKey) {
-      const isLastRow = rowIndex === invoiceItems.length - 1;
-      const rowRefs = inputRefs.current[rowIndex] || [];
-      // find last non-null/defined ref index in the row
-      let lastCol = -1;
-      for (let i = rowRefs.length - 1; i >= 0; i--) {
-        if (rowRefs[i]) {
-          lastCol = i;
-          break;
-        }
-      }
-      // determine current column index by matching the focused element
-      const target = e.currentTarget as unknown as HTMLInputElement | null;
+		const key = e.key;
+    console.log("🚀 ~ :450 ~ handleEnter ~ key:", key)
+    console.log("🚀 ~ :449 ~ handleEnter ~ isLastCol:", isLastCol)
 
+    if (key !== "Tab" && key !== "Enter") return;
 
-      if (isLastRow && isLastCol) {
-        e.preventDefault();
-        const nextRow = rowIndex + 1;
-        const nextCol = 0;
-        addRow();
-        setTimeout(() => {
-          const newRowInput = inputRefs.current[nextRow]?.[nextCol];
-          if (newRowInput) newRowInput.focus();
-        }, 100);
+    // Allow Shift+Tab native backward movement
+    if (key === "Tab" && (e as any).shiftKey) return;
+
+    const rowRefs = inputRefs.current[rowIndex] || [];
+    const lastColIndex = rowRefs.length - 1;
+    const atLastCol = typeof isLastCol === "boolean" ? isLastCol : colIndex >= lastColIndex;
+    const isLastRow = rowIndex === invoiceItems.length - 1;
+
+    if (key === "Enter") {
+      e.preventDefault();
+
+      if (!atLastCol) {
+        const nextInRow = rowRefs[colIndex + 1];
+        if (nextInRow) focusNode(nextInRow);
         return;
       }
-      // otherwise, allow default Tab behavior
-    }
 
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const nextRow = rowIndex + 1;
-      const nextCol = 0;
-
-      if (nextRow < invoiceItems.length) {
-        const nextInput = inputRefs.current[nextRow]?.[nextCol];
-
-        if (nextInput) nextInput.focus();
-      } else {
-        addRow();
-        setTimeout(() => {
-          const newRowInput = inputRefs.current[nextRow]?.[nextCol];
-
-          if (newRowInput) newRowInput.focus();
-        }, 100);
+			console.log('********444');
+      // last col behavior: same as Tab
+      if (!isLastRow) {
+        focusFirstInRow(rowIndex + 1);
+        return;
       }
+			
+
+      addRow();
+      focusNewRowFirstCell(rowIndex + 1);
+      return;
     }
+
+    // Tab
+    if (!atLastCol) {
+      // let browser handle within-row next field
+      return;
+    }
+
+    // last column
+    e.preventDefault();
+    if (!isLastRow) {
+      focusFirstInRow(rowIndex + 1);
+      return;
+    }
+
+    addRow();
+    focusNewRowFirstCell(rowIndex + 1);
   };
 
   // change total (user edits final total including tax) -> distribute back
@@ -572,9 +622,9 @@ export default function InvoiceItemTable({
     setInvoiceItems(updated);
   };
 
-  const setRef = (row: number, col: number, el: HTMLInputElement | null) => {
+  const setRef = (row: number, col: number) => (el: any) => {
     if (!inputRefs.current[row]) inputRefs.current[row] = [];
-    inputRefs.current[row][col] = el;
+    inputRefs.current[row][col] = el as HTMLInputElement | null;
   };
 
   return (
@@ -624,6 +674,7 @@ export default function InvoiceItemTable({
         </thead>
         <tbody>
           {invoiceItems.map((item, index) => {
+            
             let col = -1;
             const weight = toNum(item.weight);
             const gWeight = toNum(item.g_weight);
@@ -646,12 +697,17 @@ export default function InvoiceItemTable({
             return (
               <tr key={item.id}>
                 <td className="p-1">
-                  <AsyncCreatableSelect
-                    ref={(el: any) => {
-                      inputRefs.current[index][++col] =
-                        el as unknown as HTMLInputElement;
-                    }}
-                    inputId={`item-${index}${col + 1}`}
+                  {(() => {
+                    const thisCol = ++col;
+                    return (
+                      <AsyncCreatableSelect
+                        selectRef={(instance) => {
+                          if (!inputRefs.current[index])
+                            inputRefs.current[index] = [];
+                          inputRefs.current[index][thisCol] =
+                            instance as unknown as HTMLInputElement | null;
+                        }}
+                        inputId={`item-${index}${thisCol}`}
                     isClearable
                     isSearchable
                     additional={{ page: 1 }}
@@ -783,280 +839,320 @@ export default function InvoiceItemTable({
                       } as InvoiceDetail;
                       setInvoiceItems(updated);
                     }}
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
+                        onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                      />
+                    );
+                  })()}
                 </td>
 
                 <td className="align-middle">
-                  <input
-                    id={`qty-${index}${col}`}
-                    ref={(el) => setRef(index, ++col, el)}
-                    className="border w-full p-1 text-xs text-center align-middle"
-                    disabled={!isEditing}
-                    dir="ltr"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    step={1}
-                    type="number"
-                    value={String(item.qty ?? "")}
-                    onChange={(e) =>
-                      handleFieldChange(index, "qty", e.target.value)
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
+                  {(() => {
+                    const thisCol = ++col;
+                    return (
+                      <input
+                        id={`qty-${index}${thisCol}`}
+                        ref={setRef(index, thisCol)}
+                        className="border w-full p-1 text-xs text-center align-middle"
+                        disabled={!isEditing}
+                        dir="ltr"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        step={1}
+                        type="number"
+                        value={String(item.qty ?? "")}
+                        onChange={(e) =>
+                          handleFieldChange(index, "qty", e.target.value)
+                        }
+                        onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                      />
+                    );
+                  })()}
                 </td>
 
                 <td className="align-middle">
-                  <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    id={`weight-${index}${col}`}
-                    className="border w-full p-1 text-xs text-center align-middle"
-                    disabled={!isEditing}
-                    dir="ltr"
-                    inputMode="decimal"
-                    type="number"
-                    step={stepFromDigits(weightDigits)}
-                    value={String(item.weight ?? "")}
-                    onChange={(e) =>
-                      handleFieldChange(index, "weight", e.target.value)
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
+                  {(() => {
+                    const thisCol = ++col;
+                    return (
+                      <input
+                        ref={setRef(index, thisCol)}
+                        id={`weight-${index}${thisCol}`}
+                        className="border w-full p-1 text-xs text-center align-middle"
+                        disabled={!isEditing}
+                        dir="ltr"
+                        inputMode="decimal"
+                        type="number"
+                        step={stepFromDigits(weightDigits)}
+                        value={String(item.weight ?? "")}
+                        onChange={(e) =>
+                          handleFieldChange(index, "weight", e.target.value)
+                        }
+                        onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                      />
+                    );
+                  })()}
                 </td>
 
                 <td className="align-middle">
-                  <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    id={`gweight-${index}${col}`}
-                    className="border w-full p-1 text-xs text-center align-middle"
-                    disabled={!isEditing}
-                    dir="ltr"
-                    inputMode="decimal"
-                    type="number"
-                    step={stepFromDigits(gWeightDigits)}
-                    value={String(item.g_weight ?? "")}
-                    onChange={(e) =>
-                      handleFieldChange(index, "g_weight", e.target.value)
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
+                  {(() => {
+                    const thisCol = ++col;
+                    return (
+                      <input
+                        ref={setRef(index, thisCol)}
+                        id={`gweight-${index}${thisCol}`}
+                        className="border w-full p-1 text-xs text-center align-middle"
+                        disabled={!isEditing}
+                        dir="ltr"
+                        inputMode="decimal"
+                        type="number"
+                        step={stepFromDigits(gWeightDigits)}
+                        value={String(item.g_weight ?? "")}
+                        onChange={(e) =>
+                          handleFieldChange(index, "g_weight", e.target.value)
+                        }
+                        onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                      />
+                    );
+                  })()}
                 </td>
 
                 <td>
-                  <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    id={`stones-${index}${col}`}
-                    className="border w-full p-1 text-xs text-center"
-                    disabled={!isEditing}
-                    dir="ltr"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    type="number"
-                    step={1}
-                    value={String(item.stones ?? "")}
-                    onChange={(e) =>
-                      handleFieldChange(
-                        index,
-                        "stones",
-                        sanitizeNumericInput(e.target.value, false),
-                      )
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
+                  {(() => {
+                    const thisCol = ++col;
+                    return (
+                      <input
+                        ref={setRef(index, thisCol)}
+                        id={`stones-${index}${thisCol}`}
+                        className="border w-full p-1 text-xs text-center"
+                        disabled={!isEditing}
+                        dir="ltr"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        type="number"
+                        step={1}
+                        value={String(item.stones ?? "")}
+                        onChange={(e) =>
+                          handleFieldChange(
+                            index,
+                            "stones",
+                            sanitizeNumericInput(e.target.value, false),
+                          )
+                        }
+                        onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                      />
+                    );
+                  })()}
                 </td>
 
                 {(payType === INVOICE_PAY_TYPES.VALUE ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
-                    <input
-                      ref={(el) => {
-                        inputRefs.current[index][++col] = el;
-                      }}
-                      id={`price-${index}${col}`}
-                      className="border w-full p-1 text-xs text-center"
-                      disabled={!isEditing}
-                      dir="ltr"
-                      inputMode="decimal"
-                      type="number"
-                      step={stepFromDigits(priceDigits)}
-                      value={String(item.price ?? "")}
-                      onChange={(e) =>
-                        handleFieldChange(index, "price", e.target.value)
-                      }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
-                    />
+                    {(() => {
+                      const thisCol = ++col;
+                      return (
+                        <input
+                          ref={setRef(index, thisCol)}
+                          id={`price-${index}${thisCol}`}
+                          className="border w-full p-1 text-xs text-center"
+                          disabled={!isEditing}
+                          dir="ltr"
+                          inputMode="decimal"
+                          type="number"
+                          step={stepFromDigits(priceDigits)}
+                          value={String(item.price ?? "")}
+                          onChange={(e) =>
+                            handleFieldChange(index, "price", e.target.value)
+                          }
+                          onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                        />
+                      );
+                    })()}
                   </td>
                 )}
 
                 {(payType === INVOICE_PAY_TYPES.WAGES ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
-                    <input
-                      ref={(el) => {
-                        inputRefs.current[index][++col] = el;
-                      }}
-                      id={`pricew-${index}${col}`}
-                      className="border w-full p-1 text-xs text-center"
-                      disabled={!isEditing}
-                      required={
-                        payType === INVOICE_PAY_TYPES.WAGES ||
-                        payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
-                      }
-                      dir="ltr"
-                      inputMode="decimal"
-                      type="number"
-                      step={stepFromDigits(priceWDigits)}
-                      value={String(item.price_w ?? "")}
-                      onChange={(e) =>
-                        handleFieldChange(index, "price_w", e.target.value)
-                      }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
-                    />
+                    {(() => {
+                      const thisCol = ++col;
+                      return (
+                        <input
+                          ref={setRef(index, thisCol)}
+                          id={`pricew-${index}${thisCol}`}
+                          className="border w-full p-1 text-xs text-center"
+                          disabled={!isEditing}
+                          required={
+                            payType === INVOICE_PAY_TYPES.WAGES ||
+                            payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
+                          }
+                          dir="ltr"
+                          inputMode="decimal"
+                          type="number"
+                          step={stepFromDigits(priceWDigits)}
+                          value={String(item.price_w ?? "")}
+                          onChange={(e) =>
+                            handleFieldChange(index, "price_w", e.target.value)
+                          }
+                          onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                        />
+                      );
+                    })()}
                   </td>
                 )}
 
                 {(payType === INVOICE_PAY_TYPES.VALUE ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
-                    <input
-                      ref={(el) => {
-                        inputRefs.current[index][++col] = el;
-                      }}
-                      id={`totala-${index}${col}`}
-                      className="border w-full p-1 text-xs text-center"
-                      disabled={!isEditing}
-                      dir="ltr"
-                      inputMode="decimal"
-                      type="number"
-                      step={stepFromDigits(totalADigits)}
-                      value={String(item.total_a ?? "")}
-                      onChange={(e) =>
-                        handleTotalAChange(index, e.target.value)
-                      }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
-                    />
+                    {(() => {
+                      const thisCol = ++col;
+                      return (
+                        <input
+                          ref={setRef(index, thisCol)}
+                          id={`totala-${index}${thisCol}`}
+                          className="border w-full p-1 text-xs text-center"
+                          disabled={!isEditing}
+                          dir="ltr"
+                          inputMode="decimal"
+                          type="number"
+                          step={stepFromDigits(totalADigits)}
+                          value={String(item.total_a ?? "")}
+                          onChange={(e) =>
+                            handleTotalAChange(index, e.target.value)
+                          }
+                          onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                        />
+                      );
+                    })()}
                   </td>
                 )}
 
                 {(payType === INVOICE_PAY_TYPES.WAGES ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
-                    <input
-                      ref={(el) => {
-                        inputRefs.current[index][++col] = el;
-                      }}
-                      id={`totalw-${index}${col}`}
-                      className="border w-full p-1 text-xs text-center"
-                      disabled={!isEditing}
-                      dir="ltr"
-                      inputMode="decimal"
-                      type="number"
-                      step={stepFromDigits(totalWDigits)}
-                      value={String(item.total_w ?? "")}
-                      onChange={(e) =>
-                        handleTotalWChange(index, e.target.value)
-                      }
-                      onKeyDown={(e) => handleEnter(e, index, col)}
-                    />
+                    {(() => {
+                      const thisCol = ++col;
+                      return (
+                        <input
+                          ref={setRef(index, thisCol)}
+                          id={`totalw-${index}${thisCol}`}
+                          className="border w-full p-1 text-xs text-center"
+                          disabled={!isEditing}
+                          dir="ltr"
+                          inputMode="decimal"
+                          type="number"
+                          step={stepFromDigits(totalWDigits)}
+                          value={String(item.total_w ?? "")}
+                          onChange={(e) =>
+                            handleTotalWChange(index, e.target.value)
+                          }
+                          onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                        />
+                      );
+                    })()}
                   </td>
                 )}
 
                 <td>
-                  <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    id={`disc-${index}${col}`}
-                    className="border w-full p-1 text-xs text-center"
-                    disabled={!isEditing}
-                    dir="ltr"
-                    inputMode="decimal"
-                    type="number"
-                    step={stepFromDigits(itemDiscDigits)}
-                    value={String(item.item_disc_amt ?? "")}
-                    onChange={(e) =>
-                      handleFieldChange(index, "item_disc_amt", e.target.value)
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
+                  {(() => {
+                    const thisCol = ++col;
+                    return (
+                      <input
+                        ref={setRef(index, thisCol)}
+                        id={`disc-${index}${thisCol}`}
+                        className="border w-full p-1 text-xs text-center"
+                        disabled={!isEditing}
+                        dir="ltr"
+                        inputMode="decimal"
+                        type="number"
+                        step={stepFromDigits(itemDiscDigits)}
+                        value={String(item.item_disc_amt ?? "")}
+                        onChange={(e) =>
+                          handleFieldChange(index, "item_disc_amt", e.target.value)
+                        }
+                        onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                      />
+                    );
+                  })()}
                 </td>
 
                 <td>
-                  <select
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    id={`taxprc-${index}${col}`}
-                    className="border w-full p-1 text-xs text-center"
-                    disabled={!isEditing}
-                    value={String(Math.round(toNum(item.tax_prc)))}
-                    onChange={(e) =>
-                      handleFieldChange(index, "tax_prc", e.target.value)
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  >
+                  {(() => {
+                    const thisCol = ++col;
+                    return (
+                      <select
+                        ref={setRef(index, thisCol)}
+                        id={`taxprc-${index}${thisCol}`}
+                        className="border w-full p-1 text-xs text-center"
+                        disabled={!isEditing}
+                        value={String(Math.round(toNum(item.tax_prc)))}
+                        onChange={(e) =>
+                          handleFieldChange(index, "tax_prc", e.target.value)
+                        }
+                        onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                      >
                     {taxRates.map((rate) => (
                       <option key={rate} value={rate}>
                         {rate}%
                       </option>
                     ))}
-                  </select>
+                      </select>
+                    );
+                  })()}
                 </td>
 
                 <td>{formatAmount(String(item.tax ?? tax), taxDigits)}</td>
 
                 <td>
-                  <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    id={`total-${index}${col}`}
-                    className="border w-full p-1 text-xs text-center"
-                    disabled={!isEditing}
-                    type="number"
-                    dir="ltr"
-                    inputMode="decimal"
-                    step={stepFromDigits(totalDigits)}
-                    value={
-                      tempTotals[item.id] !== undefined
-                        ? tempTotals[item.id]
-                        : Number.isFinite(totalWithTax)
-                          ? String(Number(totalWithTax.toFixed(totalDigits)))
-                          : ""
-                    }
-                    onBlur={(e) => {
-                      handleTotalChange(index, e.target.value);
-                    }}
-                    onChange={(e) =>
-                      setTempTotals((prev) => ({
-                        ...prev,
-                        [item.id]: e.target.value,
-                      }))
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col)}
-                  />
+                  {(() => {
+                    const thisCol = ++col;
+                    return (
+                      <input
+                        ref={setRef(index, thisCol)}
+                        id={`total-${index}${thisCol}`}
+                        className="border w-full p-1 text-xs text-center"
+                        disabled={!isEditing}
+                        type="number"
+                        dir="ltr"
+                        inputMode="decimal"
+                        step={stepFromDigits(totalDigits)}
+                        value={
+                          tempTotals[item.id] !== undefined
+                            ? tempTotals[item.id]
+                            : Number.isFinite(totalWithTax)
+                              ? String(Number(totalWithTax.toFixed(totalDigits)))
+                              : ""
+                        }
+                        onBlur={(e) => {
+                          handleTotalChange(index, e.target.value);
+                        }}
+                        onChange={(e) =>
+                          setTempTotals((prev) => ({
+                            ...prev,
+                            [item.id]: e.target.value,
+                          }))
+                        }
+                        onKeyDown={(e) => handleEnter(e, index, thisCol)}
+                      />
+                    );
+                  })()}
                 </td>
 
                 <td>
-                  <input
-                    ref={(el) => {
-                      inputRefs.current[index][++col] = el;
-                    }}
-                    id={`desc-${index}${col}`}
-                    className="border w-full p-1 text-xs text-center"
-                    disabled={!isEditing}
-                    value={item.item_desc ?? ""}
-                    onChange={(e) =>
-                      handleFieldChange(index, "item_desc", e.target.value)
-                    }
-                    onKeyDown={(e) => handleEnter(e, index, col, true)}
-                  />
+                  {(() => {
+                    const thisCol = ++col;
+                    return (
+                      <input
+                        ref={setRef(index, thisCol)}
+                        id={`desc-${index}${thisCol}`}
+                        className="border w-full p-1 text-xs text-center"
+                        disabled={!isEditing}
+                        value={item.item_desc ?? ""}
+                        onChange={(e) =>
+                          handleFieldChange(index, "item_desc", e.target.value)
+                        }
+                        onKeyDown={(e) => handleEnter(e, index, thisCol, true)}
+                      />
+                    );
+                  })()}
                 </td>
 
                 <td>
