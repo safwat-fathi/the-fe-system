@@ -3,9 +3,9 @@
 import { useEffect, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import InvoiceSelectors from "@/components/InvoiceSelectors";
-import InvoiceItemTable from "@/components/InvoiceItemTable";
-import InvoiceTotalsActions from "@/components/InvoiceTotalsActions";
+import InvoiceSelectors from "@/app/(pages)/forms/invoices/components/InvoiceSelectors";
+import InvoiceItemTable from "@/app/(pages)/forms/invoices/components/InvoiceItemTable";
+import InvoiceTotalsActions from "@/app/(pages)/forms/invoices/components/InvoiceTotalsActions";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
 import useInvoiceForm from "@/hooks/useInvoiceForm";
 
@@ -74,6 +74,22 @@ export default function InvoiceClientPage({
   formMode = "new",
   newInvoiceHref,
 }: InvoiceClientPageProps) {
+  console.log(
+    "🚀 ~ :77 ~ InvoiceClientPage ~ invoiceData next_invoice_id:",
+    invoiceData?.next_invoice_id,
+  );
+  console.log(
+    "🚀 ~ :77 ~ InvoiceClientPage ~ invoiceData previous_invoice_id:",
+    invoiceData?.previous_invoice_id,
+  );
+  console.log(
+    "🚀 ~ :77 ~ InvoiceClientPage ~ invoiceData first_invoice_id:",
+    invoiceData?.first_invoice_id,
+  );
+  console.log(
+    "🚀 ~ :77 ~ InvoiceClientPage ~ invoiceData last_invoice_id:",
+    invoiceData?.last_invoice_id,
+  );
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -113,12 +129,6 @@ export default function InvoiceClientPage({
     setSearchNumber,
     searchValue,
     setSearchValue,
-
-    // records
-    currentRecord,
-    setCurrentRecord,
-    totalRecords,
-    setTotalRecords,
 
     // helpers & actions
     frac,
@@ -191,12 +201,90 @@ export default function InvoiceClientPage({
     router.replace(url);
   };
 
+  // Navigate to entered invoice id on search
+  const handleSearchByInvoiceId = () => {
+    const raw = (searchNumber ?? "").toString().trim();
+    if (!raw) return;
+
+    // normalize to integer-like string
+    const parsed = Number(raw);
+    const id = Number.isFinite(parsed) && parsed > 0 ? String(parsed) : raw;
+
+    // Set mode to preview and update only the id param; clear inv_id to avoid ambiguity
+    const url = buildUrl({ mode: "preview", id, inv_id: null });
+    router.replace(url);
+  };
+
   // join any derived totals via computeTotals (hook exposes computeTotals)
   const totals = useMemo(() => {
     return computeTotals(form.pay_type, invoiceItems);
   }, [computeTotals, form.pay_type, invoiceItems]);
 
+  const resolvePaginatedInvoiceHref = (inv_id: string | null) => {
+    console.log("🚀 ~ :195 ~ resolvePaginatedInvoiceHref ~ inv_id:", inv_id);
+    if (!inv_id) return null;
 
+    const searchParams = new URLSearchParams({
+      type: invoiceType,
+      mode: "preview",
+      id: String(inv_id),
+    });
+
+    return `${pathname}?${searchParams.toString()}`;
+  };
+
+  // const resolvedPrevInvoiceHref = () => {
+  // 	if (!invoiceData?.previous_invoice_id) return null;
+
+  //   const searchParams = new URLSearchParams({
+  //     mode: "preview",
+  //     type: invoiceType,
+  //     inv_id: String(invoiceData?.previous_invoice_id),
+  //   });
+
+  //   return `${pathname}?${searchParams.toString()}`;
+  // };
+
+  // const resolvedLastInvoiceHref = () => {
+  // 	if (!invoiceData?.last_invoice_id) return null;
+
+  //   const searchParams = new URLSearchParams({
+  //     mode: "preview",
+  //     type: invoiceType,
+  //     inv_id: String(invoiceData?.last_invoice_id),
+  //   });
+
+  //   return `${pathname}?${searchParams.toString()}`;
+  // };
+
+  // const resolvedFirstInvoiceHref = () => {
+  // 	if (!invoiceData?.first_invoice_id) return null;
+
+  //   const searchParams = new URLSearchParams({
+  //     mode: "preview",
+  //     type: invoiceType,
+  //     inv_id: String(invoiceData?.first_invoice_id),
+  //   });
+
+  //   return `${pathname}?${searchParams.toString()}`;
+  // };
+
+  const metadata = invoiceData
+    ? {
+        nextInvoiceHref: resolvePaginatedInvoiceHref(
+          invoiceData?.next_invoice_id,
+        ),
+        prevInvoiceHref: resolvePaginatedInvoiceHref(
+          invoiceData?.previous_invoice_id,
+        ),
+        lastInvoiceHref: resolvePaginatedInvoiceHref(
+          invoiceData?.last_invoice_id,
+        ),
+        firstInvoiceHref: resolvePaginatedInvoiceHref(
+          invoiceData?.first_invoice_id,
+        ),
+      }
+    : null;
 
   if (isLoading) {
     return (
@@ -212,12 +300,12 @@ export default function InvoiceClientPage({
   return (
     <>
       <InvoiceTotalsActions
+        metadata={metadata}
         autoTotalValue={autoTotalValue}
         autoTotalWages={autoTotalWages}
         canEdit={allowEditing}
         commit={form.commit}
         isNewInvoice={isNewInvoice}
-        currentRecord={currentRecord}
         formattedDateTime={new Date(form.inv_date).toLocaleString("ar-EG")}
         invoiceNumber={form.inv_id}
         invoiceType={totalsInvoiceType}
@@ -243,7 +331,7 @@ export default function InvoiceClientPage({
         totalAmount={totals.totalAmount}
         totalDiscount={totals.totalDiscount}
         totalGWeight={totals.totalGWeight}
-        totalRecords={totalRecords}
+        totalRecords={1}
         totalTax={totals.taxAmount ?? 0}
         totalValueTax={totals.taxAmount ?? 0}
         totalWagesTax={0}
@@ -254,7 +342,7 @@ export default function InvoiceClientPage({
           const url = buildUrl({ mode: "edit", edit: null, inv_id: invId });
           router.replace(url);
         }}
-        onInvoiceSearch={handleInvoiceSearch}
+        onInvoiceSearch={handleSearchByInvoiceId}
         onManualTotalChange={handleManualTotalChange}
         onResetManualTotals={resetManualTotals}
         onUseManualTotalsChange={setUseManualTotals}

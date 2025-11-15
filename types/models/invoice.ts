@@ -93,38 +93,12 @@ export interface Invoice {
   inv_QR?: string | null;
   store?: string | null;
   gold_box?: string | null;
-  // Add other invoice properties as needed
+  first_invoice_id: string | null;
+  last_invoice_id: string | null;
+  next_invoice_id: string | null;
+  previous_invoice_id: string | null;
 }
 
-// export interface InvoiceDetail {
-//   id: number;
-//   inv: number;
-//   item: number;
-//   item_code?: string;
-//   item_name?: string;
-//   qty: number;
-//   weight: number;
-//   g_weight: number;
-//   k?: string;
-//   price: number;
-//   price_w: number;
-//   total: number;
-//   total_w: number;
-//   total_a: number;
-//   tax: number;
-//   tax_prc: number;
-//   stones: string;
-//   item_disc_prc: number;
-//   item_disc_amt: number;
-//   sn: string;
-//   item_desc: string;
-//   inv_notes: string;
-//   cr_date: string;
-//   cr_user: string;
-//   upd_date: string;
-//   upd_user: string;
-//   com: number;
-// }
 /**
  * Interface representing a single item transaction in the API response.
  */
