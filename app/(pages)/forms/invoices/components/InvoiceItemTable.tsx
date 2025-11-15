@@ -431,10 +431,7 @@ export default function InvoiceItemTable({
       }
       // determine current column index by matching the focused element
       const target = e.currentTarget as unknown as HTMLInputElement | null;
-      const currentCol = rowRefs.findIndex((el) => el === target);
-      console.log("🚀 ~ :434 ~ handleEnter ~ currentCol:", currentCol);
-      // const isLastCol = currentCol === lastCol;
-      console.log("🚀 ~ :436 ~ handleEnter ~ isLastCol:", isLastCol);
+
 
       if (isLastRow && isLastCol) {
         e.preventDefault();

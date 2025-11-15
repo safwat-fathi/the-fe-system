@@ -122,7 +122,6 @@ export default function InvoiceTotalsActions({
   newInvoiceHref = "/forms/invoices?type=sale&mode=new",
   isNewInvoice = false,
 }: Props) {
-  console.log("🚀 ~ :129 ~ InvoiceTotalsActions ~ metadata:", metadata);
   const fractions = useFractions() as { frac: number; frac2: number };
   const router = useRouter();
 

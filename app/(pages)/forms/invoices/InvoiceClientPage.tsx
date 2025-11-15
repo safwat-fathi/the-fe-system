@@ -74,22 +74,6 @@ export default function InvoiceClientPage({
   formMode = "new",
   newInvoiceHref,
 }: InvoiceClientPageProps) {
-  console.log(
-    "🚀 ~ :77 ~ InvoiceClientPage ~ invoiceData next_invoice_id:",
-    invoiceData?.next_invoice_id,
-  );
-  console.log(
-    "🚀 ~ :77 ~ InvoiceClientPage ~ invoiceData previous_invoice_id:",
-    invoiceData?.previous_invoice_id,
-  );
-  console.log(
-    "🚀 ~ :77 ~ InvoiceClientPage ~ invoiceData first_invoice_id:",
-    invoiceData?.first_invoice_id,
-  );
-  console.log(
-    "🚀 ~ :77 ~ InvoiceClientPage ~ invoiceData last_invoice_id:",
-    invoiceData?.last_invoice_id,
-  );
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
