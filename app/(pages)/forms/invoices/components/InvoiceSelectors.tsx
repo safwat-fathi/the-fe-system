@@ -131,7 +131,7 @@ export default function InvoiceSelectors({
 }: Props) {
   const selectorsRef = useRef<HTMLDivElement | null>(null);
   const { handleKeyDown } = useKeyAsTab({
-    keys: ["Enter", "Space"],
+    keys: ["Enter"],
     containerRef: selectorsRef,
     disabled: !isEditing,
     shouldIgnoreEvent: (event) => {
@@ -151,7 +151,6 @@ export default function InvoiceSelectors({
       if (tagName === "input") {
         const input = target as HTMLInputElement;
         if (
-          input.type === "radio" ||
           input.type === "checkbox" ||
           input.type === "button" ||
           input.type === "submit"
