@@ -13,7 +13,7 @@ import {
 } from "@/types/models/invoice";
 import itemService from "@/services/api/item.service";
 import taxRateService from "@/services/api/tax-rate.service";
-import useEnterKeyNavigation from "@/hooks/useEnterKeyNavigation";
+import useEnterKeyNavigation from "@/app/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 
 const AsyncCreatableSelect = withAsyncPaginate(CreatableSelect);
 

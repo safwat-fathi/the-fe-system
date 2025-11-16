@@ -7,7 +7,7 @@ import InvoiceSelectors from "@/app/(pages)/forms/invoices/components/InvoiceSel
 import InvoiceItemTable from "@/app/(pages)/forms/invoices/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/app/(pages)/forms/invoices/components/InvoiceTotalsActions";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
-import useInvoiceForm from "@/hooks/useInvoiceForm";
+import useInvoiceForm from "@/app/(pages)/forms/invoices/hooks/useInvoiceForm";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 
