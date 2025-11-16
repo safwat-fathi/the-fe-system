@@ -296,15 +296,11 @@ export const useCustomerGoldVoucherForm = ({
         })
         .map(({ value, label, item }) => ({ value, label, item }));
 
-      return {
-        options,
-        hasMore: Boolean(result.next),
-        additional: { page: result.next ? page + 1 : page },
-      };
+      return options;
     } catch (e) {
       console.error("Error loading item options:", e);
 
-      return { options: [], hasMore: false, additional: { page: 1 } };
+      return [];
     }
   };
 
@@ -647,12 +643,6 @@ export const useCustomerGoldVoucherForm = ({
         close_weight: box.close_weight || null,
       }));
 
-      console.log("📦 Client - الصناديق قبل الإرسال:", {
-        validBoxes: validBoxes.length,
-        boxesData,
-        voucherBoxes,
-      });
-
       const goldDetailsData = goldDetails
         .filter((detail) => detail.item_id && detail.item_id > 0)
         .map((detail) => ({
@@ -694,15 +684,6 @@ export const useCustomerGoldVoucherForm = ({
         (id) => !currentGoldDetailIds.includes(id),
       );
 
-      console.log("📤 Client - قبل استدعاء updateVoucherAction:", {
-        formMode,
-        isEdit: formMode === "edit",
-        voucherRecordId,
-        boxesDataLength: boxesData.length,
-        boxesData,
-        voucherData,
-      });
-
       const result =
         formMode === "edit"
           ? await updateVoucherAction(
@@ -721,8 +702,6 @@ export const useCustomerGoldVoucherForm = ({
               boxesData,
               goldDetailsData,
             );
-
-      console.log("📥 Client - بعد استدعاء updateVoucherAction:", result);
 
       if (result.success && result.data) {
         const realId = result.data.id;

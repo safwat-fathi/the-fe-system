@@ -11,7 +11,7 @@ import { parseNumber } from "@/utilities/voucherForm";
 
 const NUMERIC_TOLERANCE = 0.01;
 
-interface SanitizedDetail {
+export interface NormalizedDetail {
   payload: any;
   debit: number;
   credit: number;
@@ -21,13 +21,56 @@ interface SanitizedDetail {
   isUpdate?: boolean;
 }
 
+const formatParallelErrors = (
+  context: string,
+  messages: string[],
+): string => {
+  if (messages.length === 0) return context;
+  const uniqueMessages = Array.from(
+    new Set(
+      messages.map((message) =>
+        typeof message === "string" && message.trim().length > 0
+          ? message.trim()
+          : "خطأ غير معروف",
+      ),
+    ),
+  );
+  const preview = uniqueMessages.slice(0, 3).join(" | ");
+  const extra =
+    uniqueMessages.length > 3
+      ? ` (+${uniqueMessages.length - 3} أخطاء إضافية)`
+      : "";
+
+  return `${context}: ${preview}${extra}`;
+};
+
+const collectSettledErrors = (
+  results: PromiseSettledResult<unknown>[],
+): string[] =>
+  results
+    .filter(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    )
+    .map((result) => {
+      const reason = result.reason;
+
+      if (reason instanceof Error) return reason.message;
+      if (typeof reason === "string") return reason;
+
+      try {
+        return JSON.stringify(reason);
+      } catch {
+        return "خطأ غير معروف";
+      }
+    });
+
 function sanitizeDetailData(
   detail: VoucherDetailData,
   voucherId: number,
   currentDate: string,
   currentUsername: string | null,
   isUpdate: boolean,
-): SanitizedDetail | null {
+): NormalizedDetail | null {
   if (!detail.acc_id || detail.acc_id === 0) {
     return null;
   }
@@ -111,14 +154,15 @@ function sanitizeDetailData(
 }
 
 function validateDetailTotals(
-  sanitizedDetails: SanitizedDetail[],
+  normalizedDetails: NormalizedDetail[],
   context: string,
+  voucherType: number,
 ): { success: boolean; error?: string } {
-  if (sanitizedDetails.length === 0) {
+  if (normalizedDetails.length === 0) {
     return { success: true };
   }
 
-  const totals = sanitizedDetails.reduce(
+  const totals = normalizedDetails.reduce(
     (acc, detail) => {
       acc.debit += detail.debit;
       acc.credit += detail.credit;
@@ -133,7 +177,7 @@ function validateDetailTotals(
   const cashDiff = Math.abs(totals.debit - totals.credit);
   const hasBothCashSides =
     totals.debit > NUMERIC_TOLERANCE && totals.credit > NUMERIC_TOLERANCE;
-  if (cashDiff > NUMERIC_TOLERANCE) {
+  if (cashDiff > NUMERIC_TOLERANCE && voucherType !== 0) {
     if (!hasBothCashSides) {
       return { success: true };
     }
@@ -149,11 +193,19 @@ function validateDetailTotals(
   const goldDiff = Math.abs(totals.gDebit - totals.gCredit);
   const hasBothGoldSides =
     totals.gDebit > NUMERIC_TOLERANCE && totals.gCredit > NUMERIC_TOLERANCE;
-  if (goldDiff > NUMERIC_TOLERANCE) {
-    if (!hasBothGoldSides) {
-      return { success: true };
-    }
+  const firstDetail = normalizedDetails[0];
+  const detailVoucherType =
+    firstDetail?.payload?.trans_type ??
+    firstDetail?.payload?.vouch_type ??
+    firstDetail?.trans_type ??
+    firstDetail?.vouch_type ??
+    null;
 
+  if (
+    goldDiff > NUMERIC_TOLERANCE &&
+    hasBothGoldSides &&
+    (detailVoucherType ?? voucherType) !== 0
+  ) {
     return {
       success: false,
       error: `التفاصيل الذهبية غير متوازنة (${context}): إجمالي الذهب المدين ${totals.gDebit.toFixed(
@@ -173,34 +225,53 @@ export async function processVoucherDetails(
   details: VoucherDetailData[],
   currentDate: string,
   currentUsername: string | null,
-): Promise<{ success: boolean; error?: string }> {
-  const sanitizedDetails = details
+  voucherType: number,
+): Promise<{ success: boolean; error?: string; normalizedDetails?: NormalizedDetail[] }> {
+  const normalizedDetails = details
     .map((detail) =>
       sanitizeDetailData(detail, masterId, currentDate, currentUsername, false),
     )
-    .filter((detail): detail is SanitizedDetail => detail !== null);
+    .filter((detail): detail is NormalizedDetail => detail !== null);
 
   const validation = validateDetailTotals(
-    sanitizedDetails,
+    normalizedDetails,
     "سند جديد رقم " + masterId,
+    voucherType,
   );
 
   if (!validation.success) {
     return validation;
   }
 
-  for (const detail of sanitizedDetails) {
-    const detailResponse = await voucherService.createDetail(detail.payload);
-
-    if (!detailResponse.success) {
-      return {
-        success: false,
-        error: `فشل حفظ التفصيل: ${detailResponse.message}`,
-      };
-    }
+  if (normalizedDetails.length === 0) {
+    return { success: true, normalizedDetails };
   }
 
-  return { success: true };
+  const creationResults = await Promise.allSettled(
+    normalizedDetails.map((detail) =>
+      voucherService.createDetail(detail.payload).then((response) => {
+        if (!response.success) {
+          throw new Error(
+            response.message ||
+              `فشل حفظ التفصيل للحساب ${detail.payload?.acc ?? ""}`,
+          );
+        }
+
+        return response;
+      }),
+    ),
+  );
+
+  const creationErrors = collectSettledErrors(creationResults);
+
+  if (creationErrors.length > 0) {
+    return {
+      success: false,
+      error: formatParallelErrors("أخطاء حفظ التفاصيل", creationErrors),
+    };
+  }
+
+  return { success: true, normalizedDetails };
 }
 
 /**
@@ -213,12 +284,33 @@ export async function updateVoucherDetails(
   currentDate: string,
   currentUsername: string | null,
   branchId: number = 1,
-): Promise<{ success: boolean; error?: string }> {
+  voucherType: number,
+): Promise<{ success: boolean; error?: string; normalizedDetails?: NormalizedDetail[] }> {
   if (deletedDetailIds.length > 0) {
-    for (const detailId of deletedDetailIds) {
-      if (detailId && detailId > 0) {
-        await voucherService.deleteDetail(detailId);
-      }
+    const deleteResults = await Promise.allSettled(
+      deletedDetailIds
+        .filter((detailId) => detailId && detailId > 0)
+        .map((detailId) =>
+          voucherService.deleteDetail(detailId).then((response) => {
+            if (!response.success) {
+              throw new Error(
+                response.message ||
+                  `فشل حذف التفصيل رقم ${detailId.toString()}`,
+              );
+            }
+
+            return response;
+          }),
+        ),
+    );
+
+    const deleteErrors = collectSettledErrors(deleteResults);
+
+    if (deleteErrors.length > 0) {
+      return {
+        success: false,
+        error: formatParallelErrors("أخطاء حذف التفاصيل", deleteErrors),
+      };
     }
   }
 
@@ -261,30 +353,66 @@ export async function updateVoucherDetails(
         true,
       ),
     )
-    .filter((detail): detail is SanitizedDetail => detail !== null);
+    .filter((detail): detail is NormalizedDetail => detail !== null);
 
   const validation = validateDetailTotals(
     sanitizedDetails,
     "تحديث سند رقم " + realVoucherId,
+    voucherType,
   );
 
   if (!validation.success) {
     return validation;
   }
 
-  for (const detail of sanitizedDetails) {
-    const detailResponse =
-      detail.isUpdate && detail.id && detail.id > 0
-        ? await voucherService.updateDetail(detail.id, detail.payload)
-        : await voucherService.createDetail(detail.payload);
+  const updateOperations = sanitizedDetails
+    .filter(
+      (detail): detail is NormalizedDetail & { id: number } =>
+        Boolean(detail.isUpdate && detail.id && detail.id > 0),
+    )
+    .map((detail) =>
+      voucherService.updateDetail(detail.id!, detail.payload).then((response) => {
+        if (!response.success) {
+          throw new Error(
+            response.message ||
+              `فشل تعديل التفصيل للحساب ${detail.payload?.acc ?? ""}`,
+          );
+        }
 
-    if (!detailResponse.success) {
-      return {
-        success: false,
-        error: `فشل حفظ التفصيل: ${detailResponse.message}`,
-      };
-    }
+        return response;
+      }),
+    );
+
+  const createOperations = sanitizedDetails
+    .filter((detail) => !detail.isUpdate || !detail.id || detail.id <= 0)
+    .map((detail) =>
+      voucherService.createDetail(detail.payload).then((response) => {
+        if (!response.success) {
+          throw new Error(
+            response.message ||
+              `فشل إضافة التفصيل للحساب ${detail.payload?.acc ?? ""}`,
+          );
+        }
+
+        return response;
+      }),
+    );
+
+  const allOperations = [...updateOperations, ...createOperations];
+  const settledResults =
+    allOperations.length > 0
+      ? await Promise.allSettled(allOperations)
+      : [];
+
+  const operationErrors = collectSettledErrors(settledResults);
+
+  if (operationErrors.length > 0) {
+    return {
+      success: false,
+      error: formatParallelErrors("أخطاء حفظ/تحديث التفاصيل", operationErrors),
+    };
   }
 
-  return { success: true };
+  return { success: true, normalizedDetails: sanitizedDetails };
 }
+

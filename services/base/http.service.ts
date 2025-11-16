@@ -108,11 +108,6 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
         credentials: "include",
       });
 
-      console.log(
-        "🚀 ~ :100 ~ HttpService ~ _performTokenRefresh ~ refreshResponse:",
-        refreshResponse,
-      );
-
       if (refreshResponse.ok) {
         const refreshData = await refreshResponse.json();
 

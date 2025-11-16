@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = env("DATABASE_PROVIDER")
+  url      = env("DATABASE_URL")
+}
+
+model Contact {
+  id          String         @id @default(cuid())
+  waId        String         @unique
+  name        String?
+  optinState  String         @default("unknown")
+  conversations Conversation[]
+  messages    Message[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Conversation {
+  id         String    @id @default(cuid())
+  contact    Contact   @relation(fields: [contactId], references: [id])
+  contactId  String
+  lastMsgAt  DateTime?
+  status     String    @default("open")
+  messages   Message[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([contactId])
+}
+
+model Message {
+  id              String        @id @default(cuid())
+  conversation    Conversation  @relation(fields: [conversationId], references: [id])
+  conversationId  String
+  contact         Contact       @relation(fields: [contactId], references: [id])
+  contactId       String
+  direction       String
+  type            String
+  bodyJson        Json
+  waMsgId         String?       @unique
+  status          String        @default("pending")
+  errorCode       String?
+  clientMsgId     String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  media           Media[]
+}
+
+model Media {
+  id          String   @id @default(cuid())
+  waMediaId   String   @unique
+  mime        String
+  size        Int?
+  url         String?
+  expiresAt   DateTime?
+  message     Message? @relation(fields: [messageId], references: [id])
+  messageId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Template {
+  id              String   @id @default(cuid())
+  name            String
+  lang            String   @default("en_US")
+  componentsJson  Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([name, lang])
+}
+

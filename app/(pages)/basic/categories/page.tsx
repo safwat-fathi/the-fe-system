@@ -6,6 +6,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
 import categoryService from "@/services/api/category.service";
 import categoryAccountService from "@/services/api/cat-account.service";
+import boxesService from "@/services/api/boxes.service";
 import accountService from "@/services/api/account.service";
 import helperService from "@/services/api/helper.service";
 
@@ -23,9 +24,16 @@ export default async function CategoriesPage() {
       : 1;
 
   // جلب البيانات بالتوازي
-  const [categoriesData, boxesData] = await Promise.all([
+  const [
+    categoriesData,
+    boxesDataRaw,
+    catTypesData,
+    catStatusesData,
+  ] = await Promise.all([
     categoryService.getAllCategories(companyId).catch(() => []),
-    helperService.getBoxes(companyId).catch(() => []),
+    boxesService.getGoldBoxes({ xcom_id: companyId }).catch(() => []),
+    helperService.getCatTypes().catch(() => []),
+    helperService.getCatStatuses().catch(() => []),
   ]);
 
   const firstCategoryId = categoriesData?.[0]?.id ?? null;
@@ -39,6 +47,30 @@ export default async function CategoriesPage() {
       : Promise.resolve([]),
   ]);
 
+  const normalizedBoxes = Array.isArray(boxesDataRaw)
+    ? boxesDataRaw.map((box: any) => ({
+        id: Number(box?.id ?? box?.cust_code ?? 0),
+        box_name:
+          box?.cust_name ??
+          box?.box_name ??
+          (box?.id ? `صندوق ${box.id}` : "صندوق غير معروف"),
+      }))
+    : [];
+
+  const normalizedCatTypes = Array.isArray(catTypesData)
+    ? catTypesData.map((item: any) => ({
+        id: String(item?.code_id ?? ""),
+        name: item?.code_desc ?? String(item?.code_id ?? ""),
+      }))
+    : [];
+
+  const normalizedCatStatuses = Array.isArray(catStatusesData)
+    ? catStatusesData.map((item: any) => ({
+        id: String(item?.code_id ?? ""),
+        name: item?.code_desc ?? String(item?.code_id ?? ""),
+      }))
+    : [];
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
@@ -46,7 +78,9 @@ export default async function CategoriesPage() {
 
       <CategoriesClient
         companyId={companyId}
-        initialBoxes={boxesData as any}
+        initialBoxes={normalizedBoxes}
+        catTypes={normalizedCatTypes}
+        catStatuses={normalizedCatStatuses}
         initialCategories={categoriesData as any}
         initialAccounts={accountsData as any}
         initialCategoryAccounts={initialCategoryAccounts as any}

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
+import ReactSelect from "react-select";
 import {
   Button,
   Modal,
@@ -14,22 +15,17 @@ import {
   SelectItem,
   Textarea,
 } from "@heroui/react";
+import { ConfirmationModal } from "@/components/Modal";
 import {
   CheckIcon,
   PencilIcon,
   PrinterIcon,
-  DocumentTextIcon,
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
-import GLTransactionModal from "../components/GLTransactionModal";
-import GLPreviewPanel from "../components/GLPreviewPanel";
-
 import { useBalanceVoucherForm } from "@/hooks/useBalanceVoucherForm";
-import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
-import { ConfirmationModal } from "@/components/Modal";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 interface BalanceVoucherClientPageProps {
@@ -82,6 +78,7 @@ export default function BalanceVoucherClientPage({
     isPrinting,
     isClient,
     showUnbalancedModal,
+    defaultAccountOptions,
 
     // Totals and balances
     totals,
@@ -99,11 +96,11 @@ export default function BalanceVoucherClientPage({
     saveVoucher,
     printVoucher,
     handleEditClick,
-    handleUnbalancedConfirm,
-    handleUnbalancedCancel,
     loadAccountOptions,
     getAccountSelectValue,
     updateAccountsList,
+    handleUnbalancedConfirm,
+    handleUnbalancedCancel,
   } = useBalanceVoucherForm({
     voucherData,
     voucherDetailsData,
@@ -114,27 +111,11 @@ export default function BalanceVoucherClientPage({
     startInEditMode: propStartInEditMode,
   });
 
-  // استخدام hook موحد لحركة الترحيل (بعد useBalanceVoucherForm لأننا نحتاج voucher)
-  const {
-    isGLModalOpen,
-    setIsGLModalOpen,
-    glTransactions,
-    loadingGLTransactions,
-    handleViewGLTransactions,
-    getAccountName,
-  } = useGLTransactions({
-    vouchId: voucher.vouch_id || 0,
-    vouchType: 0, // قيد افتتاحي
-    refNo: voucher.ref_no,
-  });
-
   const toAmount = (value: unknown) => {
     const numeric = Number(value);
 
     return Number.isFinite(numeric) ? numeric : 0;
   };
-
-const PREVIEW_TOLERANCE = 0.01;
 
   const getPreviewAccountName = (
     accId: number | string | null | undefined,
@@ -168,6 +149,33 @@ const PREVIEW_TOLERANCE = 0.01;
       ""
     );
   };
+
+  // Helper functions for cost center select (must be before any early return)
+  const getCostCenterSelectValue = (
+    costId: number | null | undefined,
+  ) => {
+    if (!costId || costId <= 0) {
+      return null;
+    }
+
+    const center = costCenters.find((c) => c.id === costId);
+
+    if (!center) {
+      return null;
+    }
+
+    return {
+      value: String(center.id),
+      label: center.name || center.cost_name || `مركز ${center.id}`,
+    };
+  };
+
+  const costCenterSelectOptions = useMemo(() => {
+    return (costCenters || []).map((center) => ({
+      value: String(center.id),
+      label: center.name || center.cost_name || `مركز ${center.id}`,
+    }));
+  }, [costCenters]);
 
   if (!isClient) {
     return (
@@ -254,17 +262,6 @@ const PREVIEW_TOLERANCE = 0.01;
                 className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
               >
                 طباعة
-              </Button>
-
-              <Button
-                size="sm"
-                variant="solid"
-                isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
-                onPress={handleViewGLTransactions}
-                startContent={<DocumentTextIcon className="h-4 w-4" />}
-                className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[140px]"
-              >
-                القيد المحاسبي
               </Button>
             </div>
 
@@ -353,23 +350,47 @@ const PREVIEW_TOLERANCE = 0.01;
                 <label className="text-sm font-medium text-slate-700">
                   مركز التكلفة
                 </label>
-                <Select
+                <ReactSelect
+                  isSearchable
                   isDisabled={!isEditing}
                   isClearable
-                  placeholder="اختر مركز التكلفة"
-                  selectedKeys={
-                    voucher.cost_id && voucher.cost_id > 0
-                      ? new Set([String(voucher.cost_id)])
-                      : new Set([])
+                  className="text-sm"
+                  classNamePrefix="react-select"
+                  components={{ IndicatorSeparator: () => null }}
+                  instanceId="balance-cost-center-select"
+                  menuPortalTarget={
+                    typeof window !== "undefined" ? document.body : null
                   }
-                  onSelectionChange={(keys) => {
-                    const key =
-                      keys instanceof Set
-                        ? Array.from(keys)[0]
-                        : Array.isArray(keys)
-                          ? keys[0]
-                          : null;
-                    const selected = key ? Number(key) : null;
+                  menuPosition="fixed"
+                  options={costCenterSelectOptions}
+                  placeholder="اختر مركز التكلفة..."
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      minHeight: "40px",
+                      height: "40px",
+                      fontSize: "14px",
+                    }),
+                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                    option: (base) => ({
+                      ...base,
+                      fontSize: "14px",
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      fontSize: "14px",
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      fontSize: "14px",
+                    }),
+                  }}
+                  value={getCostCenterSelectValue(voucher.cost_id)}
+                  onChange={(selectedOption: any) => {
+                    if (!isEditing) return;
+                    const selected = selectedOption?.value
+                      ? Number(selectedOption.value)
+                      : null;
 
                     handleMasterCostChange(
                       selected !== null && Number.isFinite(selected)
@@ -377,17 +398,7 @@ const PREVIEW_TOLERANCE = 0.01;
                         : null,
                     );
                   }}
-                  className="text-sm"
-                >
-                  {costCenters.map((center) => (
-                    <SelectItem
-                      key={String(center.id)}
-                      textValue={center.name || center.cost_name || `مركز ${center.id}`}
-                    >
-                      {center.name || center.cost_name || `مركز ${center.id}`}
-                    </SelectItem>
-                  ))}
-                </Select>
+                />
               </div>
             )}
 
@@ -466,9 +477,10 @@ const PREVIEW_TOLERANCE = 0.01;
               + صف
             </button>
           </div>
-          <div className="overflow-x-auto overflow-y-auto mb-1 max-w-full max-h-[600px]">
-            <table className="min-w-[1400px] border text-xs text-center table-fixed">
-              <thead className="bg-gray-100 text-xs font-bold">
+          <div className="overflow-x-auto mb-1">
+            <div className="max-h-[360px] overflow-y-auto">
+              <table className="min-w-[1400px] border text-xs text-center table-fixed">
+                <thead className="sticky top-0 z-10 bg-gray-100 text-xs font-bold">
                 <tr>
                   <th
                     className="w-64 p-0.5 font-bold text-slate-700 border"
@@ -552,15 +564,19 @@ const PREVIEW_TOLERANCE = 0.01;
                       <AsyncCreatableSelect
                         isClearable
                         isSearchable
+                        cacheOptions
+                        closeMenuOnScroll={false}
                         className="text-xs"
                         classNamePrefix="select"
                         components={{ IndicatorSeparator: () => null }}
+                        defaultOptions={defaultAccountOptions}
                         formatCreateLabel={(inputValue) =>
                           `إضافة حساب جديد: "${inputValue}"`
                         }
                         instanceId={`account-select-${index}`}
                         isDisabled={!isEditing}
                         loadOptions={loadAccountOptions}
+                        debounceTimeout={300}
                         menuPortalTarget={
                           typeof window !== "undefined" ? document.body : null
                         }
@@ -603,10 +619,7 @@ const PREVIEW_TOLERANCE = 0.01;
 
                           if (!selected) return;
 
-                          if (!accounts.find((a) => a.id === selected.id)) {
-                            updateAccountsList(selected);
-                          }
-
+                          updateAccountsList(selected);
                           updateDetail(index, "acc_id", selected.id ?? null);
                           updateDetail(
                             index,
@@ -803,68 +816,148 @@ const PREVIEW_TOLERANCE = 0.01;
                       />
                     </td>
 
-                    {/* حقول ذهب معاير (g_debit_base/g_credit_base) - للقراءة فقط */}
+                    {/* حقول ذهب معاير (g_debit_base/g_credit_base) */}
                     <td className="p-0 border bg-amber-50">
                       <input
-                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 cursor-not-allowed bg-amber-50`}
-                        disabled={true}
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${
+                          isEditing ? "bg-amber-50" : "cursor-not-allowed bg-amber-100"
+                        }`}
+                        disabled={!isEditing}
                         min="0"
                         placeholder="0.00"
-                        readOnly={true}
+                        readOnly={!isEditing}
                         step="0.000001"
                         style={{
                           MozAppearance: "textfield",
                           WebkitAppearance: "none",
                           appearance: "none",
                         }}
-                        title="يُحسب تلقائياً من: مدين ذهب قائم × (المعايرة / 875)"
+                        title="يمكن تعديل الذهب المعاير، وسيتم تحديث المعايرة تلقائياً"
                         type="number"
-                        value={detail.g_debit_base ? String(detail.g_debit_base) : ""}
+                        value={
+                          detail.g_debit_base !== undefined &&
+                          detail.g_debit_base !== null
+                            ? String(detail.g_debit_base)
+                            : ""
+                        }
+                        onChange={(e) => {
+                          if (!isEditing) return;
+                          const val = e.target.value;
+
+                          if (!val || parseFloat(val) >= 0) {
+                            updateDetail(
+                              index,
+                              "g_debit_base",
+                              val ? parseFloat(val) : undefined,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
                       />
                     </td>
 
                     <td className="p-0 border bg-amber-50">
                       <input
-                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 cursor-not-allowed bg-amber-50`}
-                        disabled={true}
+                        className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${
+                          isEditing ? "bg-amber-50" : "cursor-not-allowed bg-amber-100"
+                        }`}
+                        disabled={!isEditing}
                         min="0"
                         placeholder="0.00"
-                        readOnly={true}
+                        readOnly={!isEditing}
                         step="0.000001"
                         style={{
                           MozAppearance: "textfield",
                           WebkitAppearance: "none",
                           appearance: "none",
                         }}
-                        title="يُحسب تلقائياً من: دائن ذهب قائم × (المعايرة / 875)"
+                        title="يمكن تعديل الذهب المعاير، وسيتم تحديث المعايرة تلقائياً"
                         type="number"
-                        value={detail.g_credit_base ? String(detail.g_credit_base) : ""}
+                        value={
+                          detail.g_credit_base !== undefined &&
+                          detail.g_credit_base !== null
+                            ? String(detail.g_credit_base)
+                            : ""
+                        }
+                        onChange={(e) => {
+                          if (!isEditing) return;
+                          const val = e.target.value;
+
+                          if (!val || parseFloat(val) >= 0) {
+                            updateDetail(
+                              index,
+                              "g_credit_base",
+                              val ? parseFloat(val) : undefined,
+                            );
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                            e.preventDefault();
+                          }
+                        }}
+                        onWheel={(e) => e.currentTarget.blur()}
                       />
                     </td>
 
                     {costCenters.length > 0 && (
                       <td className="p-0 border">
-                        <select
-                          className={`w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          value={detail.cost_id || ""}
-                          onChange={(e) =>
+                        <ReactSelect
+                          isSearchable
+                          isDisabled={!isEditing}
+                          className="text-xs"
+                          classNamePrefix="react-select"
+                          components={{ IndicatorSeparator: () => null }}
+                          instanceId={`cost-center-detail-select-${index}`}
+                          menuPortalTarget={
+                            typeof window !== "undefined" ? document.body : null
+                          }
+                          menuPosition="fixed"
+                          options={costCenterSelectOptions}
+                          placeholder="مركز التكلفة..."
+                          styles={{
+                            control: (base) => ({
+                              ...base,
+                              minHeight: "32px",
+                              height: "32px",
+                              fontSize: "12px",
+                              border: "none",
+                              borderRadius: "0",
+                              boxShadow: "none",
+                              cursor: isEditing ? "pointer" : "not-allowed",
+                              backgroundColor: "transparent",
+                            }),
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            option: (base) => ({
+                              ...base,
+                              fontSize: "12px",
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              fontSize: "12px",
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              fontSize: "12px",
+                            }),
+                          }}
+                          value={getCostCenterSelectValue(detail.cost_id)}
+                          onChange={(selectedOption: any) => {
+                            if (!isEditing) return;
                             updateDetail(
                               index,
                               "cost_id",
-                              e.target.value ? parseInt(e.target.value) : null,
-                            )
-                          }
-                        >
-                          <option value="">مركز التكلفة</option>
-                          {costCenters.map((center) => (
-                            <option key={center.id} value={center.id}>
-                              {center.name ||
-                                center.cost_name ||
-                                `مركز ${center.id}`}
-                            </option>
-                          ))}
-                        </select>
+                              selectedOption?.value
+                                ? parseInt(selectedOption.value)
+                                : null,
+                            );
+                          }}
+                        />
                       </td>
                     )}
 
@@ -896,7 +989,8 @@ const PREVIEW_TOLERANCE = 0.01;
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -968,26 +1062,14 @@ const PREVIEW_TOLERANCE = 0.01;
         </div>
       </div>
 
-      {/* مودال عرض القيد المحاسبي */}
-      <GLTransactionModal
-        getAccountName={getAccountName}
-        isOpen={isGLModalOpen}
-        loading={loadingGLTransactions}
-        refNo={voucher.ref_no}
-        transactions={glTransactions}
-        voucherId={voucher.vouch_id || 0}
-        onClose={() => setIsGLModalOpen(false)}
-      />
-
-      {/* مودال تحذير عدم التوازن */}
       <ConfirmationModal
         isOpen={showUnbalancedModal}
         onClose={handleUnbalancedCancel}
         onConfirm={handleUnbalancedConfirm}
-        title="⚠️ تحذير: القيد غير متزن"
+        title="⚠️ القيد غير متزن"
         message={
-          <div className="space-y-2">
-            <p className="text-gray-700">القيد غير متزن:</p>
+          <div className="space-y-2 text-right">
+            <p className="text-gray-700">القيد الحالي غير متزن:</p>
             <div className="bg-gray-50 p-3 rounded-lg space-y-1">
               <p className="font-semibold text-gray-800">
                 إجمالي المدين: {totals.totalDebit.toFixed(2)}
@@ -995,9 +1077,15 @@ const PREVIEW_TOLERANCE = 0.01;
               <p className="font-semibold text-gray-800">
                 إجمالي الدائن: {totals.totalCredit.toFixed(2)}
               </p>
+              <p className="font-semibold text-gray-800">
+                إجمالي الذهب المدين: {totals.totalDebitG.toFixed(6)} جم
+              </p>
+              <p className="font-semibold text-gray-800">
+                إجمالي الذهب الدائن: {totals.totalCreditG.toFixed(6)} جم
+              </p>
             </div>
             <p className="mt-3 text-gray-600 text-sm">
-              هل تريد المتابعة والحفظ رغم عدم التوازن؟ (القيد الافتتاحي)
+              هل ترغب بالمتابعة والحفظ رغم عدم التوازن؟
             </p>
           </div>
         }

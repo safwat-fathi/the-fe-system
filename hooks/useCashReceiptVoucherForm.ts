@@ -93,9 +93,11 @@ export const useCashReceiptVoucherForm = ({
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>([]);
   const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
+  const [defaultAccountOptions, setDefaultAccountOptions] = useState<any[]>([]);
 
   const hasGeneratedVoucherNumber = useRef(false);
   const hasLoadedVoucherBoxes = useRef(false);
+  const previousVouchNotesRef = useRef<string>(voucher.vouch_notes || "");
 
   // Initialize component
   useEffect(() => {
@@ -148,6 +150,47 @@ export const useCashReceiptVoucherForm = ({
   }, []);
 
   useEffect(() => {
+    const currentNotes = voucher.vouch_notes || "";
+    const previousNotes = previousVouchNotesRef.current;
+
+    if (currentNotes === previousNotes) {
+      return;
+    }
+
+    previousVouchNotesRef.current = currentNotes;
+
+    setDetails((prev) =>
+      prev.map((detail) => {
+        const existingNote = detail.vouch_notes || "";
+
+        if (!existingNote || existingNote === previousNotes) {
+          return {
+            ...detail,
+            vouch_notes: currentNotes,
+          };
+        }
+
+        return detail;
+      }),
+    );
+
+    setVoucherBoxes((prev) =>
+      prev.map((box) => {
+        const existingNote = box.vouch_notes || "";
+
+        if (!existingNote || existingNote === previousNotes) {
+          return {
+            ...box,
+            vouch_notes: currentNotes,
+          };
+        }
+
+        return box;
+      }),
+    );
+  }, [voucher.vouch_notes]);
+
+  useEffect(() => {
     if (
       !isNewVoucher &&
       initialVoucherBoxes &&
@@ -181,6 +224,22 @@ export const useCashReceiptVoucherForm = ({
 
     return () => clearInterval(interval);
   }, [isClient]);
+
+  useEffect(() => {
+    if (accounts.length === 0) {
+      setDefaultAccountOptions([]);
+
+      return;
+    }
+
+    const options = accounts.slice(0, 50).map((acc) => ({
+      value: acc.id,
+      label: `${acc.acc_code ?? acc.code ?? ""} - ${acc.acc_name ?? acc.name ?? ""}`,
+      account: acc,
+    }));
+
+    setDefaultAccountOptions(options);
+  }, [accounts]);
 
   // Helper Functions
   const updateCurrentTime = () => {
@@ -257,6 +316,8 @@ export const useCashReceiptVoucherForm = ({
 
       return options;
     } catch (e) {
+      console.error("Error loading account options:", e);
+
       return [];
     }
   };
@@ -689,6 +750,7 @@ export const useCashReceiptVoucherForm = ({
     isPrinting,
     currentTime,
     isClient,
+    defaultAccountOptions,
 
     // Totals and balance
     totals,

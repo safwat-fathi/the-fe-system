@@ -39,10 +39,12 @@ class HomeService extends HttpService<HomeSettings> {
       if (params?.com) queryParams.com = params.com;
       if (params?.year) queryParams.year = params.year;
 
-      console.log("🔍 HomeService Request:");
-      console.log("  - URL: home_list");
-      console.log("  - Params:", queryParams);
-      console.log("  - Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
+      if (process.env.NODE_ENV === "development") {
+        console.info("🔍 HomeService Request:");
+        console.info("  - URL: home_list");
+        console.info("  - Params:", queryParams);
+        console.info("  - Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
+      }
 
       const startTime = Date.now();
 
@@ -56,8 +58,10 @@ class HomeService extends HttpService<HomeSettings> {
 
       const endTime = Date.now();
 
-      console.log(`⏱️ Request took: ${endTime - startTime}ms`);
-      console.log("✅ HomeService Response:", response);
+      if (process.env.NODE_ENV === "development") {
+        console.info(`⏱️ Request took: ${endTime - startTime}ms`);
+        console.info("✅ HomeService Response:", response);
+      }
 
       if (response.success) {
         if (Array.isArray(response.data)) {

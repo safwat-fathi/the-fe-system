@@ -13,16 +13,13 @@ import type {
 
 import { getCurrentUsername } from "./helpers/common";
 import { validateVoucherData } from "./helpers/validation";
-import {
-  createGLTransactionRecords,
-  deleteGLTransactionRecords,
-} from "./helpers/gl-transaction";
 import { updateVoucherBoxes } from "./helpers/process-boxes";
 import { updateVoucherDetails } from "./helpers/process-details";
 import { updateGoldDetails } from "./helpers/process-gold-details";
 import { revalidateVoucherPaths } from "./helpers/revalidation";
 
 import { voucherService } from "@/services/api";
+import { requiresBoxes } from "@/utilities/voucher/routing";
 
 /**
  * Update an existing voucher
@@ -190,27 +187,27 @@ export async function updateVoucherAction(
       };
     }
 
-    // حذف سجلات gl_transaction القديمة
-    await deleteGLTransactionRecords(
-      voucherData.vouch_id,
-      voucherData.vouch_type,
-    );
-
     // تحديث الصناديق
-    const boxesResult = await updateVoucherBoxes(
-      realVoucherId,
-      voucherBoxes,
-      deletedBoxIds,
-      voucherData.vouch_type,
-      currentDate,
-      currentUsername,
-    );
+    let normalizedBoxes = voucherBoxes;
 
-    if (!boxesResult.success) {
-      return {
-        success: false,
-        message: boxesResult.error || "خطأ في تحديث الصناديق",
-      };
+    if (requiresBoxes(voucherData.vouch_type)) {
+      const boxesResult = await updateVoucherBoxes(
+        realVoucherId,
+        voucherBoxes,
+        deletedBoxIds,
+        voucherData.vouch_type,
+        currentDate,
+        currentUsername,
+      );
+
+      if (!boxesResult.success) {
+        return {
+          success: false,
+          message: boxesResult.error || "خطأ في تحديث الصناديق",
+        };
+      }
+    } else {
+      normalizedBoxes = [];
     }
 
     // تحديث التفاصيل
@@ -224,6 +221,7 @@ export async function updateVoucherAction(
       currentDate,
       currentUsername,
       branchId,
+      voucherData.vouch_type,
     );
 
     if (!detailsResult.success) {
@@ -232,18 +230,6 @@ export async function updateVoucherAction(
         message: detailsResult.error || "خطأ في تحديث التفاصيل",
       };
     }
-
-    // ترحيل سجلات gl_transaction الجديدة
-    await createGLTransactionRecords(
-      voucherData,
-      details,
-      realVoucherId,
-      currentDate,
-      currentUsername,
-      voucherPayload,
-      voucherBoxes,
-      goldDetails,
-    );
 
     // تحديث تفاصيل الذهب
     const goldResult = await updateGoldDetails(

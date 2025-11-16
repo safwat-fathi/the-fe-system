@@ -74,6 +74,36 @@ export const useVoucherForm = ({
     caratTypes: state.caratTypes,
   });
 
+  const previousVouchNotesRef = useRef<string>(
+    state.voucher.vouch_notes || "",
+  );
+
+  useEffect(() => {
+    const currentNotes = state.voucher.vouch_notes || "";
+    const previousNotes = previousVouchNotesRef.current;
+
+    if (currentNotes === previousNotes) {
+      return;
+    }
+
+    previousVouchNotesRef.current = currentNotes;
+
+    details.setDetails((prev) =>
+      prev.map((detail) => {
+        const existingNote = detail.vouch_notes || "";
+
+        if (!existingNote || existingNote === previousNotes) {
+          return {
+            ...detail,
+            vouch_notes: currentNotes,
+          };
+        }
+
+        return detail;
+      }),
+    );
+  }, [state.voucher.vouch_notes, details.setDetails]);
+
   const previousDetailsLengthRef = useRef(details.details.length);
   const detailsLength = details.details.length;
 

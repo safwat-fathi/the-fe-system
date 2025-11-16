@@ -325,3 +325,23 @@ export const calculateReverseCalibratedGold = (
 
   return parseFloat(((calibratedValue * baseGauge) / gauge).toFixed(6));
 };
+
+export const calculateGaugeFromCalibrated = (
+  calibratedValue: number,
+  actualValue: number,
+  baseGauge: number = 875,
+  decimalPlaces: number = 3,
+): number => {
+  if (
+    !calibratedValue ||
+    calibratedValue <= 0 ||
+    !actualValue ||
+    actualValue <= 0
+  ) {
+    return baseGauge;
+  }
+
+  return parseFloat(
+    ((calibratedValue * baseGauge) / actualValue).toFixed(decimalPlaces),
+  );
+};

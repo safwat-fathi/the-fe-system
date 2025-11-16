@@ -24,17 +24,21 @@ export default async function VoucherReportsPage({
 
   // جلب البيانات من API مع المعاملات الصحيحة
   const [vouchersResponse, typesResponse] = await Promise.all([
-    voucherService.getAll(queryParams),
+    voucherService.getAllWithTotals(queryParams),
     voucherService.getVoucherTypes(),
   ]);
 
   // معالجة البيانات
-  const vouchers =
-    vouchersResponse.success && vouchersResponse.data
-      ? Array.isArray(vouchersResponse.data)
-        ? vouchersResponse.data
-        : []
-      : [];
+  const vouchers = vouchersResponse.success
+    ? Array.isArray(vouchersResponse.pageData)
+      ? vouchersResponse.pageData
+      : []
+    : [];
+
+  const defaultTotals = { totalAmount: 0, totalGold: 0 };
+  const voucherTotals = vouchersResponse.success
+    ? vouchersResponse.totals || defaultTotals
+    : defaultTotals;
 
   const voucherTypes =
     typesResponse.success && typesResponse.data
@@ -43,9 +47,10 @@ export default async function VoucherReportsPage({
         : []
       : [];
 
-  const count = vouchersResponse.count || 0;
-  const itemsPerPage = 20;
-  const totalPages = count > 0 ? Math.ceil(count / itemsPerPage) : 0;
+  const count = vouchersResponse.success ? vouchersResponse.count || 0 : 0;
+  const totalPages = vouchersResponse.success
+    ? vouchersResponse.totalPages || 0
+    : 0;
 
   return (
     <div className="font-cairo space-y-4 p-4">
@@ -64,6 +69,7 @@ export default async function VoucherReportsPage({
           searchParams={queryParams}
           totalPages={totalPages}
           totalVouchers={count}
+          overallTotals={voucherTotals}
         />
       </Suspense>
     </div>
