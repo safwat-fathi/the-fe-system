@@ -88,6 +88,7 @@ export default function InvoiceItemTable({
   const inputRefs = useRef<(HTMLInputElement | null)[][]>([]);
   const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
   const [taxRates, setTaxRates] = useState<number[]>([0, 5, 10, 15, 20]);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   // load tax rates from API
   useEffect(() => {
@@ -217,6 +218,17 @@ export default function InvoiceItemTable({
     const n = parseFloat(String(v ?? "0"));
 
     return Number.isNaN(n) ? 0 : n;
+  };
+
+  const makeFieldKey = (rowId: number | string, field: string) =>
+    `${rowId}-${field}`;
+
+  const formatForDisplay = (value: any): string => {
+    const num = toNum(value);
+
+    if (!Number.isFinite(num)) return "";
+
+    return num.toFixed(2);
   };
 
   // sanitize numeric inputs: allow digits and a single dot for decimals
@@ -848,6 +860,12 @@ export default function InvoiceItemTable({
                 <td className="align-middle">
                   {(() => {
                     const thisCol = ++col;
+                    const fieldKey = makeFieldKey(item.id, "qty");
+                    const rawValue = String(item.qty ?? "");
+                    const displayValue =
+                      focusedField === fieldKey
+                        ? rawValue
+                        : formatForDisplay(rawValue);
                     return (
                       <input
                         id={`qty-${index}${thisCol}`}
@@ -859,10 +877,14 @@ export default function InvoiceItemTable({
                         pattern="[0-9]*"
                         step={1}
                         type="number"
-                        value={String(item.qty ?? "")}
+                        value={displayValue}
                         onChange={(e) =>
                           handleFieldChange(index, "qty", e.target.value)
                         }
+                        onFocus={() => setFocusedField(fieldKey)}
+                        onBlur={() => {
+                          if (focusedField === fieldKey) setFocusedField(null);
+                        }}
                         onKeyDown={(e) => handleEnter(e, index, thisCol)}
                       />
                     );
@@ -872,6 +894,12 @@ export default function InvoiceItemTable({
                 <td className="align-middle">
                   {(() => {
                     const thisCol = ++col;
+                    const fieldKey = makeFieldKey(item.id, "weight");
+                    const rawValue = String(item.weight ?? "");
+                    const displayValue =
+                      focusedField === fieldKey
+                        ? rawValue
+                        : formatForDisplay(rawValue);
                     return (
                       <input
                         ref={setRef(index, thisCol)}
@@ -882,10 +910,14 @@ export default function InvoiceItemTable({
                         inputMode="decimal"
                         type="number"
                         step={stepFromDigits(weightDigits)}
-                        value={String(item.weight ?? "")}
+                        value={displayValue}
                         onChange={(e) =>
                           handleFieldChange(index, "weight", e.target.value)
                         }
+                        onFocus={() => setFocusedField(fieldKey)}
+                        onBlur={() => {
+                          if (focusedField === fieldKey) setFocusedField(null);
+                        }}
                         onKeyDown={(e) => handleEnter(e, index, thisCol)}
                       />
                     );
@@ -895,6 +927,12 @@ export default function InvoiceItemTable({
                 <td className="align-middle">
                   {(() => {
                     const thisCol = ++col;
+                    const fieldKey = makeFieldKey(item.id, "g_weight");
+                    const rawValue = String(item.g_weight ?? "");
+                    const displayValue =
+                      focusedField === fieldKey
+                        ? rawValue
+                        : formatForDisplay(rawValue);
                     return (
                       <input
                         ref={setRef(index, thisCol)}
@@ -905,10 +943,14 @@ export default function InvoiceItemTable({
                         inputMode="decimal"
                         type="number"
                         step={stepFromDigits(gWeightDigits)}
-                        value={String(item.g_weight ?? "")}
+                        value={displayValue}
                         onChange={(e) =>
                           handleFieldChange(index, "g_weight", e.target.value)
                         }
+                        onFocus={() => setFocusedField(fieldKey)}
+                        onBlur={() => {
+                          if (focusedField === fieldKey) setFocusedField(null);
+                        }}
                         onKeyDown={(e) => handleEnter(e, index, thisCol)}
                       />
                     );
@@ -948,6 +990,12 @@ export default function InvoiceItemTable({
                   <td>
                     {(() => {
                       const thisCol = ++col;
+                      const fieldKey = makeFieldKey(item.id, "price");
+                      const rawValue = String(item.price ?? "");
+                      const displayValue =
+                        focusedField === fieldKey
+                          ? rawValue
+                          : formatForDisplay(rawValue);
                       return (
                         <input
                           ref={setRef(index, thisCol)}
@@ -958,10 +1006,15 @@ export default function InvoiceItemTable({
                           inputMode="decimal"
                           type="number"
                           step={stepFromDigits(priceDigits)}
-                          value={String(item.price ?? "")}
+                          value={displayValue}
                           onChange={(e) =>
                             handleFieldChange(index, "price", e.target.value)
                           }
+                          onFocus={() => setFocusedField(fieldKey)}
+                          onBlur={() => {
+                            if (focusedField === fieldKey)
+                              setFocusedField(null);
+                          }}
                           onKeyDown={(e) => handleEnter(e, index, thisCol)}
                         />
                       );
@@ -974,6 +1027,12 @@ export default function InvoiceItemTable({
                   <td>
                     {(() => {
                       const thisCol = ++col;
+                      const fieldKey = makeFieldKey(item.id, "price_w");
+                      const rawValue = String(item.price_w ?? "");
+                      const displayValue =
+                        focusedField === fieldKey
+                          ? rawValue
+                          : formatForDisplay(rawValue);
                       return (
                         <input
                           ref={setRef(index, thisCol)}
@@ -988,10 +1047,15 @@ export default function InvoiceItemTable({
                           inputMode="decimal"
                           type="number"
                           step={stepFromDigits(priceWDigits)}
-                          value={String(item.price_w ?? "")}
+                          value={displayValue}
                           onChange={(e) =>
                             handleFieldChange(index, "price_w", e.target.value)
                           }
+                          onFocus={() => setFocusedField(fieldKey)}
+                          onBlur={() => {
+                            if (focusedField === fieldKey)
+                              setFocusedField(null);
+                          }}
                           onKeyDown={(e) => handleEnter(e, index, thisCol)}
                         />
                       );
@@ -1004,6 +1068,12 @@ export default function InvoiceItemTable({
                   <td>
                     {(() => {
                       const thisCol = ++col;
+                      const fieldKey = makeFieldKey(item.id, "total_a");
+                      const rawValue = String(item.total_a ?? "");
+                      const displayValue =
+                        focusedField === fieldKey
+                          ? rawValue
+                          : formatForDisplay(rawValue);
                       return (
                         <input
                           ref={setRef(index, thisCol)}
@@ -1014,10 +1084,15 @@ export default function InvoiceItemTable({
                           inputMode="decimal"
                           type="number"
                           step={stepFromDigits(totalADigits)}
-                          value={String(item.total_a ?? "")}
+                          value={displayValue}
                           onChange={(e) =>
                             handleTotalAChange(index, e.target.value)
                           }
+                          onFocus={() => setFocusedField(fieldKey)}
+                          onBlur={() => {
+                            if (focusedField === fieldKey)
+                              setFocusedField(null);
+                          }}
                           onKeyDown={(e) => handleEnter(e, index, thisCol)}
                         />
                       );
@@ -1030,6 +1105,12 @@ export default function InvoiceItemTable({
                   <td>
                     {(() => {
                       const thisCol = ++col;
+                      const fieldKey = makeFieldKey(item.id, "total_w");
+                      const rawValue = String(item.total_w ?? "");
+                      const displayValue =
+                        focusedField === fieldKey
+                          ? rawValue
+                          : formatForDisplay(rawValue);
                       return (
                         <input
                           ref={setRef(index, thisCol)}
@@ -1040,10 +1121,15 @@ export default function InvoiceItemTable({
                           inputMode="decimal"
                           type="number"
                           step={stepFromDigits(totalWDigits)}
-                          value={String(item.total_w ?? "")}
+                          value={displayValue}
                           onChange={(e) =>
                             handleTotalWChange(index, e.target.value)
                           }
+                          onFocus={() => setFocusedField(fieldKey)}
+                          onBlur={() => {
+                            if (focusedField === fieldKey)
+                              setFocusedField(null);
+                          }}
                           onKeyDown={(e) => handleEnter(e, index, thisCol)}
                         />
                       );
@@ -1054,6 +1140,12 @@ export default function InvoiceItemTable({
                 <td>
                   {(() => {
                     const thisCol = ++col;
+                    const fieldKey = makeFieldKey(item.id, "item_disc_amt");
+                    const rawValue = String(item.item_disc_amt ?? "");
+                    const displayValue =
+                      focusedField === fieldKey
+                        ? rawValue
+                        : formatForDisplay(rawValue);
                     return (
                       <input
                         ref={setRef(index, thisCol)}
@@ -1064,10 +1156,14 @@ export default function InvoiceItemTable({
                         inputMode="decimal"
                         type="number"
                         step={stepFromDigits(itemDiscDigits)}
-                        value={String(item.item_disc_amt ?? "")}
+                        value={displayValue}
                         onChange={(e) =>
                           handleFieldChange(index, "item_disc_amt", e.target.value)
                         }
+                        onFocus={() => setFocusedField(fieldKey)}
+                        onBlur={() => {
+                          if (focusedField === fieldKey) setFocusedField(null);
+                        }}
                         onKeyDown={(e) => handleEnter(e, index, thisCol)}
                       />
                     );
@@ -1104,6 +1200,22 @@ export default function InvoiceItemTable({
                 <td>
                   {(() => {
                     const thisCol = ++col;
+                    const fieldKey = makeFieldKey(item.id, "total");
+                    const rawRawValue =
+                      tempTotals[item.id] !== undefined
+                        ? tempTotals[item.id]
+                        : String(
+                            item.total ??
+                              (Number.isFinite(totalWithTax) ? totalWithTax : ""),
+                          );
+                    const displayValue =
+                      focusedField === fieldKey
+                        ? rawRawValue
+                        : formatForDisplay(
+                            Number.isFinite(totalWithTax)
+                              ? totalWithTax
+                              : item.total,
+                          );
                     return (
                       <input
                         ref={setRef(index, thisCol)}
@@ -1114,15 +1226,11 @@ export default function InvoiceItemTable({
                         dir="ltr"
                         inputMode="decimal"
                         step={stepFromDigits(totalDigits)}
-                        value={
-                          tempTotals[item.id] !== undefined
-                            ? tempTotals[item.id]
-                            : Number.isFinite(totalWithTax)
-                              ? String(Number(totalWithTax.toFixed(totalDigits)))
-                              : ""
-                        }
+                        value={displayValue}
                         onBlur={(e) => {
                           handleTotalChange(index, e.target.value);
+                          if (focusedField === fieldKey)
+                            setFocusedField(null);
                         }}
                         onChange={(e) =>
                           setTempTotals((prev) => ({
@@ -1130,6 +1238,7 @@ export default function InvoiceItemTable({
                             [item.id]: e.target.value,
                           }))
                         }
+                        onFocus={() => setFocusedField(fieldKey)}
                         onKeyDown={(e) => handleEnter(e, index, thisCol)}
                       />
                     );
