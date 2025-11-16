@@ -13,13 +13,13 @@ import type {
 
 import { getCurrentUsername } from "./helpers/common";
 import { validateVoucherData } from "./helpers/validation";
-import { createGLTransactionRecords } from "./helpers/gl-transaction";
 import { processVoucherBoxes } from "./helpers/process-boxes";
 import { processVoucherDetails } from "./helpers/process-details";
 import { processGoldDetails } from "./helpers/process-gold-details";
 import { revalidateVoucherPaths } from "./helpers/revalidation";
 
 import { voucherService } from "@/services/api";
+import { requiresBoxes } from "@/utilities/voucher/routing";
 
 /**
  * Create a new voucher
@@ -76,7 +76,7 @@ export async function createVoucherAction(
     const currentDate = new Date().toISOString();
 
     // تجهيز بيانات القيد
-    const voucherPayload: any = {
+    let voucherPayload: any = {
       ...voucherData,
       com: 1,
       year: 1,
@@ -126,13 +126,22 @@ export async function createVoucherAction(
     }
 
     // حفظ السند الرئيسي
-    const voucherResponse = await voucherService.create(voucherPayload);
+    let voucherResponse = await voucherService.create(voucherPayload);
 
     if (!voucherResponse.success || !voucherResponse.data) {
-      return {
-        success: false,
-        message: voucherResponse.message || "خطأ في حفظ القيد",
-      };
+      const duplicateResolution = await handleDuplicateVoucherNumber(
+        voucherResponse,
+        voucherData,
+        voucherPayload,
+      );
+
+      if (!duplicateResolution.success) {
+        return duplicateResolution.result;
+      }
+
+      voucherResponse = duplicateResolution.voucherResponse;
+      voucherPayload = duplicateResolution.voucherPayload;
+      voucherData = duplicateResolution.voucherData;
     }
 
     const savedVoucher = voucherResponse.data;
@@ -162,20 +171,25 @@ export async function createVoucherAction(
       };
     }
 
-    // حفظ الصناديق
-    const boxesResult = await processVoucherBoxes(
-      masterId,
-      voucherBoxes,
-      voucherData.vouch_type,
-      currentDate,
-      currentUsername,
-    );
+    let normalizedBoxes = voucherBoxes;
 
-    if (!boxesResult.success) {
-      return {
-        success: false,
-        message: boxesResult.error || "خطأ في حفظ الصناديق",
-      };
+    if (requiresBoxes(voucherData.vouch_type)) {
+      const boxesResult = await processVoucherBoxes(
+        masterId,
+        voucherBoxes,
+        voucherData.vouch_type,
+        currentDate,
+        currentUsername,
+      );
+
+      if (!boxesResult.success) {
+        return {
+          success: false,
+          message: boxesResult.error || "خطأ في حفظ الصناديق",
+        };
+      }
+    } else {
+      normalizedBoxes = [];
     }
 
     // حفظ التفاصيل
@@ -184,6 +198,7 @@ export async function createVoucherAction(
       details,
       currentDate,
       currentUsername,
+      voucherData.vouch_type,
     );
 
     if (!detailsResult.success) {
@@ -192,18 +207,6 @@ export async function createVoucherAction(
         message: detailsResult.error || "خطأ في حفظ التفاصيل",
       };
     }
-
-    // ترحيل سجلات gl_transaction
-    await createGLTransactionRecords(
-      voucherData,
-      details,
-      masterId,
-      currentDate,
-      currentUsername,
-      voucherPayload,
-      voucherBoxes,
-      goldDetails,
-    );
 
     // حفظ تفاصيل الذهب
     const goldResult = await processGoldDetails(
@@ -240,4 +243,103 @@ export async function createVoucherAction(
       message: error instanceof Error ? error.message : "حدث خطأ",
     };
   }
+}
+
+const DUPLICATE_ERROR_SNIPPET =
+  "The fields com, vouch_type, vouch_id must make a unique set.";
+
+type DuplicateResolution =
+  | {
+      success: true;
+      voucherResponse: Awaited<ReturnType<typeof voucherService.create>>;
+      voucherPayload: any;
+      voucherData: SaveVoucherData;
+    }
+  | {
+      success: false;
+      result: {
+        success: false;
+        message: string;
+      };
+    };
+
+async function handleDuplicateVoucherNumber(
+  response: Awaited<ReturnType<typeof voucherService.create>>,
+  voucherData: SaveVoucherData,
+  voucherPayload: any,
+): Promise<DuplicateResolution> {
+  const nonFieldErrors: string[] | undefined = Array.isArray(
+    response?.data?.non_field_errors,
+  )
+    ? response.data.non_field_errors
+    : undefined;
+
+  const hasDuplicateError = nonFieldErrors?.some((err) =>
+    String(err).includes(DUPLICATE_ERROR_SNIPPET),
+  );
+
+  if (!hasDuplicateError) {
+    return {
+      success: false,
+      result: {
+        success: false,
+        message:
+          response.message ||
+          "خطأ في حفظ القيد. يرجى المحاولة مرة أخرى أو التواصل مع المسؤول.",
+      },
+    };
+  }
+
+  const voucherType =
+    voucherData.vouch_type ?? Number(voucherPayload?.vouch_type);
+
+  if (!voucherType) {
+    return {
+      success: false,
+      result: {
+        success: false,
+        message:
+          "هناك سند بنفس الرقم، وتعذر تحديد نوع السند لتحديث الرقم تلقائياً.",
+      },
+    };
+  }
+
+  const currentNumber =
+    Number(voucherData.vouch_id ?? voucherPayload?.vouch_id) || 0;
+
+  let nextNumber = await voucherService.getNextNumber(voucherType);
+
+  if (!Number.isFinite(nextNumber) || nextNumber <= currentNumber) {
+    nextNumber = currentNumber + 1;
+  }
+
+  voucherPayload = {
+    ...voucherPayload,
+    vouch_id: nextNumber,
+  };
+  voucherData = {
+    ...voucherData,
+    vouch_id: nextNumber,
+  };
+
+  const retryResponse = await voucherService.create(voucherPayload);
+
+  if (!retryResponse.success || !retryResponse.data) {
+    return {
+      success: false,
+      result: {
+        success: false,
+        message:
+          retryResponse.message ||
+          "تعذر حفظ القيد حتى بعد تحديث الرقم. يرجى إعادة المحاولة.",
+      },
+    };
+  }
+
+  return {
+    success: true,
+    voucherResponse: retryResponse,
+    voucherPayload,
+    voucherData,
+  };
 }

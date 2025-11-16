@@ -26,7 +26,7 @@ const authMiddleware: MiddlewareFactory = () => {
       const token = request.cookies.get(STORAGE_KEYS.ACCESS_TOKEN)?.value;
 
       if (!isTokenValid(token)) {
-        console.log("Token is invalid");
+        console.warn("Token is invalid");
 
         // Delete the auth token cookie
         await request.cookies.delete(STORAGE_KEYS.ACCESS_TOKEN);

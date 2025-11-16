@@ -1,28 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import CreatableSelect from "react-select/creatable";
 import AsyncCreatableSelectRegular from "react-select/async-creatable";
-import { withAsyncPaginate } from "react-select-async-paginate";
+import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Button } from "@heroui/react";
 import {
   CheckIcon,
   PencilIcon,
   PrinterIcon,
-  DocumentTextIcon,
   PlusIcon,
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
-const AsyncPaginateCreatableSelect = withAsyncPaginate(CreatableSelect);
-
-import GLTransactionModal from "../components/GLTransactionModal";
-
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { useReceiptDeliveryVoucherForm } from "@/hooks/useReceiptDeliveryVoucherForm";
-import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 
@@ -44,6 +37,7 @@ interface DeliveryVoucherClientPageProps {
   startInEditMode?: boolean;
   vouchType: number; // 222 للتسليم
   formMode?: "new" | "edit" | "preview";
+  categories?: any[];
 }
 
 export default function DeliveryVoucherClientPage({
@@ -62,6 +56,7 @@ export default function DeliveryVoucherClientPage({
   startInEditMode = false,
   vouchType,
   formMode = "new",
+  categories: initialCategories = [],
 }: DeliveryVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -125,25 +120,12 @@ export default function DeliveryVoucherClientPage({
     startInEditMode,
     vouchType,
     formMode,
+    categories: initialCategories,
   });
 
   // Handle search
   const [searchTerm, setSearchTerm] = useState("");
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
-
-  // استخدام hook موحد لحركة الترحيل
-  const {
-    isGLModalOpen,
-    setIsGLModalOpen,
-    glTransactions,
-    loadingGLTransactions,
-    handleViewGLTransactions,
-    getAccountName,
-  } = useGLTransactions({
-    vouchId: voucher.vouch_id || 0,
-    vouchType: vouchType,
-    refNo: voucher.ref_no,
-  });
 
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
@@ -212,6 +194,70 @@ export default function DeliveryVoucherClientPage({
       router.push(`/forms/delivery/${voucherRecordId}?mode=edit`);
     }
   };
+
+  // Helper functions for box select
+  const getBoxSelectValue = (
+    boxId: number | null | undefined,
+    boxList: any[],
+  ) => {
+    if (!boxId || boxId <= 0) {
+      return null;
+    }
+
+    const box = boxList.find((b) => b.id === boxId);
+
+    if (!box) {
+      return null;
+    }
+
+    return {
+      value: String(box.id),
+      label: box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
+    };
+  };
+
+  // Must be before any early return (Rules of Hooks)
+  const goldBoxSelectOptions = useMemo(() => {
+    return (goldBoxes || []).map((box) => ({
+      value: String(box.id),
+      label: box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
+    }));
+  }, [goldBoxes]);
+
+  const cashBoxSelectOptions = useMemo(() => {
+    return (boxes || []).map((box) => ({
+      value: String(box.id),
+      label:
+        box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
+    }));
+  }, [boxes]);
+
+  // Helper functions for cost center select
+  const getCostCenterSelectValue = (
+    costId: number | null | undefined,
+  ) => {
+    if (!costId || costId <= 0) {
+      return null;
+    }
+
+    const center = costCenters.find((c) => c.id === costId);
+
+    if (!center) {
+      return null;
+    }
+
+    return {
+      value: String(center.id),
+      label: center.name || center.cost_name || `مركز ${center.id}`,
+    };
+  };
+
+  const costCenterSelectOptions = useMemo(() => {
+    return (costCenters || []).map((center) => ({
+      value: String(center.id),
+      label: center.name || center.cost_name || `مركز ${center.id}`,
+    }));
+  }, [costCenters]);
 
   if (!isClient) {
     return (
@@ -324,17 +370,6 @@ export default function DeliveryVoucherClientPage({
               className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
             >
               طباعة
-            </Button>
-
-            <Button
-              size="sm"
-              variant="solid"
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
-              onPress={handleViewGLTransactions}
-              startContent={<DocumentTextIcon className="h-4 w-4" />}
-              className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[140px]"
-            >
-              القيد المحاسبي
             </Button>
           </div>
 
@@ -556,26 +591,51 @@ export default function DeliveryVoucherClientPage({
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
             مركز التكلفة
           </label>
-          <select
-            className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 bg-white"
-            disabled={!isEditing}
-            value={voucher.cost_id || ""}
-            onChange={(e) =>
+          <ReactSelect
+            isSearchable
+            isDisabled={!isEditing}
+            className="text-xs"
+            classNamePrefix="react-select"
+            components={{ IndicatorSeparator: () => null }}
+            instanceId="delivery-cost-center-select"
+            menuPortalTarget={
+              typeof window !== "undefined" ? document.body : null
+            }
+            menuPosition="fixed"
+            options={costCenterSelectOptions}
+            placeholder="اختر مركز التكلفة..."
+            styles={{
+              control: (base) => ({
+                ...base,
+                minHeight: "32px",
+                height: "32px",
+                fontSize: "12px",
+              }),
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+              option: (base) => ({
+                ...base,
+                fontSize: "12px",
+              }),
+              placeholder: (base) => ({
+                ...base,
+                fontSize: "12px",
+              }),
+              singleValue: (base) => ({
+                ...base,
+                fontSize: "12px",
+              }),
+            }}
+            value={getCostCenterSelectValue(voucher.cost_id)}
+            onChange={(selectedOption: any) => {
+              if (!isEditing) return;
               setVoucher((prev) => ({
                 ...prev,
-                cost_id: e.target.value ? parseInt(e.target.value) : null,
-              }))
-            }
-          >
-            <option value="">اختر مركز التكلفة...</option>
-            {costCenters.map((center) => (
-              <option key={center.id} value={center.id}>
-                {center.name ||
-                  center.cost_name ||
-                  `مركز ${center.id}`}
-              </option>
-            ))}
-          </select>
+                cost_id: selectedOption?.value
+                  ? parseInt(selectedOption.value)
+                  : null,
+              }));
+            }}
+          />
         </div>
       </div>
 
@@ -619,7 +679,7 @@ export default function DeliveryVoucherClientPage({
                 {goldDetails.map((detail, index) => (
                   <tr key={index} className="border-b">
                     <td className="p-0 border">
-                      <AsyncPaginateCreatableSelect
+                      <AsyncCreatableSelectRegular
                         defaultOptions
                         isClearable
                         isSearchable
@@ -831,27 +891,57 @@ export default function DeliveryVoucherClientPage({
                       />
                     </td>
                     <td className="p-0 border">
-                      <select
-                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        value={detail.box_id || ""}
-                        onChange={(e) =>
+                      <ReactSelect
+                        isSearchable
+                        isDisabled={!isEditing}
+                        className="text-xs"
+                        classNamePrefix="react-select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`gold-box-select-${index}`}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
+                        }
+                        menuPosition="fixed"
+                        options={goldBoxSelectOptions}
+                        placeholder="اختر الصندوق..."
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                            height: "32px",
+                            fontSize: "12px",
+                            border: "none",
+                            borderRadius: "0",
+                            boxShadow: "none",
+                            cursor: isEditing ? "pointer" : "not-allowed",
+                            backgroundColor: "transparent",
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          option: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                        }}
+                        value={getBoxSelectValue(detail.box_id, goldBoxes || [])}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
                           updateGoldDetail(
                             index,
                             "box_id",
-                            e.target.value
-                              ? parseInt(e.target.value)
+                            selectedOption?.value
+                              ? parseInt(selectedOption.value)
                               : undefined,
-                          )
-                        }
-                      >
-                        <option value="">اختر الصندوق</option>
-                        {goldBoxes.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.cust_name || b.name || `صندوق ${b.id}`}
-                          </option>
-                        ))}
-                      </select>
+                          );
+                        }}
+                      />
                     </td>
                     <td className="p-0 border">
                       <input
@@ -983,29 +1073,57 @@ export default function DeliveryVoucherClientPage({
                       />
                     </td>
                     <td className="p-0 border">
-                      <select
-                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        value={detail.cost_id || ""}
-                        onChange={(e) =>
+                      <ReactSelect
+                        isSearchable
+                        isDisabled={!isEditing}
+                        className="text-xs"
+                        classNamePrefix="react-select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`cost-center-gold-select-${index}`}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
+                        }
+                        menuPosition="fixed"
+                        options={costCenterSelectOptions}
+                        placeholder="مركز التكلفة..."
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                            height: "32px",
+                            fontSize: "12px",
+                            border: "none",
+                            borderRadius: "0",
+                            boxShadow: "none",
+                            cursor: isEditing ? "pointer" : "not-allowed",
+                            backgroundColor: "transparent",
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          option: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                        }}
+                        value={getCostCenterSelectValue(detail.cost_id)}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
                           updateGoldDetail(
                             index,
                             "cost_id",
-                            e.target.value
-                              ? parseInt(e.target.value)
+                            selectedOption?.value
+                              ? parseInt(selectedOption.value)
                               : undefined,
-                          )
-                        }
-                      >
-                        <option value="">مركز التكلفة</option>
-                        {costCenters.map((center) => (
-                          <option key={center.id} value={center.id}>
-                            {center.name ||
-                              center.cost_name ||
-                              `مركز ${center.id}`}
-                          </option>
-                        ))}
-                      </select>
+                          );
+                        }}
+                      />
                     </td>
                     <td className="p-1 border">
                       <button
@@ -1047,7 +1165,6 @@ export default function DeliveryVoucherClientPage({
                   <th className="w-32 p-1 border">المبلغ</th>
                   <th className="w-48 p-1 border">الصندوق</th>
                   <th className="w-80 p-1 border">البيان</th>
-                  <th className="w-32 p-1 border">وزن التسكير</th>
                   <th className="w-32 p-1 border">رقم الفاتورة</th>
                   <th className="w-48 p-1 border">مركز التكلفة</th>
                   <th className="w-12 p-1 border">حذف</th>
@@ -1085,30 +1202,55 @@ export default function DeliveryVoucherClientPage({
                       />
                     </td>
                     <td className="p-0 border">
-                      <select
-                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        value={
-                          box.box_id && box.box_id > 0 ? String(box.box_id) : ""
+                      <ReactSelect
+                        isSearchable
+                        isDisabled={!isEditing}
+                        className="text-xs"
+                        classNamePrefix="react-select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`cash-box-select-${index}`}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
                         }
-                        onChange={(e) => {
-                          const selectedBoxId = e.target.value
-                            ? parseInt(e.target.value)
+                        menuPosition="fixed"
+                        options={cashBoxSelectOptions}
+                        placeholder="اختر الصندوق..."
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                            height: "32px",
+                            fontSize: "12px",
+                            border: "none",
+                            borderRadius: "0",
+                            boxShadow: "none",
+                            cursor: isEditing ? "pointer" : "not-allowed",
+                            backgroundColor: "transparent",
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          option: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                        }}
+                        value={getBoxSelectValue(box.box_id, boxes || [])}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
+                          const selectedBoxId = selectedOption?.value
+                            ? parseInt(selectedOption.value)
                             : 0;
 
                           updateVoucherBox(index, "box_id", selectedBoxId);
                         }}
-                      >
-                        <option value="">اختر الصندوق</option>
-                        {boxes.map((b) => (
-                          <option key={b.id} value={String(b.id)}>
-                            {b.cust_name ||
-                              b.name ||
-                              box.box?.cust_name ||
-                              `صندوق ${b.id}`}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </td>
                     <td className="p-0 border">
                       <input
@@ -1120,35 +1262,6 @@ export default function DeliveryVoucherClientPage({
                         onChange={(e) =>
                           updateVoucherBox(index, "vouch_notes", e.target.value)
                         }
-                      />
-                    </td>
-                    <td className="p-0 border">
-                      <input
-                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        readOnly={!isEditing}
-                        style={{
-                          MozAppearance: "textfield",
-                          WebkitAppearance: "none",
-                          appearance: "none",
-                        }}
-                        type="number"
-                        value={box.close_weight || ""}
-                        onChange={(e) =>
-                          updateVoucherBox(
-                            index,
-                            "close_weight",
-                            e.target.value
-                              ? parseFloat(e.target.value)
-                              : undefined,
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            e.preventDefault();
-                          }
-                        }}
-                        onWheel={(e) => e.currentTarget.blur()}
                       />
                     </td>
                     <td className="p-0 border">
@@ -1182,27 +1295,57 @@ export default function DeliveryVoucherClientPage({
                       />
                     </td>
                     <td className="p-0 border">
-                      <select
-                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        value={box.cost_id || ""}
-                        onChange={(e) =>
+                      <ReactSelect
+                        isSearchable
+                        isDisabled={!isEditing}
+                        className="text-xs"
+                        classNamePrefix="react-select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`cost-center-cash-select-${index}`}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
+                        }
+                        menuPosition="fixed"
+                        options={costCenterSelectOptions}
+                        placeholder="مركز التكلفة..."
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                            height: "32px",
+                            fontSize: "12px",
+                            border: "none",
+                            borderRadius: "0",
+                            boxShadow: "none",
+                            cursor: isEditing ? "pointer" : "not-allowed",
+                            backgroundColor: "transparent",
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          option: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                        }}
+                        value={getCostCenterSelectValue(box.cost_id)}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
                           updateVoucherBox(
                             index,
                             "cost_id",
-                            e.target.value ? parseInt(e.target.value) : null,
-                          )
-                        }
-                      >
-                        <option value="">مركز التكلفة</option>
-                        {costCenters.map((center) => (
-                          <option key={center.id} value={center.id}>
-                            {center.name ||
-                              center.cost_name ||
-                              `مركز ${center.id}`}
-                          </option>
-                        ))}
-                      </select>
+                            selectedOption?.value
+                              ? parseInt(selectedOption.value)
+                              : null,
+                          );
+                        }}
+                      />
                     </td>
                     <td className="p-1 border">
                       <button
@@ -1259,17 +1402,6 @@ export default function DeliveryVoucherClientPage({
           </div>
         </div>
       </div>
-
-      {/* مودال عرض القيد المحاسبي */}
-      <GLTransactionModal
-        getAccountName={getAccountName}
-        isOpen={isGLModalOpen}
-        loading={loadingGLTransactions}
-        refNo={voucher.ref_no}
-        transactions={glTransactions}
-        voucherId={voucher.vouch_id || 0}
-        onClose={() => setIsGLModalOpen(false)}
-      />
 
       {/* مودال توسيع البيان */}
       <Modal

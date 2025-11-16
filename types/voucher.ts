@@ -127,3 +127,15 @@ export interface VoucherFormData {
   details: VoucherDetail[];
   boxDetails: VoucherBox[];
 }
+
+export type AccountOption = {
+  value: number;
+  label: string;
+  account: any;
+};
+
+export type AccountSearchResponse = {
+  options: AccountOption[];
+  hasMore: boolean;
+  nextPage: number;
+};

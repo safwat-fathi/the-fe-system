@@ -39,6 +39,11 @@ const settingsLinks = [
     icon: <Cog6ToothIcon className="h-5 w-5" />,
   },
   {
+    name: "فروع ومراكز المستخدم",
+    href: "/settings/user-assignments",
+    icon: <UserGroupIcon className="h-5 w-5" />,
+  },
+  {
     name: "الصلاحيات",
     href: "/settings/permissions",
     icon: <ShieldCheckIcon className="h-5 w-5" />,

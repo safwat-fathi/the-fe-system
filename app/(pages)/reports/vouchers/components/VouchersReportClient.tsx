@@ -3,9 +3,13 @@
 import { useState, useEffect, useMemo, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Button, Tabs, Tab } from "@heroui/react";
+import { Button, Tabs, Tab, Tooltip } from "@heroui/react";
 import { CardBody } from "@heroui/react";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
 
 import Card from "@/components/Card";
 import { PrintButton } from "@/components";
@@ -36,6 +40,10 @@ interface VouchersReportClientProps {
   searchParams: IParams;
   totalVouchers: number;
   totalPages: number;
+  overallTotals: {
+    totalAmount: number;
+    totalGold: number;
+  };
 }
 
 const VouchersReportClient = ({
@@ -44,6 +52,7 @@ const VouchersReportClient = ({
   searchParams,
   totalVouchers,
   totalPages,
+  overallTotals,
 }: VouchersReportClientProps) => {
   const router = useRouter();
 
@@ -101,6 +110,8 @@ const VouchersReportClient = ({
   const [searchQ, setSearchQ] = useState(params.xvouch_id || "");
   const [activeTab, setActiveTab] = useState("all");
   const [, startTransition] = useTransition();
+  const [isPaging, startPagingTransition] = useTransition();
+  const currentPage = Number(params.page) || 1;
 
   // Clear filters function
   const clearFilters = () => {
@@ -115,6 +126,21 @@ const VouchersReportClient = ({
       }),
     );
   };
+
+  const handlePageChange = useCallback(
+    (nextPage: number) => {
+      if (!Number.isFinite(nextPage) || nextPage <= 0) return;
+      if (totalPages > 0 && nextPage > totalPages) return;
+
+      startPagingTransition(() => {
+        setParams({
+          ...params,
+          page: String(nextPage),
+        });
+      });
+    },
+    [params, setParams, totalPages],
+  );
 
 
   // Get vouchers by type (filtered on client side for tabs) - memoized
@@ -401,7 +427,40 @@ const VouchersReportClient = ({
       <div className="mb-2">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold mt-2">تقرير السندات</h1>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2">
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">
+                <Tooltip content="السابق" placement="bottom">
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    className="h-7 w-7"
+                    aria-label="السابق"
+                    isDisabled={currentPage <= 1 || isPaging}
+                    onPress={() => handlePageChange(currentPage - 1)}
+                  >
+                    <ChevronRightIcon className="h-4 w-4 text-slate-600" />
+                  </Button>
+                </Tooltip>
+                <span className="text-xs font-medium text-slate-500">
+                  {currentPage}/{totalPages}
+                </span>
+                <Tooltip content="التالي" placement="bottom">
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    className="h-7 w-7"
+                    aria-label="التالي"
+                    isDisabled={currentPage >= totalPages || isPaging}
+                    onPress={() => handlePageChange(currentPage + 1)}
+                  >
+                    <ChevronLeftIcon className="h-4 w-4 text-slate-600" />
+                  </Button>
+                </Tooltip>
+              </div>
+            )}
             <PrintButton />
             <Button
               color="primary"
@@ -555,12 +614,13 @@ const VouchersReportClient = ({
             calculateVoucherGoldTotal={calculateVoucherGoldTotal}
             vouchers={vouchers}
             voucherDetails={voucherDetails}
+            overallTotals={{
+              totalAmount: overallTotals.totalAmount,
+              totalGold: overallTotals.totalGold,
+            }}
+            totalVoucherCount={totalVouchers}
           />
-          {totalPages > 1 && (
-            <div className="text-sm text-gray-600 text-center mt-2">
-              الصفحة {params.page} من {totalPages}
-            </div>
-          )}
+          {/* أزرار التنقل انتقلت إلى أعلى الصفحة */}
         </CardBody>
       </Card>
     </div>

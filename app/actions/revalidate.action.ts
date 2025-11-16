@@ -51,6 +51,8 @@ export async function revalidateAllBasicData() {
     const tables = [
       "accounts_list",
       "cost_centers_list",
+      "user_companies",
+      "user_cost_centers",
       "boxes_list",
       "currencies_list",
       "customers_list",

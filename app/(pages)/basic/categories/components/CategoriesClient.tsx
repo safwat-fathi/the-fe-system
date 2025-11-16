@@ -121,23 +121,50 @@ const EMPTY_ACCOUNT_FORM = ACCOUNT_KEYS.reduce(
   {} as CategoryAccountFormState,
 );
 
-interface Category {
+type RawCategory = {
+  id?: number | string;
+  cat_name?: string;
+  cat_name_e?: string;
+  k?: string;
+  K?: string;
+  purity?: string | number | null;
+  box?: number | string | null;
+  cat_box?: number | string | null;
+  tax_type?: boolean | number | null;
+  tax?: number | string | null;
+  cat_type?: string | number | null;
+  catType?: string | number | null;
+  cat_status?: string | number | boolean | null;
+  catStatus?: string | number | boolean | null;
+};
+
+type CategoryRow = {
   id: number;
   cat_name: string;
   cat_name_e: string;
   k: string;
   purity: string;
-  box: number | null;
+  box_id: number | null;
+  box_name: string;
   tax_type: boolean;
   tax: number;
-  cat_type: string;
-  cat_status: boolean;
-}
+  cat_type_id: string | number | null;
+  cat_type_name: string;
+  cat_status_id: string | number | null;
+  cat_status_name: string;
+};
+
+type CategoryLookupOption = {
+  id: string;
+  name: string;
+};
 
 interface CategoriesClientProps {
   companyId: number;
-  initialCategories: Category[];
+  initialCategories: RawCategory[];
   initialBoxes: { id: number; box_name: string }[];
+  catTypes: CategoryLookupOption[];
+  catStatuses: CategoryLookupOption[];
   initialAccounts: Account[];
   initialCategoryAccounts: CategoryAccount[];
 }
@@ -163,20 +190,118 @@ export default function CategoriesClient({
   companyId,
   initialCategories,
   initialBoxes,
+  catTypes,
+  catStatuses,
   initialAccounts,
   initialCategoryAccounts,
 }: CategoriesClientProps) {
   const router = useRouter();
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const boxMap = useMemo(() => {
+    const map = new Map<number, string>();
+    initialBoxes.forEach((box) => {
+      if (box?.id !== undefined && box?.id !== null) {
+        map.set(Number(box.id), box.box_name);
+      }
+    });
+
+    return map;
+  }, [initialBoxes]);
+
+  const catTypeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    catTypes.forEach((type) => {
+      map.set(String(type.id), type.name);
+    });
+
+    return map;
+  }, [catTypes]);
+
+  const catStatusMap = useMemo(() => {
+    const map = new Map<string, string>();
+    catStatuses.forEach((status) => {
+      map.set(String(status.id), status.name);
+    });
+
+    return map;
+  }, [catStatuses]);
+
+  const mapCategoryToRow = useCallback(
+    (cat: RawCategory): CategoryRow => {
+      const id = Number(cat.id ?? 0);
+      const boxIdRaw = cat.box ?? cat.cat_box ?? null;
+      const boxId =
+        boxIdRaw === null || boxIdRaw === undefined || boxIdRaw === ""
+          ? null
+          : Number(boxIdRaw);
+      const catTypeId = cat.cat_type ?? cat.catType ?? null;
+      const catStatusId = cat.cat_status ?? cat.catStatus ?? null;
+      const taxTypeRaw = cat.tax_type;
+      const isTaxable =
+        typeof taxTypeRaw === "boolean"
+          ? taxTypeRaw
+          : Number(taxTypeRaw ?? 0) === 1;
+
+      const normalizedCatTypeId =
+        catTypeId === null || catTypeId === undefined || catTypeId === ""
+          ? null
+          : catTypeId;
+      const normalizedCatStatusId =
+        catStatusId === null || catStatusId === undefined || catStatusId === ""
+          ? null
+          : catStatusId;
+
+      const statusKey =
+        normalizedCatStatusId !== null
+          ? String(normalizedCatStatusId)
+          : undefined;
+      const typeKey =
+        normalizedCatTypeId !== null ? String(normalizedCatTypeId) : undefined;
+
+      return {
+        id,
+        cat_name: cat.cat_name ?? "-",
+        cat_name_e: cat.cat_name_e ?? "-",
+        k: cat.k ?? cat.K ?? "-",
+        purity:
+          cat.purity !== null && cat.purity !== undefined
+            ? String(cat.purity)
+            : "-",
+        box_id: boxId,
+        box_name:
+          (boxId !== null ? boxMap.get(boxId) : undefined) ??
+          String(boxId ?? "-"),
+        tax_type: isTaxable,
+        tax: Number(cat.tax ?? 0),
+        cat_type_id: normalizedCatTypeId,
+        cat_type_name:
+          (typeKey !== undefined ? catTypeMap.get(typeKey) : undefined) ??
+          (normalizedCatTypeId !== null ? String(normalizedCatTypeId) : "-"),
+        cat_status_id: normalizedCatStatusId,
+        cat_status_name:
+          (statusKey !== undefined ? catStatusMap.get(statusKey) : undefined) ??
+          (normalizedCatStatusId !== null
+            ? String(normalizedCatStatusId)
+            : "-"),
+      };
+    },
+    [boxMap, catStatusMap, catTypeMap],
+  );
+
+  const [categories, setCategories] = useState<CategoryRow[]>(() =>
+    initialCategories.map(mapCategoryToRow),
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [rowsPerPage] = useState(5);
-  const [boxes] = useState<{ id: number; box_name: string }[]>(initialBoxes);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
+  const [categoryToDelete, setCategoryToDelete] = useState<CategoryRow | null>(
     null,
   );
-  const initialCategoryId = initialCategories?.[0]?.id ?? null;
+  const initialCategoryIdRaw = initialCategories?.[0]?.id ?? null;
+  const initialCategoryId =
+    initialCategoryIdRaw !== null && initialCategoryIdRaw !== undefined
+      ? Number(initialCategoryIdRaw)
+      : null;
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     initialCategoryId,
   );
@@ -239,23 +364,10 @@ export default function CategoriesClient({
     return value;
   };
 
-  const sanitizeCategory = (cat: any): Category => ({
-    id: cat.id ?? 0,
-    cat_name: cat.cat_name ?? "-",
-    cat_name_e: cat.cat_name_e ?? "-",
-    k: cat.k ?? cat.K ?? "-",
-    purity: cat.purity ?? "-",
-    box: cat.box ?? cat.cat_box ?? null,
-    tax_type: Boolean(cat.tax_type),
-    tax: Number(cat.tax ?? 0),
-    cat_type: cat.cat_type ?? "-",
-    cat_status: Boolean(cat.cat_status),
-  });
-
   const loadData = async () => {
     try {
       const categoriesList = await categoryService.getAllCategories(companyId);
-      const sanitized = categoriesList.map(sanitizeCategory);
+      const sanitized = categoriesList.map(mapCategoryToRow);
       setCategories(sanitized);
     } catch (error) {
       console.error("فشل في جلب البيانات:", error);
@@ -282,11 +394,25 @@ export default function CategoriesClient({
   const filteredCategories = useMemo(() => {
     if (!searchQuery) return categories;
 
-    return categories.filter((cat) =>
-      Object.values(cat).some((val) =>
-        val?.toString().toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-    );
+    const normalizedQuery = searchQuery.toLowerCase().trim();
+
+    return categories.filter((cat) => {
+      const valuesToSearch = [
+        cat.id,
+        cat.cat_name,
+        cat.cat_name_e,
+        cat.k,
+        cat.purity,
+        cat.box_name,
+        cat.cat_type_name,
+        cat.cat_status_name,
+        cat.tax,
+      ];
+
+      return valuesToSearch.some((val) =>
+        val?.toString().toLowerCase().includes(normalizedQuery),
+      );
+    });
   }, [searchQuery, categories]);
 
   const sortedCategories = useMemo(
@@ -312,7 +438,7 @@ export default function CategoriesClient({
     [accountForm, accountFormSnapshot],
   );
 
-  const handleDeleteClick = (category: Category) => {
+  const handleDeleteClick = (category: CategoryRow) => {
     if (!category.id) {
       toast.error("❌ لا يمكن حذف فئة بدون معرف");
       return;
@@ -503,7 +629,7 @@ export default function CategoriesClient({
     }
   };
 
-  const renderActions = (cat: Category) => (
+  const renderActions = (cat: CategoryRow) => (
     <div className="flex gap-2">
       <Button
         isIconOnly
@@ -583,17 +709,13 @@ export default function CategoriesClient({
                 <TableCell>{cat.cat_name_e}</TableCell>
                 <TableCell>{cat.k}</TableCell>
                 <TableCell>{cat.purity}</TableCell>
-                <TableCell>
-                  {boxes.find((b) => b.id === cat.box)?.box_name || cat.box}
-                </TableCell>
+                <TableCell>{cat.box_name}</TableCell>
                 <TableCell>
                   <Checkbox isReadOnly isSelected={cat.tax_type} />
                 </TableCell>
                 <TableCell>{cat.tax}</TableCell>
-                <TableCell>{cat.cat_type}</TableCell>
-                <TableCell>
-                  <Checkbox isReadOnly isSelected={cat.cat_status} />
-                </TableCell>
+                <TableCell>{cat.cat_type_name}</TableCell>
+                <TableCell>{cat.cat_status_name}</TableCell>
                 <TableCell>{renderActions(cat)}</TableCell>
               </TableRow>
             ))}

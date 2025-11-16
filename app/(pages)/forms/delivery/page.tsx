@@ -35,6 +35,7 @@ export default async function DeliveryVoucherPage() {
         startInEditMode={true}
         vouchType={222}
         voucherTypes={formData.voucherTypes}
+        categories={formData.categories || []}
       />
     </div>
   );

@@ -365,10 +365,11 @@ export default async function ReceiptVoucherEditPage({
         items={formData.items || []}
         startInEditMode={startInEditMode}
         vouchType={111}
-        voucherBoxes={boxes}
+        voucherBoxes={boxesData}
         voucherData={formattedVoucher}
-        voucherRecordId={targetVoucher?.id || voucherId}
+        voucherRecordId={targetVoucher.id}
         voucherTypes={formData.voucherTypes}
+        categories={formData.categories || []}
       />
     </div>
   );

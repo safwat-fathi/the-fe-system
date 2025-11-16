@@ -335,10 +335,11 @@ export default async function DeliveryVoucherEditPage({
         items={formData.items || []}
         startInEditMode={startInEditMode}
         vouchType={222}
-        voucherBoxes={boxes}
+        voucherBoxes={boxesData}
         voucherData={formattedVoucher}
         voucherRecordId={targetVoucher.id}
         voucherTypes={formData.voucherTypes}
+        categories={formData.categories || []}
       />
     </div>
   );

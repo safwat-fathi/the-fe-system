@@ -40,6 +40,7 @@ type FilterParams = {
   itemType: string;
   status: string;
   page: string;
+  search: string;
 };
 
 const ITEM_STATUS_FILTERS: { key: string; label: string }[] = [
@@ -53,6 +54,7 @@ const DEFAULT_FILTERS: FilterParams = {
   itemType: "",
   status: "all",
   page: "1",
+  search: "",
 };
 
 
@@ -119,7 +121,7 @@ export default function ItemsClient({
   }, [itemTypesState]);
 
   const { params, setParams } = useQueryParams<FilterParams>(
-    ["category", "itemType", "status", "page"],
+    ["category", "itemType", "status", "page", "search"],
     {
       defaultValues: DEFAULT_FILTERS,
       schema: {
@@ -143,6 +145,11 @@ export default function ItemsClient({
           serialize: (value) => value ?? "1",
           default: "1",
         },
+        search: {
+          parse: (value) => value ?? "",
+          serialize: (value) => value ?? "",
+          default: "",
+        },
       },
       pushMode: "replace",
       refreshOnChange: true, // تفعيل refresh عند تغيير الفلاتر
@@ -155,6 +162,10 @@ export default function ItemsClient({
     setItemsCount(totalItems);
     setCategories(initialCategories);
   }, [initialItems, totalItems, initialCategories]);
+
+  useEffect(() => {
+    setSearchValue(params.search ?? "");
+  }, [params.search]);
 
   const handleOpenAddModal = () => {
     router.push("/basic/items/new");
@@ -316,6 +327,7 @@ export default function ItemsClient({
         itemType: "",
         status: "all",
         page: "1",
+        search: "",
       }),
     );
   };

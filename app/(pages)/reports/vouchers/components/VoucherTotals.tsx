@@ -14,6 +14,11 @@ interface VoucherTotalsProps {
   calculateVoucherCashTotal: (voucher: Voucher) => number;
   calculateVoucherGoldTotal: (voucher: Voucher) => number;
   voucherDetails: Record<number, any[]>;
+  overallTotals?: {
+    totalAmount: number;
+    totalGold: number;
+  };
+  totalVoucherCount?: number;
 }
 
 export default function VoucherTotals({
@@ -21,8 +26,18 @@ export default function VoucherTotals({
   calculateVoucherCashTotal,
   calculateVoucherGoldTotal,
   voucherDetails,
+  overallTotals,
+  totalVoucherCount,
 }: VoucherTotalsProps) {
   const totals = useMemo(() => {
+    if (overallTotals) {
+      return {
+        totalAmount: overallTotals.totalAmount,
+        totalGold: overallTotals.totalGold,
+        totalCount: totalVoucherCount ?? vouchers.length,
+      };
+    }
+
     return vouchers.reduce(
       (acc, voucher) => {
         acc.totalAmount += calculateVoucherCashTotal(voucher);
@@ -32,7 +47,14 @@ export default function VoucherTotals({
       },
       { totalAmount: 0, totalCount: 0, totalGold: 0 },
     );
-  }, [vouchers, voucherDetails, calculateVoucherCashTotal, calculateVoucherGoldTotal]);
+  }, [
+    vouchers,
+    voucherDetails,
+    calculateVoucherCashTotal,
+    calculateVoucherGoldTotal,
+    overallTotals,
+    totalVoucherCount,
+  ]);
 
   return (
     <div className="flex justify-between items-center mt-2">

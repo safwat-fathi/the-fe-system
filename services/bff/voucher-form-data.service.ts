@@ -7,6 +7,7 @@ import {
   boxesService,
   itemService,
   customerService,
+  categoryService,
 } from "@/services/api";
 
 export interface VoucherFormData {
@@ -19,6 +20,7 @@ export interface VoucherFormData {
   goldBoxes?: any[];
   items?: any[];
   customers?: any[];
+  categories?: any[];
 }
 
 type VoucherFormDataOptions = {
@@ -110,6 +112,7 @@ const getVoucherFormData = cache(
       goldBoxesResponse,
     itemsResponse,
     customersResponse,
+    categoriesResponse,
   ] = await Promise.all([
     accountService.getAllAccounts(),
     costCenterService.getAllCostCenters(),
@@ -120,6 +123,7 @@ const getVoucherFormData = cache(
       goldBoxesPromise,
     itemService.searchItems({ companyId: 1 }),
     customerService.getAllCustomers({ xcom_id: 1 }),
+    categoryService.getAllCategories(1),
   ]);
 
   // معالجة الحسابات
@@ -178,18 +182,20 @@ const getVoucherFormData = cache(
 
   // معالجة العملاء
   const customers = Array.isArray(customersResponse) ? customersResponse : [];
+  const categories = Array.isArray(categoriesResponse) ? categoriesResponse : [];
 
-    return {
-      accounts,
-      costCenters,
-      voucherTypes,
-      voucherStatuses,
-      caratTypes,
-      boxes,
+  return {
+    accounts,
+    costCenters,
+    voucherTypes,
+    voucherStatuses,
+    caratTypes,
+    boxes,
     goldBoxes,
-      items,
-      customers,
-    };
+    items,
+    customers,
+    categories,
+  };
   },
 );
 
