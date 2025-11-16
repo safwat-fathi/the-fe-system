@@ -266,6 +266,7 @@ export default function InvoiceClientPage({
         firstInvoiceHref: resolvePaginatedInvoiceHref(
           invoiceData?.first_invoice_id,
         ),
+				totalInvoices: invoiceData?.invoices_count
       }
     : null;
 

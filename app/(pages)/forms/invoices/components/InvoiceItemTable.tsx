@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
   type KeyboardEvent,
+  type FocusEvent,
 } from "react";
 import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
@@ -229,6 +230,19 @@ export default function InvoiceItemTable({
     if (!Number.isFinite(num)) return "";
 
     return num.toFixed(2);
+  };
+
+  const handleNumericFocus = (
+    e: FocusEvent<HTMLInputElement>,
+    fieldKey: string,
+  ) => {
+    setFocusedField(fieldKey);
+    // Select all text on focus so the user can overwrite quickly
+    try {
+      e.target.select();
+    } catch {
+      // ignore selection errors
+    }
   };
 
   // sanitize numeric inputs: allow digits and a single dot for decimals
@@ -881,7 +895,7 @@ export default function InvoiceItemTable({
                         onChange={(e) =>
                           handleFieldChange(index, "qty", e.target.value)
                         }
-                        onFocus={() => setFocusedField(fieldKey)}
+                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
                         onBlur={() => {
                           if (focusedField === fieldKey) setFocusedField(null);
                         }}
@@ -914,7 +928,7 @@ export default function InvoiceItemTable({
                         onChange={(e) =>
                           handleFieldChange(index, "weight", e.target.value)
                         }
-                        onFocus={() => setFocusedField(fieldKey)}
+                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
                         onBlur={() => {
                           if (focusedField === fieldKey) setFocusedField(null);
                         }}
@@ -947,7 +961,7 @@ export default function InvoiceItemTable({
                         onChange={(e) =>
                           handleFieldChange(index, "g_weight", e.target.value)
                         }
-                        onFocus={() => setFocusedField(fieldKey)}
+                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
                         onBlur={() => {
                           if (focusedField === fieldKey) setFocusedField(null);
                         }}
@@ -1010,7 +1024,7 @@ export default function InvoiceItemTable({
                           onChange={(e) =>
                             handleFieldChange(index, "price", e.target.value)
                           }
-                          onFocus={() => setFocusedField(fieldKey)}
+                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
                           onBlur={() => {
                             if (focusedField === fieldKey)
                               setFocusedField(null);
@@ -1051,7 +1065,7 @@ export default function InvoiceItemTable({
                           onChange={(e) =>
                             handleFieldChange(index, "price_w", e.target.value)
                           }
-                          onFocus={() => setFocusedField(fieldKey)}
+                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
                           onBlur={() => {
                             if (focusedField === fieldKey)
                               setFocusedField(null);
@@ -1088,7 +1102,7 @@ export default function InvoiceItemTable({
                           onChange={(e) =>
                             handleTotalAChange(index, e.target.value)
                           }
-                          onFocus={() => setFocusedField(fieldKey)}
+                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
                           onBlur={() => {
                             if (focusedField === fieldKey)
                               setFocusedField(null);
@@ -1125,7 +1139,7 @@ export default function InvoiceItemTable({
                           onChange={(e) =>
                             handleTotalWChange(index, e.target.value)
                           }
-                          onFocus={() => setFocusedField(fieldKey)}
+                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
                           onBlur={() => {
                             if (focusedField === fieldKey)
                               setFocusedField(null);
@@ -1160,7 +1174,7 @@ export default function InvoiceItemTable({
                         onChange={(e) =>
                           handleFieldChange(index, "item_disc_amt", e.target.value)
                         }
-                        onFocus={() => setFocusedField(fieldKey)}
+                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
                         onBlur={() => {
                           if (focusedField === fieldKey) setFocusedField(null);
                         }}
@@ -1238,7 +1252,7 @@ export default function InvoiceItemTable({
                             [item.id]: e.target.value,
                           }))
                         }
-                        onFocus={() => setFocusedField(fieldKey)}
+                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
                         onKeyDown={(e) => handleEnter(e, index, thisCol)}
                       />
                     );
