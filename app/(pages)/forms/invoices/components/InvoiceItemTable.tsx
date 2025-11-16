@@ -245,6 +245,21 @@ export default function InvoiceItemTable({
     }
   };
 
+  const rowHasItem = (row: InvoiceDetail | undefined): boolean => {
+    if (!row) return false;
+
+    const numericItemId = Number(
+      (row as any).item ?? (row as any).item_id ?? 0,
+    );
+
+    if (Number.isFinite(numericItemId) && numericItemId > 0) return true;
+
+    const code = String((row as any).item_code ?? "").trim();
+    const desc = String((row as any).item_desc ?? "").trim();
+
+    return code.length > 0 || desc.length > 0;
+  };
+
   // sanitize numeric inputs: allow digits and a single dot for decimals
   const sanitizeNumericInput = (raw: string, allowDecimal: boolean) => {
     let s = String(raw ?? "");
@@ -490,9 +505,7 @@ export default function InvoiceItemTable({
     colIndex: number,
     isLastCol?: boolean,
   ) => {
-		const key = e.key;
-    console.log("🚀 ~ :450 ~ handleEnter ~ key:", key)
-    console.log("🚀 ~ :449 ~ handleEnter ~ isLastCol:", isLastCol)
+    const key = e.key;
 
     if (key !== "Tab" && key !== "Enter") return;
 
@@ -501,10 +514,13 @@ export default function InvoiceItemTable({
 
     const rowRefs = inputRefs.current[rowIndex] || [];
     const lastColIndex = rowRefs.length - 1;
-    const atLastCol = typeof isLastCol === "boolean" ? isLastCol : colIndex >= lastColIndex;
+    const atLastCol =
+      typeof isLastCol === "boolean" ? isLastCol : colIndex >= lastColIndex;
     const isLastRow = rowIndex === invoiceItems.length - 1;
+    const hasItem = rowHasItem(invoiceItems[rowIndex]);
 
     if (key === "Enter") {
+      // always prevent default enter (avoid form submit)
       e.preventDefault();
 
       if (!atLastCol) {
@@ -513,7 +529,11 @@ export default function InvoiceItemTable({
         return;
       }
 
-			console.log('********444');
+      // If row has no item, do not move or add rows
+      if (!hasItem) {
+        return;
+      }
+
       // last col behavior: same as Tab
       if (!isLastRow) {
         focusFirstInRow(rowIndex + 1);
@@ -533,6 +553,12 @@ export default function InvoiceItemTable({
     }
 
     // last column
+    if (!hasItem) {
+      // Let browser handle Tab naturally (likely moving focus out of table),
+      // but do not add or move to a new row.
+      return;
+    }
+
     e.preventDefault();
     if (!isLastRow) {
       focusFirstInRow(rowIndex + 1);
