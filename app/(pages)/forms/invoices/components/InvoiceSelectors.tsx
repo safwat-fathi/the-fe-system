@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, Dispatch, SetStateAction, useRef } from "react";
+import { ChangeEvent, Dispatch, SetStateAction, useRef, useState } from "react";
 import ReactSelect from "react-select";
 
 import useKeyAsTab from "@/hooks/useKeyAsTab";
@@ -130,6 +130,9 @@ export default function InvoiceSelectors({
   setInvoiceDate,
 }: Props) {
   const selectorsRef = useRef<HTMLDivElement | null>(null);
+
+  const [isOpen, setIsOpen] = useState(false);
+
   const { handleKeyDown } = useKeyAsTab({
     keys: ["Enter"],
     containerRef: selectorsRef,
@@ -240,10 +243,10 @@ export default function InvoiceSelectors({
       : null;
 
   return (
-    <div className="mb-4" ref={selectorsRef} onKeyDownCapture={handleKeyDown}>
-      <div className="grid grid-cols-1 gap-4">
+    <div ref={selectorsRef} onKeyDownCapture={handleKeyDown}>
+      <div className="grid grid-cols-1 gap-2">
         {/* معلومات الفاتورة الأساسية */}
-        <div className="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-2 md:p-3">
           <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
             📋 معلومات الفاتورة
           </h3>
@@ -266,92 +269,96 @@ export default function InvoiceSelectors({
                       ? new Date(invoiceDate).toISOString().slice(0, 16)
                       : ""
                   }
+                  disabled={!isEditing}
                   onChange={(e) => setInvoiceDate?.(e.target.value)}
                 />
               </div>
             )}
 
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div>
-              <label
-                className="block mb-1 font-medium text-gray-700 text-xs"
-                htmlFor="customer-select"
-              >
-                {invoiceType === "purchase" || invoiceType === "purchase_return"
-                  ? "المورد:"
-                  : "العميل:"}
-              </label>
-              <ReactSelect
-                isSearchable
-                className="w-full text-xs"
-                classNamePrefix="react-select"
-                components={{ IndicatorSeparator: () => null }}
-                instanceId="customer-select"
-                menuPortalTarget={
-                  typeof window !== "undefined" ? document.body : null
-                }
-                menuPosition="fixed"
-                options={selectOptions}
-                placeholder={
-                  invoiceType === "purchase" ||
+              <div>
+                <label
+                  className="block mb-1 font-medium text-gray-700 text-xs"
+                  htmlFor="customer-select"
+                >
+                  {invoiceType === "purchase" ||
                   invoiceType === "purchase_return"
-                    ? "اختر المورد..."
-                    : "اختر العميل..."
-                }
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    height: 32,
-                    minHeight: 32,
-                    fontSize: "12px",
-                  }),
-                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                  option: (base) => ({ ...base, fontSize: "12px" }),
-                  placeholder: (base) => ({ ...base, fontSize: "12px" }),
-                  singleValue: (base) => ({ ...base, fontSize: "12px" }),
-                }}
-                value={selectedOption}
-                onChange={(selectedOption) => {
-                  const nextValue = selectedOption?.value ?? null;
-
-                  setSelectedCustomer(nextValue);
-                  setReferenceNumber("");
-
-                  const selectedCust = findCustomerByValue(nextValue);
-
-                  if (selectedCust) {
-                    setSelectedCustomerName(selectedCust.cust_name ?? "");
-                    setMobileMethod(selectedCust.mobile ?? "");
-                    setHandlingMethod(selectedCust.handling?.toString() ?? "");
-                    setVatNumber(selectedCust.vat_no ?? "");
-                    setCrNo(selectedCust.cr_no ?? "");
-                    setGov(selectedCust.gov ?? "");
-                    setCity(selectedCust.city ?? "");
-                    setArea(selectedCust.area ?? "");
-                    setStreet(selectedCust.street ?? "");
-                    setBuildNo(selectedCust.build_no ?? "");
-                    setPostNo(selectedCust.post_no ?? "");
-                    setPostCode(selectedCust.post_code ?? "");
-                  } else {
-                    setSelectedCustomerName("");
-                    setMobileMethod("");
-                    setHandlingMethod("");
-                    setVatNumber("");
-                    setCrNo("");
-                    setGov("");
-                    setCity("");
-                    setArea("");
-                    setStreet("");
-                    setBuildNo("");
-                    setPostNo("");
-                    setPostCode("");
+                    ? "المورد:"
+                    : "العميل:"}
+                </label>
+                <ReactSelect
+                  isSearchable
+                  className="w-full text-xs"
+                  classNamePrefix="react-select"
+                  components={{ IndicatorSeparator: () => null }}
+                  instanceId="customer-select"
+                  menuPortalTarget={
+                    typeof window !== "undefined" ? document.body : null
                   }
-                }}
-              />
-            </div>
+                  menuPosition="fixed"
+                  options={selectOptions}
+                  placeholder={
+                    invoiceType === "purchase" ||
+                    invoiceType === "purchase_return"
+                      ? "اختر المورد..."
+                      : "اختر العميل..."
+                  }
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      height: 32,
+                      minHeight: 32,
+                      fontSize: "12px",
+                    }),
+                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                    option: (base) => ({ ...base, fontSize: "12px" }),
+                    placeholder: (base) => ({ ...base, fontSize: "12px" }),
+                    singleValue: (base) => ({ ...base, fontSize: "12px" }),
+                  }}
+                  value={selectedOption}
+                  onChange={(selectedOption) => {
+                    const nextValue = selectedOption?.value ?? null;
 
-              <div >
+                    setSelectedCustomer(nextValue);
+                    setReferenceNumber("");
+
+                    const selectedCust = findCustomerByValue(nextValue);
+
+                    if (selectedCust) {
+                      setSelectedCustomerName(selectedCust.cust_name ?? "");
+                      setMobileMethod(selectedCust.mobile ?? "");
+                      setHandlingMethod(
+                        selectedCust.handling?.toString() ?? "",
+                      );
+                      setVatNumber(selectedCust.vat_no ?? "");
+                      setCrNo(selectedCust.cr_no ?? "");
+                      setGov(selectedCust.gov ?? "");
+                      setCity(selectedCust.city ?? "");
+                      setArea(selectedCust.area ?? "");
+                      setStreet(selectedCust.street ?? "");
+                      setBuildNo(selectedCust.build_no ?? "");
+                      setPostNo(selectedCust.post_no ?? "");
+                      setPostCode(selectedCust.post_code ?? "");
+                    } else {
+                      setSelectedCustomerName("");
+                      setMobileMethod("");
+                      setHandlingMethod("");
+                      setVatNumber("");
+                      setCrNo("");
+                      setGov("");
+                      setCity("");
+                      setArea("");
+                      setStreet("");
+                      setBuildNo("");
+                      setPostNo("");
+                      setPostCode("");
+                    }
+                  }}
+                  isDisabled={!isEditing}
+                />
+              </div>
+
+              <div>
                 <span className="block mb-1 font-medium text-gray-700 text-xs">
                   طريقة الدفع:
                 </span>
@@ -367,6 +374,7 @@ export default function InvoiceSelectors({
                         setSelectedCustomer(null);
                         setSelectedCustomerName("");
                       }}
+                      disabled={!isEditing}
                     />
                     نقداً
                   </label>
@@ -381,6 +389,7 @@ export default function InvoiceSelectors({
                         setSelectedCustomer(null);
                         setSelectedCustomerName("");
                       }}
+                      disabled={!isEditing}
                     />
                     أجل
                   </label>
@@ -399,6 +408,7 @@ export default function InvoiceSelectors({
                   id="pay-type"
                   value={payType}
                   onChange={handlePayTypeChange}
+                  disabled={!isEditing}
                 >
                   {payTypeOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -411,7 +421,7 @@ export default function InvoiceSelectors({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               {saleInvoices ? (
-                <div >
+                <div>
                   <label
                     className="block mb-1 font-medium text-gray-700 text-xs"
                     htmlFor="reference-number"
@@ -432,6 +442,7 @@ export default function InvoiceSelectors({
                     menuPortalTarget={
                       typeof window !== "undefined" ? document.body : null
                     }
+                    isDisabled={!isEditing}
                     menuPosition="fixed"
                     options={(saleInvoices || [])
                       .filter((inv) =>
@@ -480,7 +491,7 @@ export default function InvoiceSelectors({
                   />
                 </div>
               ) : (
-                <div >
+                <div>
                   <label
                     className="block mb-1 font-medium text-gray-700 text-xs"
                     htmlFor="reference-number"
@@ -493,6 +504,7 @@ export default function InvoiceSelectors({
                     type="text"
                     value={referenceNumber}
                     onChange={(e) => setReferenceNumber(e.target.value)}
+                    disabled={!isEditing}
                   />
                 </div>
               )}
@@ -510,6 +522,7 @@ export default function InvoiceSelectors({
                   placeholder="الرقم الضريبي"
                   type="text"
                   value={vatNumber}
+                  disabled={!isEditing}
                 />
               </div>
               <div>
@@ -525,12 +538,12 @@ export default function InvoiceSelectors({
                   type="text"
                   value={handlingMethod}
                   onChange={(e) => setHandlingMethod(e.target.value)}
+                  disabled={!isEditing}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -544,6 +557,7 @@ export default function InvoiceSelectors({
                   type="text"
                   value={mobileMethod}
                   onChange={(e) => setMobileMethod(e.target.value)}
+                  disabled={!isEditing}
                 />
               </div>
 
@@ -559,6 +573,7 @@ export default function InvoiceSelectors({
                   id="employee"
                   value={employee}
                   onChange={(e) => setEmployee(e.target.value)}
+                  disabled={!isEditing}
                 >
                   <option value="">-- اختر --</option>
                   <option value="hashem">هاشم</option>
@@ -578,6 +593,7 @@ export default function InvoiceSelectors({
                   className="w-full h-[32px] border px-2 rounded bg-gray-100 text-xs"
                   type="text"
                   value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
+                  disabled={!isEditing}
                 />
               </div>
             </div>
@@ -595,167 +611,207 @@ export default function InvoiceSelectors({
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
+                disabled={!isEditing}
               />
             </div>
           </div>
         </div>
 
         {/* مربع معلومات العنوان والباركود */}
-        <div className="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
-            📍 معلومات العنوان
-          </h3>
-          {selectedCustomer ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <div>
-                <label className="block mb-1 text-xs font-medium text-gray-600">
-                  السجل التجاري:
-                </label>
-                <input
-                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                  placeholder="رقم السجل"
-                  type="text"
-                  value={crNo}
-                  onChange={(e) => setCrNo(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs font-medium text-gray-600">
-                  المحافظة:
-                </label>
-                <input
-                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                  placeholder="اسم المحافظة"
-                  type="text"
-                  value={gov}
-                  onChange={(e) => setGov(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs font-medium text-gray-600">
-                  المدينة:
-                </label>
-                <input
-                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                  placeholder="اسم المدينة"
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs font-medium text-gray-600">
-                  المنطقة:
-                </label>
-                <input
-                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                  placeholder="اسم المنطقة"
-                  type="text"
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs font-medium text-gray-600">
-                  الشارع:
-                </label>
-                <input
-                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                  placeholder="اسم الشارع"
-                  type="text"
-                  value={street}
-                  onChange={(e) => setStreet(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs font-medium text-gray-600">
-                  رقم المبنى:
-                </label>
-                <input
-                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                  placeholder="رقم المبنى"
-                  type="text"
-                  value={buildNo}
-                  onChange={(e) => setBuildNo(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs font-medium text-gray-600">
-                  صندوق البريد:
-                </label>
-                <input
-                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                  placeholder="رقم صندوق البريد"
-                  type="text"
-                  value={postNo}
-                  onChange={(e) => setPostNo(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-xs font-medium text-gray-600">
-                  الرمز البريدي:
-                </label>
-                <input
-                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                  placeholder="الرمز البريدي"
-                  type="text"
-                  value={postCode}
-                  onChange={(e) => setPostCode(e.target.value)}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="text-center text-gray-500 py-6 md:py-8">
-              <div className="text-2xl mb-2">📍</div>
-              <p className="text-xs sm:text-sm">
-                اختر{" "}
-                {invoiceType === "purchase" || invoiceType === "purchase_return"
-                  ? "مورداً"
-                  : "عميلاً"}{" "}
-                لعرض معلومات العنوان
-              </p>
-            </div>
-          )}
-
-          {/* حقل البحث بالباركود - تحت العنوان */}
-          <div className="mt-3 pt-3 md:mt-4 md:pt-4 border-t border-gray-200">
-            <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <div className="bg-white border border-gray-200 rounded-lg">
+          {/* Header with Toggle Button */}
+          <div
+            className="flex items-center justify-between p-2 md:p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <span>📍</span>
+              <span>معلومات العنوان</span>
+            </h3>
+            <button
+              className="text-gray-600 hover:text-gray-800 transition-transform duration-200"
+              style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+            >
               <svg
-                height="24"
-                id="mdi-barcode-scan"
-                version="1.1"
+                width="20"
+                height="20"
                 viewBox="0 0 24 24"
-                width="24"
-                xmlns="http://www.w3.org/2000/svg"
-                xmlnsXlink="http://www.w3.org/1999/xlink"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                <path d="M4,6H6V18H4V6M7,6H8V18H7V6M9,6H12V18H9V6M13,6H14V18H13V6M16,6H18V18H16V6M19,6H20V18H19V6M2,4V8H0V4A2,2 0 0,1 2,2H6V4H2M22,2A2,2 0 0,1 24,4V8H22V4H18V2H22M2,16V20H6V22H2A2,2 0 0,1 0,20V16H2M22,20V16H24V20A2,2 0 0,1 22,22H18V20H22Z" />
+                <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
-              البحث بالباركود
-            </h4>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-              <input
-                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white flex items-center"
-                disabled={!isEditing}
-                data-skip-key-as-tab="true"
-                placeholder="أدخل كود الصنف"
-                type="text"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    onBarcodeSearch();
-                  }
-                }}
-              />
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={!isEditing || !searchValue.trim()}
-                onClick={onBarcodeSearch}
-              >
-                بحث
-              </button>
+            </button>
+          </div>
+
+          {/* Collapsible Content */}
+          <div
+            className="overflow-hidden transition-all duration-300 ease-in-out"
+            style={{
+              maxHeight: isOpen ? "1000px" : "0",
+              opacity: isOpen ? 1 : 0,
+            }}
+          >
+            <div className="px-3 pb-3 md:px-4 md:pb-4 border-t border-gray-200">
+              {selectedCustomer ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
+                  <div>
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      السجل التجاري:
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      placeholder="رقم السجل"
+                      type="text"
+                      value={crNo}
+                      onChange={(e) => setCrNo(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      المحافظة:
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      placeholder="اسم المحافظة"
+                      type="text"
+                      value={gov}
+                      onChange={(e) => setGov(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      المدينة:
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      placeholder="اسم المدينة"
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      المنطقة:
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      placeholder="اسم المنطقة"
+                      type="text"
+                      value={area}
+                      onChange={(e) => setArea(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      الشارع:
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      placeholder="اسم الشارع"
+                      type="text"
+                      value={street}
+                      onChange={(e) => setStreet(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      رقم المبنى:
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      placeholder="رقم المبنى"
+                      type="text"
+                      value={buildNo}
+                      onChange={(e) => setBuildNo(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      صندوق البريد:
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      placeholder="رقم صندوق البريد"
+                      type="text"
+                      value={postNo}
+                      onChange={(e) => setPostNo(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      الرمز البريدي:
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      placeholder="الرمز البريدي"
+                      type="text"
+                      value={postCode}
+                      onChange={(e) => setPostCode(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-6 md:py-8">
+                  <div className="text-2xl mb-2">📍</div>
+                  <p className="text-xs sm:text-sm">
+                    اختر{" "}
+                    {invoiceType === "purchase" ||
+                    invoiceType === "purchase_return"
+                      ? "مورداً"
+                      : "عميلاً"}{" "}
+                    لعرض معلومات العنوان
+                  </p>
+                </div>
+              )}
+
+              {/* Barcode Search Section */}
+              <div className="mt-3 pt-3 md:mt-4 md:pt-4 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <svg
+                    height="24"
+                    width="24"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M4,6H6V18H4V6M7,6H8V18H7V6M9,6H12V18H9V6M13,6H14V18H13V6M16,6H18V18H16V6M19,6H20V18H19V6M2,4V8H0V4A2,2 0 0,1 2,2H6V4H2M22,2A2,2 0 0,1 24,4V8H22V4H18V2H22M2,16V20H6V22H2A2,2 0 0,1 0,20V16H2M22,20V16H24V20A2,2 0 0,1 22,22H18V20H22Z" />
+                  </svg>
+                  البحث بالباركود
+                </h4>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                  <input
+                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    disabled={!isEditing}
+                    placeholder="أدخل كود الصنف"
+                    type="text"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        onBarcodeSearch();
+                      }
+                    }}
+                  />
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled={!isEditing || !searchValue.trim()}
+                    onClick={onBarcodeSearch}
+                  >
+                    بحث
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
