@@ -2,12 +2,15 @@
 
 import { useEffect, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import clsx from "clsx";
+
+import toast from "react-hot-toast";
 
 import InvoiceSelectors from "@/app/(pages)/forms/invoices/components/InvoiceSelectors";
 import InvoiceItemTable from "@/app/(pages)/forms/invoices/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/app/(pages)/forms/invoices/components/InvoiceTotalsActions";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
-import useInvoiceForm from "@/hooks/useInvoiceForm";
+import useInvoiceForm from "@/app/(pages)/forms/invoices/hooks/useInvoiceForm";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 
@@ -187,12 +190,23 @@ export default function InvoiceClientPage({
 
   // Navigate to entered invoice id on search
   const handleSearchByInvoiceId = () => {
-    const raw = (searchNumber ?? "").toString().trim();
-    if (!raw) return;
+    if (
+      (invoiceData?.last_invoice_id &&
+        searchNumber > invoiceData.last_invoice_id) ||
+      (invoiceData?.first_invoice_id &&
+        searchNumber < invoiceData.first_invoice_id)
+    ) {
+      toast.error("هذه الفاتورة غير موجودة.");
+      return;
+    }
+		
+    const rawSearch = (searchNumber ?? "").toString().trim();
+    if (!rawSearch) return;
 
     // normalize to integer-like string
-    const parsed = Number(raw);
-    const id = Number.isFinite(parsed) && parsed > 0 ? String(parsed) : raw;
+    const parsed = Number(rawSearch);
+    const id =
+      Number.isFinite(parsed) && parsed > 0 ? String(parsed) : rawSearch;
 
     // Set mode to preview and update only the id param; clear inv_id to avoid ambiguity
     const url = buildUrl({ mode: "preview", id, inv_id: null });
@@ -266,6 +280,7 @@ export default function InvoiceClientPage({
         firstInvoiceHref: resolvePaginatedInvoiceHref(
           invoiceData?.first_invoice_id,
         ),
+        totalInvoices: invoiceData?.invoices_count,
       }
     : null;
 
@@ -281,162 +296,162 @@ export default function InvoiceClientPage({
   }
 
   return (
-    <>
-      <InvoiceTotalsActions
-        metadata={metadata}
-        autoTotalValue={autoTotalValue}
-        autoTotalWages={autoTotalWages}
-        canEdit={allowEditing}
-        commit={form.commit}
-        isNewInvoice={isNewInvoice}
-        formattedDateTime={new Date(form.inv_date).toLocaleString("ar-EG")}
-        invoiceNumber={form.inv_id}
-        invoiceType={totalsInvoiceType}
-        isEditing={isEditing}
-        manualTotalValue={manualTotalValue}
-        manualTotalWages={manualTotalWages}
-        navigateToInvoice={navigateToInvoice}
-        netAmount={totals.netAmount}
-        newInvoiceHref={resolvedNewInvoiceHref}
-        paymentMethod={paymentMethod}
-        previewInvoice={previewInvoice}
-        print={form.print}
-        saveInvoice={handleSaveAndNavigate}
-        searchNumber={searchNumber}
-        setCommit={(value: boolean) =>
-          dispatchForm({ type: "SET_FIELD", field: "commit", value })
-        }
-        setPrint={(value: boolean) =>
-          dispatchForm({ type: "SET_FIELD", field: "print", value })
-        }
-        setSearchNumber={setSearchNumber}
-        taxAmount={totals.taxAmount}
-        totalAmount={totals.totalAmount}
-        totalDiscount={totals.totalDiscount}
-        totalGWeight={totals.totalGWeight}
-        totalRecords={1}
-        totalTax={totals.taxAmount ?? 0}
-        totalValueTax={totals.taxAmount ?? 0}
-        totalWagesTax={0}
-        useManualTotals={useManualTotals}
-        onEdit={() => {
-          setIsEditing(true);
-          const invId = form.inv_id ? String(form.inv_id) : undefined;
-          const url = buildUrl({ mode: "edit", edit: null, inv_id: invId });
-          router.replace(url);
-        }}
-        onInvoiceSearch={handleSearchByInvoiceId}
-        onManualTotalChange={handleManualTotalChange}
-        onResetManualTotals={resetManualTotals}
-        onUseManualTotalsChange={setUseManualTotals}
-      >
-        <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
-          <InvoiceSelectors
-            area={form.area}
-            buildNo={form.build_no}
-            city={form.city}
-            crNo={form.cr_no}
-            customers={customers}
-            employee={employee}
-            goldPrice={goldPrice}
-            goldPriceValue={goldPrice ?? maybeGoldPrice}
-            gov={form.gov}
-            handlingMethod={handlingMethod}
-            invoiceType={selectorsInvoiceType}
-            isEditing={isEditing}
-            mobileMethod={mobileMethod}
-            note={form.inv_notes}
-            payType={form.pay_type}
-            paymentMethod={paymentMethod}
-            postCode={form.post_code}
-            postNo={form.post_no}
-            referenceNumber={form.ref_no}
-            saleInvoices={[]}
-            searchValue={searchValue}
-            selectedCustomer={form.cust_code}
-            selectedCustomerName={form.cust_name}
-            setArea={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "area", value: v })
-            }
-            setBuildNo={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "build_no", value: v })
-            }
-            setCity={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "city", value: v })
-            }
-            setCrNo={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "cr_no", value: v })
-            }
-            setEmployee={setEmployee}
-            setGov={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "gov", value: v })
-            }
-            setHandlingMethod={setHandlingMethod}
-            setMobileMethod={setMobileMethod}
-            setNote={(v) =>
-              dispatchForm({
-                type: "SET_FIELD",
-                field: "inv_notes",
-                value: v,
-              })
-            }
-            setPayType={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "pay_type", value: v })
-            }
-            setPaymentMethod={setPaymentMethod}
-            setPostCode={(v) =>
-              dispatchForm({
-                type: "SET_FIELD",
-                field: "post_code",
-                value: v,
-              })
-            }
-            setPostNo={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "post_no", value: v })
-            }
-            setReferenceNumber={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "ref_no", value: v })
-            }
-            setSearchValue={setSearchValue}
-            setSelectedCustomer={(v) =>
-              dispatchForm({
-                type: "SET_FIELD",
-                field: "cust_code",
-                value: v !== null && v !== undefined ? String(v) : null,
-              })
-            }
-            setSelectedCustomerName={(value) =>
-              dispatchForm({
-                type: "SET_FIELD",
-                field: "cust_name",
-                value,
-              })
-            }
-            setStreet={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "street", value: v })
-            }
-            setVatNumber={(v) =>
-              dispatchForm({ type: "SET_FIELD", field: "vat_no", value: v })
-            }
-            street={form.street}
-            onBarcodeSearch={() => handleBarcodeSearch()}
-            onInvoiceSelect={() => {}}
-          />
+    <InvoiceTotalsActions
+      metadata={metadata}
+      autoTotalValue={autoTotalValue}
+      autoTotalWages={autoTotalWages}
+      canEdit={allowEditing}
+      commit={form.commit}
+      isNewInvoice={isNewInvoice}
+      formattedDateTime={new Date(form.inv_date).toLocaleString("ar-EG")}
+      invoiceNumber={form.inv_id}
+      invoiceType={totalsInvoiceType}
+      isEditing={isEditing}
+      manualTotalValue={manualTotalValue}
+      manualTotalWages={manualTotalWages}
+      navigateToInvoice={navigateToInvoice}
+      netAmount={totals.netAmount}
+      newInvoiceHref={resolvedNewInvoiceHref}
+      paymentMethod={paymentMethod}
+      previewInvoice={previewInvoice}
+      print={form.print}
+      isDone={form.is_done}
+      isOk={form.is_ok}
+      saveInvoice={handleSaveAndNavigate}
+      searchNumber={searchNumber}
+      setCommit={(value: boolean) =>
+        dispatchForm({ type: "SET_FIELD", field: "commit", value })
+      }
+      setPrint={(value: boolean) =>
+        dispatchForm({ type: "SET_FIELD", field: "print", value })
+      }
+      setSearchNumber={setSearchNumber}
+      taxAmount={totals.taxAmount}
+      totalAmount={totals.totalAmount}
+      totalDiscount={totals.totalDiscount}
+      totalGWeight={totals.totalGWeight}
+      totalRecords={1}
+      totalTax={totals.taxAmount ?? 0}
+      totalValueTax={totals.taxAmount ?? 0}
+      totalWagesTax={0}
+      useManualTotals={useManualTotals}
+      onEdit={() => {
+        setIsEditing(true);
+        const invId = form.inv_id ? String(form.inv_id) : undefined;
+        const url = buildUrl({ mode: "edit", edit: null, inv_id: invId });
+        router.replace(url);
+      }}
+      onInvoiceSearch={handleSearchByInvoiceId}
+      onManualTotalChange={handleManualTotalChange}
+      onResetManualTotals={resetManualTotals}
+      onUseManualTotalsChange={setUseManualTotals}
+    >
+      <div className="space-y-2">
+        <InvoiceSelectors
+          area={form.area}
+          buildNo={form.build_no}
+          city={form.city}
+          crNo={form.cr_no}
+          customers={customers}
+          employee={employee}
+          goldPrice={goldPrice}
+          goldPriceValue={goldPrice ?? maybeGoldPrice}
+          gov={form.gov}
+          handlingMethod={handlingMethod}
+          invoiceType={selectorsInvoiceType}
+          isEditing={isEditing}
+          mobileMethod={mobileMethod}
+          note={form.inv_notes}
+          payType={form.pay_type}
+          paymentMethod={paymentMethod}
+          postCode={form.post_code}
+          postNo={form.post_no}
+          referenceNumber={form.ref_no}
+          saleInvoices={[]}
+          searchValue={searchValue}
+          selectedCustomer={form.cust_code}
+          selectedCustomerName={form.cust_name}
+          setArea={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "area", value: v })
+          }
+          setBuildNo={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "build_no", value: v })
+          }
+          setCity={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "city", value: v })
+          }
+          setCrNo={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "cr_no", value: v })
+          }
+          setEmployee={setEmployee}
+          setGov={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "gov", value: v })
+          }
+          setHandlingMethod={setHandlingMethod}
+          setMobileMethod={setMobileMethod}
+          setNote={(v) =>
+            dispatchForm({
+              type: "SET_FIELD",
+              field: "inv_notes",
+              value: v,
+            })
+          }
+          setPayType={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "pay_type", value: v })
+          }
+          setPaymentMethod={setPaymentMethod}
+          setPostCode={(v) =>
+            dispatchForm({
+              type: "SET_FIELD",
+              field: "post_code",
+              value: v,
+            })
+          }
+          setPostNo={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "post_no", value: v })
+          }
+          setReferenceNumber={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "ref_no", value: v })
+          }
+          setSearchValue={setSearchValue}
+          setSelectedCustomer={(v) =>
+            dispatchForm({
+              type: "SET_FIELD",
+              field: "cust_code",
+              value: v !== null && v !== undefined ? String(v) : null,
+            })
+          }
+          setSelectedCustomerName={(value) =>
+            dispatchForm({
+              type: "SET_FIELD",
+              field: "cust_name",
+              value,
+            })
+          }
+          setStreet={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "street", value: v })
+          }
+          setVatNumber={(v) =>
+            dispatchForm({ type: "SET_FIELD", field: "vat_no", value: v })
+          }
+          street={form.street}
+          onBarcodeSearch={() => handleBarcodeSearch()}
+          onInvoiceSelect={() => {}}
+        />
 
-          <InvoiceItemTable
-            categories={categories}
-            goldPrice={goldPrice ?? maybeGoldPrice ?? null}
-            homePurity={homePurity}
-            invoiceItems={invoiceItems}
-            isEditing={isEditing}
-            items={items}
-            payType={form.pay_type}
-            setInvoiceItems={setInvoiceItems}
-            setItems={setItems}
-            onItemRemoved={handleItemRemoved}
-          />
-        </div>
-      </InvoiceTotalsActions>
-    </>
+        <InvoiceItemTable
+          categories={categories}
+          goldPrice={goldPrice ?? maybeGoldPrice ?? null}
+          homePurity={homePurity}
+          invoiceItems={invoiceItems}
+          isEditing={isEditing}
+          items={items}
+          payType={form.pay_type}
+          setInvoiceItems={setInvoiceItems}
+          setItems={setItems}
+          onItemRemoved={handleItemRemoved}
+        />
+      </div>
+    </InvoiceTotalsActions>
   );
 }

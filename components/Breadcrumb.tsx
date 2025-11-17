@@ -134,7 +134,7 @@ const Breadcrumb = ({
     <nav
       aria-label="Breadcrumb"
       className={clsx(
-        "flex items-center pt-3 pb-1 mb-2 text-xs text-gray-600",
+        "flex items-center pb-1 mb-2 text-xs text-gray-600",
         className,
       )}
     >
@@ -155,14 +155,14 @@ const Breadcrumb = ({
           const name = item.name;
           const hasView = name.includes("عرض");
           const hasEdit = name.includes("تعديل");
-          
+
           // استخراج الكلمة والبقية من النص
           let renderName: React.ReactNode = name;
-          
+
           if (hasView || hasEdit) {
             const parts: React.ReactNode[] = [];
             let remainingText = name;
-            
+
             if (hasView) {
               const viewIndex = remainingText.indexOf("عرض");
               if (viewIndex !== -1) {
@@ -174,7 +174,7 @@ const Breadcrumb = ({
                 parts.push(
                   <span key="view" className="text-blue-600 font-semibold">
                     عرض
-                  </span>
+                  </span>,
                 );
                 // البقية بعد "عرض"
                 remainingText = remainingText.substring(viewIndex + 3);
@@ -190,25 +190,27 @@ const Breadcrumb = ({
                 parts.push(
                   <span key="edit" className="text-yellow-600 font-semibold">
                     تعديل
-                  </span>
+                  </span>,
                 );
                 // البقية بعد "تعديل"
                 remainingText = remainingText.substring(editIndex + 5);
               }
             }
-            
+
             // إضافة البقية إذا كان هناك نص متبقي
             if (remainingText) {
               parts.push(remainingText);
             }
-            
+
             renderName = <>{parts}</>;
           }
-          
+
           return (
             <li
               key={index}
-              aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}
+              aria-current={
+                index === breadcrumbs.length - 1 ? "page" : undefined
+              }
               className="inline-flex items-center"
             >
               <div className="flex items-center">
@@ -230,7 +232,9 @@ const Breadcrumb = ({
                     {renderName}
                   </button>
                 ) : (
-                  <span className="font-medium text-gray-500 leading-none">{renderName}</span>
+                  <span className="font-medium text-gray-500 leading-none">
+                    {renderName}
+                  </span>
                 )}
               </div>
             </li>

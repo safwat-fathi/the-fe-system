@@ -29,6 +29,7 @@ interface Props {
     prevInvoiceHref: string | null;
     lastInvoiceHref: string | null;
     firstInvoiceHref: string | null;
+    totalInvoices: string | null;
   } | null;
   invoiceNumber: string;
   formattedDateTime: string;
@@ -42,6 +43,10 @@ interface Props {
   setCommit: (val: boolean) => void;
   print: boolean;
   setPrint: (val: boolean) => void;
+  isDone: boolean;
+
+  isOk: boolean;
+
   isEditing: boolean;
   onEdit: () => void;
   children: ReactNode;
@@ -90,6 +95,10 @@ export default function InvoiceTotalsActions({
   setCommit,
   print,
   setPrint,
+  isOk,
+  setIsOk,
+  isDone,
+  setIsDone,
   isEditing,
   onEdit,
   children,
@@ -142,14 +151,14 @@ export default function InvoiceTotalsActions({
   const invoiceTitle = getInvoiceTitle();
 
   return (
-    <div className="p-2 sm:p-3 max-w-full mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="p-2 max-w-full mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* رأس الفاتورة المرتب */}
       <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 border border-slate-200">
         {/* الصف الأول: معلومات الفاتورة */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <div>
-              <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-4">
+              <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-4 mb-2">
                 <span>فاتورة {invoiceTitle}</span>
                 <span className="text-slate-600 font-medium text-sm sm:text-base">
                   #{invoiceNumber}
@@ -265,7 +274,7 @@ export default function InvoiceTotalsActions({
                   <ChevronRightIcon className="w-4 h-4 " />
                 </Link>
                 <span className="text-xs text-slate-600 px-2 font-medium">
-                  {currentRecord} من {totalRecords}
+                  {invoiceNumber} من {metadata.totalInvoices}
                 </span>
                 <Link
                   // onClick={(e) => handleLinkClick(e, metadata.nextInvoiceHref)}
@@ -323,6 +332,28 @@ export default function InvoiceTotalsActions({
                 onValueChange={setPrint}
               />
               <span className="text-xs text-slate-600">طُبع</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={isOk}
+                size="sm"
+                onValueChange={setIsOk}
+              />
+              <span className="text-xs text-slate-600">OK</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={isDone}
+                size="sm"
+                onValueChange={setIsDone}
+              />
+              <span className="text-xs text-slate-600">Done</span>
             </div>
           </div>
         </div>
