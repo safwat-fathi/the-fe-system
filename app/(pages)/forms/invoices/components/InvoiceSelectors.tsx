@@ -241,7 +241,7 @@ export default function InvoiceSelectors({
 
   return (
     <div className="mb-4" ref={selectorsRef} onKeyDownCapture={handleKeyDown}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {/* معلومات الفاتورة الأساسية */}
         <div className="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
           <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
@@ -249,7 +249,7 @@ export default function InvoiceSelectors({
           </h3>
           <div className="grid grid-cols-1 gap-2 text-xs">
             {/* تاريخ ووقت الفاتورة */}
-            {invoiceDate !== undefined && setInvoiceDate && (
+            {invoiceDate && (
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -266,11 +266,13 @@ export default function InvoiceSelectors({
                       ? new Date(invoiceDate).toISOString().slice(0, 16)
                       : ""
                   }
-                  onChange={(e) => setInvoiceDate(e.target.value)}
+                  onChange={(e) => setInvoiceDate?.(e.target.value)}
                 />
               </div>
             )}
 
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <div>
               <label
                 className="block mb-1 font-medium text-gray-700 text-xs"
@@ -349,8 +351,7 @@ export default function InvoiceSelectors({
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
+              <div >
                 <span className="block mb-1 font-medium text-gray-700 text-xs">
                   طريقة الدفع:
                 </span>
@@ -408,9 +409,9 @@ export default function InvoiceSelectors({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               {saleInvoices ? (
-                <div>
+                <div >
                   <label
                     className="block mb-1 font-medium text-gray-700 text-xs"
                     htmlFor="reference-number"
@@ -479,7 +480,7 @@ export default function InvoiceSelectors({
                   />
                 </div>
               ) : (
-                <div>
+                <div >
                   <label
                     className="block mb-1 font-medium text-gray-700 text-xs"
                     htmlFor="reference-number"
@@ -511,9 +512,6 @@ export default function InvoiceSelectors({
                   value={vatNumber}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -529,6 +527,9 @@ export default function InvoiceSelectors({
                   onChange={(e) => setHandlingMethod(e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
 
               <div>
                 <label
@@ -545,9 +546,7 @@ export default function InvoiceSelectors({
                   onChange={(e) => setMobileMethod(e.target.value)}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -607,110 +606,102 @@ export default function InvoiceSelectors({
             📍 معلومات العنوان
           </h3>
           {selectedCustomer ? (
-            <div className="grid grid-cols-1 gap-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    السجل التجاري:
-                  </label>
-                  <input
-                    className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                    placeholder="رقم السجل"
-                    type="text"
-                    value={crNo}
-                    onChange={(e) => setCrNo(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    المحافظة:
-                  </label>
-                  <input
-                    className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                    placeholder="اسم المحافظة"
-                    type="text"
-                    value={gov}
-                    onChange={(e) => setGov(e.target.value)}
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div>
+                <label className="block mb-1 text-xs font-medium text-gray-600">
+                  السجل التجاري:
+                </label>
+                <input
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                  placeholder="رقم السجل"
+                  type="text"
+                  value={crNo}
+                  onChange={(e) => setCrNo(e.target.value)}
+                />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    المدينة:
-                  </label>
-                  <input
-                    className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                    placeholder="اسم المدينة"
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    المنطقة:
-                  </label>
-                  <input
-                    className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                    placeholder="اسم المنطقة"
-                    type="text"
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                  />
-                </div>
+              <div>
+                <label className="block mb-1 text-xs font-medium text-gray-600">
+                  المحافظة:
+                </label>
+                <input
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                  placeholder="اسم المحافظة"
+                  type="text"
+                  value={gov}
+                  onChange={(e) => setGov(e.target.value)}
+                />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    الشارع:
-                  </label>
-                  <input
-                    className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                    placeholder="اسم الشارع"
-                    type="text"
-                    value={street}
-                    onChange={(e) => setStreet(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    رقم المبنى:
-                  </label>
-                  <input
-                    className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                    placeholder="رقم المبنى"
-                    type="text"
-                    value={buildNo}
-                    onChange={(e) => setBuildNo(e.target.value)}
-                  />
-                </div>
+              <div>
+                <label className="block mb-1 text-xs font-medium text-gray-600">
+                  المدينة:
+                </label>
+                <input
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                  placeholder="اسم المدينة"
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    صندوق البريد:
-                  </label>
-                  <input
-                    className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                    placeholder="رقم صندوق البريد"
-                    type="text"
-                    value={postNo}
-                    onChange={(e) => setPostNo(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    الرمز البريدي:
-                  </label>
-                  <input
-                    className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                    placeholder="الرمز البريدي"
-                    type="text"
-                    value={postCode}
-                    onChange={(e) => setPostCode(e.target.value)}
-                  />
-                </div>
+              <div>
+                <label className="block mb-1 text-xs font-medium text-gray-600">
+                  المنطقة:
+                </label>
+                <input
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                  placeholder="اسم المنطقة"
+                  type="text"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block mb-1 text-xs font-medium text-gray-600">
+                  الشارع:
+                </label>
+                <input
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                  placeholder="اسم الشارع"
+                  type="text"
+                  value={street}
+                  onChange={(e) => setStreet(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block mb-1 text-xs font-medium text-gray-600">
+                  رقم المبنى:
+                </label>
+                <input
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                  placeholder="رقم المبنى"
+                  type="text"
+                  value={buildNo}
+                  onChange={(e) => setBuildNo(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block mb-1 text-xs font-medium text-gray-600">
+                  صندوق البريد:
+                </label>
+                <input
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                  placeholder="رقم صندوق البريد"
+                  type="text"
+                  value={postNo}
+                  onChange={(e) => setPostNo(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block mb-1 text-xs font-medium text-gray-600">
+                  الرمز البريدي:
+                </label>
+                <input
+                  className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                  placeholder="الرمز البريدي"
+                  type="text"
+                  value={postCode}
+                  onChange={(e) => setPostCode(e.target.value)}
+                />
               </div>
             </div>
           ) : (

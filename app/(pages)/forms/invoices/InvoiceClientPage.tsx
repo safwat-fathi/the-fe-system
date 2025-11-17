@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import clsx from "clsx";
 
 import toast from "react-hot-toast";
 
@@ -344,7 +345,12 @@ export default function InvoiceClientPage({
         onResetManualTotals={resetManualTotals}
         onUseManualTotalsChange={setUseManualTotals}
       >
-        <div className={isEditing ? "" : "pointer-events-none opacity-70"}>
+        <div
+          className={clsx(
+            "space-y-4",
+            !isEditing && "pointer-events-none opacity-70",
+          )}
+        >
           <InvoiceSelectors
             area={form.area}
             buildNo={form.build_no}
