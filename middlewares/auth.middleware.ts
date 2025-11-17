@@ -14,7 +14,8 @@ const AUTH_LOGIN_URL = "/auth/login";
 
 const authMiddleware: MiddlewareFactory = () => {
   return async (request: NextRequest) => {
-    const { pathname } = request.nextUrl;
+    const { pathname, search, hash } = request.nextUrl;
+    const originalPath = `${pathname}${search}${hash}`;
 
     // Skip authentication for public routes
     if (isPublicRoute(pathname)) {
@@ -33,8 +34,12 @@ const authMiddleware: MiddlewareFactory = () => {
         await request.cookies.delete(STORAGE_KEYS.REFRESH_TOKEN);
         await request.cookies.delete(STORAGE_KEYS.CSRF_TOKEN);
 
-        // If token is invalid, redirect to login
-        return NextResponse.redirect(new URL(AUTH_LOGIN_URL, request.url));
+        // If token is invalid, redirect to login with original path for post-login redirect
+        const loginUrl = new URL(AUTH_LOGIN_URL, request.url);
+
+        loginUrl.searchParams.set("redirect", originalPath);
+
+        return NextResponse.redirect(loginUrl);
       }
 
       // If token exists and user is on login page, redirect to dashboard
@@ -51,7 +56,7 @@ const authMiddleware: MiddlewareFactory = () => {
 
         const loginUrl = new URL(AUTH_LOGIN_URL, request.url);
 
-        loginUrl.searchParams.set("redirect", pathname);
+        loginUrl.searchParams.set("redirect", originalPath);
 
         return NextResponse.redirect(loginUrl);
       }
@@ -70,7 +75,7 @@ const authMiddleware: MiddlewareFactory = () => {
 
       const loginUrl = new URL(AUTH_LOGIN_URL, request.url);
 
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("redirect", originalPath);
 
       return NextResponse.redirect(loginUrl);
     }

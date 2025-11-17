@@ -14,7 +14,6 @@ const LoginForm = () => {
   return (
     <Form action={action} className="flex flex-col gap-4">
       <input name="redirect" type="hidden" value={redirectPath} />
-      {/* <input type="hidden" name="csrfToken" value={csrfToken} /> */}
       <Input
         required
         className="text-right"

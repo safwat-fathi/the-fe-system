@@ -1,8 +1,9 @@
 "use client";
 
-import { ChangeEvent, Dispatch, SetStateAction } from "react";
+import { ChangeEvent, Dispatch, SetStateAction, useRef } from "react";
 import ReactSelect from "react-select";
 
+import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { INVOICE_PAY_TYPES, type InvoicePayType } from "@/types/models/invoice";
 
 interface Customer {
@@ -128,6 +129,39 @@ export default function InvoiceSelectors({
   invoiceDate,
   setInvoiceDate,
 }: Props) {
+  const selectorsRef = useRef<HTMLDivElement | null>(null);
+  const { handleKeyDown } = useKeyAsTab({
+    keys: ["Enter"],
+    containerRef: selectorsRef,
+    disabled: !isEditing,
+    shouldIgnoreEvent: (event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return false;
+      if (target.closest("[data-skip-key-as-tab='true']")) {
+        return true;
+      }
+      const comboRoot = target.closest('[role="combobox"]');
+      if (comboRoot && comboRoot.getAttribute("aria-expanded") === "true") {
+        return true;
+      }
+      const tagName = target.tagName.toLowerCase();
+      if (tagName === "textarea" || tagName === "button") {
+        return true;
+      }
+      if (tagName === "input") {
+        const input = target as HTMLInputElement;
+        if (
+          input.type === "checkbox" ||
+          input.type === "button" ||
+          input.type === "submit"
+        ) {
+          return true;
+        }
+      }
+      return false;
+    },
+  });
+
   const payTypeOptions = [
     { value: INVOICE_PAY_TYPES.VALUE, label: "القيمة" },
     { value: INVOICE_PAY_TYPES.WAGES, label: "الأجور" },
@@ -206,7 +240,7 @@ export default function InvoiceSelectors({
       : null;
 
   return (
-    <div className="mb-4">
+    <div className="mb-4" ref={selectorsRef} onKeyDownCapture={handleKeyDown}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* معلومات الفاتورة الأساسية */}
         <div className="bg-white border border-gray-200 rounded-lg p-3 md:p-4">
@@ -712,6 +746,7 @@ export default function InvoiceSelectors({
               <input
                 className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white flex items-center"
                 disabled={!isEditing}
+                data-skip-key-as-tab="true"
                 placeholder="أدخل كود الصنف"
                 type="text"
                 value={searchValue}

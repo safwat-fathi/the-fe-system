@@ -3,11 +3,13 @@
 import { useEffect, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import toast from "react-hot-toast";
+
 import InvoiceSelectors from "@/app/(pages)/forms/invoices/components/InvoiceSelectors";
 import InvoiceItemTable from "@/app/(pages)/forms/invoices/components/InvoiceItemTable";
 import InvoiceTotalsActions from "@/app/(pages)/forms/invoices/components/InvoiceTotalsActions";
 import { Invoice, InvoiceDetail } from "@/types/models/invoice";
-import useInvoiceForm from "@/hooks/useInvoiceForm";
+import useInvoiceForm from "@/app/(pages)/forms/invoices/hooks/useInvoiceForm";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 
@@ -187,12 +189,23 @@ export default function InvoiceClientPage({
 
   // Navigate to entered invoice id on search
   const handleSearchByInvoiceId = () => {
-    const raw = (searchNumber ?? "").toString().trim();
-    if (!raw) return;
+    if (
+      (invoiceData?.last_invoice_id &&
+        searchNumber > invoiceData.last_invoice_id) ||
+      (invoiceData?.first_invoice_id &&
+        searchNumber < invoiceData.first_invoice_id)
+    ) {
+      toast.error("هذه الفاتورة غير موجودة.");
+      return;
+    }
+		
+    const rawSearch = (searchNumber ?? "").toString().trim();
+    if (!rawSearch) return;
 
     // normalize to integer-like string
-    const parsed = Number(raw);
-    const id = Number.isFinite(parsed) && parsed > 0 ? String(parsed) : raw;
+    const parsed = Number(rawSearch);
+    const id =
+      Number.isFinite(parsed) && parsed > 0 ? String(parsed) : rawSearch;
 
     // Set mode to preview and update only the id param; clear inv_id to avoid ambiguity
     const url = buildUrl({ mode: "preview", id, inv_id: null });
@@ -266,6 +279,7 @@ export default function InvoiceClientPage({
         firstInvoiceHref: resolvePaginatedInvoiceHref(
           invoiceData?.first_invoice_id,
         ),
+        totalInvoices: invoiceData?.invoices_count,
       }
     : null;
 

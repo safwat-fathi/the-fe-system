@@ -29,6 +29,7 @@ interface Props {
     prevInvoiceHref: string | null;
     lastInvoiceHref: string | null;
     firstInvoiceHref: string | null;
+		totalInvoices: string | null;
   } | null;
   invoiceNumber: string;
   formattedDateTime: string;
@@ -265,7 +266,7 @@ export default function InvoiceTotalsActions({
                   <ChevronRightIcon className="w-4 h-4 " />
                 </Link>
                 <span className="text-xs text-slate-600 px-2 font-medium">
-                  {currentRecord} من {totalRecords}
+                  {invoiceNumber} من {metadata.totalInvoices}
                 </span>
                 <Link
                   // onClick={(e) => handleLinkClick(e, metadata.nextInvoiceHref)}
