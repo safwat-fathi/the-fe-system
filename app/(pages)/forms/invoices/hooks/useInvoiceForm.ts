@@ -98,6 +98,8 @@ export type FormState = {
   post_code: string;
   commit: boolean;
   print: boolean;
+  is_done: boolean;
+  is_ok: boolean;
 };
 
 type FormAction =
@@ -296,6 +298,8 @@ export default function useInvoiceForm({
       post_code: invoiceData?.post_code ?? "",
       commit: invoiceData?.commit ?? false,
       print: invoiceData?.print ?? false,
+      is_ok: invoiceData?.is_ok ?? false,
+      is_done: invoiceData?.is_done ?? false,
     };
   }, [invoiceData, resolvedInvoiceCustomerCode]);
 
