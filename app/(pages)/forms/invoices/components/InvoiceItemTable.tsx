@@ -767,7 +767,11 @@ export default function InvoiceItemTable({
                             } as InvoiceDetail;
                             setInvoiceItems(updated);
                           }}
-                          onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                          onKeyDown={(e) =>
+                            handleKeyDown(e, index, thisCol, {
+                              allowEnterDefaultWhenRowMissing: true,
+                            })
+                          }
                         />
                       );
                     })()}
