@@ -7,16 +7,62 @@ export interface Fractions {
   frac2: number;
 }
 
+const DEFAULT_FRACTIONS: Fractions = { frac: 2, frac2: 3 };
+
+let cachedFractions: Fractions | null = null;
+let pendingFractionsPromise: Promise<Fractions> | null = null;
+
+const fetchFractionsOnce = async (): Promise<Fractions> => {
+  if (cachedFractions) {
+    return cachedFractions;
+  }
+
+  if (!pendingFractionsPromise) {
+    pendingFractionsPromise = homeService
+      .getFractions()
+      .then((result) => {
+        if (result) {
+          cachedFractions = result;
+        } else {
+          cachedFractions = DEFAULT_FRACTIONS;
+        }
+
+        return cachedFractions;
+      })
+      .catch((error) => {
+        console.error("Error fetching fractions:", error);
+
+        return cachedFractions ?? DEFAULT_FRACTIONS;
+      })
+      .finally(() => {
+        pendingFractionsPromise = null;
+      });
+  }
+
+  return pendingFractionsPromise;
+};
+
 export default function useFractions(fieldName?: string): Fractions | number {
-  const [digits, setDigits] = useState<Fractions>({ frac: 2, frac2: 3 });
+  const [digits, setDigits] = useState<Fractions>(
+    () => cachedFractions ?? DEFAULT_FRACTIONS,
+  );
 
   useEffect(() => {
-    // fetchFractions().then((res) => {
-    //   if (res) setDigits(res);
-    // });
-    homeService.getFractions().then((res) => {
-      if (res) setDigits(res);
-    });
+    let isMounted = true;
+
+    fetchFractionsOnce()
+      .then((fractions) => {
+        if (isMounted) {
+          setDigits(fractions);
+        }
+      })
+      .catch(() => {
+        // already logged inside fetchFractionsOnce
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (!fieldName) return digits;
