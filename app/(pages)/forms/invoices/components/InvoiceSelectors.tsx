@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import ReactSelect from "react-select";
+import ReactSelect, { type SelectInstance } from "react-select";
 
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import {
@@ -38,6 +38,8 @@ interface Customer {
   post_no?: string;
   post_code?: string;
 }
+
+type CustomerOption = { value: string; label: string };
 
 interface Props {
   customers: Customer[];
@@ -141,8 +143,7 @@ export default function InvoiceSelectors({
   setInvoiceDate,
 }: Props) {
   const selectorsRef = useRef<HTMLDivElement | null>(null);
-  const customerSelectRef =
-    useRef<ReactSelect<{ value: string; label: string }> | null>(null);
+  const customerSelectRef = useRef<SelectInstance<CustomerOption> | null>(null);
 
   const [isOpen, setIsOpen] = useState(false);
   const [customerInvoices, setCustomerInvoices] = useState<Invoice[]>([]);
@@ -225,7 +226,7 @@ export default function InvoiceSelectors({
     paymentMethod === "cash" ? cust.cust_type === 99 : cust.cust_type !== 99,
   );
 
-  const mapCustomerToOption = (cust: Customer) => {
+  const mapCustomerToOption = (cust: Customer): CustomerOption => {
     const value = resolveCustomerValue(cust);
     const codeToShow =
       cust.cust_code !== undefined && cust.cust_code !== null
@@ -269,6 +270,12 @@ export default function InvoiceSelectors({
       ? Number(rawCustomerId)
       : NaN;
   const hasCustomerId = Number.isFinite(numericCustomerId);
+
+  useEffect(() => {
+    if (isEditing) {
+      customerSelectRef.current?.focus();
+    }
+  }, [isEditing]);
 
   useEffect(() => {
     if (!isReturnInvoice && referenceNumber) {
@@ -342,10 +349,6 @@ export default function InvoiceSelectors({
           label: referenceNumber,
         })
       : null;
-
-  useEffect(() => {
-    customerSelectRef.current?.focus?.();
-  }, []);
 
   return (
     <div ref={selectorsRef} onKeyDownCapture={handleKeyDown}>
