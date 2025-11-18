@@ -553,17 +553,6 @@ export default function InvoiceItemTable({
 
   return (
     <div className="w-full overflow-auto mb-6 max-w-full max-h-[250px]">
-      <div className="flex justify-between mb-2">
-        <button
-          className="btn focus:ring-0 focus:ring-offset-0"
-          disabled={!isEditing}
-          type="button"
-          onClick={addRow}
-        >
-          + صف
-        </button>
-      </div>
-
       <table className="min-w-[1000px] border text-sm text-center table-fixed">
         <thead className="bg-gray-100 text-xs font-semibold">
           <tr>
@@ -598,7 +587,6 @@ export default function InvoiceItemTable({
         </thead>
         <tbody>
           {invoiceItems.map((item, index) => {
-            
             let col = -1;
             const weight = toNum(item.weight);
             const gWeight = toNum(item.g_weight);
@@ -626,9 +614,10 @@ export default function InvoiceItemTable({
                     return (
                       <AsyncCreatableSelect
                         selectRef={(instance) =>
-                          setInputRef(index, thisCol)(
-                            (instance as unknown as HTMLInputElement) || null,
-                          )
+                          setInputRef(
+                            index,
+                            thisCol,
+                          )((instance as unknown as HTMLInputElement) || null)
                         }
                         inputId={`item-${index}${thisCol}`}
                         isClearable
@@ -672,12 +661,15 @@ export default function InvoiceItemTable({
                             id: itemId,
                             item_code: item.item_code ?? String(itemId),
                             item_name:
-                              item.item_desc ?? item.item_code ?? String(itemId),
+                              item.item_desc ??
+                              item.item_code ??
+                              String(itemId),
                           });
                         })()}
                         onChange={(opt: any) => {
                           const selected =
-                            opt?.item || items.find((it) => it.id === opt?.value);
+                            opt?.item ||
+                            items.find((it) => it.id === opt?.value);
 
                           if (!selected) return;
                           // cache option if missing
@@ -701,11 +693,15 @@ export default function InvoiceItemTable({
                               selected.item_code ??
                               String(selected.id),
                             // populate fields present in interface as strings
-                            price: String(goldPrice ?? selected.item_price ?? 0),
+                            price: String(
+                              goldPrice ?? selected.item_price ?? 0,
+                            ),
                             price_w: String(selected.work_price ?? 0),
                             weight: String(selected.item_weight ?? 0),
                             g_weight: String(
-                              selected.item_g_weight ?? selected.item_weight ?? 0,
+                              selected.item_g_weight ??
+                                selected.item_weight ??
+                                0,
                             ),
                             stones: selected.stones ?? null,
                           } as InvoiceDetail;
@@ -1070,7 +1066,11 @@ export default function InvoiceItemTable({
                         step={stepFromDigits(itemDiscDigits)}
                         value={displayValue}
                         onChange={(e) =>
-                          handleFieldChange(index, "item_disc_amt", e.target.value)
+                          handleFieldChange(
+                            index,
+                            "item_disc_amt",
+                            e.target.value,
+                          )
                         }
                         onFocus={(e) => handleNumericFocus(e, fieldKey)}
                         onBlur={() => {
@@ -1097,11 +1097,11 @@ export default function InvoiceItemTable({
                         }
                         onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
                       >
-                    {taxRates.map((rate) => (
-                      <option key={rate} value={rate}>
-                        {rate}%
-                      </option>
-                    ))}
+                        {taxRates.map((rate) => (
+                          <option key={rate} value={rate}>
+                            {rate}%
+                          </option>
+                        ))}
                       </select>
                     );
                   })()}
@@ -1118,7 +1118,9 @@ export default function InvoiceItemTable({
                         ? tempTotals[item.id]
                         : String(
                             item.total ??
-                              (Number.isFinite(totalWithTax) ? totalWithTax : ""),
+                              (Number.isFinite(totalWithTax)
+                                ? totalWithTax
+                                : ""),
                           );
                     const displayValue =
                       focusedField === fieldKey
@@ -1141,8 +1143,7 @@ export default function InvoiceItemTable({
                         value={displayValue}
                         onBlur={(e) => {
                           handleTotalChange(index, e.target.value);
-                          if (focusedField === fieldKey)
-                            setFocusedField(null);
+                          if (focusedField === fieldKey) setFocusedField(null);
                         }}
                         onChange={(e) =>
                           setTempTotals((prev) => ({
@@ -1193,6 +1194,14 @@ export default function InvoiceItemTable({
           })}
         </tbody>
       </table>
+      <button
+        className="btn focus:ring-0 focus:ring-offset-0"
+        disabled={!isEditing}
+        type="button"
+        onClick={addRow}
+      >
+        + إضافة صف
+      </button>
     </div>
   );
 }

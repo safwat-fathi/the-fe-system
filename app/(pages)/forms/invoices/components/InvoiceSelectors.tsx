@@ -275,8 +275,8 @@ export default function InvoiceSelectors({
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+              <div className="md:col-span-2">
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="customer-select"
@@ -417,9 +417,6 @@ export default function InvoiceSelectors({
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               {saleInvoices ? (
                 <div>
                   <label
@@ -508,7 +505,9 @@ export default function InvoiceSelectors({
                   />
                 </div>
               )}
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -519,12 +518,12 @@ export default function InvoiceSelectors({
                 <input
                   readOnly
                   className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
-                  placeholder="الرقم الضريبي"
                   type="text"
                   value={vatNumber}
                   disabled={!isEditing}
                 />
               </div>
+
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -534,16 +533,13 @@ export default function InvoiceSelectors({
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs"
-                  placeholder="مناولة"
                   type="text"
                   value={handlingMethod}
                   onChange={(e) => setHandlingMethod(e.target.value)}
                   disabled={!isEditing}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -553,7 +549,6 @@ export default function InvoiceSelectors({
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs"
-                  placeholder=" الجوال"
                   type="text"
                   value={mobileMethod}
                   onChange={(e) => setMobileMethod(e.target.value)}
@@ -607,7 +602,6 @@ export default function InvoiceSelectors({
               </label>
               <input
                 className="w-full h-[32px] border px-2 rounded text-xs"
-                placeholder="البيان"
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -662,7 +656,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="رقم السجل"
                       type="text"
                       value={crNo}
                       onChange={(e) => setCrNo(e.target.value)}
@@ -675,7 +668,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="اسم المحافظة"
                       type="text"
                       value={gov}
                       onChange={(e) => setGov(e.target.value)}
@@ -688,7 +680,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="اسم المدينة"
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
@@ -701,7 +692,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="اسم المنطقة"
                       type="text"
                       value={area}
                       onChange={(e) => setArea(e.target.value)}
@@ -714,7 +704,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="اسم الشارع"
                       type="text"
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
@@ -727,7 +716,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="رقم المبنى"
                       type="text"
                       value={buildNo}
                       onChange={(e) => setBuildNo(e.target.value)}
@@ -740,7 +728,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="رقم صندوق البريد"
                       type="text"
                       value={postNo}
                       onChange={(e) => setPostNo(e.target.value)}
@@ -753,7 +740,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="الرمز البريدي"
                       type="text"
                       value={postCode}
                       onChange={(e) => setPostCode(e.target.value)}
