@@ -1,10 +1,24 @@
 "use client";
 
-import { ChangeEvent, Dispatch, SetStateAction, useRef, useState } from "react";
-import ReactSelect from "react-select";
+import {
+  ChangeEvent,
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import ReactSelect, { type SelectInstance } from "react-select";
 
 import useKeyAsTab from "@/hooks/useKeyAsTab";
-import { INVOICE_PAY_TYPES, type InvoicePayType } from "@/types/models/invoice";
+import {
+  INVOICE_PAY_TYPES,
+  type Invoice,
+  type InvoicePayType,
+  TransTypes,
+} from "@/types/models/invoice";
+import { getCustomerInvoicesAction } from "@/app/actions/customer";
 
 interface Customer {
   id: string;
@@ -24,6 +38,8 @@ interface Customer {
   post_no?: string;
   post_code?: string;
 }
+
+type CustomerOption = { value: string; label: string };
 
 interface Props {
   customers: Customer[];
@@ -64,8 +80,6 @@ interface Props {
   goldPrice: number | null;
   note: string;
   setNote: (val: string) => void;
-  // saleInvoices?: { inv_id: number }[];
-  saleInvoices?: { inv_id: string; cust?: string }[];
   onInvoiceSelect?: (invoiceId: number) => void;
   // البحث بالباركود
   searchValue: string;
@@ -117,7 +131,6 @@ export default function InvoiceSelectors({
   goldPrice,
   note,
   setNote,
-  saleInvoices,
   onInvoiceSelect,
   // البحث بالباركود
   searchValue,
@@ -130,8 +143,12 @@ export default function InvoiceSelectors({
   setInvoiceDate,
 }: Props) {
   const selectorsRef = useRef<HTMLDivElement | null>(null);
+  const customerSelectRef = useRef<SelectInstance<CustomerOption> | null>(null);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [customerInvoices, setCustomerInvoices] = useState<Invoice[]>([]);
+  const [isCustomerInvoicesLoading, setIsCustomerInvoicesLoading] =
+    useState(false);
 
   const { handleKeyDown } = useKeyAsTab({
     keys: ["Enter"],
@@ -209,7 +226,7 @@ export default function InvoiceSelectors({
     paymentMethod === "cash" ? cust.cust_type === 99 : cust.cust_type !== 99,
   );
 
-  const mapCustomerToOption = (cust: Customer) => {
+  const mapCustomerToOption = (cust: Customer): CustomerOption => {
     const value = resolveCustomerValue(cust);
     const codeToShow =
       cust.cust_code !== undefined && cust.cust_code !== null
@@ -226,7 +243,7 @@ export default function InvoiceSelectors({
     };
   };
 
-  const selectOptions = filteredCustomers.map(mapCustomerToOption);
+  const filteredCustomersOptions = filteredCustomers.map(mapCustomerToOption);
 
   const currentCustomer = findCustomerByValue(selectedCustomer);
   const selectedOption =
@@ -241,15 +258,103 @@ export default function InvoiceSelectors({
                 : String(selectedCustomer),
           }
       : null;
+  const isReturnInvoice =
+    invoiceType === "purchase_return" || invoiceType === "sale_return";
+  const rawCustomerId =
+    currentCustomer?.id ??
+    (selectedCustomer !== null ? selectedCustomer : null);
+  const numericCustomerId =
+    rawCustomerId !== null &&
+    rawCustomerId !== undefined &&
+    rawCustomerId !== ""
+      ? Number(rawCustomerId)
+      : NaN;
+  const hasCustomerId = Number.isFinite(numericCustomerId);
+
+  useEffect(() => {
+    if (isEditing) {
+      customerSelectRef.current?.focus();
+    }
+  }, [isEditing]);
+
+  useEffect(() => {
+    if (!isReturnInvoice && referenceNumber) {
+      setReferenceNumber("");
+    }
+  }, [isReturnInvoice, referenceNumber, setReferenceNumber]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (!isReturnInvoice || !hasCustomerId) {
+      setCustomerInvoices([]);
+      return;
+    }
+
+    const loadCustomerInvoices = async () => {
+      setIsCustomerInvoicesLoading(true);
+
+      try {
+        const transType =
+          invoiceType === "purchase_return"
+            ? TransTypes.PURCHASE_RETURN
+            : TransTypes.SALES_RETURN;
+        const invoices = await getCustomerInvoicesAction({
+          xcust_id: Number(numericCustomerId),
+          xtrans_type: transType,
+        });
+
+        if (!ignore) {
+          setCustomerInvoices(Array.isArray(invoices) ? invoices : []);
+        }
+      } catch (error) {
+        if (!ignore) {
+          console.error("Error loading customer invoices:", error);
+          setCustomerInvoices([]);
+        }
+      } finally {
+        if (!ignore) {
+          setIsCustomerInvoicesLoading(false);
+        }
+      }
+    };
+
+    loadCustomerInvoices();
+
+    return () => {
+      ignore = true;
+    };
+  }, [hasCustomerId, invoiceType, isReturnInvoice, numericCustomerId]);
+
+  const customerInvoiceOptions = useMemo(() => {
+    return customerInvoices.map((invoice) => {
+      const dateLabel = invoice.inv_date ? invoice.inv_date.split("T")[0] : "";
+      const label = dateLabel
+        ? `${invoice.inv_id} - ${dateLabel}`
+        : String(invoice.inv_id);
+
+      return {
+        value: String(invoice.inv_id),
+        label,
+      };
+    });
+  }, [customerInvoices]);
+
+  const selectedReferenceOption =
+    referenceNumber && referenceNumber.trim().length > 0
+      ? (customerInvoiceOptions.find(
+          (option) => String(option.value) === String(referenceNumber),
+        ) ?? {
+          value: referenceNumber,
+          label: referenceNumber,
+        })
+      : null;
 
   return (
     <div ref={selectorsRef} onKeyDownCapture={handleKeyDown}>
       <div className="grid grid-cols-1 gap-2">
         {/* معلومات الفاتورة الأساسية */}
         <div className="bg-white border border-gray-200 rounded-lg p-2 md:p-3">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
-            📋 معلومات الفاتورة
-          </h3>
           <div className="grid grid-cols-1 gap-2 text-xs">
             {/* تاريخ ووقت الفاتورة */}
             {invoiceDate && (
@@ -275,8 +380,8 @@ export default function InvoiceSelectors({
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+              <div className="md:col-span-2">
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="customer-select"
@@ -287,6 +392,7 @@ export default function InvoiceSelectors({
                     : "العميل:"}
                 </label>
                 <ReactSelect
+                  ref={customerSelectRef}
                   isSearchable
                   className="w-full text-xs"
                   classNamePrefix="react-select"
@@ -296,7 +402,7 @@ export default function InvoiceSelectors({
                     typeof window !== "undefined" ? document.body : null
                   }
                   menuPosition="fixed"
-                  options={selectOptions}
+                  options={filteredCustomersOptions}
                   placeholder={
                     invoiceType === "purchase" ||
                     invoiceType === "purchase_return"
@@ -396,7 +502,7 @@ export default function InvoiceSelectors({
                 </div>
               </div>
 
-              <div>
+              <div className={!isReturnInvoice ? "md:col-span-2" : ""}>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="pay-type"
@@ -417,10 +523,8 @@ export default function InvoiceSelectors({
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              {saleInvoices ? (
+              {isReturnInvoice && (
                 <div>
                   <label
                     className="block mb-1 font-medium text-gray-700 text-xs"
@@ -434,6 +538,7 @@ export default function InvoiceSelectors({
                     :
                   </label>
                   <ReactSelect
+                    id="reference-number"
                     isSearchable
                     className="w-full text-xs"
                     classNamePrefix="react-select"
@@ -442,19 +547,10 @@ export default function InvoiceSelectors({
                     menuPortalTarget={
                       typeof window !== "undefined" ? document.body : null
                     }
-                    isDisabled={!isEditing}
+                    isDisabled={!isEditing || !hasCustomerId}
+                    isLoading={isCustomerInvoicesLoading}
                     menuPosition="fixed"
-                    options={(saleInvoices || [])
-                      .filter((inv) =>
-                        selectedCustomer
-                          ? String(inv.cust ?? "") ===
-                            String(selectedCustomer ?? "")
-                          : true,
-                      )
-                      .map((inv) => ({
-                        value: inv.inv_id,
-                        label: String(inv.inv_id),
-                      }))}
+                    options={customerInvoiceOptions}
                     placeholder="اختر الفاتورة..."
                     styles={{
                       control: (base) => ({
@@ -468,30 +564,29 @@ export default function InvoiceSelectors({
                       placeholder: (base) => ({ ...base, fontSize: "12px" }),
                       singleValue: (base) => ({ ...base, fontSize: "12px" }),
                     }}
-                    value={
-                      referenceNumber
-                        ? {
-                            value: Number(referenceNumber),
-                            label: referenceNumber,
-                          }
-                        : null
-                    }
+                    value={selectedReferenceOption}
                     onChange={(opt) => {
                       const val = opt?.value ? String(opt.value) : "";
 
                       setReferenceNumber(val);
-                      if (opt?.value && onInvoiceSelect) {
-                        const confirmLoad = window.confirm(
-                          "هل تريد تنزيل أصناف الفاتورة المختارة؟",
-                        );
+                      // if (opt?.value && onInvoiceSelect) {
+                      //   const confirmLoad = window.confirm(
+                      //     "هل تريد تنزيل أصناف الفاتورة المختارة؟",
+                      //   );
 
-                        if (confirmLoad) onInvoiceSelect(opt.value);
-                      }
+                      //   if (confirmLoad) {
+                      //     const parsedId = Number(opt.value);
+                      //     if (Number.isFinite(parsedId)) {
+                      //       onInvoiceSelect(parsedId);
+                      //     }
+                      //   }
+                      // }
                     }}
                   />
                 </div>
-              ) : (
-                <div>
+              )}
+
+              {/* <div>
                   <label
                     className="block mb-1 font-medium text-gray-700 text-xs"
                     htmlFor="reference-number"
@@ -507,8 +602,10 @@ export default function InvoiceSelectors({
                     disabled={!isEditing}
                   />
                 </div>
-              )}
+               */}
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -519,12 +616,12 @@ export default function InvoiceSelectors({
                 <input
                   readOnly
                   className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
-                  placeholder="الرقم الضريبي"
                   type="text"
                   value={vatNumber}
                   disabled={!isEditing}
                 />
               </div>
+
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -534,16 +631,13 @@ export default function InvoiceSelectors({
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs"
-                  placeholder="مناولة"
                   type="text"
                   value={handlingMethod}
                   onChange={(e) => setHandlingMethod(e.target.value)}
                   disabled={!isEditing}
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -553,7 +647,6 @@ export default function InvoiceSelectors({
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs"
-                  placeholder=" الجوال"
                   type="text"
                   value={mobileMethod}
                   onChange={(e) => setMobileMethod(e.target.value)}
@@ -598,26 +691,60 @@ export default function InvoiceSelectors({
               </div>
             </div>
 
-            <div>
-              <label
-                className="block mb-1 font-medium text-gray-700 text-xs"
-                htmlFor="note"
-              >
-                البيان:
-              </label>
-              <input
-                className="w-full h-[32px] border px-2 rounded text-xs"
-                placeholder="البيان"
-                type="text"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                disabled={!isEditing}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div>
+                <label
+                  className="block mb-1 font-medium text-gray-700 text-xs"
+                  htmlFor="note"
+                >
+                  البيان:
+                </label>
+                <input
+                  id="note"
+                  className="w-full h-[32px] border px-2 rounded text-xs"
+                  type="text"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  disabled={!isEditing}
+                />
+              </div>
+
+              {/* Barcode Search Section */}
+
+              <div>
+                <label
+                  className="block mb-1 font-medium text-gray-700 text-xs"
+                  htmlFor="search-barcode"
+                >
+                  الباركود:
+                </label>
+                <input
+                  id="search-barcode"
+                  className="w-full h-[32px] border px-2 rounded text-xs"
+                  disabled={!isEditing}
+                  placeholder="بحث بالباركود"
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      onBarcodeSearch();
+                    }
+                  }}
+                />
+                {/* <button
+                  className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={!isEditing || !searchValue.trim()}
+                  onClick={onBarcodeSearch}
+                >
+                  بحث
+                </button> */}
+              </div>
             </div>
           </div>
         </div>
-
-        {/* مربع معلومات العنوان والباركود */}
+        {/* مربع معلومات العنوان */}
         <div className="bg-white border border-gray-200 rounded-lg">
           {/* Header with Toggle Button */}
           <div
@@ -655,14 +782,13 @@ export default function InvoiceSelectors({
           >
             <div className="px-3 pb-3 md:px-4 md:pb-4 border-t border-gray-200">
               {selectedCustomer ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mt-3">
                   <div>
                     <label className="block mb-1 text-xs font-medium text-gray-600">
                       السجل التجاري:
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="رقم السجل"
                       type="text"
                       value={crNo}
                       onChange={(e) => setCrNo(e.target.value)}
@@ -675,7 +801,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="اسم المحافظة"
                       type="text"
                       value={gov}
                       onChange={(e) => setGov(e.target.value)}
@@ -688,7 +813,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="اسم المدينة"
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
@@ -701,7 +825,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="اسم المنطقة"
                       type="text"
                       value={area}
                       onChange={(e) => setArea(e.target.value)}
@@ -714,7 +837,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="اسم الشارع"
                       type="text"
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
@@ -727,7 +849,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="رقم المبنى"
                       type="text"
                       value={buildNo}
                       onChange={(e) => setBuildNo(e.target.value)}
@@ -740,7 +861,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="رقم صندوق البريد"
                       type="text"
                       value={postNo}
                       onChange={(e) => setPostNo(e.target.value)}
@@ -753,7 +873,6 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      placeholder="الرمز البريدي"
                       type="text"
                       value={postCode}
                       onChange={(e) => setPostCode(e.target.value)}
@@ -774,44 +893,6 @@ export default function InvoiceSelectors({
                   </p>
                 </div>
               )}
-
-              {/* Barcode Search Section */}
-              <div className="mt-3 pt-3 md:mt-4 md:pt-4 border-t border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <svg
-                    height="24"
-                    width="24"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M4,6H6V18H4V6M7,6H8V18H7V6M9,6H12V18H9V6M13,6H14V18H13V6M16,6H18V18H16V6M19,6H20V18H19V6M2,4V8H0V4A2,2 0 0,1 2,2H6V4H2M22,2A2,2 0 0,1 24,4V8H22V4H18V2H22M2,16V20H6V22H2A2,2 0 0,1 0,20V16H2M22,20V16H24V20A2,2 0 0,1 22,22H18V20H22Z" />
-                  </svg>
-                  البحث بالباركود
-                </h4>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                  <input
-                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                    disabled={!isEditing}
-                    placeholder="أدخل كود الصنف"
-                    type="text"
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        onBarcodeSearch();
-                      }
-                    }}
-                  />
-                  <button
-                    className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    disabled={!isEditing || !searchValue.trim()}
-                    onClick={onBarcodeSearch}
-                  >
-                    بحث
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>

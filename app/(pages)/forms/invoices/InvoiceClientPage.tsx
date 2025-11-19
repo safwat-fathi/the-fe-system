@@ -338,7 +338,7 @@ export default function InvoiceClientPage({
       onEdit={() => {
         setIsEditing(true);
         const invId = form.inv_id ? String(form.inv_id) : undefined;
-        const url = buildUrl({ mode: "edit", edit: null, inv_id: invId });
+        const url = buildUrl({ mode: "edit", inv_id: invId });
         router.replace(url);
       }}
       onInvoiceSearch={handleSearchByInvoiceId}
@@ -367,7 +367,6 @@ export default function InvoiceClientPage({
           postCode={form.post_code}
           postNo={form.post_no}
           referenceNumber={form.ref_no}
-          saleInvoices={[]}
           searchValue={searchValue}
           selectedCustomer={form.cust_code}
           selectedCustomerName={form.cust_name}

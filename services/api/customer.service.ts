@@ -1,10 +1,22 @@
 import { HttpService } from "@/services/base";
 import { Customer } from "@/types/models/customer";
+import { Invoice, TransTypes } from "@/types/models/invoice";
 
 interface GetCustomerParams {
   xcom_id: number;
   xcust_type?: number;
   xcust_code?: number;
+}
+
+export type CustomerInvoiceTransType =
+  | TransTypes.PURCHASE_RETURN
+  | TransTypes.SALES_RETURN;
+
+export interface GetCustomerInvoicesParams {
+  xcust_id: number;
+  xtrans_type: CustomerInvoiceTransType;
+  xcom_id?: number;
+  xyear_id?: number;
 }
 
 class CustomerService extends HttpService<Customer> {
@@ -133,6 +145,50 @@ class CustomerService extends HttpService<Customer> {
       console.error("Error fetching customer by ID:", error);
 
       return null;
+    }
+  }
+
+  async getCustomerInvoices({
+    xcust_id,
+    xtrans_type,
+    xcom_id = 1,
+    xyear_id = 1,
+  }: GetCustomerInvoicesParams): Promise<Invoice[]> {
+    try {
+      const response = await this.get<Invoice[] | { results?: Invoice[] }>(
+        "getCustomerInvoices",
+        {
+          xcust_id,
+          xtrans_type,
+          xcom_id,
+          xyear_id,
+        },
+        {
+          cache: "force-cache",
+          next: {
+            tags: [
+              `customer-invoices-${xcom_id}-${xyear_id}-${xcust_id}-${xtrans_type}`,
+            ],
+          },
+        },
+      );
+
+      if (response.success) {
+        const payload = response.data;
+
+        if (Array.isArray(payload)) {
+          return payload;
+        }
+
+        if (payload && Array.isArray(payload.results)) {
+          return payload.results;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching customer invoices:", error);
+      throw new Error("حدث خطأ أثناء جلب فواتير العميل");
     }
   }
 }

@@ -552,358 +552,523 @@ export default function InvoiceItemTable({
   });
 
   return (
-    <div className="w-full overflow-auto mb-6 max-w-full max-h-[250px]">
-      <div className="flex justify-between mb-2">
-        <button
-          className="btn focus:ring-0 focus:ring-offset-0"
-          disabled={!isEditing}
-          type="button"
-          onClick={addRow}
-        >
-          + صف
-        </button>
-      </div>
+    <div>
+      <div className="w-full overflow-y-scroll mb-1 max-w-full max-h-[250px]">
+        <table className="min-w-[1000px] border text-sm text-center table-fixed">
+          <thead className="bg-gray-100 text-xs font-semibold">
+            <tr>
+              <th className="w-[400px]">الصنف</th>
+              <th className="w-[60px]">العدد</th>
+              <th className="w-[100px]">الوزن القائم</th>
+              <th className="w-[80px]">الوزن المعاير</th>
+              <th className="w-[80px]">الاحجار</th>
+              {(payType === INVOICE_PAY_TYPES.VALUE ||
+                payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
+                <th className="w-[100px]">سعر الجرام</th>
+              )}
+              {(payType === INVOICE_PAY_TYPES.WAGES ||
+                payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
+                <th className="w-[100px]">أجرة الجرام</th>
+              )}
+              {(payType === INVOICE_PAY_TYPES.VALUE ||
+                payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
+                <th className="w-[100px]">اجمالي القيمة</th>
+              )}
+              {(payType === INVOICE_PAY_TYPES.WAGES ||
+                payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
+                <th className="w-[100px]">اجمالي الاجور</th>
+              )}
+              <th className="w-[100px]">الخصم</th>
+              <th className="w-[80px]">نسبة الضريبة</th>
+              <th className="w-[100px]">الضريبة</th>
+              <th className="w-[120px]">الاجمالي شامل الضريبة</th>
+              <th className="w-[200px]">البيان</th>
+              <th className="w-[60px]">حذف</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoiceItems.map((item, index) => {
+              let col = -1;
+              const weight = toNum(item.weight);
+              const gWeight = toNum(item.g_weight);
+              const price = toNum(item.price);
+              const priceW = toNum(item.price_w);
 
-      <table className="min-w-[1000px] border text-sm text-center table-fixed">
-        <thead className="bg-gray-100 text-xs font-semibold">
-          <tr>
-            <th className="w-[400px]">الصنف</th>
-            <th className="w-[60px]">العدد</th>
-            <th className="w-[100px]">الوزن القائم</th>
-            <th className="w-[80px]">الوزن المعاير</th>
-            <th className="w-[80px]">الاحجار</th>
-            {(payType === INVOICE_PAY_TYPES.VALUE ||
-              payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-              <th className="w-[100px]">سعر الجرام</th>
-            )}
-            {(payType === INVOICE_PAY_TYPES.WAGES ||
-              payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-              <th className="w-[100px]">أجرة الجرام</th>
-            )}
-            {(payType === INVOICE_PAY_TYPES.VALUE ||
-              payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-              <th className="w-[100px]">اجمالي القيمة</th>
-            )}
-            {(payType === INVOICE_PAY_TYPES.WAGES ||
-              payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-              <th className="w-[100px]">اجمالي الاجور</th>
-            )}
-            <th className="w-[100px]">الخصم</th>
-            <th className="w-[80px]">نسبة الضريبة</th>
-            <th className="w-[100px]">الضريبة</th>
-            <th className="w-[120px]">الاجمالي شامل الضريبة</th>
-            <th className="w-[200px]">البيان</th>
-            <th className="w-[60px]">حذف</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoiceItems.map((item, index) => {
-            
-            let col = -1;
-            const weight = toNum(item.weight);
-            const gWeight = toNum(item.g_weight);
-            const price = toNum(item.price);
-            const priceW = toNum(item.price_w);
+              // calculate totals client-side for display (base calculations)
+              const totalA = weight * price;
+              const totalW = gWeight * priceW;
+              let rowBase = 0;
 
-            // calculate totals client-side for display (base calculations)
-            const totalA = weight * price;
-            const totalW = gWeight * priceW;
-            let rowBase = 0;
+              if (payType === INVOICE_PAY_TYPES.VALUE) rowBase = totalA;
+              else if (payType === INVOICE_PAY_TYPES.WAGES) rowBase = totalW;
+              else rowBase = totalA + totalW;
 
-            if (payType === INVOICE_PAY_TYPES.VALUE) rowBase = totalA;
-            else if (payType === INVOICE_PAY_TYPES.WAGES) rowBase = totalW;
-            else rowBase = totalA + totalW;
+              const base = rowBase - toNum(item.item_disc_amt);
+              const tax = (base * toNum(item.tax_prc ?? "15")) / 100;
+              const totalWithTax = base + tax;
 
-            const base = rowBase - toNum(item.item_disc_amt);
-            const tax = (base * toNum(item.tax_prc ?? "15")) / 100;
-            const totalWithTax = base + tax;
+              return (
+                <tr key={item.id}>
+                  <td className="p-1">
+                    {(() => {
+                      const thisCol = ++col;
+                      return (
+                        <AsyncCreatableSelect
+                          selectRef={(instance) =>
+                            setInputRef(
+                              index,
+                              thisCol,
+                            )((instance as unknown as HTMLInputElement) || null)
+                          }
+                          inputId={`item-${index}${thisCol}`}
+                          isClearable
+                          isSearchable
+                          additional={{ page: 1 }}
+                          className="text-xs"
+                          classNamePrefix="select"
+                          components={{ IndicatorSeparator: () => null }}
+                          defaultOptions={staticItemOptions}
+                          formatCreateLabel={(inputValue) =>
+                            `إضافة صنف جديد: "${inputValue}"`
+                          }
+                          instanceId={`item-select-${index}`}
+                          isDisabled={!isEditing}
+                          loadOptions={loadItemOptions}
+                          menuPortalTarget={
+                            typeof window !== "undefined" ? document.body : null
+                          }
+                          menuPosition="fixed"
+                          placeholder="اختر الصنف..."
+                          styles={{
+                            control: (base) => ({
+                              ...base,
+                              minHeight: 30,
+                              height: 30,
+                            }),
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          }}
+                          value={(() => {
+                            const rawId = item.item ?? (item as any).item_id;
+                            const itemId = Number(rawId ?? 0);
 
-            return (
-              <tr key={item.id}>
-                <td className="p-1">
-                  {(() => {
-                    const thisCol = ++col;
-                    return (
-                      <AsyncCreatableSelect
-                        selectRef={(instance) =>
-                          setInputRef(index, thisCol)(
-                            (instance as unknown as HTMLInputElement) || null,
-                          )
-                        }
-                        inputId={`item-${index}${thisCol}`}
-                        isClearable
-                        isSearchable
-                        additional={{ page: 1 }}
-                        className="text-xs"
-                        classNamePrefix="select"
-                        components={{ IndicatorSeparator: () => null }}
-                        defaultOptions={staticItemOptions}
-                        formatCreateLabel={(inputValue) =>
-                          `إضافة صنف جديد: "${inputValue}"`
-                        }
-                        instanceId={`item-select-${index}`}
-                        isDisabled={!isEditing}
-                        loadOptions={loadItemOptions}
-                        menuPortalTarget={
-                          typeof window !== "undefined" ? document.body : null
-                        }
-                        menuPosition="fixed"
-                        placeholder="اختر الصنف..."
-                        styles={{
-                          control: (base) => ({
-                            ...base,
-                            minHeight: 30,
-                            height: 30,
-                          }),
-                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                        }}
-                        value={(() => {
-                          const rawId = item.item ?? (item as any).item_id;
-                          const itemId = Number(rawId ?? 0);
+                            if (!Number.isFinite(itemId) || itemId <= 0)
+                              return null;
 
-                          if (!Number.isFinite(itemId) || itemId <= 0)
-                            return null;
+                            const existing = items.find(
+                              (it) => it.id === itemId,
+                            );
 
-                          const existing = items.find((it) => it.id === itemId);
+                            if (existing) return buildOption(existing);
 
-                          if (existing) return buildOption(existing);
+                            return buildOption({
+                              id: itemId,
+                              item_code: item.item_code ?? String(itemId),
+                              item_name:
+                                item.item_desc ??
+                                item.item_code ??
+                                String(itemId),
+                            });
+                          })()}
+                          onChange={(opt: any) => {
+                            const selected =
+                              opt?.item ||
+                              items.find((it) => it.id === opt?.value);
 
-                          return buildOption({
-                            id: itemId,
-                            item_code: item.item_code ?? String(itemId),
-                            item_name:
-                              item.item_desc ?? item.item_code ?? String(itemId),
-                          });
-                        })()}
-                        onChange={(opt: any) => {
-                          const selected =
-                            opt?.item || items.find((it) => it.id === opt?.value);
+                            if (!selected) return;
+                            // cache option if missing
+                            setItems((prev) => {
+                              if (prev.some((i) => i.id === selected.id)) {
+                                return prev;
+                              }
 
-                          if (!selected) return;
-                          // cache option if missing
-                          setItems((prev) => {
-                            if (prev.some((i) => i.id === selected.id)) {
-                              return prev;
+                              return [...prev, selected];
+                            });
+
+                            const updated = [...invoiceItems];
+
+                            updated[index] = {
+                              ...updated[index],
+                              item: selected.id ?? 0,
+                              // keep both to avoid stale reads in save mapper
+                              ...(selected.id ? { item_id: selected.id } : {}),
+                              item_desc:
+                                selected.item_name ??
+                                selected.item_code ??
+                                String(selected.id),
+                              // populate fields present in interface as strings
+                              price: String(
+                                goldPrice ?? selected.item_price ?? 0,
+                              ),
+                              price_w: String(selected.work_price ?? 0),
+                              weight: String(selected.item_weight ?? 0),
+                              g_weight: String(
+                                selected.item_g_weight ??
+                                  selected.item_weight ??
+                                  0,
+                              ),
+                              stones: selected.stones ?? null,
+                            } as InvoiceDetail;
+
+                            // recalc totals
+                            const w = toNum(updated[index].weight);
+                            const gw = toNum(updated[index].g_weight);
+                            const pr = toNum(updated[index].price);
+                            const prw = toNum(updated[index].price_w);
+                            const totalA = w * pr;
+                            const totalW = gw * prw;
+                            const baseCalc =
+                              (payType === INVOICE_PAY_TYPES.VALUE
+                                ? totalA
+                                : payType === INVOICE_PAY_TYPES.WAGES
+                                  ? totalW
+                                  : totalA + totalW) -
+                              toNum(updated[index].item_disc_amt);
+                            const taxCalc =
+                              (baseCalc *
+                                toNum(updated[index].tax_prc ?? "15")) /
+                              100;
+
+                            updated[index].total_a = String(totalA);
+                            updated[index].total_w = String(totalW);
+                            updated[index].tax = String(taxCalc);
+                            updated[index].total = String(baseCalc + taxCalc);
+
+                            setInvoiceItems(updated);
+                          }}
+                          onCreateOption={(inputValue) => {
+                            const newItem = {
+                              id: Math.floor(Math.random() * 1000000),
+                              item_code: "000000",
+                              item_name: inputValue,
+                              item_price: 0,
+                              item_weight: 0,
+                              item_g_weight: 0,
+                              work_price: 0,
+                            } as Item;
+
+                            setItems((prev) => [...prev, newItem]);
+                            const updated = [...invoiceItems];
+
+                            updated[index] = {
+                              ...updated[index],
+                              item: newItem.id,
+                              item_id: newItem.id,
+                              item_desc: newItem.item_name,
+                              price: String(
+                                goldPrice ?? newItem.item_price ?? 0,
+                              ),
+                              price_w: String(newItem.work_price ?? 0),
+                              weight: String(newItem.item_weight ?? 0),
+                              g_weight: String(
+                                newItem.item_g_weight ??
+                                  newItem.item_weight ??
+                                  0,
+                              ),
+                            } as InvoiceDetail;
+                            setInvoiceItems(updated);
+                          }}
+                          onKeyDown={(e) =>
+                            handleKeyDown(e, index, thisCol, {
+                              allowEnterDefaultWhenRowMissing: true,
+                            })
+                          }
+                        />
+                      );
+                    })()}
+                  </td>
+
+                  <td className="align-middle">
+                    {(() => {
+                      const thisCol = ++col;
+                      const fieldKey = makeFieldKey(item.id, "qty");
+                      const rawValue = String(item.qty ?? "");
+                      const displayValue =
+                        focusedField === fieldKey
+                          ? rawValue
+                          : formatForDisplay(rawValue);
+                      return (
+                        <input
+                          id={`qty-${index}${thisCol}`}
+                          ref={setInputRef(index, thisCol)}
+                          className="border w-full p-1 text-xs text-center align-middle"
+                          disabled={!isEditing}
+                          dir="ltr"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          step={1}
+                          type="number"
+                          value={displayValue}
+                          onChange={(e) =>
+                            handleFieldChange(index, "qty", e.target.value)
+                          }
+                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
+                          onBlur={() => {
+                            if (focusedField === fieldKey)
+                              setFocusedField(null);
+                          }}
+                          onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                        />
+                      );
+                    })()}
+                  </td>
+
+                  <td className="align-middle">
+                    {(() => {
+                      const thisCol = ++col;
+                      const fieldKey = makeFieldKey(item.id, "weight");
+                      const rawValue = String(item.weight ?? "");
+                      const displayValue =
+                        focusedField === fieldKey
+                          ? rawValue
+                          : formatForDisplay(rawValue);
+                      return (
+                        <input
+                          ref={setInputRef(index, thisCol)}
+                          id={`weight-${index}${thisCol}`}
+                          className="border w-full p-1 text-xs text-center align-middle"
+                          disabled={!isEditing}
+                          dir="ltr"
+                          inputMode="decimal"
+                          type="number"
+                          step={stepFromDigits(weightDigits)}
+                          value={displayValue}
+                          onChange={(e) =>
+                            handleFieldChange(index, "weight", e.target.value)
+                          }
+                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
+                          onBlur={() => {
+                            if (focusedField === fieldKey)
+                              setFocusedField(null);
+                          }}
+                          onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                        />
+                      );
+                    })()}
+                  </td>
+
+                  <td className="align-middle">
+                    {(() => {
+                      const thisCol = ++col;
+                      const fieldKey = makeFieldKey(item.id, "g_weight");
+                      const rawValue = String(item.g_weight ?? "");
+                      const displayValue =
+                        focusedField === fieldKey
+                          ? rawValue
+                          : formatForDisplay(rawValue);
+                      return (
+                        <input
+                          ref={setInputRef(index, thisCol)}
+                          id={`gweight-${index}${thisCol}`}
+                          className="border w-full p-1 text-xs text-center align-middle"
+                          disabled={!isEditing}
+                          dir="ltr"
+                          inputMode="decimal"
+                          type="number"
+                          step={stepFromDigits(gWeightDigits)}
+                          value={displayValue}
+                          onChange={(e) =>
+                            handleFieldChange(index, "g_weight", e.target.value)
+                          }
+                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
+                          onBlur={() => {
+                            if (focusedField === fieldKey)
+                              setFocusedField(null);
+                          }}
+                          onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                        />
+                      );
+                    })()}
+                  </td>
+
+                  <td>
+                    {(() => {
+                      const thisCol = ++col;
+                      return (
+                        <input
+                          ref={setInputRef(index, thisCol)}
+                          id={`stones-${index}${thisCol}`}
+                          className="border w-full p-1 text-xs text-center"
+                          disabled={!isEditing}
+                          dir="ltr"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          type="number"
+                          step={1}
+                          value={String(item.stones ?? "")}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              index,
+                              "stones",
+                              sanitizeNumericInput(e.target.value, false),
+                            )
+                          }
+                          onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                        />
+                      );
+                    })()}
+                  </td>
+
+                  {(payType === INVOICE_PAY_TYPES.VALUE ||
+                    payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
+                    <td>
+                      {(() => {
+                        const thisCol = ++col;
+                        const fieldKey = makeFieldKey(item.id, "price");
+                        const rawValue = String(item.price ?? "");
+                        const displayValue =
+                          focusedField === fieldKey
+                            ? rawValue
+                            : formatForDisplay(rawValue);
+                        return (
+                          <input
+                            ref={setInputRef(index, thisCol)}
+                            id={`price-${index}${thisCol}`}
+                            className="border w-full p-1 text-xs text-center"
+                            disabled={!isEditing}
+                            dir="ltr"
+                            inputMode="decimal"
+                            type="number"
+                            step={stepFromDigits(priceDigits)}
+                            value={displayValue}
+                            onChange={(e) =>
+                              handleFieldChange(index, "price", e.target.value)
                             }
+                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
+                            onBlur={() => {
+                              if (focusedField === fieldKey)
+                                setFocusedField(null);
+                            }}
+                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                          />
+                        );
+                      })()}
+                    </td>
+                  )}
 
-                            return [...prev, selected];
-                          });
+                  {(payType === INVOICE_PAY_TYPES.WAGES ||
+                    payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
+                    <td>
+                      {(() => {
+                        const thisCol = ++col;
+                        const fieldKey = makeFieldKey(item.id, "price_w");
+                        const rawValue = String(item.price_w ?? "");
+                        const displayValue =
+                          focusedField === fieldKey
+                            ? rawValue
+                            : formatForDisplay(rawValue);
+                        return (
+                          <input
+                            ref={setInputRef(index, thisCol)}
+                            id={`pricew-${index}${thisCol}`}
+                            className="border w-full p-1 text-xs text-center"
+                            disabled={!isEditing}
+                            required={
+                              payType === INVOICE_PAY_TYPES.WAGES ||
+                              payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
+                            }
+                            dir="ltr"
+                            inputMode="decimal"
+                            type="number"
+                            step={stepFromDigits(priceWDigits)}
+                            value={displayValue}
+                            onChange={(e) =>
+                              handleFieldChange(
+                                index,
+                                "price_w",
+                                e.target.value,
+                              )
+                            }
+                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
+                            onBlur={() => {
+                              if (focusedField === fieldKey)
+                                setFocusedField(null);
+                            }}
+                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                          />
+                        );
+                      })()}
+                    </td>
+                  )}
 
-                          const updated = [...invoiceItems];
+                  {(payType === INVOICE_PAY_TYPES.VALUE ||
+                    payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
+                    <td>
+                      {(() => {
+                        const thisCol = ++col;
+                        const fieldKey = makeFieldKey(item.id, "total_a");
+                        const rawValue = String(item.total_a ?? "");
+                        const displayValue =
+                          focusedField === fieldKey
+                            ? rawValue
+                            : formatForDisplay(rawValue);
+                        return (
+                          <input
+                            ref={setInputRef(index, thisCol)}
+                            id={`totala-${index}${thisCol}`}
+                            className="border w-full p-1 text-xs text-center"
+                            disabled={!isEditing}
+                            dir="ltr"
+                            inputMode="decimal"
+                            type="number"
+                            step={stepFromDigits(totalADigits)}
+                            value={displayValue}
+                            onChange={(e) =>
+                              handleTotalAChange(index, e.target.value)
+                            }
+                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
+                            onBlur={() => {
+                              if (focusedField === fieldKey)
+                                setFocusedField(null);
+                            }}
+                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                          />
+                        );
+                      })()}
+                    </td>
+                  )}
 
-                          updated[index] = {
-                            ...updated[index],
-                            item: selected.id ?? 0,
-                            // keep both to avoid stale reads in save mapper
-                            ...(selected.id ? { item_id: selected.id } : {}),
-                            item_desc:
-                              selected.item_name ??
-                              selected.item_code ??
-                              String(selected.id),
-                            // populate fields present in interface as strings
-                            price: String(goldPrice ?? selected.item_price ?? 0),
-                            price_w: String(selected.work_price ?? 0),
-                            weight: String(selected.item_weight ?? 0),
-                            g_weight: String(
-                              selected.item_g_weight ?? selected.item_weight ?? 0,
-                            ),
-                            stones: selected.stones ?? null,
-                          } as InvoiceDetail;
+                  {(payType === INVOICE_PAY_TYPES.WAGES ||
+                    payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
+                    <td>
+                      {(() => {
+                        const thisCol = ++col;
+                        const fieldKey = makeFieldKey(item.id, "total_w");
+                        const rawValue = String(item.total_w ?? "");
+                        const displayValue =
+                          focusedField === fieldKey
+                            ? rawValue
+                            : formatForDisplay(rawValue);
+                        return (
+                          <input
+                            ref={setInputRef(index, thisCol)}
+                            id={`totalw-${index}${thisCol}`}
+                            className="border w-full p-1 text-xs text-center"
+                            disabled={!isEditing}
+                            dir="ltr"
+                            inputMode="decimal"
+                            type="number"
+                            step={stepFromDigits(totalWDigits)}
+                            value={displayValue}
+                            onChange={(e) =>
+                              handleTotalWChange(index, e.target.value)
+                            }
+                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
+                            onBlur={() => {
+                              if (focusedField === fieldKey)
+                                setFocusedField(null);
+                            }}
+                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                          />
+                        );
+                      })()}
+                    </td>
+                  )}
 
-                          // recalc totals
-                          const w = toNum(updated[index].weight);
-                          const gw = toNum(updated[index].g_weight);
-                          const pr = toNum(updated[index].price);
-                          const prw = toNum(updated[index].price_w);
-                          const totalA = w * pr;
-                          const totalW = gw * prw;
-                          const baseCalc =
-                            (payType === INVOICE_PAY_TYPES.VALUE
-                              ? totalA
-                              : payType === INVOICE_PAY_TYPES.WAGES
-                                ? totalW
-                                : totalA + totalW) -
-                            toNum(updated[index].item_disc_amt);
-                          const taxCalc =
-                            (baseCalc * toNum(updated[index].tax_prc ?? "15")) /
-                            100;
-
-                          updated[index].total_a = String(totalA);
-                          updated[index].total_w = String(totalW);
-                          updated[index].tax = String(taxCalc);
-                          updated[index].total = String(baseCalc + taxCalc);
-
-                          setInvoiceItems(updated);
-                        }}
-                        onCreateOption={(inputValue) => {
-                          const newItem = {
-                            id: Math.floor(Math.random() * 1000000),
-                            item_code: "000000",
-                            item_name: inputValue,
-                            item_price: 0,
-                            item_weight: 0,
-                            item_g_weight: 0,
-                            work_price: 0,
-                          } as Item;
-
-                          setItems((prev) => [...prev, newItem]);
-                          const updated = [...invoiceItems];
-
-                          updated[index] = {
-                            ...updated[index],
-                            item: newItem.id,
-                            item_id: newItem.id,
-                            item_desc: newItem.item_name,
-                            price: String(goldPrice ?? newItem.item_price ?? 0),
-                            price_w: String(newItem.work_price ?? 0),
-                            weight: String(newItem.item_weight ?? 0),
-                            g_weight: String(
-                              newItem.item_g_weight ?? newItem.item_weight ?? 0,
-                            ),
-                          } as InvoiceDetail;
-                          setInvoiceItems(updated);
-                        }}
-                        onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                      />
-                    );
-                  })()}
-                </td>
-
-                <td className="align-middle">
-                  {(() => {
-                    const thisCol = ++col;
-                    const fieldKey = makeFieldKey(item.id, "qty");
-                    const rawValue = String(item.qty ?? "");
-                    const displayValue =
-                      focusedField === fieldKey
-                        ? rawValue
-                        : formatForDisplay(rawValue);
-                    return (
-                      <input
-                        id={`qty-${index}${thisCol}`}
-                        ref={setInputRef(index, thisCol)}
-                        className="border w-full p-1 text-xs text-center align-middle"
-                        disabled={!isEditing}
-                        dir="ltr"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        step={1}
-                        type="number"
-                        value={displayValue}
-                        onChange={(e) =>
-                          handleFieldChange(index, "qty", e.target.value)
-                        }
-                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                        onBlur={() => {
-                          if (focusedField === fieldKey) setFocusedField(null);
-                        }}
-                        onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                      />
-                    );
-                  })()}
-                </td>
-
-                <td className="align-middle">
-                  {(() => {
-                    const thisCol = ++col;
-                    const fieldKey = makeFieldKey(item.id, "weight");
-                    const rawValue = String(item.weight ?? "");
-                    const displayValue =
-                      focusedField === fieldKey
-                        ? rawValue
-                        : formatForDisplay(rawValue);
-                    return (
-                      <input
-                        ref={setInputRef(index, thisCol)}
-                        id={`weight-${index}${thisCol}`}
-                        className="border w-full p-1 text-xs text-center align-middle"
-                        disabled={!isEditing}
-                        dir="ltr"
-                        inputMode="decimal"
-                        type="number"
-                        step={stepFromDigits(weightDigits)}
-                        value={displayValue}
-                        onChange={(e) =>
-                          handleFieldChange(index, "weight", e.target.value)
-                        }
-                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                        onBlur={() => {
-                          if (focusedField === fieldKey) setFocusedField(null);
-                        }}
-                        onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                      />
-                    );
-                  })()}
-                </td>
-
-                <td className="align-middle">
-                  {(() => {
-                    const thisCol = ++col;
-                    const fieldKey = makeFieldKey(item.id, "g_weight");
-                    const rawValue = String(item.g_weight ?? "");
-                    const displayValue =
-                      focusedField === fieldKey
-                        ? rawValue
-                        : formatForDisplay(rawValue);
-                    return (
-                      <input
-                        ref={setInputRef(index, thisCol)}
-                        id={`gweight-${index}${thisCol}`}
-                        className="border w-full p-1 text-xs text-center align-middle"
-                        disabled={!isEditing}
-                        dir="ltr"
-                        inputMode="decimal"
-                        type="number"
-                        step={stepFromDigits(gWeightDigits)}
-                        value={displayValue}
-                        onChange={(e) =>
-                          handleFieldChange(index, "g_weight", e.target.value)
-                        }
-                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                        onBlur={() => {
-                          if (focusedField === fieldKey) setFocusedField(null);
-                        }}
-                        onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                      />
-                    );
-                  })()}
-                </td>
-
-                <td>
-                  {(() => {
-                    const thisCol = ++col;
-                    return (
-                      <input
-                        ref={setInputRef(index, thisCol)}
-                        id={`stones-${index}${thisCol}`}
-                        className="border w-full p-1 text-xs text-center"
-                        disabled={!isEditing}
-                        dir="ltr"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        type="number"
-                        step={1}
-                        value={String(item.stones ?? "")}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            index,
-                            "stones",
-                            sanitizeNumericInput(e.target.value, false),
-                          )
-                        }
-                        onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                      />
-                    );
-                  })()}
-                </td>
-
-                {(payType === INVOICE_PAY_TYPES.VALUE ||
-                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
                     {(() => {
                       const thisCol = ++col;
-                      const fieldKey = makeFieldKey(item.id, "price");
-                      const rawValue = String(item.price ?? "");
+                      const fieldKey = makeFieldKey(item.id, "item_disc_amt");
+                      const rawValue = String(item.item_disc_amt ?? "");
                       const displayValue =
                         focusedField === fieldKey
                           ? rawValue
@@ -911,16 +1076,20 @@ export default function InvoiceItemTable({
                       return (
                         <input
                           ref={setInputRef(index, thisCol)}
-                          id={`price-${index}${thisCol}`}
+                          id={`disc-${index}${thisCol}`}
                           className="border w-full p-1 text-xs text-center"
                           disabled={!isEditing}
                           dir="ltr"
                           inputMode="decimal"
                           type="number"
-                          step={stepFromDigits(priceDigits)}
+                          step={stepFromDigits(itemDiscDigits)}
                           value={displayValue}
                           onChange={(e) =>
-                            handleFieldChange(index, "price", e.target.value)
+                            handleFieldChange(
+                              index,
+                              "item_disc_amt",
+                              e.target.value,
+                            )
                           }
                           onFocus={(e) => handleNumericFocus(e, fieldKey)}
                           onBlur={() => {
@@ -932,267 +1101,135 @@ export default function InvoiceItemTable({
                       );
                     })()}
                   </td>
-                )}
 
-                {(payType === INVOICE_PAY_TYPES.WAGES ||
-                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
                     {(() => {
                       const thisCol = ++col;
-                      const fieldKey = makeFieldKey(item.id, "price_w");
-                      const rawValue = String(item.price_w ?? "");
+                      return (
+                        <select
+                          ref={setInputRef(index, thisCol)}
+                          id={`taxprc-${index}${thisCol}`}
+                          className="border w-full p-1 text-xs text-center"
+                          disabled={!isEditing}
+                          value={String(Math.round(toNum(item.tax_prc)))}
+                          onChange={(e) =>
+                            handleFieldChange(index, "tax_prc", e.target.value)
+                          }
+                          onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                        >
+                          {taxRates.map((rate) => (
+                            <option key={rate} value={rate}>
+                              {rate}%
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    })()}
+                  </td>
+
+                  <td>{formatAmount(String(item.tax ?? tax), taxDigits)}</td>
+
+                  <td>
+                    {(() => {
+                      const thisCol = ++col;
+                      const fieldKey = makeFieldKey(item.id, "total");
+                      const rawRawValue =
+                        tempTotals[item.id] !== undefined
+                          ? tempTotals[item.id]
+                          : String(
+                              item.total ??
+                                (Number.isFinite(totalWithTax)
+                                  ? totalWithTax
+                                  : ""),
+                            );
                       const displayValue =
                         focusedField === fieldKey
-                          ? rawValue
-                          : formatForDisplay(rawValue);
+                          ? rawRawValue
+                          : formatForDisplay(
+                              Number.isFinite(totalWithTax)
+                                ? totalWithTax
+                                : item.total,
+                            );
                       return (
                         <input
                           ref={setInputRef(index, thisCol)}
-                          id={`pricew-${index}${thisCol}`}
+                          id={`total-${index}${thisCol}`}
                           className="border w-full p-1 text-xs text-center"
                           disabled={!isEditing}
-                          required={
-                            payType === INVOICE_PAY_TYPES.WAGES ||
-                            payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
-                          }
+                          type="number"
                           dir="ltr"
                           inputMode="decimal"
-                          type="number"
-                          step={stepFromDigits(priceWDigits)}
+                          step={stepFromDigits(totalDigits)}
                           value={displayValue}
-                          onChange={(e) =>
-                            handleFieldChange(index, "price_w", e.target.value)
-                          }
-                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                          onBlur={() => {
+                          onBlur={(e) => {
+                            handleTotalChange(index, e.target.value);
                             if (focusedField === fieldKey)
                               setFocusedField(null);
                           }}
+                          onChange={(e) =>
+                            setTempTotals((prev) => ({
+                              ...prev,
+                              [item.id]: e.target.value,
+                            }))
+                          }
+                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
                           onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
                         />
                       );
                     })()}
                   </td>
-                )}
 
-                {(payType === INVOICE_PAY_TYPES.VALUE ||
-                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
                     {(() => {
                       const thisCol = ++col;
-                      const fieldKey = makeFieldKey(item.id, "total_a");
-                      const rawValue = String(item.total_a ?? "");
-                      const displayValue =
-                        focusedField === fieldKey
-                          ? rawValue
-                          : formatForDisplay(rawValue);
                       return (
                         <input
                           ref={setInputRef(index, thisCol)}
-                          id={`totala-${index}${thisCol}`}
+                          id={`desc-${index}${thisCol}`}
                           className="border w-full p-1 text-xs text-center"
                           disabled={!isEditing}
-                          dir="ltr"
-                          inputMode="decimal"
-                          type="number"
-                          step={stepFromDigits(totalADigits)}
-                          value={displayValue}
+                          value={item.item_desc ?? ""}
                           onChange={(e) =>
-                            handleTotalAChange(index, e.target.value)
+                            handleFieldChange(
+                              index,
+                              "item_desc",
+                              e.target.value,
+                            )
                           }
-                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                          onBlur={() => {
-                            if (focusedField === fieldKey)
-                              setFocusedField(null);
-                          }}
-                          onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
+                          onKeyDown={(e) =>
+                            handleKeyDown(e, index, thisCol, {
+                              isLastCol: true,
+                            })
+                          }
                         />
                       );
                     })()}
                   </td>
-                )}
 
-                {(payType === INVOICE_PAY_TYPES.WAGES ||
-                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
                   <td>
-                    {(() => {
-                      const thisCol = ++col;
-                      const fieldKey = makeFieldKey(item.id, "total_w");
-                      const rawValue = String(item.total_w ?? "");
-                      const displayValue =
-                        focusedField === fieldKey
-                          ? rawValue
-                          : formatForDisplay(rawValue);
-                      return (
-                        <input
-                          ref={setInputRef(index, thisCol)}
-                          id={`totalw-${index}${thisCol}`}
-                          className="border w-full p-1 text-xs text-center"
-                          disabled={!isEditing}
-                          dir="ltr"
-                          inputMode="decimal"
-                          type="number"
-                          step={stepFromDigits(totalWDigits)}
-                          value={displayValue}
-                          onChange={(e) =>
-                            handleTotalWChange(index, e.target.value)
-                          }
-                          onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                          onBlur={() => {
-                            if (focusedField === fieldKey)
-                              setFocusedField(null);
-                          }}
-                          onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                        />
-                      );
-                    })()}
+                    <button
+                      className="text-red-600 font-bold"
+                      disabled={!isEditing}
+                      tabIndex={-1}
+                      onClick={() => removeRow(item.id)}
+                    >
+                      ×
+                    </button>
                   </td>
-                )}
-
-                <td>
-                  {(() => {
-                    const thisCol = ++col;
-                    const fieldKey = makeFieldKey(item.id, "item_disc_amt");
-                    const rawValue = String(item.item_disc_amt ?? "");
-                    const displayValue =
-                      focusedField === fieldKey
-                        ? rawValue
-                        : formatForDisplay(rawValue);
-                    return (
-                      <input
-                        ref={setInputRef(index, thisCol)}
-                        id={`disc-${index}${thisCol}`}
-                        className="border w-full p-1 text-xs text-center"
-                        disabled={!isEditing}
-                        dir="ltr"
-                        inputMode="decimal"
-                        type="number"
-                        step={stepFromDigits(itemDiscDigits)}
-                        value={displayValue}
-                        onChange={(e) =>
-                          handleFieldChange(index, "item_disc_amt", e.target.value)
-                        }
-                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                        onBlur={() => {
-                          if (focusedField === fieldKey) setFocusedField(null);
-                        }}
-                        onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                      />
-                    );
-                  })()}
-                </td>
-
-                <td>
-                  {(() => {
-                    const thisCol = ++col;
-                    return (
-                      <select
-                        ref={setInputRef(index, thisCol)}
-                        id={`taxprc-${index}${thisCol}`}
-                        className="border w-full p-1 text-xs text-center"
-                        disabled={!isEditing}
-                        value={String(Math.round(toNum(item.tax_prc)))}
-                        onChange={(e) =>
-                          handleFieldChange(index, "tax_prc", e.target.value)
-                        }
-                        onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                      >
-                    {taxRates.map((rate) => (
-                      <option key={rate} value={rate}>
-                        {rate}%
-                      </option>
-                    ))}
-                      </select>
-                    );
-                  })()}
-                </td>
-
-                <td>{formatAmount(String(item.tax ?? tax), taxDigits)}</td>
-
-                <td>
-                  {(() => {
-                    const thisCol = ++col;
-                    const fieldKey = makeFieldKey(item.id, "total");
-                    const rawRawValue =
-                      tempTotals[item.id] !== undefined
-                        ? tempTotals[item.id]
-                        : String(
-                            item.total ??
-                              (Number.isFinite(totalWithTax) ? totalWithTax : ""),
-                          );
-                    const displayValue =
-                      focusedField === fieldKey
-                        ? rawRawValue
-                        : formatForDisplay(
-                            Number.isFinite(totalWithTax)
-                              ? totalWithTax
-                              : item.total,
-                          );
-                    return (
-                      <input
-                        ref={setInputRef(index, thisCol)}
-                        id={`total-${index}${thisCol}`}
-                        className="border w-full p-1 text-xs text-center"
-                        disabled={!isEditing}
-                        type="number"
-                        dir="ltr"
-                        inputMode="decimal"
-                        step={stepFromDigits(totalDigits)}
-                        value={displayValue}
-                        onBlur={(e) => {
-                          handleTotalChange(index, e.target.value);
-                          if (focusedField === fieldKey)
-                            setFocusedField(null);
-                        }}
-                        onChange={(e) =>
-                          setTempTotals((prev) => ({
-                            ...prev,
-                            [item.id]: e.target.value,
-                          }))
-                        }
-                        onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                        onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                      />
-                    );
-                  })()}
-                </td>
-
-                <td>
-                  {(() => {
-                    const thisCol = ++col;
-                    return (
-                      <input
-                        ref={setInputRef(index, thisCol)}
-                        id={`desc-${index}${thisCol}`}
-                        className="border w-full p-1 text-xs text-center"
-                        disabled={!isEditing}
-                        value={item.item_desc ?? ""}
-                        onChange={(e) =>
-                          handleFieldChange(index, "item_desc", e.target.value)
-                        }
-                        onKeyDown={(e) =>
-                          handleKeyDown(e, index, thisCol, { isLastCol: true })
-                        }
-                      />
-                    );
-                  })()}
-                </td>
-
-                <td>
-                  <button
-                    className="text-red-600 font-bold"
-                    disabled={!isEditing}
-                    tabIndex={-1}
-                    onClick={() => removeRow(item.id)}
-                  >
-                    ×
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <button
+        className="btn focus:ring-0 focus:ring-offset-0"
+        disabled={!isEditing}
+        type="button"
+        onClick={addRow}
+      >
+        + إضافة صنف
+      </button>
     </div>
   );
 }
