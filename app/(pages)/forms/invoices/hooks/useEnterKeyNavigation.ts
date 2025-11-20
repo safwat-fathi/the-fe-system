@@ -8,13 +8,18 @@ interface UseEnterKeyNavigationOptions<Row> {
   onAddRow: () => void;
 }
 
+interface HandleKeyDownOptions {
+  isLastCol?: boolean;
+  allowEnterDefaultWhenRowMissing?: boolean;
+}
+
 interface UseEnterKeyNavigationResult {
   setInputRef: (rowIndex: number, colIndex: number) => (node: NullableInput) => void;
   handleKeyDown: (
     event: KeyboardEvent,
     rowIndex: number,
     colIndex: number,
-    options?: { isLastCol?: boolean },
+    options?: HandleKeyDownOptions,
   ) => void;
   focusFirstInRow: (rowIndex: number) => boolean;
 }
@@ -75,7 +80,7 @@ export default function useEnterKeyNavigation<Row>(
       event: KeyboardEvent,
       rowIndex: number,
       colIndex: number,
-      { isLastCol }: { isLastCol?: boolean } = {},
+      { isLastCol, allowEnterDefaultWhenRowMissing }: HandleKeyDownOptions = {},
     ) => {
       const key = event.key;
       if (key !== "Tab" && key !== "Enter") return;
@@ -87,6 +92,15 @@ export default function useEnterKeyNavigation<Row>(
         typeof isLastCol === "boolean" ? isLastCol : colIndex >= lastColIndex;
       const isLastRow = rowIndex === rows.length - 1;
       const hasValue = rowHasValue(rows[rowIndex]);
+
+      if (!hasValue) {
+        if (key === "Tab") {
+          event.preventDefault();
+        } else if (key === "Enter" && !allowEnterDefaultWhenRowMissing) {
+          event.preventDefault();
+        }
+        return;
+      }
 
       if (key === "Enter") {
         event.preventDefault();

@@ -89,7 +89,6 @@ export const createInvoiceColumns = (
       const editParams = new URLSearchParams({
         type: formType,
         mode: "edit",
-        edit: "true",
       });
 
       if (invoiceIdentifier) {
