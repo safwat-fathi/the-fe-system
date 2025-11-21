@@ -19,6 +19,7 @@ import {
   TransTypes,
 } from "@/types/models/invoice";
 import { getCustomerInvoicesAction } from "@/app/actions/customer";
+import clsx from "clsx";
 
 interface Customer {
   id: string;
@@ -86,10 +87,11 @@ interface Props {
   setSearchValue: (val: string) => void;
   onBarcodeSearch: () => void;
   isEditing: boolean;
-  invoiceType?: "purchase" | "sale" | "purchase_return" | "sale_return";
+  invoiceType?: TransTypes;
   // التاريخ والوقت
   invoiceDate?: string;
   setInvoiceDate?: (val: string) => void;
+  onFocusNextSection?: () => boolean;
 }
 
 export default function InvoiceSelectors({
@@ -137,10 +139,11 @@ export default function InvoiceSelectors({
   setSearchValue,
   onBarcodeSearch,
   isEditing,
-  invoiceType = "sale",
+  invoiceType = TransTypes.SALES,
   // التاريخ والوقت
   invoiceDate,
   setInvoiceDate,
+  onFocusNextSection,
 }: Props) {
   const selectorsRef = useRef<HTMLDivElement | null>(null);
   const customerSelectRef = useRef<SelectInstance<CustomerOption> | null>(null);
@@ -179,6 +182,10 @@ export default function InvoiceSelectors({
         }
       }
       return false;
+    },
+    onBoundaryFocus: (direction) => {
+      if (direction !== 1) return false;
+      return onFocusNextSection?.() ?? false;
     },
   });
 
@@ -259,7 +266,12 @@ export default function InvoiceSelectors({
           }
       : null;
   const isReturnInvoice =
-    invoiceType === "purchase_return" || invoiceType === "sale_return";
+    invoiceType === TransTypes.PURCHASE_RETURN ||
+    invoiceType === TransTypes.SALES_RETURN;
+  console.log(
+    "🚀 ~ :265 ~ InvoiceSelectors ~ isReturnInvoice:",
+    isReturnInvoice,
+  );
   const rawCustomerId =
     currentCustomer?.id ??
     (selectedCustomer !== null ? selectedCustomer : null);
@@ -278,12 +290,6 @@ export default function InvoiceSelectors({
   }, [isEditing]);
 
   useEffect(() => {
-    if (!isReturnInvoice && referenceNumber) {
-      setReferenceNumber("");
-    }
-  }, [isReturnInvoice, referenceNumber, setReferenceNumber]);
-
-  useEffect(() => {
     let ignore = false;
 
     if (!isReturnInvoice || !hasCustomerId) {
@@ -296,7 +302,7 @@ export default function InvoiceSelectors({
 
       try {
         const transType =
-          invoiceType === "purchase_return"
+          invoiceType === TransTypes.PURCHASE_RETURN
             ? TransTypes.PURCHASE_RETURN
             : TransTypes.SALES_RETURN;
         const invoices = await getCustomerInvoicesAction({
@@ -386,8 +392,8 @@ export default function InvoiceSelectors({
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="customer-select"
                 >
-                  {invoiceType === "purchase" ||
-                  invoiceType === "purchase_return"
+                  {invoiceType === TransTypes.PURCHASE ||
+                  invoiceType === TransTypes.PURCHASE_RETURN
                     ? "المورد:"
                     : "العميل:"}
                 </label>
@@ -404,8 +410,8 @@ export default function InvoiceSelectors({
                   menuPosition="fixed"
                   options={filteredCustomersOptions}
                   placeholder={
-                    invoiceType === "purchase" ||
-                    invoiceType === "purchase_return"
+                    invoiceType === TransTypes.PURCHASE ||
+                    invoiceType === TransTypes.PURCHASE_RETURN
                       ? "اختر المورد..."
                       : "اختر العميل..."
                   }
@@ -502,7 +508,7 @@ export default function InvoiceSelectors({
                 </div>
               </div>
 
-              <div className={!isReturnInvoice ? "md:col-span-2" : ""}>
+              <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="pay-type"
@@ -524,15 +530,15 @@ export default function InvoiceSelectors({
                 </select>
               </div>
 
-              {isReturnInvoice && (
+              {isReturnInvoice ? (
                 <div>
                   <label
                     className="block mb-1 font-medium text-gray-700 text-xs"
                     htmlFor="reference-number"
                   >
                     فواتير{" "}
-                    {invoiceType === "purchase" ||
-                    invoiceType === "purchase_return"
+                    {invoiceType === TransTypes.PURCHASE ||
+                    invoiceType === TransTypes.PURCHASE_RETURN
                       ? "المورد"
                       : "العميل"}
                     :
@@ -584,9 +590,8 @@ export default function InvoiceSelectors({
                     }}
                   />
                 </div>
-              )}
-
-              {/* <div>
+              ) : (
+                <div>
                   <label
                     className="block mb-1 font-medium text-gray-700 text-xs"
                     htmlFor="reference-number"
@@ -595,33 +600,18 @@ export default function InvoiceSelectors({
                   </label>
                   <input
                     className="w-full h-[32px] border px-2 rounded text-xs"
-                    placeholder=" المرجع "
+                    id="reference-number"
+                    placeholder="المرجع"
                     type="text"
                     value={referenceNumber}
                     onChange={(e) => setReferenceNumber(e.target.value)}
                     disabled={!isEditing}
                   />
                 </div>
-               */}
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-              <div>
-                <label
-                  className="block mb-1 font-medium text-gray-700 text-xs"
-                  htmlFor="vat-number"
-                >
-                  الرقم الضريبي:
-                </label>
-                <input
-                  readOnly
-                  className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
-                  type="text"
-                  value={vatNumber}
-                  disabled={!isEditing}
-                />
-              </div>
-
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -634,22 +624,6 @@ export default function InvoiceSelectors({
                   type="text"
                   value={handlingMethod}
                   onChange={(e) => setHandlingMethod(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div>
-                <label
-                  className="block mb-1 font-medium text-gray-700 text-xs"
-                  htmlFor="mobile-method"
-                >
-                  جوال:
-                </label>
-                <input
-                  className="w-full h-[32px] border px-2 rounded text-xs"
-                  type="text"
-                  value={mobileMethod}
-                  onChange={(e) => setMobileMethod(e.target.value)}
                   disabled={!isEditing}
                 />
               </div>
@@ -689,9 +663,6 @@ export default function InvoiceSelectors({
                   disabled={!isEditing}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -710,7 +681,6 @@ export default function InvoiceSelectors({
               </div>
 
               {/* Barcode Search Section */}
-
               <div>
                 <label
                   className="block mb-1 font-medium text-gray-700 text-xs"
@@ -744,8 +714,12 @@ export default function InvoiceSelectors({
             </div>
           </div>
         </div>
+
         {/* مربع معلومات العنوان */}
-        <div className="bg-white border border-gray-200 rounded-lg">
+        <div
+          tabIndex={-1}
+          className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+        >
           {/* Header with Toggle Button */}
           <div
             className="flex items-center justify-between p-2 md:p-3 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -756,6 +730,7 @@ export default function InvoiceSelectors({
               <span>معلومات العنوان</span>
             </h3>
             <button
+              tabIndex={-1}
               className="text-gray-600 hover:text-gray-800 transition-transform duration-200"
               style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
             >
@@ -792,6 +767,21 @@ export default function InvoiceSelectors({
                       type="text"
                       value={crNo}
                       onChange={(e) => setCrNo(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="block mb-1 font-medium text-gray-700 text-xs"
+                      htmlFor="vat-number"
+                    >
+                      الرقم الضريبي:
+                    </label>
+                    <input
+                      readOnly
+                      className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
+                      type="text"
+                      value={vatNumber}
                       disabled={!isEditing}
                     />
                   </div>
@@ -856,6 +846,21 @@ export default function InvoiceSelectors({
                     />
                   </div>
                   <div>
+                    <label
+                      className="block mb-1 font-medium text-gray-700 text-xs"
+                      htmlFor="mobile-method"
+                    >
+                      جوال:
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-xs"
+                      type="text"
+                      value={mobileMethod}
+                      onChange={(e) => setMobileMethod(e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
                     <label className="block mb-1 text-xs font-medium text-gray-600">
                       صندوق البريد:
                     </label>
@@ -885,8 +890,8 @@ export default function InvoiceSelectors({
                   <div className="text-2xl mb-2">📍</div>
                   <p className="text-xs sm:text-sm">
                     اختر{" "}
-                    {invoiceType === "purchase" ||
-                    invoiceType === "purchase_return"
+                    {invoiceType === TransTypes.PURCHASE ||
+                    invoiceType === TransTypes.PURCHASE_RETURN
                       ? "مورداً"
                       : "عميلاً"}{" "}
                     لعرض معلومات العنوان

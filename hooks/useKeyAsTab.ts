@@ -32,6 +32,11 @@ export interface UseKeyAsTabOptions {
    * Allow consumers to ignore certain events dynamically (e.g., keep Enter working inside textareas).
    */
   shouldIgnoreEvent?: (event: KeyboardEvent<HTMLElement>) => boolean;
+  /**
+   * Invoked when focus is about to exit the container (no more focusable nodes in the given direction).
+   * Return true to indicate you handled focus transfer yourself.
+   */
+  onBoundaryFocus?: (direction: 1 | -1) => boolean | void;
 }
 
 export interface UseKeyAsTabResult {
@@ -113,6 +118,7 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
     filterElement,
     wrap = false,
     shouldIgnoreEvent,
+    onBoundaryFocus,
   } = options;
 
   const keySet = useMemo(() => {
@@ -169,6 +175,14 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
 
       if (nextIndex < 0 || nextIndex >= candidates.length) {
         if (!wrap) {
+          if (direction === 1 && typeof onBoundaryFocus === "function") {
+            const handled = onBoundaryFocus(direction);
+            if (handled) return true;
+          }
+          if (direction === -1 && typeof onBoundaryFocus === "function") {
+            const handled = onBoundaryFocus(direction);
+            if (handled) return true;
+          }
           return false;
         }
 
@@ -185,7 +199,7 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
         return false;
       }
     },
-    [containerRef, focusableSelector, mergedFilter, wrap],
+    [containerRef, focusableSelector, mergedFilter, onBoundaryFocus, wrap],
   );
 
   const handleKeyDown = useCallback(

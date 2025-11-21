@@ -1,5 +1,6 @@
-import { HttpService, ServiceResponse } from "@/services/base";
+import { HttpService } from "@/services/base";
 import { HomeSettings } from "@/types/models/home";
+import { ServiceResponse } from "@/types/services/base";
 
 class HomeService extends HttpService<HomeSettings> {
   constructor() {
@@ -10,7 +11,8 @@ class HomeService extends HttpService<HomeSettings> {
   async getHomeList(): Promise<HomeSettings[]> {
     try {
       const response = await this.get<HomeSettings[]>("home_list", undefined, {
-        cache: "no-store",
+        cache: "force-cache",
+        next: { tags: ["home_list"] },
       });
 
       if (response.success) {
