@@ -55,9 +55,37 @@ interface BoxType {
   code_desc: string;
 }
 
+interface Branch {
+  id: number;
+  com_name?: string;
+  com_name_e?: string;
+  com_code?: string;
+  com_status?: number;
+}
+
 class HelperService extends HttpService {
   constructor() {
     super("");
+  }
+
+  private _extractArray<T>(payload: unknown): T[] {
+    if (!payload) {
+      return [];
+    }
+
+    if (Array.isArray(payload)) {
+      return payload as T[];
+    }
+
+    if (typeof payload === "object" && payload !== null) {
+      const maybeResults = (payload as { results?: unknown }).results;
+
+      if (Array.isArray(maybeResults)) {
+        return maybeResults as T[];
+      }
+    }
+
+    return [];
   }
 
   // جلب الفئات
@@ -191,6 +219,41 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching boxes:", error);
+
+      return [];
+    }
+  }
+
+  // جلب الفروع (قائمة الشركات)
+  async getBranches(com_id?: string | number): Promise<Branch[]> {
+    try {
+      let companyId = com_id;
+
+      if (!companyId) {
+        try {
+          const branchParams = await import("@/app/actions/branch-params").then(
+            (m) => m.getBranchParams(),
+          );
+
+          companyId = branchParams.com || "1";
+        } catch {
+          companyId = "1";
+        }
+      }
+
+      const branchKey = String(companyId || "1");
+      const response = await this.get<Branch[]>("companies_list", {
+        com_id: branchKey,
+        xcom_id: branchKey,
+      });
+
+      if (response.success) {
+        return this._extractArray<Branch>(response.data);
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching branches:", error);
 
       return [];
     }

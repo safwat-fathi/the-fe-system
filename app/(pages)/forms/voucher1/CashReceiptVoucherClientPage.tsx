@@ -1,16 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
+import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 import {
   CheckIcon,
   PencilIcon,
   PrinterIcon,
-  DocumentTextIcon,
   PlusIcon,
   ArrowsPointingOutIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  BackwardIcon,
+  ForwardIcon,
 } from "@heroicons/react/24/outline";
 import {
   Button,
@@ -24,12 +28,8 @@ import {
   Textarea,
 } from "@heroui/react";
 
-import GLTransactionModal from "../components/GLTransactionModal";
-import GLPreviewPanel from "../components/GLPreviewPanel";
-
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 import { useCashReceiptVoucherForm } from "@/hooks/useCashReceiptVoucherForm";
-import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 import { voucherService } from "@/services/api";
@@ -54,7 +54,7 @@ interface CashReceiptVoucherClientPageProps {
   voucherTypes: any[];
   voucherStatuses: any[];
   startInEditMode?: boolean;
-  vouchType: number; // 1 للقبض، 2 للصرف
+  vouchType: number;
   formMode?: "new" | "edit" | "preview";
 }
 
@@ -81,8 +81,6 @@ export default function CashReceiptVoucherClientPage({
   // Handle search - must be before any conditional returns (Rules of Hooks)
   const [searchTerm, setSearchTerm] = useState("");
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
-
-  // Use the hook for all state management and business logic
   const {
     // State
     voucher,
@@ -101,6 +99,7 @@ export default function CashReceiptVoucherClientPage({
     isPrinting,
     currentTime,
     isClient,
+    // defaultAccountOptions,
 
     // Totals and balance
     totals,
@@ -136,20 +135,6 @@ export default function CashReceiptVoucherClientPage({
     formMode,
   });
 
-  // استخدام hook موحد لحركة الترحيل
-  const {
-    isGLModalOpen,
-    setIsGLModalOpen,
-    glTransactions,
-    loadingGLTransactions,
-    handleViewGLTransactions,
-    getAccountName,
-  } = useGLTransactions({
-    vouchId: voucher.vouch_id || 0,
-    vouchType: vouchType,
-    refNo: voucher.ref_no,
-  });
-
   const navigationTargets = useMemo(() => {
     return {
       previous: navigationInfo?.previous ?? -1,
@@ -161,12 +146,17 @@ export default function CashReceiptVoucherClientPage({
 
   const handleNavigate = (targetId?: number | null) => {
     if (!targetId || targetId <= 0) {
-      // fallback to listing page
-      router.push("/forms/voucher1");
+      return;
+    }
+
+    const currentRecordId = voucher.id ?? voucher.vouch_id ?? null;
+
+    if (currentRecordId && Number(currentRecordId) === targetId) {
       return;
     }
 
     router.push(`/forms/voucher1/${targetId}?mode=preview`);
+    router.refresh();
   };
 
   const toAmount = (value: unknown) => {
@@ -239,6 +229,59 @@ const PREVIEW_TOLERANCE = 0.01;
       code: boxItem?.acc ?? boxItem?.acc_id ?? boxId,
     };
   };
+
+  // Helper functions for box select
+  const getBoxSelectValue = (boxId: number | null | undefined) => {
+    if (!boxId || boxId <= 0) {
+      return null;
+    }
+
+    const box = boxes.find((b) => b.id === boxId);
+
+    if (!box) {
+      return null;
+    }
+
+    return {
+      value: String(box.id),
+      label:
+        box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
+    };
+  };
+
+  const boxSelectOptions = useMemo(() => {
+    return boxes.map((box) => ({
+      value: String(box.id),
+      label: box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
+    }));
+  }, [boxes]);
+
+  // Helper functions for cost center select
+  const getCostCenterSelectValue = (
+    costId: number | null | undefined,
+  ) => {
+    if (!costId || costId <= 0) {
+      return null;
+    }
+
+    const center = costCenters.find((c) => c.id === costId);
+
+    if (!center) {
+      return null;
+    }
+
+    return {
+      value: String(center.id),
+      label: center.name || center.cost_name || `مركز ${center.id}`,
+    };
+  };
+
+  const costCenterSelectOptions = useMemo(() => {
+    return (costCenters || []).map((center) => ({
+      value: String(center.id),
+      label: center.name || center.cost_name || `مركز ${center.id}`,
+    }));
+  }, [costCenters]);
 
   if (!isClient) {
     return (
@@ -482,16 +525,48 @@ const PREVIEW_TOLERANCE = 0.01;
               طباعة
             </Button>
 
-            <Button
-              size="sm"
-              variant="solid"
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
-              onPress={handleViewGLTransactions}
-              startContent={<DocumentTextIcon className="h-4 w-4" />}
-              className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[140px]"
-            >
-              القيد المحاسبي
-            </Button>
+            <div className="flex items-center gap-1 border border-slate-200 rounded-md px-1.5 py-1 bg-white">
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                aria-label="أول سند"
+                onPress={() => handleNavigate(navigationTargets.first)}
+                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
+              >
+                <BackwardIcon className="h-4 w-4 text-slate-600" />
+              </Button>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                aria-label="السند السابق"
+                onPress={() => handleNavigate(navigationTargets.previous)}
+                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
+              >
+                <ChevronRightIcon className="h-4 w-4 text-slate-600" />
+              </Button>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                aria-label="السند التالي"
+                onPress={() => handleNavigate(navigationTargets.next)}
+                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
+              >
+                <ChevronLeftIcon className="h-4 w-4 text-slate-600" />
+              </Button>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                aria-label="آخر سند"
+                onPress={() => handleNavigate(navigationTargets.last)}
+                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
+              >
+                <ForwardIcon className="h-4 w-4 text-slate-600" />
+              </Button>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -576,30 +651,53 @@ const PREVIEW_TOLERANCE = 0.01;
             <label className="block text-xs font-medium text-slate-700 mb-0.5">
               مركز التكلفة
             </label>
-            <select
-              className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
-              disabled={!isEditing}
-              value={
-                voucher.cost_id && voucher.cost_id > 0
-                  ? String(voucher.cost_id)
-                  : ""
+            <ReactSelect
+              isSearchable
+              isDisabled={!isEditing}
+              className="text-xs"
+              classNamePrefix="react-select"
+              components={{ IndicatorSeparator: () => null }}
+              instanceId="voucher-cost-center-select"
+              menuPortalTarget={
+                typeof window !== "undefined" ? document.body : null
               }
-              onChange={(e) => {
-                const selected = e.target.value ? Number(e.target.value) : null;
+              menuPosition="fixed"
+              options={costCenterSelectOptions}
+              placeholder="اختر مركز التكلفة..."
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minHeight: "32px",
+                  height: "32px",
+                  fontSize: "12px",
+                }),
+                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                option: (base) => ({
+                  ...base,
+                  fontSize: "12px",
+                }),
+                placeholder: (base) => ({
+                  ...base,
+                  fontSize: "12px",
+                }),
+                singleValue: (base) => ({
+                  ...base,
+                  fontSize: "12px",
+                }),
+              }}
+              value={getCostCenterSelectValue(voucher.cost_id)}
+              onChange={(selectedOption: any) => {
+                if (!isEditing) return;
+                const selected = selectedOption?.value
+                  ? Number(selectedOption.value)
+                  : null;
                 handleMasterCostChange(
                   selected !== null && Number.isFinite(selected)
                     ? selected
                     : null,
                 );
               }}
-            >
-              <option value="">اختر مركز التكلفة</option>
-              {costCenters.map((center) => (
-                <option key={center.id} value={String(center.id)}>
-                  {center.name || center.cost_name || `مركز ${center.id}`}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         )}
 
@@ -746,15 +844,50 @@ const PREVIEW_TOLERANCE = 0.01;
                       />
                     </td>
                     <td className="p-0 border">
-                      <select
-                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        value={
-                          box.box_id && box.box_id > 0 ? String(box.box_id) : ""
+                      <ReactSelect
+                        isSearchable
+                        isDisabled={!isEditing}
+                        className="text-xs"
+                        classNamePrefix="react-select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`box-select-${index}`}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
                         }
-                        onChange={(e) => {
-                          const selectedBoxId = e.target.value
-                            ? parseInt(e.target.value)
+                        menuPosition="fixed"
+                        options={boxSelectOptions}
+                        placeholder="اختر الصندوق..."
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                            height: "32px",
+                            fontSize: "12px",
+                            border: "none",
+                            borderRadius: "0",
+                            boxShadow: "none",
+                            cursor: isEditing ? "pointer" : "not-allowed",
+                            backgroundColor: "transparent",
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          option: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                        }}
+                        value={getBoxSelectValue(box.box_id)}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
+                          const selectedBoxId = selectedOption?.value
+                            ? parseInt(selectedOption.value)
                             : 0;
                           const selectedBox = boxes.find(
                             (b) => b.id === selectedBoxId,
@@ -772,17 +905,7 @@ const PREVIEW_TOLERANCE = 0.01;
                             });
                           }
                         }}
-                      >
-                        <option value="">اختر الصندوق</option>
-                        {boxes.map((b) => (
-                          <option key={b.id} value={String(b.id)}>
-                            {b.cust_name ||
-                              b.name ||
-                              box.box?.cust_name ||
-                              `صندوق ${b.id}`}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </td>
                     <td className="p-0 border">
                       <input
@@ -797,31 +920,57 @@ const PREVIEW_TOLERANCE = 0.01;
                       />
                     </td>
                     <td className="p-0 border">
-                      <select
-                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        value={
-                          box.cost_id && box.cost_id > 0
-                            ? String(box.cost_id)
-                            : ""
+                      <ReactSelect
+                        isSearchable
+                        isDisabled={!isEditing}
+                        className="text-xs"
+                        classNamePrefix="react-select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`cost-center-box-select-${index}`}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
                         }
-                        onChange={(e) =>
+                        menuPosition="fixed"
+                        options={costCenterSelectOptions}
+                        placeholder="مركز التكلفة..."
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                            height: "32px",
+                            fontSize: "12px",
+                            border: "none",
+                            borderRadius: "0",
+                            boxShadow: "none",
+                            cursor: isEditing ? "pointer" : "not-allowed",
+                            backgroundColor: "transparent",
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          option: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                        }}
+                        value={getCostCenterSelectValue(box.cost_id)}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
                           updateVoucherBox(
                             index,
                             "cost_id",
-                            e.target.value ? parseInt(e.target.value) : null,
-                          )
-                        }
-                      >
-                        <option value="">مركز التكلفة</option>
-                        {costCenters.map((center) => (
-                          <option key={center.id} value={String(center.id)}>
-                            {center.name ||
-                              center.cost_name ||
-                              `مركز ${center.id}`}
-                          </option>
-                        ))}
-                      </select>
+                            selectedOption?.value
+                              ? parseInt(selectedOption.value)
+                              : null,
+                          );
+                        }}
+                      />
                     </td>
                     <td className="p-0 border">
                       <input
@@ -907,6 +1056,9 @@ const PREVIEW_TOLERANCE = 0.01;
                         className="text-xs"
                         classNamePrefix="select"
                         components={{ IndicatorSeparator: () => null }}
+                        formatCreateLabel={(inputValue) =>
+                          `إضافة حساب جديد: "${inputValue}"`
+                        }
                         instanceId={`account-select-${index}`}
                         isDisabled={!isEditing}
                         loadOptions={loadAccountOptions}
@@ -952,6 +1104,7 @@ const PREVIEW_TOLERANCE = 0.01;
 
                           if (!selected) return;
 
+                          updateAccountsList(selected);
                           updateDetail(index, "acc_id", selected.id ?? null);
                           updateDetail(
                             index,
@@ -1028,33 +1181,57 @@ const PREVIEW_TOLERANCE = 0.01;
                       />
                     </td>
                     <td className="p-0 border">
-                      <select
-                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        value={
-                          detail.cost_id !== null &&
-                          detail.cost_id !== undefined &&
-                          detail.cost_id > 0
-                            ? String(detail.cost_id)
-                            : ""
+                      <ReactSelect
+                        isSearchable
+                        isDisabled={!isEditing}
+                        className="text-xs"
+                        classNamePrefix="react-select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`cost-center-detail-select-${index}`}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
                         }
-                        onChange={(e) =>
+                        menuPosition="fixed"
+                        options={costCenterSelectOptions}
+                        placeholder="مركز التكلفة..."
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                            height: "32px",
+                            fontSize: "12px",
+                            border: "none",
+                            borderRadius: "0",
+                            boxShadow: "none",
+                            cursor: isEditing ? "pointer" : "not-allowed",
+                            backgroundColor: "transparent",
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          option: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                        }}
+                        value={getCostCenterSelectValue(detail.cost_id)}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
                           updateDetail(
                             index,
                             "cost_id",
-                            e.target.value ? parseInt(e.target.value) : null,
-                          )
-                        }
-                      >
-                        <option value="">مركز التكلفة</option>
-                        {costCenters.map((center) => (
-                          <option key={center.id} value={String(center.id)}>
-                            {center.name ||
-                              center.cost_name ||
-                              `مركز ${center.id}`}
-                          </option>
-                        ))}
-                      </select>
+                            selectedOption?.value
+                              ? parseInt(selectedOption.value)
+                              : null,
+                          );
+                        }}
+                      />
                     </td>
                     <td className="p-1 border">
                       <button
@@ -1117,58 +1294,6 @@ const PREVIEW_TOLERANCE = 0.01;
           </div>
         </div>
       </div>
-
-      <div className="mt-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Button
-            size="sm"
-            variant="light"
-            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
-            onPress={() => handleNavigate(navigationTargets.first)}
-          >
-            <i className="bi bi-chevron-double-right ms-1" />
-            أول سند
-          </Button>
-          <Button
-            size="sm"
-            variant="light"
-            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
-            onPress={() => handleNavigate(navigationTargets.next)}
-          >
-            <i className="bi bi-chevron-right ms-1" />
-            التالي
-          </Button>
-          <Button
-            size="sm"
-            variant="light"
-            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
-            onPress={() => handleNavigate(navigationTargets.previous)}
-          >
-            السابق
-            <i className="bi bi-chevron-left me-1" />
-          </Button>
-          <Button
-            size="sm"
-            variant="light"
-            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
-            onPress={() => handleNavigate(navigationTargets.last)}
-          >
-            آخر سند
-            <i className="bi bi-chevron-double-left me-1" />
-          </Button>
-        </div>
-      </div>
-
-      {/* مودال عرض القيد المحاسبي */}
-      <GLTransactionModal
-        getAccountName={getAccountName}
-        isOpen={isGLModalOpen}
-        loading={loadingGLTransactions}
-        refNo={voucher.ref_no}
-        transactions={glTransactions}
-        voucherId={voucher.vouch_id || 0}
-        onClose={() => setIsGLModalOpen(false)}
-      />
 
       {/* مودال توسيع البيان */}
       <Modal

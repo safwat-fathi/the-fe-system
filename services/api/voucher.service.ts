@@ -110,6 +110,131 @@ class VoucherService extends HttpService<Voucher> {
   }
 
   /**
+   * الحصول على جميع السندات مع إجماليات عبر جميع الصفحات
+   * يعيد بيانات الصفحة الحالية بالإضافة إلى إجماليات كاملة
+   */
+  async getAllWithTotals(params?: IParams) {
+    const toPositiveInt = (value: unknown, fallback = 0): number => {
+      const numeric = Number(value);
+
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
+    };
+
+    const requestedPageRaw =
+      typeof params?.page === "string" ? params.page : params?.page;
+    const requestedPageNumber = toPositiveInt(requestedPageRaw, 1);
+    const safeRequestedPage = requestedPageNumber > 0 ? requestedPageNumber : 1;
+
+    const { page: _ignoredPage, ...filters } = params || {};
+
+    const totals = {
+      totalAmount: 0,
+      totalGold: 0,
+    };
+
+    const pageResultsMap = new Map<number, any[]>();
+    let aggregatedCount = 0;
+    let highestCountFromApi = 0;
+    let lastPageSize = 0;
+    let currentPage = 1;
+    let shouldContinue = true;
+    let loopGuard = 0;
+
+    while (shouldContinue) {
+      loopGuard += 1;
+
+      if (loopGuard > 200) {
+        console.warn(
+          "[voucherService.getAllWithTotals] Pagination loop exceeded safety limit (200 iterations).",
+        );
+        break;
+      }
+
+      const response = await this.getAll({
+        ...filters,
+        page: String(currentPage),
+      });
+
+      if (!response.success || !response.data) {
+        break;
+      }
+
+      const pageResults: any[] = Array.isArray(response.data)
+        ? response.data
+        : [];
+
+      pageResultsMap.set(currentPage, pageResults);
+
+      pageResults.forEach((voucher) => {
+        totals.totalAmount += parseFloat(String(voucher?.vouch_amt ?? 0)) || 0;
+        totals.totalGold += parseFloat(String(voucher?.bag_wt ?? 0)) || 0;
+      });
+
+      aggregatedCount += pageResults.length;
+      lastPageSize = pageResults.length > 0 ? pageResults.length : lastPageSize;
+
+      const responseCount = toPositiveInt(response.count, 0);
+      highestCountFromApi = Math.max(highestCountFromApi, responseCount);
+
+      const hasNext =
+        typeof response.next === "string" && response.next.trim().length > 0;
+      const reachedDeclaredCount =
+        highestCountFromApi > 0 && aggregatedCount >= highestCountFromApi;
+      const noData = pageResults.length === 0;
+
+      if (!hasNext || reachedDeclaredCount || noData) {
+        shouldContinue = false;
+      } else {
+        currentPage += 1;
+      }
+    }
+
+    if (pageResultsMap.size === 0) {
+      return {
+        success: true,
+        pageData: [],
+        count: 0,
+        totalPages: 0,
+        totals,
+      };
+    }
+
+    const firstPageResults = pageResultsMap.get(1) ?? [];
+    const firstPageSize =
+      firstPageResults.length > 0
+        ? firstPageResults.length
+        : lastPageSize > 0
+          ? lastPageSize
+          : 1;
+
+    const finalCount =
+      highestCountFromApi > 0
+        ? Math.max(highestCountFromApi, aggregatedCount)
+        : aggregatedCount;
+
+    const derivedTotalPages =
+      firstPageSize > 0 && finalCount > 0
+        ? Math.ceil(finalCount / firstPageSize)
+        : pageResultsMap.size;
+
+    const totalPages = Math.max(pageResultsMap.size, derivedTotalPages, 1);
+
+    const normalizedRequestedPage =
+      safeRequestedPage > totalPages ? totalPages : safeRequestedPage;
+
+    const currentPageData =
+      pageResultsMap.get(normalizedRequestedPage) ?? firstPageResults;
+
+    return {
+      success: true,
+      pageData: currentPageData,
+      count: finalCount,
+      totalPages,
+      totals,
+    };
+  }
+
+  /**
    * الحصول على السندات حسب النوع
    */
   async getByType(voucherType: number, params?: IParams) {
@@ -379,10 +504,6 @@ class VoucherService extends HttpService<Voucher> {
         queryParams = params || {};
       }
 
-      if (options?.logLabel) {
-        console.log(`Fetching ${options.logLabel} with params:`, queryParams);
-      }
-
       const response = await this.getList<any[]>(
         endpoint,
         queryParams,
@@ -396,10 +517,6 @@ class VoucherService extends HttpService<Voucher> {
 
       if (response.success && response.data) {
         const data = Array.isArray(response.data) ? response.data : [];
-
-        if (options?.logLabel) {
-          console.log(`${options.logLabel} loaded:`, data.length);
-        }
 
         return {
           success: true,
@@ -446,34 +563,69 @@ class VoucherService extends HttpService<Voucher> {
    */
   async getNextNumber(voucherType: number = 2) {
     try {
-      // جلب جميع السندات
-      const response = await this.getAll();
+      const baseParams = {
+        xvouch_type: String(voucherType),
+        page: "1",
+      };
 
-      if (!response.success || !response.data || response.data.length === 0) {
+      const firstPage = await this.getAll(baseParams);
+
+      if (
+        !firstPage.success ||
+        !firstPage.data ||
+        (Array.isArray(firstPage.data) && firstPage.data.length === 0)
+      ) {
         return 1;
       }
 
-      // فلترة السندات حسب النوع
-      const vouchers = response.data.filter(
+      const firstPageData: any[] = Array.isArray(firstPage.data)
+        ? firstPage.data
+        : [];
+      const pageSize = firstPageData.length || 1;
+      const totalCount = firstPage.count ?? firstPageData.length;
+
+      let candidates = firstPageData.filter(
         (v: any) =>
-          Number(v.vouch_type) === Number(voucherType) &&
-          v.vouch_id &&
-          v.vouch_id > 0 &&
-          isFinite(v.vouch_id),
+          Number(v?.vouch_type) === Number(voucherType) &&
+          Number.isFinite(Number(v?.vouch_id)) &&
+          Number(v?.vouch_id) > 0,
       );
 
-      if (vouchers.length === 0) {
+      if (totalCount > pageSize) {
+        const lastPageNumber = Math.ceil(totalCount / pageSize);
+
+        if (lastPageNumber > 1) {
+          const lastPage = await this.getAll({
+            ...baseParams,
+            page: String(lastPageNumber),
+          });
+
+          if (lastPage.success && Array.isArray(lastPage.data)) {
+            const lastPageData = lastPage.data.filter(
+              (v: any) =>
+                Number(v?.vouch_type) === Number(voucherType) &&
+                Number.isFinite(Number(v?.vouch_id)) &&
+                Number(v?.vouch_id) > 0,
+            );
+
+            if (lastPageData.length > 0) {
+              candidates = lastPageData;
+            }
+          }
+        }
+      }
+
+      if (candidates.length === 0) {
         return 1;
       }
 
-      // الحصول على أكبر رقم
-      const maxId = vouchers.reduce((max: number, curr: any) => {
-        return curr.vouch_id > max ? curr.vouch_id : max;
+      const maxId = candidates.reduce((max, curr) => {
+        const currentId = Number(curr?.vouch_id) || 0;
+
+        return currentId > max ? currentId : max;
       }, 0);
 
-      const nextId = maxId + 1;
-
-      return nextId;
+      return maxId + 1;
     } catch (error) {
       return 1;
     }

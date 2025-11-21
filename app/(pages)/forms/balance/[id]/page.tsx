@@ -32,18 +32,22 @@ async function getVoucherById(voucherId: number) {
         ? vouchersResponse.data
         : [];
 
-      // البحث أولاً بـ id (primary key)
+      // البحث أولاً بـ id (primary key) والتحقق من vouch_type = 0
       const foundVoucher = vouchers.find(
-        (v: any) => Number(v?.id) === voucherId,
+        (v: any) =>
+          Number(v?.id) === voucherId &&
+          (v?.vouch_type === 0 || v?.vouch_type === "0"),
       );
 
       if (foundVoucher) {
         return foundVoucher;
       }
 
-      // البحث بـ vouch_id كـ fallback
+      // البحث بـ vouch_id كـ fallback والتحقق من vouch_type = 0
       const foundByVouchId = vouchers.find(
-        (v: any) => Number(v?.vouch_id) === voucherId,
+        (v: any) =>
+          Number(v?.vouch_id) === voucherId &&
+          (v?.vouch_type === 0 || v?.vouch_type === "0"),
       );
 
       if (foundByVouchId) {
@@ -240,6 +244,7 @@ export default async function BalanceVoucherEditPage({
         formData={formData}
         formMode={formMode}
         isNewVoucher={false}
+        startInEditMode={startInEditMode}
         voucherData={formattedVoucher}
         voucherDetailsData={details}
         voucherRecordId={targetVoucher.id}

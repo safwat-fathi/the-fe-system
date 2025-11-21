@@ -10,6 +10,12 @@ declare global {
       NEXT_PUBLIC_CSRF_COOKIE_NAME: string;
       SESSION_SECRET: string;
       CSRF_SECRET: string;
+      WHATSAPP_BASE_URL: string;
+      WHATSAPP_TOKEN: string;
+      PHONE_NUMBER_ID: string;
+      VERIFY_TOKEN: string;
+      DATABASE_PROVIDER: string;
+      DATABASE_URL: string;
     }
   }
 }

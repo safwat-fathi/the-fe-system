@@ -26,6 +26,34 @@ const getVoucherById = cache(
   },
 );
 
+// جلب قيد تسوية للحصول على navigationInfo
+const getAdjustmentVoucherForNavigation = cache(async () => {
+  try {
+    const vouchersResponse = await voucherService.getAll({
+      xvouch_type: "3", // قيد التسوية فقط
+    });
+
+    if (!vouchersResponse.success || !vouchersResponse.data) {
+      return null;
+    }
+
+    const vouchers = Array.isArray(vouchersResponse.data)
+      ? vouchersResponse.data
+      : [];
+
+    if (vouchers.length === 0) {
+      return null;
+    }
+
+    // إرجاع أول سند في القائمة (عادة ما يحتوي على navigationInfo)
+    return vouchers[0];
+  } catch (error) {
+    console.error("Error fetching adjustment voucher for navigation:", error);
+
+    return null;
+  }
+});
+
 const VOUCHER_TYPE_CONFIG: Record<
   VoucherPageType,
   {
@@ -198,6 +226,44 @@ export default async function VoucherPage({
 
   const formData = await getVoucherFormData();
 
+  // جلب navigationInfo عند إنشاء قيد تسوية جديد
+  const voucherForNav =
+    mode === "new" && config.vouchType === 3
+      ? await getAdjustmentVoucherForNavigation()
+      : null;
+
+  // بناء navigationInfo من قيد التسوية
+  const parseNavId = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  };
+
+  const navigationInfo = voucherForNav
+    ? {
+        previous: parseNavId(
+          (voucherForNav as any).previous_voucher_id ??
+            (voucherForNav as any).previous,
+        ),
+        next: parseNavId(
+          (voucherForNav as any).next_voucher_id ??
+            (voucherForNav as any).next,
+        ),
+        first: parseNavId(
+          (voucherForNav as any).first_voucher_id ??
+            (voucherForNav as any).first,
+        ),
+        last: parseNavId(
+          (voucherForNav as any).last_voucher_id ??
+            (voucherForNav as any).last,
+        ),
+      }
+    : undefined;
+
   const newVoucherHref = `/forms/voucher?type=${encodeURIComponent(
     voucherType,
   )}&mode=new`;
@@ -223,6 +289,7 @@ export default async function VoucherPage({
         costCenters={formData.costCenters}
         formMode={mode}
         isNewVoucher={mode === "new"}
+        navigationInfo={navigationInfo}
         newVoucherHref={newVoucherHref}
         startInEditMode={
           mode === "new"

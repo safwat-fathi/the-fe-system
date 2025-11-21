@@ -11,7 +11,5 @@
 export { createVoucherAction } from "./create";
 export { updateVoucherAction } from "./update";
 export { deleteVoucherAction } from "./delete";
-export { createGLTransactionRecords } from "./helpers/gl-transaction";
-
 // getCurrentUsername is a helper function, not a server action
 // Import it directly from helpers/common if needed

@@ -19,6 +19,7 @@ import {
   calculateVoucherTotals,
   calculateCalibratedGold,
   calculateReverseCalibratedGold,
+  calculateGaugeFromCalibrated,
 } from "@/utilities/voucherForm";
 
 interface UseBalanceVoucherFormProps {
@@ -89,15 +90,17 @@ export const useBalanceVoucherForm = ({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [isEditing, setIsEditing] = useState(propStartInEditMode || false);
+  const [isEditing, setIsEditing] = useState(
+    isNewVoucher ? true : propStartInEditMode || false,
+  );
   const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>(
     voucherDetailsData || [],
   );
   const [showUnbalancedModal, setShowUnbalancedModal] = useState(false);
+  const [defaultAccountOptions, setDefaultAccountOptions] = useState<any[]>([]);
 
   const previousVouchNotesRef = useRef<string>(voucherData?.vouch_notes || "");
   const hasGeneratedVoucherNumber = useRef(false);
-  const isSavingUnbalancedRef = useRef(false);
 
   // Initialize component
   useEffect(() => {
@@ -151,8 +154,30 @@ export const useBalanceVoucherForm = ({
   }, [isClient]);
 
   useEffect(() => {
+    if (isNewVoucher) {
+      setIsEditing(true);
+
+      return;
+    }
+
     setIsEditing(propStartInEditMode || false);
-  }, [propStartInEditMode]);
+  }, [isNewVoucher, propStartInEditMode]);
+
+  useEffect(() => {
+    if (accounts.length === 0) {
+      setDefaultAccountOptions([]);
+
+      return;
+    }
+
+    const options = accounts.slice(0, 50).map((acc) => ({
+      value: acc.id,
+      label: `${acc.acc_code ?? acc.code ?? ""} - ${acc.acc_name ?? acc.name ?? ""}`,
+      account: acc,
+    }));
+
+    setDefaultAccountOptions(options);
+  }, [accounts]);
 
   // نقل البيان من القيد الرئيسي إلى التفاصيل تلقائياً
   useEffect(() => {
@@ -237,7 +262,7 @@ export const useBalanceVoucherForm = ({
 
       return options;
     } catch (e) {
-      console.error("failed to load accounts", e);
+      console.error("Error loading account options:", e);
 
       return [];
     }
@@ -320,6 +345,25 @@ export const useBalanceVoucherForm = ({
     field: keyof VoucherDetail,
     value: any,
   ) => {
+    if (field === "acc_id" && value) {
+      const numericValue = Number(value);
+      if (Number.isFinite(numericValue) && numericValue > 0) {
+        const isDuplicate = details.some(
+          (detail, detailIndex) =>
+            detailIndex !== index &&
+            Number(detail.acc_id) === numericValue,
+        );
+
+        if (isDuplicate) {
+          toast.error("⚠️ هذا الحساب مُدرج مسبقاً في القيد.", {
+            id: "duplicate-account-warning",
+          });
+
+          return;
+        }
+      }
+    }
+
     setDetails((prev) => {
       const updated = prev.map((detail, i) => {
         if (i !== index) return detail;
@@ -339,6 +383,33 @@ export const useBalanceVoucherForm = ({
             const gauge = getAccountGauge(selectedAccount, caratTypes);
 
             newDetail.gauge = gauge;
+
+            const baseGauge = 875;
+            if (
+              newDetail.g_debit !== undefined &&
+              newDetail.g_debit !== null &&
+              parseNumber(newDetail.g_debit) > 0
+            ) {
+              newDetail.g_debit_base = calculateCalibratedGold(
+                parseNumber(newDetail.g_debit),
+                gauge,
+                baseGauge,
+                2,
+              );
+            }
+
+            if (
+              newDetail.g_credit !== undefined &&
+              newDetail.g_credit !== null &&
+              parseNumber(newDetail.g_credit) > 0
+            ) {
+              newDetail.g_credit_base = calculateCalibratedGold(
+                parseNumber(newDetail.g_credit),
+                gauge,
+                baseGauge,
+                2,
+              );
+            }
           }
         }
 
@@ -385,14 +456,51 @@ export const useBalanceVoucherForm = ({
           const gDebitBaseValue =
             value !== undefined && value !== null ? parseNumber(value) : 0;
 
-          if (gDebitBaseValue > 0 && currentGauge > 0) {
-            newDetail.g_debit = calculateReverseCalibratedGold(
-              gDebitBaseValue,
-              currentGauge,
-              baseGauge,
+          if (gDebitBaseValue > 0) {
+            const debitActual = parseNumber(
+              newDetail.g_debit !== undefined && newDetail.g_debit !== null
+                ? newDetail.g_debit
+                : (newDetail as any).debit_g,
             );
+            const normalizedBase = parseFloat(
+              gDebitBaseValue.toFixed(2),
+            ) as number;
+            newDetail.g_debit_base = normalizedBase;
+
+            if (debitActual > 0) {
+              const derivedGauge = calculateGaugeFromCalibrated(
+                normalizedBase,
+                debitActual,
+                baseGauge,
+                3,
+              );
+              newDetail.gauge = derivedGauge;
+
+              const creditActual = parseNumber(
+                newDetail.g_credit !== undefined && newDetail.g_credit !== null
+                  ? newDetail.g_credit
+                  : (newDetail as any).credit_g,
+              );
+
+              if (creditActual > 0) {
+                newDetail.g_credit_base = calculateCalibratedGold(
+                  creditActual,
+                  derivedGauge,
+                  baseGauge,
+                  2,
+                );
+              }
+            } else if (currentGauge > 0) {
+              const derivedDebit = calculateReverseCalibratedGold(
+                normalizedBase,
+                currentGauge,
+                baseGauge,
+              );
+
+              newDetail.g_debit = derivedDebit > 0 ? derivedDebit : undefined;
+            }
           } else {
-            newDetail.g_debit = undefined;
+            newDetail.g_debit_base = undefined;
           }
         }
 
@@ -401,14 +509,51 @@ export const useBalanceVoucherForm = ({
           const gCreditBaseValue =
             value !== undefined && value !== null ? parseNumber(value) : 0;
 
-          if (gCreditBaseValue > 0 && currentGauge > 0) {
-            newDetail.g_credit = calculateReverseCalibratedGold(
-              gCreditBaseValue,
-              currentGauge,
-              baseGauge,
+          if (gCreditBaseValue > 0) {
+            const creditActual = parseNumber(
+              newDetail.g_credit !== undefined && newDetail.g_credit !== null
+                ? newDetail.g_credit
+                : (newDetail as any).credit_g,
             );
+            const normalizedBase = parseFloat(
+              gCreditBaseValue.toFixed(2),
+            ) as number;
+            newDetail.g_credit_base = normalizedBase;
+
+            if (creditActual > 0) {
+              const derivedGauge = calculateGaugeFromCalibrated(
+                normalizedBase,
+                creditActual,
+                baseGauge,
+                3,
+              );
+              newDetail.gauge = derivedGauge;
+
+              const debitActual = parseNumber(
+                newDetail.g_debit !== undefined && newDetail.g_debit !== null
+                  ? newDetail.g_debit
+                  : (newDetail as any).debit_g,
+              );
+
+              if (debitActual > 0) {
+                newDetail.g_debit_base = calculateCalibratedGold(
+                  debitActual,
+                  derivedGauge,
+                  baseGauge,
+                  2,
+                );
+              }
+            } else if (currentGauge > 0) {
+              const derivedCredit = calculateReverseCalibratedGold(
+                normalizedBase,
+                currentGauge,
+                baseGauge,
+              );
+
+              newDetail.g_credit = derivedCredit > 0 ? derivedCredit : undefined;
+            }
           } else {
-            newDetail.g_credit = undefined;
+            newDetail.g_credit_base = undefined;
           }
         }
 
@@ -518,8 +663,13 @@ export const useBalanceVoucherForm = ({
           ? vouchersResponse.data
           : [];
 
-        if (vouchers.length > 0 && isNewVoucher) {
-          const existingId = vouchers[0].id || vouchers[0].vouch_id;
+        // البحث عن أول قيد افتتاحي (vouch_type = 0) فقط
+        const balanceVoucher = vouchers.find(
+          (v: any) => v?.vouch_type === 0 || v?.vouch_type === "0",
+        );
+
+        if (balanceVoucher && isNewVoucher) {
+          const existingId = balanceVoucher.id || balanceVoucher.vouch_id;
 
           return existingId || null;
         }
@@ -559,18 +709,14 @@ export const useBalanceVoucherForm = ({
       return;
     }
 
-    // إظهار مودال تحذيري عند عدم التوازن (القيد الافتتاحي)
-    // انتظار قرار المستخدم قبل الحفظ
     if (!isBalanced) {
-      isSavingUnbalancedRef.current = true;
       setShowUnbalancedModal(true);
-      return; // انتظار قرار المستخدم من المودال
+
+      return;
     }
 
-    // إذا كان القيد متزن، متابعة الحفظ مباشرة
     await proceedWithSave();
   };
-
 
   const proceedWithSave = async () => {
     const detailsWithAccounts = details.filter(
@@ -651,11 +797,15 @@ export const useBalanceVoucherForm = ({
           // تقريب إلى منزلتين عشريتين حسب متطلبات الـ backend
           g_debit_base:
             detail.g_debit_base !== undefined && detail.g_debit_base !== null
-              ? parseFloat(detail.g_debit_base.toFixed(2))
+              ? parseFloat(
+                  Number(detail.g_debit_base ?? 0).toFixed(2),
+                )
               : 0,
           g_credit_base:
             detail.g_credit_base !== undefined && detail.g_credit_base !== null
-              ? parseFloat(detail.g_credit_base.toFixed(2))
+              ? parseFloat(
+                  Number(detail.g_credit_base ?? 0).toFixed(2),
+                )
               : 0,
           vouch_notes: detail.vouch_notes || "",
           cost_id:
@@ -693,7 +843,7 @@ export const useBalanceVoucherForm = ({
       }
 
       if (result.success && result.data) {
-        const realId = result.data.id;
+        const realId = result.data.id || voucher.id || voucherRecordId;
         const vouchId = result.data.vouch_id || voucher.vouch_id;
 
         setVoucher((prev) => ({
@@ -705,15 +855,13 @@ export const useBalanceVoucherForm = ({
 
         toast.success(result.message);
 
-        if (realId) {
+        // استخدام realId (primary key) للتوجيه
+        if (realId && Number(realId) > 0) {
           // إعادة التوجيه السلسة مع تحديث البيانات
           router.push(`/forms/balance/${realId}?mode=preview`);
           router.refresh();
-        } else if (vouchId) {
-          router.push(`/forms/balance?mode=preview`);
-          router.refresh();
         } else {
-          router.push(`/forms/balance`);
+          // Fallback: إعادة تحميل الصفحة الحالية
           router.refresh();
         }
       } else {
@@ -762,13 +910,24 @@ export const useBalanceVoucherForm = ({
     }));
 
     if (voucherRecordId) {
-      router.push(`/forms/balance?mode=edit`);
+      // التوجيه إلى صفحة التعديل مع معرف القيد
+      router.push(`/forms/balance/${voucherRecordId}?mode=edit`);
     } else {
+      // إذا لم يكن هناك معرف قيد، تفعيل وضع التعديل مباشرة
       setIsEditing(true);
       toast.success("✅ تم تفعيل وضع التعديل");
     }
   };
 
+
+  const handleUnbalancedConfirm = async () => {
+    setShowUnbalancedModal(false);
+    await proceedWithSave();
+  };
+
+  const handleUnbalancedCancel = () => {
+    setShowUnbalancedModal(false);
+  };
 
   return {
     // State
@@ -787,6 +946,7 @@ export const useBalanceVoucherForm = ({
     currentTime,
     isClient,
     showUnbalancedModal,
+    defaultAccountOptions,
 
     // Totals and balances
     totals,
@@ -809,18 +969,7 @@ export const useBalanceVoucherForm = ({
     saveVoucher,
     printVoucher,
     handleEditClick,
-    handleUnbalancedConfirm: async () => {
-      // المستخدم وافق على المتابعة رغم عدم التوازن
-      setShowUnbalancedModal(false);
-      isSavingUnbalancedRef.current = false;
-      // حفظ القيد بشكل طبيعي تماماً كما لو كان متزناً
-      // استدعاء proceedWithSave مباشرة (التحقق من الشروط تم بالفعل في saveVoucher)
-      await proceedWithSave();
-    },
-    handleUnbalancedCancel: () => {
-      // المستخدم ألغى العملية
-      setShowUnbalancedModal(false);
-      isSavingUnbalancedRef.current = false;
-    },
+    handleUnbalancedConfirm,
+    handleUnbalancedCancel,
   };
 };

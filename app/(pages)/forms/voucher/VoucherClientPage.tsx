@@ -3,22 +3,23 @@
 import { useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
+import ReactSelect from "react-select";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Button } from "@heroui/react";
 import {
   CheckIcon,
   PencilIcon,
   PrinterIcon,
-  DocumentTextIcon,
   PlusIcon,
   ArrowsPointingOutIcon,
   ArrowUturnLeftIcon,
+  DocumentTextIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  BackwardIcon,
+  ForwardIcon,
 } from "@heroicons/react/24/outline";
 
-import GLTransactionModal from "../components/GLTransactionModal";
-import GLPreviewPanel from "../components/GLPreviewPanel";
-
 import { useVoucherForm } from "@/hooks/useVoucherForm";
-import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 import { formatDateTime } from "@/utilities/dateUtils";
@@ -32,6 +33,12 @@ interface VoucherClientPageProps {
   voucherDetailsData?: VoucherDetail[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
+  navigationInfo?: {
+    previous?: number | null;
+    next?: number | null;
+    first?: number | null;
+    last?: number | null;
+  };
   accounts: any[];
   costCenters: any[];
   voucherTypes: any[];
@@ -131,42 +138,71 @@ export default function VoucherClientPage({
     newVoucherHref,
   });
 
-  // استخدام hook موحد لحركة الترحيل
-  const {
-    isGLModalOpen,
-    setIsGLModalOpen,
-    glTransactions,
-    loadingGLTransactions,
-    handleViewGLTransactions,
-    getAccountName,
-  } = useGLTransactions({
-    vouchId: voucher.vouch_id || 0,
-    vouchType: 3, // قيد التسوية
-    refNo: voucher.ref_no,
-  });
-
   const toAmount = (value: unknown) => {
     const numeric = Number(value);
 
     return Number.isFinite(numeric) ? numeric : 0;
   };
 
-  const navigationTargets = useMemo(() => {
-    return {
+  const navigationTargets = useMemo(
+    () => ({
       previous: navigationInfo?.previous ?? -1,
       next: navigationInfo?.next ?? -1,
       first: navigationInfo?.first ?? -1,
       last: navigationInfo?.last ?? -1,
+    }),
+    [navigationInfo],
+  );
+
+  // Helper functions for cost center select (must be before any early return)
+  const getCostCenterSelectValue = (
+    costId: number | null | undefined,
+  ) => {
+    if (!costId || costId <= 0) {
+      return null;
+    }
+
+    const center = costCenters.find((c) => {
+      const centerId = c.id ?? c.Id;
+
+      return centerId === costId;
+    });
+
+    if (!center) {
+      return null;
+    }
+
+    return {
+      value: String(center.id ?? center.Id),
+      label: center.name || center.cost_name || `مركز ${center.id ?? center.Id}`,
     };
-  }, [navigationInfo]);
+  };
+
+  const costCenterSelectOptions = useMemo(() => {
+    return (costCenters || []).map((center) => {
+      const centerId = center.id ?? center.Id;
+
+      return {
+        value: String(centerId),
+        label:
+          center.name || center.cost_name || `مركز ${centerId}`,
+      };
+    });
+  }, [costCenters]);
 
   const handleNavigate = (targetId?: number | null) => {
     if (!targetId || targetId <= 0) {
-      router.push("/forms/voucher");
+      return;
+    }
+
+    const currentRecordId = voucher.id ?? voucher.vouch_id ?? null;
+
+    if (currentRecordId && Number(currentRecordId) === targetId) {
       return;
     }
 
     router.push(`/forms/voucher/${targetId}?mode=preview`);
+    router.refresh();
   };
 
 const PREVIEW_TOLERANCE = 0.01;
@@ -362,30 +398,62 @@ const PREVIEW_TOLERANCE = 0.01;
                 className="bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-700 font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[140px]"
               >
                 انشاء من قيد سابق
-              </Button>
+          </Button>
 
-              {isCreatedFromPrevious && (
-                <Button
-                  size="sm"
-                  variant="solid"
-                  onPress={resetToNew}
-                  startContent={<ArrowUturnLeftIcon className="h-4 w-4" />}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-                >
-                  تراجع
-                </Button>
-              )}
+          {isCreatedFromPrevious && (
+            <Button
+              size="sm"
+              variant="solid"
+              onPress={resetToNew}
+              startContent={<ArrowUturnLeftIcon className="h-4 w-4" />}
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+            >
+              تراجع
+            </Button>
+          )}
 
-              <Button
-                size="sm"
-                variant="solid"
-                isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
-                onPress={handleViewGLTransactions}
-                startContent={<DocumentTextIcon className="h-4 w-4" />}
-                className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[140px]"
-              >
-                القيد المحاسبي
-              </Button>
+          <div className="flex items-center gap-1 border border-slate-200 rounded-md px-1.5 py-1 bg-white">
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              aria-label="أول قيد"
+              onPress={() => handleNavigate(navigationTargets.first)}
+              className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
+            >
+              <BackwardIcon className="h-4 w-4 text-slate-600" />
+            </Button>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              aria-label="السابق"
+              onPress={() => handleNavigate(navigationTargets.previous)}
+              className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
+            >
+              <ChevronRightIcon className="h-4 w-4 text-slate-600" />
+            </Button>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              aria-label="التالي"
+              onPress={() => handleNavigate(navigationTargets.next)}
+              className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
+            >
+              <ChevronLeftIcon className="h-4 w-4 text-slate-600" />
+            </Button>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              aria-label="آخر قيد"
+              onPress={() => handleNavigate(navigationTargets.last)}
+              className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
+            >
+              <ForwardIcon className="h-4 w-4 text-slate-600" />
+            </Button>
+          </div>
             </div>
 
             {/* حالة القيد */}
@@ -560,17 +628,45 @@ const PREVIEW_TOLERANCE = 0.01;
                 <label className="text-sm font-medium text-slate-700">
                   مركز التكلفة
                 </label>
-                <select
-                  className="text-sm border border-slate-300 rounded-md px-3 py-2 h-10 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
-                  disabled={!isEditing || costCenters.length === 0}
-                  value={
-                    voucher.cost_id && voucher.cost_id > 0
-                      ? String(voucher.cost_id)
-                      : ""
+                <ReactSelect
+                  isSearchable
+                  isDisabled={!isEditing || costCenters.length === 0}
+                  className="text-sm"
+                  classNamePrefix="react-select"
+                  components={{ IndicatorSeparator: () => null }}
+                  instanceId="voucher-cost-center-select"
+                  menuPortalTarget={
+                    typeof window !== "undefined" ? document.body : null
                   }
-                  onChange={(e) => {
-                    const selected = e.target.value
-                      ? Number(e.target.value)
+                  menuPosition="fixed"
+                  options={costCenterSelectOptions}
+                  placeholder="اختر مركز التكلفة..."
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      minHeight: "40px",
+                      height: "40px",
+                      fontSize: "14px",
+                    }),
+                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                    option: (base) => ({
+                      ...base,
+                      fontSize: "14px",
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      fontSize: "14px",
+                    }),
+                    singleValue: (base) => ({
+                      ...base,
+                      fontSize: "14px",
+                    }),
+                  }}
+                  value={getCostCenterSelectValue(voucher.cost_id)}
+                  onChange={(selectedOption: any) => {
+                    if (!isEditing) return;
+                    const selected = selectedOption?.value
+                      ? Number(selectedOption.value)
                       : null;
                     handleMasterCostChange(
                       selected !== null && Number.isFinite(selected)
@@ -578,24 +674,7 @@ const PREVIEW_TOLERANCE = 0.01;
                         : null,
                     );
                   }}
-                >
-                  <option value="">اختر مركز التكلفة</option>
-                  {costCenters.map((center) => {
-                    const centerId = center.id ?? center.Id;
-
-                    if (!centerId) {
-                      return null;
-                    }
-
-                    return (
-                      <option key={centerId} value={String(centerId)}>
-                        {center.name ||
-                          center.cost_name ||
-                          `مركز ${centerId}`}
-                      </option>
-                    );
-                  })}
-                </select>
+                />
               </div>
             </div>
           </div>
@@ -780,7 +859,6 @@ const PREVIEW_TOLERANCE = 0.01;
                           className="text-xs"
                           classNamePrefix="select"
                           components={{ IndicatorSeparator: () => null }}
-                          defaultOptions={defaultAccountOptions}
                           formatCreateLabel={(inputValue) =>
                             `إضافة حساب جديد: "${inputValue}"`
                           }
@@ -829,12 +907,10 @@ const PREVIEW_TOLERANCE = 0.01;
 
                             if (!selected) return;
 
-                            // cache option in accounts list if not already present
                             if (!accounts.find((a) => a.id === selected.id)) {
                               updateAccountsList(selected);
                             }
 
-                            // تحديث جميع بيانات الحساب
                             updateDetail(index, "acc_id", selected.id ?? null);
                             updateDetail(
                               index,
@@ -846,8 +922,6 @@ const PREVIEW_TOLERANCE = 0.01;
                               "acc_name",
                               selected.acc_name ?? selected.name ?? "",
                             );
-
-                            // Note: Validation errors are managed by the hook
                           }}
                         />
                       </td>
@@ -1036,27 +1110,57 @@ const PREVIEW_TOLERANCE = 0.01;
                       </td>
 
                       <td className="p-0 border">
-                        <select
-                          className={`w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          value={detail.cost_id || ""}
-                          onChange={(e) =>
+                        <ReactSelect
+                          isSearchable
+                          isDisabled={!isEditing}
+                          className="text-xs"
+                          classNamePrefix="react-select"
+                          components={{ IndicatorSeparator: () => null }}
+                          instanceId={`cost-center-detail-select-${index}`}
+                          menuPortalTarget={
+                            typeof window !== "undefined" ? document.body : null
+                          }
+                          menuPosition="fixed"
+                          options={costCenterSelectOptions}
+                          placeholder="مركز التكلفة..."
+                          styles={{
+                            control: (base) => ({
+                              ...base,
+                              minHeight: "32px",
+                              height: "32px",
+                              fontSize: "12px",
+                              border: "none",
+                              borderRadius: "0",
+                              boxShadow: "none",
+                              cursor: isEditing ? "pointer" : "not-allowed",
+                              backgroundColor: "transparent",
+                            }),
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            option: (base) => ({
+                              ...base,
+                              fontSize: "12px",
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              fontSize: "12px",
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              fontSize: "12px",
+                            }),
+                          }}
+                          value={getCostCenterSelectValue(detail.cost_id)}
+                          onChange={(selectedOption: any) => {
+                            if (!isEditing) return;
                             updateDetail(
                               index,
                               "cost_id",
-                              e.target.value ? parseInt(e.target.value) : null,
-                            )
-                          }
-                        >
-                          <option value="">مركز التكلفة</option>
-                          {costCenters.map((center) => (
-                            <option key={center.id} value={center.id}>
-                              {center.name ||
-                                center.cost_name ||
-                                `مركز ${center.id}`}
-                            </option>
-                          ))}
-                        </select>
+                              selectedOption?.value
+                                ? parseInt(selectedOption.value)
+                                : null,
+                            );
+                          }}
+                        />
                       </td>
 
                       <td className="p-0 border">
@@ -1324,58 +1428,6 @@ const PREVIEW_TOLERANCE = 0.01;
           </div>
         )}
       </div>
-
-      <div className="mt-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Button
-            size="sm"
-            variant="light"
-            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
-            onPress={() => handleNavigate(navigationTargets.first)}
-          >
-            <i className="bi bi-chevron-double-right ms-1" />
-            أول قيد
-          </Button>
-          <Button
-            size="sm"
-            variant="light"
-            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
-            onPress={() => handleNavigate(navigationTargets.next)}
-          >
-            <i className="bi bi-chevron-right ms-1" />
-            التالي
-          </Button>
-          <Button
-            size="sm"
-            variant="light"
-            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
-            onPress={() => handleNavigate(navigationTargets.previous)}
-          >
-            السابق
-            <i className="bi bi-chevron-left me-1" />
-          </Button>
-          <Button
-            size="sm"
-            variant="light"
-            className="w-full justify-center border border-slate-300 bg-white hover:bg-slate-100 text-slate-700"
-            onPress={() => handleNavigate(navigationTargets.last)}
-          >
-            آخر قيد
-            <i className="bi bi-chevron-double-left me-1" />
-          </Button>
-        </div>
-      </div>
-
-      {/* مودال عرض القيد المحاسبي */}
-      <GLTransactionModal
-        getAccountName={getAccountName}
-        isOpen={isGLModalOpen}
-        loading={loadingGLTransactions}
-        refNo={voucher.ref_no}
-        transactions={glTransactions}
-        voucherId={voucher.vouch_id || 0}
-        onClose={() => setIsGLModalOpen(false)}
-      />
 
       {/* مودال توسيع البيان */}
       <Modal

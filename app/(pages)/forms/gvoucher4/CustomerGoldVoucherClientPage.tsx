@@ -4,25 +4,19 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import CreatableSelect from "react-select/creatable";
 import AsyncCreatableSelectRegular from "react-select/async-creatable";
-import { withAsyncPaginate } from "react-select-async-paginate";
+import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Button } from "@heroui/react";
 import {
   CheckIcon,
   PencilIcon,
   PrinterIcon,
-  DocumentTextIcon,
   PlusIcon,
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
-const AsyncPaginateCreatableSelect = withAsyncPaginate(CreatableSelect);
-
-import GLTransactionModal from "../components/GLTransactionModal";
-
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { voucherService, itemService, customerService } from "@/services/api";
-import { useGLTransactions } from "@/hooks/useGLTransactions";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 
@@ -44,6 +38,7 @@ interface CustomerGoldVoucherClientPageProps {
   startInEditMode?: boolean;
   vouchType: number; // 4 للقبض، 5 للصرف
   formMode?: "new" | "edit" | "preview";
+  categories?: any[];
 }
 
 export default function CustomerGoldVoucherClientPage({
@@ -62,6 +57,7 @@ export default function CustomerGoldVoucherClientPage({
   startInEditMode = false,
   vouchType,
   formMode = "new",
+  categories: initialCategories = [],
 }: CustomerGoldVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -123,6 +119,45 @@ export default function CustomerGoldVoucherClientPage({
   const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>(
     [],
   );
+
+  const categories = useMemo(() => initialCategories || [], [initialCategories]);
+  const categoryMap = useMemo(() => {
+    const map = new Map<number, any>();
+
+    categories.forEach((category: any) => {
+      const rawId = category?.id ?? category?.cat ?? category?.cat_id;
+      const parsedId = Number(rawId);
+
+      if (Number.isFinite(parsedId) && parsedId > 0) {
+        map.set(parsedId, category);
+      }
+    });
+
+    return map;
+  }, [categories]);
+
+  const getCategoryBoxId = (category: any): number | undefined => {
+    if (!category) return undefined;
+
+    const candidates = [
+      category.box_id,
+      category.box,
+      category.cat_box,
+      category.gold_box,
+      category.default_box,
+      category.default_gold_box,
+    ];
+
+    for (const candidate of candidates) {
+      const parsed = Number(candidate);
+
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    return undefined;
+  };
 
   // Initialize component
   useEffect(() => {
@@ -355,37 +390,91 @@ export default function CustomerGoldVoucherClientPage({
           const selectedItem = items.find((item) => item.id === value);
 
           if (selectedItem) {
-            // تحديث k من الصنف
-            if (selectedItem.k !== undefined && selectedItem.k !== null) {
-              const itemK =
-                typeof selectedItem.k === "number"
-                  ? selectedItem.k
-                  : parseFloat(String(selectedItem.k || "0")) || 0;
+            const toNumber = (input: unknown) => {
+              const parsed = Number(input);
 
-              if (itemK > 0) {
-                newDetail.k = itemK;
+              return Number.isFinite(parsed) ? parsed : 0;
+            };
+
+            newDetail.item_id = selectedItem.id;
+            newDetail.item_code =
+              selectedItem.item_code ||
+              selectedItem.code ||
+              newDetail.item_code ||
+              "";
+            newDetail.item_name =
+              selectedItem.item_name ||
+              selectedItem.name ||
+              newDetail.item_name ||
+              "";
+
+            const rawCategoryId =
+              selectedItem.cat ??
+              selectedItem.category ??
+              selectedItem.category_id ??
+              selectedItem.cat_id;
+            const categoryId = toNumber(rawCategoryId);
+            const linkedCategory =
+              categoryId > 0 ? categoryMap.get(categoryId) : undefined;
+
+            let resolvedK = 0;
+
+            if (linkedCategory) {
+              resolvedK =
+                toNumber(linkedCategory?.purity) ||
+                toNumber((linkedCategory as any)?.cat_purity) ||
+                toNumber(linkedCategory?.k) ||
+                toNumber(linkedCategory?.gauge) ||
+                toNumber((linkedCategory as any)?.carat);
+
+              const resolvedBoxId = getCategoryBoxId(linkedCategory);
+
+              // تحديث الصندوق تلقائياً عند تغيير الصنف (دائماً، حتى لو كان موجوداً)
+              if (resolvedBoxId) {
+                newDetail.box_id = resolvedBoxId;
               }
             }
-            // تحديث weight من الصنف إذا كان موجوداً ولم يكن المستخدم قد أدخل وزن
-            if (
-              selectedItem.item_weight !== undefined &&
-              selectedItem.item_weight !== null
-            ) {
-              const itemWeight =
-                typeof selectedItem.item_weight === "number"
-                  ? selectedItem.item_weight
-                  : parseFloat(String(selectedItem.item_weight || "0")) || 0;
 
-              if (
-                itemWeight > 0 &&
-                (!newDetail.weight || newDetail.weight === 0)
-              ) {
-                newDetail.weight = itemWeight;
-              }
+            if (resolvedK <= 0) {
+              resolvedK =
+                toNumber(selectedItem.k) ||
+                toNumber((selectedItem as any).item_k) ||
+                toNumber((selectedItem as any).purity) ||
+                toNumber((selectedItem as any).carat);
+            }
+
+            if (resolvedK > 0) {
+              newDetail.k = resolvedK;
+            }
+
+            const itemWeight =
+              toNumber(selectedItem.item_weight) ||
+              toNumber(selectedItem.weight) ||
+              toNumber((selectedItem as any).itemWeight);
+            if (itemWeight > 0) {
+              newDetail.weight = itemWeight;
+            }
+
+            const itemGoldWeight =
+              toNumber((selectedItem as any).item_g_weight) ||
+              toNumber(selectedItem.g_weight) ||
+              toNumber((selectedItem as any).gWeight);
+            if (itemGoldWeight > 0) {
+              newDetail.g_weight = parseFloat(itemGoldWeight.toFixed(5));
+            } else if (
+              typeof newDetail.weight === "number" &&
+              newDetail.weight > 0 &&
+              typeof newDetail.k === "number" &&
+              newDetail.k > 0
+            ) {
+              newDetail.g_weight = parseFloat(
+                ((newDetail.weight * newDetail.k) / 875).toFixed(5),
+              );
+            } else {
+              newDetail.g_weight = undefined;
             }
           }
 
-          // حساب g_weight بعد تحديث k و weight من الصنف
           const weight =
             typeof newDetail.weight === "number"
               ? newDetail.weight
@@ -396,11 +485,10 @@ export default function CustomerGoldVoucherClientPage({
               : parseFloat(String(newDetail.k || "0")) || 0;
 
           if (weight > 0 && k > 0) {
-            // حساب الوزن المعاير: g_weight = weight * (k / 875)
             const calculatedGWeight = (weight * k) / 875;
 
             newDetail.g_weight = parseFloat(calculatedGWeight.toFixed(5));
-          } else {
+          } else if (!newDetail.g_weight) {
             newDetail.g_weight = undefined;
           }
         }
@@ -550,15 +638,11 @@ export default function CustomerGoldVoucherClientPage({
         })
         .map(({ value, label, item }) => ({ value, label, item }));
 
-      return {
-        options,
-        hasMore: Boolean(result.next),
-        additional: { page: result.next ? page + 1 : page },
-      };
+      return options;
     } catch (e) {
       console.error("Error loading item options:", e);
 
-      return { options: [], hasMore: false, additional: { page: 1 } };
+      return [];
     }
   };
 
@@ -649,6 +733,61 @@ export default function CustomerGoldVoucherClientPage({
 
     return null;
   };
+
+  // Helper functions for box and cost center select (must be before any early return)
+  const getBoxSelectValue = (boxId: number | null | undefined) => {
+    if (!boxId || boxId <= 0) {
+      return null;
+    }
+
+    const box = boxes.find((b) => b.id === boxId);
+
+    if (!box) {
+      return null;
+    }
+
+    return {
+      value: String(box.id),
+      label:
+        box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
+    };
+  };
+
+  const boxSelectOptions = useMemo(() => {
+    return (boxes || []).map((box) => ({
+      value: String(box.id),
+      label:
+        box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
+    }));
+  }, [boxes]);
+
+  const getCostCenterSelectValue = (
+    costId: number | null | undefined,
+  ) => {
+    if (!costId || costId <= 0) {
+      return null;
+    }
+
+    const center = costCenters.find((c) => c.id === costId);
+
+    if (!center) {
+      return null;
+    }
+
+    return {
+      value: String(center.id),
+      label:
+        center.name || center.cost_name || `مركز ${center.id}`,
+    };
+  };
+
+  const costCenterSelectOptions = useMemo(() => {
+    return (costCenters || []).map((center) => ({
+      value: String(center.id),
+      label:
+        center.name || center.cost_name || `مركز ${center.id}`,
+    }));
+  }, [costCenters]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -837,20 +976,6 @@ export default function CustomerGoldVoucherClientPage({
       setIsLoading(false);
     }
   };
-
-  // استخدام hook موحد لحركة الترحيل
-  const {
-    isGLModalOpen,
-    setIsGLModalOpen,
-    glTransactions,
-    loadingGLTransactions,
-    handleViewGLTransactions,
-    getAccountName,
-  } = useGLTransactions({
-    vouchId: voucher.vouch_id || 0,
-    vouchType: vouchType,
-    refNo: voucher.ref_no,
-  });
 
   // Print voucher
   const printVoucher = async () => {
@@ -1230,7 +1355,6 @@ export default function CustomerGoldVoucherClientPage({
                       <th>البيان</th>
                       <th>فرق عيار</th>
                       <th>مبلغ التسكير</th>
-                      <th>وزن التسكير</th>
                       <th>رقم الفاتورة</th>
                       <th>مركز التكلفة</th>
                     </tr>
@@ -1257,7 +1381,6 @@ export default function CustomerGoldVoucherClientPage({
                           <td style="text-align: right; font-size: 11px; color: #718096;">${detail.notes || "-"}</td>
                           <td>${detail.diff || "-"}</td>
                           <td class="amount">${detail.close_amt ? formatAmount(detail.close_amt) : "-"}</td>
-                          <td>${detail.close_weight ? detail.close_weight.toFixed(5) : "-"}</td>
                           <td>${detail.inv_id || "-"}</td>
                           <td style="text-align: right; font-size: 11px;">${costName}</td>
                         </tr>
@@ -1283,7 +1406,6 @@ export default function CustomerGoldVoucherClientPage({
                       <th>المبلغ</th>
                       <th>الصندوق</th>
                       <th>البيان</th>
-                      <th>وزن التسكير</th>
                       <th>رقم الفاتورة</th>
                       <th>مركز التكلفة</th>
                     </tr>
@@ -1299,7 +1421,6 @@ export default function CustomerGoldVoucherClientPage({
                           <td class="amount amount-cash">${formatAmount(box.amount || 0)}</td>
                           <td style="text-align: right;">${boxName}</td>
                           <td style="text-align: right; font-size: 11px; color: #718096;">${box.vouch_notes || "-"}</td>
-                          <td>${box.close_weight ? box.close_weight.toFixed(5) : "-"}</td>
                           <td>${box.inv_id || "-"}</td>
                           <td style="text-align: right; font-size: 11px;">${costName}</td>
                         </tr>
@@ -1308,7 +1429,7 @@ export default function CustomerGoldVoucherClientPage({
                       .join("")}
                     <tr class="totals">
                       <td class="amount amount-cash">${formatAmount(totals.totalBoxes)}</td>
-                      <td colspan="5" style="text-align: right; padding-right: 20px; font-weight: 700;">إجمالي النقدية</td>
+                      <td colspan="4" style="text-align: right; padding-right: 20px; font-weight: 700;">إجمالي النقدية</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1623,17 +1744,6 @@ export default function CustomerGoldVoucherClientPage({
             >
               طباعة
             </Button>
-
-            <Button
-              size="sm"
-              variant="solid"
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
-              onPress={handleViewGLTransactions}
-              startContent={<DocumentTextIcon className="h-4 w-4" />}
-              className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[140px]"
-            >
-              القيد المحاسبي
-            </Button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -1916,7 +2026,7 @@ export default function CustomerGoldVoucherClientPage({
                 {goldDetails.map((detail, index) => (
                   <tr key={index} className="border-b">
                     <td className="p-0 border">
-                      <AsyncPaginateCreatableSelect
+                      <AsyncCreatableSelectRegular
                         defaultOptions
                         isClearable
                         isSearchable
@@ -2290,13 +2400,12 @@ export default function CustomerGoldVoucherClientPage({
             </button>
           </div>
           <div className="overflow-x-auto mb-1 max-w-full">
-            <table className="min-w-[1000px] border text-xs text-center table-fixed">
+            <table className="min-w-[880px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
                   <th className="w-32 p-1 border">المبلغ</th>
                   <th className="w-48 p-1 border">الصندوق</th>
                   <th className="w-80 p-1 border">البيان</th>
-                  <th className="w-32 p-1 border">وزن التسكير</th>
                   <th className="w-32 p-1 border">رقم الفاتورة</th>
                   <th className="w-48 p-1 border">مركز التكلفة</th>
                   <th className="w-12 p-1 border">حذف</th>
@@ -2334,30 +2443,55 @@ export default function CustomerGoldVoucherClientPage({
                       />
                     </td>
                     <td className="p-0 border">
-                      <select
-                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        value={
-                          box.box_id && box.box_id > 0 ? String(box.box_id) : ""
+                      <ReactSelect
+                        isSearchable
+                        isDisabled={!isEditing}
+                        className="text-xs"
+                        classNamePrefix="react-select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`box-select-${index}`}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
                         }
-                        onChange={(e) => {
-                          const selectedBoxId = e.target.value
-                            ? parseInt(e.target.value)
+                        menuPosition="fixed"
+                        options={boxSelectOptions}
+                        placeholder="اختر الصندوق..."
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                            height: "32px",
+                            fontSize: "12px",
+                            border: "none",
+                            borderRadius: "0",
+                            boxShadow: "none",
+                            cursor: isEditing ? "pointer" : "not-allowed",
+                            backgroundColor: "transparent",
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          option: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                        }}
+                        value={getBoxSelectValue(box.box_id)}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
+                          const selectedBoxId = selectedOption?.value
+                            ? parseInt(selectedOption.value)
                             : 0;
 
                           updateVoucherBox(index, "box_id", selectedBoxId);
                         }}
-                      >
-                        <option value="">اختر الصندوق</option>
-                        {boxes.map((b) => (
-                          <option key={b.id} value={String(b.id)}>
-                            {b.cust_name ||
-                              b.name ||
-                              box.box?.cust_name ||
-                              `صندوق ${b.id}`}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </td>
                     <td className="p-0 border">
                       <input
@@ -2369,35 +2503,6 @@ export default function CustomerGoldVoucherClientPage({
                         onChange={(e) =>
                           updateVoucherBox(index, "vouch_notes", e.target.value)
                         }
-                      />
-                    </td>
-                    <td className="p-0 border">
-                      <input
-                        className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        readOnly={!isEditing}
-                        style={{
-                          MozAppearance: "textfield",
-                          WebkitAppearance: "none",
-                          appearance: "none",
-                        }}
-                        type="number"
-                        value={box.close_weight || ""}
-                        onChange={(e) =>
-                          updateVoucherBox(
-                            index,
-                            "close_weight",
-                            e.target.value
-                              ? parseFloat(e.target.value)
-                              : undefined,
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            e.preventDefault();
-                          }
-                        }}
-                        onWheel={(e) => e.currentTarget.blur()}
                       />
                     </td>
                     <td className="p-0 border">
@@ -2431,27 +2536,57 @@ export default function CustomerGoldVoucherClientPage({
                       />
                     </td>
                     <td className="p-0 border">
-                      <select
-                        className="w-full h-full text-xs border-0 rounded-none focus:outline-none focus:ring-0"
-                        disabled={!isEditing}
-                        value={box.cost_id || ""}
-                        onChange={(e) =>
+                      <ReactSelect
+                        isSearchable
+                        isDisabled={!isEditing}
+                        className="text-xs"
+                        classNamePrefix="react-select"
+                        components={{ IndicatorSeparator: () => null }}
+                        instanceId={`cost-center-box-select-${index}`}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
+                        }
+                        menuPosition="fixed"
+                        options={costCenterSelectOptions}
+                        placeholder="مركز التكلفة..."
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: "32px",
+                            height: "32px",
+                            fontSize: "12px",
+                            border: "none",
+                            borderRadius: "0",
+                            boxShadow: "none",
+                            cursor: isEditing ? "pointer" : "not-allowed",
+                            backgroundColor: "transparent",
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          option: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            fontSize: "12px",
+                          }),
+                        }}
+                        value={getCostCenterSelectValue(box.cost_id)}
+                        onChange={(selectedOption: any) => {
+                          if (!isEditing) return;
                           updateVoucherBox(
                             index,
                             "cost_id",
-                            e.target.value ? parseInt(e.target.value) : null,
-                          )
-                        }
-                      >
-                        <option value="">مركز التكلفة</option>
-                        {costCenters.map((center) => (
-                          <option key={center.id} value={center.id}>
-                            {center.name ||
-                              center.cost_name ||
-                              `مركز ${center.id}`}
-                          </option>
-                        ))}
-                      </select>
+                            selectedOption?.value
+                              ? parseInt(selectedOption.value)
+                              : null,
+                          );
+                        }}
+                      />
                     </td>
                     <td className="p-1 border">
                       <button
@@ -2500,17 +2635,6 @@ export default function CustomerGoldVoucherClientPage({
           </div>
         </div>
       </div>
-
-      {/* مودال عرض القيد المحاسبي */}
-      <GLTransactionModal
-        getAccountName={getAccountName}
-        isOpen={isGLModalOpen}
-        loading={loadingGLTransactions}
-        refNo={voucher.ref_no}
-        transactions={glTransactions}
-        voucherId={voucher.vouch_id || 0}
-        onClose={() => setIsGLModalOpen(false)}
-      />
 
       {/* مودال توسيع البيان */}
       <Modal

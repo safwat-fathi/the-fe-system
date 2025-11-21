@@ -28,6 +28,10 @@ interface IntegrationConfig {
   apiSecret?: string;
   merchantId?: string;
   environment?: "sandbox" | "production";
+  senderName?: string;
+  instanceId?: string;
+  baseUrl?: string;
+  webhookUrl?: string;
   enabled: boolean;
 }
 
@@ -49,6 +53,8 @@ interface FatooraConfig {
 }
 
 export default function IntegrationsClient() {
+  const ENJAZATEK_DOC_URL = "https://enjazatik.com/";
+
   // حالة جيديا
   const [geideaConfig, setGeideaConfig] = useState<IntegrationConfig>({
     name: "جيديا",
@@ -59,6 +65,20 @@ export default function IntegrationsClient() {
     apiSecret: "",
     merchantId: "",
     environment: "sandbox",
+    enabled: false,
+  });
+
+  // حالة إنجازتك (واتساب)
+  const [enjazatekConfig, setEnjazatekConfig] = useState<IntegrationConfig>({
+    name: "Enjazatek WhatsApp",
+    description:
+      "انجـازاتك توفر منصة رسائل واتساب احترافية لإرسال التنبيهات والحملات التسويقية مع دعم كامل للوسائط.",
+    status: "disconnected",
+    apiKey: "",
+    senderName: "",
+    instanceId: "",
+    baseUrl: "",
+    webhookUrl: "",
     enabled: false,
   });
 
@@ -84,14 +104,22 @@ export default function IntegrationsClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [showGeideaSetup, setShowGeideaSetup] = useState(false);
+  const [showEnjazatekSetup, setShowEnjazatekSetup] = useState(false);
   
   const [isSavingFatoora, setIsSavingFatoora] = useState(false);
   const [isTestingFatoora, setIsTestingFatoora] = useState(false);
   const [showFatooraSetup, setShowFatooraSetup] = useState(false);
 
+  const [isSavingEnjazatek, setIsSavingEnjazatek] = useState(false);
+  const [isTestingEnjazatek, setIsTestingEnjazatek] = useState(false);
+
   // بدء إدخال المعلومات لجيديا
   const handleStartGeideaSetup = () => {
     setShowGeideaSetup(true);
+  };
+
+  const handleStartEnjazatekSetup = () => {
+    setShowEnjazatekSetup(true);
   };
 
   // حفظ إعدادات جيديا
@@ -115,6 +143,30 @@ export default function IntegrationsClient() {
       toast.error("حدث خطأ أثناء حفظ الإعدادات");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // حفظ إعدادات إنجازتك
+  const handleSaveEnjazatek = async () => {
+    if (
+      !enjazatekConfig.apiKey ||
+      !enjazatekConfig.senderName ||
+      !enjazatekConfig.instanceId
+    ) {
+      toast.error("يرجى إدخال مفتاح API، ومعرف الإرسال، ورقم المثيل أولاً");
+      return;
+    }
+
+    setIsSavingEnjazatek(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setEnjazatekConfig((prev) => ({ ...prev, status: "connected" }));
+      toast.success("تم حفظ إعدادات Enjazatek بنجاح");
+    } catch (error) {
+      toast.error("حدث خطأ أثناء حفظ إعدادات Enjazatek");
+    } finally {
+      setIsSavingEnjazatek(false);
     }
   };
 
@@ -143,6 +195,30 @@ export default function IntegrationsClient() {
     }
   };
 
+  // اختبار الاتصال مع إنجازتك
+  const handleTestEnjazatek = async () => {
+    if (
+      !enjazatekConfig.apiKey ||
+      !enjazatekConfig.senderName ||
+      !enjazatekConfig.instanceId
+    ) {
+      toast.error("يرجى إكمال بيانات الربط قبل الاختبار");
+      return;
+    }
+
+    setIsTestingEnjazatek(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      toast.success("تم الاتصال مع Enjazatek بنجاح (اختبار تجريبي)");
+      setEnjazatekConfig((prev) => ({ ...prev, status: "connected" }));
+    } catch (error) {
+      toast.error("فشل الاتصال مع Enjazatek، يرجى التحقق من البيانات");
+      setEnjazatekConfig((prev) => ({ ...prev, status: "disconnected" }));
+    } finally {
+      setIsTestingEnjazatek(false);
+    }
+  };
+
   // تبديل تفعيل/إلغاء تفعيل الخدمة
   const handleToggleGeidea = (enabled: boolean) => {
     setGeideaConfig((prev) => ({
@@ -159,6 +235,31 @@ export default function IntegrationsClient() {
     } else {
       toast.success("تم إلغاء تفعيل خدمة جيديا");
     }
+  };
+
+  // تبديل تفعيل/إلغاء تفعيل إنجازتك
+  const handleToggleEnjazatek = (enabled: boolean) => {
+    if (
+      enabled &&
+      (!enjazatekConfig.apiKey ||
+        !enjazatekConfig.senderName ||
+        !enjazatekConfig.instanceId)
+    ) {
+      toast.error("يرجى إكمال بيانات Enjazatek أولاً");
+      return;
+    }
+
+    setEnjazatekConfig((prev) => ({
+      ...prev,
+      enabled,
+      status: enabled ? prev.status : "disconnected",
+    }));
+
+    toast.success(
+      enabled
+        ? "تم تفعيل خدمة Enjazatek"
+        : "تم إلغاء تفعيل خدمة Enjazatek",
+    );
   };
 
   // حفظ إعدادات فاتورة
@@ -239,8 +340,208 @@ export default function IntegrationsClient() {
   const hasGeideaData =
     geideaConfig.apiKey || geideaConfig.apiSecret || geideaConfig.merchantId;
 
+  const hasEnjazatekData =
+    enjazatekConfig.apiKey ||
+    enjazatekConfig.senderName ||
+    enjazatekConfig.instanceId ||
+    enjazatekConfig.baseUrl ||
+    enjazatekConfig.webhookUrl;
+
   return (
     <div className="space-y-6">
+      {/* Enjazatek WhatsApp */}
+      <Card className="shadow-md">
+        {!hasEnjazatekData && !showEnjazatekSetup ? (
+          <CardBody className="p-6">
+            <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex-1 flex items-center gap-4">
+                <div className="flex-shrink-0">
+                  <div className="rounded-lg p-3 flex items-center justify-center bg-emerald-50 border border-emerald-200">
+                    <span className="text-xl font-black text-emerald-600 tracking-tight">
+                      Enjazatek
+                    </span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-slate-800 mb-1">
+                    Enjazatek WhatsApp
+                  </h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    منصة رسائل واتساب احترافية مع دعم الوسائط والردود التفاعلية.
+                    مثالية للتنبيهات الفورية والحملات التسويقية{" "}
+                    <a
+                      className="text-emerald-600 font-semibold underline underline-offset-4"
+                      href={ENJAZATEK_DOC_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      تعرّف على الخدمة
+                    </a>
+                    .
+                  </p>
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <Button
+                  color="primary"
+                  onPress={handleStartEnjazatekSetup}
+                  className="btn-primary border-2 border-blue-600 bg-white text-blue-600 hover:bg-blue-50 font-semibold px-6 py-3"
+                  size="lg"
+                >
+                  ابدأ الربط
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        ) : (
+          <>
+            <CardHeader className="flex justify-between items-center pb-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg p-2 flex items-center justify-center">
+                  <span className="text-lg font-black text-blue-600 tracking-tight">
+                    Enjazatek
+                  </span>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">
+                    {enjazatekConfig.name}
+                  </h2>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {enjazatekConfig.description}
+                  </p>
+                  <div className="mt-2">
+                    <a
+                      className="inline-flex items-center gap-1 text-xs text-blue-600 font-semibold underline underline-offset-4"
+                      href={ENJAZATEK_DOC_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                      وثائق Enjazatek
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(enjazatekConfig.status)}
+                  <span className="text-sm text-slate-600">
+                    {getStatusText(enjazatekConfig.status)}
+                  </span>
+                </div>
+                <Switch
+                  isSelected={enjazatekConfig.enabled}
+                  onValueChange={handleToggleEnjazatek}
+                  color="success"
+                >
+                  <span className="text-sm font-medium text-slate-700">
+                    {enjazatekConfig.enabled ? "مفعل" : "معطل"}
+                  </span>
+                </Switch>
+              </div>
+            </CardHeader>
+            <Divider />
+            <CardBody className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="مفتاح API"
+                  placeholder="أدخل مفتاح Enjazatek"
+                  value={enjazatekConfig.apiKey || ""}
+                  onChange={(e) =>
+                    setEnjazatekConfig((prev) => ({
+                      ...prev,
+                      apiKey: e.target.value,
+                    }))
+                  }
+                  type="password"
+                  variant="bordered"
+                  description="متوفر في لوحة تحكم Enjazatek"
+                />
+                <Input
+                  label="معرف المثيل (Instance ID)"
+                  placeholder="أدخل معرف المثيل"
+                  value={enjazatekConfig.instanceId || ""}
+                  onChange={(e) =>
+                    setEnjazatekConfig((prev) => ({
+                      ...prev,
+                      instanceId: e.target.value,
+                    }))
+                  }
+                  variant="bordered"
+                  description="يربط التطبيق بقناة الواتساب الخاصة بك"
+                />
+                <Input
+                  label="اسم المرسل (Sender Name)"
+                  placeholder="الاسم الذي سيظهر للمستلمين"
+                  value={enjazatekConfig.senderName || ""}
+                  onChange={(e) =>
+                    setEnjazatekConfig((prev) => ({
+                      ...prev,
+                      senderName: e.target.value,
+                    }))
+                  }
+                  variant="bordered"
+                />
+                <Input
+                  label="عنوان واجهة API"
+                  placeholder="مثال: https://enjazatik.com/api"
+                  value={enjazatekConfig.baseUrl || ""}
+                  onChange={(e) =>
+                    setEnjazatekConfig((prev) => ({
+                      ...prev,
+                      baseUrl: e.target.value,
+                    }))
+                  }
+                  variant="bordered"
+                />
+                <Input
+                  label="رابط Webhook (اختياري)"
+                  placeholder="استخدمه لتلقي تقارير التسليم"
+                  value={enjazatekConfig.webhookUrl || ""}
+                  onChange={(e) =>
+                    setEnjazatekConfig((prev) => ({
+                      ...prev,
+                      webhookUrl: e.target.value,
+                    }))
+                  }
+                  variant="bordered"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3 mt-6">
+                <Button
+                  color="primary"
+                  onPress={handleSaveEnjazatek}
+                  isLoading={isSavingEnjazatek}
+                  className="min-w-[140px]"
+                >
+                  حفظ الإعدادات
+                </Button>
+                <Button
+                  variant="bordered"
+                  color="success"
+                  onPress={handleTestEnjazatek}
+                  isLoading={isTestingEnjazatek}
+                  className="min-w-[140px]"
+                >
+                  اختبار الاتصال
+                </Button>
+                <Button
+                  as="a"
+                  href={ENJAZATEK_DOC_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="light"
+                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                  endContent={<LinkIcon className="h-4 w-4" />}
+                >
+                  دليل الاستخدام
+                </Button>
+              </div>
+            </CardBody>
+          </>
+        )}
+      </Card>
+
       {/* جيديا */}
       <Card className="shadow-md">
         {/* إذا لم تكن هناك بيانات ولم يتم الضغط على "ابدأ الربط" */}

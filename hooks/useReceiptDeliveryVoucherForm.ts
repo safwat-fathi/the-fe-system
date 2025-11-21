@@ -27,6 +27,7 @@ interface UseReceiptDeliveryVoucherFormProps {
   startInEditMode?: boolean;
   vouchType: number; // 111 للاستلام، 222 للتسليم
   formMode?: "new" | "edit" | "preview";
+  categories?: any[];
 }
 
 export const useReceiptDeliveryVoucherForm = ({
@@ -45,6 +46,7 @@ export const useReceiptDeliveryVoucherForm = ({
   startInEditMode = false,
   vouchType,
   formMode = "new",
+  categories: initialCategories = [],
 }: UseReceiptDeliveryVoucherFormProps) => {
   const router = useRouter();
 
@@ -98,12 +100,48 @@ export const useReceiptDeliveryVoucherForm = ({
   const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>(
     [],
   );
-  const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
-  const [originalGoldDetails, setOriginalGoldDetails] = useState<
-    GVoucherDetail[]
-  >([]);
+
+  const categories = useMemo(() => initialCategories || [], [initialCategories]);
+  const categoryMap = useMemo(() => {
+    const map = new Map<number, any>();
+
+    categories.forEach((category: any) => {
+      const rawId = category?.id ?? category?.cat ?? category?.cat_id;
+      const parsedId = Number(rawId);
+
+      if (Number.isFinite(parsedId) && parsedId > 0) {
+        map.set(parsedId, category);
+      }
+    });
+
+    return map;
+  }, [categories]);
+
+  const getCategoryBoxId = (category: any): number | undefined => {
+    if (!category) return undefined;
+
+    const candidateKeys = [
+      category.box_id,
+      category.box,
+      category.cat_box,
+      category.gold_box,
+      category.default_box,
+      category.default_gold_box,
+    ];
+
+    for (const key of candidateKeys) {
+      const parsed = Number(key);
+
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    return undefined;
+  };
 
   const hasGeneratedVoucherNumber = useRef(false);
+  const previousVouchNotesRef = useRef<string>(voucher.vouch_notes || "");
 
   // Initialize component
   useEffect(() => {
@@ -175,6 +213,32 @@ export const useReceiptDeliveryVoucherForm = ({
       setDefaultCustomerOptions(options);
     }
   }, []);
+
+  useEffect(() => {
+    const currentNotes = voucher.vouch_notes || "";
+    const previousNotes = previousVouchNotesRef.current;
+
+    if (currentNotes === previousNotes) {
+      return;
+    }
+
+    previousVouchNotesRef.current = currentNotes;
+
+    setVoucherBoxes((prev) =>
+      prev.map((box) => {
+        const existingNote = box.vouch_notes || "";
+
+        if (!existingNote || existingNote === previousNotes) {
+          return {
+            ...box,
+            vouch_notes: currentNotes,
+          };
+        }
+
+        return box;
+      }),
+    );
+  }, [voucher.vouch_notes]);
 
   // تحديث voucher عند تغيير voucherData (خاصة عند تحميل سند موجود)
   useEffect(() => {
@@ -260,19 +324,28 @@ export const useReceiptDeliveryVoucherForm = ({
   // Load item options with pagination
   const loadItemOptions = async (
     search: string,
-    loadedOptions: any[],
-    { page }: { page: number },
+    loadedOptions: readonly any[] = [],
+    additional: { page?: number } = { page: 1 },
   ) => {
+    const trimmed = search.trim();
+    const page = additional?.page || 1;
+
     try {
-      const trimmed = search.trim();
+      // استخدام searchItems للحصول على جميع الأصناف بدون فلترة
       const result = await itemService.searchItems({
-        query: trimmed || "",
-        page: page || 1,
+        page,
         companyId: 1,
+        categoryId: 0, // جميع الفئات
+        itemTypeId: 0, // جميع الأنواع
+        itemStatus: 0, // جميع الحالات
       });
 
       if (!result || !result.results) {
-        return { options: [], hasMore: false, additional: { page: 1 } };
+        return {
+          options: [],
+          hasMore: false,
+          additional: { page: 1 },
+        };
       }
 
       const normalizedResults = result.results.map((item: any) => ({
@@ -290,6 +363,7 @@ export const useReceiptDeliveryVoucherForm = ({
         k: item.k ?? undefined,
       }));
 
+      // تحديث items في state
       setItems((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
         const additions = normalizedResults.filter(
@@ -299,13 +373,14 @@ export const useReceiptDeliveryVoucherForm = ({
         return additions.length > 0 ? [...prev, ...additions] : prev;
       });
 
+      // فلترة النتائج بناءً على البحث النصي
       const term = trimmed.toLowerCase();
       const options = normalizedResults
         .map((item: any) => {
           const itemCode = String(item.item_code ?? "").toLowerCase();
           const itemName = String(item.item_name ?? "").toLowerCase();
-          const codeMatch = itemCode.indexOf(term);
-          const nameMatch = itemName.indexOf(term);
+          const codeMatch = term ? itemCode.indexOf(term) : 0;
+          const nameMatch = term ? itemName.indexOf(term) : 0;
 
           return {
             value: item.id,
@@ -315,8 +390,16 @@ export const useReceiptDeliveryVoucherForm = ({
             nameMatch,
           };
         })
-        .filter((entry) => entry.codeMatch !== -1 || entry.nameMatch !== -1)
+        .filter((entry) => {
+          // إذا لم يكن هناك بحث، نعرض جميع الأصناف
+          if (!term) return true;
+          // إذا كان هناك بحث، نفلتر النتائج
+          return entry.codeMatch !== -1 || entry.nameMatch !== -1;
+        })
         .sort((a, b) => {
+          // إذا لم يكن هناك بحث، لا نحتاج للترتيب
+          if (!term) return 0;
+          
           const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
           const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
 
@@ -328,15 +411,11 @@ export const useReceiptDeliveryVoucherForm = ({
         })
         .map(({ value, label, item }) => ({ value, label, item }));
 
-      return {
-        options,
-        hasMore: Boolean(result.next),
-        additional: { page: result.next ? page + 1 : page },
-      };
+      return options;
     } catch (e) {
       console.error("Error loading item options:", e);
 
-      return { options: [], hasMore: false, additional: { page: 1 } };
+      return [];
     }
   };
 
@@ -499,6 +578,96 @@ export const useReceiptDeliveryVoucherForm = ({
             newDetail.g_weight = calculateCalibratedGold(weight, k, 875);
           } else {
             newDetail.g_weight = undefined;
+          }
+        }
+
+        if (field === "item_id" && value) {
+          const numericValue = Number(value);
+          const selectedItem = items.find(
+            (item) => Number(item.id) === numericValue,
+          );
+
+          if (selectedItem) {
+            const itemId = Number(selectedItem.id ?? numericValue) || numericValue;
+            newDetail.item_id = itemId;
+            newDetail.item_code =
+              selectedItem.item_code ??
+              selectedItem.code ??
+              newDetail.item_code ??
+              "";
+            newDetail.item_name =
+              selectedItem.item_name ??
+              selectedItem.name ??
+              newDetail.item_name ??
+              "";
+
+            const rawCategoryId =
+              selectedItem.cat ??
+              selectedItem.category ??
+              selectedItem.category_id ??
+              selectedItem.cat_id;
+            const categoryId = parseNumber(rawCategoryId);
+            const linkedCategory =
+              categoryId > 0 ? categoryMap.get(categoryId) : undefined;
+
+            let resolvedK = 0;
+
+            if (linkedCategory) {
+              resolvedK =
+                parseNumber(linkedCategory?.purity) ||
+                parseNumber((linkedCategory as any)?.cat_purity) ||
+                parseNumber(linkedCategory?.k) ||
+                parseNumber(linkedCategory?.gauge) ||
+                parseNumber((linkedCategory as any)?.carat);
+
+              const resolvedBoxId = getCategoryBoxId(linkedCategory);
+
+              if (
+                resolvedBoxId &&
+                (!newDetail.box_id || newDetail.box_id === 0)
+              ) {
+                newDetail.box_id = resolvedBoxId;
+              }
+            }
+
+            if (resolvedK <= 0) {
+              resolvedK =
+                parseNumber(selectedItem.k) ||
+                parseNumber((selectedItem as any).item_k) ||
+                parseNumber((selectedItem as any).purity) ||
+                parseNumber((selectedItem as any).carat);
+            }
+
+            if (resolvedK > 0) {
+              newDetail.k = resolvedK;
+            }
+
+            const itemWeight =
+              parseNumber(selectedItem.item_weight) ||
+              parseNumber(selectedItem.weight) ||
+              parseNumber((selectedItem as any).itemWeight);
+            if (itemWeight > 0) {
+              newDetail.weight = itemWeight;
+            }
+
+            const itemGoldWeight =
+              parseNumber((selectedItem as any).item_g_weight) ||
+              parseNumber(selectedItem.g_weight) ||
+              parseNumber((selectedItem as any).gWeight);
+            if (itemGoldWeight > 0) {
+              newDetail.g_weight = parseFloat(itemGoldWeight.toFixed(5));
+            } else if (
+              parseNumber(newDetail.weight) > 0 &&
+              parseNumber(newDetail.k) > 0
+            ) {
+              newDetail.g_weight = calculateCalibratedGold(
+                parseNumber(newDetail.weight),
+                parseNumber(newDetail.k),
+                875,
+              );
+            } else {
+              newDetail.g_weight = undefined;
+            }
           }
         }
 
@@ -704,13 +873,6 @@ export const useReceiptDeliveryVoucherForm = ({
         const realId = result.data.id;
         const realVouchId = result.data.vouch_id;
 
-        console.log("Voucher saved successfully:", {
-          realId,
-          realVouchId,
-          resultData: result.data,
-          vouchType,
-        });
-
         setVoucher((prev) => ({
           ...prev,
           commit: true,
@@ -725,8 +887,6 @@ export const useReceiptDeliveryVoucherForm = ({
 
         // استخدام id أولاً، وإذا لم يكن موجوداً، استخدام vouch_id
         const targetId = realId || realVouchId;
-        
-        console.log("Redirecting to:", `${basePath}/${targetId}?mode=preview`);
         
         if (targetId) {
           // إضافة delay صغير للتأكد من أن البيانات تم حفظها في قاعدة البيانات

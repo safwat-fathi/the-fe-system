@@ -28,8 +28,13 @@ const getExistingBalanceVoucher = cache(async () => {
         ? vouchersResponse.data
         : [];
 
-      // إرجاع أول قيد افتتاحي موجود
-      return vouchers.length > 0 ? vouchers[0] : null;
+      // البحث عن أول قيد افتتاحي (vouch_type = 0) والتأكد من ذلك
+      const balanceVoucher = vouchers.find(
+        (v: any) => v?.vouch_type === 0 || v?.vouch_type === "0",
+      );
+
+      // إرجاع أول قيد افتتاحي موجود فقط
+      return balanceVoucher || null;
     }
 
     return null;

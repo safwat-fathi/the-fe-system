@@ -124,6 +124,10 @@ export function validateVoucherBalance(
   voucherBoxes: Array<{ amount: number }> = [],
   vouchType: number,
 ): { isValid: boolean; error?: string } {
+  if (vouchType === 0) {
+    return { isValid: true };
+  }
+
   const totals = calculateVoucherTotals(details);
 
   // سندات القبض والصرف (1, 2, 111, 222): التحقق من توازن الصناديق مع التفاصيل فقط

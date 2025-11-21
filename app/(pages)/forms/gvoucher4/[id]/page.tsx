@@ -284,8 +284,8 @@ export default async function CustomerReceiptVoucherEditPage({
       amount: parseFloat(String(boxData.vouch_amt || boxData.amount || 0)),
       vouch_notes:
         boxData.box_note || boxData.vouch_notes || boxData.notes || "",
-      cost_id: costId,
-      inv_id: invId,
+      cost_id: costId ?? undefined,
+      inv_id: invId ?? undefined,
       close_weight: parseFloat(String(boxData.close_weight || 0)) || undefined,
       cr_date: boxData.cr_date || new Date().toISOString(),
     };
@@ -359,6 +359,7 @@ export default async function CustomerReceiptVoucherEditPage({
         voucherData={formattedVoucher}
         voucherRecordId={targetVoucher.id}
         voucherTypes={formData.voucherTypes}
+        categories={formData.categories || []}
       />
     </div>
   );

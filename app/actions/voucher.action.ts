@@ -17,7 +17,6 @@ export {
   createVoucherAction,
   updateVoucherAction,
   deleteVoucherAction,
-  createGLTransactionRecords,
 } from "./voucher/index";
 
 // Note: getCurrentUsername uses next/headers and should only be imported in Server Components
