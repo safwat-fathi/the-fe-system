@@ -91,6 +91,7 @@ interface Props {
   // التاريخ والوقت
   invoiceDate?: string;
   setInvoiceDate?: (val: string) => void;
+  onFocusNextSection?: () => boolean;
 }
 
 export default function InvoiceSelectors({
@@ -142,6 +143,7 @@ export default function InvoiceSelectors({
   // التاريخ والوقت
   invoiceDate,
   setInvoiceDate,
+  onFocusNextSection,
 }: Props) {
   const selectorsRef = useRef<HTMLDivElement | null>(null);
   const customerSelectRef = useRef<SelectInstance<CustomerOption> | null>(null);
@@ -180,6 +182,10 @@ export default function InvoiceSelectors({
         }
       }
       return false;
+    },
+    onBoundaryFocus: (direction) => {
+      if (direction !== 1) return false;
+      return onFocusNextSection?.() ?? false;
     },
   });
 
@@ -710,7 +716,10 @@ export default function InvoiceSelectors({
         </div>
 
         {/* مربع معلومات العنوان */}
-        <div className="bg-white border border-gray-200 rounded-lg">
+        <div
+          tabIndex={-1}
+          className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+        >
           {/* Header with Toggle Button */}
           <div
             className="flex items-center justify-between p-2 md:p-3 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -721,6 +730,7 @@ export default function InvoiceSelectors({
               <span>معلومات العنوان</span>
             </h3>
             <button
+              tabIndex={-1}
               className="text-gray-600 hover:text-gray-800 transition-transform duration-200"
               style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
             >

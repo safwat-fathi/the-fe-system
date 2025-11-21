@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 import InvoiceSelectors from "@/app/(pages)/forms/invoices/components/InvoiceSelectors";
-import InvoiceItemTable from "@/app/(pages)/forms/invoices/components/InvoiceItemTable";
+import InvoiceItemTable, {
+  type InvoiceItemTableHandle,
+} from "@/app/(pages)/forms/invoices/components/InvoiceItemTable";
 import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
 import useInvoiceForm from "@/app/(pages)/forms/invoices/hooks/useInvoiceForm";
 import {
@@ -139,6 +141,7 @@ export default function InvoiceClientPage({
     context: FORM_CONTEXT_MAP[invoiceType],
   });
   const allowEditing = formMode === "edit" || isNewInvoice;
+  const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
 
   useEffect(() => {
     if (allowEditing && (startInEditMode || formMode === "edit")) {
@@ -480,9 +483,13 @@ export default function InvoiceClientPage({
         street={form.street}
         onBarcodeSearch={() => handleBarcodeSearch()}
         onInvoiceSelect={() => {}}
+        onFocusNextSection={() =>
+          itemTableRef.current?.focusFirstRow() ?? false
+        }
       />
 
       <InvoiceItemTable
+        ref={itemTableRef}
         categories={categories}
         goldPrice={goldPrice ?? maybeGoldPrice ?? null}
         homePurity={homePurity}
