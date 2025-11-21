@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import clsx from "clsx";
-
 import toast from "react-hot-toast";
 
 import InvoiceSelectors from "@/app/(pages)/forms/invoices/components/InvoiceSelectors";
-import InvoiceItemTable from "@/app/(pages)/forms/invoices/components/InvoiceItemTable";
-import InvoiceTotalsActions from "@/app/(pages)/forms/invoices/components/InvoiceTotalsActions";
-import { Invoice, InvoiceDetail } from "@/types/models/invoice";
+import InvoiceItemTable, {
+  type InvoiceItemTableHandle,
+} from "@/app/(pages)/forms/invoices/components/InvoiceItemTable";
+import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
 import useInvoiceForm from "@/app/(pages)/forms/invoices/hooks/useInvoiceForm";
+import {
+  hydrateInvoiceTotalsStore,
+  resetInvoiceTotalsStore,
+} from "@/stores/invoiceTotalsStore";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 
@@ -24,14 +27,11 @@ const FORM_CONTEXT_MAP: Record<
   "purchase-return": "purchase_return",
 };
 
-const SELECTOR_TYPE_MAP: Record<
-  InvoicePageType,
-  "sale" | "purchase" | "sale_return" | "purchase_return"
-> = {
-  sale: "sale",
-  purchase: "purchase",
-  "sale-return": "sale_return",
-  "purchase-return": "purchase_return",
+const SELECTOR_TYPE_MAP: Record<InvoicePageType, TransTypes> = {
+  sale: TransTypes.SALES,
+  purchase: TransTypes.PURCHASE,
+  "sale-return": TransTypes.SALES_RETURN,
+  "purchase-return": TransTypes.PURCHASE_RETURN,
 };
 
 const TOTALS_TYPE_MAP: Record<
@@ -44,7 +44,7 @@ const TOTALS_TYPE_MAP: Record<
   "purchase-return": "purchase_return",
 };
 
-interface InvoiceClientPageProps {
+export interface InvoiceClientPageProps {
   invoiceData: Invoice | null;
   invoiceDetailsData: InvoiceDetail[];
   isNewInvoice: boolean;
@@ -99,7 +99,6 @@ export default function InvoiceClientPage({
     dispatchForm,
     invoiceItems,
     setInvoiceItems,
-    makeEmptyRow,
 
     // prices & settings
     goldPrice,
@@ -118,24 +117,13 @@ export default function InvoiceClientPage({
     setSearchValue,
 
     // helpers & actions
-    frac,
     computeTotals,
     handleBarcodeSearch,
     saveInvoice,
     previewInvoice,
-    handleInvoiceSearch,
     handleItemRemoved,
-    navigateToInvoice,
 
     // manual totals
-    autoTotalValue,
-    autoTotalWages,
-    manualTotalValue,
-    manualTotalWages,
-    useManualTotals,
-    setUseManualTotals,
-    handleManualTotalChange,
-    resetManualTotals,
 
     // other
     goldPrice: maybeGoldPrice, // already have goldPrice but keep alias if needed
@@ -153,6 +141,7 @@ export default function InvoiceClientPage({
     context: FORM_CONTEXT_MAP[invoiceType],
   });
   const allowEditing = formMode === "edit" || isNewInvoice;
+  const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
 
   useEffect(() => {
     if (allowEditing && (startInEditMode || formMode === "edit")) {
@@ -166,30 +155,37 @@ export default function InvoiceClientPage({
     newInvoiceHref ??
     `/forms/invoices?type=${encodeURIComponent(invoiceType)}&mode=new`;
 
-  const buildUrl = (updates: Record<string, string | null | undefined>) => {
-    const sp = new URLSearchParams(searchParams?.toString() || "");
-    // apply updates
-    Object.entries(updates).forEach(([k, v]) => {
-      if (v == null || v === "") sp.delete(k);
-      else sp.set(k, v);
-    });
-    // ensure we never keep legacy edit=true when mode is managed
-    if (updates.mode) sp.delete("edit");
-    return `${pathname}?${sp.toString()}`;
-  };
+  const buildUrl = useCallback(
+    (updates: Record<string, string | null | undefined>) => {
+      const sp = new URLSearchParams(searchParams?.toString() || "");
 
-  const handleSaveAndNavigate = async () => {
+      // apply updates
+      Object.entries(updates).forEach(([k, v]) => {
+        if (v == null || v === "") sp.delete(k);
+        else sp.set(k, v);
+      });
+      // ensure we never keep legacy edit=true when mode is managed
+      if (updates.mode) sp.delete("edit");
+
+      return `${pathname}?${sp.toString()}`;
+    },
+    [pathname, searchParams],
+  );
+
+  const handleSaveAndNavigate = useCallback(async () => {
     const result = await saveInvoice();
+
     if (!result || result.ok !== true) return;
 
     const invNumber = String(result.invoiceNumber);
     // Prefer inv_id; also remove id to avoid ambiguity
     const url = buildUrl({ mode: "preview", inv_id: invNumber, id: null });
+
     router.replace(url);
-  };
+  }, [buildUrl, router, saveInvoice]);
 
   // Navigate to entered invoice id on search
-  const handleSearchByInvoiceId = () => {
+  const handleSearchByInvoiceId = useCallback(() => {
     if (
       (invoiceData?.last_invoice_id &&
         searchNumber > invoiceData.last_invoice_id) ||
@@ -197,10 +193,12 @@ export default function InvoiceClientPage({
         searchNumber < invoiceData.first_invoice_id)
     ) {
       toast.error("هذه الفاتورة غير موجودة.");
+
       return;
     }
-		
+
     const rawSearch = (searchNumber ?? "").toString().trim();
+
     if (!rawSearch) return;
 
     // normalize to integer-like string
@@ -210,25 +208,24 @@ export default function InvoiceClientPage({
 
     // Set mode to preview and update only the id param; clear inv_id to avoid ambiguity
     const url = buildUrl({ mode: "preview", id, inv_id: null });
+
     router.replace(url);
-  };
+  }, [buildUrl, invoiceData, router, searchNumber]);
 
-  // join any derived totals via computeTotals (hook exposes computeTotals)
-  const totals = useMemo(() => {
-    return computeTotals(form.pay_type, invoiceItems);
-  }, [computeTotals, form.pay_type, invoiceItems]);
+  const resolvePaginatedInvoiceHref = useCallback(
+    (inv_id: string | null) => {
+      if (!inv_id) return null;
 
-  const resolvePaginatedInvoiceHref = (inv_id: string | null) => {
-    if (!inv_id) return null;
+      const searchParams = new URLSearchParams({
+        type: invoiceType,
+        mode: "preview",
+        id: String(inv_id),
+      });
 
-    const searchParams = new URLSearchParams({
-      type: invoiceType,
-      mode: "preview",
-      id: String(inv_id),
-    });
-
-    return `${pathname}?${searchParams.toString()}`;
-  };
+      return `${pathname}?${searchParams.toString()}`;
+    },
+    [invoiceType, pathname],
+  );
 
   // const resolvedPrevInvoiceHref = () => {
   // 	if (!invoiceData?.previous_invoice_id) return null;
@@ -266,23 +263,123 @@ export default function InvoiceClientPage({
   //   return `${pathname}?${searchParams.toString()}`;
   // };
 
-  const metadata = invoiceData
-    ? {
-        nextInvoiceHref: resolvePaginatedInvoiceHref(
-          invoiceData?.next_invoice_id,
-        ),
-        prevInvoiceHref: resolvePaginatedInvoiceHref(
-          invoiceData?.previous_invoice_id,
-        ),
-        lastInvoiceHref: resolvePaginatedInvoiceHref(
-          invoiceData?.last_invoice_id,
-        ),
-        firstInvoiceHref: resolvePaginatedInvoiceHref(
-          invoiceData?.first_invoice_id,
-        ),
-        totalInvoices: invoiceData?.invoices_count,
-      }
-    : null;
+  const metadata = useMemo(() => {
+    if (!invoiceData) return null;
+
+    return {
+      nextInvoiceHref: resolvePaginatedInvoiceHref(
+        invoiceData?.next_invoice_id,
+      ),
+      prevInvoiceHref: resolvePaginatedInvoiceHref(
+        invoiceData?.previous_invoice_id,
+      ),
+      lastInvoiceHref: resolvePaginatedInvoiceHref(
+        invoiceData?.last_invoice_id,
+      ),
+      firstInvoiceHref: resolvePaginatedInvoiceHref(
+        invoiceData?.first_invoice_id,
+      ),
+      totalInvoices: invoiceData?.invoices_count,
+    };
+  }, [invoiceData, resolvePaginatedInvoiceHref]);
+
+  const handleStartEdit = useCallback(() => {
+    setIsEditing(true);
+    const invId = form.inv_id ? String(form.inv_id) : undefined;
+    const url = buildUrl({ mode: "edit", inv_id: invId });
+
+    router.replace(url);
+  }, [buildUrl, form.inv_id, router, setIsEditing]);
+
+  // join any derived totals via computeTotals (hook exposes computeTotals)
+  const totals = useMemo(() => {
+    return computeTotals(form.pay_type, invoiceItems);
+  }, [computeTotals, form.pay_type, invoiceItems]);
+
+  const { totalAmount, netAmount, totalDiscount, taxAmount, totalGWeight } =
+    totals;
+
+  const formattedDateTime = useMemo(() => {
+    if (!form.inv_date) return "";
+
+    return new Date(form.inv_date).toLocaleString("ar-EG");
+  }, [form.inv_date]);
+
+  const invoiceNumber = form.inv_id ? String(form.inv_id) : "";
+
+  const commitFieldSetter = useCallback(
+    (value: boolean) =>
+      dispatchForm({ type: "SET_FIELD", field: "commit", value }),
+    [dispatchForm],
+  );
+
+  const printFieldSetter = useCallback(
+    (value: boolean) =>
+      dispatchForm({ type: "SET_FIELD", field: "print", value }),
+    [dispatchForm],
+  );
+
+  useEffect(() => {
+    hydrateInvoiceTotalsStore({
+      metadata,
+      invoiceNumber,
+      formattedDateTime,
+      saveInvoice: handleSaveAndNavigate,
+      previewInvoice,
+      totalAmount,
+      taxAmount: taxAmount ?? 0,
+      netAmount,
+      totalDiscount,
+      commit: form.commit,
+      setCommit: commitFieldSetter,
+      print: form.print,
+      setPrint: printFieldSetter,
+      isDone: form.is_done,
+      isOk: form.is_ok,
+      isEditing,
+      onEdit: handleStartEdit,
+      invoiceType: totalsInvoiceType,
+      searchNumber,
+      setSearchNumber,
+      onInvoiceSearch: handleSearchByInvoiceId,
+      totalGWeight: totalGWeight ?? 0,
+      paymentMethod: paymentMethod ?? "cash",
+      newInvoiceHref: resolvedNewInvoiceHref,
+      isNewInvoice,
+    });
+  }, [
+    metadata,
+    invoiceNumber,
+    formattedDateTime,
+    handleSaveAndNavigate,
+    previewInvoice,
+    totalAmount,
+    taxAmount,
+    netAmount,
+    totalDiscount,
+    form.commit,
+    commitFieldSetter,
+    form.print,
+    printFieldSetter,
+    form.is_done,
+    form.is_ok,
+    isEditing,
+    handleStartEdit,
+    totalsInvoiceType,
+    searchNumber,
+    setSearchNumber,
+    handleSearchByInvoiceId,
+    totalGWeight,
+    paymentMethod,
+    resolvedNewInvoiceHref,
+    isNewInvoice,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      resetInvoiceTotalsStore();
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -296,161 +393,114 @@ export default function InvoiceClientPage({
   }
 
   return (
-    <InvoiceTotalsActions
-      metadata={metadata}
-      autoTotalValue={autoTotalValue}
-      autoTotalWages={autoTotalWages}
-      canEdit={allowEditing}
-      commit={form.commit}
-      isNewInvoice={isNewInvoice}
-      formattedDateTime={new Date(form.inv_date).toLocaleString("ar-EG")}
-      invoiceNumber={form.inv_id}
-      invoiceType={totalsInvoiceType}
-      isEditing={isEditing}
-      manualTotalValue={manualTotalValue}
-      manualTotalWages={manualTotalWages}
-      navigateToInvoice={navigateToInvoice}
-      netAmount={totals.netAmount}
-      newInvoiceHref={resolvedNewInvoiceHref}
-      paymentMethod={paymentMethod}
-      previewInvoice={previewInvoice}
-      print={form.print}
-      isDone={form.is_done}
-      isOk={form.is_ok}
-      saveInvoice={handleSaveAndNavigate}
-      searchNumber={searchNumber}
-      setCommit={(value: boolean) =>
-        dispatchForm({ type: "SET_FIELD", field: "commit", value })
-      }
-      setPrint={(value: boolean) =>
-        dispatchForm({ type: "SET_FIELD", field: "print", value })
-      }
-      setSearchNumber={setSearchNumber}
-      taxAmount={totals.taxAmount}
-      totalAmount={totals.totalAmount}
-      totalDiscount={totals.totalDiscount}
-      totalGWeight={totals.totalGWeight}
-      totalRecords={1}
-      totalTax={totals.taxAmount ?? 0}
-      totalValueTax={totals.taxAmount ?? 0}
-      totalWagesTax={0}
-      useManualTotals={useManualTotals}
-      onEdit={() => {
-        setIsEditing(true);
-        const invId = form.inv_id ? String(form.inv_id) : undefined;
-        const url = buildUrl({ mode: "edit", inv_id: invId });
-        router.replace(url);
-      }}
-      onInvoiceSearch={handleSearchByInvoiceId}
-      onManualTotalChange={handleManualTotalChange}
-      onResetManualTotals={resetManualTotals}
-      onUseManualTotalsChange={setUseManualTotals}
-    >
-      <div className="space-y-2">
-        <InvoiceSelectors
-          area={form.area}
-          buildNo={form.build_no}
-          city={form.city}
-          crNo={form.cr_no}
-          customers={customers}
-          employee={employee}
-          goldPrice={goldPrice}
-          goldPriceValue={goldPrice ?? maybeGoldPrice}
-          gov={form.gov}
-          handlingMethod={handlingMethod}
-          invoiceType={selectorsInvoiceType}
-          isEditing={isEditing}
-          mobileMethod={mobileMethod}
-          note={form.inv_notes}
-          payType={form.pay_type}
-          paymentMethod={paymentMethod}
-          postCode={form.post_code}
-          postNo={form.post_no}
-          referenceNumber={form.ref_no}
-          searchValue={searchValue}
-          selectedCustomer={form.cust_code}
-          selectedCustomerName={form.cust_name}
-          setArea={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "area", value: v })
-          }
-          setBuildNo={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "build_no", value: v })
-          }
-          setCity={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "city", value: v })
-          }
-          setCrNo={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "cr_no", value: v })
-          }
-          setEmployee={setEmployee}
-          setGov={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "gov", value: v })
-          }
-          setHandlingMethod={setHandlingMethod}
-          setMobileMethod={setMobileMethod}
-          setNote={(v) =>
-            dispatchForm({
-              type: "SET_FIELD",
-              field: "inv_notes",
-              value: v,
-            })
-          }
-          setPayType={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "pay_type", value: v })
-          }
-          setPaymentMethod={setPaymentMethod}
-          setPostCode={(v) =>
-            dispatchForm({
-              type: "SET_FIELD",
-              field: "post_code",
-              value: v,
-            })
-          }
-          setPostNo={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "post_no", value: v })
-          }
-          setReferenceNumber={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "ref_no", value: v })
-          }
-          setSearchValue={setSearchValue}
-          setSelectedCustomer={(v) =>
-            dispatchForm({
-              type: "SET_FIELD",
-              field: "cust_code",
-              value: v !== null && v !== undefined ? String(v) : null,
-            })
-          }
-          setSelectedCustomerName={(value) =>
-            dispatchForm({
-              type: "SET_FIELD",
-              field: "cust_name",
-              value,
-            })
-          }
-          setStreet={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "street", value: v })
-          }
-          setVatNumber={(v) =>
-            dispatchForm({ type: "SET_FIELD", field: "vat_no", value: v })
-          }
-          street={form.street}
-          onBarcodeSearch={() => handleBarcodeSearch()}
-          onInvoiceSelect={() => {}}
-        />
+    <div className="space-y-2">
+      <InvoiceSelectors
+        area={form.area}
+        buildNo={form.build_no}
+        city={form.city}
+        crNo={form.cr_no}
+        customers={customers}
+        employee={employee}
+        goldPrice={goldPrice}
+        goldPriceValue={goldPrice ?? maybeGoldPrice}
+        gov={form.gov}
+        handlingMethod={handlingMethod}
+        invoiceType={selectorsInvoiceType}
+        isEditing={isEditing}
+        mobileMethod={mobileMethod}
+        note={form.inv_notes}
+        payType={form.pay_type}
+        paymentMethod={paymentMethod}
+        postCode={form.post_code}
+        postNo={form.post_no}
+        referenceNumber={form.ref_no}
+        searchValue={searchValue}
+        selectedCustomer={form.cust_code}
+        selectedCustomerName={form.cust_name}
+        setArea={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "area", value: v })
+        }
+        setBuildNo={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "build_no", value: v })
+        }
+        setCity={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "city", value: v })
+        }
+        setCrNo={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "cr_no", value: v })
+        }
+        setEmployee={setEmployee}
+        setGov={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "gov", value: v })
+        }
+        setHandlingMethod={setHandlingMethod}
+        setMobileMethod={setMobileMethod}
+        setNote={(v) =>
+          dispatchForm({
+            type: "SET_FIELD",
+            field: "inv_notes",
+            value: v,
+          })
+        }
+        setPayType={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "pay_type", value: v })
+        }
+        setPaymentMethod={setPaymentMethod}
+        setPostCode={(v) =>
+          dispatchForm({
+            type: "SET_FIELD",
+            field: "post_code",
+            value: v,
+          })
+        }
+        setPostNo={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "post_no", value: v })
+        }
+        setReferenceNumber={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "ref_no", value: v })
+        }
+        setSearchValue={setSearchValue}
+        setSelectedCustomer={(v) =>
+          dispatchForm({
+            type: "SET_FIELD",
+            field: "cust_code",
+            value: v !== null && v !== undefined ? String(v) : null,
+          })
+        }
+        setSelectedCustomerName={(value) =>
+          dispatchForm({
+            type: "SET_FIELD",
+            field: "cust_name",
+            value,
+          })
+        }
+        setStreet={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "street", value: v })
+        }
+        setVatNumber={(v) =>
+          dispatchForm({ type: "SET_FIELD", field: "vat_no", value: v })
+        }
+        street={form.street}
+        onBarcodeSearch={() => handleBarcodeSearch()}
+        onInvoiceSelect={() => {}}
+        onFocusNextSection={() =>
+          itemTableRef.current?.focusFirstRow() ?? false
+        }
+      />
 
-        <InvoiceItemTable
-          categories={categories}
-          goldPrice={goldPrice ?? maybeGoldPrice ?? null}
-          homePurity={homePurity}
-          invoiceItems={invoiceItems}
-          isEditing={isEditing}
-          items={items}
-          payType={form.pay_type}
-          setInvoiceItems={setInvoiceItems}
-          setItems={setItems}
-          onItemRemoved={handleItemRemoved}
-        />
-      </div>
-    </InvoiceTotalsActions>
+      <InvoiceItemTable
+        ref={itemTableRef}
+        categories={categories}
+        goldPrice={goldPrice ?? maybeGoldPrice ?? null}
+        homePurity={homePurity}
+        invoiceItems={invoiceItems}
+        isEditing={isEditing}
+        items={items}
+        payType={form.pay_type}
+        setInvoiceItems={setInvoiceItems}
+        setItems={setItems}
+        onItemRemoved={handleItemRemoved}
+      />
+    </div>
   );
 }

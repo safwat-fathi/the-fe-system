@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, type FocusEvent } from "react";
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+  type FocusEvent,
+} from "react";
 import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 
@@ -51,18 +58,25 @@ interface Props {
   onItemRemoved?: (removedItem: InvoiceDetail) => void;
 }
 
-export default function InvoiceItemTable({
-  items,
-  setItems,
-  invoiceItems,
-  setInvoiceItems,
-  goldPrice,
+export type InvoiceItemTableHandle = {
+  focusFirstRow: () => boolean;
+};
+
+const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(function InvoiceItemTable(
+  {
+    items,
+    setItems,
+    invoiceItems,
+    setInvoiceItems,
+    goldPrice,
   payType,
-  categories,
-  homePurity,
-  isEditing,
-  onItemRemoved,
-}: Props) {
+    categories,
+    homePurity,
+    isEditing,
+    onItemRemoved,
+  },
+  ref,
+) {
   // number of decimals per field
   const weightDigits = useFractions("weight") as number;
   const gWeightDigits = useFractions("g_weight") as number;
@@ -545,11 +559,22 @@ export default function InvoiceItemTable({
     setInvoiceItems(updated);
   };
 
-  const { setInputRef, handleKeyDown } = useEnterKeyNavigation({
+  const { setInputRef, handleKeyDown, focusFirstInRow } = useEnterKeyNavigation({
     rows: invoiceItems,
     rowHasValue: rowHasItem,
     onAddRow: addRow,
   });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusFirstRow: () => {
+        if (!isEditing) return false;
+        return focusFirstInRow(0);
+      },
+    }),
+    [focusFirstInRow, isEditing],
+  );
 
   return (
     <div>
@@ -1232,4 +1257,6 @@ export default function InvoiceItemTable({
       </button>
     </div>
   );
-}
+});
+
+export default InvoiceItemTable;

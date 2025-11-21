@@ -1,8 +1,9 @@
-import { cache } from "react";
+import { Suspense, cache } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import InvoiceClientPage from "@/app/(pages)/forms/invoices/InvoiceClientPage";
+import InvoiceClientPageWrapper from "@/app/(pages)/forms/invoices/InvoiceClientPageWrapper";
+import InvoiceTotalsActions from "@/app/(pages)/forms/invoices/components/InvoiceTotalsActions";
 import Breadcrumb from "@/components/Breadcrumb";
 import invoiceFormDataService from "@/services/bff/invoice-form-data.service";
 import invoiceService from "@/services/api/invoice.service";
@@ -181,23 +182,41 @@ export default async function InvoicePage({
           },
         ]}
       />
-      <InvoiceClientPage
-        key={`${invoiceType}-${mode}-${invoiceData?.id ?? "new"}`}
-        boxes={formData.boxes}
-        categories={formData.categories}
-        customers={formData.customers}
-        formMode={mode}
-        goldPrice={formData.goldPrice}
-        homePurity={formData.homePurity}
-        invoiceData={invoiceData}
-        invoiceDetailsData={invoiceDetails}
-        invoiceRecordId={invoiceData?.id ?? null}
-        invoiceType={invoiceType}
-        isNewInvoice={mode === "new"}
-        items={formData.items}
-        newInvoiceHref={newInvoiceHref}
-        startInEditMode={startInEdit || mode === "edit"}
-      />
+
+      <div className="space-y-4">
+        <InvoiceTotalsActions />
+        <Suspense
+          key={`${invoiceType}-${mode}-${invoiceData?.id ?? "new"}`}
+          fallback={<InvoiceFormFallback />}
+        >
+          <InvoiceClientPageWrapper
+            boxes={formData.boxes}
+            categories={formData.categories}
+            customers={formData.customers}
+            formMode={mode}
+            goldPrice={formData.goldPrice}
+            homePurity={formData.homePurity}
+            invoiceData={invoiceData}
+            invoiceDetailsData={invoiceDetails}
+            invoiceRecordId={invoiceData?.id ?? null}
+            invoiceType={invoiceType}
+            isNewInvoice={mode === "new"}
+            items={formData.items}
+            newInvoiceHref={newInvoiceHref}
+            startInEditMode={startInEdit || mode === "edit"}
+          />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+function InvoiceFormFallback() {
+  return (
+    <div className="p-4 my-4 bg-white rounded-lg shadow-sm border border-gray-200 min-h-[600px] flex items-center justify-center">
+      <div className="flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
     </div>
   );
 }
