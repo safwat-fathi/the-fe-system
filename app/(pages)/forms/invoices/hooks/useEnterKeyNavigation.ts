@@ -22,6 +22,7 @@ interface UseEnterKeyNavigationResult {
     options?: HandleKeyDownOptions,
   ) => void;
   focusFirstInRow: (rowIndex: number) => boolean;
+  focusNode: (node: NullableInput) => void;
 }
 
 export default function useEnterKeyNavigation<Row>(
@@ -32,7 +33,54 @@ export default function useEnterKeyNavigation<Row>(
 
   const focusNode = (node: NullableInput) => {
     try {
-      node?.focus?.();
+      if (!node) return;
+      
+      // إذا كان HTMLInputElement أو HTMLSelectElement مباشر
+      if ((node as any) instanceof HTMLInputElement || (node as any) instanceof HTMLSelectElement) {
+        (node as HTMLInputElement | HTMLSelectElement).focus();
+        return;
+      }
+      
+      // محاولة التركيز مباشرة
+      if (typeof (node as any).focus === 'function') {
+        (node as any).focus();
+        return;
+      }
+      
+      // البحث عن input داخل العنصر
+      const nodeElement = node as HTMLElement;
+      if (nodeElement) {
+        // البحث عن input باستخدام inputId
+        const inputId = nodeElement.id || nodeElement.getAttribute?.('id');
+        if (inputId) {
+          const foundInput = document.getElementById(inputId) as HTMLInputElement;
+          if (foundInput) {
+            foundInput.focus();
+            return;
+          }
+        }
+        
+        // البحث عن input داخل العنصر
+        const inputInside = nodeElement.querySelector?.('input') as HTMLInputElement;
+        if (inputInside) {
+          inputInside.focus();
+          return;
+        }
+        
+        // البحث عن combobox button
+        const combobox = nodeElement.closest?.('[role="combobox"]') as HTMLElement;
+        if (combobox) {
+          combobox.focus();
+          return;
+        }
+        
+        // محاولة أخيرة: البحث عن أي input قابل للتركيز
+        const anyInput = nodeElement.querySelector?.('input, select, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+        if (anyInput && typeof anyInput.focus === 'function') {
+          anyInput.focus();
+          return;
+        }
+      }
     } catch {
       // ignore focus failures
     }
@@ -83,8 +131,20 @@ export default function useEnterKeyNavigation<Row>(
       { isLastCol, allowEnterDefaultWhenRowMissing }: HandleKeyDownOptions = {},
     ) => {
       const key = event.key;
-      if (key !== "Tab" && key !== "Enter") return;
-      if (key === "Tab" && (event as any).shiftKey) return;
+      const target = event.target as HTMLElement | null;
+      
+      // التحقق من أننا لسنا داخل SearchableSelect listbox
+      const isInListbox = target?.closest('[role="listbox"]');
+      if (isInListbox) {
+        return; // نترك الأسهم تعمل داخل القائمة
+      }
+
+      // التحقق من أننا لسنا في combobox مفتوح
+      const selectButton = target?.closest('[role="combobox"]');
+      const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+      if (isExpanded && (key === "ArrowDown" || key === "ArrowUp")) {
+        return; // نترك الأسهم تعمل داخل القائمة المفتوحة
+      }
 
       const rowRefs = inputRefs.current[rowIndex] || [];
       const lastColIndex = rowRefs.length - 1;
@@ -93,13 +153,112 @@ export default function useEnterKeyNavigation<Row>(
       const isLastRow = rowIndex === rows.length - 1;
       const hasValue = rowHasValue(rows[rowIndex]);
 
+      // معالجة Arrow Keys للتنقل (RTL: اليمين = السابق، اليسار = التالي)
+      if (key === "ArrowRight") {
+        event.preventDefault();
+        
+        if (colIndex > 0) {
+          // الانتقال للحقل السابق في نفس الصف (في RTL، السهم الأيمن = السابق)
+          const prevInRow = rowRefs[colIndex - 1];
+          if (prevInRow) {
+            focusNode(prevInRow);
+            // تحديد النص إذا كان input
+            setTimeout(() => {
+              const input = prevInRow as HTMLInputElement;
+              if (input && input.select && typeof input.select === 'function') {
+                input.select();
+              }
+            }, 0);
+          }
+        }
+        return;
+      }
+
+      if (key === "ArrowLeft") {
+        event.preventDefault();
+        
+        if (!atLastCol) {
+          // الانتقال للحقل التالي في نفس الصف (في RTL، السهم الأيسر = التالي)
+          const nextInRow = rowRefs[colIndex + 1];
+          if (nextInRow) {
+            focusNode(nextInRow);
+            // تحديد النص إذا كان input
+            setTimeout(() => {
+              const input = nextInRow as HTMLInputElement;
+              if (input && input.select && typeof input.select === 'function') {
+                input.select();
+              }
+            }, 0);
+          }
+        }
+        return;
+      }
+
+      if (key === "ArrowDown") {
+        event.preventDefault(); // منع زيادة القيمة في input number
+        
+        if (!isLastRow) {
+          // الانتقال للحقل في نفس العمود في الصف التالي
+          const nextRowRefs = inputRefs.current[rowIndex + 1] || [];
+          const sameColInNextRow = nextRowRefs[colIndex];
+          if (sameColInNextRow) {
+            focusNode(sameColInNextRow);
+            // تحديد النص إذا كان input
+            setTimeout(() => {
+              const input = sameColInNextRow as HTMLInputElement;
+              if (input && input.select && typeof input.select === 'function') {
+                input.select();
+              }
+            }, 0);
+          } else {
+            // إذا لم يوجد، ننتقل لأول حقل في الصف التالي
+            focusFirstInRow(rowIndex + 1);
+          }
+        } else {
+          // إذا كان آخر صف، نضيف صف جديد
+          onAddRow();
+          focusNextRowFirstCell(rowIndex + 1);
+        }
+        return;
+      }
+
+      if (key === "ArrowUp") {
+        event.preventDefault(); // منع تقليل القيمة في input number
+        
+        if (rowIndex > 0) {
+          // الانتقال للحقل في نفس العمود في الصف السابق
+          const prevRowRefs = inputRefs.current[rowIndex - 1] || [];
+          const sameColInPrevRow = prevRowRefs[colIndex];
+          if (sameColInPrevRow) {
+            focusNode(sameColInPrevRow);
+            // تحديد النص إذا كان input
+            setTimeout(() => {
+              const input = sameColInPrevRow as HTMLInputElement;
+              if (input && input.select && typeof input.select === 'function') {
+                input.select();
+              }
+            }, 0);
+          } else {
+            // إذا لم يوجد، ننتقل لأول حقل في الصف السابق
+            focusFirstInRow(rowIndex - 1);
+          }
+        }
+        return;
+      }
+
+      // معالجة Tab و Enter (الكود الأصلي)
+      if (key !== "Tab" && key !== "Enter") return;
+      if (key === "Tab" && (event as any).shiftKey) return;
+
       if (!hasValue) {
         if (key === "Tab") {
           event.preventDefault();
+          return;
         } else if (key === "Enter" && !allowEnterDefaultWhenRowMissing) {
           event.preventDefault();
+          return;
         }
-        return;
+        // إذا كان Enter و allowEnterDefaultWhenRowMissing = true، نستمر في التنقل
       }
 
       if (key === "Enter") {
@@ -158,5 +317,6 @@ export default function useEnterKeyNavigation<Row>(
     setInputRef,
     handleKeyDown,
     focusFirstInRow,
+    focusNode,
   };
 }

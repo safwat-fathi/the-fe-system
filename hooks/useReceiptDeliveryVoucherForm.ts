@@ -100,6 +100,10 @@ export const useReceiptDeliveryVoucherForm = ({
   const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>(
     [],
   );
+  const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
+  const [originalGoldDetails, setOriginalGoldDetails] = useState<
+    GVoucherDetail[]
+  >([]);
 
   const categories = useMemo(() => initialCategories || [], [initialCategories]);
   const categoryMap = useMemo(() => {
@@ -158,7 +162,7 @@ export const useReceiptDeliveryVoucherForm = ({
             box_id: 0,
             amount: 0,
             vouch_notes: "",
-            cost_id: null,
+            cost_id: undefined,
             inv_id: undefined,
             close_weight: undefined,
             cr_date: new Date().toISOString(),
@@ -321,47 +325,168 @@ export const useReceiptDeliveryVoucherForm = ({
     }
   };
 
-  // Load item options with pagination
+  // Load item options - حل نهائي: Infinite Scroll مع بحث شامل
+  // عند فتح القائمة: تحميل أول صفحة (20 صنف)
+  // عند البحث: البحث في جميع الصفحات حتى نجد النتائج المطابقة
+  // عند التمرير: تحميل الصفحات التالية تلقائياً
   const loadItemOptions = async (
     search: string,
     loadedOptions: readonly any[] = [],
     additional: { page?: number } = { page: 1 },
   ) => {
     const trimmed = search.trim();
+    const term = trimmed.toLowerCase();
     const page = additional?.page || 1;
 
     try {
-      // استخدام searchItems للحصول على جميع الأصناف بدون فلترة
+      // إذا كان هناك بحث، نبحث في جميع الصفحات من البداية
+      if (term) {
+        // أولاً: البحث في cache (items state) - فوري
+        const cachedMatches = items.filter((item: any) => {
+          const code = String(item.item_code ?? "").toLowerCase();
+          const name = String(item.item_name ?? "").toLowerCase();
+          return code.includes(term) || name.includes(term);
+        });
+
+        // البحث في جميع الصفحات من البداية (الصفحة 1)
+        // لا نعتمد على cache فقط لأن cache قد لا يحتوي على جميع الفئات
+        const allMatchingItems: any[] = [...cachedMatches];
+        let currentPage = 1; // نبدأ من الصفحة 1 دائماً للبحث الشامل
+        const maxPages = 200; // حد أقصى 200 صفحة (4000 صنف) للبحث الشامل
+        const maxResults = 200; // حد أقصى 200 نتيجة
+        let hasMore = true;
+        const searchedPages = new Set<number>(); // لتجنب البحث في نفس الصفحة مرتين
+
+        // إضافة الصفحات المحملة في cache إلى searchedPages
+        const cachedPages = Math.ceil(items.length / 20);
+        for (let i = 1; i <= cachedPages; i++) {
+          searchedPages.add(i);
+        }
+
+        while (
+          hasMore && 
+          currentPage <= maxPages && 
+          allMatchingItems.length < maxResults
+        ) {
+          // تخطي الصفحات التي تم البحث فيها من cache
+          if (searchedPages.has(currentPage)) {
+            currentPage++;
+            continue;
+          }
+
+          const result = await itemService.searchItems({
+            page: currentPage,
+            companyId: 1,
+            categoryId: 0, // 0 = جميع الفئات
+            itemTypeId: 0, // 0 = جميع الأنواع
+            itemStatus: 0, // 0 = جميع الحالات
+          });
+
+          if (!result?.results || result.results.length === 0) {
+            hasMore = false;
+            break;
+          }
+
+          // تحويل البيانات
+          const normalizedResults = result.results.map((item: any) => {
+            const itemCode = item.item_code ?? item.code ?? String(item.id ?? "");
+            const itemName = item.item_name ?? item.name ?? "";
+            
+            return {
+              id: Number(item.id ?? 0),
+              item_code: itemCode,
+              item_name: itemName,
+              item_price: item.item_price ?? item.price ?? 0,
+              item_weight: item.item_weight ?? item.weight ?? 0,
+              item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+              work_price: item.work_price ?? item.price_w ?? 0,
+              purity: item.purity ?? item.k ?? "",
+              stones: item.stones ?? item.stone ?? null,
+              cat: item.cat ?? undefined,
+              k: item.k ?? undefined,
+            };
+          });
+
+          // تحديث items في state
+          setItems((prev) => {
+            const existingIds = new Set(prev.map((item) => item.id));
+            const additions = normalizedResults.filter(
+              (item) => !existingIds.has(item.id),
+            );
+            return additions.length > 0 ? [...prev, ...additions] : prev;
+          });
+
+          // فلترة النتائج
+          const matchingItems = normalizedResults.filter((item: any) => {
+            const code = String(item.item_code ?? "").toLowerCase();
+            const name = String(item.item_name ?? "").toLowerCase();
+            return code.includes(term) || name.includes(term);
+          });
+
+          // إضافة النتائج الجديدة (غير موجودة في cache)
+          matchingItems.forEach((item) => {
+            if (!allMatchingItems.find((existing) => existing.id === item.id)) {
+              allMatchingItems.push(item);
+            }
+          });
+
+          searchedPages.add(currentPage);
+
+          // إذا وجدنا نتائج كافية، نتوقف
+          if (allMatchingItems.length >= maxResults) {
+            break;
+          }
+
+          // إذا لم تكن هناك صفحة تالية، توقف
+          if (!result.next) {
+            hasMore = false;
+            break;
+          }
+
+          currentPage++;
+        }
+
+        // إرجاع النتائج (حد أقصى maxResults)
+        return allMatchingItems.slice(0, maxResults).map((item: any) => ({
+          value: item.id,
+          label: `${item.item_code || ""} - ${item.item_name || ""}`,
+          item: item,
+          _hasNext: hasMore && currentPage <= maxPages,
+        }));
+      }
+
+      // بدون بحث: تحميل صفحة واحدة فقط (20 صنف)
       const result = await itemService.searchItems({
         page,
         companyId: 1,
-        categoryId: 0, // جميع الفئات
-        itemTypeId: 0, // جميع الأنواع
-        itemStatus: 0, // جميع الحالات
+        categoryId: 0, // 0 = جميع الفئات
+        itemTypeId: 0, // 0 = جميع الأنواع
+        itemStatus: 0, // 0 = جميع الحالات
       });
 
-      if (!result || !result.results) {
-        return {
-          options: [],
-          hasMore: false,
-          additional: { page: 1 },
-        };
+      if (!result?.results || result.results.length === 0) {
+        return [];
       }
 
-      const normalizedResults = result.results.map((item: any) => ({
-        id: Number(item.id ?? 0),
-        item_code: item.item_code ?? item.code ?? String(item.id ?? ""),
-        item_name: item.item_name ?? item.name ?? "",
-        item_price: item.item_price ?? item.price ?? 0,
-        item_weight: item.item_weight ?? item.weight ?? 0,
-        item_g_weight:
-          item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
-        work_price: item.work_price ?? item.price_w ?? 0,
-        purity: item.purity ?? item.k ?? "",
-        stones: item.stones ?? item.stone ?? null,
-        cat: item.cat ?? undefined,
-        k: item.k ?? undefined,
-      }));
+      // البيانات من API تأتي بنفس الشكل كما في شاشة الأصناف
+      const normalizedResults = result.results.map((item: any) => {
+        const itemCode = item.item_code ?? item.code ?? String(item.id ?? "");
+        const itemName = item.item_name ?? item.name ?? "";
+        
+        return {
+          id: Number(item.id ?? 0),
+          item_code: itemCode,
+          item_name: itemName,
+          item_price: item.item_price ?? item.price ?? 0,
+          item_weight: item.item_weight ?? item.weight ?? 0,
+          item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+          work_price: item.work_price ?? item.price_w ?? 0,
+          purity: item.purity ?? item.k ?? "",
+          stones: item.stones ?? item.stone ?? null,
+          cat: item.cat ?? undefined,
+          k: item.k ?? undefined,
+        };
+      });
 
       // تحديث items في state
       setItems((prev) => {
@@ -369,53 +494,48 @@ export const useReceiptDeliveryVoucherForm = ({
         const additions = normalizedResults.filter(
           (item) => !existingIds.has(item.id),
         );
-
         return additions.length > 0 ? [...prev, ...additions] : prev;
       });
 
-      // فلترة النتائج بناءً على البحث النصي
-      const term = trimmed.toLowerCase();
-      const options = normalizedResults
-        .map((item: any) => {
-          const itemCode = String(item.item_code ?? "").toLowerCase();
-          const itemName = String(item.item_name ?? "").toLowerCase();
-          const codeMatch = term ? itemCode.indexOf(term) : 0;
-          const nameMatch = term ? itemName.indexOf(term) : 0;
+      // حفظ معلومات next في state للتحقق من وجود صفحات إضافية
+      const hasNext = result?.next !== null && result?.next !== undefined;
 
-          return {
-            value: item.id,
-            label: `${item.item_code || ""} - ${item.item_name || ""}`,
-            item: item,
-            codeMatch,
-            nameMatch,
-          };
-        })
-        .filter((entry) => {
-          // إذا لم يكن هناك بحث، نعرض جميع الأصناف
-          if (!term) return true;
-          // إذا كان هناك بحث، نفلتر النتائج
-          return entry.codeMatch !== -1 || entry.nameMatch !== -1;
-        })
-        .sort((a, b) => {
-          // إذا لم يكن هناك بحث، لا نحتاج للترتيب
-          if (!term) return 0;
-          
-          const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
-          const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
-
-          if (aCode !== bCode) return aCode - bCode;
-          const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
-          const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
-
-          return aName - bName;
-        })
-        .map(({ value, label, item }) => ({ value, label, item }));
-
-      return options;
+      // بدون بحث: نرجع جميع النتائج من الصفحة
+      return normalizedResults.map((item: any) => ({
+        value: item.id,
+        label: `${item.item_code || ""} - ${item.item_name || ""}`,
+        item: item,
+        _hasNext: hasNext,
+      }));
     } catch (e) {
       console.error("Error loading item options:", e);
-
       return [];
+    }
+  };
+
+  // دالة للتحميل التدريجي (Infinite Scroll) - تحميل صفحة معينة
+  const loadMoreItems = async (page: number, searchTerm: string) => {
+    return loadItemOptions(searchTerm, [], { page });
+  };
+
+  // دالة للتحقق من وجود صفحات إضافية
+  // نستخدم result.next من الصفحة الحالية
+  const hasMoreItems = async (currentPage: number, searchTerm: string = ""): Promise<boolean> => {
+    try {
+      // نحمل الصفحة الحالية للتحقق من result.next
+      const result = await itemService.searchItems({
+        page: currentPage,
+        companyId: 1,
+        categoryId: 0,
+        itemTypeId: 0,
+        itemStatus: 0,
+      });
+      
+      // إذا كان هناك next، فهناك صفحات إضافية
+      const hasNext = result?.next !== null && result?.next !== undefined;
+      return hasNext;
+    } catch {
+      return false;
     }
   };
 
@@ -542,7 +662,7 @@ export const useReceiptDeliveryVoucherForm = ({
         box_id: 0,
         amount: 0,
         vouch_notes: "",
-        cost_id: null,
+        cost_id: undefined,
         inv_id: undefined,
         vat_no: undefined,
         tax_prc: undefined,
@@ -804,9 +924,9 @@ export const useReceiptDeliveryVoucherForm = ({
         box_id: box.box_id,
         amount: box.amount,
         vouch_notes: box.vouch_notes || "",
-        cost_id: box.cost_id || null,
-        inv_id: box.inv_id || null,
-        close_weight: box.close_weight || null,
+        cost_id: box.cost_id ?? null,
+        inv_id: box.inv_id === null ? undefined : box.inv_id,
+        close_weight: box.close_weight === null ? undefined : box.close_weight,
       }));
 
       const goldDetailsData = goldDetails
@@ -980,6 +1100,8 @@ export const useReceiptDeliveryVoucherForm = ({
     updateCurrentTime,
     generateNextVoucherNumber,
     loadItemOptions,
+    loadMoreItems,
+    hasMoreItems,
     loadCustomerOptions,
     getCustomerSelectValue,
     getItemSelectValue,
