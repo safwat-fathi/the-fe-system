@@ -6,8 +6,9 @@ import { cookies } from "next/headers";
 
 import { setCookieAction } from "./cookie-store";
 
-import { loginSchema } from "@/app/auth/login/components/LoginForm/login.schema";
+import { loginSchema } from "@/app/[locale]/auth/login/components/LoginForm/login.schema";
 import { STORAGE_KEYS } from "@/constants";
+import { defaultLocale, locales } from "@/i18n/config";
 import { authService } from "@/services/api";
 import { generateCSRFToken } from "@/utilities/csrf";
 
@@ -27,6 +28,8 @@ export async function loginAction(
   // Validate form data using Zod schema
   const result = loginSchema.safeParse(formData);
   const redirectPath = (formData.get("redirect") as string) || "/";
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("NEXT_LOCALE")?.value ?? defaultLocale;
   // const csrfToken = formData.get("csrfToken") as string;
 
   // Validate CSRF token
@@ -148,24 +151,32 @@ export async function loginAction(
 
   // Redirect after successful login or return error result
   if (loginSuccess) {
-    redirect(redirectPath);
+    const normalizedRedirect = redirectPath.startsWith("/")
+      ? redirectPath
+      : `/${redirectPath}`;
+    const hasLocalePrefix = locales.some(
+      (loc) =>
+        normalizedRedirect === `/${loc}` ||
+        normalizedRedirect.startsWith(`/${loc}/`),
+    );
+    const finalRedirect = hasLocalePrefix
+      ? normalizedRedirect
+      : `/${locale}${normalizedRedirect === "/" ? "" : normalizedRedirect}`;
+
+    redirect(finalRedirect);
   } else {
     return loginResult as LoginResult;
   }
 }
 
 export async function onLogoutAction() {
-  (await cookies()).set(STORAGE_KEYS.ACCESS_TOKEN, "", {
-    maxAge: 0,
-  });
+  const cookieStore = await cookies();
 
-  (await cookies()).set(STORAGE_KEYS.REFRESH_TOKEN, "", {
-    maxAge: 0,
-  });
+  cookieStore.set(STORAGE_KEYS.ACCESS_TOKEN, "", { maxAge: 0 });
+  cookieStore.set(STORAGE_KEYS.REFRESH_TOKEN, "", { maxAge: 0 });
+  cookieStore.set(STORAGE_KEYS.CSRF_TOKEN, "", { maxAge: 0 });
 
-  (await cookies()).set(STORAGE_KEYS.CSRF_TOKEN, "", {
-    maxAge: 0,
-  });
+  const locale = cookieStore.get("NEXT_LOCALE")?.value ?? defaultLocale;
 
-  redirect("/auth/login");
+  redirect(`/${locale}/auth/login`);
 }

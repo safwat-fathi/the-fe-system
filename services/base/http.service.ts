@@ -9,6 +9,7 @@ import { createParams } from "@/utilities/qs";
 import { STORAGE_KEYS } from "@/constants";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
 import { getBranchParams } from "@/app/actions/branch-params";
+import { onLogoutAction } from "@/app/actions/auth";
 
 // Enhanced response type for better type safety
 export interface ServiceResponse<T = any> {

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 
 import type { HTMLAttributes, MouseEvent, ReactNode } from "react";
+import { Locale, locales } from "@/i18n/config";
 
 export interface BreadcrumbItem {
   name: string;
@@ -89,8 +90,14 @@ const Breadcrumb = ({
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
     if (items.length > 0) return items;
 
-    const pathSegments = pathname.split("/").filter((segment) => segment);
-    
+    const allSegments = pathname.split("/").filter((segment) => segment);
+
+    // Remove leading locale segment (e.g. "ar" or "en") if present
+    const pathSegments =
+      allSegments.length > 0 && locales.includes(allSegments[0] as Locale)
+        ? allSegments.slice(1)
+        : allSegments;
+
     // Filter out "basic" and "forms" segments - they should not appear in breadcrumbs
     // The pages under them should appear directly after "الرئيسية"
     const segmentsToShow = pathSegments.filter(
@@ -99,9 +106,9 @@ const Breadcrumb = ({
     
     // Build hrefs based on original segments but names based on filtered segments
     return segmentsToShow.map((segment, filteredIndex) => {
-      // Find the actual index in original segments
-      const actualIndex = pathSegments.indexOf(segment);
-      const href = "/" + pathSegments.slice(0, actualIndex + 1).join("/");
+      // Find the actual index in original segments (including locale if present)
+      const actualIndex = allSegments.indexOf(segment);
+      const href = "/" + allSegments.slice(0, actualIndex + 1).join("/");
       
       // Handle dynamic segments (like [id])
       // If segment is a number, it's likely an ID - use parent segment name

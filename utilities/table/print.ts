@@ -1,4 +1,4 @@
-import { FormState } from "@/app/(pages)/forms/invoices/hooks/useInvoiceForm";
+import { FormState } from "@/app/[locale]/(pages)/forms/invoices/hooks/useInvoiceForm";
 import type { Table } from "@tanstack/react-table";
 import { InvoiceItemRow } from "../invoiceForm";
 
