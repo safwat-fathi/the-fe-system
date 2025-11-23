@@ -204,8 +204,6 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLElement>) => {
-			console.log(event.key);
-			
       if (disabled) return;
       if (typeof shouldIgnoreEvent === "function" && shouldIgnoreEvent(event)) {
         return;
