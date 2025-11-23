@@ -1,0 +1,108 @@
+{
+  "common": {
+    "appName": "Nafees Gold System",
+    "loading": "Loading…",
+    "error": "An unexpected error occurred. Please try again later.",
+    "actions": {
+      "back": "Back",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    }
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "forms": "Forms",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "reports": {
+    "invoices": {
+      "title": "Invoice Reports",
+      "description": "Comprehensive report of all invoices",
+      "header": "Invoice Reports",
+      "subheader": "Manage and view all invoices",
+      "print": "Print",
+      "export": "Export",
+      "exportSuccess": "Data exported successfully",
+      "tableTab": "Invoices list",
+      "analyticsTab": "Analytics",
+      "tableTitle": "Invoices list ({count} invoices)",
+      "columns": {
+        "invoiceNumber": "Invoice #",
+        "dateTime": "Date & time",
+        "customer": "Customer",
+        "total": "Total",
+        "tax": "Tax",
+        "grandTotal": "Total incl. tax",
+        "type": "Type",
+        "actions": "Actions"
+      },
+      "typeLabels": {
+        "sale": "Sale",
+        "purchase": "Purchase",
+        "saleReturn": "Sales return",
+        "purchaseReturn": "Purchase return",
+        "unknown": "Unknown"
+      },
+      "actionLabels": {
+        "preview": "Preview invoice",
+        "edit": "Edit invoice"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by number or name...",
+        "typePlaceholder": "Invoice type",
+        "fromDate": "From date",
+        "toDate": "To date",
+        "clear": "Clear filters",
+        "types": {
+          "all": "All invoices",
+          "purchase": "Purchase invoices",
+          "sales": "Sales invoices",
+          "purchaseReturn": "Purchase returns",
+          "salesReturn": "Sales returns"
+        }
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "e.g. admin",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "brand": {
+        "title": "Nafees",
+        "subtitle": "Web"
+      },
+      "tagline": "Where gold brilliance meets technology"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "summary": "Branch: {branch} | Year: {year}",
+    "summaryPlaceholder": "-",
+    "invoices": "Invoices",
+    "customers": "Customers",
+    "items": "Items",
+    "categories": "Categories",
+    "goldPrice": "Gold price per gram",
+    "salesDataset": "Sales",
+    "months": {
+      "jan": "January",
+      "feb": "February",
+      "mar": "March",
+      "apr": "April",
+      "may": "May",
+      "jun": "June",
+      "jul": "July",
+      "aug": "August",
+      "sep": "September",
+      "oct": "October",
+      "nov": "November",
+      "dec": "December"
+    },
+    "error": "Failed to load dashboard data"
+  }
+}

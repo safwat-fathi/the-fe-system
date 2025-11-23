@@ -22,9 +22,9 @@ export {
 
 // Existing Components
 export { default as ActionButtons } from "./ActionButtons";
-export { default as InvoiceItemTable } from "../app/(pages)/forms/invoices/components/InvoiceItemTable";
-export { default as InvoiceSelectors } from "../app/(pages)/forms/invoices/components/InvoiceSelectors";
-export { default as InvoiceTotalsActions } from "../app/(pages)/forms/invoices/components/InvoiceTotalsActions";
+export { default as InvoiceItemTable } from "../app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
+export { default as InvoiceSelectors } from "../app/[locale]/(pages)/forms/invoices/components/InvoiceSelectors";
+export { default as InvoiceTotalsActions } from "../app/[locale]/(pages)/forms/invoices/components/InvoiceTotalsActions";
 
 // Loading Components
 export {

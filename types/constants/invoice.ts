@@ -1,25 +1,25 @@
 import { TransTypes } from "@/types/models/invoice";
 
 export const INVOICE_TYPE_FILTERS = [
-  { key: "0", label: "جميع الفواتير", color: "default" },
+  { key: "0", labelKey: "filters.types.all", color: "default" },
   {
     key: String(TransTypes.PURCHASE),
-    label: "فواتير الشراء",
+    labelKey: "filters.types.purchase",
     color: "primary",
   },
   {
     key: String(TransTypes.SALES),
-    label: "فواتير البيع",
+    labelKey: "filters.types.sales",
     color: "success",
   },
   {
     key: String(TransTypes.PURCHASE_RETURN),
-    label: "مردود الشراء",
+    labelKey: "filters.types.purchaseReturn",
     color: "warning",
   },
   {
     key: String(TransTypes.SALES_RETURN),
-    label: "مردود البيع",
+    labelKey: "filters.types.salesReturn",
     color: "danger",
   },
 ] as const;
