@@ -10,37 +10,40 @@ import {
 } from "@heroui/react";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useLocale } from "next-intl";
-import { useSearchParams } from "next/navigation";
 
 import { Locale, localeLabels, locales } from "@/i18n/config";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { usePathname } from "@/i18n/navigation";
 
 const LocaleSwitcher = () => {
   const currentLocale = useLocale() as Locale;
   const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
 
   const currentLabel = useMemo(
     () => localeLabels[currentLocale] ?? currentLocale.toUpperCase(),
     [currentLocale],
   );
 
-  const buildHref = () => {
-    const search = searchParams?.toString();
-    const query = search ? `?${search}` : "";
-    const hash = typeof window !== "undefined" ? window.location.hash : "";
-
-    return `${pathname}${query}${hash}`;
-  };
-
   const handleChange = (nextLocale: Locale) => {
     if (nextLocale === currentLocale) return;
 
-    router.replace(buildHref(), {
-      locale: nextLocale,
-      scroll: false,
-    });
+    const segments = pathname.split("/").filter(Boolean);
+    let restPath = "";
+
+    if (segments.length === 0) {
+      restPath = "";
+    } else if (locales.includes(segments[0] as Locale)) {
+      // replace existing locale segment
+      restPath = segments.slice(1).join("/");
+    } else {
+      // no locale prefix yet, keep full path as rest
+      restPath = segments.join("/");
+    }
+
+    const newPath = `/${nextLocale}${restPath ? `/${restPath}` : ""}`;
+
+    if (typeof window !== "undefined") {
+      window.location.href = newPath + window.location.search + window.location.hash;
+    }
   };
 
   return (
