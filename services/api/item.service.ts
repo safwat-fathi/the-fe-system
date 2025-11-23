@@ -2,7 +2,11 @@ import type { ItemForm } from "@/types/items";
 
 import { HttpService } from "@/services/base";
 import { IPaginatedResponse } from "@/types/services/base";
-import { Item, SearchItemsParams } from "@/types/models/item";
+import {
+  Item,
+  SearchItemsParams,
+  SearchItemsVoucherListParams,
+} from "@/types/models/item";
 
 class ItemService extends HttpService<Item> {
   constructor() {
@@ -30,38 +34,6 @@ class ItemService extends HttpService<Item> {
 
     return formData;
   }
-
-  // async getAllItems(): Promise<IPaginatedResponse<Item> | null> {
-  //   try {
-  //     const response = await this.get<IPaginatedResponse<Item>>(
-  //       "GetItemsList/",
-  //       undefined,
-  //       {
-  //         cache: "force-cache",
-  //         next: { tags: ["items"] },
-  //       },
-  //     );
-
-  //     if (!response.success || !response.data) {
-  //       return null;
-  //     }
-
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error("Error fetching items:", error);
-  //     throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
-  //   }
-  // }
-
-  // async getItemCount(): Promise<number> {
-  //   try {
-  //     const items = await this.getAllItems();
-  //     return items?.count ?? 0;
-  //   } catch (error) {
-  //     console.error("Error counting items:", error);
-  //     return 0;
-  //   }
-  // }
 
   async getHomeSettings(): Promise<Record<string, unknown>[]> {
     try {
@@ -108,15 +80,18 @@ class ItemService extends HttpService<Item> {
     }
   }
 
-  async getItemById(id: number, companyId: number = 1): Promise<Item | null> {
+  async getItemById(
+    id: number,
+    companyId: number = 1,
+  ): Promise<Item | null> {
     try {
       // البحث عن الصنف في جميع الصفحات
       // نبدأ بصفحة واحدة ثم نبحث في النتائج
       let page = 1;
       let found: Item | null = null;
+      const maxPages = 10; // حد أقصى 10 صفحات للبحث
 
-      while (!found && page <= 10) {
-        // نحد بحد أقصى 10 صفحات للبحث
+      while (!found && page <= maxPages) {
         const response = await this.get<IPaginatedResponse<Item>>(
           "items_list",
           {
@@ -128,6 +103,9 @@ class ItemService extends HttpService<Item> {
           },
           {
             cache: "force-cache",
+            next: {
+              tags: [`item-by-id-${id}-company-${companyId}`],
+            },
           },
         );
 
@@ -214,41 +192,48 @@ class ItemService extends HttpService<Item> {
     }
   }
 
-  async searchItemsVoucherList({
-    query = "",
-    page = 1,
-    companyId = 1,
-  }: {
-    query?: string;
-    page?: number;
-    companyId?: number;
-  } = {}): Promise<IPaginatedResponse<Item>> {
-    const emptyResponse: IPaginatedResponse<Item> = {
+  async searchItemsVoucherList(
+    params: SearchItemsVoucherListParams = {},
+  ): Promise<
+    IPaginatedResponse<Item> & {
+      hasMore: boolean;
+      currentPage: number;
+    }
+  > {
+    const { query = "", page = 1, companyId = 1 } = params;
+
+    const emptyResponse: IPaginatedResponse<Item> & {
+      hasMore: boolean;
+      currentPage: number;
+    } = {
       results: [],
       count: 0,
       next: null,
       previous: null,
+      hasMore: false,
+      currentPage: page,
     };
 
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
-        "SearchItemsVoucherList",
+        "SearchItemsList",
         {
           xcom_id: companyId,
-          query: query || "0",
           page,
+          ...(query ? { query } : {}),
         },
         {
-          cache: "force-cache",
+          cache: "no-store",
           next: {
             tags: [
               "items-voucher",
               `items-voucher-company-${companyId}`,
               `items-voucher-page-${page}`,
-              `items-voucher-query-${query}`,
+              `items-voucher-query-${query || "all"}`,
             ],
-            revalidate: 300,
+            revalidate: 0,
           },
+          signal: AbortSignal.timeout(30000),
         },
       );
 
@@ -269,10 +254,12 @@ class ItemService extends HttpService<Item> {
         next: typeof next === "string" || next === null ? next : null,
         previous:
           typeof previous === "string" || previous === null ? previous : null,
+        hasMore: Boolean(next),
+        currentPage: page,
       };
     } catch (error) {
       console.error("Error fetching items for voucher:", error);
-      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
+      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف لقائمة سند الاستلام/التسليم");
     }
   }
 
