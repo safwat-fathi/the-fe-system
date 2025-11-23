@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { onLogoutAction } from "@/app/actions/auth";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
 
 interface UserInfo {
   username: string;
@@ -123,6 +124,9 @@ export default function UserHeader() {
       </NavbarContent>
 
       <NavbarContent justify="end">
+        <NavbarItem>
+          <LocaleSwitcher />
+        </NavbarItem>
         <NavbarItem>
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
