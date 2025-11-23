@@ -1,0 +1,115 @@
+{
+  "common": {
+    "appName": "نظام نفيس للذهب",
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ غير متوقع، يرجى المحاولة لاحقًا.",
+    "actions": {
+      "back": "رجوع",
+      "confirm": "تأكيد",
+      "cancel": "إلغاء"
+    }
+  },
+  "navigation": {
+    "dashboard": "لوحة التحكم",
+    "forms": "النماذج",
+    "reports": "التقارير",
+    "settings": "الإعدادات"
+  },
+  "notFound": {
+    "title": "الصفحة غير موجودة - 404",
+    "description": "عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها.",
+    "heading": "الصفحة غير موجودة",
+    "body": "عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها. قد تكون الصفحة قد تم حذفها أو نقلها.",
+    "backToHome": "العودة إلى الصفحة الرئيسية"
+  },
+  "reports": {
+    "invoices": {
+      "title": "تقارير الفواتير",
+      "description": "تقرير شامل لجميع الفواتير",
+      "header": "تقارير الفواتير",
+      "subheader": "إدارة وعرض جميع الفواتير",
+      "print": "طباعة",
+      "export": "تصدير",
+      "exportSuccess": "تم تصدير البيانات بنجاح",
+      "tableTab": "قائمة الفواتير",
+      "analyticsTab": "التحليلات",
+      "tableTitle": "قائمة الفواتير ({count} فاتورة)",
+      "columns": {
+        "invoiceNumber": "رقم الفاتورة",
+        "dateTime": "التاريخ والوقت",
+        "customer": "العميل",
+        "total": "الإجمالي",
+        "tax": "الضريبة",
+        "grandTotal": "الإجمالي شامل الضريبة",
+        "type": "النوع",
+        "actions": "الإجراءات"
+      },
+      "typeLabels": {
+        "sale": "بيع",
+        "purchase": "شراء",
+        "saleReturn": "مردود بيع",
+        "purchaseReturn": "مردود شراء",
+        "unknown": "غير محدد"
+      },
+      "actionLabels": {
+        "preview": "عرض الفاتورة",
+        "edit": "تعديل الفاتورة"
+      },
+      "filters": {
+        "searchPlaceholder": "البحث بالرقم أو الاسم...",
+        "typePlaceholder": "نوع الفاتورة",
+        "fromDate": "من تاريخ",
+        "toDate": "إلى تاريخ",
+        "clear": "مسح الفلاتر",
+        "types": {
+          "all": "جميع الفواتير",
+          "purchase": "فواتير الشراء",
+          "sales": "فواتير البيع",
+          "purchaseReturn": "مردود الشراء",
+          "salesReturn": "مردود البيع"
+        }
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "usernameLabel": "اسم المستخدم",
+      "usernamePlaceholder": "مثال: admin",
+      "passwordLabel": "كلمة المرور",
+      "passwordPlaceholder": "••••••••",
+      "submit": "دخول النظام",
+      "submitting": "جارٍ الدخول...",
+      "brand": {
+        "title": "نفيس",
+        "subtitle": "Web"
+      },
+      "tagline": "حيث يلتقي بريق الذهب بالتقنية"
+    }
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "summary": "فرع: {branch} | السنة: {year}",
+    "summaryPlaceholder": "-",
+    "invoices": "الفواتير",
+    "customers": "العملاء",
+    "items": "الأصناف",
+    "categories": "الفئات",
+    "goldPrice": "سعر الذهب للجرام",
+    "salesDataset": "المبيعات",
+    "months": {
+      "jan": "يناير",
+      "feb": "فبراير",
+      "mar": "مارس",
+      "apr": "أبريل",
+      "may": "مايو",
+      "jun": "يونيو",
+      "jul": "يوليو",
+      "aug": "أغسطس",
+      "sep": "سبتمبر",
+      "oct": "أكتوبر",
+      "nov": "نوفمبر",
+      "dec": "ديسمبر"
+    },
+    "error": "حدث خطأ في جلب البيانات"
+  }
+}
