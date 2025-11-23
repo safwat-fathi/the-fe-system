@@ -30,3 +30,9 @@ export type SearchItemsParams = {
   itemTypeId?: number | string;
   itemStatus?: number | string;
 };
+
+export type SearchItemsVoucherListParams = {
+  query?: string;
+  page?: number;
+  companyId?: number;
+};
