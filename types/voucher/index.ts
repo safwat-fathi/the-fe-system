@@ -40,4 +40,3 @@ export interface VoucherValidationResult {
   errors: string[];
   warnings: string[];
 }
-

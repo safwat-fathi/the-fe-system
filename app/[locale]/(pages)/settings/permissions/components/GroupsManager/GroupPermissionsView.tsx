@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Chip, Tooltip } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import { EyeIcon } from "@heroicons/react/24/outline";
 
 import { Group } from "../../types/groups";
 import { SYSTEM_MAP } from "../../utils/system-map";
-import { PERMISSION_TYPES } from "../../types/permissions";
 import {
   getPermissionLabel,
   getPermissionColor,
@@ -28,11 +27,13 @@ export default function GroupPermissionsView({
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) => {
       const newSet = new Set(prev);
+
       if (newSet.has(sectionId)) {
         newSet.delete(sectionId);
       } else {
         newSet.add(sectionId);
       }
+
       return newSet;
     });
   };
@@ -62,14 +63,14 @@ export default function GroupPermissionsView({
                   <span className="font-medium text-gray-900">
                     {section.name}
                   </span>
-                  <Chip size="sm" variant="flat" color="primary">
+                  <Chip color="primary" size="sm" variant="flat">
                     {sectionScreens.length} شاشة
                   </Chip>
                 </div>
                 <Button
+                  isIconOnly
                   size="sm"
                   variant="light"
-                  isIconOnly
                   onPress={() => toggleSection(section.id)}
                 >
                   <EyeIcon
@@ -94,7 +95,7 @@ export default function GroupPermissionsView({
                           <span className="font-medium text-gray-900">
                             {screen.name}
                           </span>
-                          <Chip size="sm" variant="flat" color="secondary">
+                          <Chip color="secondary" size="sm" variant="flat">
                             {screenPerms.length} صلاحية
                           </Chip>
                         </div>
@@ -106,8 +107,8 @@ export default function GroupPermissionsView({
                             return (
                               <Chip
                                 key={permission}
-                                size="sm"
                                 color={color as any}
+                                size="sm"
                                 variant="flat"
                               >
                                 {label}
@@ -127,4 +128,3 @@ export default function GroupPermissionsView({
     </div>
   );
 }
-

@@ -1,8 +1,12 @@
 "use client";
 
 import { Button, Chip } from "@heroui/react";
+
 import { PERMISSION_TYPES } from "../../types/permissions";
-import { getPermissionLabel, getPermissionColor } from "../../utils/permission-formatters";
+import {
+  getPermissionLabel,
+  getPermissionColor,
+} from "../../utils/permission-formatters";
 
 interface PermissionFiltersProps {
   selectedPermissions: Set<string>;
@@ -20,7 +24,9 @@ export default function PermissionFilters({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700">تصفية حسب الصلاحية:</span>
+        <span className="text-sm font-medium text-gray-700">
+          تصفية حسب الصلاحية:
+        </span>
         <div className="flex gap-2">
           <Button size="sm" variant="flat" onPress={onSelectAll}>
             تحديد الكل
@@ -40,10 +46,10 @@ export default function PermissionFilters({
             <Chip
               key={permission}
               isPressable
-              onPress={() => onTogglePermission(permission)}
+              className="cursor-pointer"
               color={isSelected ? (color as any) : "default"}
               variant={isSelected ? "flat" : "bordered"}
-              className="cursor-pointer"
+              onPress={() => onTogglePermission(permission)}
             >
               {label}
             </Chip>
@@ -53,4 +59,3 @@ export default function PermissionFilters({
     </div>
   );
 }
-

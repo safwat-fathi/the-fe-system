@@ -1,6 +1,7 @@
+import { NextRequest, NextResponse } from "next/server";
+
 import { whatsappConfig } from "@/config/whatsapp";
 import processWhatsappWebhook from "@/app/actions/whatsapp/webhook-processor";
-import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+
     await processWhatsappWebhook(body);
 
     return new NextResponse(null, { status: 200 });
@@ -32,4 +34,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

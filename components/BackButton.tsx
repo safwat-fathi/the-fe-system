@@ -11,12 +11,15 @@ export default function NotFoundClient() {
     if (typeof document === "undefined") return;
 
     const referrer = document.referrer;
+
     if (!referrer) return;
 
     try {
       const referrerUrl = new URL(referrer);
+
       if (referrerUrl.origin === window.location.origin) {
         const path = `${referrerUrl.pathname}${referrerUrl.search}${referrerUrl.hash}`;
+
         setPreviousPath(path || "/");
       }
     } catch (error) {

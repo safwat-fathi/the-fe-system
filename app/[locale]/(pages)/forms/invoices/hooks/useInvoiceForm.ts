@@ -197,7 +197,6 @@ const getNumericRowId = getNumericRowIdUtil;
 
 const normalizeRowIdentifier = normalizeRowIdentifierUtil;
 
-
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_FIELD":
@@ -1142,6 +1141,7 @@ export default function useInvoiceForm({
       toast.success(
         isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
       );
+
       return {
         ok: true,
         recordId: resolvedInvoicePk,
@@ -1213,6 +1213,7 @@ export default function useInvoiceForm({
   const previewInvoice = useCallback(() => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
+
       return;
     }
 
@@ -1222,6 +1223,7 @@ export default function useInvoiceForm({
 
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
+
       return;
     }
 
@@ -1248,10 +1250,12 @@ export default function useInvoiceForm({
         "_blank",
         "width=1024,height=768,scrollbars=yes,resizable=yes",
       );
+
       if (!w) {
         toast.error(
           "لم يتمكن من فتح نافذة الطباعة. يرجى التحقق من إعدادات المتصفح.",
         );
+
         return;
       }
 

@@ -70,10 +70,10 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
     }
   };
 
-
   const handleDeleteClick = (unit: Unit) => {
     if (!unit.id) {
       toast.error("❌ لا يمكن حذف وحدة بدون معرف");
+
       return;
     }
 
@@ -85,13 +85,12 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
     if (!unitToDelete?.id) {
       setDeleteModalOpen(false);
       setUnitToDelete(null);
+
       return;
     }
 
     // Optimistic delete
-    setUnits((prevUnits) =>
-      prevUnits.filter((u) => u.id !== unitToDelete.id)
-    );
+    setUnits((prevUnits) => prevUnits.filter((u) => u.id !== unitToDelete.id));
 
     try {
       const result = await unitService.deleteUnit(unitToDelete.id);
@@ -166,8 +165,8 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
         <h2 className="text-base font-semibold">إدارة الوحدات</h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
-          variant="bordered"
           className="bg-gray-100"
+          variant="bordered"
           onPress={() => router.push("/basic/units/new")}
         >
           <PlusIcon className="h-3 w-3" />
@@ -177,10 +176,12 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder="بحث بالاسم..."
+            size="sm"
+            startContent={
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
-            size="sm"
           />
         </div>
       </div>
@@ -223,15 +224,15 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
       </div>
 
       <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف الوحدة "${unitToDelete?.unit_name}"؟`}
-        confirmText="حذف"
         cancelText="إلغاء"
         confirmColor="danger"
+        confirmText="حذف"
+        isOpen={deleteModalOpen}
+        message={`هل أنت متأكد من حذف الوحدة "${unitToDelete?.unit_name}"؟`}
         size="md"
+        title="تأكيد الحذف"
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   );

@@ -9,6 +9,10 @@ import {
   InvoiceMaxIdPrimitive,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
+import {
+  AuthenticationError,
+  rethrowAuthenticationError,
+} from "@/utilities/errors/Authentication";
 
 export interface GetAllInvoicesParams {
   page?: string;
@@ -83,7 +87,7 @@ class InvoiceService extends HttpService<Invoice> {
 
       return null;
     } catch (error) {
-      console.error("Error fetching invoices:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
     }
   }
@@ -177,7 +181,6 @@ class InvoiceService extends HttpService<Invoice> {
 
       return null;
     } catch (error) {
-      console.error("Error fetching invoices:", error);
       throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
     }
   }
@@ -263,7 +266,6 @@ class InvoiceService extends HttpService<Invoice> {
 
       return [];
     } catch (error) {
-      console.error("Error fetching invoice details:", error);
       throw new Error("حدث خطأ أثناء جلب تفاصيل الفاتورة");
     }
   }

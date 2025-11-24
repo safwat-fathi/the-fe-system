@@ -4,6 +4,7 @@
  */
 
 import { create } from "zustand";
+
 import { UserPermissions, MergedPermissions } from "../types/users";
 
 interface PermissionState {
@@ -75,4 +76,3 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
     return permissions.every((perm) => objectPermissions.includes(perm));
   },
 }));
-

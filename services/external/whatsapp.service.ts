@@ -1,10 +1,11 @@
 import crypto from "node:crypto";
 
+import { Message } from "@prisma/client";
+
 import { whatsappConfig } from "@/config/whatsapp";
 import whatsappHttpService from "@/services/external/whatsapp-http.service";
 import whatsappRepository from "@/services/external/whatsapp.repository";
 import logger from "@/utilities/logger";
-import { Message } from "@prisma/client";
 
 interface SendTextPayload {
   to: string;
@@ -67,9 +68,8 @@ class WhatsappService {
   }
 
   private async ensureConversation(contactId: string) {
-    const conversation = await whatsappRepository.findConversationByContact(
-      contactId,
-    );
+    const conversation =
+      await whatsappRepository.findConversationByContact(contactId);
 
     if (conversation) {
       return conversation;
@@ -257,6 +257,7 @@ class WhatsappService {
       return { message, response: response.data };
     } catch (error) {
       const { code, message } = this.parseWhatsappError(error);
+
       logger.error("[WhatsappService] sendTemplate failed", { code, message });
       throw Object.assign(new Error(message), { code });
     }
@@ -264,6 +265,7 @@ class WhatsappService {
 
   async uploadMedia(payload: UploadMediaPayload) {
     const formData = new FormData();
+
     formData.append("file", new Blob([payload.fileBuffer]), payload.fileName);
     formData.append("type", payload.mimeType);
 
@@ -285,6 +287,7 @@ class WhatsappService {
       return response.data;
     } catch (error) {
       const { code, message } = this.parseWhatsappError(error);
+
       logger.error("[WhatsappService] uploadMedia failed", { code, message });
       throw Object.assign(new Error(message), { code });
     }
@@ -343,6 +346,7 @@ class WhatsappService {
       return { message, response: response.data };
     } catch (error) {
       const { code, message } = this.parseWhatsappError(error);
+
       logger.error("[WhatsappService] sendMedia failed", { code, message });
       throw Object.assign(new Error(message), { code });
     }
@@ -366,4 +370,3 @@ class WhatsappService {
 export const whatsappService = new WhatsappService();
 
 export default whatsappService;
-

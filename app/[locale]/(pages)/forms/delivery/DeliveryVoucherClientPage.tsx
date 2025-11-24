@@ -3,10 +3,15 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Button } from "@heroui/react";
-import useEnterKeyNavigation from "@/app/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
-import useKeyAsTab from "@/hooks/useKeyAsTab";
-import SearchableSelect from "@/components/SearchableSelect";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Textarea,
+  Button,
+} from "@heroui/react";
 import {
   CheckIcon,
   PencilIcon,
@@ -15,6 +20,9 @@ import {
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
+import useEnterKeyNavigation from "@/app/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
+import useKeyAsTab from "@/hooks/useKeyAsTab";
+import SearchableSelect from "@/components/SearchableSelect";
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { useReceiptDeliveryVoucherForm } from "@/hooks/useReceiptDeliveryVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
@@ -158,6 +166,7 @@ export default function DeliveryVoucherClientPage({
     },
     shouldIgnoreEvent: (event) => {
       const target = event.target as HTMLElement | null;
+
       if (!target) return false;
 
       // Ignore elements with data-skip-key-as-tab="true"
@@ -167,26 +176,34 @@ export default function DeliveryVoucherClientPage({
 
       // Ignore textareas and buttons
       const tagName = target.tagName.toLowerCase();
+
       if (tagName === "textarea" || tagName === "button") {
         return true;
       }
 
       // Ignore if inside an open dropdown list
       const listboxElement = target.closest('[role="listbox"]');
+
       if (listboxElement) {
         return true;
       }
 
       // Ignore if inside an open popover or dropdown
-      const popoverElement = target.closest('[role="dialog"], [role="menu"], [data-headlessui-state]');
+      const popoverElement = target.closest(
+        '[role="dialog"], [role="menu"], [data-headlessui-state]',
+      );
+
       if (popoverElement) {
         return true;
       }
 
       // Ignore select button itself when Enter is pressed (don't open it)
       const selectButton = target.closest('[role="combobox"]');
+
       if (selectButton) {
-        const isExpanded = selectButton.getAttribute("aria-expanded") === "true";
+        const isExpanded =
+          selectButton.getAttribute("aria-expanded") === "true";
+
         if (!isExpanded) {
           return true; // Ignore select on Enter if closed
         }
@@ -197,10 +214,10 @@ export default function DeliveryVoucherClientPage({
   });
 
   // Hook for Enter key navigation in gold details table
-  const { 
-    setInputRef: setGoldInputRef, 
-    handleKeyDown: handleGoldKeyDownBase, 
-    focusFirstInRow: focusFirstInGoldRow 
+  const {
+    setInputRef: setGoldInputRef,
+    handleKeyDown: handleGoldKeyDownBase,
+    focusFirstInRow: focusFirstInGoldRow,
   } = useEnterKeyNavigation({
     rows: goldDetails,
     rowHasValue: (row) => {
@@ -211,71 +228,97 @@ export default function DeliveryVoucherClientPage({
   });
 
   // Wrapper function للتحقق من الحقول المعطلة وتخطيها
-  const handleGoldKeyDown = useCallback((event: React.KeyboardEvent, rowIndex: number, colIndex: number, options?: any) => {
-    const isLastRow = rowIndex === goldDetails.length - 1;
-    const isLastCol = options?.isLastCol || colIndex >= 12; // آخر عمود هو 12 (مركز التكلفة)
-    
-    // إذا كان الحقل الحالي هو معدل الأجور (colIndex 4) والضغط على Enter أو ArrowLeft
-    // التخطي مباشرة إلى حقل الصندوق (colIndex 6) لأن حقل الأجور (colIndex 5) معطل
-    if (colIndex === 4 && (event.key === "Enter" || event.key === "ArrowLeft")) {
-      // التخطي مباشرة إلى الحقل الذي يليه (الصندوق - colIndex 6)
-      event.preventDefault();
-      event.stopPropagation();
-      setTimeout(() => {
-        const boxSelect = document.querySelector(
-          `#gold-box-select-${rowIndex}`
-        ) as HTMLElement;
-        if (boxSelect) {
-          const selectButton = boxSelect.closest('[role="combobox"]') as HTMLElement;
-          if (selectButton) {
-            selectButton.focus();
+  const handleGoldKeyDown = useCallback(
+    (
+      event: React.KeyboardEvent,
+      rowIndex: number,
+      colIndex: number,
+      options?: any,
+    ) => {
+      const isLastRow = rowIndex === goldDetails.length - 1;
+      const isLastCol = options?.isLastCol || colIndex >= 12; // آخر عمود هو 12 (مركز التكلفة)
+
+      // إذا كان الحقل الحالي هو معدل الأجور (colIndex 4) والضغط على Enter أو ArrowLeft
+      // التخطي مباشرة إلى حقل الصندوق (colIndex 6) لأن حقل الأجور (colIndex 5) معطل
+      if (
+        colIndex === 4 &&
+        (event.key === "Enter" || event.key === "ArrowLeft")
+      ) {
+        // التخطي مباشرة إلى الحقل الذي يليه (الصندوق - colIndex 6)
+        event.preventDefault();
+        event.stopPropagation();
+        setTimeout(() => {
+          const boxSelect = document.querySelector(
+            `#gold-box-select-${rowIndex}`,
+          ) as HTMLElement;
+
+          if (boxSelect) {
+            const selectButton = boxSelect.closest(
+              '[role="combobox"]',
+            ) as HTMLElement;
+
+            if (selectButton) {
+              selectButton.focus();
+
+              return;
+            }
+            boxSelect.focus();
+
             return;
           }
-          boxSelect.focus();
-          return;
-        }
-      }, 50);
-      return;
-    }
-    
-    // عند الوصول لآخر حقل في آخر صف، الانتقال لجدول النقدية
-    if (isLastRow && isLastCol && (event.key === "Enter" || event.key === "Tab")) {
-      event.preventDefault();
-      event.stopPropagation();
-      setTimeout(() => {
-        // الانتقال لأول حقل في جدول النقدية
-        const firstCashInput = document.querySelector(
-          'input[data-box-row="0"][data-box-col="0"]'
-        ) as HTMLInputElement;
-        if (firstCashInput) {
-          firstCashInput.focus();
-          firstCashInput.select();
-          return;
-        }
-      }, 50);
-      return;
-    }
-    
-    // منع إضافة صف جديد عند الضغط على ArrowDown في آخر صف (جدول الذهب فقط)
-    if (event.key === "ArrowDown" && isLastRow) {
-      event.preventDefault();
-      event.stopPropagation();
-      // لا نفعل شيء - فقط نمنع إضافة الصف
-      return;
-    }
-    
-    // استدعاء الدالة الأصلية مع السماح بالتنقل حتى لو كان الحقل فارغاً
-    handleGoldKeyDownBase(event, rowIndex, colIndex, {
-      ...options,
-      allowEnterDefaultWhenRowMissing: true,
-    });
-  }, [handleGoldKeyDownBase, goldDetails.length]);
+        }, 50);
+
+        return;
+      }
+
+      // عند الوصول لآخر حقل في آخر صف، الانتقال لجدول النقدية
+      if (
+        isLastRow &&
+        isLastCol &&
+        (event.key === "Enter" || event.key === "Tab")
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        setTimeout(() => {
+          // الانتقال لأول حقل في جدول النقدية
+          const firstCashInput = document.querySelector(
+            'input[data-box-row="0"][data-box-col="0"]',
+          ) as HTMLInputElement;
+
+          if (firstCashInput) {
+            firstCashInput.focus();
+            firstCashInput.select();
+
+            return;
+          }
+        }, 50);
+
+        return;
+      }
+
+      // منع إضافة صف جديد عند الضغط على ArrowDown في آخر صف (جدول الذهب فقط)
+      if (event.key === "ArrowDown" && isLastRow) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // لا نفعل شيء - فقط نمنع إضافة الصف
+        return;
+      }
+
+      // استدعاء الدالة الأصلية مع السماح بالتنقل حتى لو كان الحقل فارغاً
+      handleGoldKeyDownBase(event, rowIndex, colIndex, {
+        ...options,
+        allowEnterDefaultWhenRowMissing: true,
+      });
+    },
+    [handleGoldKeyDownBase, goldDetails.length],
+  );
 
   // Hook for Enter key navigation in voucher boxes table
-  const { 
-    setInputRef: setBoxInputRef, 
-    handleKeyDown: handleBoxKeyDownBase, 
-    focusFirstInRow: focusFirstInBoxRow 
+  const {
+    setInputRef: setBoxInputRef,
+    handleKeyDown: handleBoxKeyDownBase,
+    focusFirstInRow: focusFirstInBoxRow,
   } = useEnterKeyNavigation({
     rows: voucherBoxes,
     rowHasValue: (row) => {
@@ -292,99 +335,109 @@ export default function DeliveryVoucherClientPage({
   const loadItemOptionsRef = useRef(loadItemOptions);
   const loadMoreItemsRef = useRef(loadMoreItems);
   const hasMoreItemsRef = useRef(hasMoreItems);
-  
+
   // تحديث refs عند تغيير الدوال
   useEffect(() => {
     loadItemOptionsRef.current = loadItemOptions;
     loadMoreItemsRef.current = loadMoreItems;
     hasMoreItemsRef.current = hasMoreItems;
   }, [loadItemOptions, loadMoreItems, hasMoreItems]);
-  
+
   // استخدام useRef لتخزين آخر searchTerm لتجنب البحث المتكرر
   const lastSearchTermRef = useRef<string>("");
   const searchInProgressRef = useRef<boolean>(false);
   const currentPageRef = useRef<number>(1);
   const hasMoreRef = useRef<boolean>(true);
-  
+
   // State لتتبع hasMore لكل SearchableSelect
   const [itemsHasMore, setItemsHasMore] = useState<boolean>(true);
-  
+
   const handleItemSearch = useCallback(async (searchTerm: string) => {
     const trimmed = searchTerm.trim();
-    
+
     // إذا كان البحث نفسه، لا نعيد البحث
     if (trimmed === lastSearchTermRef.current && trimmed !== "") {
       return [];
     }
-    
+
     // إذا كان البحث قيد التنفيذ، لا نبدأ بحث جديد
     if (searchInProgressRef.current) {
       return [];
     }
-    
+
     // إذا كان البحث فارغاً، نحمل أول صفحة (عند فتح القائمة)
     if (!trimmed) {
       lastSearchTermRef.current = "";
       currentPageRef.current = 1;
       hasMoreRef.current = true;
-      
+
       try {
         const results = await loadItemOptionsRef.current("", [], { page: 1 });
         // التحقق من وجود صفحات إضافية
         const hasMore = await hasMoreItemsRef.current(1, "");
+
         hasMoreRef.current = hasMore;
         setItemsHasMore(hasMore);
-        
+
         // إزالة _hasNext من النتائج قبل الإرجاع
-        const cleanResults = Array.isArray(results) 
+        const cleanResults = Array.isArray(results)
           ? results.map((r: any) => {
               const { _hasNext, ...rest } = r;
+
               return rest;
             })
           : [];
+
         return cleanResults;
       } catch (error) {
         console.error("Error in handleItemSearch:", error);
+
         return [];
       }
     }
-    
+
     try {
       searchInProgressRef.current = true;
       lastSearchTermRef.current = trimmed;
       currentPageRef.current = 1;
-      
+
       // تحميل أول صفحة مع البحث
-      const results = await loadItemOptionsRef.current(trimmed, [], { page: 1 });
-      
+      const results = await loadItemOptionsRef.current(trimmed, [], {
+        page: 1,
+      });
+
       // التحقق من وجود صفحات إضافية
       const hasMore = await hasMoreItemsRef.current(1, trimmed);
+
       hasMoreRef.current = hasMore;
       setItemsHasMore(hasMore);
-      
+
       // التأكد من أن النتائج هي array
       if (!results) {
         return [];
       }
-      
+
       // إذا كانت النتائج array مباشر
       if (Array.isArray(results)) {
         // إزالة _hasNext من النتائج قبل الإرجاع
         return results.map((r: any) => {
           const { _hasNext, ...rest } = r;
+
           return rest;
         });
       }
-      
+
       // إذا كانت النتائج كائن به options
-      if (results && typeof results === 'object' && 'options' in results) {
+      if (results && typeof results === "object" && "options" in results) {
         const resultsObj = results as { options?: any[] };
+
         return Array.isArray(resultsObj.options) ? resultsObj.options : [];
       }
-      
+
       return [];
     } catch (error) {
       console.error("Error in handleItemSearch:", error);
+
       return [];
     } finally {
       searchInProgressRef.current = false;
@@ -392,59 +445,76 @@ export default function DeliveryVoucherClientPage({
   }, []); // لا dependencies لأننا نستخدم ref
 
   // دالة للتحميل التدريجي (Infinite Scroll)
-  const handleLoadMoreItems = useCallback(async (page: number, searchTerm: string) => {
-    try {
-      const results = await loadMoreItemsRef.current(page, searchTerm);
-      
-      // التحقق من وجود صفحات إضافية
-      const hasMore = await hasMoreItemsRef.current(page, searchTerm);
-      hasMoreRef.current = hasMore;
-      setItemsHasMore(hasMore);
-      currentPageRef.current = page;
-      
-      // إزالة _hasNext من النتائج قبل الإرجاع
-      const cleanResults = Array.isArray(results) 
-        ? results.map((r: any) => {
-            const { _hasNext, ...rest } = r;
-            return rest;
-          })
-        : [];
-      return cleanResults;
-    } catch (error) {
-      console.error("Error in handleLoadMoreItems:", error);
-      return [];
-    }
-  }, []);
+  const handleLoadMoreItems = useCallback(
+    async (page: number, searchTerm: string) => {
+      try {
+        const results = await loadMoreItemsRef.current(page, searchTerm);
+
+        // التحقق من وجود صفحات إضافية
+        const hasMore = await hasMoreItemsRef.current(page, searchTerm);
+
+        hasMoreRef.current = hasMore;
+        setItemsHasMore(hasMore);
+        currentPageRef.current = page;
+
+        // إزالة _hasNext من النتائج قبل الإرجاع
+        const cleanResults = Array.isArray(results)
+          ? results.map((r: any) => {
+              const { _hasNext, ...rest } = r;
+
+              return rest;
+            })
+          : [];
+
+        return cleanResults;
+      } catch (error) {
+        console.error("Error in handleLoadMoreItems:", error);
+
+        return [];
+      }
+    },
+    [],
+  );
 
   // دالة مساعدة للانتقال للحقل التالي في جدول الذهب
-  const focusNextGoldField = useCallback((rowIndex: number, colIndex: number) => {
-    const nextCol = colIndex + 1;
-    const nextInput = document.querySelector(
-      `input[data-gold-row="${rowIndex}"][data-gold-col="${nextCol}"]`
-    ) as HTMLInputElement;
-    
-    if (nextInput) {
-      nextInput.focus();
-      nextInput.select();
-      return true;
-    }
-    return false;
-  }, []);
+  const focusNextGoldField = useCallback(
+    (rowIndex: number, colIndex: number) => {
+      const nextCol = colIndex + 1;
+      const nextInput = document.querySelector(
+        `input[data-gold-row="${rowIndex}"][data-gold-col="${nextCol}"]`,
+      ) as HTMLInputElement;
+
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.select();
+
+        return true;
+      }
+
+      return false;
+    },
+    [],
+  );
 
   // دالة مساعدة للانتقال للحقل التالي في جدول الصناديق
-  const focusNextBoxField = useCallback((rowIndex: number, colIndex: number) => {
-    const nextCol = colIndex + 1;
-    const nextInput = document.querySelector(
-      `input[data-box-row="${rowIndex}"][data-box-col="${nextCol}"]`
-    ) as HTMLInputElement;
-    
-    if (nextInput) {
-      nextInput.focus();
-      nextInput.select();
-      return true;
-    }
-    return false;
-  }, []);
+  const focusNextBoxField = useCallback(
+    (rowIndex: number, colIndex: number) => {
+      const nextCol = colIndex + 1;
+      const nextInput = document.querySelector(
+        `input[data-box-row="${rowIndex}"][data-box-col="${nextCol}"]`,
+      ) as HTMLInputElement;
+
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.select();
+
+        return true;
+      }
+
+      return false;
+    },
+    [],
+  );
 
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
@@ -546,15 +616,12 @@ export default function DeliveryVoucherClientPage({
   const cashBoxSelectOptions = useMemo(() => {
     return (boxes || []).map((box) => ({
       value: String(box.id),
-      label:
-        box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
+      label: box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
     }));
   }, [boxes]);
 
   // Helper functions for cost center select
-  const getCostCenterSelectValue = (
-    costId: number | null | undefined,
-  ) => {
+  const getCostCenterSelectValue = (costId: number | null | undefined) => {
     if (!costId || costId <= 0) {
       return null;
     }
@@ -636,57 +703,53 @@ export default function DeliveryVoucherClientPage({
           </div>
         </div>
 
-          <div className="flex items-center justify-between mt-1">
+        <div className="flex items-center justify-between mt-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Button
-              size="sm"
-              variant="solid"
-              isLoading={isLoading}
-              isDisabled={!isEditing}
-              onPress={saveVoucher}
-              startContent={
-                !isLoading ? (
-                  <CheckIcon className="h-4 w-4" />
-                ) : undefined
-              }
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              isDisabled={!isEditing}
+              isLoading={isLoading}
+              size="sm"
+              startContent={
+                !isLoading ? <CheckIcon className="h-4 w-4" /> : undefined
+              }
+              variant="solid"
+              onPress={saveVoucher}
             >
               حفظ
             </Button>
 
             <Button
-              size="sm"
-              variant="solid"
-              isDisabled={formMode === "new" || isEditing || isLoading}
-              onPress={handleEditClick}
-              startContent={<PencilIcon className="h-4 w-4" />}
               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              isDisabled={formMode === "new" || isEditing || isLoading}
+              size="sm"
+              startContent={<PencilIcon className="h-4 w-4" />}
+              variant="solid"
+              onPress={handleEditClick}
             >
               تعديل
             </Button>
 
             <Button
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
               size="sm"
+              startContent={<PlusIcon className="h-4 w-4" />}
               variant="solid"
               onPress={() => router.push("/forms/delivery")}
-              startContent={<PlusIcon className="h-4 w-4" />}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
             >
               جديد
             </Button>
 
             <Button
-              size="sm"
-              variant="solid"
-              isLoading={isPrinting}
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
-              onPress={printVoucher}
-              startContent={
-                !isPrinting ? (
-                  <PrinterIcon className="h-4 w-4" />
-                ) : undefined
-              }
               className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              isLoading={isPrinting}
+              size="sm"
+              startContent={
+                !isPrinting ? <PrinterIcon className="h-4 w-4" /> : undefined
+              }
+              variant="solid"
+              onPress={printVoucher}
             >
               طباعة
             </Button>
@@ -727,7 +790,11 @@ export default function DeliveryVoucherClientPage({
       </div>
 
       {/* Form Fields - Row 1 */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2" ref={selectorsRef} onKeyDownCapture={handleKeyDownSelectors}>
+      <div
+        ref={selectorsRef}
+        className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2"
+        onKeyDownCapture={handleKeyDownSelectors}
+      >
         {/* رقم المرجع - أضيق */}
         <div className="md:col-span-2">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
@@ -778,9 +845,9 @@ export default function DeliveryVoucherClientPage({
             <input
               className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
               disabled={!isEditing}
+              placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
               readOnly={!isEditing}
               type="text"
-              placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
               value={voucher.vouch_notes || ""}
               onChange={(e) =>
                 setVoucher((prev) => ({ ...prev, vouch_notes: e.target.value }))
@@ -797,29 +864,36 @@ export default function DeliveryVoucherClientPage({
                   setTimeout(() => {
                     // البحث عن حقل العميل في الصفحة
                     const customerSelect = document.querySelector(
-                      '#customer-select'
+                      "#customer-select",
                     ) as HTMLElement;
+
                     if (customerSelect) {
-                      const selectButton = customerSelect.closest('[role="combobox"]') as HTMLElement;
+                      const selectButton = customerSelect.closest(
+                        '[role="combobox"]',
+                      ) as HTMLElement;
+
                       if (selectButton) {
                         selectButton.focus();
+
                         return;
                       }
                       customerSelect.focus();
+
                       return;
                     }
                   }, 50);
+
                   return;
                 }
               }}
             />
             {isEditing && (
               <button
+                className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
+                data-skip-key-as-tab="true"
+                title="توسيع البيان"
                 type="button"
                 onClick={() => setIsNotesModalOpen(true)}
-                className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
-                title="توسيع البيان"
-                data-skip-key-as-tab="true"
               >
                 <ArrowsPointingOutIcon className="h-3 w-3" />
               </button>
@@ -846,20 +920,23 @@ export default function DeliveryVoucherClientPage({
               }
 
               if (selectButton) {
-                const isExpanded = selectButton.getAttribute("aria-expanded") === "true";
+                const isExpanded =
+                  selectButton.getAttribute("aria-expanded") === "true";
 
                 if (e.key === "Enter" && !isExpanded) {
                   e.preventDefault();
                   e.stopPropagation();
                   setTimeout(() => {
                     const handlingInput = document.querySelector(
-                      'input[placeholder*="مناولة"]'
+                      'input[placeholder*="مناولة"]',
                     ) as HTMLInputElement;
+
                     if (handlingInput) {
                       handlingInput.focus();
                       handlingInput.select();
                     }
                   }, 50);
+
                   return;
                 }
 
@@ -870,11 +947,17 @@ export default function DeliveryVoucherClientPage({
             }}
           >
             <SearchableSelect
+              className="text-xs"
+              defaultOptions={defaultCustomerOptions}
+              disabled={!isEditing}
+              emptyMessage="لا يوجد عملاء"
               inputId="customer-select"
               options={[]}
+              placeholder="اختر العميل..."
+              searchPlaceholder="ابحث عن العميل..."
               value={getCustomerSelectValue()?.value || null}
               onChange={(selectedValue) => {
-              if (!isEditing) return;
+                if (!isEditing) return;
                 if (!selectedValue) {
                   setSelectedCustomer(null);
                   setVoucher((prev) => ({
@@ -882,37 +965,35 @@ export default function DeliveryVoucherClientPage({
                     cust_id: undefined,
                     handling: "",
                   }));
+
                   return;
                 }
 
-              const selected =
-                  customers.find((cust) => cust.id === selectedValue);
+                const selected = customers.find(
+                  (cust) => cust.id === selectedValue,
+                );
 
-              setSelectedCustomer(selected || null);
+                setSelectedCustomer(selected || null);
 
-              const handling = selected?.handling?.toString() || "";
+                const handling = selected?.handling?.toString() || "";
 
-              setVoucher((prev) => ({
-                ...prev,
-                cust_id: selected?.id ?? null,
-                handling: handling,
-              }));
-            }}
-              placeholder="اختر العميل..."
-              searchPlaceholder="ابحث عن العميل..."
-              disabled={!isEditing}
-              className="text-xs"
-              defaultOptions={defaultCustomerOptions}
+                setVoucher((prev) => ({
+                  ...prev,
+                  cust_id: selected?.id ?? null,
+                  handling: handling,
+                }));
+              }}
               onSearch={async (searchTerm: string) => {
                 try {
                   const results = await loadCustomerOptions(searchTerm);
+
                   return results || [];
                 } catch (error) {
                   console.error("Error in customer search:", error);
+
                   return [];
                 }
               }}
-              emptyMessage="لا يوجد عملاء"
             />
           </div>
         </div>
@@ -938,18 +1019,25 @@ export default function DeliveryVoucherClientPage({
                 e.stopPropagation();
                 setTimeout(() => {
                   const costCenterSelect = document.querySelector(
-                    '#delivery-cost-center-select'
+                    "#delivery-cost-center-select",
                   ) as HTMLElement;
+
                   if (costCenterSelect) {
-                    const selectButton = costCenterSelect.closest('[role="combobox"]') as HTMLElement;
+                    const selectButton = costCenterSelect.closest(
+                      '[role="combobox"]',
+                    ) as HTMLElement;
+
                     if (selectButton) {
                       selectButton.focus();
+
                       return;
                     }
                     costCenterSelect.focus();
+
                     return;
                   }
                 }, 50);
+
                 return;
               }
             }}
@@ -972,7 +1060,8 @@ export default function DeliveryVoucherClientPage({
               }
 
               if (selectButton) {
-                const isExpanded = selectButton.getAttribute("aria-expanded") === "true";
+                const isExpanded =
+                  selectButton.getAttribute("aria-expanded") === "true";
 
                 if (e.key === "Enter" && !isExpanded) {
                   e.preventDefault();
@@ -980,35 +1069,45 @@ export default function DeliveryVoucherClientPage({
                   setTimeout(() => {
                     // الانتقال لأول حقل في جدول الذهب (حقل الصنف - SearchableSelect)
                     const firstItemSelect = document.querySelector(
-                      '#item-select-0'
+                      "#item-select-0",
                     ) as HTMLElement;
+
                     if (firstItemSelect) {
-                      const selectButton = firstItemSelect.closest('[role="combobox"]') as HTMLElement;
+                      const selectButton = firstItemSelect.closest(
+                        '[role="combobox"]',
+                      ) as HTMLElement;
+
                       if (selectButton) {
                         selectButton.focus();
+
                         return;
                       }
                       firstItemSelect.focus();
+
                       return;
                     }
                     // إذا لم يوجد، نبحث عن أول input في الجدول
                     const firstGoldInput = document.querySelector(
-                      'input[data-gold-row="0"][data-gold-col="0"]'
+                      'input[data-gold-row="0"][data-gold-col="0"]',
                     ) as HTMLInputElement;
+
                     if (firstGoldInput) {
                       firstGoldInput.focus();
                       firstGoldInput.select();
+
                       return;
                     }
                     // إذا لم يوجد، نبحث عن أول input في الجدول
                     const firstInput = document.querySelector(
-                      'table input[data-gold-row="0"]'
+                      'table input[data-gold-row="0"]',
                     ) as HTMLInputElement;
+
                     if (firstInput) {
                       firstInput.focus();
                       firstInput.select();
                     }
                   }, 50);
+
                   return;
                 }
 
@@ -1019,33 +1118,36 @@ export default function DeliveryVoucherClientPage({
             }}
           >
             <SearchableSelect
+              className="text-xs"
+              disabled={!isEditing}
+              emptyMessage="لا يوجد مراكز تكلفة"
               inputId="delivery-cost-center-select"
               options={costCenterSelectOptions}
-              value={getCostCenterSelectValue(voucher.cost_id)?.value || null}
-              onChange={(selectedValue) => {
-              if (!isEditing) return;
-              const costId = selectedValue ? parseInt(String(selectedValue)) : null;
-              setVoucher((prev) => ({
-                ...prev,
-                cost_id: costId,
-              }));
-              
-              // تعميم مركز التكلفة على جميع صفوف جدول الذهب
-              goldDetails.forEach((_, index) => {
-                updateGoldDetail(index, "cost_id", costId);
-              });
-              
-              // تعميم مركز التكلفة على جميع صفوف جدول النقدية
-              voucherBoxes.forEach((_, index) => {
-                updateVoucherBox(index, "cost_id", costId);
-              });
-            }}
               placeholder="اختر مركز التكلفة..."
               searchPlaceholder="ابحث عن مركز التكلفة..."
-              disabled={!isEditing}
-              className="text-xs"
-              emptyMessage="لا يوجد مراكز تكلفة"
-          />
+              value={getCostCenterSelectValue(voucher.cost_id)?.value || null}
+              onChange={(selectedValue) => {
+                if (!isEditing) return;
+                const costId = selectedValue
+                  ? parseInt(String(selectedValue))
+                  : null;
+
+                setVoucher((prev) => ({
+                  ...prev,
+                  cost_id: costId,
+                }));
+
+                // تعميم مركز التكلفة على جميع صفوف جدول الذهب
+                goldDetails.forEach((_, index) => {
+                  updateGoldDetail(index, "cost_id", costId);
+                });
+
+                // تعميم مركز التكلفة على جميع صفوف جدول النقدية
+                voucherBoxes.forEach((_, index) => {
+                  updateVoucherBox(index, "cost_id", costId);
+                });
+              }}
+            />
           </div>
         </div>
       </div>
@@ -1093,34 +1195,53 @@ export default function DeliveryVoucherClientPage({
                       {(() => {
                         const thisCol = 0;
                         const itemValue = getItemSelectValue(detail);
-                        const selectedItemValue = itemValue ? (typeof itemValue === 'object' ? itemValue.value : itemValue) : null;
+                        const selectedItemValue = itemValue
+                          ? typeof itemValue === "object"
+                            ? itemValue.value
+                            : itemValue
+                          : null;
 
                         // إعداد defaultOptions (بدون useMemo لأننا داخل map)
                         const defaultItemOptions = (() => {
                           if (!selectedItemValue) return [];
-                          const selectedItem = items.find((itm) => itm.id === selectedItemValue);
+                          const selectedItem = items.find(
+                            (itm) => itm.id === selectedItemValue,
+                          );
+
                           if (!selectedItem) return [];
                           // استخدام نفس الحقول التي نستخدمها في normalizedResults
-                          const itemCode = selectedItem.item_code ?? String(selectedItem.id ?? "");
+                          const itemCode =
+                            selectedItem.item_code ??
+                            String(selectedItem.id ?? "");
                           const itemName = selectedItem.item_name ?? "";
-                          return [{
-                            value: selectedItem.id,
-                            label: `${itemCode} - ${itemName}` || `صنف رقم: ${selectedItem.id}`,
-                            item: selectedItem,
-                          }];
+
+                          return [
+                            {
+                              value: selectedItem.id,
+                              label:
+                                `${itemCode} - ${itemName}` ||
+                                `صنف رقم: ${selectedItem.id}`,
+                              item: selectedItem,
+                            },
+                          ];
                         })();
 
                         return (
                           <div
                             ref={(el) => {
                               const refSetter = setGoldInputRef(index, thisCol);
+
                               if (el) {
                                 setTimeout(() => {
                                   const selectButton = document.querySelector(
-                                    `#item-select-${index}`
+                                    `#item-select-${index}`,
                                   ) as HTMLButtonElement;
+
                                   if (selectButton) {
-                                    refSetter((selectButton as unknown as HTMLInputElement) || null);
+                                    refSetter(
+                                      (selectButton as unknown as HTMLInputElement) ||
+                                        null,
+                                    );
                                   } else {
                                     refSetter(null);
                                   }
@@ -1132,81 +1253,122 @@ export default function DeliveryVoucherClientPage({
                             className="h-full"
                           >
                             <SearchableSelect
+                              className="text-xs h-full"
+                              defaultOptions={defaultItemOptions}
+                              disabled={!isEditing}
+                              emptyMessage="لا توجد أصناف"
+                              hasMore={itemsHasMore}
                               inputId={`item-select-${index}`}
                               options={[]}
+                              placeholder="اختر الصنف..."
+                              searchDebounceMs={500}
+                              searchPlaceholder="ابحث عن الصنف..."
                               value={selectedItemValue}
                               onChange={(selectedValue) => {
-                          if (!isEditing) return;
+                                if (!isEditing) return;
                                 if (!selectedValue) {
                                   updateGoldDetail(index, "item_id", null);
                                   updateGoldDetail(index, "item_code", "");
                                   updateGoldDetail(index, "item_name", "");
+
                                   return;
                                 }
 
-                                const selected = items.find((itm) => itm.id === selectedValue);
-                                if (selected) {
-                                  updateGoldDetail(index, "item_id", selected.id ?? null);
-                                  updateGoldDetail(index, "item_code", selected.item_code ?? "");
-                                  updateGoldDetail(index, "item_name", selected.item_name ?? "");
+                                const selected = items.find(
+                                  (itm) => itm.id === selectedValue,
+                                );
 
-                          // تحديث k إذا كان موجوداً في الصنف
-                          if (selected.k !== undefined && selected.k !== null) {
-                            updateGoldDetail(index, "k", selected.k);
+                                if (selected) {
+                                  updateGoldDetail(
+                                    index,
+                                    "item_id",
+                                    selected.id ?? null,
+                                  );
+                                  updateGoldDetail(
+                                    index,
+                                    "item_code",
+                                    selected.item_code ?? "",
+                                  );
+                                  updateGoldDetail(
+                                    index,
+                                    "item_name",
+                                    selected.item_name ?? "",
+                                  );
+
+                                  // تحديث k إذا كان موجوداً في الصنف
+                                  if (
+                                    selected.k !== undefined &&
+                                    selected.k !== null
+                                  ) {
+                                    updateGoldDetail(index, "k", selected.k);
                                   }
                                 }
                               }}
-                              placeholder="اختر الصنف..."
-                              searchPlaceholder="ابحث عن الصنف..."
-                              disabled={!isEditing}
-                              className="text-xs h-full"
-                              defaultOptions={defaultItemOptions}
-                              onSearch={handleItemSearch}
+                              onKeyDown={(e) => {
+                                const target = e.target as HTMLElement | null;
+
+                                if (!target) return;
+
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
+
+                                if (isInListbox) return;
+
+                                if (e.key === "Escape") return;
+
+                                // معالجة الأسهم للتنقل
+                                if (
+                                  e.key === "ArrowRight" ||
+                                  e.key === "ArrowLeft" ||
+                                  e.key === "ArrowDown" ||
+                                  e.key === "ArrowUp"
+                                ) {
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
+                                  if (!isExpanded) {
+                                    // إذا كانت القائمة مغلقة، نستخدم التنقل
+                                    handleGoldKeyDown(e, index, thisCol);
+
+                                    return;
+                                  }
+
+                                  // إذا كانت القائمة مفتوحة، نترك الأسهم تعمل داخل القائمة
+                                  return;
+                                }
+
+                                if (e.key === "Enter") {
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
+                                  if (!isExpanded) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleGoldKeyDown(e, index, thisCol, {
+                                      allowEnterDefaultWhenRowMissing:
+                                        !detail?.item_id,
+                                    });
+
+                                    return;
+                                  }
+                                }
+                              }}
                               onLoadMore={handleLoadMoreItems}
-                              hasMore={itemsHasMore}
-                              searchDebounceMs={500}
-                              emptyMessage="لا توجد أصناف"
+                              onSearch={handleItemSearch}
                               onSelectComplete={() => {
                                 setTimeout(() => {
                                   focusNextGoldField(index, thisCol);
                                 }, 100);
                               }}
-                              onKeyDown={(e) => {
-                                const target = e.target as HTMLElement | null;
-                                if (!target) return;
-                                
-                                const isInListbox = target.closest('[role="listbox"]');
-                                if (isInListbox) return;
-                                
-                                if (e.key === "Escape") return;
-                                
-                                // معالجة الأسهم للتنقل
-                                if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "ArrowUp") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
-                                  if (!isExpanded) {
-                                    // إذا كانت القائمة مغلقة، نستخدم التنقل
-                                    handleGoldKeyDown(e, index, thisCol);
-                                    return;
-                                  }
-                                  // إذا كانت القائمة مفتوحة، نترك الأسهم تعمل داخل القائمة
-                                  return;
-                                }
-                                
-                                if (e.key === "Enter") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
-                                  if (!isExpanded) {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleGoldKeyDown(e, index, thisCol, {
-                                      allowEnterDefaultWhenRowMissing: !detail?.item_id,
-                                    });
-                                    return;
-                                  }
-                          }
-                        }}
-                      />
+                            />
                           </div>
                         );
                       })()}
@@ -1214,9 +1376,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setGoldInputRef(index, 1)}
-                        data-gold-row={index}
-                        data-gold-col={1}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-gold-col={1}
+                        data-gold-row={index}
                         disabled={!isEditing}
                         readOnly={!isEditing}
                         style={{
@@ -1242,9 +1404,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setGoldInputRef(index, 2)}
-                        data-gold-row={index}
-                        data-gold-col={2}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-gold-col={2}
+                        data-gold-row={index}
                         disabled={!isEditing}
                         readOnly={!isEditing}
                         style={{
@@ -1270,9 +1432,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setGoldInputRef(index, 3)}
-                        data-gold-row={index}
-                        data-gold-col={3}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-gold-col={3}
+                        data-gold-row={index}
                         disabled={!isEditing}
                         readOnly={!isEditing}
                         style={{
@@ -1299,9 +1461,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setGoldInputRef(index, 4)}
-                        data-gold-row={index}
-                        data-gold-col={4}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-gold-col={4}
+                        data-gold-row={index}
                         disabled={!isEditing}
                         readOnly={!isEditing}
                         step="0.01"
@@ -1345,20 +1507,32 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       {(() => {
                         const thisCol = 6;
-                        const boxValue = getBoxSelectValue(detail.box_id, goldBoxes || []);
-                        const selectedBoxValue = boxValue ? (typeof boxValue === 'object' ? boxValue.value : boxValue) : null;
-                        
+                        const boxValue = getBoxSelectValue(
+                          detail.box_id,
+                          goldBoxes || [],
+                        );
+                        const selectedBoxValue = boxValue
+                          ? typeof boxValue === "object"
+                            ? boxValue.value
+                            : boxValue
+                          : null;
+
                         return (
                           <div
                             ref={(el) => {
                               const refSetter = setGoldInputRef(index, thisCol);
+
                               if (el) {
                                 setTimeout(() => {
                                   const selectButton = document.querySelector(
-                                    `#gold-box-select-${index}`
+                                    `#gold-box-select-${index}`,
                                   ) as HTMLButtonElement;
+
                                   if (selectButton) {
-                                    refSetter((selectButton as unknown as HTMLInputElement) || null);
+                                    refSetter(
+                                      (selectButton as unknown as HTMLInputElement) ||
+                                        null,
+                                    );
                                   } else {
                                     refSetter(null);
                                   }
@@ -1370,61 +1544,85 @@ export default function DeliveryVoucherClientPage({
                             className="h-full"
                           >
                             <SearchableSelect
+                              className="text-xs h-full"
+                              disabled={!isEditing}
+                              emptyMessage="لا توجد صناديق"
                               inputId={`gold-box-select-${index}`}
                               options={goldBoxSelectOptions}
-                              value={selectedBoxValue}
-                              onChange={(selectedValue) => {
-                          if (!isEditing) return;
-                          updateGoldDetail(
-                            index,
-                            "box_id",
-                                  selectedValue ? parseInt(String(selectedValue)) : undefined,
-                                );
-                              }}
                               placeholder="اختر الصندوق..."
                               searchPlaceholder="ابحث عن الصندوق..."
-                              disabled={!isEditing}
-                              className="text-xs h-full"
-                              emptyMessage="لا توجد صناديق"
-                              onSelectComplete={() => {
-                                setTimeout(() => {
-                                  focusNextGoldField(index, thisCol);
-                                }, 100);
+                              value={selectedBoxValue}
+                              onChange={(selectedValue) => {
+                                if (!isEditing) return;
+                                updateGoldDetail(
+                                  index,
+                                  "box_id",
+                                  selectedValue
+                                    ? parseInt(String(selectedValue))
+                                    : undefined,
+                                );
                               }}
                               onKeyDown={(e) => {
                                 const target = e.target as HTMLElement | null;
+
                                 if (!target) return;
-                                
-                                const isInListbox = target.closest('[role="listbox"]');
+
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
+
                                 if (isInListbox) return;
-                                
+
                                 if (e.key === "Escape") return;
-                                
+
                                 // معالجة الأسهم للتنقل
-                                if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "ArrowUp") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+                                if (
+                                  e.key === "ArrowRight" ||
+                                  e.key === "ArrowLeft" ||
+                                  e.key === "ArrowDown" ||
+                                  e.key === "ArrowUp"
+                                ) {
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
                                   if (!isExpanded) {
                                     // إذا كانت القائمة مغلقة، نستخدم التنقل
                                     handleGoldKeyDown(e, index, thisCol);
+
                                     return;
                                   }
+
                                   // إذا كانت القائمة مفتوحة، نترك الأسهم تعمل داخل القائمة
                                   return;
                                 }
-                                
+
                                 if (e.key === "Enter") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
                                   if (!isExpanded) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleGoldKeyDown(e, index, thisCol, {
-                                      allowEnterDefaultWhenRowMissing: !detail?.box_id,
+                                      allowEnterDefaultWhenRowMissing:
+                                        !detail?.box_id,
                                     });
+
                                     return;
                                   }
                                 }
+                              }}
+                              onSelectComplete={() => {
+                                setTimeout(() => {
+                                  focusNextGoldField(index, thisCol);
+                                }, 100);
                               }}
                             />
                           </div>
@@ -1434,9 +1632,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setGoldInputRef(index, 7)}
-                        data-gold-row={index}
-                        data-gold-col={7}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-gold-col={7}
+                        data-gold-row={index}
                         disabled={!isEditing}
                         readOnly={!isEditing}
                         type="text"
@@ -1450,9 +1648,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setGoldInputRef(index, 8)}
-                        data-gold-row={index}
-                        data-gold-col={8}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-gold-col={8}
+                        data-gold-row={index}
                         disabled={!isEditing}
                         readOnly={!isEditing}
                         style={{
@@ -1478,9 +1676,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setGoldInputRef(index, 9)}
-                        data-gold-row={index}
-                        data-gold-col={9}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-gold-col={9}
+                        data-gold-row={index}
                         disabled={!isEditing}
                         readOnly={!isEditing}
                         style={{
@@ -1506,9 +1704,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setGoldInputRef(index, 10)}
-                        data-gold-row={index}
-                        data-gold-col={10}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-gold-col={10}
+                        data-gold-row={index}
                         disabled={!isEditing}
                         readOnly={!isEditing}
                         style={{
@@ -1534,9 +1732,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setGoldInputRef(index, 11)}
-                        data-gold-row={index}
-                        data-gold-col={11}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-gold-col={11}
+                        data-gold-row={index}
                         disabled={!isEditing}
                         min="0"
                         readOnly={!isEditing}
@@ -1556,27 +1754,40 @@ export default function DeliveryVoucherClientPage({
                               : undefined,
                           )
                         }
-                        onKeyDown={(e) => handleGoldKeyDown(e, index, 11, { isLastCol: true })}
+                        onKeyDown={(e) =>
+                          handleGoldKeyDown(e, index, 11, { isLastCol: true })
+                        }
                         onWheel={(e) => e.currentTarget.blur()}
                       />
                     </td>
                     <td className="p-0 border">
                       {(() => {
                         const thisCol = 12;
-                        const costValue = getCostCenterSelectValue(detail.cost_id);
-                        const selectedCostValue = costValue ? (typeof costValue === 'object' ? costValue.value : costValue) : null;
-                        
+                        const costValue = getCostCenterSelectValue(
+                          detail.cost_id,
+                        );
+                        const selectedCostValue = costValue
+                          ? typeof costValue === "object"
+                            ? costValue.value
+                            : costValue
+                          : null;
+
                         return (
                           <div
                             ref={(el) => {
                               const refSetter = setGoldInputRef(index, thisCol);
+
                               if (el) {
                                 setTimeout(() => {
                                   const selectButton = document.querySelector(
-                                    `#cost-center-gold-select-${index}`
+                                    `#cost-center-gold-select-${index}`,
                                   ) as HTMLButtonElement;
+
                                   if (selectButton) {
-                                    refSetter((selectButton as unknown as HTMLInputElement) || null);
+                                    refSetter(
+                                      (selectButton as unknown as HTMLInputElement) ||
+                                        null,
+                                    );
                                   } else {
                                     refSetter(null);
                                   }
@@ -1588,60 +1799,86 @@ export default function DeliveryVoucherClientPage({
                             className="h-full"
                           >
                             <SearchableSelect
+                              className="text-xs h-full"
+                              disabled={!isEditing}
+                              emptyMessage="لا يوجد مراكز تكلفة"
                               inputId={`cost-center-gold-select-${index}`}
                               options={costCenterSelectOptions}
-                              value={selectedCostValue}
-                              onChange={(selectedValue) => {
-                          if (!isEditing) return;
-                          updateGoldDetail(
-                            index,
-                            "cost_id",
-                                  selectedValue ? parseInt(String(selectedValue)) : undefined,
-                                );
-                              }}
                               placeholder="مركز التكلفة..."
                               searchPlaceholder="ابحث عن مركز التكلفة..."
-                              disabled={!isEditing}
-                              className="text-xs h-full"
-                              emptyMessage="لا يوجد مراكز تكلفة"
-                              onSelectComplete={() => {
-                                setTimeout(() => {
-                                  focusNextGoldField(index, thisCol);
-                                }, 100);
+                              value={selectedCostValue}
+                              onChange={(selectedValue) => {
+                                if (!isEditing) return;
+                                updateGoldDetail(
+                                  index,
+                                  "cost_id",
+                                  selectedValue
+                                    ? parseInt(String(selectedValue))
+                                    : undefined,
+                                );
                               }}
                               onKeyDown={(e) => {
                                 const target = e.target as HTMLElement | null;
+
                                 if (!target) return;
-                                
-                                const isInListbox = target.closest('[role="listbox"]');
+
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
+
                                 if (isInListbox) return;
-                                
+
                                 if (e.key === "Escape") return;
-                                
+
                                 // معالجة الأسهم للتنقل
-                                if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "ArrowUp") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+                                if (
+                                  e.key === "ArrowRight" ||
+                                  e.key === "ArrowLeft" ||
+                                  e.key === "ArrowDown" ||
+                                  e.key === "ArrowUp"
+                                ) {
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
                                   if (!isExpanded) {
-                                    handleGoldKeyDown(e, index, thisCol, { isLastCol: true });
+                                    handleGoldKeyDown(e, index, thisCol, {
+                                      isLastCol: true,
+                                    });
+
                                     return;
                                   }
+
                                   return;
                                 }
-                                
+
                                 if (e.key === "Enter") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
                                   if (!isExpanded) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleGoldKeyDown(e, index, thisCol, {
-                                      allowEnterDefaultWhenRowMissing: !detail?.cost_id,
+                                      allowEnterDefaultWhenRowMissing:
+                                        !detail?.cost_id,
                                       isLastCol: true,
                                     });
+
                                     return;
                                   }
                                 }
+                              }}
+                              onSelectComplete={() => {
+                                setTimeout(() => {
+                                  focusNextGoldField(index, thisCol);
+                                }, 100);
                               }}
                             />
                           </div>
@@ -1699,9 +1936,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setBoxInputRef(index, 0)}
-                        data-box-row={index}
-                        data-box-col={0}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-box-col={0}
+                        data-box-row={index}
                         disabled={!isEditing}
                         min="0"
                         readOnly={!isEditing}
@@ -1726,20 +1963,32 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       {(() => {
                         const thisCol = 1;
-                        const boxValue = getBoxSelectValue(box.box_id, boxes || []);
-                        const selectedBoxValue = boxValue ? (typeof boxValue === 'object' ? boxValue.value : boxValue) : null;
-                        
+                        const boxValue = getBoxSelectValue(
+                          box.box_id,
+                          boxes || [],
+                        );
+                        const selectedBoxValue = boxValue
+                          ? typeof boxValue === "object"
+                            ? boxValue.value
+                            : boxValue
+                          : null;
+
                         return (
                           <div
                             ref={(el) => {
                               const refSetter = setBoxInputRef(index, thisCol);
+
                               if (el) {
                                 setTimeout(() => {
                                   const selectButton = document.querySelector(
-                                    `#cash-box-select-${index}`
+                                    `#cash-box-select-${index}`,
                                   ) as HTMLButtonElement;
+
                                   if (selectButton) {
-                                    refSetter((selectButton as unknown as HTMLInputElement) || null);
+                                    refSetter(
+                                      (selectButton as unknown as HTMLInputElement) ||
+                                        null,
+                                    );
                                   } else {
                                     refSetter(null);
                                   }
@@ -1751,58 +2000,87 @@ export default function DeliveryVoucherClientPage({
                             className="h-full"
                           >
                             <SearchableSelect
+                              className="text-xs h-full"
+                              disabled={!isEditing}
+                              emptyMessage="لا توجد صناديق"
                               inputId={`cash-box-select-${index}`}
-                        options={cashBoxSelectOptions}
+                              options={cashBoxSelectOptions}
+                              placeholder="اختر الصندوق..."
+                              searchPlaceholder="ابحث عن الصندوق..."
                               value={selectedBoxValue}
                               onChange={(selectedValue) => {
                                 if (!isEditing) return;
-                                const selectedBoxId = selectedValue ? parseInt(String(selectedValue)) : 0;
-                                updateVoucherBox(index, "box_id", selectedBoxId);
-                              }}
-                        placeholder="اختر الصندوق..."
-                              searchPlaceholder="ابحث عن الصندوق..."
-                              disabled={!isEditing}
-                              className="text-xs h-full"
-                              emptyMessage="لا توجد صناديق"
-                              onSelectComplete={() => {
-                                setTimeout(() => {
-                                  focusNextBoxField(index, thisCol);
-                                }, 100);
+                                const selectedBoxId = selectedValue
+                                  ? parseInt(String(selectedValue))
+                                  : 0;
+
+                                updateVoucherBox(
+                                  index,
+                                  "box_id",
+                                  selectedBoxId,
+                                );
                               }}
                               onKeyDown={(e) => {
                                 const target = e.target as HTMLElement | null;
+
                                 if (!target) return;
-                                
-                                const isInListbox = target.closest('[role="listbox"]');
+
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
+
                                 if (isInListbox) return;
-                                
+
                                 if (e.key === "Escape") return;
-                                
+
                                 // معالجة الأسهم للتنقل
-                                if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "ArrowUp") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+                                if (
+                                  e.key === "ArrowRight" ||
+                                  e.key === "ArrowLeft" ||
+                                  e.key === "ArrowDown" ||
+                                  e.key === "ArrowUp"
+                                ) {
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
                                   if (!isExpanded) {
                                     // إذا كانت القائمة مغلقة، نستخدم التنقل
                                     handleBoxKeyDown(e, index, thisCol);
+
                                     return;
                                   }
+
                                   // إذا كانت القائمة مفتوحة، نترك الأسهم تعمل داخل القائمة
                                   return;
                                 }
-                                
+
                                 if (e.key === "Enter") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
                                   if (!isExpanded) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleBoxKeyDown(e, index, thisCol, {
-                                      allowEnterDefaultWhenRowMissing: !box?.box_id,
+                                      allowEnterDefaultWhenRowMissing:
+                                        !box?.box_id,
                                     });
+
                                     return;
                                   }
                                 }
+                              }}
+                              onSelectComplete={() => {
+                                setTimeout(() => {
+                                  focusNextBoxField(index, thisCol);
+                                }, 100);
                               }}
                             />
                           </div>
@@ -1812,9 +2090,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setBoxInputRef(index, 2)}
-                        data-box-row={index}
-                        data-box-col={2}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-box-col={2}
+                        data-box-row={index}
                         disabled={!isEditing}
                         readOnly={!isEditing}
                         type="text"
@@ -1828,9 +2106,9 @@ export default function DeliveryVoucherClientPage({
                     <td className="p-0 border">
                       <input
                         ref={setBoxInputRef(index, 3)}
-                        data-box-row={index}
-                        data-box-col={3}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
+                        data-box-col={3}
+                        data-box-row={index}
                         disabled={!isEditing}
                         min="0"
                         readOnly={!isEditing}
@@ -1850,7 +2128,9 @@ export default function DeliveryVoucherClientPage({
                               : undefined,
                           )
                         }
-                        onKeyDown={(e) => handleBoxKeyDown(e, index, 3, { isLastCol: true })}
+                        onKeyDown={(e) =>
+                          handleBoxKeyDown(e, index, 3, { isLastCol: true })
+                        }
                         onWheel={(e) => e.currentTarget.blur()}
                       />
                     </td>
@@ -1858,19 +2138,28 @@ export default function DeliveryVoucherClientPage({
                       {(() => {
                         const thisCol = 4;
                         const costValue = getCostCenterSelectValue(box.cost_id);
-                        const selectedCostValue = costValue ? (typeof costValue === 'object' ? costValue.value : costValue) : null;
-                        
+                        const selectedCostValue = costValue
+                          ? typeof costValue === "object"
+                            ? costValue.value
+                            : costValue
+                          : null;
+
                         return (
                           <div
                             ref={(el) => {
                               const refSetter = setBoxInputRef(index, thisCol);
+
                               if (el) {
                                 setTimeout(() => {
                                   const selectButton = document.querySelector(
-                                    `#cost-center-cash-select-${index}`
+                                    `#cost-center-cash-select-${index}`,
                                   ) as HTMLButtonElement;
+
                                   if (selectButton) {
-                                    refSetter((selectButton as unknown as HTMLInputElement) || null);
+                                    refSetter(
+                                      (selectButton as unknown as HTMLInputElement) ||
+                                        null,
+                                    );
                                   } else {
                                     refSetter(null);
                                   }
@@ -1882,60 +2171,86 @@ export default function DeliveryVoucherClientPage({
                             className="h-full"
                           >
                             <SearchableSelect
+                              className="text-xs h-full"
+                              disabled={!isEditing}
+                              emptyMessage="لا يوجد مراكز تكلفة"
                               inputId={`cost-center-cash-select-${index}`}
                               options={costCenterSelectOptions}
-                              value={selectedCostValue}
-                              onChange={(selectedValue) => {
-                          if (!isEditing) return;
-                          updateVoucherBox(
-                            index,
-                            "cost_id",
-                                  selectedValue ? parseInt(String(selectedValue)) : null,
-                                );
-                              }}
                               placeholder="مركز التكلفة..."
                               searchPlaceholder="ابحث عن مركز التكلفة..."
-                              disabled={!isEditing}
-                              className="text-xs h-full"
-                              emptyMessage="لا يوجد مراكز تكلفة"
-                              onSelectComplete={() => {
-                                setTimeout(() => {
-                                  focusNextBoxField(index, thisCol);
-                                }, 100);
+                              value={selectedCostValue}
+                              onChange={(selectedValue) => {
+                                if (!isEditing) return;
+                                updateVoucherBox(
+                                  index,
+                                  "cost_id",
+                                  selectedValue
+                                    ? parseInt(String(selectedValue))
+                                    : null,
+                                );
                               }}
                               onKeyDown={(e) => {
                                 const target = e.target as HTMLElement | null;
+
                                 if (!target) return;
-                                
-                                const isInListbox = target.closest('[role="listbox"]');
+
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
+
                                 if (isInListbox) return;
-                                
+
                                 if (e.key === "Escape") return;
-                                
+
                                 // معالجة الأسهم للتنقل
-                                if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "ArrowUp") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+                                if (
+                                  e.key === "ArrowRight" ||
+                                  e.key === "ArrowLeft" ||
+                                  e.key === "ArrowDown" ||
+                                  e.key === "ArrowUp"
+                                ) {
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
                                   if (!isExpanded) {
-                                    handleBoxKeyDown(e, index, thisCol, { isLastCol: true });
+                                    handleBoxKeyDown(e, index, thisCol, {
+                                      isLastCol: true,
+                                    });
+
                                     return;
                                   }
+
                                   return;
                                 }
-                                
+
                                 if (e.key === "Enter") {
-                                  const selectButton = target.closest('[role="combobox"]');
-                                  const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
                                   if (!isExpanded) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleBoxKeyDown(e, index, thisCol, {
-                                      allowEnterDefaultWhenRowMissing: !box?.cost_id,
+                                      allowEnterDefaultWhenRowMissing:
+                                        !box?.cost_id,
                                       isLastCol: true,
                                     });
+
                                     return;
                                   }
                                 }
+                              }}
+                              onSelectComplete={() => {
+                                setTimeout(() => {
+                                  focusNextBoxField(index, thisCol);
+                                }, 100);
                               }}
                             />
                           </div>
@@ -2001,9 +2316,9 @@ export default function DeliveryVoucherClientPage({
       {/* مودال توسيع البيان */}
       <Modal
         isOpen={isNotesModalOpen}
-        onClose={() => setIsNotesModalOpen(false)}
-        size="2xl"
         scrollBehavior="inside"
+        size="2xl"
+        onClose={() => setIsNotesModalOpen(false)}
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
@@ -2011,6 +2326,12 @@ export default function DeliveryVoucherClientPage({
           </ModalHeader>
           <ModalBody>
             <Textarea
+              classNames={{
+                input: "resize-none",
+              }}
+              disabled={!isEditing}
+              maxRows={12}
+              minRows={6}
               placeholder="أدخل بيان القيد..."
               value={voucher.vouch_notes || ""}
               onChange={(e) =>
@@ -2019,12 +2340,6 @@ export default function DeliveryVoucherClientPage({
                   vouch_notes: e.target.value,
                 }))
               }
-              disabled={!isEditing}
-              minRows={6}
-              maxRows={12}
-              classNames={{
-                input: "resize-none",
-              }}
             />
           </ModalBody>
           <ModalFooter>

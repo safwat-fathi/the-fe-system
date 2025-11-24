@@ -24,10 +24,7 @@ interface UnitFormClientProps {
   initialUnit: Partial<Unit>;
 }
 
-const UnitFormClient = ({
-  mode,
-  initialUnit,
-}: UnitFormClientProps) => {
+const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
   const router = useRouter();
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
@@ -37,6 +34,7 @@ const UnitFormClient = ({
   const handleSave = async () => {
     if (!unit.unit_name || !unit.unit_name_e) {
       toast.error("❌ يجب ملء جميع الحقول المطلوبة");
+
       return;
     }
 
@@ -75,12 +73,14 @@ const UnitFormClient = ({
   const getTitle = () => {
     if (isViewMode) return `عرض ${unit.unit_name || "الوحدة"}`;
     if (isAddMode) return "إضافة وحدة جديدة";
+
     return `تعديل ${unit.unit_name || "الوحدة"}`;
   };
 
   const getDescription = () => {
     if (isViewMode) return "عرض تفاصيل الوحدة";
     if (isAddMode) return "قم بإضافة وحدة جديدة إلى النظام";
+
     return "قم بتعديل بيانات الوحدة";
   };
 
@@ -93,10 +93,7 @@ const UnitFormClient = ({
           <p className="text-sm text-gray-600 mt-1">{getDescription()}</p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="light"
-            onPress={() => router.push("/basic/units")}
-          >
+          <Button variant="light" onPress={() => router.push("/basic/units")}>
             <ArrowLeftIcon className="h-4 w-4" />
             رجوع
           </Button>
@@ -113,11 +110,7 @@ const UnitFormClient = ({
               >
                 إلغاء
               </Button>
-              <Button
-                color="success"
-                isLoading={isSaving}
-                onPress={handleSave}
-              >
+              <Button color="success" isLoading={isSaving} onPress={handleSave}>
                 {isAddMode ? "حفظ" : "تحديث"}
               </Button>
             </>
@@ -128,22 +121,18 @@ const UnitFormClient = ({
       {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="اسم الوحدة"
           value={unit.unit_name || ""}
-          onChange={(e) =>
-            setUnit({ ...unit, unit_name: e.target.value })
-          }
-          isRequired
+          onChange={(e) => setUnit({ ...unit, unit_name: e.target.value })}
         />
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="اسم الوحدة بالإنجليزي"
           value={unit.unit_name_e || ""}
-          onChange={(e) =>
-            setUnit({ ...unit, unit_name_e: e.target.value })
-          }
-          isRequired
+          onChange={(e) => setUnit({ ...unit, unit_name_e: e.target.value })}
         />
         <Input
           isDisabled={isViewMode}
@@ -161,18 +150,14 @@ const UnitFormClient = ({
           <Checkbox
             isDisabled={isViewMode}
             isSelected={Boolean(unit.unit_status)}
-            onValueChange={(val) =>
-              setUnit({ ...unit, unit_status: val })
-            }
+            onValueChange={(val) => setUnit({ ...unit, unit_status: val })}
           >
             مفعلة
           </Checkbox>
           <Checkbox
             isDisabled={isViewMode}
             isSelected={Boolean(unit.unit_default)}
-            onValueChange={(val) =>
-              setUnit({ ...unit, unit_default: val })
-            }
+            onValueChange={(val) => setUnit({ ...unit, unit_default: val })}
           >
             افتراضية
           </Checkbox>
@@ -183,4 +168,3 @@ const UnitFormClient = ({
 };
 
 export default UnitFormClient;
-

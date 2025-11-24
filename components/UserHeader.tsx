@@ -83,10 +83,10 @@ export default function UserHeader() {
     return (
       <Navbar
         className="bg-gradient-to-r from-white via-slate-50 to-white shadow-sm border-b border-slate-200"
-        maxWidth="full"
         classNames={{
           wrapper: "px-4 py-2 min-h-[48px]",
         }}
+        maxWidth="full"
       >
         <NavbarContent className="hidden md:flex" justify="start">
           <NavbarItem>
@@ -100,10 +100,10 @@ export default function UserHeader() {
   return (
     <Navbar
       className="bg-gradient-to-r from-white via-slate-50 to-white shadow-sm border-b border-slate-200"
-      maxWidth="full"
       classNames={{
         wrapper: "px-4 py-2 min-h-[48px]",
       }}
+      maxWidth="full"
     >
       <NavbarContent className="hidden md:flex" justify="start">
         <NavbarItem>
@@ -131,8 +131,8 @@ export default function UserHeader() {
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <Button
-                variant="light"
                 className="flex items-center gap-2 px-2 py-1"
+                variant="light"
               >
                 <Avatar
                   className="bg-gradient-to-br from-amber-500 to-amber-600 text-white w-8 h-8 text-xs"
@@ -163,9 +163,7 @@ export default function UserHeader() {
               <DropdownItem
                 key="logout"
                 className="text-red-600"
-                startContent={
-                  <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                }
+                startContent={<ArrowRightOnRectangleIcon className="w-4 h-4" />}
                 onPress={handleLogout}
               >
                 تسجيل الخروج

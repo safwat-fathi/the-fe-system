@@ -731,12 +731,14 @@ export const useCustomerGoldVoucherForm = ({
         ) {
           try {
             const nextNumber = await voucherService.getNextNumber(vouchType);
+
             setVoucher((prev) => ({
               ...prev,
               vouch_id: nextNumber,
             }));
             hasGeneratedVoucherNumber.current = true;
             toast.error("تم تحديث رقم السند، يرجى إعادة الحفظ");
+
             return;
           } catch (error) {
             console.error("Error refreshing voucher number:", error);
@@ -759,12 +761,14 @@ export const useCustomerGoldVoucherForm = ({
       ) {
         try {
           const nextNumber = await voucherService.getNextNumber(vouchType);
+
           setVoucher((prev) => ({
             ...prev,
             vouch_id: nextNumber,
           }));
           hasGeneratedVoucherNumber.current = true;
           toast.error("تم تحديث رقم السند، يرجى إعادة الحفظ");
+
           return;
         } catch (numberError) {
           console.error("Error refreshing voucher number:", numberError);

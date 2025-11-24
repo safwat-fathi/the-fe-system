@@ -3,10 +3,12 @@
  * التنقل بين السندات والبحث
  */
 
-import { useState, useEffect } from "react";
+import type { Voucher } from "@/types/voucher";
+
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import type { Voucher } from "@/types/voucher";
+
 import { voucherService } from "@/services/api";
 import { getVoucherRoute } from "@/utilities/voucher/routing";
 
@@ -56,7 +58,8 @@ export const useVoucherNavigation = ({
 
     let targetIndex = 0;
     const currentIndex = vouchersList.findIndex(
-      (v) => v.vouch_id === currentVoucher.vouch_id || v.id === currentVoucher.id,
+      (v) =>
+        v.vouch_id === currentVoucher.vouch_id || v.id === currentVoucher.id,
     );
 
     switch (direction) {
@@ -84,6 +87,7 @@ export const useVoucherNavigation = ({
 
       if (targetId) {
         const route = getVoucherRoute(vouchType, targetId, "preview");
+
         router.push(route);
       }
     }
@@ -93,6 +97,7 @@ export const useVoucherNavigation = ({
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
       toast.error("يرجى إدخال رقم القيد للبحث");
+
       return;
     }
 
@@ -131,9 +136,11 @@ export const useVoucherNavigation = ({
           if (targetId) {
             const finalId = foundVoucher.id || targetId;
             const route = getVoucherRoute(vouchType, finalId, "preview");
+
             router.push(route);
             router.refresh();
             setSearchTerm("");
+
             return;
           }
         }
@@ -162,6 +169,7 @@ export const useVoucherNavigation = ({
             toast.error(
               `القيد الموجود (${foundAny.vouch_id}) ليس من نوع قيد تسوية`,
             );
+
             return;
           }
 
@@ -170,9 +178,11 @@ export const useVoucherNavigation = ({
           if (targetId) {
             const finalId = foundAny.id || targetId;
             const route = getVoucherRoute(vouchType, finalId, "preview");
+
             router.push(route);
             router.refresh();
             setSearchTerm("");
+
             return;
           }
         }
@@ -199,4 +209,3 @@ export const useVoucherNavigation = ({
     handleSearch,
   };
 };
-

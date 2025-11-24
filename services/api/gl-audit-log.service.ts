@@ -1,8 +1,9 @@
-import HttpService from "@/services/base/http.service";
 import type {
   CreateGLAuditLogPayload,
   GLAuditLog,
 } from "@/types/models/gl-audit-log";
+
+import HttpService from "@/services/base/http.service";
 
 class GLAuditLogService extends HttpService<GLAuditLog> {
   constructor() {
@@ -21,4 +22,3 @@ class GLAuditLogService extends HttpService<GLAuditLog> {
 const glAuditLogService = new GLAuditLogService();
 
 export default glAuditLogService;
-

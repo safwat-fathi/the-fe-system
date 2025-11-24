@@ -42,7 +42,8 @@ const LocaleSwitcher = () => {
     const newPath = `/${nextLocale}${restPath ? `/${restPath}` : ""}`;
 
     if (typeof window !== "undefined") {
-      window.location.href = newPath + window.location.search + window.location.hash;
+      window.location.href =
+        newPath + window.location.search + window.location.hash;
     }
   };
 
@@ -65,8 +66,8 @@ const LocaleSwitcher = () => {
         {locales.map((locale) => (
           <DropdownItem
             key={locale}
-            onPress={() => handleChange(locale)}
             className="text-sm"
+            onPress={() => handleChange(locale)}
           >
             {localeLabels[locale]}
           </DropdownItem>

@@ -341,7 +341,9 @@ export default function InvoicePaymentPage() {
         <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4 mb-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex-1 w-full">
-              <h1 className="text-lg sm:text-xl font-bold text-gray-800">دفع الفاتورة</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800">
+                دفع الفاتورة
+              </h1>
               <div className="flex flex-col sm:flex-row gap-2 text-xs sm:text-sm text-gray-600 mt-1">
                 {invoiceNumber && <span>رقم الفاتورة: {invoiceNumber}</span>}
                 {customerName && <span>العميل: {customerName}</span>}
@@ -349,21 +351,21 @@ export default function InvoicePaymentPage() {
             </div>
             <div className="flex gap-2 w-full sm:w-auto justify-end">
               <Button
+                className="flex-1"
                 color="default"
                 size="sm"
                 variant="bordered"
                 onClick={() => router.back()}
-                className="flex-1"
               >
                 العودة
               </Button>
               <Button
+                className="flex-1"
                 color="primary"
                 disabled={isOverpaid || !isFullyPaid || isLoading}
                 isLoading={isSaving}
                 size="sm"
                 onClick={handleSave}
-                className="flex-1"
               >
                 {isSaving ? "جاري الحفظ..." : "حفظ الدفع"}
               </Button>
@@ -383,14 +385,18 @@ export default function InvoicePaymentPage() {
 
               <div className="space-y-2 sm:space-y-3">
                 <div className="bg-green-50 rounded-lg p-2 sm:p-3 text-center">
-                  <p className="text-xs sm:text-sm text-green-600">قيمة الفاتورة</p>
+                  <p className="text-xs sm:text-sm text-green-600">
+                    قيمة الفاتورة
+                  </p>
                   <p className="text-lg sm:text-xl font-bold text-green-700">
                     {invoiceTotal.toFixed(frac)} ريال
                   </p>
                 </div>
 
                 <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
-                  <p className="text-xs sm:text-sm text-blue-600">المبلغ المدفوع</p>
+                  <p className="text-xs sm:text-sm text-blue-600">
+                    المبلغ المدفوع
+                  </p>
                   <p className="text-lg sm:text-xl font-bold text-blue-700">
                     {paidAmount.toFixed(frac)} ريال
                   </p>

@@ -3,8 +3,10 @@
  * إدارة تفاصيل السند
  */
 
-import { useState, useEffect, useMemo } from "react";
 import type { VoucherDetail } from "@/types/voucher";
+
+import { useState, useEffect, useMemo } from "react";
+
 import {
   parseNumber,
   clearOppositeField,
@@ -123,6 +125,7 @@ export const useVoucherDetails = ({
       return { success: false, error: "يجب أن يكون هناك سطرين على الأقل" };
     }
     setDetails((prev) => prev.filter((_, i) => i !== index));
+
     return { success: true };
   };
 
@@ -140,12 +143,14 @@ export const useVoucherDetails = ({
 
         // Clear opposite field
         const cleared = clearOppositeField(field, value);
+
         Object.assign(newDetail, cleared);
 
         // Get gauge from account when acc_id is selected
         if (field === "acc_id" && value) {
           const selectedAccount = accounts.find((acc) => acc.id === value);
           const gauge = getAccountGauge(selectedAccount, caratTypes);
+
           newDetail.gauge = gauge;
         }
 
@@ -322,4 +327,3 @@ export const useVoucherDetails = ({
     validateDetails,
   };
 };
-

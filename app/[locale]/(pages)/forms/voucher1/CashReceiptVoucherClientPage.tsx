@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect from "react-select";
@@ -23,8 +23,6 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Select,
-  SelectItem,
   Textarea,
 } from "@heroui/react";
 
@@ -165,7 +163,7 @@ export default function CashReceiptVoucherClientPage({
     return Number.isFinite(numeric) ? numeric : 0;
   };
 
-const PREVIEW_TOLERANCE = 0.01;
+  const PREVIEW_TOLERANCE = 0.01;
 
   const getPreviewAccountName = (
     accId: number | string | null | undefined,
@@ -186,18 +184,12 @@ const PREVIEW_TOLERANCE = 0.01;
     }
 
     const account = accounts?.find((acc: any) => {
-      const candidate =
-        acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
+      const candidate = acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
 
       return Number(candidate) === numericId;
     });
 
-    return (
-      account?.acc_name ||
-      account?.name ||
-      account?.label ||
-      ""
-    );
+    return account?.acc_name || account?.name || account?.label || "";
   };
 
   const getBoxAccountName = (
@@ -214,18 +206,13 @@ const PREVIEW_TOLERANCE = 0.01;
     }
 
     const boxItem = boxes?.find((box: any) => {
-      const candidate =
-        box?.id ?? box?.box_id ?? box?.box;
+      const candidate = box?.id ?? box?.box_id ?? box?.box;
 
       return Number(candidate) === numericId;
     });
 
     return {
-      name:
-        boxItem?.box_name ||
-        boxItem?.name ||
-        boxItem?.label ||
-        "",
+      name: boxItem?.box_name || boxItem?.name || boxItem?.label || "",
       code: boxItem?.acc ?? boxItem?.acc_id ?? boxId,
     };
   };
@@ -244,8 +231,7 @@ const PREVIEW_TOLERANCE = 0.01;
 
     return {
       value: String(box.id),
-      label:
-        box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
+      label: box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
     };
   };
 
@@ -257,9 +243,7 @@ const PREVIEW_TOLERANCE = 0.01;
   }, [boxes]);
 
   // Helper functions for cost center select
-  const getCostCenterSelectValue = (
-    costId: number | null | undefined,
-  ) => {
+  const getCostCenterSelectValue = (costId: number | null | undefined) => {
     if (!costId || costId <= 0) {
       return null;
     }
@@ -467,60 +451,57 @@ const PREVIEW_TOLERANCE = 0.01;
         <div className="flex items-center justify-between mt-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Button
-              size="sm"
-              variant="solid"
-              isLoading={isLoading}
-              isDisabled={!isEditing}
-              onPress={saveVoucher}
-              startContent={
-                !isLoading ? (
-                  <CheckIcon className="h-4 w-4" />
-                ) : undefined
-              }
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              isDisabled={!isEditing}
+              isLoading={isLoading}
+              size="sm"
+              startContent={
+                !isLoading ? <CheckIcon className="h-4 w-4" /> : undefined
+              }
+              variant="solid"
+              onPress={saveVoucher}
             >
               حفظ
             </Button>
 
             <Button
-              size="sm"
-              variant="solid"
-              isDisabled={formMode === "new" || isEditing || isLoading}
-              onPress={handleEditClick}
-              startContent={<PencilIcon className="h-4 w-4" />}
               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              isDisabled={formMode === "new" || isEditing || isLoading}
+              size="sm"
+              startContent={<PencilIcon className="h-4 w-4" />}
+              variant="solid"
+              onPress={handleEditClick}
             >
               تعديل
             </Button>
 
             <Button
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
               size="sm"
+              startContent={<PlusIcon className="h-4 w-4" />}
               variant="solid"
               onPress={() => {
                 // تحديد المسار بناءً على pathname أو vouchType
                 const basePath = pathname?.includes("/voucher2")
                   ? "/forms/voucher2"
                   : "/forms/voucher1";
+
                 router.push(basePath);
               }}
-              startContent={<PlusIcon className="h-4 w-4" />}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
             >
               جديد
             </Button>
 
             <Button
-              size="sm"
-              variant="solid"
-              isLoading={isPrinting}
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
-              onPress={printVoucher}
-              startContent={
-                !isPrinting ? (
-                  <PrinterIcon className="h-4 w-4" />
-                ) : undefined
-              }
               className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              isLoading={isPrinting}
+              size="sm"
+              startContent={
+                !isPrinting ? <PrinterIcon className="h-4 w-4" /> : undefined
+              }
+              variant="solid"
+              onPress={printVoucher}
             >
               طباعة
             </Button>
@@ -528,41 +509,41 @@ const PREVIEW_TOLERANCE = 0.01;
             <div className="flex items-center gap-1 border border-slate-200 rounded-md px-1.5 py-1 bg-white">
               <Button
                 isIconOnly
+                aria-label="أول سند"
+                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
                 size="sm"
                 variant="light"
-                aria-label="أول سند"
                 onPress={() => handleNavigate(navigationTargets.first)}
-                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
               >
                 <BackwardIcon className="h-4 w-4 text-slate-600" />
               </Button>
               <Button
                 isIconOnly
+                aria-label="السند السابق"
+                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
                 size="sm"
                 variant="light"
-                aria-label="السند السابق"
                 onPress={() => handleNavigate(navigationTargets.previous)}
-                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
               >
                 <ChevronRightIcon className="h-4 w-4 text-slate-600" />
               </Button>
               <Button
                 isIconOnly
+                aria-label="السند التالي"
+                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
                 size="sm"
                 variant="light"
-                aria-label="السند التالي"
                 onPress={() => handleNavigate(navigationTargets.next)}
-                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
               >
                 <ChevronLeftIcon className="h-4 w-4 text-slate-600" />
               </Button>
               <Button
                 isIconOnly
+                aria-label="آخر سند"
+                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
                 size="sm"
                 variant="light"
-                aria-label="آخر سند"
                 onPress={() => handleNavigate(navigationTargets.last)}
-                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
               >
                 <ForwardIcon className="h-4 w-4 text-slate-600" />
               </Button>
@@ -653,11 +634,11 @@ const PREVIEW_TOLERANCE = 0.01;
             </label>
             <ReactSelect
               isSearchable
-              isDisabled={!isEditing}
               className="text-xs"
               classNamePrefix="react-select"
               components={{ IndicatorSeparator: () => null }}
               instanceId="voucher-cost-center-select"
+              isDisabled={!isEditing}
               menuPortalTarget={
                 typeof window !== "undefined" ? document.body : null
               }
@@ -691,6 +672,7 @@ const PREVIEW_TOLERANCE = 0.01;
                 const selected = selectedOption?.value
                   ? Number(selectedOption.value)
                   : null;
+
                 handleMasterCostChange(
                   selected !== null && Number.isFinite(selected)
                     ? selected
@@ -758,9 +740,9 @@ const PREVIEW_TOLERANCE = 0.01;
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
             disabled={!isEditing}
+            placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
             readOnly={!isEditing}
             type="text"
-            placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
             value={voucher.vouch_notes || ""}
             onChange={(e) =>
               setVoucher((prev) => ({ ...prev, vouch_notes: e.target.value }))
@@ -773,10 +755,10 @@ const PREVIEW_TOLERANCE = 0.01;
           />
           {isEditing && (
             <button
-              type="button"
-              onClick={() => setIsNotesModalOpen(true)}
               className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
               title="توسيع البيان"
+              type="button"
+              onClick={() => setIsNotesModalOpen(true)}
             >
               <ArrowsPointingOutIcon className="h-3 w-3" />
             </button>
@@ -846,11 +828,11 @@ const PREVIEW_TOLERANCE = 0.01;
                     <td className="p-0 border">
                       <ReactSelect
                         isSearchable
-                        isDisabled={!isEditing}
                         className="text-xs"
                         classNamePrefix="react-select"
                         components={{ IndicatorSeparator: () => null }}
                         instanceId={`box-select-${index}`}
+                        isDisabled={!isEditing}
                         menuPortalTarget={
                           typeof window !== "undefined" ? document.body : null
                         }
@@ -922,11 +904,11 @@ const PREVIEW_TOLERANCE = 0.01;
                     <td className="p-0 border">
                       <ReactSelect
                         isSearchable
-                        isDisabled={!isEditing}
                         className="text-xs"
                         classNamePrefix="react-select"
                         components={{ IndicatorSeparator: () => null }}
                         instanceId={`cost-center-box-select-${index}`}
+                        isDisabled={!isEditing}
                         menuPortalTarget={
                           typeof window !== "undefined" ? document.body : null
                         }
@@ -1183,11 +1165,11 @@ const PREVIEW_TOLERANCE = 0.01;
                     <td className="p-0 border">
                       <ReactSelect
                         isSearchable
-                        isDisabled={!isEditing}
                         className="text-xs"
                         classNamePrefix="react-select"
                         components={{ IndicatorSeparator: () => null }}
                         instanceId={`cost-center-detail-select-${index}`}
+                        isDisabled={!isEditing}
                         menuPortalTarget={
                           typeof window !== "undefined" ? document.body : null
                         }
@@ -1298,9 +1280,9 @@ const PREVIEW_TOLERANCE = 0.01;
       {/* مودال توسيع البيان */}
       <Modal
         isOpen={isNotesModalOpen}
-        onClose={() => setIsNotesModalOpen(false)}
-        size="2xl"
         scrollBehavior="inside"
+        size="2xl"
+        onClose={() => setIsNotesModalOpen(false)}
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
@@ -1308,6 +1290,12 @@ const PREVIEW_TOLERANCE = 0.01;
           </ModalHeader>
           <ModalBody>
             <Textarea
+              classNames={{
+                input: "resize-none",
+              }}
+              disabled={!isEditing}
+              maxRows={12}
+              minRows={6}
               placeholder="أدخل بيان القيد..."
               value={voucher.vouch_notes || ""}
               onChange={(e) =>
@@ -1316,12 +1304,6 @@ const PREVIEW_TOLERANCE = 0.01;
                   vouch_notes: e.target.value,
                 }))
               }
-              disabled={!isEditing}
-              minRows={6}
-              maxRows={12}
-              classNames={{
-                input: "resize-none",
-              }}
             />
           </ModalBody>
           <ModalFooter>

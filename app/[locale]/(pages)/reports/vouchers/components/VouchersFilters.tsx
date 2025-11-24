@@ -8,6 +8,7 @@
 import { Input, Button, Select, SelectItem } from "@heroui/react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { CardBody } from "@heroui/react";
+
 import Card from "@/components/Card";
 
 interface VoucherType {
@@ -94,4 +95,3 @@ export default function VouchersFilters({
     </Card>
   );
 }
-

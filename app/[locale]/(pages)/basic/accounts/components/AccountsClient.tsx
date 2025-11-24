@@ -1,9 +1,10 @@
 "use client";
 
+import type { BreadcrumbItem } from "@/components/Breadcrumb";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, CardBody, Input, Select, SelectItem } from "@heroui/react";
-import Breadcrumb from "@/components/Breadcrumb";
 import {
   EyeIcon,
   PencilIcon,
@@ -15,9 +16,6 @@ import {
 import toast from "react-hot-toast";
 
 import Card from "../../../../../../components/Card";
-
-import accountService from "@/services/api/account.service";
-import { revalidateTableData } from "@/app/actions/revalidate.action";
 import {
   findAccountById,
   flattenAccountTree,
@@ -25,9 +23,12 @@ import {
   normalizeAccountsTree,
   removeAccountFromTree,
 } from "../utils/account-tree";
+
+import accountService from "@/services/api/account.service";
+import { revalidateTableData } from "@/app/actions/revalidate.action";
+import Breadcrumb from "@/components/Breadcrumb";
 import { Account } from "@/types/models/account";
 import { Currency } from "@/types/models/currency";
-import type { BreadcrumbItem } from "@/components/Breadcrumb";
 
 // Simple icon components
 const FolderEmoji = ({ className }: { className?: string }) => (
@@ -122,6 +123,7 @@ export default function AccountsClient({
   useEffect(() => {
     if (initialAccounts.length > 0) {
       const normalized = normalizeAccountsTree(initialAccounts);
+
       setAccounts(normalized);
       setDisplayAccounts(normalized);
     }
@@ -180,17 +182,23 @@ export default function AccountsClient({
     if (parentId) {
       const parentAccount = findAccountById(accounts, parentId);
 
-    if (parentAccount && parentAccount.acc_level >= 5) {
-      toast.error("لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.");
+      if (parentAccount && parentAccount.acc_level >= 5) {
+        toast.error("لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.");
 
         return;
-    }
+      }
 
       const flatAccounts = flattenAccountTree(accounts);
-    const siblings = flatAccounts.filter((account) => account.parent === parentId);
+      const siblings = flatAccounts.filter(
+        (account) => account.parent === parentId,
+      );
 
-      if (parentAccount && parentAccount.acc_level < 5 && siblings.length >= 9) {
-      toast.error("لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.");
+      if (
+        parentAccount &&
+        parentAccount.acc_level < 5 &&
+        siblings.length >= 9
+      ) {
+        toast.error("لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.");
 
         return;
       }
@@ -274,7 +282,6 @@ export default function AccountsClient({
     setExpandedNodes(new Set());
   };
 
-
   const renderAccountTree = (accounts: Account[], level: number = 0) => {
     return accounts.map((account) => {
       const hasChildren = account.children && account.children.length > 0;
@@ -341,12 +348,14 @@ export default function AccountsClient({
     const applyTypeFilter = (account: Account) => {
       if (filterType === "main") return account.acc_type === 1;
       if (filterType === "sub") return account.acc_type === 2;
+
       return true;
     };
 
     const applyReportFilter = (account: Account) => {
       if (filterReport === "pl") return account.acc_rep === 1;
       if (filterReport === "balance") return account.acc_rep === 2;
+
       return true;
     };
 
@@ -383,6 +392,7 @@ export default function AccountsClient({
       }
 
       let ancestorId = parentMap.get(account.id);
+
       while (ancestorId) {
         matchingIds.add(ancestorId);
         ancestorId = parentMap.get(ancestorId) ?? null;
@@ -425,12 +435,15 @@ export default function AccountsClient({
     if (trimmedSearch.length > 0 && matchingIds.size > 0) {
       setExpandedNodes((prev) => {
         const merged = new Set(prev);
+
         matchingIds.forEach((id) => {
           const parentId = parentMap.get(id);
+
           if (parentId) {
             merged.add(parentId);
           }
         });
+
         return merged;
       });
     }
@@ -441,10 +454,10 @@ export default function AccountsClient({
       <div className="max-w-7xl mx-auto pb-6">
         <div className="flex flex-wrap items-center gap-3 mb-2">
           <Button
-            variant="bordered"
-            startContent={<PlusIcon className="h-4 w-4" />}
-            onPress={handleAddAccount}
             className="bg-gray-100 hover:bg-gray-200 border-gray-300"
+            startContent={<PlusIcon className="h-4 w-4" />}
+            variant="bordered"
+            onPress={handleAddAccount}
           >
             إضافة حساب
           </Button>
@@ -486,9 +499,9 @@ export default function AccountsClient({
 
             <Button
               isIconOnly
-              variant="bordered"
               className="h-10"
               title="مسح الفلاتر"
+              variant="bordered"
               onPress={clearFilters}
             >
               <FunnelIcon className="h-4 w-4" />
@@ -502,11 +515,11 @@ export default function AccountsClient({
               aria-label="بحث في الحسابات"
               className="w-full"
               placeholder="بحث بالاسم..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
               startContent={
                 <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
               }
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -644,13 +657,17 @@ export default function AccountsClient({
                           </thead>
                           <tbody>
                             {getDirectSubAccounts(selectedAccount)
-                              .filter((account) => account.id !== selectedAccount.id)
+                              .filter(
+                                (account) => account.id !== selectedAccount.id,
+                              )
                               .map((account) => (
                                 <tr
                                   key={account.id}
                                   className="hover:bg-gray-50 cursor-pointer"
                                   title="انقر مزدوج للانتقال إلى المستوى التالي"
-                                  onDoubleClick={() => setSelectedAccount(account)}
+                                  onDoubleClick={() =>
+                                    setSelectedAccount(account)
+                                  }
                                 >
                                   <td className="border border-gray-300 px-2 py-1 text-xs text-right">
                                     {account.acc_id}
@@ -667,8 +684,9 @@ export default function AccountsClient({
                                       : "الميزانية العمومية"}
                                   </td>
                                   <td className="border border-gray-300 px-2 py-1 text-xs text-right">
-                                    {currencies.find((c) => c.id === account.cur)?.cur_name ||
-                                      "غير محددة"}
+                                    {currencies.find(
+                                      (c) => c.id === account.cur,
+                                    )?.cur_name || "غير محددة"}
                                   </td>
                                   <td className="border border-gray-300 px-2 py-1 text-xs">
                                     <div className="flex items-center justify-center gap-2">
@@ -718,7 +736,9 @@ export default function AccountsClient({
                                 {selectedAccount.acc_name}
                               </td>
                               <td className="border border-gray-300 px-2 py-1 text-xs text-right">
-                                {selectedAccount.acc_type === 1 ? "رئيسي" : "فرعي"}
+                                {selectedAccount.acc_type === 1
+                                  ? "رئيسي"
+                                  : "فرعي"}
                               </td>
                               <td className="border border-gray-300 px-2 py-1 text-xs text-right">
                                 {selectedAccount.acc_rep === 1
@@ -726,8 +746,9 @@ export default function AccountsClient({
                                   : "الميزانية العمومية"}
                               </td>
                               <td className="border border-gray-300 px-2 py-1 text-xs text-right">
-                                {currencies.find((c) => c.id === selectedAccount.cur)?.cur_name ||
-                                  "غير محددة"}
+                                {currencies.find(
+                                  (c) => c.id === selectedAccount.cur,
+                                )?.cur_name || "غير محددة"}
                               </td>
                               <td className="border border-gray-300 px-2 py-1 text-xs">
                                 <div className="flex items-center justify-center gap-2">
@@ -786,7 +807,6 @@ export default function AccountsClient({
           </div>
         </div>
       </div>
-
     </div>
   );
 }

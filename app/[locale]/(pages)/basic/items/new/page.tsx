@@ -1,3 +1,5 @@
+import type { ItemForm } from "@/types/items";
+
 import { Metadata } from "next";
 
 import ItemFormClient from "../components/ItemFormClient";
@@ -5,7 +7,6 @@ import ItemFormClient from "../components/ItemFormClient";
 import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
 import helperService from "@/services/api/helper.service";
-import type { ItemForm } from "@/types/items";
 
 export const metadata: Metadata = {
   title: "إضافة صنف جديد - NafeesWeb",
@@ -64,8 +65,8 @@ export default async function NewItemPage() {
         ]}
       />
       <ItemFormClient
-        companyId={companyId}
         categories={categoriesData}
+        companyId={companyId}
         initialItem={emptyItem}
         itemTypes={itemTypesData}
         mode="add"
@@ -74,4 +75,3 @@ export default async function NewItemPage() {
     </div>
   );
 }
-

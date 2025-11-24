@@ -138,8 +138,8 @@ export const createInvoiceColumns = (
         <div className="flex gap-2">
           <Link href={previewHref}>
             <Button
-              aria-label={messages.actionLabels.preview}
               isIconOnly
+              aria-label={messages.actionLabels.preview}
               size="sm"
               variant="light"
             >
@@ -148,8 +148,8 @@ export const createInvoiceColumns = (
           </Link>
           <Link href={editHref}>
             <Button
-              aria-label={messages.actionLabels.edit}
               isIconOnly
+              aria-label={messages.actionLabels.edit}
               size="sm"
               variant="light"
             >

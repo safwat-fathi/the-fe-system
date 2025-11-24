@@ -1,24 +1,27 @@
 "use client";
 
+import type { HTMLAttributes, MouseEvent } from "react";
+
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 
-import type { HTMLAttributes, MouseEvent, ReactNode } from "react";
 import { Locale, locales } from "@/i18n/config";
 
 export interface BreadcrumbItem {
   name: string;
   href?: string;
-  onClick?: (event: MouseEvent<HTMLAnchorElement | HTMLButtonElement | HTMLSpanElement>) => void;
+  onClick?: (
+    event: MouseEvent<HTMLAnchorElement | HTMLButtonElement | HTMLSpanElement>,
+  ) => void;
 }
 
 type BreadcrumbProps = HTMLAttributes<HTMLBaseElement> & {
   items?: BreadcrumbItem[];
   showHome?: boolean;
   className?: string;
-}
+};
 
 // Mapping for better Arabic names
 const pathNameMap: Record<string, string> = {
@@ -27,7 +30,7 @@ const pathNameMap: Record<string, string> = {
   forms: "النماذج",
   basic: "القوائم الأساسية",
   settings: "الإعدادات",
-  
+
   // Reports
   "account-statement": "كشف حساب",
   vouchers: "تقرير السندات",
@@ -44,7 +47,7 @@ const pathNameMap: Record<string, string> = {
   "purchase-invoices": "فواتير المشتريات",
   "credit-notes": "إشعارات دائنة",
   "debit-notes": "إشعارات مدينة",
-  
+
   // Forms - Vouchers
   voucher: "القيود",
   voucher1: "سند قبض",
@@ -54,7 +57,7 @@ const pathNameMap: Record<string, string> = {
   receipt: "سند استلام",
   delivery: "سند تسليم",
   balance: "قيد افتتاحي",
-  
+
   // Basic
   accounts: "الحسابات",
   customers: "العملاء",
@@ -64,14 +67,14 @@ const pathNameMap: Record<string, string> = {
   categories: "الفئات",
   currencies: "العملات",
   "cost-centers": "مراكز التكلفة",
-  "cust_type": "أنواع العملاء",
-  
+  cust_type: "أنواع العملاء",
+
   // Settings
   permissions: "الصلاحيات",
   "gl-transactions": "القيود المحاسبية",
   taxes: "الضرائب",
   integrations: "التكاملات",
-  
+
   // Actions
   new: "جديدة",
   edit: "تعديل",
@@ -101,23 +104,24 @@ const Breadcrumb = ({
     // Filter out "basic" and "forms" segments - they should not appear in breadcrumbs
     // The pages under them should appear directly after "الرئيسية"
     const segmentsToShow = pathSegments.filter(
-      (segment) => segment !== "basic" && segment !== "forms"
+      (segment) => segment !== "basic" && segment !== "forms",
     );
-    
+
     // Build hrefs based on original segments but names based on filtered segments
     return segmentsToShow.map((segment, filteredIndex) => {
       // Find the actual index in original segments (including locale if present)
       const actualIndex = allSegments.indexOf(segment);
       const href = "/" + allSegments.slice(0, actualIndex + 1).join("/");
-      
+
       // Handle dynamic segments (like [id])
       // If segment is a number, it's likely an ID - use parent segment name
       let name: string;
-      
+
       if (!isNaN(Number(segment)) && filteredIndex > 0) {
         // This is a dynamic ID segment, use parent name with ID
         const parentSegment = segmentsToShow[filteredIndex - 1];
         const parentName = pathNameMap[parentSegment] || parentSegment;
+
         name = `${parentName} #${segment}`;
       } else {
         // Use mapped name if available, otherwise capitalize
@@ -172,6 +176,7 @@ const Breadcrumb = ({
 
             if (hasView) {
               const viewIndex = remainingText.indexOf("عرض");
+
               if (viewIndex !== -1) {
                 // إضافة النص قبل "عرض"
                 if (viewIndex > 0) {
@@ -188,6 +193,7 @@ const Breadcrumb = ({
               }
             } else if (hasEdit) {
               const editIndex = remainingText.indexOf("تعديل");
+
               if (editIndex !== -1) {
                 // إضافة النص قبل "تعديل"
                 if (editIndex > 0) {
@@ -232,8 +238,8 @@ const Breadcrumb = ({
                   </Link>
                 ) : item.onClick ? (
                   <button
-                    type="button"
                     className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
+                    type="button"
                     onClick={item.onClick}
                   >
                     {renderName}

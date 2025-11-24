@@ -24,17 +24,13 @@ export default async function CategoriesPage() {
       : 1;
 
   // جلب البيانات بالتوازي
-  const [
-    categoriesData,
-    boxesDataRaw,
-    catTypesData,
-    catStatusesData,
-  ] = await Promise.all([
-    categoryService.getAllCategories(companyId).catch(() => []),
-    boxesService.getGoldBoxes({ xcom_id: companyId }).catch(() => []),
-    helperService.getCatTypes().catch(() => []),
-    helperService.getCatStatuses().catch(() => []),
-  ]);
+  const [categoriesData, boxesDataRaw, catTypesData, catStatusesData] =
+    await Promise.all([
+      categoryService.getAllCategories(companyId).catch(() => []),
+      boxesService.getGoldBoxes({ xcom_id: companyId }).catch(() => []),
+      helperService.getCatTypes().catch(() => []),
+      helperService.getCatStatuses().catch(() => []),
+    ]);
 
   const firstCategoryId = categoriesData?.[0]?.id ?? null;
 
@@ -77,12 +73,12 @@ export default async function CategoriesPage() {
       <h1 className="responsive-text-xl font-bold mb-2">الفئات</h1>
 
       <CategoriesClient
-        companyId={companyId}
-        initialBoxes={normalizedBoxes}
-        catTypes={normalizedCatTypes}
         catStatuses={normalizedCatStatuses}
-        initialCategories={categoriesData as any}
+        catTypes={normalizedCatTypes}
+        companyId={companyId}
         initialAccounts={accountsData as any}
+        initialBoxes={normalizedBoxes}
+        initialCategories={categoriesData as any}
         initialCategoryAccounts={initialCategoryAccounts as any}
       />
     </div>

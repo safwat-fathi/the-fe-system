@@ -97,7 +97,7 @@ export interface Invoice {
   last_invoice_id: string | null;
   next_invoice_id: string | null;
   previous_invoice_id: string | null;
-	invoices_count: string | null;
+  invoices_count: string | null;
 }
 
 /**

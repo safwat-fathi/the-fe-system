@@ -1,6 +1,7 @@
 import { HttpService } from "@/services/base";
 import { Customer } from "@/types/models/customer";
 import { Invoice, TransTypes } from "@/types/models/invoice";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 interface GetCustomerParams {
   xcom_id: number;
@@ -54,6 +55,7 @@ class CustomerService extends HttpService<Customer> {
       return [];
     } catch (error) {
       console.error("Error fetching customers:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات العملاء");
     }
   }
@@ -90,6 +92,7 @@ class CustomerService extends HttpService<Customer> {
       return null;
     } catch (error) {
       console.error("Error creating customer:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء إنشاء العميل");
     }
   }
@@ -115,6 +118,7 @@ class CustomerService extends HttpService<Customer> {
       return null;
     } catch (error) {
       console.error("Error updating customer:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء تحديث العميل");
     }
   }
@@ -132,6 +136,7 @@ class CustomerService extends HttpService<Customer> {
       return response.success;
     } catch (error) {
       console.error("Error deleting customer:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء حذف العميل");
     }
   }
@@ -188,6 +193,7 @@ class CustomerService extends HttpService<Customer> {
       return [];
     } catch (error) {
       console.error("Error fetching customer invoices:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب فواتير العميل");
     }
   }

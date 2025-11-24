@@ -1,5 +1,6 @@
-import { whatsappService } from "@/services/external/whatsapp.service";
 import { NextRequest, NextResponse } from "next/server";
+
+import { whatsappService } from "@/services/external/whatsapp.service";
 
 export const runtime = "nodejs";
 
@@ -50,4 +51,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

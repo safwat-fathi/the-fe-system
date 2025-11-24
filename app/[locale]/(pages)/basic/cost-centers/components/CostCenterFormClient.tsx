@@ -56,12 +56,14 @@ const CostCenterFormClient = ({
   const router = useRouter();
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
-  const [costCenter, setCostCenter] = useState<Partial<CostCenter>>(initialCostCenter);
+  const [costCenter, setCostCenter] =
+    useState<Partial<CostCenter>>(initialCostCenter);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     if (!costCenter.cost_name || !costCenter.cost_name_e) {
       toast.error("❌ يجب ملء جميع الحقول المطلوبة");
+
       return;
     }
 
@@ -75,7 +77,10 @@ const CostCenterFormClient = ({
           costCenter as Omit<CostCenter, "id">,
         );
       } else if (costCenter.id) {
-        result = await costCenterService.updateCostCenter(costCenter.id, costCenter);
+        result = await costCenterService.updateCostCenter(
+          costCenter.id,
+          costCenter,
+        );
       }
 
       if (result) {
@@ -104,19 +109,19 @@ const CostCenterFormClient = ({
   const getTitle = () => {
     if (isViewMode) return `عرض ${costCenter.cost_name || "مركز التكلفة"}`;
     if (isAddMode) return "إضافة مركز تكلفة جديد";
+
     return `تعديل ${costCenter.cost_name || "مركز التكلفة"}`;
   };
 
   const getDescription = () => {
     if (isViewMode) return "عرض تفاصيل مركز التكلفة";
     if (isAddMode) return "قم بإضافة مركز تكلفة جديد إلى النظام";
+
     return "قم بتعديل بيانات مركز التكلفة";
   };
 
   // Filter out current cost center from parent options
-  const parentOptions = costCenters.filter(
-    (cc) => cc.id !== costCenter.id,
-  );
+  const parentOptions = costCenters.filter((cc) => cc.id !== costCenter.id);
 
   return (
     <div className="space-y-4">
@@ -147,11 +152,7 @@ const CostCenterFormClient = ({
               >
                 إلغاء
               </Button>
-              <Button
-                color="success"
-                isLoading={isSaving}
-                onPress={handleSave}
-              >
+              <Button color="success" isLoading={isSaving} onPress={handleSave}>
                 {isAddMode ? "حفظ" : "تحديث"}
               </Button>
             </>
@@ -162,22 +163,22 @@ const CostCenterFormClient = ({
       {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="اسم مركز التكلفة"
           value={costCenter.cost_name || ""}
           onChange={(e) =>
             setCostCenter({ ...costCenter, cost_name: e.target.value })
           }
-          isRequired
         />
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="الاسم بالإنجليزي"
           value={costCenter.cost_name_e || ""}
           onChange={(e) =>
             setCostCenter({ ...costCenter, cost_name_e: e.target.value })
           }
-          isRequired
         />
         <Select
           isDisabled={isViewMode}
@@ -187,6 +188,7 @@ const CostCenterFormClient = ({
           }
           onSelectionChange={(keys) => {
             const type = Number(Array.from(keys)[0]);
+
             setCostCenter({ ...costCenter, cost_type: type });
           }}
         >
@@ -210,6 +212,7 @@ const CostCenterFormClient = ({
           }
           onSelectionChange={(keys) => {
             const accId = Number(Array.from(keys)[0]);
+
             setCostCenter({ ...costCenter, acc: accId || null });
           }}
         >
@@ -229,6 +232,7 @@ const CostCenterFormClient = ({
           }
           onSelectionChange={(keys) => {
             const parentId = Number(Array.from(keys)[0]);
+
             setCostCenter({ ...costCenter, parent: parentId || null });
           }}
         >
@@ -255,4 +259,3 @@ const CostCenterFormClient = ({
 };
 
 export default CostCenterFormClient;
-

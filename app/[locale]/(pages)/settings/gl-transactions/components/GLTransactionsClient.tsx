@@ -234,7 +234,8 @@ export default function GLTransactionsClient({
                 <span
                   className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass[healthSummary.lastAudit.status] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}
                 >
-                  {healthSummary.lastAudit.status === "success" && "بدون ملاحظات"}
+                  {healthSummary.lastAudit.status === "success" &&
+                    "بدون ملاحظات"}
                   {healthSummary.lastAudit.status === "warnings" && "تحذيرات"}
                   {healthSummary.lastAudit.status === "errors" && "أخطاء"}
                   {!["success", "warnings", "errors"].includes(
@@ -272,16 +273,18 @@ export default function GLTransactionsClient({
                     className="flex items-center justify-between gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2"
                   >
                     <div className="space-y-1">
-                      <p className="font-semibold text-red-700">{issue.label}</p>
+                      <p className="font-semibold text-red-700">
+                        {issue.label}
+                      </p>
                       <p className="text-xs text-red-600">
                         فرق نقدي: {issue.cashDiff.toFixed(2)} | فرق ذهب:{" "}
                         {issue.goldDiff.toFixed(2)}
                       </p>
                     </div>
                     <Button
+                      color="danger"
                       size="sm"
                       variant="light"
-                      color="danger"
                       onPress={() => router.push(issue.route)}
                     >
                       مراجعة
@@ -472,7 +475,9 @@ export default function GLTransactionsClient({
                       </TableCell>
                       <TableCell
                         className={`text-center text-xs font-semibold ${
-                          totals.cashBalanced ? "text-emerald-700" : "text-red-600"
+                          totals.cashBalanced
+                            ? "text-emerald-700"
+                            : "text-red-600"
                         }`}
                       >
                         {formatAmount(Math.abs(totals.cashDiff))}

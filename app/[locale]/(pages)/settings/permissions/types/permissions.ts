@@ -24,4 +24,3 @@ export interface ObjectPermission {
   permissions: PermissionType[];
   source: "group" | "user";
 }
-

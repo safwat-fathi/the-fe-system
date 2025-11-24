@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo, useTransition, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useTransition,
+  useCallback,
+} from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Button, Tabs, Tab, Tooltip } from "@heroui/react";
@@ -11,21 +17,17 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 
-import Card from "@/components/Card";
-import { PrintButton } from "@/components";
-import { Voucher } from "@/types/voucher";
-import { formatAmount } from "@/utilities/formatAmount";
-import { useQueryParams } from "@/utilities/hooks/useQueryParams";
-import { IParams } from "@/types/services/base";
-import { voucherService } from "@/services/api";
-import {
-  getVoucherRoute,
-  getVoucherTypeName,
-} from "@/utilities/voucher/routing";
-import { formatVoucherDate } from "@/utilities/voucher/formatting";
 import VouchersFilters from "./VouchersFilters";
 import VoucherTotals from "./VoucherTotals";
 import VouchersTable from "./VouchersTable";
+
+import Card from "@/components/Card";
+import { PrintButton } from "@/components";
+import { Voucher } from "@/types/voucher";
+import { useQueryParams } from "@/utilities/hooks/useQueryParams";
+import { IParams } from "@/types/services/base";
+import { voucherService } from "@/services/api";
+import { getVoucherRoute } from "@/utilities/voucher/routing";
 
 interface VoucherType {
   id: number;
@@ -141,7 +143,6 @@ const VouchersReportClient = ({
     },
     [params, setParams, totalPages],
   );
-
 
   // Get vouchers by type (filtered on client side for tabs) - memoized
   const getVouchersByType = useCallback(
@@ -433,11 +434,11 @@ const VouchersReportClient = ({
                 <Tooltip content="السابق" placement="bottom">
                   <Button
                     isIconOnly
+                    aria-label="السابق"
+                    className="h-7 w-7"
+                    isDisabled={currentPage <= 1 || isPaging}
                     size="sm"
                     variant="light"
-                    className="h-7 w-7"
-                    aria-label="السابق"
-                    isDisabled={currentPage <= 1 || isPaging}
                     onPress={() => handlePageChange(currentPage - 1)}
                   >
                     <ChevronRightIcon className="h-4 w-4 text-slate-600" />
@@ -449,11 +450,11 @@ const VouchersReportClient = ({
                 <Tooltip content="التالي" placement="bottom">
                   <Button
                     isIconOnly
+                    aria-label="التالي"
+                    className="h-7 w-7"
+                    isDisabled={currentPage >= totalPages || isPaging}
                     size="sm"
                     variant="light"
-                    className="h-7 w-7"
-                    aria-label="التالي"
-                    isDisabled={currentPage >= totalPages || isPaging}
                     onPress={() => handlePageChange(currentPage + 1)}
                   >
                     <ChevronLeftIcon className="h-4 w-4 text-slate-600" />
@@ -474,30 +475,26 @@ const VouchersReportClient = ({
 
         {/* Filters */}
         <VouchersFilters
+          fromDate={params.xfrom_date || "0"}
           searchQ={searchQ}
+          toDate={params.xto_date || "0"}
+          voucherType={params.xvouch_type || "0"}
+          voucherTypes={voucherTypes}
+          onClearFilters={clearFilters}
+          onFromDateChange={(value) =>
+            startTransition(() => setParams({ xfrom_date: value, page: "1" }))
+          }
           onSearchChange={(value) => {
             setSearchQ(value);
             if (value === params.xvouch_id) return;
             startTransition(() => setParams({ xvouch_id: value, page: "1" }));
           }}
-          voucherType={params.xvouch_type || "0"}
-          onVoucherTypeChange={(value) =>
-            startTransition(() =>
-              setParams({ xvouch_type: value, page: "1" }),
-            )
-          }
-          fromDate={params.xfrom_date || "0"}
-          onFromDateChange={(value) =>
-            startTransition(() =>
-              setParams({ xfrom_date: value, page: "1" }),
-            )
-          }
-          toDate={params.xto_date || "0"}
           onToDateChange={(value) =>
             startTransition(() => setParams({ xto_date: value, page: "1" }))
           }
-          voucherTypes={voucherTypes}
-          onClearFilters={clearFilters}
+          onVoucherTypeChange={(value) =>
+            startTransition(() => setParams({ xvouch_type: value, page: "1" }))
+          }
         />
       </div>
 
@@ -612,13 +609,13 @@ const VouchersReportClient = ({
           <VoucherTotals
             calculateVoucherCashTotal={calculateVoucherCashTotal}
             calculateVoucherGoldTotal={calculateVoucherGoldTotal}
-            vouchers={vouchers}
-            voucherDetails={voucherDetails}
             overallTotals={{
               totalAmount: overallTotals.totalAmount,
               totalGold: overallTotals.totalGold,
             }}
             totalVoucherCount={totalVouchers}
+            voucherDetails={voucherDetails}
+            vouchers={vouchers}
           />
           {/* أزرار التنقل انتقلت إلى أعلى الصفحة */}
         </CardBody>

@@ -12,13 +12,9 @@ import {
   Chip,
   Divider,
 } from "@heroui/react";
-import {
-  Squares2X2Icon,
-  CheckBadgeIcon,
-} from "@heroicons/react/24/outline";
+import { Squares2X2Icon, CheckBadgeIcon } from "@heroicons/react/24/outline";
 
 import { PERMISSION_TYPES } from "../../types/permissions";
-import { SYSTEM_MAP } from "../../utils/system-map";
 import {
   getPermissionLabel,
   getPermissionColor,
@@ -61,6 +57,7 @@ export default function BulkPermissions({
     }
 
     const newPermissions: Record<string, string[]> = {};
+
     selectedScreens.forEach((screenId) => {
       newPermissions[screenId] = [...selectedPermissions];
     });
@@ -70,7 +67,7 @@ export default function BulkPermissions({
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose} size="2xl">
+    <Modal isOpen={true} size="2xl" onClose={onClose}>
       <ModalContent>
         <ModalHeader>
           <div className="flex items-center gap-3">
@@ -131,8 +128,8 @@ export default function BulkPermissions({
                     >
                       <Chip
                         color={isSelected ? (color as any) : "default"}
-                        variant={isSelected ? "flat" : "bordered"}
                         size="sm"
+                        variant={isSelected ? "flat" : "bordered"}
                       >
                         {label}
                       </Chip>
@@ -158,9 +155,9 @@ export default function BulkPermissions({
           </Button>
           <Button
             color="primary"
-            onPress={handleApply}
             isDisabled={selectedPermissions.length === 0}
             startContent={<CheckBadgeIcon className="h-5 w-5" />}
+            onPress={handleApply}
           >
             تطبيق على {selectedScreens.length} شاشة
           </Button>
@@ -169,4 +166,3 @@ export default function BulkPermissions({
     </Modal>
   );
 }
-

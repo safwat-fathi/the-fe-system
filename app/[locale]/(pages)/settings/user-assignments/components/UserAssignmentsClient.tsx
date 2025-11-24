@@ -1,5 +1,7 @@
 "use client";
 
+import type { Selection } from "@react-types/shared";
+
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -17,7 +19,7 @@ import {
   TableRow,
 } from "@heroui/react";
 import toast from "react-hot-toast";
-import type { Selection } from "@react-types/shared";
+
 import {
   deleteUserCompanyAction,
   deleteUserCostCenterAction,
@@ -79,6 +81,7 @@ export default function UserAssignmentsClient({
 
   const branchNameById = useMemo(() => {
     const map = new Map<number, string>();
+
     branches.forEach((branch) => {
       map.set(branch.id, branch.label);
     });
@@ -88,6 +91,7 @@ export default function UserAssignmentsClient({
 
   const costCenterNameById = useMemo(() => {
     const map = new Map<number, string>();
+
     costCenters.forEach((costCenter) => {
       map.set(costCenter.id, costCenter.label);
     });
@@ -96,7 +100,8 @@ export default function UserAssignmentsClient({
   }, [costCenters]);
 
   const assignedBranchIds = useMemo(
-    () => new Set(companyAssignments.map((assignment) => Number(assignment.com))),
+    () =>
+      new Set(companyAssignments.map((assignment) => Number(assignment.com))),
     [companyAssignments],
   );
 
@@ -123,7 +128,7 @@ export default function UserAssignmentsClient({
   const branchCount = companyAssignments.length;
   const costCenterCount = costAssignments.length;
   const selectedUser = selectedUserId
-    ? users.find((user) => user.id === selectedUserId) ?? null
+    ? (users.find((user) => user.id === selectedUserId) ?? null)
     : null;
 
   const refreshAssignments = async (userId: number, showSpinner = false) => {
@@ -384,8 +389,8 @@ export default function UserAssignmentsClient({
                   {users.map((user) => (
                     <SelectItem
                       key={String(user.id)}
-                      textValue={user.label}
                       description={user.helper ?? undefined}
+                      textValue={user.label}
                     >
                       <div className="flex flex-col">
                         <span className="font-medium">{user.label}</span>
@@ -402,7 +407,9 @@ export default function UserAssignmentsClient({
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500">عدد الفروع المصرح بها</p>
+                  <p className="text-xs text-slate-500">
+                    عدد الفروع المصرح بها
+                  </p>
                   <p className="text-xl font-semibold text-slate-800">
                     {branchCount}
                   </p>
@@ -428,7 +435,7 @@ export default function UserAssignmentsClient({
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card shadow="sm" className="h-full">
+        <Card className="h-full" shadow="sm">
           <CardBody className="space-y-5">
             <header className="flex items-start justify-between gap-4">
               <div className="space-y-1 text-right flex-1">
@@ -436,8 +443,8 @@ export default function UserAssignmentsClient({
                   الفروع المصرح بها
                 </h3>
                 <p className="text-sm text-gray-600 text-right">
-                  قم بإضافة الفروع التي يمكن للمستخدم العمل ضمنها، أو قم بإزالتها
-                  عند الحاجة.
+                  قم بإضافة الفروع التي يمكن للمستخدم العمل ضمنها، أو قم
+                  بإزالتها عند الحاجة.
                 </p>
               </div>
               <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600">
@@ -453,6 +460,9 @@ export default function UserAssignmentsClient({
               <>
                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_140px]">
                   <Select
+                    isDisabled={
+                      availableBranches.length === 0 || isLoadingAssignments
+                    }
                     label="اختر فرعاً للإضافة"
                     placeholder={
                       availableBranches.length === 0
@@ -464,15 +474,13 @@ export default function UserAssignmentsClient({
                         ? new Set<string>([selectedBranchKey])
                         : new Set<string>()
                     }
-                    isDisabled={
-                      availableBranches.length === 0 || isLoadingAssignments
-                    }
                     onSelectionChange={(keys) => {
                       if (keys === "all") {
                         return;
                       }
 
                       const key = Array.from(keys)[0] as string | undefined;
+
                       setSelectedBranchKey(key ?? null);
                     }}
                   >
@@ -487,8 +495,8 @@ export default function UserAssignmentsClient({
                   </Select>
 
                   <Button
-                    color="primary"
                     className="self-end"
+                    color="primary"
                     isDisabled={
                       !selectedBranchKey ||
                       availableBranches.length === 0 ||
@@ -510,8 +518,8 @@ export default function UserAssignmentsClient({
                     </div>
                   ) : (
                     <Table
-                      aria-label="الفروع المرتبطة بالمستخدم"
                       removeWrapper
+                      aria-label="الفروع المرتبطة بالمستخدم"
                       classNames={{
                         table: "min-h-[200px]",
                       }}
@@ -536,11 +544,11 @@ export default function UserAssignmentsClient({
                             <TableCell className="text-right">
                               <Button
                                 color="danger"
-                                variant="light"
-                                size="sm"
                                 isLoading={
                                   deletingRecordId === item.id && !isSavingCost
                                 }
+                                size="sm"
+                                variant="light"
                                 onPress={() => handleRemoveCompany(item)}
                               >
                                 حذف
@@ -557,7 +565,7 @@ export default function UserAssignmentsClient({
           </CardBody>
         </Card>
 
-        <Card shadow="sm" className="h-full">
+        <Card className="h-full" shadow="sm">
           <CardBody className="space-y-5">
             <header className="flex items-start justify-between gap-4">
               <div className="space-y-1 text-right flex-1">
@@ -582,6 +590,9 @@ export default function UserAssignmentsClient({
               <>
                 <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_140px]">
                   <Select
+                    isDisabled={
+                      availableCostCenters.length === 0 || isLoadingAssignments
+                    }
                     label="اختر مركز تكلفة"
                     placeholder={
                       availableCostCenters.length === 0
@@ -593,15 +604,13 @@ export default function UserAssignmentsClient({
                         ? new Set<string>([selectedCostKey])
                         : new Set<string>()
                     }
-                    isDisabled={
-                      availableCostCenters.length === 0 || isLoadingAssignments
-                    }
                     onSelectionChange={(keys) => {
                       if (keys === "all") {
                         return;
                       }
 
                       const key = Array.from(keys)[0] as string | undefined;
+
                       setSelectedCostKey(key ?? null);
                     }}
                   >
@@ -616,8 +625,8 @@ export default function UserAssignmentsClient({
                   </Select>
 
                   <Button
-                    color="primary"
                     className="self-end"
+                    color="primary"
                     isDisabled={
                       !selectedCostKey ||
                       availableCostCenters.length === 0 ||
@@ -639,8 +648,8 @@ export default function UserAssignmentsClient({
                     </div>
                   ) : (
                     <Table
-                      aria-label="مراكز التكلفة المرتبطة بالمستخدم"
                       removeWrapper
+                      aria-label="مراكز التكلفة المرتبطة بالمستخدم"
                       classNames={{
                         table: "min-h-[200px]",
                       }}
@@ -667,12 +676,12 @@ export default function UserAssignmentsClient({
                             <TableCell className="text-right">
                               <Button
                                 color="danger"
-                                variant="light"
-                                size="sm"
                                 isLoading={
                                   deletingRecordId === item.id &&
                                   !isSavingCompany
                                 }
+                                size="sm"
+                                variant="light"
                                 onPress={() => handleRemoveCostCenter(item)}
                               >
                                 حذف
@@ -692,4 +701,3 @@ export default function UserAssignmentsClient({
     </div>
   );
 }
-

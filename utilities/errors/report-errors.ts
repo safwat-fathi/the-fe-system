@@ -50,4 +50,3 @@ export function handleReportError(error: unknown): {
     message: "حدث خطأ أثناء إنشاء التقرير",
   };
 }
-

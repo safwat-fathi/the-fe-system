@@ -38,4 +38,3 @@ export interface Screen {
 export interface SystemMap {
   systems: System[];
 }
-

@@ -9,10 +9,7 @@ import type { VoucherBoxData } from "./types";
 import { voucherService } from "@/services/api";
 import { requiresBoxes } from "@/utilities/voucher/routing";
 
-const formatParallelErrors = (
-  context: string,
-  messages: string[],
-): string => {
+const formatParallelErrors = (context: string, messages: string[]): string => {
   if (messages.length === 0) return context;
   const uniqueMessages = Array.from(
     new Set(
@@ -67,7 +64,9 @@ export async function processVoucherBoxes(
   }
 
   const createOperations = voucherBoxes
-    .filter((box) => box.box_id && box.box_id > 0 && box.amount && box.amount !== 0)
+    .filter(
+      (box) => box.box_id && box.box_id > 0 && box.amount && box.amount !== 0,
+    )
     .map((box) => {
       const boxData: any = {
         vouch: masterId,
@@ -84,7 +83,11 @@ export async function processVoucherBoxes(
         cr_user: currentUsername || null,
       };
 
-      if (box.cost_id !== undefined && box.cost_id !== null && box.cost_id > 0) {
+      if (
+        box.cost_id !== undefined &&
+        box.cost_id !== null &&
+        box.cost_id > 0
+      ) {
         boxData.cost = box.cost_id;
       }
       if (box.inv_id !== undefined && box.inv_id !== null && box.inv_id > 0) {
@@ -140,8 +143,7 @@ export async function updateVoucherBoxes(
           voucherService.deleteBox(boxId).then((response) => {
             if (!response.success) {
               throw new Error(
-                response.message ||
-                  `فشل حذف الصندوق رقم ${boxId.toString()}`,
+                response.message || `فشل حذف الصندوق رقم ${boxId.toString()}`,
               );
             }
 
@@ -190,8 +192,7 @@ export async function updateVoucherBoxes(
           voucherService.deleteBox(boxId).then((response) => {
             if (!response.success) {
               throw new Error(
-                response.message ||
-                  `فشل حذف الصندوق رقم ${boxId.toString()}`,
+                response.message || `فشل حذف الصندوق رقم ${boxId.toString()}`,
               );
             }
 
@@ -212,7 +213,9 @@ export async function updateVoucherBoxes(
 
   // حفظ/تحديث الصناديق
   const boxOperations = voucherBoxes
-    .filter((box) => box.box_id && box.box_id > 0 && box.amount && box.amount !== 0)
+    .filter(
+      (box) => box.box_id && box.box_id > 0 && box.amount && box.amount !== 0,
+    )
     .map((box) => {
       const boxData: any = {
         vouch: realVoucherId,
@@ -235,16 +238,21 @@ export async function updateVoucherBoxes(
         boxData.cr_user = currentUsername || null;
       }
 
-      if (box.cost_id !== undefined && box.cost_id !== null && box.cost_id > 0) {
+      if (
+        box.cost_id !== undefined &&
+        box.cost_id !== null &&
+        box.cost_id > 0
+      ) {
         boxData.cost = box.cost_id;
       }
       if (box.inv_id !== undefined && box.inv_id !== null && box.inv_id > 0) {
         boxData.inv = box.inv_id;
       }
 
-      const request = box.id && box.id > 0
-        ? voucherService.updateBox(box.id, boxData)
-        : voucherService.createBox(boxData);
+      const request =
+        box.id && box.id > 0
+          ? voucherService.updateBox(box.id, boxData)
+          : voucherService.createBox(boxData);
 
       return request.then((response) => {
         if (!response.success) {

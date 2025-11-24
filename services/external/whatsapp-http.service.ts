@@ -89,7 +89,7 @@ export class WhatsappHttpService {
         const errorBody =
           typeof payload === "string"
             ? payload
-            : (payload as any)?.error ?? payload;
+            : ((payload as any)?.error ?? payload);
 
         const error: WhatsappError = {
           status: response.status,
@@ -109,12 +109,14 @@ export class WhatsappHttpService {
           retryCount < MAX_RETRIES
         ) {
           const delay = 2 ** retryCount * 500;
+
           logger.warn(
             "[WhatsAppHttpService] Retrying request",
             response.status,
             `retry=${retryCount + 1}`,
           );
           await sleep(delay);
+
           return this.request<T>({
             ...options,
             retryCount: retryCount + 1,
@@ -143,6 +145,7 @@ export class WhatsappHttpService {
           status: 408,
           message: "WhatsApp request timed out",
         };
+
         logger.error("[WhatsAppHttpService] Timeout", abortError);
         throw abortError;
       }
@@ -196,4 +199,3 @@ export class WhatsappHttpService {
 export const whatsappHttpService = new WhatsappHttpService();
 
 export default whatsappHttpService;
-

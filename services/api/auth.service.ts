@@ -4,6 +4,7 @@ import {
   LoginResponse,
   RegisterRequest,
 } from "@/types/services/auth";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 class AuthService extends HttpService {
   constructor() {
@@ -21,6 +22,7 @@ class AuthService extends HttpService {
 
       return response;
     } catch (error) {
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ غير متوقع في الاتصال");
     }
   }

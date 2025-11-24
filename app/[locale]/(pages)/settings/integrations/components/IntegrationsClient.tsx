@@ -85,8 +85,7 @@ export default function IntegrationsClient() {
   // حالة فاتورة
   const [fatooraConfig, setFatooraConfig] = useState<FatooraConfig>({
     name: "فاتورة - الزكاة والدخل",
-    description:
-      "خدمة ربط فاتورة الإلكترونية لإدارة الزكاة والدخل بشكل متكامل",
+    description: "خدمة ربط فاتورة الإلكترونية لإدارة الزكاة والدخل بشكل متكامل",
     status: "disconnected",
     enableEInvoice: false,
     connectionType: "",
@@ -105,7 +104,7 @@ export default function IntegrationsClient() {
   const [isTesting, setIsTesting] = useState(false);
   const [showGeideaSetup, setShowGeideaSetup] = useState(false);
   const [showEnjazatekSetup, setShowEnjazatekSetup] = useState(false);
-  
+
   const [isSavingFatoora, setIsSavingFatoora] = useState(false);
   const [isTestingFatoora, setIsTestingFatoora] = useState(false);
   const [showFatooraSetup, setShowFatooraSetup] = useState(false);
@@ -126,6 +125,7 @@ export default function IntegrationsClient() {
   const handleSaveGeidea = async () => {
     if (!geideaConfig.apiKey || !geideaConfig.apiSecret) {
       toast.error("يرجى إدخال مفتاح API والسر");
+
       return;
     }
 
@@ -133,10 +133,10 @@ export default function IntegrationsClient() {
     try {
       // TODO: حفظ الإعدادات في قاعدة البيانات أو localStorage
       // await saveIntegrationConfig("geidea", geideaConfig);
-      
+
       // محاكاة الحفظ
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       setGeideaConfig((prev) => ({ ...prev, status: "connected" }));
       toast.success("تم حفظ إعدادات جيديا بنجاح");
     } catch (error) {
@@ -154,6 +154,7 @@ export default function IntegrationsClient() {
       !enjazatekConfig.instanceId
     ) {
       toast.error("يرجى إدخال مفتاح API، ومعرف الإرسال، ورقم المثيل أولاً");
+
       return;
     }
 
@@ -174,6 +175,7 @@ export default function IntegrationsClient() {
   const handleTestGeidea = async () => {
     if (!geideaConfig.apiKey || !geideaConfig.apiSecret) {
       toast.error("يرجى إدخال مفتاح API والسر أولاً");
+
       return;
     }
 
@@ -181,10 +183,10 @@ export default function IntegrationsClient() {
     try {
       // TODO: اختبار الاتصال مع API جيديا
       // await testGeideaConnection(geideaConfig);
-      
+
       // محاكاة الاختبار
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      
+
       toast.success("تم الاتصال بنجاح مع جيديا");
       setGeideaConfig((prev) => ({ ...prev, status: "connected" }));
     } catch (error) {
@@ -203,6 +205,7 @@ export default function IntegrationsClient() {
       !enjazatekConfig.instanceId
     ) {
       toast.error("يرجى إكمال بيانات الربط قبل الاختبار");
+
       return;
     }
 
@@ -226,7 +229,7 @@ export default function IntegrationsClient() {
       enabled,
       status: enabled ? prev.status : "disconnected",
     }));
-    
+
     if (enabled && (!geideaConfig.apiKey || !geideaConfig.apiSecret)) {
       toast.error("يرجى إدخال بيانات الاتصال أولاً");
       setGeideaConfig((prev) => ({ ...prev, enabled: false }));
@@ -246,6 +249,7 @@ export default function IntegrationsClient() {
         !enjazatekConfig.instanceId)
     ) {
       toast.error("يرجى إكمال بيانات Enjazatek أولاً");
+
       return;
     }
 
@@ -256,9 +260,7 @@ export default function IntegrationsClient() {
     }));
 
     toast.success(
-      enabled
-        ? "تم تفعيل خدمة Enjazatek"
-        : "تم إلغاء تفعيل خدمة Enjazatek",
+      enabled ? "تم تفعيل خدمة Enjazatek" : "تم إلغاء تفعيل خدمة Enjazatek",
     );
   };
 
@@ -268,7 +270,7 @@ export default function IntegrationsClient() {
     try {
       // TODO: حفظ الإعدادات في قاعدة البيانات
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       setFatooraConfig((prev) => ({ ...prev, status: "connected" }));
       toast.success("تم حفظ إعدادات فاتورة بنجاح");
     } catch (error) {
@@ -284,7 +286,7 @@ export default function IntegrationsClient() {
     try {
       // TODO: اختبار الاتصال مع API فاتورة
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      
+
       toast.success("تم الاتصال بنجاح مع فاتورة");
       setFatooraConfig((prev) => ({ ...prev, status: "connected" }));
     } catch (error) {
@@ -302,7 +304,7 @@ export default function IntegrationsClient() {
       enabled,
       status: enabled ? prev.status : "disconnected",
     }));
-    
+
     if (enabled) {
       toast.success("تم تفعيل خدمة فاتورة");
     } else {
@@ -313,9 +315,7 @@ export default function IntegrationsClient() {
   const getStatusIcon = (status: IntegrationStatus) => {
     switch (status) {
       case "connected":
-        return (
-          <CheckCircleIcon className="h-5 w-5 text-green-500" />
-        );
+        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
       case "testing":
         return (
           <div className="h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -372,8 +372,8 @@ export default function IntegrationsClient() {
                     <a
                       className="text-emerald-600 font-semibold underline underline-offset-4"
                       href={ENJAZATEK_DOC_URL}
-                      target="_blank"
                       rel="noreferrer"
+                      target="_blank"
                     >
                       تعرّف على الخدمة
                     </a>
@@ -383,10 +383,10 @@ export default function IntegrationsClient() {
               </div>
               <div className="flex-shrink-0">
                 <Button
-                  color="primary"
-                  onPress={handleStartEnjazatekSetup}
                   className="btn-primary border-2 border-blue-600 bg-white text-blue-600 hover:bg-blue-50 font-semibold px-6 py-3"
+                  color="primary"
                   size="lg"
+                  onPress={handleStartEnjazatekSetup}
                 >
                   ابدأ الربط
                 </Button>
@@ -413,8 +413,8 @@ export default function IntegrationsClient() {
                     <a
                       className="inline-flex items-center gap-1 text-xs text-blue-600 font-semibold underline underline-offset-4"
                       href={ENJAZATEK_DOC_URL}
-                      target="_blank"
                       rel="noreferrer"
+                      target="_blank"
                     >
                       <LinkIcon className="h-4 w-4" />
                       وثائق Enjazatek
@@ -430,9 +430,9 @@ export default function IntegrationsClient() {
                   </span>
                 </div>
                 <Switch
+                  color="success"
                   isSelected={enjazatekConfig.enabled}
                   onValueChange={handleToggleEnjazatek}
-                  color="success"
                 >
                   <span className="text-sm font-medium text-slate-700">
                     {enjazatekConfig.enabled ? "مفعل" : "معطل"}
@@ -444,95 +444,95 @@ export default function IntegrationsClient() {
             <CardBody className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
+                  description="متوفر في لوحة تحكم Enjazatek"
                   label="مفتاح API"
                   placeholder="أدخل مفتاح Enjazatek"
+                  type="password"
                   value={enjazatekConfig.apiKey || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setEnjazatekConfig((prev) => ({
                       ...prev,
                       apiKey: e.target.value,
                     }))
                   }
-                  type="password"
-                  variant="bordered"
-                  description="متوفر في لوحة تحكم Enjazatek"
                 />
                 <Input
+                  description="يربط التطبيق بقناة الواتساب الخاصة بك"
                   label="معرف المثيل (Instance ID)"
                   placeholder="أدخل معرف المثيل"
                   value={enjazatekConfig.instanceId || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setEnjazatekConfig((prev) => ({
                       ...prev,
                       instanceId: e.target.value,
                     }))
                   }
-                  variant="bordered"
-                  description="يربط التطبيق بقناة الواتساب الخاصة بك"
                 />
                 <Input
                   label="اسم المرسل (Sender Name)"
                   placeholder="الاسم الذي سيظهر للمستلمين"
                   value={enjazatekConfig.senderName || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setEnjazatekConfig((prev) => ({
                       ...prev,
                       senderName: e.target.value,
                     }))
                   }
-                  variant="bordered"
                 />
                 <Input
                   label="عنوان واجهة API"
                   placeholder="مثال: https://enjazatik.com/api"
                   value={enjazatekConfig.baseUrl || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setEnjazatekConfig((prev) => ({
                       ...prev,
                       baseUrl: e.target.value,
                     }))
                   }
-                  variant="bordered"
                 />
                 <Input
                   label="رابط Webhook (اختياري)"
                   placeholder="استخدمه لتلقي تقارير التسليم"
                   value={enjazatekConfig.webhookUrl || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setEnjazatekConfig((prev) => ({
                       ...prev,
                       webhookUrl: e.target.value,
                     }))
                   }
-                  variant="bordered"
                 />
               </div>
               <div className="flex flex-wrap items-center gap-3 mt-6">
                 <Button
-                  color="primary"
-                  onPress={handleSaveEnjazatek}
-                  isLoading={isSavingEnjazatek}
                   className="min-w-[140px]"
+                  color="primary"
+                  isLoading={isSavingEnjazatek}
+                  onPress={handleSaveEnjazatek}
                 >
                   حفظ الإعدادات
                 </Button>
                 <Button
-                  variant="bordered"
-                  color="success"
-                  onPress={handleTestEnjazatek}
-                  isLoading={isTestingEnjazatek}
                   className="min-w-[140px]"
+                  color="success"
+                  isLoading={isTestingEnjazatek}
+                  variant="bordered"
+                  onPress={handleTestEnjazatek}
                 >
                   اختبار الاتصال
                 </Button>
                 <Button
                   as="a"
-                  href={ENJAZATEK_DOC_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  variant="light"
                   className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
                   endContent={<LinkIcon className="h-4 w-4" />}
+                  href={ENJAZATEK_DOC_URL}
+                  rel="noreferrer"
+                  target="_blank"
+                  variant="light"
                 >
                   دليل الاستخدام
                 </Button>
@@ -566,8 +566,8 @@ export default function IntegrationsClient() {
                     جيديا
                   </h3>
                   <p className="text-sm text-slate-600 leading-relaxed">
-                    جيديا توفر لك المرونة لقبول المدفوعات بشكل آمن وسريع من
-                    خلال جهاز نقاط البيع الذكي.
+                    جيديا توفر لك المرونة لقبول المدفوعات بشكل آمن وسريع من خلال
+                    جهاز نقاط البيع الذكي.
                   </p>
                 </div>
               </div>
@@ -575,10 +575,10 @@ export default function IntegrationsClient() {
               {/* الجانب الأيمن: زر "ابدأ الربط" */}
               <div className="flex-shrink-0">
                 <Button
-                  color="primary"
-                  onPress={handleStartGeideaSetup}
                   className="btn-primary border-2 border-blue-600 bg-white text-blue-600 hover:bg-blue-50 font-semibold px-6 py-3"
+                  color="primary"
                   size="lg"
+                  onPress={handleStartGeideaSetup}
                 >
                   ابدأ الربط
                 </Button>
@@ -611,9 +611,9 @@ export default function IntegrationsClient() {
                   </span>
                 </div>
                 <Switch
+                  color="success"
                   isSelected={geideaConfig.enabled}
                   onValueChange={handleToggleGeidea}
-                  color="success"
                 >
                   <span className="text-sm font-medium text-slate-700">
                     {geideaConfig.enabled ? "مفعل" : "معطل"}
@@ -626,52 +626,52 @@ export default function IntegrationsClient() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* مفتاح API */}
                 <Input
+                  description="يمكنك الحصول عليه من لوحة تحكم جيديا"
+                  isDisabled={!showGeideaSetup && !geideaConfig.enabled}
                   label="مفتاح API (API Key)"
                   placeholder="أدخل مفتاح API من جيديا"
+                  type="password"
                   value={geideaConfig.apiKey || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setGeideaConfig((prev) => ({
                       ...prev,
                       apiKey: e.target.value,
                     }))
                   }
-                  isDisabled={!showGeideaSetup && !geideaConfig.enabled}
-                  type="password"
-                  variant="bordered"
-                  description="يمكنك الحصول عليه من لوحة تحكم جيديا"
                 />
 
                 {/* السر (Secret) */}
                 <Input
+                  description="المفتاح السري للاتصال بـ API"
+                  isDisabled={!showGeideaSetup && !geideaConfig.enabled}
                   label="السر (API Secret)"
                   placeholder="أدخل السر من جيديا"
+                  type="password"
                   value={geideaConfig.apiSecret || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setGeideaConfig((prev) => ({
                       ...prev,
                       apiSecret: e.target.value,
                     }))
                   }
-                  isDisabled={!showGeideaSetup && !geideaConfig.enabled}
-                  type="password"
-                  variant="bordered"
-                  description="المفتاح السري للاتصال بـ API"
                 />
 
                 {/* معرف التاجر */}
                 <Input
+                  description="معرف التاجر الخاص بك في جيديا"
+                  isDisabled={!showGeideaSetup && !geideaConfig.enabled}
                   label="معرف التاجر (Merchant ID)"
                   placeholder="أدخل معرف التاجر"
                   value={geideaConfig.merchantId || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setGeideaConfig((prev) => ({
                       ...prev,
                       merchantId: e.target.value,
                     }))
                   }
-                  isDisabled={!showGeideaSetup && !geideaConfig.enabled}
-                  variant="bordered"
-                  description="معرف التاجر الخاص بك في جيديا"
                 />
 
                 {/* البيئة */}
@@ -681,6 +681,7 @@ export default function IntegrationsClient() {
                   </label>
                   <select
                     className="w-full h-10 text-sm border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                    disabled={!showGeideaSetup && !geideaConfig.enabled}
                     value={geideaConfig.environment}
                     onChange={(e) =>
                       setGeideaConfig((prev) => ({
@@ -688,7 +689,6 @@ export default function IntegrationsClient() {
                         environment: e.target.value as "sandbox" | "production",
                       }))
                     }
-                    disabled={!showGeideaSetup && !geideaConfig.enabled}
                   >
                     <option value="sandbox">Sandbox (اختبار)</option>
                     <option value="production">Production (إنتاج)</option>
@@ -705,36 +705,35 @@ export default function IntegrationsClient() {
                   معلومات مهمة:
                 </h3>
                 <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-                  <li>
-                    يمكنك الحصول على مفتاح API والسر من لوحة تحكم جيديا
-                  </li>
+                  <li>يمكنك الحصول على مفتاح API والسر من لوحة تحكم جيديا</li>
                   <li>
                     استخدم بيئة Sandbox للاختبار قبل التبديل إلى Production
                   </li>
-                  <li>
-                    تأكد من حفظ بيانات الاتصال بشكل آمن
-                  </li>
+                  <li>تأكد من حفظ بيانات الاتصال بشكل آمن</li>
                 </ul>
               </div>
 
               {/* الأزرار */}
               <div className="flex gap-3 mt-6">
                 <Button
-                  color="primary"
-                  onPress={handleSaveGeidea}
-                  isLoading={isSaving}
-                  isDisabled={!showGeideaSetup && !geideaConfig.enabled}
                   className="btn-primary"
+                  color="primary"
+                  isDisabled={!showGeideaSetup && !geideaConfig.enabled}
+                  isLoading={isSaving}
+                  onPress={handleSaveGeidea}
                 >
                   {isSaving ? "جاري الحفظ..." : "حفظ الإعدادات"}
                 </Button>
                 <Button
+                  className="btn-secondary"
                   color="default"
+                  isDisabled={
+                    (!showGeideaSetup && !geideaConfig.enabled) ||
+                    !geideaConfig.apiKey
+                  }
+                  isLoading={isTesting}
                   variant="bordered"
                   onPress={handleTestGeidea}
-                  isLoading={isTesting}
-                  isDisabled={(!showGeideaSetup && !geideaConfig.enabled) || !geideaConfig.apiKey}
-                  className="btn-secondary"
                 >
                   {isTesting ? "جاري الاختبار..." : "اختبار الاتصال"}
                 </Button>
@@ -781,10 +780,10 @@ export default function IntegrationsClient() {
               {/* الجانب الأيمن: زر "ابدأ الربط" */}
               <div className="flex-shrink-0">
                 <Button
-                  color="primary"
-                  onPress={() => setShowFatooraSetup(true)}
                   className="btn-primary border-2 border-blue-600 bg-white text-blue-600 hover:bg-blue-50 font-semibold px-6 py-3"
+                  color="primary"
                   size="lg"
+                  onPress={() => setShowFatooraSetup(true)}
                 >
                   ابدأ الربط
                 </Button>
@@ -822,9 +821,9 @@ export default function IntegrationsClient() {
                   </span>
                 </div>
                 <Switch
+                  color="success"
                   isSelected={fatooraConfig.enabled}
                   onValueChange={handleToggleFatoora}
-                  color="success"
                 >
                   <span className="text-sm font-medium text-slate-700">
                     {fatooraConfig.enabled ? "مفعل" : "معطل"}
@@ -838,6 +837,7 @@ export default function IntegrationsClient() {
                 {/* تفعيل الفاتورة الإلكترونية */}
                 <div className="flex items-center gap-3">
                   <Switch
+                    color="success"
                     isSelected={fatooraConfig.enableEInvoice}
                     onValueChange={(val) =>
                       setFatooraConfig((prev) => ({
@@ -845,7 +845,6 @@ export default function IntegrationsClient() {
                         enableEInvoice: val,
                       }))
                     }
-                    color="success"
                   >
                     <span className="text-sm font-medium text-slate-700">
                       تفعيل الفاتورة الإلكترونية
@@ -855,144 +854,144 @@ export default function IntegrationsClient() {
 
                 {/* نوع الربط */}
                 <Input
+                  description="نوع الربط مع نظام فاتورة"
+                  isDisabled={!fatooraConfig.enabled}
                   label="نوع الربط"
                   placeholder="أدخل نوع الربط"
                   value={fatooraConfig.connectionType || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setFatooraConfig((prev) => ({
                       ...prev,
                       connectionType: e.target.value,
                     }))
                   }
-                  isDisabled={!fatooraConfig.enabled}
-                  variant="bordered"
-                  description="نوع الربط مع نظام فاتورة"
                 />
 
                 {/* تاريخ تفعيل الربط */}
                 <Input
+                  isDisabled={!fatooraConfig.enabled}
                   label="تاريخ تفعيل الربط"
                   placeholder="تاريخ تفعيل الربط"
                   type="date"
                   value={fatooraConfig.activationDate || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setFatooraConfig((prev) => ({
                       ...prev,
                       activationDate: e.target.value,
                     }))
                   }
-                  isDisabled={!fatooraConfig.enabled}
-                  variant="bordered"
                 />
 
                 {/* مسار ملفات XML */}
                 <Input
+                  description="مسار مجلد ملفات XML"
+                  isDisabled={!fatooraConfig.enabled}
                   label="مسار ملفات XML"
                   placeholder="أدخل مسار ملفات XML"
                   value={fatooraConfig.xmlPath || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setFatooraConfig((prev) => ({
                       ...prev,
                       xmlPath: e.target.value,
                     }))
                   }
-                  isDisabled={!fatooraConfig.enabled}
-                  variant="bordered"
-                  description="مسار مجلد ملفات XML"
                 />
 
                 {/* اسم المستخدم */}
                 <Input
+                  isDisabled={!fatooraConfig.enabled}
                   label="اسم المستخدم"
                   placeholder="أدخل اسم المستخدم"
                   value={fatooraConfig.username || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setFatooraConfig((prev) => ({
                       ...prev,
                       username: e.target.value,
                     }))
                   }
-                  isDisabled={!fatooraConfig.enabled}
-                  variant="bordered"
                 />
 
                 {/* كلمة المرور */}
                 <Input
+                  isDisabled={!fatooraConfig.enabled}
                   label="كلمة المرور"
                   placeholder="أدخل كلمة المرور"
                   type="password"
                   value={fatooraConfig.password || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setFatooraConfig((prev) => ({
                       ...prev,
                       password: e.target.value,
                     }))
                   }
-                  isDisabled={!fatooraConfig.enabled}
-                  variant="bordered"
                 />
 
                 {/* الشهادة */}
                 <Input
+                  description="شهادة SSL"
+                  isDisabled={!fatooraConfig.enabled}
                   label="الشهادة"
                   placeholder="أدخل الشهادة"
                   value={fatooraConfig.certificate || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setFatooraConfig((prev) => ({
                       ...prev,
                       certificate: e.target.value,
                     }))
                   }
-                  isDisabled={!fatooraConfig.enabled}
-                  variant="bordered"
-                  description="شهادة SSL"
                 />
 
                 {/* المفتاح الخاص */}
                 <Input
+                  description="المفتاح الخاص للشهادة"
+                  isDisabled={!fatooraConfig.enabled}
                   label="المفتاح الخاص"
                   placeholder="أدخل المفتاح الخاص"
                   type="password"
                   value={fatooraConfig.privateKey || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setFatooraConfig((prev) => ({
                       ...prev,
                       privateKey: e.target.value,
                     }))
                   }
-                  isDisabled={!fatooraConfig.enabled}
-                  variant="bordered"
-                  description="المفتاح الخاص للشهادة"
                 />
 
                 {/* آخر PIH */}
                 <Input
+                  isDisabled={!fatooraConfig.enabled}
                   label="آخر PIH"
                   placeholder="أدخل آخر PIH"
                   value={fatooraConfig.lastPIH || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setFatooraConfig((prev) => ({
                       ...prev,
                       lastPIH: e.target.value,
                     }))
                   }
-                  isDisabled={!fatooraConfig.enabled}
-                  variant="bordered"
                 />
 
                 {/* آخر ICV */}
                 <Input
+                  isDisabled={!fatooraConfig.enabled}
                   label="آخر ICV"
                   placeholder="أدخل آخر ICV"
                   value={fatooraConfig.lastICV || ""}
+                  variant="bordered"
                   onChange={(e) =>
                     setFatooraConfig((prev) => ({
                       ...prev,
                       lastICV: e.target.value,
                     }))
                   }
-                  isDisabled={!fatooraConfig.enabled}
-                  variant="bordered"
                 />
               </div>
 
@@ -1005,42 +1004,37 @@ export default function IntegrationsClient() {
                   <li>
                     تأكد من تفعيل الفاتورة الإلكترونية قبل إعداد باقي الخدمات
                   </li>
-                  <li>
-                    احفظ بيانات الاتصال والشهادة بشكل آمن
-                  </li>
-                  <li>
-                    تأكد من صحة مسار ملفات XML
-                  </li>
+                  <li>احفظ بيانات الاتصال والشهادة بشكل آمن</li>
+                  <li>تأكد من صحة مسار ملفات XML</li>
                 </ul>
               </div>
 
               {/* الأزرار */}
               <div className="flex gap-3 mt-6">
                 <Button
-                  color="primary"
-                  onPress={handleSaveFatoora}
-                  isLoading={isSavingFatoora}
-                  isDisabled={!fatooraConfig.enabled}
                   className="btn-primary"
+                  color="primary"
+                  isDisabled={!fatooraConfig.enabled}
+                  isLoading={isSavingFatoora}
+                  onPress={handleSaveFatoora}
                 >
                   {isSavingFatoora ? "جاري الحفظ..." : "حفظ الإعدادات"}
                 </Button>
                 <Button
+                  className="btn-secondary"
                   color="default"
+                  isDisabled={!fatooraConfig.enabled}
+                  isLoading={isTestingFatoora}
                   variant="bordered"
                   onPress={handleTestFatoora}
-                  isLoading={isTestingFatoora}
-                  isDisabled={!fatooraConfig.enabled}
-                  className="btn-secondary"
                 >
                   {isTestingFatoora ? "جاري الاختبار..." : "اختبار الاتصال"}
                 </Button>
               </div>
-        </CardBody>
+            </CardBody>
           </>
         )}
       </Card>
     </div>
   );
 }
-

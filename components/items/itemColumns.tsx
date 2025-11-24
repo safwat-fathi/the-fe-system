@@ -37,31 +37,21 @@ export const createItemColumns = ({
   // Create a component that uses router
   const ActionsCell = ({ item }: { item: Item }) => {
     const router = useRouter();
-    
+
     const handleView = () => {
       router.push(`/basic/items/${item.id}`);
     };
-    
+
     const handleEdit = () => {
       router.push(`/basic/items/${item.id}?mode=edit`);
     };
-    
+
     return (
       <div className="flex items-center gap-2">
-        <Button
-          isIconOnly
-          size="sm"
-          variant="light"
-          onPress={handleView}
-        >
+        <Button isIconOnly size="sm" variant="light" onPress={handleView}>
           <EyeIcon className="h-4 w-4 text-blue-500" />
         </Button>
-        <Button
-          isIconOnly
-          size="sm"
-          variant="light"
-          onPress={handleEdit}
-        >
+        <Button isIconOnly size="sm" variant="light" onPress={handleEdit}>
           <PencilIcon className="h-4 w-4 text-yellow-500" />
         </Button>
         <Button
@@ -78,50 +68,54 @@ export const createItemColumns = ({
   };
 
   return [
-  columnHelper.accessor("item_code", {
-    header: () => "كود الصنف",
-    cell: (info) => info.getValue() || "-",
-    enableSorting: true,
-  }),
-  columnHelper.accessor("item_name", {
-    header: () => "اسم الصنف",
-    cell: (info) => info.getValue() || "-",
-    enableSorting: true,
-  }),
-  columnHelper.accessor("item_price", {
-    header: () => "السعر",
-    cell: (info) => renderAmount(info.getValue(), fractions.frac),
-    enableSorting: true,
-  }),
-  columnHelper.accessor("item_weight", {
-    header: () => "الوزن",
-    cell: (info) => info.getValue() ?? "-",
-    enableSorting: true,
-  }),
-  columnHelper.accessor("cat", {
-    header: () => "الفئة",
-    cell: (info) => getCategoryLabel(info.getValue() ?? null),
-  }),
-  columnHelper.accessor("item_type", {
-    header: () => "نوع الصنف",
-    cell: (info) => getItemTypeLabel(info.getValue() ?? null),
-  }),
-  columnHelper.accessor("item_status", {
-    header: () => "الحالة",
-    cell: (info) => {
-      const isActive = Number(info.getValue() ?? 0) === 1;
+    columnHelper.accessor("item_code", {
+      header: () => "كود الصنف",
+      cell: (info) => info.getValue() || "-",
+      enableSorting: true,
+    }),
+    columnHelper.accessor("item_name", {
+      header: () => "اسم الصنف",
+      cell: (info) => info.getValue() || "-",
+      enableSorting: true,
+    }),
+    columnHelper.accessor("item_price", {
+      header: () => "السعر",
+      cell: (info) => renderAmount(info.getValue(), fractions.frac),
+      enableSorting: true,
+    }),
+    columnHelper.accessor("item_weight", {
+      header: () => "الوزن",
+      cell: (info) => info.getValue() ?? "-",
+      enableSorting: true,
+    }),
+    columnHelper.accessor("cat", {
+      header: () => "الفئة",
+      cell: (info) => getCategoryLabel(info.getValue() ?? null),
+    }),
+    columnHelper.accessor("item_type", {
+      header: () => "نوع الصنف",
+      cell: (info) => getItemTypeLabel(info.getValue() ?? null),
+    }),
+    columnHelper.accessor("item_status", {
+      header: () => "الحالة",
+      cell: (info) => {
+        const isActive = Number(info.getValue() ?? 0) === 1;
 
-      return (
-        <Chip color={isActive ? "success" : "warning"} size="sm" variant="flat">
-          {isActive ? "فعال" : "غير فعال"}
-        </Chip>
-      );
-    },
-  }),
-  columnHelper.display({
-    id: "actions",
-    header: () => "الإجراءات",
-    cell: ({ row }) => <ActionsCell item={row.original} />,
-  }),
-];
+        return (
+          <Chip
+            color={isActive ? "success" : "warning"}
+            size="sm"
+            variant="flat"
+          >
+            {isActive ? "فعال" : "غير فعال"}
+          </Chip>
+        );
+      },
+    }),
+    columnHelper.display({
+      id: "actions",
+      header: () => "الإجراءات",
+      cell: ({ row }) => <ActionsCell item={row.original} />,
+    }),
+  ];
 };

@@ -482,10 +482,10 @@ export default function InvoiceClientPage({
         }
         street={form.street}
         onBarcodeSearch={() => handleBarcodeSearch()}
-        onInvoiceSelect={() => {}}
         onFocusNextSection={() =>
           itemTableRef.current?.focusFirstRow() ?? false
         }
+        onInvoiceSelect={() => {}}
       />
 
       <InvoiceItemTable

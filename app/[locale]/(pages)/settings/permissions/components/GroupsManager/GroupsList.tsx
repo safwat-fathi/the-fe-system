@@ -12,6 +12,7 @@ import {
 import toast from "react-hot-toast";
 
 import { Group } from "../../types/groups";
+
 import GroupPermissions from "./GroupPermissions";
 import GroupUsers from "./GroupUsers";
 
@@ -21,7 +22,11 @@ interface GroupsListProps {
   onRefresh: () => void;
 }
 
-export default function GroupsList({ groups, onEdit, onRefresh }: GroupsListProps) {
+export default function GroupsList({
+  groups,
+  onEdit,
+  onRefresh,
+}: GroupsListProps) {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [usersOpen, setUsersOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -42,6 +47,7 @@ export default function GroupsList({ groups, onEdit, onRefresh }: GroupsListProp
 
     try {
       const { groupService } = await import("../../services");
+
       await groupService.delete(group.id);
       toast.success("تم حذف المجموعة بنجاح");
       onRefresh();
@@ -76,8 +82,8 @@ export default function GroupsList({ groups, onEdit, onRefresh }: GroupsListProp
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 <Avatar
-                  icon={<UserGroupIcon className="h-5 w-5" />}
                   className="bg-blue-100 text-blue-600"
+                  icon={<UserGroupIcon className="h-5 w-5" />}
                 />
                 <div>
                   <h3 className="font-semibold text-gray-900">{group.name}</h3>
@@ -99,57 +105,57 @@ export default function GroupsList({ groups, onEdit, onRefresh }: GroupsListProp
               </p>
             )}
 
-              <div className="flex flex-col gap-3 pt-4 border-t border-gray-200">
+            <div className="flex flex-col gap-3 pt-4 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <Button
+                  color="primary"
+                  size="sm"
+                  startContent={<ShieldCheckIcon className="h-4 w-4" />}
+                  variant="flat"
+                  onPress={() => handlePermissions(group)}
+                >
+                  الصلاحيات
+                </Button>
+                <Button
+                  color="secondary"
+                  size="sm"
+                  startContent={<UserIcon className="h-4 w-4" />}
+                  variant="flat"
+                  onPress={() => handleUsers(group)}
+                >
+                  المستخدمين
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>المستخدمين:</span>
+                  <span className="font-medium">0</span>
+                </div>
                 <div className="flex items-center gap-2">
                   <Button
+                    isIconOnly
                     size="sm"
-                    variant="flat"
-                    color="primary"
-                    startContent={<ShieldCheckIcon className="h-4 w-4" />}
-                    onPress={() => handlePermissions(group)}
+                    variant="light"
+                    onPress={() => onEdit(group)}
                   >
-                    الصلاحيات
+                    <PencilIcon className="h-4 w-4" />
                   </Button>
                   <Button
+                    isIconOnly
+                    color="danger"
                     size="sm"
-                    variant="flat"
-                    color="secondary"
-                    startContent={<UserIcon className="h-4 w-4" />}
-                    onPress={() => handleUsers(group)}
+                    variant="light"
+                    onPress={() => handleDelete(group)}
                   >
-                    المستخدمين
+                    <TrashIcon className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <span>المستخدمين:</span>
-                    <span className="font-medium">0</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="light"
-                      isIconOnly
-                      onPress={() => onEdit(group)}
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="light"
-                      color="danger"
-                      isIconOnly
-                      onPress={() => handleDelete(group)}
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
               </div>
+            </div>
           </CardBody>
         </Card>
       ))}
-      
+
       {/* Modals */}
       {selectedGroup && (
         <>
@@ -176,4 +182,3 @@ export default function GroupsList({ groups, onEdit, onRefresh }: GroupsListProp
     </div>
   );
 }
-

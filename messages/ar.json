@@ -111,5 +111,16 @@
       "dec": "ديسمبر"
     },
     "error": "حدث خطأ في جلب البيانات"
+  },
+  "globalError": {
+    "titleDev": "عفوًا!",
+    "subtitleDev": "حدث خطأ ما في وضع التطوير",
+    "detailsTitle": "تفاصيل الخطأ:",
+    "titleProd": "نحن نعتذر!",
+    "subtitleProd": "حدث خطأ غير متوقع. تم إبلاغ فريقنا ونحن نعمل على إصلاحه.",
+    "retry": "حاول مرة أخرى",
+    "backHome": "العودة للرئيسية",
+    "helpText": "هل تحتاج إلى مساعدة؟ تواصل مع الدعم عبر",
+    "supportEmailLabel": "support@nafeesweb.com"
   }
 }

@@ -11,3 +11,9 @@ export class AuthorizationError extends Error {
     this.name = "AuthorizationError";
   }
 }
+
+export const rethrowAuthenticationError = (error: unknown): void => {
+  if (error instanceof AuthenticationError) {
+    throw error;
+  }
+}

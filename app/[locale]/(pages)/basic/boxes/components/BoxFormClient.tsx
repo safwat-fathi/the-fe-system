@@ -1,22 +1,15 @@
 "use client";
 import type { ChangeEvent } from "react";
+import type { Box as BoxModel } from "@/types/models/box";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Checkbox,
-} from "@heroui/react";
+import { Button, Input, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 
 import boxService from "@/services/api/box.service";
-import type { Box as BoxModel } from "@/types/models/box";
-import { getBranchParams } from "@/app/actions/branch-params";
 
 type BoxFormMode = "view" | "edit" | "add";
 
@@ -63,6 +56,7 @@ const BoxFormClient = ({
   const handleNumberInputChange =
     (key: keyof Box) => (event: ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
+
       setBox({
         ...box,
         [key]: value ? Number(value) : null,
@@ -79,6 +73,7 @@ const BoxFormClient = ({
   const handleSave = async () => {
     if (!box.cust_name) {
       toast.error("⚠️ يرجى إدخال اسم الصندوق");
+
       return;
     }
 
@@ -165,12 +160,14 @@ const BoxFormClient = ({
   const getTitle = () => {
     if (isAddMode) return "إضافة صندوق جديد";
     if (isViewMode) return `عرض ${box.cust_name || box.cust_code || "الصندوق"}`;
+
     return `تعديل ${box.cust_name || box.cust_code || "الصندوق"}`;
   };
 
   const getDescription = () => {
     if (isViewMode) return "عرض تفاصيل الصندوق";
     if (isAddMode) return "قم بإضافة صندوق جديد إلى النظام";
+
     return "قم بتعديل بيانات الصندوق";
   };
 
@@ -227,11 +224,11 @@ const BoxFormClient = ({
           onChange={handleInputChange("cust_code")}
         />
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="اسم الصندوق"
           value={box.cust_name || ""}
           onChange={handleInputChange("cust_name")}
-          isRequired
         />
         <Input
           isDisabled={isViewMode}
@@ -244,17 +241,17 @@ const BoxFormClient = ({
             نوع الصندوق
           </label>
           <ReactSelect
+            className="react-select-container"
+            classNamePrefix="react-select"
             isDisabled={isViewMode}
             options={boxTypeOptions}
+            placeholder="اختر نوع الصندوق"
             value={boxTypeOptions.find(
               (opt) => opt.value === String(box.box_type),
             )}
             onChange={(selected) =>
               setBox({ ...box, box_type: selected?.value || "" })
             }
-            placeholder="اختر نوع الصندوق"
-            className="react-select-container"
-            classNamePrefix="react-select"
           />
         </div>
         <Input
@@ -271,11 +268,11 @@ const BoxFormClient = ({
           onChange={handleInputChange("email")}
         />
         <Input
+          className="md:col-span-2"
           isDisabled={isViewMode}
           label="العنوان"
           value={box.address || ""}
           onChange={handleInputChange("address")}
-          className="md:col-span-2"
         />
         <Input
           isDisabled={isViewMode}
@@ -342,16 +339,16 @@ const BoxFormClient = ({
             الحساب المرتبط
           </label>
           <ReactSelect
+            isClearable
+            className="react-select-container"
+            classNamePrefix="react-select"
             isDisabled={isViewMode}
             options={accountOptions}
+            placeholder="اختر الحساب (اختياري)"
             value={accountOptions.find((opt) => opt.value === String(box.acc))}
             onChange={(selected) =>
               setBox({ ...box, acc: selected ? Number(selected.value) : null })
             }
-            placeholder="اختر الحساب (اختياري)"
-            isClearable
-            className="react-select-container"
-            classNamePrefix="react-select"
           />
         </div>
         <div className="md:col-span-2 flex gap-6 items-center">

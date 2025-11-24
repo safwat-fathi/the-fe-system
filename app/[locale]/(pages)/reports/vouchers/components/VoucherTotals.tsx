@@ -6,6 +6,7 @@
 "use client";
 
 import { useMemo } from "react";
+
 import { Voucher } from "@/types/voucher";
 import { formatAmount } from "@/utilities/formatAmount";
 
@@ -43,6 +44,7 @@ export default function VoucherTotals({
         acc.totalAmount += calculateVoucherCashTotal(voucher);
         acc.totalCount += 1;
         acc.totalGold += calculateVoucherGoldTotal(voucher);
+
         return acc;
       },
       { totalAmount: 0, totalCount: 0, totalGold: 0 },
@@ -66,4 +68,3 @@ export default function VoucherTotals({
     </div>
   );
 }
-

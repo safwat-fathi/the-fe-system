@@ -2,13 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Textarea,
-} from "@heroui/react";
+import { Button, Input, Select, SelectItem, Textarea } from "@heroui/react";
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -16,15 +10,16 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import accountService from "@/services/api/account.service";
-import { revalidateTableData } from "@/app/actions/revalidate.action";
-import { Account } from "@/types/models/account";
-import { Currency } from "@/types/models/currency";
 import {
   findAccountById,
   flattenAccountTree,
   generateAccountId,
 } from "../utils/account-tree";
+
+import accountService from "@/services/api/account.service";
+import { revalidateTableData } from "@/app/actions/revalidate.action";
+import { Account } from "@/types/models/account";
+import { Currency } from "@/types/models/currency";
 
 type AccountFormMode = "add" | "edit" | "view";
 
@@ -107,8 +102,7 @@ const AccountFormClient = ({
     acc_id: initialAccount.acc_id || suggestedAccId || "",
     acc_name: initialAccount.acc_name || "",
     acc_name_e: initialAccount.acc_name_e || "",
-    acc_type:
-      initialAccount.acc_type || (resolvedParentAccount ? 2 : 1),
+    acc_type: initialAccount.acc_type || (resolvedParentAccount ? 2 : 1),
     parent: resolvedParentAccount ? resolvedParentAccount.id : null,
     acc_kind: initialAccount.acc_kind ?? 1,
     acc_rep: initialAccount.acc_rep ?? 1,
@@ -131,17 +125,22 @@ const AccountFormClient = ({
     }
 
     const target = findAccountById(accounts, formData.id);
+
     if (!target) {
       return new Set<number>([formData.id]);
     }
 
-    const collectDescendants = (node: Account | undefined, acc: number[]): number[] => {
+    const collectDescendants = (
+      node: Account | undefined,
+      acc: number[],
+    ): number[] => {
       if (!node || !node.children) {
         return acc;
       }
 
       return node.children.reduce((result, child) => {
         result.push(child.id);
+
         return collectDescendants(child, result);
       }, acc);
     };
@@ -164,14 +163,13 @@ const AccountFormClient = ({
 
   // Merge a static "no parent" option with computed options to use with Select's items API
   const parentSelectItems = useMemo(
-    () =>
-      [
-        { id: "null", label: "حساب رئيسي (بدون أب)" },
-        ...parentOptions.map((option) => ({
-          id: String(option.id),
-          label: option.label,
-        })),
-      ],
+    () => [
+      { id: "null", label: "حساب رئيسي (بدون أب)" },
+      ...parentOptions.map((option) => ({
+        id: String(option.id),
+        label: option.label,
+      })),
+    ],
     [parentOptions],
   );
 
@@ -209,7 +207,11 @@ const AccountFormClient = ({
         (account) => account.parent === parentAccountId,
       );
 
-      if (parentAccount && parentAccount.acc_level < 5 && siblings.length >= 9) {
+      if (
+        parentAccount &&
+        parentAccount.acc_level < 5 &&
+        siblings.length >= 9
+      ) {
         toast.error("لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.");
 
         return;
@@ -292,7 +294,9 @@ const AccountFormClient = ({
 
       await revalidateTableData("accounts_list");
 
-      toast.success(isAddMode ? "تمت إضافة الحساب بنجاح" : "تم تحديث الحساب بنجاح");
+      toast.success(
+        isAddMode ? "تمت إضافة الحساب بنجاح" : "تم تحديث الحساب بنجاح",
+      );
       router.push("/basic/accounts");
       router.refresh();
     } catch (error) {
@@ -319,15 +323,15 @@ const AccountFormClient = ({
             {isViewMode
               ? `عرض ${initialAccount.acc_name || initialAccount.acc_id || "الحساب"}`
               : isAddMode
-              ? "إضافة حساب جديد"
-              : `تعديل ${initialAccount.acc_name || initialAccount.acc_id || "الحساب"}`}
+                ? "إضافة حساب جديد"
+                : `تعديل ${initialAccount.acc_name || initialAccount.acc_id || "الحساب"}`}
           </h2>
           <p className="text-sm text-gray-600 mt-1">
             {isViewMode
               ? "استعراض تفاصيل الحساب المحدد"
               : isAddMode
-              ? "قم بتعبئة البيانات لإضافة حساب جديد إلى دليل الحسابات"
-              : "قم بتعديل بيانات الحساب وتحديثها"}
+                ? "قم بتعبئة البيانات لإضافة حساب جديد إلى دليل الحسابات"
+                : "قم بتعديل بيانات الحساب وتحديثها"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -353,11 +357,7 @@ const AccountFormClient = ({
               >
                 إلغاء
               </Button>
-              <Button
-                color="success"
-                isLoading={isSaving}
-                onPress={handleSave}
-              >
+              <Button color="success" isLoading={isSaving} onPress={handleSave}>
                 {isAddMode ? "حفظ" : "تحديث"}
               </Button>
             </>
@@ -369,8 +369,8 @@ const AccountFormClient = ({
         <div className="flex gap-2">
           <Input
             fullWidth
-            isDisabled={isViewMode}
             isRequired
+            isDisabled={isViewMode}
             label="رقم الحساب"
             value={formData.acc_id}
             onChange={(e) =>
@@ -379,8 +379,8 @@ const AccountFormClient = ({
           />
           {isViewMode ? null : (
             <Button
-              className="mt-6"
               isIconOnly
+              className="mt-6"
               title="توليد رقم حساب"
               variant="bordered"
               onPress={handleGenerateAccountId}
@@ -392,8 +392,8 @@ const AccountFormClient = ({
 
         <Input
           fullWidth
-          isDisabled={isViewMode}
           isRequired
+          isDisabled={isViewMode}
           label="اسم الحساب"
           value={formData.acc_name}
           onChange={(e) =>
@@ -413,6 +413,7 @@ const AccountFormClient = ({
 
         <Select
           isDisabled={isViewMode}
+          items={parentSelectItems}
           label="الحساب الأب"
           placeholder="اختر الحساب الأب"
           selectedKeys={
@@ -420,14 +421,15 @@ const AccountFormClient = ({
           }
           onSelectionChange={(keys) => {
             const key = Array.from(keys)[0];
+
             if (key === "null" || !key) {
               handleParentChange(null);
             } else {
               const parsed = Number(key);
+
               handleParentChange(Number.isNaN(parsed) ? null : parsed);
             }
           }}
-          items={parentSelectItems}
         >
           {(item) => (
             <SelectItem key={item.id} textValue={item.label}>

@@ -2,10 +2,10 @@
  * Voucher Actions
  * This file is maintained for backward compatibility
  * New code should import from app/actions/voucher/index.ts
- * 
+ *
  * IMPORTANT: This file re-exports server actions from "./voucher/index" which has "use server".
  * Types are NOT exported here to avoid bundling issues.
- * 
+ *
  * For client components:
  * - Use dynamic import for actions: const { deleteVoucherAction } = await import("@/app/actions/voucher.action");
  * - For types: import type { SaveVoucherData } from "@/app/actions/voucher/types";

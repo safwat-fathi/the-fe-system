@@ -21,10 +21,7 @@ export interface NormalizedDetail {
   isUpdate?: boolean;
 }
 
-const formatParallelErrors = (
-  context: string,
-  messages: string[],
-): string => {
+const formatParallelErrors = (context: string, messages: string[]): string => {
   if (messages.length === 0) return context;
   const uniqueMessages = Array.from(
     new Set(
@@ -177,6 +174,7 @@ function validateDetailTotals(
   const cashDiff = Math.abs(totals.debit - totals.credit);
   const hasBothCashSides =
     totals.debit > NUMERIC_TOLERANCE && totals.credit > NUMERIC_TOLERANCE;
+
   if (cashDiff > NUMERIC_TOLERANCE && voucherType !== 0) {
     if (!hasBothCashSides) {
       return { success: true };
@@ -226,7 +224,11 @@ export async function processVoucherDetails(
   currentDate: string,
   currentUsername: string | null,
   voucherType: number,
-): Promise<{ success: boolean; error?: string; normalizedDetails?: NormalizedDetail[] }> {
+): Promise<{
+  success: boolean;
+  error?: string;
+  normalizedDetails?: NormalizedDetail[];
+}> {
   const normalizedDetails = details
     .map((detail) =>
       sanitizeDetailData(detail, masterId, currentDate, currentUsername, false),
@@ -285,7 +287,11 @@ export async function updateVoucherDetails(
   currentUsername: string | null,
   branchId: number = 1,
   voucherType: number,
-): Promise<{ success: boolean; error?: string; normalizedDetails?: NormalizedDetail[] }> {
+): Promise<{
+  success: boolean;
+  error?: string;
+  normalizedDetails?: NormalizedDetail[];
+}> {
   if (deletedDetailIds.length > 0) {
     const deleteResults = await Promise.allSettled(
       deletedDetailIds
@@ -366,21 +372,22 @@ export async function updateVoucherDetails(
   }
 
   const updateOperations = sanitizedDetails
-    .filter(
-      (detail): detail is NormalizedDetail & { id: number } =>
-        Boolean(detail.isUpdate && detail.id && detail.id > 0),
+    .filter((detail): detail is NormalizedDetail & { id: number } =>
+      Boolean(detail.isUpdate && detail.id && detail.id > 0),
     )
     .map((detail) =>
-      voucherService.updateDetail(detail.id!, detail.payload).then((response) => {
-        if (!response.success) {
-          throw new Error(
-            response.message ||
-              `فشل تعديل التفصيل للحساب ${detail.payload?.acc ?? ""}`,
-          );
-        }
+      voucherService
+        .updateDetail(detail.id!, detail.payload)
+        .then((response) => {
+          if (!response.success) {
+            throw new Error(
+              response.message ||
+                `فشل تعديل التفصيل للحساب ${detail.payload?.acc ?? ""}`,
+            );
+          }
 
-        return response;
-      }),
+          return response;
+        }),
     );
 
   const createOperations = sanitizedDetails
@@ -400,9 +407,7 @@ export async function updateVoucherDetails(
 
   const allOperations = [...updateOperations, ...createOperations];
   const settledResults =
-    allOperations.length > 0
-      ? await Promise.allSettled(allOperations)
-      : [];
+    allOperations.length > 0 ? await Promise.allSettled(allOperations) : [];
 
   const operationErrors = collectSettledErrors(settledResults);
 
@@ -415,4 +420,3 @@ export async function updateVoucherDetails(
 
   return { success: true, normalizedDetails: sanitizedDetails };
 }
-

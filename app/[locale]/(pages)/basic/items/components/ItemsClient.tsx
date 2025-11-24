@@ -11,7 +11,6 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-
 import { useRouter } from "next/navigation";
 
 import AppDataTable from "@/components/AppDataTable";
@@ -19,9 +18,7 @@ import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import useFractions, { Fractions } from "@/utilities/useFractions";
 import itemService from "@/services/api/item.service";
 import { createItemColumns } from "@/components/items/itemColumns";
-import { revalidateItemsDataAction } from "@/app/actions/item";
 import { ConfirmationModal } from "@/components/Modal";
-
 
 type ItemsClientProps = {
   initialItems: ItemModel[];
@@ -56,7 +53,6 @@ const DEFAULT_FILTERS: FilterParams = {
   page: "1",
   search: "",
 };
-
 
 export default function ItemsClient({
   initialItems,
@@ -171,10 +167,10 @@ export default function ItemsClient({
     router.push("/basic/items/new");
   };
 
-
   const handleDeleteClick = (item: ItemModel) => {
     if (!item.id) {
       toast.error("❌ لا يمكن حذف صنف بدون معرف");
+
       return;
     }
 
@@ -186,6 +182,7 @@ export default function ItemsClient({
     if (!itemToDelete?.id) {
       setDeleteModalOpen(false);
       setItemToDelete(null);
+
       return;
     }
 
@@ -198,7 +195,7 @@ export default function ItemsClient({
 
       if (result) {
         toast.success("✅ تم حذف الصنف بنجاح");
-        
+
         // إعادة التحقق من البيانات في الخلفية
         router.refresh();
       } else {
@@ -208,11 +205,12 @@ export default function ItemsClient({
       }
     } catch (error: any) {
       console.error("Error deleting item:", error);
-      
+
       // عرض رسالة خطأ واضحة
       const errorMessage = error?.message || "❌ حدث خطأ أثناء حذف الصنف";
+
       toast.error(errorMessage);
-      
+
       // إعادة تحميل البيانات في حالة الخطأ
       router.refresh();
     } finally {
@@ -232,12 +230,12 @@ export default function ItemsClient({
   const itemsPerTablePage = 10; // عدد الأصناف المعروضة في الجدول
   const itemsPerApiPage = 20; // عدد الأصناف التي يعيدها API
   const currentPageNum = Number(params.page ?? "1") || 1;
-  
+
   // حساب صفحة API: كل صفحتين من الجدول = صفحة واحدة من API
   const apiPage = Math.ceil(currentPageNum / 2);
   // حساب الفهرس داخل صفحة API
   const indexInApiPage = ((currentPageNum - 1) % 2) * itemsPerTablePage;
-  
+
   // جلب البيانات عند تغيير صفحة API أو الفلاتر
   // لا نجلب في التحميل الأولي لأن البيانات محملة من server component
   const prevApiPageRef = useRef(0); // تهيئة بـ 0 لتجنب الجلب في التحميل الأولي
@@ -293,17 +291,19 @@ export default function ItemsClient({
       return items;
     }
     const searchTerm = searchValue.trim().toLowerCase();
+
     return items.filter(
       (item) =>
         (item.item_name || "").toLowerCase().includes(searchTerm) ||
         (item.item_name_e || "").toLowerCase().includes(searchTerm) ||
-        (item.item_code || "").toLowerCase().includes(searchTerm)
+        (item.item_code || "").toLowerCase().includes(searchTerm),
     );
   }, [items, searchValue]);
 
   const paginatedItems = useMemo(() => {
     const start = indexInApiPage;
     const end = start + itemsPerTablePage;
+
     return filteredItemsBySearch.slice(start, end);
   }, [filteredItemsBySearch, indexInApiPage]);
 
@@ -337,10 +337,10 @@ export default function ItemsClient({
       <div className="flex flex-wrap items-center gap-3 mb-2">
         {/* زر إضافة صنف */}
         <Button
-          variant="bordered"
-          startContent={<PlusIcon className="h-4 w-4" />}
-          onPress={handleOpenAddModal}
           className="bg-gray-100 hover:bg-gray-200 border-gray-300"
+          startContent={<PlusIcon className="h-4 w-4" />}
+          variant="bordered"
+          onPress={handleOpenAddModal}
         >
           إضافة صنف
         </Button>
@@ -406,10 +406,10 @@ export default function ItemsClient({
 
           <Button
             isIconOnly
-            variant="bordered"
             className="h-10"
-            onPress={clearFilters}
             title="مسح الفلاتر"
+            variant="bordered"
+            onPress={clearFilters}
           >
             <FunnelIcon className="h-4 w-4" />
           </Button>
@@ -423,15 +423,16 @@ export default function ItemsClient({
           <Input
             className="w-full"
             placeholder="بحث بالاسم..."
-            value={searchValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSearchValue(value);
-              startTransition(() => setParams({ page: "1", search: value }));
-            }}
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
             }
+            value={searchValue}
+            onChange={(e) => {
+              const value = e.target.value;
+
+              setSearchValue(value);
+              startTransition(() => setParams({ page: "1", search: value }));
+            }}
           />
         </div>
       </div>
@@ -464,15 +465,15 @@ export default function ItemsClient({
       )}
 
       <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف الصنف "${itemToDelete?.item_name}"؟`}
-        confirmText="حذف"
         cancelText="إلغاء"
         confirmColor="danger"
+        confirmText="حذف"
+        isOpen={deleteModalOpen}
+        message={`هل أنت متأكد من حذف الصنف "${itemToDelete?.item_name}"؟`}
         size="md"
+        title="تأكيد الحذف"
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
     </>
   );

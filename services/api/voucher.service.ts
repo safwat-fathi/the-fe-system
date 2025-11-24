@@ -174,6 +174,7 @@ class VoucherService extends HttpService<Voucher> {
       lastPageSize = pageResults.length > 0 ? pageResults.length : lastPageSize;
 
       const responseCount = toPositiveInt(response.count, 0);
+
       highestCountFromApi = Math.max(highestCountFromApi, responseCount);
 
       const hasNext =

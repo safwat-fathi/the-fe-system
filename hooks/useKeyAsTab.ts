@@ -1,4 +1,9 @@
-import { useCallback, useMemo, type KeyboardEvent, type RefObject } from "react";
+import {
+  useCallback,
+  useMemo,
+  type KeyboardEvent,
+  type RefObject,
+} from "react";
 
 type KeyLike = string;
 
@@ -62,17 +67,24 @@ const DEFAULT_FOCUSABLE_SELECTOR = [
 const normalizeKey = (key: string): string => {
   if (key === " ") return "Space";
   const lower = key.toLowerCase();
+
   if (lower === "space" || lower === "spacebar") return "Space";
   if (lower === "enter") return "Enter";
   if (lower === "tab") return "Tab";
   if (lower === "escape" || lower === "esc") return "Escape";
+
   return key;
 };
 
 const isElementVisible = (element: HTMLElement) => {
-  const visibilityChecker = (element as HTMLElement & {
-    checkVisibility?: (options?: { checkOpacity?: boolean; checkVisibilityCSS?: boolean }) => boolean;
-  }).checkVisibility;
+  const visibilityChecker = (
+    element as HTMLElement & {
+      checkVisibility?: (options?: {
+        checkOpacity?: boolean;
+        checkVisibilityCSS?: boolean;
+      }) => boolean;
+    }
+  ).checkVisibility;
 
   if (typeof visibilityChecker === "function") {
     try {
@@ -90,7 +102,12 @@ const isElementVisible = (element: HTMLElement) => {
   }
 
   const style = window.getComputedStyle(element);
-  if (style.visibility === "hidden" || style.display === "none" || style.opacity === "0") {
+
+  if (
+    style.visibility === "hidden" ||
+    style.display === "none" ||
+    style.opacity === "0"
+  ) {
     return false;
   }
 
@@ -109,7 +126,9 @@ const baseFilter = (element: HTMLElement) => {
   return isElementVisible(element);
 };
 
-export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabResult {
+export default function useKeyAsTab(
+  options: UseKeyAsTabOptions,
+): UseKeyAsTabResult {
   const {
     keys,
     containerRef,
@@ -123,6 +142,7 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
 
   const keySet = useMemo(() => {
     const input = Array.isArray(keys) ? keys : [keys];
+
     return new Set(input.map(normalizeKey));
   }, [keys]);
 
@@ -132,6 +152,7 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
       if (typeof filterElement === "function") {
         return filterElement(element);
       }
+
       return true;
     },
     [filterElement],
@@ -142,6 +163,7 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
       if (typeof document === "undefined") return false;
 
       const root = containerRef?.current ?? document.body;
+
       if (!root) return false;
 
       const nodeList = root.querySelectorAll<HTMLElement>(focusableSelector);
@@ -160,7 +182,8 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
       const activeElement =
         fallbackActiveElement && candidates.includes(fallbackActiveElement)
           ? fallbackActiveElement
-          : document.activeElement instanceof HTMLElement && root.contains(document.activeElement)
+          : document.activeElement instanceof HTMLElement &&
+              root.contains(document.activeElement)
             ? document.activeElement
             : null;
 
@@ -171,18 +194,25 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
       }
 
       let nextIndex =
-        currentIndex === -1 ? (direction === 1 ? 0 : candidates.length - 1) : currentIndex + direction;
+        currentIndex === -1
+          ? direction === 1
+            ? 0
+            : candidates.length - 1
+          : currentIndex + direction;
 
       if (nextIndex < 0 || nextIndex >= candidates.length) {
         if (!wrap) {
           if (direction === 1 && typeof onBoundaryFocus === "function") {
             const handled = onBoundaryFocus(direction);
+
             if (handled) return true;
           }
           if (direction === -1 && typeof onBoundaryFocus === "function") {
             const handled = onBoundaryFocus(direction);
+
             if (handled) return true;
           }
+
           return false;
         }
 
@@ -190,10 +220,12 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
       }
 
       const nextElement = candidates[nextIndex];
+
       if (!nextElement) return false;
 
       try {
         nextElement.focus();
+
         return true;
       } catch {
         return false;
@@ -210,6 +242,7 @@ export default function useKeyAsTab(options: UseKeyAsTabOptions): UseKeyAsTabRes
       }
 
       const normalized = normalizeKey(event.key);
+
       if (!keySet.has(normalized)) {
         return;
       }

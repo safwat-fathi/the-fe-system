@@ -38,9 +38,7 @@ export const hasAnyPermission = (
 ): boolean => {
   const objectPermissions = permissions[objectId.toString()] || [];
 
-  return requiredPermissions.some((perm) =>
-    objectPermissions.includes(perm),
-  );
+  return requiredPermissions.some((perm) => objectPermissions.includes(perm));
 };
 
 /**
@@ -53,9 +51,7 @@ export const hasAllPermissions = (
 ): boolean => {
   const objectPermissions = permissions[objectId.toString()] || [];
 
-  return requiredPermissions.every((perm) =>
-    objectPermissions.includes(perm),
-  );
+  return requiredPermissions.every((perm) => objectPermissions.includes(perm));
 };
 
 /**
@@ -141,4 +137,3 @@ export const filterMenuByPermissions = (
     })
     .filter((item) => item !== null);
 };
-

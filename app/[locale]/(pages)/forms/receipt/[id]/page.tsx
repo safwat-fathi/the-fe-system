@@ -35,6 +35,7 @@ const getVoucherById = async (voucherId: number) => {
     if (voucher && voucher.vouch_type === 111) {
       return voucher;
     }
+
     return null;
   } catch (error) {
     console.error("Error fetching voucher:", error);
@@ -43,59 +44,62 @@ const getVoucherById = async (voucherId: number) => {
   }
 };
 
-const getGoldDetails = async (voucherId: number, branchId?: number | string) => {
-    try {
-      if (!voucherId || isNaN(voucherId)) {
-        return [];
-      }
-
-      const parsedBranchId = Number(branchId ?? 1) || 1;
-
-      const goldDetailsResponse = await voucherService.getGoldDetails(
-        voucherId,
-        {
-          xcom_id: parsedBranchId,
-        },
-      );
-
-      if (!goldDetailsResponse.success || !goldDetailsResponse.data) {
-        return [];
-      }
-
-      return Array.isArray(goldDetailsResponse.data)
-        ? goldDetailsResponse.data
-        : [];
-    } catch (error) {
-      console.error("Error fetching gold details:", error);
-
+const getGoldDetails = async (
+  voucherId: number,
+  branchId?: number | string,
+) => {
+  try {
+    if (!voucherId || isNaN(voucherId)) {
       return [];
     }
+
+    const parsedBranchId = Number(branchId ?? 1) || 1;
+
+    const goldDetailsResponse = await voucherService.getGoldDetails(voucherId, {
+      xcom_id: parsedBranchId,
+    });
+
+    if (!goldDetailsResponse.success || !goldDetailsResponse.data) {
+      return [];
+    }
+
+    return Array.isArray(goldDetailsResponse.data)
+      ? goldDetailsResponse.data
+      : [];
+  } catch (error) {
+    console.error("Error fetching gold details:", error);
+
+    return [];
+  }
 };
 
-const getVoucherBoxes = async (voucherId: number, branchId?: number | string) => {
-    try {
-      if (!voucherId || isNaN(voucherId)) {
-        return [];
-      }
-
-      const parsedBranchId = Number(branchId ?? 1) || 1;
-
-      const boxesResponse = await voucherService.getBoxes(voucherId, {
-        xcom_id: parsedBranchId,
-      });
-
-      if (!boxesResponse.success || !boxesResponse.data) {
-        return [];
-      }
-
-      const boxes = Array.isArray(boxesResponse.data) ? boxesResponse.data : [];
-
-      return boxes;
-    } catch (error) {
-      console.error("Error fetching voucher boxes:", error);
-
+const getVoucherBoxes = async (
+  voucherId: number,
+  branchId?: number | string,
+) => {
+  try {
+    if (!voucherId || isNaN(voucherId)) {
       return [];
     }
+
+    const parsedBranchId = Number(branchId ?? 1) || 1;
+
+    const boxesResponse = await voucherService.getBoxes(voucherId, {
+      xcom_id: parsedBranchId,
+    });
+
+    if (!boxesResponse.success || !boxesResponse.data) {
+      return [];
+    }
+
+    const boxes = Array.isArray(boxesResponse.data) ? boxesResponse.data : [];
+
+    return boxes;
+  } catch (error) {
+    console.error("Error fetching voucher boxes:", error);
+
+    return [];
+  }
 };
 
 export default async function ReceiptVoucherEditPage({
@@ -121,50 +125,51 @@ export default async function ReceiptVoucherEditPage({
   }
 
   let targetVoucher = await getVoucherById(voucherId);
-  
+
   // إذا لم يتم العثور على السند، إعادة المحاولة
   if (!targetVoucher) {
     // محاولة البحث بدون تحديد نوع السند
     targetVoucher = await voucherService.getVoucherById(voucherId, {
       xvouch_type: "0", // البحث في جميع الأنواع
     });
-    
+
     // إذا لم يتم العثور عليه، محاولة البحث في جميع السندات
     if (!targetVoucher || targetVoucher.vouch_type !== 111) {
       const allVouchersResponse = await voucherService.getAll({
         xvouch_type: "111",
         page: "1",
       });
-      
+
       if (allVouchersResponse.success && allVouchersResponse.data) {
         const vouchers = Array.isArray(allVouchersResponse.data)
           ? allVouchersResponse.data
           : [];
-        
-        const foundVoucher = vouchers.find(
-          (v: any) => {
-            const matchesId = v.id && Number(v.id) === voucherId;
-            const matchesVouchId = v.vouch_id && Number(v.vouch_id) === voucherId;
-            return matchesId || matchesVouchId;
-          }
-        );
-        
+
+        const foundVoucher = vouchers.find((v: any) => {
+          const matchesId = v.id && Number(v.id) === voucherId;
+          const matchesVouchId = v.vouch_id && Number(v.vouch_id) === voucherId;
+
+          return matchesId || matchesVouchId;
+        });
+
         if (foundVoucher && foundVoucher.vouch_type === 111) {
           targetVoucher = foundVoucher;
         }
       }
     }
-    
+
     if (!targetVoucher || targetVoucher.vouch_type !== 111) {
       notFound();
     }
   }
 
-  const formData = await voucherFormDataService.getVoucherFormData({ goldBoxes: true });
+  const formData = await voucherFormDataService.getVoucherFormData({
+    goldBoxes: true,
+  });
 
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
   const voucherIdForDetails = targetVoucher.id || voucherId;
-  
+
   const [goldDetailsData, boxesData] = await Promise.all([
     getGoldDetails(voucherIdForDetails, branchId),
     getVoucherBoxes(voucherIdForDetails, branchId),
@@ -304,19 +309,28 @@ export default async function ReceiptVoucherEditPage({
 
   // معالجة cust - قد يكون cust أو cust_id في API
   const custValue =
-    targetVoucher?.cust_id ||
-    (targetVoucher as any)?.cust ||
-    undefined;
+    targetVoucher?.cust_id || (targetVoucher as any)?.cust || undefined;
 
   // معالجة cost_id - قد يكون cost (object أو ID) أو cost_id في API
   let costValue: number | null = null;
-  
-  if ((targetVoucher as any)?.cost_id !== undefined && (targetVoucher as any)?.cost_id !== null) {
+
+  if (
+    (targetVoucher as any)?.cost_id !== undefined &&
+    (targetVoucher as any)?.cost_id !== null
+  ) {
     costValue = Number((targetVoucher as any).cost_id);
-  } else if ((targetVoucher as any)?.cost !== undefined && (targetVoucher as any)?.cost !== null) {
+  } else if (
+    (targetVoucher as any)?.cost !== undefined &&
+    (targetVoucher as any)?.cost !== null
+  ) {
     // إذا كان cost object (يحتوي على id)
-    if (typeof (targetVoucher as any).cost === "object" && !Array.isArray((targetVoucher as any).cost)) {
-      costValue = Number((targetVoucher as any).cost.id || (targetVoucher as any).cost.Id || 0);
+    if (
+      typeof (targetVoucher as any).cost === "object" &&
+      !Array.isArray((targetVoucher as any).cost)
+    ) {
+      costValue = Number(
+        (targetVoucher as any).cost.id || (targetVoucher as any).cost.Id || 0,
+      );
     } else {
       // إذا كان cost ID مباشرة
       costValue = Number((targetVoucher as any).cost);
@@ -356,10 +370,11 @@ export default async function ReceiptVoucherEditPage({
       <ReceiptVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes || []}
-        goldBoxes={formData.goldBoxes || formData.boxes || []}
+        categories={formData.categories || []}
         costCenters={formData.costCenters}
         customers={formData.customers || []}
         formMode={formMode}
+        goldBoxes={formData.goldBoxes || formData.boxes || []}
         goldDetailsData={goldDetails}
         isNewVoucher={false}
         items={formData.items || []}
@@ -369,7 +384,6 @@ export default async function ReceiptVoucherEditPage({
         voucherData={formattedVoucher}
         voucherRecordId={targetVoucher.id}
         voucherTypes={formData.voucherTypes}
-        categories={formData.categories || []}
       />
     </div>
   );

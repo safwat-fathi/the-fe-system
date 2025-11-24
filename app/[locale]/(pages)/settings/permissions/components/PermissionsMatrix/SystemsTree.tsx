@@ -3,20 +3,21 @@
 import { Accordion, AccordionItem } from "@heroui/react";
 
 import { SYSTEM_MAP } from "../../utils/system-map";
+
 import SystemSection from "./SystemSection";
 
 export default function SystemsTree() {
-
   return (
     <div className="space-y-4">
       <Accordion
-        selectionMode="multiple"
         defaultExpandedKeys={["accounting", "gold", "settings"]}
+        selectionMode="multiple"
         variant="bordered"
       >
         {SYSTEM_MAP.systems.map((system) => (
           <AccordionItem
             key={system.id}
+            aria-label={system.name}
             title={
               <div className="flex items-center gap-3">
                 <div
@@ -34,7 +35,6 @@ export default function SystemsTree() {
                 </span>
               </div>
             }
-            aria-label={system.name}
           >
             <SystemSection system={system} />
           </AccordionItem>
@@ -43,4 +43,3 @@ export default function SystemsTree() {
     </div>
   );
 }
-

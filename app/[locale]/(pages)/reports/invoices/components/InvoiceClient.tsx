@@ -17,6 +17,7 @@ import {
   ChartBarIcon,
   TableCellsIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslations } from "next-intl";
 
 import Card from "@/components/Card";
 import useFractions from "@/utilities/useFractions";
@@ -28,7 +29,6 @@ import { Invoice } from "@/types/models/invoice";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import { INVOICE_TYPE_FILTERS } from "@/types/constants/invoice";
 import { createInvoiceColumns } from "@/app/[locale]/(pages)/reports/invoices/components/invoiceColumns";
-import { useTranslations } from "next-intl";
 
 interface InvoiceClientProps {
   invoices: Invoice[];

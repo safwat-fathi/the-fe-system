@@ -105,7 +105,10 @@ export const useReceiptDeliveryVoucherForm = ({
     GVoucherDetail[]
   >([]);
 
-  const categories = useMemo(() => initialCategories || [], [initialCategories]);
+  const categories = useMemo(
+    () => initialCategories || [],
+    [initialCategories],
+  );
   const categoryMap = useMemo(() => {
     const map = new Map<number, any>();
 
@@ -345,6 +348,7 @@ export const useReceiptDeliveryVoucherForm = ({
         const cachedMatches = items.filter((item: any) => {
           const code = String(item.item_code ?? "").toLowerCase();
           const name = String(item.item_name ?? "").toLowerCase();
+
           return code.includes(term) || name.includes(term);
         });
 
@@ -359,13 +363,14 @@ export const useReceiptDeliveryVoucherForm = ({
 
         // إضافة الصفحات المحملة في cache إلى searchedPages
         const cachedPages = Math.ceil(items.length / 20);
+
         for (let i = 1; i <= cachedPages; i++) {
           searchedPages.add(i);
         }
 
         while (
-          hasMore && 
-          currentPage <= maxPages && 
+          hasMore &&
+          currentPage <= maxPages &&
           allMatchingItems.length < maxResults
         ) {
           // تخطي الصفحات التي تم البحث فيها من cache
@@ -389,16 +394,18 @@ export const useReceiptDeliveryVoucherForm = ({
 
           // تحويل البيانات
           const normalizedResults = result.results.map((item: any) => {
-            const itemCode = item.item_code ?? item.code ?? String(item.id ?? "");
+            const itemCode =
+              item.item_code ?? item.code ?? String(item.id ?? "");
             const itemName = item.item_name ?? item.name ?? "";
-            
+
             return {
               id: Number(item.id ?? 0),
               item_code: itemCode,
               item_name: itemName,
               item_price: item.item_price ?? item.price ?? 0,
               item_weight: item.item_weight ?? item.weight ?? 0,
-              item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+              item_g_weight:
+                item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
               work_price: item.work_price ?? item.price_w ?? 0,
               purity: item.purity ?? item.k ?? "",
               stones: item.stones ?? item.stone ?? null,
@@ -413,6 +420,7 @@ export const useReceiptDeliveryVoucherForm = ({
             const additions = normalizedResults.filter(
               (item) => !existingIds.has(item.id),
             );
+
             return additions.length > 0 ? [...prev, ...additions] : prev;
           });
 
@@ -420,6 +428,7 @@ export const useReceiptDeliveryVoucherForm = ({
           const matchingItems = normalizedResults.filter((item: any) => {
             const code = String(item.item_code ?? "").toLowerCase();
             const name = String(item.item_name ?? "").toLowerCase();
+
             return code.includes(term) || name.includes(term);
           });
 
@@ -472,14 +481,15 @@ export const useReceiptDeliveryVoucherForm = ({
       const normalizedResults = result.results.map((item: any) => {
         const itemCode = item.item_code ?? item.code ?? String(item.id ?? "");
         const itemName = item.item_name ?? item.name ?? "";
-        
+
         return {
           id: Number(item.id ?? 0),
           item_code: itemCode,
           item_name: itemName,
           item_price: item.item_price ?? item.price ?? 0,
           item_weight: item.item_weight ?? item.weight ?? 0,
-          item_g_weight: item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+          item_g_weight:
+            item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
           work_price: item.work_price ?? item.price_w ?? 0,
           purity: item.purity ?? item.k ?? "",
           stones: item.stones ?? item.stone ?? null,
@@ -494,6 +504,7 @@ export const useReceiptDeliveryVoucherForm = ({
         const additions = normalizedResults.filter(
           (item) => !existingIds.has(item.id),
         );
+
         return additions.length > 0 ? [...prev, ...additions] : prev;
       });
 
@@ -509,6 +520,7 @@ export const useReceiptDeliveryVoucherForm = ({
       }));
     } catch (e) {
       console.error("Error loading item options:", e);
+
       return [];
     }
   };
@@ -520,7 +532,10 @@ export const useReceiptDeliveryVoucherForm = ({
 
   // دالة للتحقق من وجود صفحات إضافية
   // نستخدم result.next من الصفحة الحالية
-  const hasMoreItems = async (currentPage: number, searchTerm: string = ""): Promise<boolean> => {
+  const hasMoreItems = async (
+    currentPage: number,
+    searchTerm: string = "",
+  ): Promise<boolean> => {
     try {
       // نحمل الصفحة الحالية للتحقق من result.next
       const result = await itemService.searchItems({
@@ -530,9 +545,10 @@ export const useReceiptDeliveryVoucherForm = ({
         itemTypeId: 0,
         itemStatus: 0,
       });
-      
+
       // إذا كان هناك next، فهناك صفحات إضافية
       const hasNext = result?.next !== null && result?.next !== undefined;
+
       return hasNext;
     } catch {
       return false;
@@ -708,7 +724,9 @@ export const useReceiptDeliveryVoucherForm = ({
           );
 
           if (selectedItem) {
-            const itemId = Number(selectedItem.id ?? numericValue) || numericValue;
+            const itemId =
+              Number(selectedItem.id ?? numericValue) || numericValue;
+
             newDetail.item_id = itemId;
             newDetail.item_code =
               selectedItem.item_code ??
@@ -766,6 +784,7 @@ export const useReceiptDeliveryVoucherForm = ({
               parseNumber(selectedItem.item_weight) ||
               parseNumber(selectedItem.weight) ||
               parseNumber((selectedItem as any).itemWeight);
+
             if (itemWeight > 0) {
               newDetail.weight = itemWeight;
             }
@@ -774,6 +793,7 @@ export const useReceiptDeliveryVoucherForm = ({
               parseNumber((selectedItem as any).item_g_weight) ||
               parseNumber(selectedItem.g_weight) ||
               parseNumber((selectedItem as any).gWeight);
+
             if (itemGoldWeight > 0) {
               newDetail.g_weight = parseFloat(itemGoldWeight.toFixed(5));
             } else if (
@@ -1007,11 +1027,11 @@ export const useReceiptDeliveryVoucherForm = ({
 
         // استخدام id أولاً، وإذا لم يكن موجوداً، استخدام vouch_id
         const targetId = realId || realVouchId;
-        
+
         if (targetId) {
           // إضافة delay صغير للتأكد من أن البيانات تم حفظها في قاعدة البيانات
           await new Promise((resolve) => setTimeout(resolve, 500));
-          
+
           router.push(`${basePath}/${targetId}?mode=preview`);
           router.refresh(); // إجبار Next.js على إعادة جلب البيانات من الخادم
         } else {

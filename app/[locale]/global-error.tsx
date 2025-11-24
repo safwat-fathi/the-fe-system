@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { useTranslations } from "next-intl";
+
 export default function Error({
   error,
   reset,
@@ -10,6 +12,8 @@ export default function Error({
   error: Error;
   reset: () => void;
 }) {
+  const t = useTranslations("globalError");
+
   useEffect(() => {
     // Log the error to an error reporting service
     /* eslint-disable no-console */
@@ -28,15 +32,17 @@ export default function Error({
         // Show error stack in development
         <div className="max-w-4xl w-full bg-white rounded-2xl shadow-xl p-8">
           <div className="bg-red-500 p-6 text-center rounded-t-2xl">
-            <div className="text-6xl font-bold text-white mb-2">!عفوًا</div>
+            <div className="text-6xl font-bold text-white mb-2">
+              {t("titleDev")}
+            </div>
             <div className="text-xl font-medium text-red-100">
-              حدث خطأ ما في وضع التطوير
+              {t("subtitleDev")}
             </div>
           </div>
 
           <div className="p-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              تفاصيل الخطأ:
+              {t("detailsTitle")}
             </h2>
             <div className="bg-red-50 p-6 rounded-lg mb-6" dir="ltr">
               <h3 className="text-lg font-semibold text-red-700 mb-2">
@@ -54,14 +60,14 @@ export default function Error({
                 className="px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors"
                 onClick={reset}
               >
-                حاول مرة أخرى
+                {t("retry")}
               </button>
 
               <Link
                 className="px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors"
                 href="/"
               >
-                العودة للرئيسية
+                {t("backHome")}
               </Link>
             </div>
           </div>
@@ -70,8 +76,12 @@ export default function Error({
         // Show standard UI in production
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-red-500 p-6 text-center">
-            <div className="text-6xl font-bold text-white mb-2">!عفوًا</div>
-            <div className="text-xl font-medium text-red-100">حدث خطأ ما</div>
+            <div className="text-6xl font-bold text-white mb-2">
+              {t("titleProd")}
+            </div>
+            <div className="text-xl font-medium text-red-100">
+              {t("subtitleProd")}
+            </div>
           </div>
 
           <div className="p-8 text-center">
@@ -93,10 +103,10 @@ export default function Error({
             </div>
 
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              نحن نعتذر!
+              {t("titleProd")}
             </h2>
             <p className="text-gray-600 mb-6">
-              حدث خطأ غير متوقع. تم إبلاغ فريقنا ونحن نعمل على إصلاحه.
+              {t("subtitleProd")}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -104,26 +114,26 @@ export default function Error({
                 className="px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors"
                 onClick={reset}
               >
-                حاول مرة أخرى
+                {t("retry")}
               </button>
 
               <Link
                 className="px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors"
                 href="/"
               >
-                العودة للرئيسية
+                {t("backHome")}
               </Link>
             </div>
           </div>
 
           <div className="bg-gray-50 px-8 py-4 text-center">
             <p className="text-sm text-gray-500">
-              هل تحتاج إلى مساعدة؟ تواصل مع الدعم عبر{" "}
+              {t("helpText")}{" "}
               <a
                 className="text-red-500 hover:underline"
                 href="mailto:support@nafeesweb.com"
               >
-                support@nafeesweb.com
+                {t("supportEmailLabel")}
               </a>
             </p>
           </div>

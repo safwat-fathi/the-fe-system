@@ -8,6 +8,7 @@ import { HttpService } from "@/services/base";
 import { getBranchParams } from "@/app/actions/branch-params";
 import { Invoice } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 interface DashboardStats {
   invoices: IPaginatedResponse<Invoice> | null;
@@ -33,27 +34,61 @@ class DashboardService extends HttpService<any> {
           ? parsedCompanyId
           : 1;
 
-      // Fetch all required data in parallel with individual error handling
+      // Fetch all required data in parallel with individual error handling.
+      // AuthenticationError must be allowed to bubble up for proper redirects.
       const [invoices, customers, categories, items, goldPrice] =
         await Promise.all([
           invoiceService.getAllInvoices({
-            xcom_id: companyId,
+            xcom_id: String(companyId),
             xyear_id: "0",
-          }).catch(() => null),
-          customerService.getAllCustomers({
-            xcom_id: companyId,
-            xcust_type: 0,
-            xcust_code: 0,
-          }).catch(() => []),
-          categoryService.getAllCategories(companyId).catch(() => []),
-          itemService.searchItems({
-            page: 1,
-            companyId,
-            categoryId: "0",
-            itemTypeId: "0",
-            itemStatus: "0",
-          }).catch(() => ({ count: 0, results: [], next: null, previous: null })),
-          goldPriceService.getCurrentGoldPrice().catch(() => null),
+          }),
+          customerService
+            .getAllCustomers({
+              xcom_id: companyId,
+              xcust_type: 0,
+              xcust_code: 0,
+            })
+            .catch((error) => {
+              if (error instanceof AuthenticationError) {
+                throw error;
+              }
+
+              return [];
+            }),
+          categoryService.getAllCategories(companyId).catch((error) => {
+            if (error instanceof AuthenticationError) {
+              throw error;
+            }
+
+            return [];
+          }),
+          itemService
+            .searchItems({
+              page: 1,
+              companyId,
+              categoryId: "0",
+              itemTypeId: "0",
+              itemStatus: "0",
+            })
+            .catch((error) => {
+              if (error instanceof AuthenticationError) {
+                throw error;
+              }
+
+              return {
+                count: 0,
+                results: [],
+                next: null,
+                previous: null,
+              };
+            }),
+          goldPriceService.getCurrentGoldPrice().catch((error) => {
+            if (error instanceof AuthenticationError) {
+              throw error;
+            }
+
+            return null;
+          }),
         ]);
 
       // console.log(
@@ -84,6 +119,11 @@ class DashboardService extends HttpService<any> {
         monthlySales,
       };
     } catch (error) {
+      if (error instanceof AuthenticationError) {
+        // Bubble up auth errors so the page can redirect.
+        throw error;
+      }
+
       throw new Error("حدث خطأ أثناء  إحصائيات لوحة التحكم");
     }
   }

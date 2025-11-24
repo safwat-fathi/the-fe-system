@@ -32,7 +32,7 @@ export function revalidateVoucherPaths(vouchType: number, masterId?: number) {
     const basePath = route.split("?")[0];
 
     revalidatePath(basePath);
-    
+
     // Revalidate with layout to ensure all cached data is refreshed
     revalidatePath(basePath, "layout");
   }

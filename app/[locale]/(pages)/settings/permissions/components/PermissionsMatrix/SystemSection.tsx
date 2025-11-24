@@ -1,7 +1,9 @@
 "use client";
 
 import { Accordion, AccordionItem } from "@heroui/react";
-import { System, Section, Screen } from "../../types/systems";
+
+import { System } from "../../types/systems";
+
 import PermissionToggle from "./PermissionToggle";
 
 interface SystemSectionProps {
@@ -11,10 +13,11 @@ interface SystemSectionProps {
 export default function SystemSection({ system }: SystemSectionProps) {
   return (
     <div className="space-y-2">
-      <Accordion variant="light" selectionMode="multiple">
+      <Accordion selectionMode="multiple" variant="light">
         {system.sections.map((section) => (
           <AccordionItem
             key={section.id}
+            aria-label={section.name}
             title={
               <div className="flex items-center gap-2">
                 <span className="font-medium">{section.name}</span>
@@ -23,7 +26,6 @@ export default function SystemSection({ system }: SystemSectionProps) {
                 </span>
               </div>
             }
-            aria-label={section.name}
           >
             <div className="space-y-3 p-4">
               {section.screens.map((screen) => (
@@ -33,9 +35,13 @@ export default function SystemSection({ system }: SystemSectionProps) {
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h4 className="font-medium text-gray-900">{screen.name}</h4>
+                      <h4 className="font-medium text-gray-900">
+                        {screen.name}
+                      </h4>
                       {screen.path && (
-                        <p className="text-xs text-gray-500 mt-1">{screen.path}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {screen.path}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -49,4 +55,3 @@ export default function SystemSection({ system }: SystemSectionProps) {
     </div>
   );
 }
-

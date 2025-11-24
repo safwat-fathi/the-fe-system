@@ -58,6 +58,7 @@ export const createInvoiceColumns = (
     (row) => {
       const transType = Number(row.trans_type) as TransTypes;
       const typeMeta = TRANS_TYPE_META[transType];
+
       return typeMeta?.label ?? "غير محدد";
     },
     {
