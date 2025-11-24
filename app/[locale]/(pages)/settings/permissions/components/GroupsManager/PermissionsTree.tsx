@@ -20,7 +20,11 @@ import {
 
 interface PermissionsTreeProps {
   permissions: Record<string, string[]>;
-  onPermissionChange: (screenId: string, permission: string, checked: boolean) => void;
+  onPermissionChange: (
+    screenId: string,
+    permission: string,
+    checked: boolean,
+  ) => void;
   onSelectAll: (screenId: string, checked: boolean) => void;
   readOnly?: boolean;
 }
@@ -41,11 +45,13 @@ export default function PermissionsTree({
   const toggleSystem = (systemId: string) => {
     setExpandedSystems((prev) => {
       const newSet = new Set(prev);
+
       if (newSet.has(systemId)) {
         newSet.delete(systemId);
       } else {
         newSet.add(systemId);
       }
+
       return newSet;
     });
   };
@@ -53,22 +59,26 @@ export default function PermissionsTree({
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) => {
       const newSet = new Set(prev);
+
       if (newSet.has(sectionId)) {
         newSet.delete(sectionId);
       } else {
         newSet.add(sectionId);
       }
+
       return newSet;
     });
   };
 
   const hasAllPermissions = (screenId: string): boolean => {
     const screenPerms = permissions[screenId] || [];
+
     return screenPerms.length === Object.values(PERMISSION_TYPES).length;
   };
 
   const hasSomePermissions = (screenId: string): boolean => {
     const screenPerms = permissions[screenId] || [];
+
     return (
       screenPerms.length > 0 &&
       screenPerms.length < Object.values(PERMISSION_TYPES).length
@@ -124,7 +134,7 @@ export default function PermissionsTree({
                 <span className="font-semibold text-gray-900 text-lg">
                   {system.name}
                 </span>
-                <Chip size="sm" variant="flat" color="secondary">
+                <Chip color="secondary" size="sm" variant="flat">
                   {system.sections.length} أقسام
                 </Chip>
               </div>
@@ -179,12 +189,12 @@ export default function PermissionsTree({
                                 <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center gap-3">
                                     <Checkbox
-                                      isSelected={allSelected}
+                                      isDisabled={readOnly}
                                       isIndeterminate={someSelected}
+                                      isSelected={allSelected}
                                       onValueChange={(checked) =>
                                         onSelectAll(screen.id, checked)
                                       }
-                                      isDisabled={readOnly}
                                     >
                                       <span className="font-medium text-gray-900">
                                         {screen.name}
@@ -198,8 +208,8 @@ export default function PermissionsTree({
                                   </div>
                                   {screenPerms.length > 0 && (
                                     <Chip
-                                      size="sm"
                                       color="primary"
+                                      size="sm"
                                       variant="flat"
                                     >
                                       {screenPerms.length} صلاحية
@@ -213,14 +223,20 @@ export default function PermissionsTree({
                                     (permission) => {
                                       const isChecked =
                                         screenPerms.includes(permission);
-                                      const color = getPermissionColor(permission);
-                                      const icon = getPermissionIcon(permission);
+                                      const color =
+                                        getPermissionColor(permission);
+                                      const icon =
+                                        getPermissionIcon(permission);
                                       const label =
                                         getPermissionLabel(permission);
 
                                       return (
                                         <div
                                           key={permission}
+                                          className={`flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer hover:shadow-sm ${getBgColor(
+                                            isChecked,
+                                            color,
+                                          )} ${readOnly ? "cursor-not-allowed opacity-50" : ""}`}
                                           onClick={() =>
                                             !readOnly &&
                                             onPermissionChange(
@@ -229,10 +245,6 @@ export default function PermissionsTree({
                                               !isChecked,
                                             )
                                           }
-                                          className={`flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer hover:shadow-sm ${getBgColor(
-                                            isChecked,
-                                            color,
-                                          )} ${readOnly ? "cursor-not-allowed opacity-50" : ""}`}
                                         >
                                           <div
                                             className={`w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${
@@ -274,13 +286,11 @@ export default function PermissionsTree({
                                             )}
                                           </div>
                                           <Chip
+                                            className="flex-1 justify-center"
                                             color={
                                               isChecked
                                                 ? (color as any)
                                                 : "default"
-                                            }
-                                            variant={
-                                              isChecked ? "flat" : "bordered"
                                             }
                                             size="sm"
                                             startContent={
@@ -288,7 +298,9 @@ export default function PermissionsTree({
                                                 {icon}
                                               </span>
                                             }
-                                            className="flex-1 justify-center"
+                                            variant={
+                                              isChecked ? "flat" : "bordered"
+                                            }
                                           >
                                             <span className="text-xs">
                                               {label}
@@ -315,4 +327,3 @@ export default function PermissionsTree({
     </div>
   );
 }
-

@@ -50,10 +50,7 @@ export const useCashReceiptVoucherForm = ({
     if (voucherData) {
       return {
         ...voucherData,
-        cost_id:
-          voucherData.cost_id ??
-          (voucherData as any).cost ??
-          null,
+        cost_id: voucherData.cost_id ?? (voucherData as any).cost ?? null,
       };
     }
 
@@ -463,11 +460,7 @@ export const useCashReceiptVoucherForm = ({
         const boxCost =
           box.cost_id !== undefined && box.cost_id !== null ? box.cost_id : 0;
 
-        if (
-          boxCost > 0 &&
-          previousCost !== null &&
-          boxCost !== previousCost
-        ) {
+        if (boxCost > 0 && previousCost !== null && boxCost !== previousCost) {
           return box;
         }
 
@@ -567,9 +560,7 @@ export const useCashReceiptVoucherForm = ({
         amount: box.amount,
         vouch_notes: box.vouch_notes || "",
         cost_id:
-          box.cost_id !== undefined &&
-          box.cost_id !== null &&
-          box.cost_id > 0
+          box.cost_id !== undefined && box.cost_id !== null && box.cost_id > 0
             ? box.cost_id
             : masterCostId,
         inv_id: box.inv_id || null,

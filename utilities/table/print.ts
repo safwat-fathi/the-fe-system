@@ -1,6 +1,8 @@
-import { FormState } from "@/app/[locale]/(pages)/forms/invoices/hooks/useInvoiceForm";
 import type { Table } from "@tanstack/react-table";
+
 import { InvoiceItemRow } from "../invoiceForm";
+
+import { FormState } from "@/app/[locale]/(pages)/forms/invoices/hooks/useInvoiceForm";
 
 // Collect all rows before pagination (i.e., across all pages) using TanStack Table v8 API.
 // Falls back to the current row model if pre‑pagination is unavailable.
@@ -45,13 +47,16 @@ export function buildSimpleTablePrintHtml<T>(
 
   const headers = selected.map((c) => {
     const raw = c!.columnDef.header as any;
+
     if (typeof raw === "string") return raw;
     if (typeof raw === "function") {
       try {
         const val = raw({} as any);
+
         if (typeof val === "string") return val;
       } catch {}
     }
+
     return typeof c!.id === "string" ? (c!.id as string) : String(c!.id);
   });
 
@@ -62,10 +67,12 @@ export function buildSimpleTablePrintHtml<T>(
 
   const toDateOnly = (val: any): string => {
     const d = new Date(val);
+
     if (isNaN(d.getTime())) return String(val ?? "");
     const dd = String(d.getDate()).padStart(2, "0");
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const yyyy = d.getFullYear();
+
     return `${dd}-${mm}-${yyyy}`;
   };
 
@@ -74,6 +81,7 @@ export function buildSimpleTablePrintHtml<T>(
   const fmtNum = (n: number) => {
     // Match UI: integers no decimals, otherwise 2 fixed decimals
     const frac = Number.isInteger(n) ? 0 : 2;
+
     return n.toLocaleString("en-US", {
       minimumFractionDigits: frac,
       maximumFractionDigits: frac,
@@ -88,6 +96,7 @@ export function buildSimpleTablePrintHtml<T>(
             ? row.getValue(col!.id)
             : row.original?.[col!.id];
           let text = "";
+
           if (v === null || v === undefined) {
             text = "";
           } else if (String(col!.id).includes("date")) {
@@ -96,8 +105,10 @@ export function buildSimpleTablePrintHtml<T>(
             text = fmtNum(v);
           } else if (typeof v === "string") {
             const cleaned = v.replace(/,/g, "").trim();
+
             if (isNumericString(cleaned)) {
               const num = Number.parseFloat(cleaned);
+
               text = fmtNum(num);
             } else {
               text = v;
@@ -170,6 +181,7 @@ export function printTableInNewWindow<T>(
     "_blank",
     "width=1024,height=768,scrollbars=yes,resizable=yes",
   );
+
   if (!w) return;
   w.document.write(html);
   w.document.close();

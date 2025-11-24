@@ -96,8 +96,11 @@ class HelperService extends HttpService {
 
       if (!companyId) {
         try {
-          const { getBranchParams } = await import("@/app/actions/branch-params");
+          const { getBranchParams } = await import(
+            "@/app/actions/branch-params"
+          );
           const branchParams = await getBranchParams();
+
           companyId = branchParams.com || "1";
         } catch (error) {
           // إذا فشل جلب branch params، استخدم القيمة الافتراضية
@@ -113,7 +116,9 @@ class HelperService extends HttpService {
         { xcom_id: companyIdString },
         {
           cache: "no-store",
-          next: { tags: ["categories", `categories-company-${companyIdString}`] },
+          next: {
+            tags: ["categories", `categories-company-${companyIdString}`],
+          },
         },
       );
 
@@ -128,6 +133,7 @@ class HelperService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching categories:", error);
+
       // في حالة الخطأ، إرجاع مصفوفة فارغة بدلاً من رمي الخطأ
       return [];
     }

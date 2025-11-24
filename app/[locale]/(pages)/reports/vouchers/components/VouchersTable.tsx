@@ -22,6 +22,7 @@ import {
   TrashIcon,
   PrinterIcon,
 } from "@heroicons/react/24/outline";
+
 import { Voucher } from "@/types/voucher";
 import { formatAmount } from "@/utilities/formatAmount";
 import { getVoucherTypeName } from "@/utilities/voucher/routing";
@@ -160,4 +161,3 @@ export default function VouchersTable({
     </Table>
   );
 }
-

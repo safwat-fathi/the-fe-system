@@ -28,7 +28,6 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
-import { printTableInNewWindow } from "@/utilities/table/print";
 import clsx from "clsx";
 
 type AppDataTableProps<TData> = {

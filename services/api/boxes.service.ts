@@ -56,7 +56,9 @@ class BoxesService extends HttpService<Box> {
         { xcom_id: companyId },
         {
           cache: "force-cache",
-          next: { tags: ["boxes", "boxes-gold", `boxes-gold-company-${companyId}`] },
+          next: {
+            tags: ["boxes", "boxes-gold", `boxes-gold-company-${companyId}`],
+          },
           signal: AbortSignal.timeout(30000),
         },
       );

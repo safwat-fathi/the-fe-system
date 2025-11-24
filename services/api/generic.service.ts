@@ -148,7 +148,6 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
       // لا يحتاج year parameter
     }),
   },
-
 };
 
 class GenericService extends HttpService<any> {

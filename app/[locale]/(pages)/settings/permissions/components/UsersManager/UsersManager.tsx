@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardBody, Button, Spinner } from "@heroui/react";
-import {
-  UserIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+import { UserIcon, PlusIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+
+import { User } from "../../types/users";
 
 import UsersList from "./UsersList";
 import UserForm from "./UserForm";
-import { User } from "../../types/users";
 
 export default function UsersManager() {
   const [users, setUsers] = useState<User[]>([]);
@@ -29,12 +27,13 @@ export default function UsersManager() {
       try {
         const { userService } = await import("../../services");
         const users = await userService.getAll();
+
         setUsers(users);
       } catch {
         // Fallback to global user service
         const { userService } = await import("@/services/api");
         const response = await userService.getAllUsers();
-        
+
         if (response.success && Array.isArray(response.data)) {
           setUsers(response.data);
         }
@@ -107,17 +106,13 @@ export default function UsersManager() {
       </Card>
 
       {/* Users List */}
-      <UsersList
-        users={users}
-        onEdit={handleEditUser}
-        onRefresh={loadUsers}
-      />
+      <UsersList users={users} onEdit={handleEditUser} onRefresh={loadUsers} />
 
       {/* User Form Modal */}
       {isFormOpen && (
         <UserForm
-          user={selectedUser}
           isOpen={isFormOpen}
+          user={selectedUser}
           onClose={handleFormClose}
           onSuccess={handleFormSuccess}
         />
@@ -125,4 +120,3 @@ export default function UsersManager() {
     </div>
   );
 }
-

@@ -97,7 +97,9 @@ export default function CustomersClient({
   const [page, setPage] = useState(1);
   const [custTypeFilter, setCustTypeFilter] = useState<number | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
+    null,
+  );
   const router = useRouter();
   const rowsPerPage = 12;
 
@@ -112,10 +114,10 @@ export default function CustomersClient({
     }
   };
 
-
   const handleDeleteClick = (customer: Customer) => {
     if (!customer.id) {
       toast.error("❌ لا يمكن حذف عميل بدون معرف");
+
       return;
     }
 
@@ -127,12 +129,13 @@ export default function CustomersClient({
     if (!customerToDelete?.id) {
       setDeleteModalOpen(false);
       setCustomerToDelete(null);
+
       return;
     }
 
     // Optimistic delete
     setCustomers((prevCustomers) =>
-      prevCustomers.filter((c) => c.id !== customerToDelete.id)
+      prevCustomers.filter((c) => c.id !== customerToDelete.id),
     );
 
     try {
@@ -185,8 +188,7 @@ export default function CustomersClient({
 
       // فلترة حسب نوع العميل - تحويل القيم إلى أرقام للمقارنة
       const customerTypeMatch =
-        !custTypeFilter ||
-        Number(c.cust_type) === Number(custTypeFilter);
+        !custTypeFilter || Number(c.cust_type) === Number(custTypeFilter);
 
       return (
         fieldsToSearch.some((field) =>
@@ -201,7 +203,6 @@ export default function CustomersClient({
 
     return filteredCustomers.slice(start, start + rowsPerPage);
   }, [filteredCustomers, page]);
-
 
   const renderActions = (cust: Customer) => (
     <div className="flex gap-2">
@@ -233,7 +234,6 @@ export default function CustomersClient({
     </div>
   );
 
-
   const clearFilters = () => {
     setCustTypeFilter(null);
     setSearch("");
@@ -244,10 +244,10 @@ export default function CustomersClient({
       <div className="flex flex-wrap items-center gap-3 mb-2">
         {/* زر إضافة عميل */}
         <Button
-          variant="bordered"
-          startContent={<PlusIcon className="h-4 w-4" />}
-          onPress={() => router.push("/basic/customers/new")}
           className="bg-gray-100 hover:bg-gray-200 border-gray-300"
+          startContent={<PlusIcon className="h-4 w-4" />}
+          variant="bordered"
+          onPress={() => router.push("/basic/customers/new")}
         >
           إضافة عميل
         </Button>
@@ -265,6 +265,7 @@ export default function CustomersClient({
             }
             onSelectionChange={(keys) => {
               const key = Array.from(keys)[0];
+
               setCustTypeFilter(key === "all" ? null : Number(key));
             }}
           >
@@ -276,10 +277,10 @@ export default function CustomersClient({
 
           <Button
             isIconOnly
-            variant="bordered"
             className="h-10"
-            onPress={clearFilters}
             title="مسح الفلاتر"
+            variant="bordered"
+            onPress={clearFilters}
           >
             <FunnelIcon className="h-4 w-4" />
           </Button>
@@ -293,11 +294,11 @@ export default function CustomersClient({
           <Input
             className="w-full"
             placeholder="بحث بالاسم..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
             }
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
@@ -339,15 +340,15 @@ export default function CustomersClient({
       </div>
 
       <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف العميل "${customerToDelete?.cust_name}"؟`}
-        confirmText="حذف"
         cancelText="إلغاء"
         confirmColor="danger"
+        confirmText="حذف"
+        isOpen={deleteModalOpen}
+        message={`هل أنت متأكد من حذف العميل "${customerToDelete?.cust_name}"؟`}
         size="md"
+        title="تأكيد الحذف"
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   );

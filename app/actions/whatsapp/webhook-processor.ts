@@ -78,6 +78,7 @@ export const processWhatsappWebhook = async (
 ) => {
   if (!payload.entry?.length) {
     logger.warn("[WhatsappWebhook] Empty payload received");
+
     return;
   }
 
@@ -103,11 +104,10 @@ export const processWhatsappWebhook = async (
             name: contactProfile?.profile?.name,
           });
 
-          const conversation =
-            await whatsappRepository.upsertConversation({
-              contactId: contact.id,
-              lastMsgAt: parseTimestamp(message.timestamp),
-            });
+          const conversation = await whatsappRepository.upsertConversation({
+            contactId: contact.id,
+            lastMsgAt: parseTimestamp(message.timestamp),
+          });
 
           const payloadJson = mapMessageTypeToPayload(message);
 
@@ -161,4 +161,3 @@ export const processWhatsappWebhook = async (
 };
 
 export default processWhatsappWebhook;
-

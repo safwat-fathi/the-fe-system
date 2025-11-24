@@ -138,4 +138,3 @@ class CategoryAccountService extends HttpService<CategoryAccount> {
 }
 
 export default new CategoryAccountService();
-

@@ -204,9 +204,7 @@ export default async function VoucherPage({
           acc_code: detail.acc_code || "",
           acc_name: detail.acc_name || "",
           cost_id:
-            normalizeCost(detail.cost_id) ??
-            normalizeCost(detail.cost) ??
-            0,
+            normalizeCost(detail.cost_id) ?? normalizeCost(detail.cost) ?? 0,
           debit: detail.debit || 0,
           credit: detail.credit || 0,
           debit_base: detail.debit_base || detail.debit || 0,
@@ -250,16 +248,14 @@ export default async function VoucherPage({
             (voucherForNav as any).previous,
         ),
         next: parseNavId(
-          (voucherForNav as any).next_voucher_id ??
-            (voucherForNav as any).next,
+          (voucherForNav as any).next_voucher_id ?? (voucherForNav as any).next,
         ),
         first: parseNavId(
           (voucherForNav as any).first_voucher_id ??
             (voucherForNav as any).first,
         ),
         last: parseNavId(
-          (voucherForNav as any).last_voucher_id ??
-            (voucherForNav as any).last,
+          (voucherForNav as any).last_voucher_id ?? (voucherForNav as any).last,
         ),
       }
     : undefined;

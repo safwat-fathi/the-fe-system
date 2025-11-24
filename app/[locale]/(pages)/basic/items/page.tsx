@@ -36,11 +36,7 @@ export default async function ItemsPage({
     ? itemTypeParam[0] || "0"
     : itemTypeParam || "0";
   const itemStatus =
-    statusParam === "active"
-      ? "1"
-      : statusParam === "inactive"
-        ? "2"
-        : "0";
+    statusParam === "active" ? "1" : statusParam === "inactive" ? "2" : "0";
 
   const branchParams = await getBranchParams();
   const parsedCompanyId = Number(branchParams.com ?? "1");

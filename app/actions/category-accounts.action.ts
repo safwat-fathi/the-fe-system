@@ -22,10 +22,7 @@ type SaveCategoryAccountOptions = {
   id?: number;
   companyId: number | string;
   categoryId: number | string;
-  payload: Omit<
-    UpsertCategoryAccountPayload,
-    "com" | "cat"
-  >;
+  payload: Omit<UpsertCategoryAccountPayload, "com" | "cat">;
 };
 
 export async function getCategoryAccountsAction({
@@ -48,11 +45,10 @@ export async function ensureCategoryAccountAction({
   const resolvedCompany = String(companyId ?? "1");
   const resolvedCategory = String(categoryId ?? "0");
 
-  const existingRecords =
-    await categoryAccountService.getCategoryAccounts(
-      resolvedCompany,
-      resolvedCategory,
-    );
+  const existingRecords = await categoryAccountService.getCategoryAccounts(
+    resolvedCompany,
+    resolvedCategory,
+  );
 
   const existingRecord =
     existingRecords.find(
@@ -63,11 +59,10 @@ export async function ensureCategoryAccountAction({
     return existingRecord;
   }
 
-  const createdRecord =
-    await categoryAccountService.createCategoryAccount({
-      com: resolvedCompany,
-      cat: resolvedCategory,
-    });
+  const createdRecord = await categoryAccountService.createCategoryAccount({
+    com: resolvedCompany,
+    cat: resolvedCategory,
+  });
 
   if (!createdRecord) {
     throw new Error("تعذر إنشاء حسابات الفئة بشكل تلقائي");
@@ -120,4 +115,3 @@ export async function deleteCategoryAccountAction(
 
   return success;
 }
-

@@ -61,4 +61,3 @@ class UserCompanyService extends HttpService<UserCompany> {
 const userCompanyService = new UserCompanyService();
 
 export default userCompanyService;
-

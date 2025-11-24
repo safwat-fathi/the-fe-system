@@ -3,11 +3,7 @@ import { Metadata } from "next";
 import UserAssignmentsClient from "./components/UserAssignmentsClient";
 
 import { loadUserAssignmentsAction } from "@/app/actions/user-assignments.action";
-import {
-  costCenterService,
-  helperService,
-  userService,
-} from "@/services/api";
+import { costCenterService, helperService, userService } from "@/services/api";
 import { ServiceResponse } from "@/services/base/http.service";
 
 type UserApiRecord = {
@@ -70,6 +66,7 @@ function mapUsersToOptions(users: UserApiRecord[]): Option[] {
   return users
     .map((user) => {
       const id = Number(user.id);
+
       if (Number.isNaN(id)) {
         return null;
       }
@@ -97,6 +94,7 @@ function mapBranchesToOptions(branches: BranchApiRecord[]): Option[] {
       const rawId =
         branch.id ?? (branch as any).com ?? (branch as any).com_id ?? null;
       const id = Number(rawId);
+
       if (Number.isNaN(id)) {
         return null;
       }
@@ -120,6 +118,7 @@ function mapCostCentersToOptions(costCenters: CostCenterApiRecord[]): Option[] {
   return costCenters
     .map((costCenter) => {
       const id = Number(costCenter.id);
+
       if (Number.isNaN(id)) {
         return null;
       }
@@ -144,9 +143,7 @@ export default async function UserAssignmentsPage() {
       costCenterService.getAllCostCenters(),
     ]);
 
-  const users = mapUsersToOptions(
-    extractResults<UserApiRecord>(usersResponse),
-  );
+  const users = mapUsersToOptions(extractResults<UserApiRecord>(usersResponse));
 
   const branches = mapBranchesToOptions(
     (Array.isArray(branchesResponse)
@@ -192,13 +189,12 @@ export default async function UserAssignmentsPage() {
       </div>
 
       <UserAssignmentsClient
-        users={users}
         branches={branches}
         costCenters={costCenters}
-        initialUserId={initialUserId}
         initialAssignments={initialAssignments}
+        initialUserId={initialUserId}
+        users={users}
       />
     </div>
   );
 }
-

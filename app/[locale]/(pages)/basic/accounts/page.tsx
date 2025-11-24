@@ -1,7 +1,9 @@
 import { Metadata } from "next";
+
+import AccountsClient from "./components/AccountsClient";
+
 import Breadcrumb from "@/components/Breadcrumb";
 import accountService from "@/services/api/account.service";
-import AccountsClient from "./components/AccountsClient";
 import { Account } from "@/types/models/account";
 import { Currency } from "@/types/models/currency";
 

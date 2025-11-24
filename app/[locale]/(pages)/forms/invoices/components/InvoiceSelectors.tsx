@@ -19,7 +19,6 @@ import {
   TransTypes,
 } from "@/types/models/invoice";
 import { getCustomerInvoicesAction } from "@/app/actions/customer";
-import clsx from "clsx";
 
 interface Customer {
   id: string;
@@ -159,20 +158,24 @@ export default function InvoiceSelectors({
     disabled: !isEditing,
     shouldIgnoreEvent: (event) => {
       const target = event.target as HTMLElement | null;
+
       if (!target) return false;
       if (target.closest("[data-skip-key-as-tab='true']")) {
         return true;
       }
       const comboRoot = target.closest('[role="combobox"]');
+
       if (comboRoot && comboRoot.getAttribute("aria-expanded") === "true") {
         return true;
       }
       const tagName = target.tagName.toLowerCase();
+
       if (tagName === "textarea" || tagName === "button") {
         return true;
       }
       if (tagName === "input") {
         const input = target as HTMLInputElement;
+
         if (
           input.type === "checkbox" ||
           input.type === "button" ||
@@ -181,10 +184,12 @@ export default function InvoiceSelectors({
           return true;
         }
       }
+
       return false;
     },
     onBoundaryFocus: (direction) => {
       if (direction !== 1) return false;
+
       return onFocusNextSection?.() ?? false;
     },
   });
@@ -268,7 +273,7 @@ export default function InvoiceSelectors({
   const isReturnInvoice =
     invoiceType === TransTypes.PURCHASE_RETURN ||
     invoiceType === TransTypes.SALES_RETURN;
-  
+
   const rawCustomerId =
     currentCustomer?.id ??
     (selectedCustomer !== null ? selectedCustomer : null);
@@ -291,6 +296,7 @@ export default function InvoiceSelectors({
 
     if (!isReturnInvoice || !hasCustomerId) {
       setCustomerInvoices([]);
+
       return;
     }
 
@@ -370,6 +376,7 @@ export default function InvoiceSelectors({
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  disabled={!isEditing}
                   id="invoice-date"
                   type="datetime-local"
                   value={
@@ -377,7 +384,6 @@ export default function InvoiceSelectors({
                       ? new Date(invoiceDate).toISOString().slice(0, 16)
                       : ""
                   }
-                  disabled={!isEditing}
                   onChange={(e) => setInvoiceDate?.(e.target.value)}
                 />
               </div>
@@ -401,6 +407,7 @@ export default function InvoiceSelectors({
                   classNamePrefix="react-select"
                   components={{ IndicatorSeparator: () => null }}
                   instanceId="customer-select"
+                  isDisabled={!isEditing}
                   menuPortalTarget={
                     typeof window !== "undefined" ? document.body : null
                   }
@@ -463,7 +470,6 @@ export default function InvoiceSelectors({
                       setPostCode("");
                     }
                   }}
-                  isDisabled={!isEditing}
                 />
               </div>
 
@@ -475,6 +481,7 @@ export default function InvoiceSelectors({
                   <label className="flex items-center gap-1">
                     <input
                       checked={paymentMethod === "cash"}
+                      disabled={!isEditing}
                       name="payment"
                       type="radio"
                       value="cash"
@@ -483,13 +490,13 @@ export default function InvoiceSelectors({
                         setSelectedCustomer(null);
                         setSelectedCustomerName("");
                       }}
-                      disabled={!isEditing}
                     />
                     نقداً
                   </label>
                   <label className="flex items-center gap-1">
                     <input
                       checked={paymentMethod === "credit"}
+                      disabled={!isEditing}
                       name="payment"
                       type="radio"
                       value="credit"
@@ -498,7 +505,6 @@ export default function InvoiceSelectors({
                         setSelectedCustomer(null);
                         setSelectedCustomerName("");
                       }}
-                      disabled={!isEditing}
                     />
                     أجل
                   </label>
@@ -514,10 +520,10 @@ export default function InvoiceSelectors({
                 </label>
                 <select
                   className="w-full h-[32px] border px-2 rounded text-xs"
+                  disabled={!isEditing}
                   id="pay-type"
                   value={payType}
                   onChange={handlePayTypeChange}
-                  disabled={!isEditing}
                 >
                   {payTypeOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -541,17 +547,17 @@ export default function InvoiceSelectors({
                     :
                   </label>
                   <ReactSelect
-                    id="reference-number"
                     isSearchable
                     className="w-full text-xs"
                     classNamePrefix="react-select"
                     components={{ IndicatorSeparator: () => null }}
+                    id="reference-number"
                     instanceId="invoice-select"
+                    isDisabled={!isEditing || !hasCustomerId}
+                    isLoading={isCustomerInvoicesLoading}
                     menuPortalTarget={
                       typeof window !== "undefined" ? document.body : null
                     }
-                    isDisabled={!isEditing || !hasCustomerId}
-                    isLoading={isCustomerInvoicesLoading}
                     menuPosition="fixed"
                     options={customerInvoiceOptions}
                     placeholder="اختر الفاتورة..."
@@ -597,12 +603,12 @@ export default function InvoiceSelectors({
                   </label>
                   <input
                     className="w-full h-[32px] border px-2 rounded text-xs"
+                    disabled={!isEditing}
                     id="reference-number"
                     placeholder="المرجع"
                     type="text"
                     value={referenceNumber}
                     onChange={(e) => setReferenceNumber(e.target.value)}
-                    disabled={!isEditing}
                   />
                 </div>
               )}
@@ -618,10 +624,10 @@ export default function InvoiceSelectors({
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs"
+                  disabled={!isEditing}
                   type="text"
                   value={handlingMethod}
                   onChange={(e) => setHandlingMethod(e.target.value)}
-                  disabled={!isEditing}
                 />
               </div>
 
@@ -634,10 +640,10 @@ export default function InvoiceSelectors({
                 </label>
                 <select
                   className="w-full h-[32px] border px-2 rounded text-xs"
+                  disabled={!isEditing}
                   id="employee"
                   value={employee}
                   onChange={(e) => setEmployee(e.target.value)}
-                  disabled={!isEditing}
                 >
                   <option value="">-- اختر --</option>
                   <option value="hashem">هاشم</option>
@@ -655,9 +661,9 @@ export default function InvoiceSelectors({
                 <input
                   readOnly
                   className="w-full h-[32px] border px-2 rounded bg-gray-100 text-xs"
+                  disabled={!isEditing}
                   type="text"
                   value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
-                  disabled={!isEditing}
                 />
               </div>
               <div>
@@ -668,12 +674,12 @@ export default function InvoiceSelectors({
                   البيان:
                 </label>
                 <input
-                  id="note"
                   className="w-full h-[32px] border px-2 rounded text-xs"
+                  disabled={!isEditing}
+                  id="note"
                   type="text"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  disabled={!isEditing}
                 />
               </div>
 
@@ -686,9 +692,9 @@ export default function InvoiceSelectors({
                   الباركود:
                 </label>
                 <input
-                  id="search-barcode"
                   className="w-full h-[32px] border px-2 rounded text-xs"
                   disabled={!isEditing}
+                  id="search-barcode"
                   placeholder="بحث بالباركود"
                   type="text"
                   value={searchValue}
@@ -714,8 +720,8 @@ export default function InvoiceSelectors({
 
         {/* مربع معلومات العنوان */}
         <div
-          tabIndex={-1}
           className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+          tabIndex={-1}
         >
           {/* Header with Toggle Button */}
           <div
@@ -727,19 +733,19 @@ export default function InvoiceSelectors({
               <span>معلومات العنوان</span>
             </h3>
             <button
-              tabIndex={-1}
               className="text-gray-600 hover:text-gray-800 transition-transform duration-200"
               style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+              tabIndex={-1}
             >
               <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
                 fill="none"
+                height="20"
                 stroke="currentColor"
                 strokeWidth="2"
+                viewBox="0 0 24 24"
+                width="20"
               >
-                <polyline points="6 9 12 15 18 9"></polyline>
+                <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
           </div>
@@ -761,10 +767,10 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      disabled={!isEditing}
                       type="text"
                       value={crNo}
                       onChange={(e) => setCrNo(e.target.value)}
-                      disabled={!isEditing}
                     />
                   </div>
                   <div>
@@ -777,9 +783,9 @@ export default function InvoiceSelectors({
                     <input
                       readOnly
                       className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
+                      disabled={!isEditing}
                       type="text"
                       value={vatNumber}
-                      disabled={!isEditing}
                     />
                   </div>
                   <div>
@@ -788,10 +794,10 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      disabled={!isEditing}
                       type="text"
                       value={gov}
                       onChange={(e) => setGov(e.target.value)}
-                      disabled={!isEditing}
                     />
                   </div>
                   <div>
@@ -800,10 +806,10 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      disabled={!isEditing}
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      disabled={!isEditing}
                     />
                   </div>
                   <div>
@@ -812,10 +818,10 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      disabled={!isEditing}
                       type="text"
                       value={area}
                       onChange={(e) => setArea(e.target.value)}
-                      disabled={!isEditing}
                     />
                   </div>
                   <div>
@@ -824,10 +830,10 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      disabled={!isEditing}
                       type="text"
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
-                      disabled={!isEditing}
                     />
                   </div>
                   <div>
@@ -836,10 +842,10 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      disabled={!isEditing}
                       type="text"
                       value={buildNo}
                       onChange={(e) => setBuildNo(e.target.value)}
-                      disabled={!isEditing}
                     />
                   </div>
                   <div>
@@ -851,10 +857,10 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-xs"
+                      disabled={!isEditing}
                       type="text"
                       value={mobileMethod}
                       onChange={(e) => setMobileMethod(e.target.value)}
-                      disabled={!isEditing}
                     />
                   </div>
                   <div>
@@ -863,10 +869,10 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      disabled={!isEditing}
                       type="text"
                       value={postNo}
                       onChange={(e) => setPostNo(e.target.value)}
-                      disabled={!isEditing}
                     />
                   </div>
                   <div>
@@ -875,10 +881,10 @@ export default function InvoiceSelectors({
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
+                      disabled={!isEditing}
                       type="text"
                       value={postCode}
                       onChange={(e) => setPostCode(e.target.value)}
-                      disabled={!isEditing}
                     />
                   </div>
                 </div>

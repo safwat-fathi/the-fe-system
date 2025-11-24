@@ -41,7 +41,10 @@ type SearchableSelectProps = {
   // callback يتم استدعاؤه بعد اختيار العنصر (للاستخدام في الانتقال للحقل التالي)
   onSelectComplete?: () => void;
   // دعم التحميل التدريجي (Infinite Scroll)
-  onLoadMore?: (page: number, searchTerm: string) => Promise<SearchableSelectOption[]>;
+  onLoadMore?: (
+    page: number,
+    searchTerm: string,
+  ) => Promise<SearchableSelectOption[]>;
   hasMore?: boolean;
 };
 
@@ -87,12 +90,18 @@ const SearchableSelect = ({
 }: SearchableSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loadedOptions, setLoadedOptions] = useState<SearchableSelectOption[]>([]);
+  const [loadedOptions, setLoadedOptions] = useState<SearchableSelectOption[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(hasMore ?? false);
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -103,6 +112,7 @@ const SearchableSelect = ({
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 4,
         left: rect.left + window.scrollX,
@@ -124,11 +134,13 @@ const SearchableSelect = ({
         setIsOpen(false);
       }
     };
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       // تركيز على البحث عند فتح القائمة
       setTimeout(() => searchInputRef.current?.focus(), 100);
     }
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -140,21 +152,27 @@ const SearchableSelect = ({
       // إذا كان هناك بحث ديناميكي، نستخدم loadedOptions + defaultOptions
       const combined = [...defaultOptions, ...loadedOptions];
       // إزالة التكرارات بناءً على value
-      const unique = combined.filter((opt, index, self) =>
-        index === self.findIndex((o) => o.value === opt.value)
+      const unique = combined.filter(
+        (opt, index, self) =>
+          index === self.findIndex((o) => o.value === opt.value),
       );
-      
+
       // إذا كانت هناك قيمة محددة لكنها غير موجودة في الخيارات، نضيفها
-      if (value !== null && value !== undefined && !unique.find(opt => opt.value === value)) {
+      if (
+        value !== null &&
+        value !== undefined &&
+        !unique.find((opt) => opt.value === value)
+      ) {
         // نحاول إنشاء option من القيمة المحددة
         unique.push({
           value: value,
           label: String(value),
         });
       }
-      
+
       return unique;
     }
+
     return options;
   }, [options, loadedOptions, defaultOptions, onSearch, value]);
 
@@ -191,6 +209,7 @@ const SearchableSelect = ({
         .finally(() => {
           setIsLoading(false);
         });
+
       return;
     }
 
@@ -199,6 +218,7 @@ const SearchableSelect = ({
     searchDebounceTimerRef.current = setTimeout(async () => {
       try {
         const results = await onSearch(searchTerm.trim());
+
         setLoadedOptions(Array.isArray(results) ? results : []);
         setCurrentPage(1); // إعادة تعيين الصفحة عند البحث الجديد
         // الاعتماد على hasMore prop الذي يتم تحديثه من handleItemSearch
@@ -240,6 +260,7 @@ const SearchableSelect = ({
     if (!isOpen || !onLoadMore || !hasMorePages || isLoadingMore) return;
 
     const optionsList = optionsListRef.current;
+
     if (!optionsList) return;
 
     const handleScroll = () => {
@@ -250,7 +271,7 @@ const SearchableSelect = ({
       if (scrollPercentage >= 0.8 && !isLoadingMore) {
         setIsLoadingMore(true);
         const nextPage = currentPage + 1;
-        
+
         onLoadMore(nextPage, searchTerm.trim())
           .then((newOptions) => {
             if (newOptions && newOptions.length > 0) {
@@ -274,10 +295,18 @@ const SearchableSelect = ({
     };
 
     optionsList.addEventListener("scroll", handleScroll);
+
     return () => {
       optionsList.removeEventListener("scroll", handleScroll);
     };
-  }, [isOpen, onLoadMore, hasMorePages, currentPage, searchTerm, isLoadingMore]);
+  }, [
+    isOpen,
+    onLoadMore,
+    hasMorePages,
+    currentPage,
+    searchTerm,
+    isLoadingMore,
+  ]);
 
   // تصفية الخيارات بناءً على البحث
   const filteredOptions = useMemo(() => {
@@ -292,6 +321,7 @@ const SearchableSelect = ({
         // إذا كان البحث قيد التحميل، نعرض defaultOptions فقط
         return defaultOptions;
       }
+
       // نعرض loadedOptions فقط (النتائج من البحث)
       // لا ندمج مع defaultOptions لأن البحث يجب أن يعرض النتائج المطابقة فقط
       return loadedOptions.length > 0 ? loadedOptions : [];
@@ -299,19 +329,27 @@ const SearchableSelect = ({
     // للخيارات الثابتة، نطبق التصفية
     if (!searchTerm) return allOptions;
     const searchLower = searchTerm.toLowerCase();
+
     return allOptions.filter((option) => {
       return (
         option.label?.toLowerCase().includes(searchLower) ||
         option.searchText?.toLowerCase().includes(searchLower)
       );
     });
-  }, [allOptions, searchTerm, onSearch, defaultOptions, loadedOptions, isLoading]);
+  }, [
+    allOptions,
+    searchTerm,
+    onSearch,
+    defaultOptions,
+    loadedOptions,
+    isLoading,
+  ]);
 
   const handleSelect = (optionValue: string | number) => {
     onChange?.(optionValue);
     setIsOpen(false);
     setSearchTerm("");
-    
+
     // استدعاء callback بعد اختيار العنصر (للاستخدام في الانتقال للحقل التالي)
     if (onSelectComplete) {
       setTimeout(() => {
@@ -336,6 +374,7 @@ const SearchableSelect = ({
           setTimeout(() => searchInputRef.current?.focus(), 100);
         }
       }
+
       return;
     }
 
@@ -345,9 +384,10 @@ const SearchableSelect = ({
         e.preventDefault();
         e.stopPropagation();
         setIsOpen(false);
+
         return;
       }
-      
+
       // إذا كانت القائمة مغلقة
       if (!value) {
         // إذا كان فارغاً، نفتح القائمة
@@ -357,14 +397,16 @@ const SearchableSelect = ({
           setIsOpen(true);
           setTimeout(() => searchInputRef.current?.focus(), 100);
         }
+
         return;
       }
-      
+
       // إذا كان له قيمة، نسمح بالانتقال للحقل التالي
       // (سيتم التعامل معه في onKeyDown)
       if (onKeyDown) {
         onKeyDown(e);
       }
+
       return;
     }
 
@@ -372,6 +414,7 @@ const SearchableSelect = ({
       e.preventDefault();
       e.stopPropagation();
       setIsOpen(false);
+
       return;
     }
 
@@ -387,71 +430,86 @@ const SearchableSelect = ({
       e.stopPropagation();
       setIsOpen(false);
       buttonRef.current?.focus();
+
       return;
     }
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
       e.stopPropagation();
-      
+
       // الانتقال للعنصر الأول في القائمة (بما أن القائمة في Portal)
       const listboxId = inputId ? `searchable-select-listbox-${inputId}` : null;
-      const listbox = listboxId 
+      const listbox = listboxId
         ? document.getElementById(listboxId)
         : document.querySelector('[role="listbox"]');
+
       if (listbox) {
         const firstOption = listbox.querySelector(
-          '[role="option"]:first-child'
+          '[role="option"]:first-child',
         ) as HTMLElement;
+
         if (firstOption) {
           firstOption.focus();
           // تمرير تلقائي لإظهار العنصر
-          firstOption.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          firstOption.scrollIntoView({ block: "nearest", behavior: "smooth" });
         }
       }
+
       return;
     }
 
     if (e.key === "ArrowUp") {
       e.preventDefault();
       e.stopPropagation();
-      
+
       // الانتقال للعنصر الأخير في القائمة
       const listboxId = inputId ? `searchable-select-listbox-${inputId}` : null;
-      const listbox = listboxId 
+      const listbox = listboxId
         ? document.getElementById(listboxId)
         : document.querySelector('[role="listbox"]');
+
       if (listbox) {
         const options = listbox.querySelectorAll(
-          '[role="option"]'
+          '[role="option"]',
         ) as NodeListOf<HTMLElement>;
+
         if (options.length > 0) {
           const lastOption = options[options.length - 1];
+
           lastOption.focus();
           // تمرير تلقائي لإظهار العنصر
-          lastOption.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          lastOption.scrollIntoView({ block: "nearest", behavior: "smooth" });
         }
       }
+
       return;
     }
 
     if (e.key === "Enter") {
       e.preventDefault();
       e.stopPropagation();
-      
+
       if (filteredOptions.length > 0) {
         // الانتقال للعنصر الأول
-        const listboxId = inputId ? `searchable-select-listbox-${inputId}` : null;
-        const listbox = listboxId 
+        const listboxId = inputId
+          ? `searchable-select-listbox-${inputId}`
+          : null;
+        const listbox = listboxId
           ? document.getElementById(listboxId)
           : document.querySelector('[role="listbox"]');
+
         if (listbox) {
           const firstOption = listbox.querySelector(
-            '[role="option"]:first-child'
+            '[role="option"]:first-child',
           ) as HTMLElement;
+
           if (firstOption) {
             firstOption.focus();
-            firstOption.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            firstOption.scrollIntoView({
+              block: "nearest",
+              behavior: "smooth",
+            });
           }
         }
       } else {
@@ -459,6 +517,7 @@ const SearchableSelect = ({
         setIsOpen(false);
         buttonRef.current?.focus();
       }
+
       return;
     }
   };
@@ -466,12 +525,13 @@ const SearchableSelect = ({
   const handleOptionKeyDown = (
     e: React.KeyboardEvent,
     optionValue: string | number,
-    index: number
+    index: number,
   ) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       e.stopPropagation();
       handleSelect(optionValue);
+
       // onSelectComplete سيتم استدعاؤه من handleSelect
       return;
     }
@@ -479,56 +539,62 @@ const SearchableSelect = ({
     if (e.key === "ArrowDown") {
       e.preventDefault();
       e.stopPropagation();
-      
+
       // الحصول على جميع العناصر من Portal
       const listboxId = inputId ? `searchable-select-listbox-${inputId}` : null;
-      const listbox = listboxId 
+      const listbox = listboxId
         ? document.getElementById(listboxId)
         : document.querySelector('[role="listbox"]');
+
       if (!listbox) return;
-      
+
       const options = listbox.querySelectorAll(
-        '[role="option"]'
+        '[role="option"]',
       ) as NodeListOf<HTMLElement>;
-      
+
       if (options.length === 0) return;
-      
+
       // التنقل الدائري: الانتقال للعنصر التالي أو الأول
       const nextIndex = index < options.length - 1 ? index + 1 : 0;
       const nextOption = options[nextIndex];
+
       if (nextOption) {
         nextOption.focus();
         // تمرير تلقائي لإظهار العنصر
-        nextOption.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        nextOption.scrollIntoView({ block: "nearest", behavior: "smooth" });
       }
+
       return;
     }
 
     if (e.key === "ArrowUp") {
       e.preventDefault();
       e.stopPropagation();
-      
+
       // الحصول على جميع العناصر من Portal
       const listboxId = inputId ? `searchable-select-listbox-${inputId}` : null;
-      const listbox = listboxId 
+      const listbox = listboxId
         ? document.getElementById(listboxId)
         : document.querySelector('[role="listbox"]');
+
       if (!listbox) return;
-      
+
       const options = listbox.querySelectorAll(
-        '[role="option"]'
+        '[role="option"]',
       ) as NodeListOf<HTMLElement>;
-      
+
       if (options.length === 0) return;
-      
+
       // التنقل الدائري: الانتقال للعنصر السابق أو الأخير
       const prevIndex = index > 0 ? index - 1 : options.length - 1;
       const prevOption = options[prevIndex];
+
       if (prevOption) {
         prevOption.focus();
         // تمرير تلقائي لإظهار العنصر
-        prevOption.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        prevOption.scrollIntoView({ block: "nearest", behavior: "smooth" });
       }
+
       return;
     }
 
@@ -537,6 +603,7 @@ const SearchableSelect = ({
       e.stopPropagation();
       setIsOpen(false);
       buttonRef.current?.focus();
+
       return;
     }
   };
@@ -546,12 +613,6 @@ const SearchableSelect = ({
       {/* زر القائمة */}
       <button
         ref={buttonRef}
-        id={inputId}
-        type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
-        onKeyDown={handleButtonKeyDown}
-        role="combobox"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         className={clsx(
@@ -561,13 +622,19 @@ const SearchableSelect = ({
           "disabled:cursor-not-allowed disabled:opacity-50",
           "transition-colors",
           error && "border-red-500 focus:ring-red-500",
-          isOpen && "ring-2 ring-ring ring-offset-2"
+          isOpen && "ring-2 ring-ring ring-offset-2",
         )}
+        disabled={disabled}
+        id={inputId}
+        role="combobox"
+        type="button"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onKeyDown={handleButtonKeyDown}
       >
         <span
           className={clsx(
             "truncate",
-            !selectedOption && "text-muted-foreground"
+            !selectedOption && "text-muted-foreground",
           )}
         >
           {selectedOption?.label || placeholder}
@@ -586,7 +653,7 @@ const SearchableSelect = ({
           <ChevronDownIcon
             className={clsx(
               "h-4 w-4 text-gray-400 transition-transform",
-              isOpen && "transform rotate-180"
+              isOpen && "transform rotate-180",
             )}
           />
         </div>
@@ -596,119 +663,123 @@ const SearchableSelect = ({
       {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
 
       {/* القائمة المنسدلة - استخدام Portal لتجنب مشاكل overflow */}
-      {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
-        <div
-          className="fixed z-[9999] rounded-md border border-gray-200 bg-white shadow-lg animate-in fade-in zoom-in-95"
-          role="listbox"
-          id={`searchable-select-listbox-${inputId || 'default'}`}
-          style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`,
-          }}
-        >
-          {/* حقل البحث */}
-          <div className="p-2 border-b border-gray-100">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                placeholder={searchPlaceholder}
-                className="w-full h-9 pr-9 pl-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  type="button"
-                >
-                  <XMarkIcon className="h-4 w-4" />
-                </button>
+      {isOpen &&
+        dropdownPosition &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed z-[9999] rounded-md border border-gray-200 bg-white shadow-lg animate-in fade-in zoom-in-95"
+            id={`searchable-select-listbox-${inputId || "default"}`}
+            role="listbox"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`,
+              width: `${dropdownPosition.width}px`,
+            }}
+          >
+            {/* حقل البحث */}
+            <div className="p-2 border-b border-gray-100">
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  ref={searchInputRef}
+                  className="w-full h-9 pr-9 pl-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder={searchPlaceholder}
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                />
+                {searchTerm && (
+                  <button
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* قائمة الخيارات */}
+            <div
+              ref={optionsListRef}
+              className={clsx(dropdownMaxHeight, "overflow-y-auto py-1")}
+            >
+              {isLoading || externalIsLoading ? (
+                <div className="px-3 py-8 text-center text-sm text-gray-500 flex items-center justify-center gap-2">
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  جاري البحث...
+                </div>
+              ) : filteredOptions.length === 0 ? (
+                <div className="px-3 py-8 text-center text-sm text-gray-500">
+                  {emptyMessage}
+                </div>
+              ) : (
+                <>
+                  {/* عرض جميع النتائج - لا يوجد حد */}
+                  {filteredOptions.map((option, index) => (
+                    <button
+                      key={`${option.value}-${index}`} // استخدام index أيضاً لتجنب مشاكل key
+                      aria-selected={option.value === value}
+                      className={clsx(
+                        "w-full px-3 py-2 text-right text-sm hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50",
+                        option.value === value &&
+                          "bg-blue-50 text-blue-700 font-medium",
+                      )}
+                      data-index={index}
+                      role="option"
+                      tabIndex={0}
+                      type="button"
+                      onClick={() => handleSelect(option.value)}
+                      onKeyDown={(e) =>
+                        handleOptionKeyDown(e, option.value, index)
+                      }
+                    >
+                      {renderOption ? renderOption(option) : option.label}
+                    </button>
+                  ))}
+                  {/* مؤشر التحميل عند التمرير */}
+                  {isLoadingMore && hasMorePages && (
+                    <div className="px-3 py-2 text-center text-sm text-gray-500 flex items-center justify-center gap-2">
+                      <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                      جاري تحميل المزيد...
+                    </div>
+                  )}
+                  {/* عرض عدد النتائج */}
+                  {filteredOptions.length > 0 && (
+                    <div className="px-3 py-2 text-center text-xs text-gray-400 border-t border-gray-100">
+                      عرض {filteredOptions.length} نتيجة
+                    </div>
+                  )}
+                </>
               )}
             </div>
-          </div>
 
-          {/* قائمة الخيارات */}
-          <div 
-            ref={optionsListRef}
-            className={clsx(dropdownMaxHeight, "overflow-y-auto py-1")}
-          >
-            {(isLoading || externalIsLoading) ? (
-              <div className="px-3 py-8 text-center text-sm text-gray-500 flex items-center justify-center gap-2">
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                جاري البحث...
+            {/* زر إنشاء جديد (اختياري) */}
+            {onCreateNew && (
+              <div className="p-2 border-t border-gray-100">
+                <button
+                  className="w-full px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors flex items-center justify-center gap-2"
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onCreateNew();
+                    setIsOpen(false);
+                  }}
+                >
+                  <span className="text-lg">+</span>
+                  إضافة جديد
+                </button>
               </div>
-            ) : filteredOptions.length === 0 ? (
-              <div className="px-3 py-8 text-center text-sm text-gray-500">
-                {emptyMessage}
-              </div>
-            ) : (
-              <>
-                {/* عرض جميع النتائج - لا يوجد حد */}
-                {filteredOptions.map((option, index) => (
-                  <button
-                    key={`${option.value}-${index}`} // استخدام index أيضاً لتجنب مشاكل key
-                    type="button"
-                    role="option"
-                    aria-selected={option.value === value}
-                    data-index={index}
-                    onClick={() => handleSelect(option.value)}
-                    onKeyDown={(e) => handleOptionKeyDown(e, option.value, index)}
-                    tabIndex={0}
-                    className={clsx(
-                      "w-full px-3 py-2 text-right text-sm hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50",
-                      option.value === value &&
-                        "bg-blue-50 text-blue-700 font-medium"
-                    )}
-                  >
-                    {renderOption ? renderOption(option) : option.label}
-                  </button>
-                ))}
-                {/* مؤشر التحميل عند التمرير */}
-                {isLoadingMore && hasMorePages && (
-                  <div className="px-3 py-2 text-center text-sm text-gray-500 flex items-center justify-center gap-2">
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                    جاري تحميل المزيد...
-                  </div>
-                )}
-                {/* عرض عدد النتائج */}
-                {filteredOptions.length > 0 && (
-                  <div className="px-3 py-2 text-center text-xs text-gray-400 border-t border-gray-100">
-                    عرض {filteredOptions.length} نتيجة
-                  </div>
-                )}
-              </>
             )}
-          </div>
-
-          {/* زر إنشاء جديد (اختياري) */}
-          {onCreateNew && (
-            <div className="p-2 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onCreateNew();
-                  setIsOpen(false);
-                }}
-                className="w-full px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors flex items-center justify-center gap-2"
-              >
-                <span className="text-lg">+</span>
-                إضافة جديد
-              </button>
-            </div>
-          )}
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };
 
 export default SearchableSelect;
-

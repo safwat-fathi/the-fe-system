@@ -68,16 +68,14 @@ export default async function ReceiptVoucherPage() {
             (voucherForNav as any).previous,
         ),
         next: parseNavId(
-          (voucherForNav as any).next_voucher_id ??
-            (voucherForNav as any).next,
+          (voucherForNav as any).next_voucher_id ?? (voucherForNav as any).next,
         ),
         first: parseNavId(
           (voucherForNav as any).first_voucher_id ??
             (voucherForNav as any).first,
         ),
         last: parseNavId(
-          (voucherForNav as any).last_voucher_id ??
-            (voucherForNav as any).last,
+          (voucherForNav as any).last_voucher_id ?? (voucherForNav as any).last,
         ),
       }
     : undefined;

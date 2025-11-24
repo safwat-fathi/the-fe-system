@@ -46,15 +46,18 @@ export default async function CustomerDetailPage({
 
   // جلب بيانات العميل
   let customer = null;
+
   try {
     const customers = await customerService.getAllCustomers({
       xcom_id: companyId,
     });
+
     customer = customers.find((c) => c.id === customerId) || null;
-    
+
     // إذا لم يتم العثور عليه، جرب البحث بدون فلتر
     if (!customer) {
       const allCustomers = await customerService.getAllCustomers();
+
       customer = allCustomers.find((c) => c.id === customerId) || null;
     }
   } catch (error) {
@@ -66,17 +69,13 @@ export default async function CustomerDetailPage({
   }
 
   // جلب البيانات الأساسية
-  const [
-    customerTypesData,
-    customerStatusData,
-    accountsData,
-    boxTypesData,
-  ] = await Promise.all([
-    helperService.getCustomerTypes().catch(() => []),
-    helperService.getCustomerStatuses().catch(() => []),
-    accountService.getAllAccounts().catch(() => []),
-    helperService.getBoxTypes().catch(() => []),
-  ]);
+  const [customerTypesData, customerStatusData, accountsData, boxTypesData] =
+    await Promise.all([
+      helperService.getCustomerTypes().catch(() => []),
+      helperService.getCustomerStatuses().catch(() => []),
+      accountService.getAllAccounts().catch(() => []),
+      helperService.getBoxTypes().catch(() => []),
+    ]);
 
   // تحويل Customer إلى CustomerForm
   const customerForm = {
@@ -123,9 +122,9 @@ export default async function CustomerDetailPage({
         ]}
       />
       <CustomerFormClient
-        companyId={companyId}
         accounts={accountsData as any}
         boxTypes={boxTypesData as any}
+        companyId={companyId}
         customerStatus={customerStatusData as any}
         customerTypes={customerTypesData as any}
         initialCustomer={customerForm}
@@ -134,4 +133,3 @@ export default async function CustomerDetailPage({
     </div>
   );
 }
-

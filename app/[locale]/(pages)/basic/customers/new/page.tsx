@@ -21,17 +21,13 @@ export default async function NewCustomerPage() {
       : 1;
 
   // جلب البيانات الأساسية
-  const [
-    customerTypesData,
-    customerStatusData,
-    accountsData,
-    boxTypesData,
-  ] = await Promise.all([
-    helperService.getCustomerTypes().catch(() => []),
-    helperService.getCustomerStatuses().catch(() => []),
-    accountService.getAllAccounts().catch(() => []),
-    helperService.getBoxTypes().catch(() => []),
-  ]);
+  const [customerTypesData, customerStatusData, accountsData, boxTypesData] =
+    await Promise.all([
+      helperService.getCustomerTypes().catch(() => []),
+      helperService.getCustomerStatuses().catch(() => []),
+      accountService.getAllAccounts().catch(() => []),
+      helperService.getBoxTypes().catch(() => []),
+    ]);
 
   // إنشاء عميل فارغ
   const emptyCustomer = {
@@ -73,9 +69,9 @@ export default async function NewCustomerPage() {
         ]}
       />
       <CustomerFormClient
-        companyId={companyId}
         accounts={accountsData as any}
         boxTypes={boxTypesData as any}
+        companyId={companyId}
         customerStatus={customerStatusData as any}
         customerTypes={customerTypesData as any}
         initialCustomer={emptyCustomer}
@@ -84,4 +80,3 @@ export default async function NewCustomerPage() {
     </div>
   );
 }
-

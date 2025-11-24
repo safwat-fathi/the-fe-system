@@ -13,6 +13,7 @@ import {
 import toast from "react-hot-toast";
 
 import { User } from "../../types/users";
+
 import UserPermissions from "./UserPermissions";
 
 interface UsersListProps {
@@ -21,7 +22,11 @@ interface UsersListProps {
   onRefresh: () => void;
 }
 
-export default function UsersList({ users, onEdit, onRefresh }: UsersListProps) {
+export default function UsersList({
+  users,
+  onEdit,
+  onRefresh,
+}: UsersListProps) {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
@@ -36,6 +41,7 @@ export default function UsersList({ users, onEdit, onRefresh }: UsersListProps) 
 
     try {
       const { userService } = await import("../../services");
+
       await userService.delete(user.id);
       toast.success("تم حذف المستخدم بنجاح");
       onRefresh();
@@ -51,9 +57,7 @@ export default function UsersList({ users, onEdit, onRefresh }: UsersListProps) 
         <CardBody className="text-center py-20">
           <UserIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500 text-lg mb-2">لا يوجد مستخدمين</p>
-          <p className="text-gray-400 text-sm">
-            ابدأ بإضافة مستخدم جديد
-          </p>
+          <p className="text-gray-400 text-sm">ابدأ بإضافة مستخدم جديد</p>
         </CardBody>
       </Card>
     );
@@ -70,17 +74,17 @@ export default function UsersList({ users, onEdit, onRefresh }: UsersListProps) 
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 <Avatar
+                  className={
+                    user.is_staff
+                      ? "bg-purple-100 text-purple-600"
+                      : "bg-blue-100 text-blue-600"
+                  }
                   icon={
                     user.is_staff ? (
                       <LockClosedIcon className="h-5 w-5" />
                     ) : (
                       <UserIcon className="h-5 w-5" />
                     )
-                  }
-                  className={
-                    user.is_staff
-                      ? "bg-purple-100 text-purple-600"
-                      : "bg-blue-100 text-blue-600"
                   }
                 />
                 <div>
@@ -93,7 +97,7 @@ export default function UsersList({ users, onEdit, onRefresh }: UsersListProps) 
                 </div>
               </div>
               {user.is_staff && (
-                <Badge content="Admin" color="secondary" variant="solid">
+                <Badge color="secondary" content="Admin" variant="solid">
                   <Chip color="secondary" size="sm" variant="flat">
                     مدير
                   </Chip>
@@ -117,12 +121,12 @@ export default function UsersList({ users, onEdit, onRefresh }: UsersListProps) 
             <div className="flex flex-col gap-3 pt-4 border-t border-gray-200 mt-4">
               {!user.is_staff && (
                 <Button
-                  size="sm"
-                  variant="flat"
-                  color="primary"
-                  startContent={<ShieldCheckIcon className="h-4 w-4" />}
-                  onPress={() => handlePermissions(user)}
                   className="w-full"
+                  color="primary"
+                  size="sm"
+                  startContent={<ShieldCheckIcon className="h-4 w-4" />}
+                  variant="flat"
+                  onPress={() => handlePermissions(user)}
                 >
                   إدارة الصلاحيات
                 </Button>
@@ -137,18 +141,18 @@ export default function UsersList({ users, onEdit, onRefresh }: UsersListProps) 
                 </Chip>
                 <div className="flex items-center gap-2">
                   <Button
+                    isIconOnly
                     size="sm"
                     variant="light"
-                    isIconOnly
                     onPress={() => onEdit(user)}
                   >
                     <PencilIcon className="h-4 w-4" />
                   </Button>
                   <Button
+                    isIconOnly
+                    color="danger"
                     size="sm"
                     variant="light"
-                    color="danger"
-                    isIconOnly
                     onPress={() => handleDelete(user)}
                   >
                     <TrashIcon className="h-4 w-4" />
@@ -156,12 +160,12 @@ export default function UsersList({ users, onEdit, onRefresh }: UsersListProps) 
                 </div>
               </div>
             </div>
-            
+
             {/* User Permissions Modal */}
             {selectedUser && (
               <UserPermissions
-                user={selectedUser}
                 isOpen={permissionsOpen}
+                user={selectedUser}
                 onClose={() => {
                   setPermissionsOpen(false);
                   setSelectedUser(null);
@@ -175,4 +179,3 @@ export default function UsersList({ users, onEdit, onRefresh }: UsersListProps) 
     </div>
   );
 }
-

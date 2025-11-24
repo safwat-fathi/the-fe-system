@@ -182,12 +182,30 @@ export default async function PaymentVoucherEditPage({
       cost_id: costId, // قد يكون null أو رقم
       debit: parseFloat(detail.debit) || 0,
       credit: parseFloat(detail.credit) || 0,
-      debit_base: detail.debit_base !== undefined ? parseFloat(String(detail.debit_base)) : (parseFloat(detail.debit) || 0),
-      credit_base: detail.credit_base !== undefined ? parseFloat(String(detail.credit_base)) : (parseFloat(detail.credit) || 0),
-      g_debit: detail.g_debit !== undefined ? parseFloat(String(detail.g_debit)) : (parseFloat(detail.debit_g) || 0),
-      g_credit: detail.g_credit !== undefined ? parseFloat(String(detail.g_credit)) : (parseFloat(detail.credit_g) || 0),
-      g_debit_base: detail.g_debit_base !== undefined ? parseFloat(String(detail.g_debit_base)) : 0,
-      g_credit_base: detail.g_credit_base !== undefined ? parseFloat(String(detail.g_credit_base)) : 0,
+      debit_base:
+        detail.debit_base !== undefined
+          ? parseFloat(String(detail.debit_base))
+          : parseFloat(detail.debit) || 0,
+      credit_base:
+        detail.credit_base !== undefined
+          ? parseFloat(String(detail.credit_base))
+          : parseFloat(detail.credit) || 0,
+      g_debit:
+        detail.g_debit !== undefined
+          ? parseFloat(String(detail.g_debit))
+          : parseFloat(detail.debit_g) || 0,
+      g_credit:
+        detail.g_credit !== undefined
+          ? parseFloat(String(detail.g_credit))
+          : parseFloat(detail.credit_g) || 0,
+      g_debit_base:
+        detail.g_debit_base !== undefined
+          ? parseFloat(String(detail.g_debit_base))
+          : 0,
+      g_credit_base:
+        detail.g_credit_base !== undefined
+          ? parseFloat(String(detail.g_credit_base))
+          : 0,
       gauge: parseFloat(detail.gauge) || 875,
       vouch_notes: detail.vouch_notes || "",
       cr_date: detail.cr_date || new Date().toISOString(),

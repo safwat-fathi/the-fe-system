@@ -134,6 +134,7 @@ export async function getBoxAccountId(boxId: number): Promise<number | null> {
 
     if (!box) {
       const goldBoxes = await boxesService.getGoldBoxes({ xcom_id: 1 });
+
       box = goldBoxes.find((b) => b.id === boxId);
     }
 

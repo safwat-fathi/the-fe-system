@@ -3,8 +3,9 @@
  * API service for users management in permissions context
  */
 
-import HttpService from "@/services/base/http.service";
 import { User } from "../types/users";
+
+import HttpService from "@/services/base/http.service";
 
 class UserPermissionService extends HttpService {
   constructor() {
@@ -28,6 +29,7 @@ class UserPermissionService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching users:", error);
+
       return [];
     }
   }
@@ -49,6 +51,7 @@ class UserPermissionService extends HttpService {
       return null;
     } catch (error) {
       console.error("Error fetching user:", error);
+
       return null;
     }
   }
@@ -120,6 +123,7 @@ class UserPermissionService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching user groups:", error);
+
       return [];
     }
   }
@@ -159,6 +163,7 @@ class UserPermissionService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching user permissions:", error);
+
       return [];
     }
   }
@@ -166,10 +171,7 @@ class UserPermissionService extends HttpService {
   /**
    * Update user permissions
    */
-  async updatePermissions(
-    id: number,
-    permissions: any[],
-  ): Promise<boolean> {
+  async updatePermissions(id: number, permissions: any[]): Promise<boolean> {
     try {
       const response = await this.put(`users/${id}/permissions`, {
         permissions,
@@ -184,4 +186,3 @@ class UserPermissionService extends HttpService {
 }
 
 export default new UserPermissionService();
-

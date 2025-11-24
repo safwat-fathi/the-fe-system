@@ -294,19 +294,28 @@ export default async function CustomerReceiptVoucherEditPage({
   // تنسيق بيانات القيد
   // معالجة cust - قد يكون cust أو cust_id في API
   const custValue =
-    targetVoucher.cust_id ||
-    (targetVoucher as any).cust ||
-    undefined;
+    targetVoucher.cust_id || (targetVoucher as any).cust || undefined;
 
   // معالجة cost_id - قد يكون cost (object أو ID) أو cost_id في API
   let costValue: number | null = null;
-  
-  if ((targetVoucher as any).cost_id !== undefined && (targetVoucher as any).cost_id !== null) {
+
+  if (
+    (targetVoucher as any).cost_id !== undefined &&
+    (targetVoucher as any).cost_id !== null
+  ) {
     costValue = Number((targetVoucher as any).cost_id);
-  } else if ((targetVoucher as any).cost !== undefined && (targetVoucher as any).cost !== null) {
+  } else if (
+    (targetVoucher as any).cost !== undefined &&
+    (targetVoucher as any).cost !== null
+  ) {
     // إذا كان cost object (يحتوي على id)
-    if (typeof (targetVoucher as any).cost === "object" && !Array.isArray((targetVoucher as any).cost)) {
-      costValue = Number((targetVoucher as any).cost.id || (targetVoucher as any).cost.Id || 0);
+    if (
+      typeof (targetVoucher as any).cost === "object" &&
+      !Array.isArray((targetVoucher as any).cost)
+    ) {
+      costValue = Number(
+        (targetVoucher as any).cost.id || (targetVoucher as any).cost.Id || 0,
+      );
     } else {
       // إذا كان cost ID مباشرة
       costValue = Number((targetVoucher as any).cost);
@@ -346,10 +355,11 @@ export default async function CustomerReceiptVoucherEditPage({
       <CustomerGoldVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes || []}
-        goldBoxes={formData.goldBoxes || formData.boxes || []}
+        categories={formData.categories || []}
         costCenters={formData.costCenters}
         customers={formData.customers || []}
         formMode={formMode}
+        goldBoxes={formData.goldBoxes || formData.boxes || []}
         goldDetailsData={goldDetails}
         isNewVoucher={false}
         items={formData.items || []}
@@ -359,7 +369,6 @@ export default async function CustomerReceiptVoucherEditPage({
         voucherData={formattedVoucher}
         voucherRecordId={targetVoucher.id}
         voucherTypes={formData.voucherTypes}
-        categories={formData.categories || []}
       />
     </div>
   );

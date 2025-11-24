@@ -1,9 +1,7 @@
 "use client";
 
 import { Chip, Tooltip } from "@heroui/react";
-import {
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
 interface PermissionIndicatorProps {
   source: "group" | "user" | "inherited" | "custom";
@@ -43,10 +41,10 @@ export default function PermissionIndicator({
   return (
     <Tooltip content={getLabel()}>
       <Chip
-        size="sm"
         color={getColor()}
-        variant="flat"
+        size="sm"
         startContent={<InformationCircleIcon className="h-3 w-3" />}
+        variant="flat"
       >
         {source === "group" && "مجموعة"}
         {source === "inherited" && "موروث"}
@@ -55,4 +53,3 @@ export default function PermissionIndicator({
     </Tooltip>
   );
 }
-

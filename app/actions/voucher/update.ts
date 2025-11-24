@@ -171,7 +171,6 @@ export async function updateVoucherAction(
       }
       // لا تحذف cust_id إذا كان موجوداً في voucherPayload، فقط أضف cust
       // delete voucherPayload.cust_id; // تم إزالة هذا السطر لأنه يحذف العميل
-
     }
 
     // تحديث السند الرئيسي

@@ -1,7 +1,10 @@
 "use server";
 
 import { getBranchParams } from "@/app/actions/branch-params";
-import { revalidatePagePath, revalidateTableData } from "@/app/actions/revalidate.action";
+import {
+  revalidatePagePath,
+  revalidateTableData,
+} from "@/app/actions/revalidate.action";
 import {
   userCompanyService,
   userCostCenterService,
@@ -32,25 +35,26 @@ function normalizeArray<T>(value: ServiceResponse<T> | T | undefined): T[] {
 
   if ((value as any)?.success !== undefined) {
     const response = value as ServiceResponse<any>;
+
     if (!response.success) {
       return [];
     }
     const data = response.data;
+
     if (Array.isArray(data)) {
       return data;
     }
     if (data && Array.isArray((data as any).results)) {
       return (data as any).results;
     }
+
     return [];
   }
 
   return [];
 }
 
-export async function loadUserAssignmentsAction(
-  userId: number,
-): Promise<
+export async function loadUserAssignmentsAction(userId: number): Promise<
   ActionResult<{
     companies: UserCompanyRecord[];
     costCenters: UserCostCenterRecord[];
@@ -90,6 +94,7 @@ export async function loadUserAssignmentsAction(
     };
   } catch (error) {
     console.error("loadUserAssignmentsAction error:", error);
+
     return {
       success: false,
       error: "تعذر تحميل فروع ومراكز المستخدم، حاول مرة أخرى.",
@@ -139,6 +144,7 @@ export async function saveUserCompanyAction({
     };
   } catch (error) {
     console.error("saveUserCompanyAction error:", error);
+
     return {
       success: false,
       error: "تعذر حفظ فرع المستخدم، حاول مرة أخرى.",
@@ -146,7 +152,9 @@ export async function saveUserCompanyAction({
   }
 }
 
-export async function deleteUserCompanyAction(id: number): Promise<ActionResult> {
+export async function deleteUserCompanyAction(
+  id: number,
+): Promise<ActionResult> {
   try {
     const response = await userCompanyService.delete(id);
 
@@ -163,6 +171,7 @@ export async function deleteUserCompanyAction(id: number): Promise<ActionResult>
     };
   } catch (error) {
     console.error("deleteUserCompanyAction error:", error);
+
     return {
       success: false,
       error: "تعذر حذف فرع المستخدم، حاول مرة أخرى.",
@@ -212,6 +221,7 @@ export async function saveUserCostCenterAction({
     };
   } catch (error) {
     console.error("saveUserCostCenterAction error:", error);
+
     return {
       success: false,
       error: "تعذر حفظ مركز التكلفة للمستخدم، حاول مرة أخرى.",
@@ -238,6 +248,7 @@ export async function deleteUserCostCenterAction(
     };
   } catch (error) {
     console.error("deleteUserCostCenterAction error:", error);
+
     return {
       success: false,
       error: "تعذر حذف مركز التكلفة للمستخدم، حاول مرة أخرى.",
@@ -281,10 +292,10 @@ export async function loadUserAssignmentOptionsAction(): Promise<
     };
   } catch (error) {
     console.error("loadUserAssignmentOptionsAction error:", error);
+
     return {
       success: false,
       error: "تعذر تحميل البيانات الأساسية، حاول مرة أخرى.",
     };
   }
 }
-

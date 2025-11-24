@@ -22,7 +22,7 @@ import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const mainLinks = [
   {
@@ -204,28 +204,30 @@ const Sidebar = () => {
   const [showSettingsLinks, setShowSettingsLinks] = useState(true);
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  
+
   // Helper function to check if a link is active
   const isLinkActive = (href: string): boolean => {
     try {
       // Extract path and query from href
       const [linkPath, linkQuery] = href.split("?");
-      
+
       // Check if pathname matches exactly
       if (pathname === linkPath) {
         // If href has query params, check them
         if (linkQuery && searchParams) {
           const linkParams = new URLSearchParams(linkQuery);
-          
+
           // Check if all query params in href exist in current params with matching values
           for (const [key, value] of linkParams.entries()) {
             const currentValue = searchParams.get(key);
+
             // If query param value doesn't match, link is not active
             if (currentValue !== value) {
               return false;
             }
           }
         }
+
         // Pathname matches exactly and query params (if any) match, link is active
         return true;
       }
@@ -237,10 +239,10 @@ const Sidebar = () => {
       console.warn("Error checking link active state:", error);
       // Fallback to simple pathname comparison
       const [linkPath] = href.split("?");
+
       return pathname === linkPath;
     }
   };
-
 
   const animationVariants = {
     hidden: { clipPath: "inset(0% 0% 100% 0%)", opacity: 0 },
@@ -257,14 +259,17 @@ const Sidebar = () => {
     >
       {/* Header */}
       <div className="relative border-b border-amber-900/30 bg-gradient-to-r from-amber-950/20 via-transparent to-transparent rounded-b-xl">
-        <div className={`flex items-center h-16 mb-3 ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
+        <div
+          className={`flex items-center h-16 mb-3 ${isSidebarOpen ? "justify-between" : "justify-center"}`}
+        >
           {isSidebarOpen && (
             <div className="flex items-center relative">
               <h2 className="text-4xl font-black whitespace-nowrap relative">
-                <span 
+                <span
                   className="relative inline-block gradient-text-animated"
                   style={{
-                    filter: 'drop-shadow(0 0 8px rgba(217, 119, 6, 0.6)) drop-shadow(0 0 15px rgba(180, 83, 9, 0.4))',
+                    filter:
+                      "drop-shadow(0 0 8px rgba(217, 119, 6, 0.6)) drop-shadow(0 0 15px rgba(180, 83, 9, 0.4))",
                   }}
                 >
                   نفيس
@@ -275,8 +280,6 @@ const Sidebar = () => {
           <Button
             className={`text-white hover:bg-white/10 rounded-lg transition-all duration-200 ${!isSidebarOpen ? "min-w-0 flex items-center justify-center" : ""}`}
             size="sm"
-            variant="light"
-            onPress={() => setIsSidebarOpen(!isSidebarOpen)}
             style={
               !isSidebarOpen
                 ? {
@@ -287,11 +290,12 @@ const Sidebar = () => {
                   }
                 : undefined
             }
+            variant="light"
+            onPress={() => setIsSidebarOpen(!isSidebarOpen)}
           >
             <Bars3Icon className="h-5 w-5" />
           </Button>
         </div>
-
       </div>
 
       {/* Navigation */}
@@ -305,7 +309,8 @@ const Sidebar = () => {
               {
                 "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30":
                   isLinkActive(link.href),
-                "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40": !isLinkActive(link.href),
+                "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40":
+                  !isLinkActive(link.href),
               },
             )}
             href={link.href}
@@ -313,7 +318,9 @@ const Sidebar = () => {
             <div
               className={clsx("text-lg transition-all", {
                 "text-white drop-shadow-lg": isLinkActive(link.href),
-                "text-slate-300 group-hover:text-white": !isLinkActive(link.href),
+                "text-slate-300 group-hover:text-white": !isLinkActive(
+                  link.href,
+                ),
               })}
             >
               {link.icon}
@@ -714,9 +721,7 @@ const Sidebar = () => {
                       paddingLeft: isSidebarOpen ? "2.5rem" : "0.75rem",
                     }}
                   >
-                    <div className="text-sm transition-all">
-                      {link.icon}
-                    </div>
+                    <div className="text-sm transition-all">{link.icon}</div>
                     <span
                       className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
                     >

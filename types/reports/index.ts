@@ -50,4 +50,3 @@ export interface GLTransactionSummary {
   totalCreditG: number;
   isBalanced: boolean;
 }
-

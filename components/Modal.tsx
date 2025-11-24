@@ -70,9 +70,9 @@ export function BaseModal({
   return (
     <HeroModal
       className={className}
+      hideCloseButton={!showCloseButton}
       isDismissable={closeOnOverlayClick}
       isOpen={isOpen}
-      hideCloseButton={!showCloseButton}
       size={size}
       onClose={onClose}
     >
@@ -100,7 +100,13 @@ export function ConfirmationModal({
     if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey
+      ) {
         event.preventDefault();
         onConfirm();
       } else if (event.key === "Escape") {
@@ -110,6 +116,7 @@ export function ConfirmationModal({
     };
 
     window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
@@ -136,38 +143,34 @@ export function ConfirmationModal({
                 viewBox="0 0 24 24"
               >
                 <path
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
             </div>
             <div className="text-gray-700 text-center text-sm leading-relaxed">
-              {typeof message === "string" ? (
-                <p>{message}</p>
-              ) : (
-                message
-              )}
+              {typeof message === "string" ? <p>{message}</p> : message}
             </div>
           </div>
         </ModalBody>
         <ModalFooter className="gap-3">
           {cancelText && (
             <Button
+              className="font-medium min-w-[100px]"
               color="default"
               variant="flat"
               onPress={onClose}
-              className="font-medium min-w-[100px]"
             >
               {cancelText}
             </Button>
           )}
           <Button
+            className="font-medium min-w-[100px] bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md"
             color={confirmColor}
             variant="solid"
             onPress={onConfirm}
-            className="font-medium min-w-[100px] bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md"
           >
             {confirmText}
           </Button>
@@ -204,6 +207,7 @@ export function FormModal({
     };
 
     window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
@@ -256,7 +260,13 @@ export function InfoModal({
     if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey
+      ) {
         if (showOkButton) {
           event.preventDefault();
           onClose();
@@ -268,6 +278,7 @@ export function InfoModal({
     };
 
     window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };

@@ -48,7 +48,7 @@ export default function GroupUsers({
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       const [users, groupUsersData] = await Promise.all([
         userService.getAll(),
         groupService.getUsers(group.id),
@@ -78,7 +78,7 @@ export default function GroupUsers({
       // TODO: Implement updateUsers method in groupService
       // await groupService.updateUsers(group.id, groupUsers);
       toast.error("هذه الميزة قيد التطوير");
-      
+
       toast.success("تم تحديث مستخدمين المجموعة بنجاح");
       onSuccess();
       onClose();
@@ -90,14 +90,15 @@ export default function GroupUsers({
     }
   };
 
-  const filteredUsers = allUsers.filter((user) =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredUsers = allUsers.filter(
+    (user) =>
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   if (loading) {
     return (
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+      <Modal isOpen={isOpen} size="2xl" onClose={onClose}>
         <ModalContent>
           <ModalBody>
             <div className="flex justify-center items-center py-20">
@@ -110,13 +111,15 @@ export default function GroupUsers({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
       <ModalContent>
         <ModalHeader>
           <div className="flex items-center gap-3">
             <UserIcon className="h-6 w-6 text-primary" />
             <div>
-              <h3 className="text-lg font-bold">مستخدمين المجموعة: {group.name}</h3>
+              <h3 className="text-lg font-bold">
+                مستخدمين المجموعة: {group.name}
+              </h3>
               <p className="text-sm text-gray-500 font-normal">
                 حدد المستخدمين الذين ينتمون لهذه المجموعة
               </p>
@@ -127,10 +130,12 @@ export default function GroupUsers({
           <div className="space-y-4">
             <Input
               placeholder="ابحث عن مستخدم..."
+              startContent={
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              }
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
               variant="bordered"
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
 
             <div className="border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
@@ -146,14 +151,16 @@ export default function GroupUsers({
                         onValueChange={() => toggleUser(user.id)}
                       />
                       <div>
-                        <p className="font-medium text-gray-900">{user.username}</p>
+                        <p className="font-medium text-gray-900">
+                          {user.username}
+                        </p>
                         {user.email && (
                           <p className="text-xs text-gray-500">{user.email}</p>
                         )}
                       </div>
                     </div>
                     {user.is_staff && (
-                      <Chip size="sm" color="secondary" variant="flat">
+                      <Chip color="secondary" size="sm" variant="flat">
                         مدير
                       </Chip>
                     )}
@@ -174,7 +181,7 @@ export default function GroupUsers({
           <Button variant="light" onPress={onClose}>
             إلغاء
           </Button>
-          <Button color="primary" onPress={handleSave} isLoading={saving}>
+          <Button color="primary" isLoading={saving} onPress={handleSave}>
             حفظ التغييرات
           </Button>
         </ModalFooter>
@@ -182,4 +189,3 @@ export default function GroupUsers({
     </Modal>
   );
 }
-

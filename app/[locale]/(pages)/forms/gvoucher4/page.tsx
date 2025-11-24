@@ -26,16 +26,16 @@ export default async function CustomerReceiptVoucherPage() {
       <CustomerGoldVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes || []}
-        goldBoxes={formData.goldBoxes || formData.boxes || []}
+        categories={formData.categories || []}
         costCenters={formData.costCenters}
         customers={formData.customers || []}
         formMode="new"
+        goldBoxes={formData.goldBoxes || formData.boxes || []}
         isNewVoucher={true}
         items={formData.items || []}
         startInEditMode={true}
         vouchType={4}
         voucherTypes={formData.voucherTypes}
-        categories={formData.categories || []}
       />
     </div>
   );

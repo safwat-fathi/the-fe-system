@@ -27,4 +27,3 @@ export interface GroupWithPermissions extends Group {
   permissions: ObjectPermission[];
   users_count?: number;
 }
-

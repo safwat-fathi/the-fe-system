@@ -45,11 +45,13 @@ const CurrencyFormClient = ({
   const handleSave = async () => {
     if (!currency.cur_name || currency.cur_name.trim() === "") {
       toast.error("⚠️ اسم العملة مطلوب");
+
       return;
     }
 
     if (!currency.cur_price || currency.cur_price.trim() === "") {
       toast.error("⚠️ السعر مطلوب");
+
       return;
     }
 
@@ -68,9 +70,7 @@ const CurrencyFormClient = ({
 
       if (result) {
         toast.success(
-          isAddMode
-            ? "✅ تم إضافة العملة بنجاح"
-            : "✅ تم تعديل العملة بنجاح",
+          isAddMode ? "✅ تم إضافة العملة بنجاح" : "✅ تم تعديل العملة بنجاح",
         );
         router.push("/basic/currencies");
         router.refresh();
@@ -122,9 +122,7 @@ const CurrencyFormClient = ({
               { duration: 3000 },
             );
           } else {
-            toast.success(
-              `تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`,
-            );
+            toast.success(`تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`);
             toast("⚠️ لم يتم جلب سعر الصرف. يرجى إدخال السعر يدوياً", {
               icon: "ℹ️",
               duration: 4000,
@@ -154,12 +152,12 @@ const CurrencyFormClient = ({
       selectedCurrencyCode ||
       getCurrencyOptions().find(
         (opt) =>
-          opt.value.charAt(0).toUpperCase() ===
-          currency.cur_tag?.toUpperCase(),
+          opt.value.charAt(0).toUpperCase() === currency.cur_tag?.toUpperCase(),
       )?.value;
 
     if (!currencyCode) {
       toast.error("⚠️ لا يمكن تحديث السعر بدون تحديد العملة");
+
       return;
     }
 
@@ -187,12 +185,14 @@ const CurrencyFormClient = ({
   const getTitle = () => {
     if (isViewMode) return `عرض ${currency.cur_name || "العملة"}`;
     if (isAddMode) return "إضافة عملة جديدة";
+
     return `تعديل ${currency.cur_name || "العملة"}`;
   };
 
   const getDescription = () => {
     if (isViewMode) return "عرض تفاصيل العملة";
     if (isAddMode) return "قم بإضافة عملة جديدة إلى النظام";
+
     return "قم بتعديل بيانات العملة";
   };
 
@@ -225,11 +225,7 @@ const CurrencyFormClient = ({
               >
                 إلغاء
               </Button>
-              <Button
-                color="success"
-                isLoading={isSaving}
-                onPress={handleSave}
-              >
+              <Button color="success" isLoading={isSaving} onPress={handleSave}>
                 {isAddMode ? "حفظ" : "تحديث"}
               </Button>
             </>
@@ -246,12 +242,11 @@ const CurrencyFormClient = ({
               isDisabled={isViewMode}
               label="اختر العملة"
               placeholder="ابحث واختر عملة من القائمة العالمية"
-              selectedKeys={
-                currency.cur_tag ? [currency.cur_tag] : []
-              }
+              selectedKeys={currency.cur_tag ? [currency.cur_tag] : []}
               variant="bordered"
               onSelectionChange={async (keys) => {
                 const selectedCode = Array.from(keys)[0] as string;
+
                 if (selectedCode) {
                   await handleCurrencySelect(selectedCode);
                 }
@@ -276,13 +271,13 @@ const CurrencyFormClient = ({
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
+              isRequired
               isDisabled={isViewMode}
               label="اسم العملة"
               value={currency.cur_name || ""}
               onChange={(e) =>
                 setCurrency({ ...currency, cur_name: e.target.value })
               }
-              isRequired
             />
             <Input
               isDisabled={isViewMode}
@@ -326,12 +321,14 @@ const CurrencyFormClient = ({
                 value={currency.cur_tag || ""}
                 onChange={(e) => {
                   const value = e.target.value.slice(0, 1).toUpperCase();
+
                   setCurrency({ ...currency, cur_tag: value });
                 }}
               />
             </div>
             <div className="flex items-end gap-2">
               <Input
+                isRequired
                 className="flex-1"
                 description={
                   isLoadingPrice
@@ -344,7 +341,6 @@ const CurrencyFormClient = ({
                 onChange={(e) =>
                   setCurrency({ ...currency, cur_price: e.target.value })
                 }
-                isRequired
               />
               {isAddMode &&
                 (selectedCurrencyCode || currency.cur_tag) &&
@@ -381,4 +377,3 @@ const CurrencyFormClient = ({
 };
 
 export default CurrencyFormClient;
-

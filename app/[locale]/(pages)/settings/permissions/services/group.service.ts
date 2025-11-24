@@ -3,8 +3,9 @@
  * API service for groups management
  */
 
+import { Group } from "../types/groups";
+
 import HttpService from "@/services/base/http.service";
-import { Group, GroupWithPermissions } from "../types/groups";
 
 class GroupService extends HttpService {
   constructor() {
@@ -20,7 +21,7 @@ class GroupService extends HttpService {
     // try {
     //   const { default: genericService } = await import("@/services/api/generic.service");
     //   const response = await genericService.getTableData("groups_list");
-    //   
+    //
     //   if (response.success && Array.isArray(response.data)) {
     //     return response.data;
     //   }
@@ -29,7 +30,7 @@ class GroupService extends HttpService {
     //   console.warn("Groups API not available:", error);
     //   return [];
     // }
-    
+
     // Return empty array for now - mock data is handled in component
     return [];
   }
@@ -51,6 +52,7 @@ class GroupService extends HttpService {
       return null;
     } catch (error) {
       console.error("Error fetching group:", error);
+
       return null;
     }
   }
@@ -126,6 +128,7 @@ class GroupService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching group permissions:", error);
+
       return [];
     }
   }
@@ -133,10 +136,7 @@ class GroupService extends HttpService {
   /**
    * Update group permissions
    */
-  async updatePermissions(
-    id: number,
-    permissions: any[],
-  ): Promise<boolean> {
+  async updatePermissions(id: number, permissions: any[]): Promise<boolean> {
     try {
       const response = await this.put(`groups/${id}/permissions`, {
         permissions,
@@ -166,10 +166,10 @@ class GroupService extends HttpService {
       return [];
     } catch (error) {
       console.error("Error fetching group users:", error);
+
       return [];
     }
   }
 }
 
 export default new GroupService();
-

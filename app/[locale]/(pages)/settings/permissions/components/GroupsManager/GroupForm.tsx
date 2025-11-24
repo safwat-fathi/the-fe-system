@@ -56,20 +56,23 @@ export default function GroupForm({
 
     if (!formData.name.trim()) {
       toast.error("يرجى إدخال اسم المجموعة");
+
       return;
     }
 
     try {
       setLoading(true);
       const { groupService } = await import("../../services");
-      
+
       if (group) {
         await groupService.update(group.id, formData);
       } else {
         await groupService.create(formData);
       }
-      
-      toast.success(group ? "تم تحديث المجموعة بنجاح" : "تم إنشاء المجموعة بنجاح");
+
+      toast.success(
+        group ? "تم تحديث المجموعة بنجاح" : "تم إنشاء المجموعة بنجاح",
+      );
       onSuccess();
     } catch (error) {
       console.error("Error saving group:", error);
@@ -80,7 +83,7 @@ export default function GroupForm({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
       <ModalContent>
         <form onSubmit={handleSubmit}>
           <ModalHeader>
@@ -89,33 +92,33 @@ export default function GroupForm({
           <ModalBody>
             <div className="space-y-4">
               <Input
+                isRequired
                 label="اسم المجموعة (عربي)"
                 placeholder="أدخل اسم المجموعة"
                 value={formData.name}
+                variant="bordered"
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                isRequired
-                variant="bordered"
               />
               <Input
                 label="اسم المجموعة (إنجليزي)"
                 placeholder="Enter group name"
                 value={formData.name_en}
+                variant="bordered"
                 onChange={(e) =>
                   setFormData({ ...formData, name_en: e.target.value })
                 }
-                variant="bordered"
               />
               <Textarea
                 label="الوصف"
+                minRows={3}
                 placeholder="أدخل وصف المجموعة"
                 value={formData.description}
+                variant="bordered"
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                variant="bordered"
-                minRows={3}
               />
             </div>
           </ModalBody>
@@ -123,7 +126,7 @@ export default function GroupForm({
             <Button variant="light" onPress={onClose}>
               إلغاء
             </Button>
-            <Button color="primary" type="submit" isLoading={loading}>
+            <Button color="primary" isLoading={loading} type="submit">
               حفظ
             </Button>
           </ModalFooter>
@@ -132,4 +135,3 @@ export default function GroupForm({
     </Modal>
   );
 }
-

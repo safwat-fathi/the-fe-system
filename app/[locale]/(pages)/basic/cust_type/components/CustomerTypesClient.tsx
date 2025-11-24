@@ -71,10 +71,10 @@ export default function CustomerTypesClient({
     }
   };
 
-
   const handleDeleteClick = (type: CustomerType) => {
     if (!type.id) {
       toast.error("❌ لا يمكن حذف نوع بدون معرف");
+
       return;
     }
 
@@ -86,16 +86,17 @@ export default function CustomerTypesClient({
     if (!typeToDelete?.id) {
       setDeleteModalOpen(false);
       setTypeToDelete(null);
+
       return;
     }
 
     // Optimistic delete
-    setTypes((prevTypes) =>
-      prevTypes.filter((t) => t.id !== typeToDelete.id)
-    );
+    setTypes((prevTypes) => prevTypes.filter((t) => t.id !== typeToDelete.id));
 
     try {
-      const result = await customerTypeService.deleteCustomerType(typeToDelete.id);
+      const result = await customerTypeService.deleteCustomerType(
+        typeToDelete.id,
+      );
 
       if (result) {
         toast.success("✅ تم حذف النوع بنجاح");
@@ -169,8 +170,8 @@ export default function CustomerTypesClient({
         <h2 className="text-base font-semibold">إدارة أنواع العملاء</h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
-          variant="bordered"
           className="bg-gray-100"
+          variant="bordered"
           onPress={() => router.push("/basic/cust_type/new")}
         >
           <PlusIcon className="h-3 w-3" />
@@ -180,10 +181,12 @@ export default function CustomerTypesClient({
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder="بحث بالاسم..."
+            size="sm"
+            startContent={
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
-            size="sm"
           />
         </div>
       </div>
@@ -223,15 +226,15 @@ export default function CustomerTypesClient({
       </div>
 
       <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف نوع العميل "${typeToDelete?.type_name}"؟`}
-        confirmText="حذف"
         cancelText="إلغاء"
         confirmColor="danger"
+        confirmText="حذف"
+        isOpen={deleteModalOpen}
+        message={`هل أنت متأكد من حذف نوع العميل "${typeToDelete?.type_name}"؟`}
         size="md"
+        title="تأكيد الحذف"
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   );

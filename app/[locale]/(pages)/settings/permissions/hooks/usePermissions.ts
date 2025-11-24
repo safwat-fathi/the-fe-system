@@ -62,4 +62,3 @@ export const useAllPermissions = (objectId: number, permissions: string[]) => {
 
   return hasAllPermissions;
 };
-
