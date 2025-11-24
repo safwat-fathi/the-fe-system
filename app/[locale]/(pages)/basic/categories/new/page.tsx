@@ -49,14 +49,13 @@ export default async function NewCategoryPage() {
         ]}
       />
       <CategoryFormClient
-        companyId={companyId}
         boxes={boxesData as any}
-        initialCategory={emptyCategory}
+        companyId={companyId}
         initialAccounts={accountsData as any}
+        initialCategory={emptyCategory}
         initialCategoryAccount={null}
         mode="add"
       />
     </div>
   );
 }
-

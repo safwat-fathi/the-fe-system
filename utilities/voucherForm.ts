@@ -321,7 +321,8 @@ export const calculateReverseCalibratedGold = (
   gauge: number,
   baseGauge: number = 875,
 ): number => {
-  if (!calibratedValue || calibratedValue <= 0 || !gauge || gauge <= 0) return 0;
+  if (!calibratedValue || calibratedValue <= 0 || !gauge || gauge <= 0)
+    return 0;
 
   return parseFloat(((calibratedValue * baseGauge) / gauge).toFixed(6));
 };

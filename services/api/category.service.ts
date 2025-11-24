@@ -1,5 +1,5 @@
 import { HttpService } from "@/services/base";
-import { getBranchParams } from "@/app/actions/branch-params";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 export interface Category {
   id: number;
@@ -20,7 +20,7 @@ class CategoryService extends HttpService<Category> {
   }
 
   async getAllCategories(companyId: number | string = 1): Promise<Category[]> {
-    try { 
+    try {
       const response = await this.get<Category[]>(
         "categories_list",
         { xcom_id: String(companyId) },
@@ -41,6 +41,7 @@ class CategoryService extends HttpService<Category> {
       return [];
     } catch (error) {
       console.error("Error fetching categories:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات الفئات");
     }
   }
@@ -77,6 +78,7 @@ class CategoryService extends HttpService<Category> {
       return null;
     } catch (error) {
       console.error("Error creating category:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء إنشاء الفئة");
     }
   }
@@ -102,6 +104,7 @@ class CategoryService extends HttpService<Category> {
       return null;
     } catch (error) {
       console.error("Error updating category:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء تحديث الفئة");
     }
   }
@@ -119,6 +122,7 @@ class CategoryService extends HttpService<Category> {
       return response.success;
     } catch (error) {
       console.error("Error deleting category:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء حذف الفئة");
     }
   }

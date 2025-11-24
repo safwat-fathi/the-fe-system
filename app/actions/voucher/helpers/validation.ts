@@ -20,9 +20,7 @@ export function validateVoucherData(
   goldDetails?: any[], // للتحقق من goldDetails في سندات الذهب
 ): { isValid: boolean; error?: string } {
   // سندات الذهب (4, 5, 111, 222): استخدام goldDetails بدلاً من details
-  const isGoldVoucher = [4, 5, 111, 222].includes(
-    voucherData.vouch_type || 0,
-  );
+  const isGoldVoucher = [4, 5, 111, 222].includes(voucherData.vouch_type || 0);
 
   if (isGoldVoucher) {
     // التحقق من وجود goldDetails

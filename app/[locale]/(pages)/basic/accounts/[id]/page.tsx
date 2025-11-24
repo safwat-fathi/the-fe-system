@@ -2,10 +2,10 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import AccountFormClient from "../components/AccountFormClient";
+import { normalizeAccountsTree, findAccountById } from "../utils/account-tree";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import accountService from "@/services/api/account.service";
-import { normalizeAccountsTree, findAccountById } from "../utils/account-tree";
 import { Account } from "@/types/models/account";
 import { Currency } from "@/types/models/currency";
 
@@ -82,4 +82,3 @@ export default async function AccountDetailsPage({
     </div>
   );
 }
-

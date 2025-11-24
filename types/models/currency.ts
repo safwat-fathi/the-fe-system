@@ -3,4 +3,3 @@ export type Currency = {
   cur_name: string;
   cur_code: string;
 };
-

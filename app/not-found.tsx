@@ -4,7 +4,6 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import BackButton from "@/components/BackButton";
 
-
 export const metadata: Metadata = {
   title: "الصفحة غير موجودة - 404",
   description: "عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها.",

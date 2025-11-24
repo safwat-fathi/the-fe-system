@@ -116,6 +116,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   const handleDeleteClick = (box: CustomerBox) => {
     if (!box.id) {
       toast.error("❌ لا يمكن حذف صندوق بدون معرف");
+
       return;
     }
 
@@ -127,13 +128,12 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
     if (!boxToDelete?.id) {
       setDeleteModalOpen(false);
       setBoxToDelete(null);
+
       return;
     }
 
     // Optimistic delete
-    setBoxes((prevBoxes) =>
-      prevBoxes.filter((b) => b.id !== boxToDelete.id)
-    );
+    setBoxes((prevBoxes) => prevBoxes.filter((b) => b.id !== boxToDelete.id));
 
     try {
       const result = await boxService.deleteBox(boxToDelete.id);
@@ -221,8 +221,8 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         <h2 className="text-base font-semibold">إدارة الصناديق</h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
-          variant="bordered"
           className="bg-gray-100"
+          variant="bordered"
           onPress={() => router.push("/basic/boxes/new")}
         >
           <PlusIcon className="h-3 w-3" />
@@ -232,10 +232,12 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder="بحث بالاسم أو الكود..."
+            size="sm"
+            startContent={
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
-            size="sm"
           />
         </div>
       </div>
@@ -281,15 +283,15 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       </div>
 
       <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف الصندوق "${boxToDelete?.cust_name}"؟`}
-        confirmText="حذف"
         cancelText="إلغاء"
         confirmColor="danger"
+        confirmText="حذف"
+        isOpen={deleteModalOpen}
+        message={`هل أنت متأكد من حذف الصندوق "${boxToDelete?.cust_name}"؟`}
         size="md"
+        title="تأكيد الحذف"
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
     </>
   );

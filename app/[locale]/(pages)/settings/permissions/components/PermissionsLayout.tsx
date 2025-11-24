@@ -19,8 +19,6 @@ export default function PermissionsLayout() {
     <div className="w-full">
       <Tabs
         aria-label="Permissions Management"
-        selectedKey={selectedTab}
-        onSelectionChange={(key) => setSelectedTab(key as string)}
         className="w-full"
         classNames={{
           tabList:
@@ -29,6 +27,8 @@ export default function PermissionsLayout() {
           tab: "max-w-fit px-6 h-12",
           tabContent: "group-data-[selected=true]:text-amber-600",
         }}
+        selectedKey={selectedTab}
+        onSelectionChange={(key) => setSelectedTab(key as string)}
       >
         <Tab
           key="groups"
@@ -67,4 +67,3 @@ export default function PermissionsLayout() {
     </div>
   );
 }
-

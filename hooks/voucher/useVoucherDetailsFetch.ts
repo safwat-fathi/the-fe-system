@@ -3,10 +3,12 @@
  * Hook لجلب تفاصيل السندات بشكل متوازي
  */
 
+import type { Voucher } from "@/types/voucher";
+
 import { useState, useEffect, useCallback } from "react";
+
 import { voucherService } from "@/services/api";
 import { fetchInParallel } from "@/utilities/api/parallel-fetch";
-import type { Voucher } from "@/types/voucher";
 
 interface VoucherDetail {
   voucherId: number;
@@ -22,9 +24,9 @@ export const useVoucherDetailsFetch = ({
   vouchers,
   enabled = true,
 }: UseVoucherDetailsFetchProps) => {
-  const [voucherDetails, setVoucherDetails] = useState<
-    Record<number, any[]>
-  >({});
+  const [voucherDetails, setVoucherDetails] = useState<Record<number, any[]>>(
+    {},
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -54,10 +56,7 @@ export const useVoucherDetailsFetch = ({
     setError(null);
 
     try {
-      const results = await fetchInParallel<
-        Voucher,
-        VoucherDetail
-      >(
+      const results = await fetchInParallel<Voucher, VoucherDetail>(
         vouchersToFetch,
         async (voucher) => {
           const voucherId = voucher.id || voucher.vouch_id;
@@ -70,9 +69,7 @@ export const useVoucherDetailsFetch = ({
           });
 
           if (response.success && response.data) {
-            const details = Array.isArray(response.data)
-              ? response.data
-              : [];
+            const details = Array.isArray(response.data) ? response.data : [];
 
             return { voucherId, details };
           }
@@ -120,4 +117,3 @@ export const useVoucherDetailsFetch = ({
     refetch: fetchDetails,
   };
 };
-

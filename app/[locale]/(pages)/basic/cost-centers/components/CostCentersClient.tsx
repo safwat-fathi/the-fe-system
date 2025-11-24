@@ -87,7 +87,8 @@ export default function CostCentersClient({
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [costCenterToDelete, setCostCenterToDelete] = useState<CostCenter | null>(null);
+  const [costCenterToDelete, setCostCenterToDelete] =
+    useState<CostCenter | null>(null);
 
   const rowsPerPage = 10;
 
@@ -103,10 +104,10 @@ export default function CostCentersClient({
     }
   };
 
-
   const handleDeleteClick = (costCenter: CostCenter) => {
     if (!costCenter.id) {
       toast.error("❌ لا يمكن حذف مركز تكلفة بدون معرف");
+
       return;
     }
 
@@ -118,16 +119,19 @@ export default function CostCentersClient({
     if (!costCenterToDelete?.id) {
       setDeleteModalOpen(false);
       setCostCenterToDelete(null);
+
       return;
     }
 
     // Optimistic delete
     setCostCenters((prevCenters) =>
-      prevCenters.filter((cc) => cc.id !== costCenterToDelete.id)
+      prevCenters.filter((cc) => cc.id !== costCenterToDelete.id),
     );
 
     try {
-      const result = await costCenterService.deleteCostCenter(costCenterToDelete.id);
+      const result = await costCenterService.deleteCostCenter(
+        costCenterToDelete.id,
+      );
 
       if (result) {
         toast.success("✅ تم حذف مركز التكلفة بنجاح");
@@ -204,7 +208,9 @@ export default function CostCentersClient({
         isIconOnly
         size="sm"
         variant="light"
-        onPress={() => router.push(`/basic/cost-centers/${costCenter.id}?mode=edit`)}
+        onPress={() =>
+          router.push(`/basic/cost-centers/${costCenter.id}?mode=edit`)
+        }
       >
         <PencilIcon className="h-4 w-4 text-yellow-500" />
       </Button>
@@ -237,8 +243,8 @@ export default function CostCentersClient({
         <h2 className="text-base font-semibold">إدارة مراكز التكلفة</h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
-          variant="bordered"
           className="bg-gray-100"
+          variant="bordered"
           onPress={() => router.push("/basic/cost-centers/new")}
         >
           <PlusIcon className="h-3 w-3" />
@@ -248,10 +254,12 @@ export default function CostCentersClient({
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder="بحث بالاسم..."
+            size="sm"
+            startContent={
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
-            size="sm"
           />
         </div>
       </div>
@@ -295,15 +303,15 @@ export default function CostCentersClient({
       </div>
 
       <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف مركز التكلفة "${costCenterToDelete?.cost_name}"؟`}
-        confirmText="حذف"
         cancelText="إلغاء"
         confirmColor="danger"
+        confirmText="حذف"
+        isOpen={deleteModalOpen}
+        message={`هل أنت متأكد من حذف مركز التكلفة "${costCenterToDelete?.cost_name}"؟`}
         size="md"
+        title="تأكيد الحذف"
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
     </>
   );

@@ -19,6 +19,7 @@ export async function fetchInParallel<T, R>(
 
   // Split items into batches to avoid overwhelming the server
   const batches: T[][] = [];
+
   for (let i = 0; i < items.length; i += batchSize) {
     batches.push(items.slice(i, i + batchSize));
   }
@@ -33,6 +34,7 @@ export async function fetchInParallel<T, R>(
           return await fetchFn(item);
         } catch (error) {
           onError?.(item, error);
+
           return null;
         }
       }),
@@ -77,4 +79,3 @@ export async function fetchWithRetry<T>(
 
   throw lastError;
 }
-

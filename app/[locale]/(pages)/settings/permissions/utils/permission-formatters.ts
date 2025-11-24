@@ -8,7 +8,9 @@ import { PermissionType, PERMISSION_TYPES } from "../types/permissions";
 /**
  * Get Arabic label for permission type
  */
-export const getPermissionLabel = (permission: PermissionType | string): string => {
+export const getPermissionLabel = (
+  permission: PermissionType | string,
+): string => {
   const labels: Record<string, string> = {
     [PERMISSION_TYPES.VIEW]: "عرض",
     [PERMISSION_TYPES.CREATE]: "إضافة",
@@ -27,7 +29,10 @@ export const getPermissionLabel = (permission: PermissionType | string): string 
 export const getPermissionColor = (
   permission: PermissionType | string,
 ): "default" | "primary" | "secondary" | "success" | "warning" | "danger" => {
-  const colors: Record<string, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
+  const colors: Record<
+    string,
+    "default" | "primary" | "secondary" | "success" | "warning" | "danger"
+  > = {
     [PERMISSION_TYPES.VIEW]: "default",
     [PERMISSION_TYPES.CREATE]: "success",
     [PERMISSION_TYPES.EDIT]: "primary",
@@ -42,7 +47,9 @@ export const getPermissionColor = (
 /**
  * Get icon for permission type
  */
-export const getPermissionIcon = (permission: PermissionType | string): string => {
+export const getPermissionIcon = (
+  permission: PermissionType | string,
+): string => {
   const icons: Record<string, string> = {
     [PERMISSION_TYPES.VIEW]: "👁️",
     [PERMISSION_TYPES.CREATE]: "+",
@@ -63,4 +70,3 @@ export const formatPermissionsList = (
 ): string => {
   return permissions.map(getPermissionLabel).join(", ");
 };
-

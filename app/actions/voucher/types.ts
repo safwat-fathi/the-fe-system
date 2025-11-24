@@ -9,4 +9,3 @@ export type {
   VoucherBoxData,
   GVoucherDetailData,
 } from "./helpers/types";
-

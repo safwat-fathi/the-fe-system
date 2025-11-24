@@ -61,4 +61,3 @@ class UserCostCenterService extends HttpService<UserCostCenter> {
 const userCostCenterService = new UserCostCenterService();
 
 export default userCostCenterService;
-

@@ -518,4 +518,3 @@ export const getSectionById = (sectionId: string) => {
 
   return undefined;
 };
-

@@ -40,4 +40,3 @@ export interface GLAuditLog extends CreateGLAuditLogPayload {
   created_at: string;
   created_by: string | null;
 }
-

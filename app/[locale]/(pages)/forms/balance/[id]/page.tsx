@@ -58,6 +58,7 @@ async function getVoucherById(voucherId: number) {
     return null;
   } catch (error) {
     console.error("Error fetching voucher:", error);
+
     return null;
   }
 }
@@ -140,7 +141,7 @@ export default async function BalanceVoucherEditPage({
   // استخدام id (primary key) من جدول vouchers
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
   const voucherMasterId = targetVoucher.id; // primary key من جدول vouchers
-  
+
   if (!voucherMasterId || voucherMasterId <= 0) {
     console.error(
       `[Balance Voucher] Invalid voucher master ID: ${voucherMasterId}`,
@@ -175,28 +176,28 @@ export default async function BalanceVoucherEditPage({
       debit_base:
         detail.debit_base !== undefined && detail.debit_base !== null
           ? parseFloat(String(detail.debit_base))
-          : (detail.debit !== undefined && detail.debit !== null
+          : detail.debit !== undefined && detail.debit !== null
             ? parseFloat(String(detail.debit))
-            : undefined),
+            : undefined,
       credit_base:
         detail.credit_base !== undefined && detail.credit_base !== null
           ? parseFloat(String(detail.credit_base))
-          : (detail.credit !== undefined && detail.credit !== null
+          : detail.credit !== undefined && detail.credit !== null
             ? parseFloat(String(detail.credit))
-            : undefined),
+            : undefined,
       gauge: parseFloat(detail.gauge) || 875,
       g_debit:
         detail.g_debit !== undefined && detail.g_debit !== null
           ? parseFloat(String(detail.g_debit))
-          : (detail.debit_g !== undefined && detail.debit_g !== null
+          : detail.debit_g !== undefined && detail.debit_g !== null
             ? parseFloat(String(detail.debit_g))
-            : undefined),
+            : undefined,
       g_credit:
         detail.g_credit !== undefined && detail.g_credit !== null
           ? parseFloat(String(detail.g_credit))
-          : (detail.credit_g !== undefined && detail.credit_g !== null
+          : detail.credit_g !== undefined && detail.credit_g !== null
             ? parseFloat(String(detail.credit_g))
-            : undefined),
+            : undefined,
       g_debit_base:
         detail.g_debit_base !== undefined && detail.g_debit_base !== null
           ? parseFloat(String(detail.g_debit_base))

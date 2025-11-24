@@ -1,6 +1,7 @@
 "use client";
 
 import { Checkbox, Chip } from "@heroui/react";
+
 import { Screen } from "../../types/systems";
 import { PERMISSION_TYPES } from "../../types/permissions";
 import {
@@ -26,7 +27,7 @@ export default function PermissionToggle({
 
   const getBgColor = (isChecked: boolean, color: string) => {
     if (!isChecked) return "bg-gray-50 border-gray-200";
-    
+
     const colorMap: Record<string, string> = {
       default: "bg-gray-50 border-gray-200",
       primary: "bg-blue-50 border-blue-200",
@@ -35,7 +36,7 @@ export default function PermissionToggle({
       warning: "bg-amber-50 border-amber-200",
       danger: "bg-red-50 border-red-200",
     };
-    
+
     return colorMap[color] || "bg-gray-50 border-gray-200";
   };
 
@@ -53,18 +54,18 @@ export default function PermissionToggle({
             className={`flex items-center gap-2 p-2 rounded-lg border ${getBgColor(isChecked, color)}`}
           >
             <Checkbox
+              isDisabled={readOnly}
               isSelected={isChecked}
+              size="sm"
               onValueChange={(checked) =>
                 !readOnly && onPermissionChange?.(permission, checked)
               }
-              isDisabled={readOnly}
-              size="sm"
             />
             <Chip
               color={isChecked ? (color as any) : "default"}
-              variant={isChecked ? "flat" : "bordered"}
               size="sm"
               startContent={<span>{icon}</span>}
+              variant={isChecked ? "flat" : "bordered"}
             >
               {label}
             </Chip>
@@ -74,4 +75,3 @@ export default function PermissionToggle({
     </div>
   );
 }
-

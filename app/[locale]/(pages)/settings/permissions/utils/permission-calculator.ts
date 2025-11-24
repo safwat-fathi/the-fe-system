@@ -5,7 +5,7 @@
 
 import { MergedPermissions, ObjectPermission } from "../types/permissions";
 import { Group } from "../types/groups";
-import { User } from "../types/users";
+
 import { mergePermissions } from "./permission-helpers";
 
 /**
@@ -73,4 +73,3 @@ export const checkPermission = (
 
   return objectPermissions.includes(permission);
 };
-

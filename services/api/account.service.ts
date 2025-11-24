@@ -1,6 +1,7 @@
 import { HttpService } from "@/services/base";
 import { Account } from "@/types/models/account";
 import { Currency } from "@/types/models/currency";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 class AccountService extends HttpService<Account> {
   constructor() {
@@ -47,6 +48,7 @@ class AccountService extends HttpService<Account> {
       return [];
     } catch (error) {
       console.error("Error fetching accounts:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات الحسابات");
     }
   }
@@ -75,6 +77,7 @@ class AccountService extends HttpService<Account> {
       return null;
     } catch (error) {
       console.error("Error creating account:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء إنشاء الحساب");
     }
   }
@@ -106,6 +109,7 @@ class AccountService extends HttpService<Account> {
       return null;
     } catch (error) {
       console.error("Error updating account:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء تحديث الحساب");
     }
   }
@@ -123,6 +127,7 @@ class AccountService extends HttpService<Account> {
       return response.success;
     } catch (error) {
       console.error("Error deleting account:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء حذف الحساب");
     }
   }

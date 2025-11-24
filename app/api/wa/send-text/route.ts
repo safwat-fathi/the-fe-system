@@ -1,6 +1,7 @@
-import { whatsappService } from "@/services/external/whatsapp.service";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+
+import { whatsappService } from "@/services/external/whatsapp.service";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,9 @@ export async function POST(request: NextRequest) {
     const payload = await request.json();
     const { to, body } = payloadSchema.parse(payload);
     const idempotencyKey =
-      request.headers.get("idempotency-key") ?? request.headers.get("Idempotency-Key") ?? undefined;
+      request.headers.get("idempotency-key") ??
+      request.headers.get("Idempotency-Key") ??
+      undefined;
 
     const result = await whatsappService.sendText({
       to,
@@ -50,4 +53,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

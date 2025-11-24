@@ -1,7 +1,8 @@
 "use client";
 
-import { PaymentTypes, TransTypes } from "@/types/models/invoice";
 import { create } from "zustand";
+
+import { PaymentTypes, TransTypes } from "@/types/models/invoice";
 
 export type InvoiceTotalsMetadata = {
   nextInvoiceHref: string | null;

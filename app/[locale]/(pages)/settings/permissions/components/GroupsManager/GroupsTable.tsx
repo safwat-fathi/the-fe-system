@@ -17,18 +17,17 @@ import {
   Input,
 } from "@heroui/react";
 import {
-  ChevronDownIcon,
   EllipsisVerticalIcon,
   PencilIcon,
   TrashIcon,
   ShieldCheckIcon,
   UserIcon,
   MagnifyingGlassIcon,
-  PlusIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
 import { Group } from "../../types/groups";
+
 import GroupPermissions from "./GroupPermissions";
 import GroupUsers from "./GroupUsers";
 
@@ -65,6 +64,7 @@ export default function GroupsTable({
 
     try {
       const { groupService } = await import("../../services");
+
       await groupService.delete(group.id);
       toast.success("تم حذف المجموعة بنجاح");
       onRefresh();
@@ -74,9 +74,10 @@ export default function GroupsTable({
     }
   };
 
-  const filteredGroups = groups.filter((group) =>
-    group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    group.name_en?.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredGroups = groups.filter(
+    (group) =>
+      group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.name_en?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -84,12 +85,14 @@ export default function GroupsTable({
       {/* Search Bar */}
       <div className="flex items-center gap-3">
         <Input
-          placeholder="ابحث عن مجموعة..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
-          variant="bordered"
           className="flex-1"
+          placeholder="ابحث عن مجموعة..."
+          startContent={
+            <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+          }
+          value={searchTerm}
+          variant="bordered"
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
@@ -125,10 +128,10 @@ export default function GroupsTable({
               </TableCell>
               <TableCell>
                 <Chip
+                  className="font-medium"
+                  color="secondary"
                   size="sm"
                   variant="flat"
-                  color="secondary"
-                  className="font-medium"
                 >
                   المستوى {group.id || 1}
                 </Chip>
@@ -153,10 +156,10 @@ export default function GroupsTable({
                 <Dropdown>
                   <DropdownTrigger>
                     <Button
-                      variant="light"
                       isIconOnly
-                      size="sm"
                       className="text-gray-600"
+                      size="sm"
+                      variant="light"
                     >
                       <EllipsisVerticalIcon className="h-5 w-5" />
                     </Button>
@@ -230,4 +233,3 @@ export default function GroupsTable({
     </div>
   );
 }
-

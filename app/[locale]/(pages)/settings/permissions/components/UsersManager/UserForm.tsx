@@ -65,25 +65,29 @@ export default function UserForm({
 
     if (!formData.username.trim()) {
       toast.error("يرجى إدخال اسم المستخدم");
+
       return;
     }
 
     if (!formData.email.trim()) {
       toast.error("يرجى إدخال البريد الإلكتروني");
+
       return;
     }
 
     try {
       setLoading(true);
       const { userService } = await import("../../services");
-      
+
       if (user) {
         await userService.update(user.id, formData);
       } else {
         await userService.create(formData);
       }
-      
-      toast.success(user ? "تم تحديث المستخدم بنجاح" : "تم إنشاء المستخدم بنجاح");
+
+      toast.success(
+        user ? "تم تحديث المستخدم بنجاح" : "تم إنشاء المستخدم بنجاح",
+      );
       onSuccess();
     } catch (error) {
       console.error("Error saving user:", error);
@@ -94,7 +98,7 @@ export default function UserForm({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
       <ModalContent>
         <form onSubmit={handleSubmit}>
           <ModalHeader>
@@ -103,44 +107,44 @@ export default function UserForm({
           <ModalBody>
             <div className="space-y-4">
               <Input
+                isRequired
                 label="اسم المستخدم"
                 placeholder="أدخل اسم المستخدم"
                 value={formData.username}
+                variant="bordered"
                 onChange={(e) =>
                   setFormData({ ...formData, username: e.target.value })
                 }
-                isRequired
-                variant="bordered"
               />
               <Input
+                isRequired
                 label="البريد الإلكتروني"
                 placeholder="example@email.com"
                 type="email"
                 value={formData.email}
+                variant="bordered"
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                isRequired
-                variant="bordered"
               />
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="الاسم الأول"
                   placeholder="أدخل الاسم الأول"
                   value={formData.first_name}
+                  variant="bordered"
                   onChange={(e) =>
                     setFormData({ ...formData, first_name: e.target.value })
                   }
-                  variant="bordered"
                 />
                 <Input
                   label="اسم العائلة"
                   placeholder="أدخل اسم العائلة"
                   value={formData.last_name}
+                  variant="bordered"
                   onChange={(e) =>
                     setFormData({ ...formData, last_name: e.target.value })
                   }
-                  variant="bordered"
                 />
               </div>
               <div className="space-y-2">
@@ -167,7 +171,7 @@ export default function UserForm({
             <Button variant="light" onPress={onClose}>
               إلغاء
             </Button>
-            <Button color="primary" type="submit" isLoading={loading}>
+            <Button color="primary" isLoading={loading} type="submit">
               حفظ
             </Button>
           </ModalFooter>
@@ -176,4 +180,3 @@ export default function UserForm({
     </Modal>
   );
 }
-

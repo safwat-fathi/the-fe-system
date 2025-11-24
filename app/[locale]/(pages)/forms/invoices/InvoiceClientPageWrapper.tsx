@@ -5,7 +5,5 @@ import InvoiceClientPage, {
 export default async function InvoiceClientPageWrapper(
   props: InvoiceClientPageProps,
 ) {
-	
-	
   return <InvoiceClientPage {...props} />;
 }

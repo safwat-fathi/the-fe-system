@@ -1,9 +1,9 @@
 /**
  * Export all voucher actions
- * 
+ *
  * Note: Each individual action file has "use server" directive.
  * This index file re-exports them but does NOT have "use server" to allow re-exporting.
- * 
+ *
  * IMPORTANT: In client components, always use dynamic import:
  * const { deleteVoucherAction } = await import("@/app/actions/voucher.action");
  */

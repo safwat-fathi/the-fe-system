@@ -37,6 +37,7 @@ const CustomerTypeFormClient = ({
   const handleSave = async () => {
     if (!type.type_name || !type.type_name_e) {
       toast.error("❌ يجب ملء جميع الحقول المطلوبة");
+
       return;
     }
 
@@ -77,12 +78,14 @@ const CustomerTypeFormClient = ({
   const getTitle = () => {
     if (isViewMode) return `عرض ${type.type_name || "نوع العميل"}`;
     if (isAddMode) return "إضافة نوع عميل جديد";
+
     return `تعديل ${type.type_name || "نوع العميل"}`;
   };
 
   const getDescription = () => {
     if (isViewMode) return "عرض تفاصيل نوع العميل";
     if (isAddMode) return "قم بإضافة نوع عميل جديد إلى النظام";
+
     return "قم بتعديل بيانات نوع العميل";
   };
 
@@ -115,11 +118,7 @@ const CustomerTypeFormClient = ({
               >
                 إلغاء
               </Button>
-              <Button
-                color="success"
-                isLoading={isSaving}
-                onPress={handleSave}
-              >
+              <Button color="success" isLoading={isSaving} onPress={handleSave}>
                 {isAddMode ? "حفظ" : "تحديث"}
               </Button>
             </>
@@ -130,45 +129,37 @@ const CustomerTypeFormClient = ({
       {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="نوع العميل"
           value={type.type_name || ""}
-          onChange={(e) =>
-            setType({ ...type, type_name: e.target.value })
-          }
-          isRequired
+          onChange={(e) => setType({ ...type, type_name: e.target.value })}
         />
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="نوع العميل بالإنجليزي"
           value={type.type_name_e || ""}
-          onChange={(e) =>
-            setType({ ...type, type_name_e: e.target.value })
-          }
-          isRequired
+          onChange={(e) => setType({ ...type, type_name_e: e.target.value })}
         />
         <Input
+          className="md:col-span-2"
           isDisabled={isViewMode}
           label="الوصف"
           value={type.type_desc || ""}
-          onChange={(e) =>
-            setType({ ...type, type_desc: e.target.value })
-          }
-          className="md:col-span-2"
+          onChange={(e) => setType({ ...type, type_desc: e.target.value })}
         />
         <Input
+          className="md:col-span-2"
           isDisabled={true}
           label="تاريخ الإنشاء"
           value={type.cr_date || ""}
-          className="md:col-span-2"
         />
         <div className="md:col-span-2">
           <Checkbox
             isDisabled={isViewMode}
             isSelected={Boolean(type.type_status)}
-            onValueChange={(val) =>
-              setType({ ...type, type_status: val })
-            }
+            onValueChange={(val) => setType({ ...type, type_status: val })}
           >
             الحالة مفعلة
           </Checkbox>
@@ -179,4 +170,3 @@ const CustomerTypeFormClient = ({
 };
 
 export default CustomerTypeFormClient;
-

@@ -3,13 +3,16 @@
  * Hook الرئيسي للنموذج - يجمع جميع الـ hooks الفرعية
  */
 
-import { useRef, useEffect, useState } from "react";
 import type { Voucher, VoucherDetail } from "@/types/voucher";
-import { voucherService } from "@/services/api";
+
+import { useRef, useEffect, useState } from "react";
+
 import { useVoucherFormState } from "./useVoucherFormState";
 import { useVoucherDetails } from "./useVoucherDetails";
 import { useVoucherActions } from "./useVoucherActions";
 import { useVoucherNavigation } from "./useVoucherNavigation";
+
+import { voucherService } from "@/services/api";
 import { searchAccountsAction } from "@/app/actions/accounts.action";
 
 export interface UseVoucherFormProps {
@@ -47,8 +50,11 @@ export const useVoucherForm = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [vouchersList, setVouchersList] = useState<any[]>([]);
   const [isCreatedFromPrevious, setIsCreatedFromPrevious] = useState(false);
-  const [originalVoucherData, setOriginalVoucherData] = useState<Voucher | null>(null);
-  const [originalDetailsData, setOriginalDetailsData] = useState<VoucherDetail[]>([]);
+  const [originalVoucherData, setOriginalVoucherData] =
+    useState<Voucher | null>(null);
+  const [originalDetailsData, setOriginalDetailsData] = useState<
+    VoucherDetail[]
+  >([]);
 
   // State management
   const state = useVoucherFormState({
@@ -74,9 +80,7 @@ export const useVoucherForm = ({
     caratTypes: state.caratTypes,
   });
 
-  const previousVouchNotesRef = useRef<string>(
-    state.voucher.vouch_notes || "",
-  );
+  const previousVouchNotesRef = useRef<string>(state.voucher.vouch_notes || "");
 
   useEffect(() => {
     const currentNotes = state.voucher.vouch_notes || "";
@@ -220,10 +224,15 @@ export const useVoucherForm = ({
             xyear_id: "0",
           });
 
-          if (response.success && response.data && Array.isArray(response.data)) {
+          if (
+            response.success &&
+            response.data &&
+            Array.isArray(response.data)
+          ) {
             const filteredVouchers = response.data.filter(
               (v: any) => v.vouch_type === vouchType,
             );
+
             setVouchersList(filteredVouchers || []);
           } else {
             setVouchersList([]);
@@ -235,6 +244,7 @@ export const useVoucherForm = ({
           state.setIsLoading(false);
         }
       };
+
       fetchVouchers();
     }
   }, [isModalOpen, vouchType]);
@@ -249,7 +259,10 @@ export const useVoucherForm = ({
 
   const generateNextVoucherNumber = async () => {
     try {
-      const nextId = await voucherService.getNextNumber(state.voucher.vouch_type);
+      const nextId = await voucherService.getNextNumber(
+        state.voucher.vouch_type,
+      );
+
       state.setVoucher((prev) => ({
         ...prev,
         vouch_id: nextId,
@@ -286,8 +299,7 @@ export const useVoucherForm = ({
             targetVoucher.cost_id !== undefined &&
             targetVoucher.cost_id !== null
               ? targetVoucher.cost_id
-              : targetVoucher.cost !== undefined &&
-                  targetVoucher.cost !== null
+              : targetVoucher.cost !== undefined && targetVoucher.cost !== null
                 ? targetVoucher.cost
                 : null;
           const formattedVoucher = {
@@ -354,27 +366,38 @@ export const useVoucherForm = ({
                 g_debit:
                   detail.g_debit !== undefined && detail.g_debit !== null
                     ? Number(detail.g_debit)
-                    : (detail.debit_g !== undefined && detail.debit_g !== null
+                    : detail.debit_g !== undefined && detail.debit_g !== null
                       ? Number(detail.debit_g)
-                      : undefined),
+                      : undefined,
                 g_credit:
                   detail.g_credit !== undefined && detail.g_credit !== null
                     ? Number(detail.g_credit)
-                    : (detail.credit_g !== undefined && detail.credit_g !== null
+                    : detail.credit_g !== undefined && detail.credit_g !== null
                       ? Number(detail.credit_g)
-                      : undefined),
-                debit_base: detail.debit_base !== undefined && detail.debit_base !== null
-                  ? Number(detail.debit_base)
-                  : (detail.debit !== undefined && detail.debit !== null ? Number(detail.debit) : undefined),
-                credit_base: detail.credit_base !== undefined && detail.credit_base !== null
-                  ? Number(detail.credit_base)
-                  : (detail.credit !== undefined && detail.credit !== null ? Number(detail.credit) : undefined),
-                g_debit_base: detail.g_debit_base !== undefined && detail.g_debit_base !== null
-                  ? Number(detail.g_debit_base)
-                  : undefined,
-                g_credit_base: detail.g_credit_base !== undefined && detail.g_credit_base !== null
-                  ? Number(detail.g_credit_base)
-                  : undefined,
+                      : undefined,
+                debit_base:
+                  detail.debit_base !== undefined && detail.debit_base !== null
+                    ? Number(detail.debit_base)
+                    : detail.debit !== undefined && detail.debit !== null
+                      ? Number(detail.debit)
+                      : undefined,
+                credit_base:
+                  detail.credit_base !== undefined &&
+                  detail.credit_base !== null
+                    ? Number(detail.credit_base)
+                    : detail.credit !== undefined && detail.credit !== null
+                      ? Number(detail.credit)
+                      : undefined,
+                g_debit_base:
+                  detail.g_debit_base !== undefined &&
+                  detail.g_debit_base !== null
+                    ? Number(detail.g_debit_base)
+                    : undefined,
+                g_credit_base:
+                  detail.g_credit_base !== undefined &&
+                  detail.g_credit_base !== null
+                    ? Number(detail.g_credit_base)
+                    : undefined,
                 gauge: Number(detail.gauge) || 875,
                 vouch_notes: detail.vouch_notes || "",
               };
@@ -446,6 +469,7 @@ export const useVoucherForm = ({
       return options;
     } catch (e) {
       console.error("Error loading account options:", e);
+
       return [];
     }
   };
@@ -504,13 +528,11 @@ export const useVoucherForm = ({
           post: false,
           print: false,
           cost_id:
-            voucherToUse.cost_id !== undefined &&
-            voucherToUse.cost_id !== null
+            voucherToUse.cost_id !== undefined && voucherToUse.cost_id !== null
               ? Number(voucherToUse.cost_id)
-              : voucherToUse.cost !== undefined &&
-                  voucherToUse.cost !== null
+              : voucherToUse.cost !== undefined && voucherToUse.cost !== null
                 ? Number(voucherToUse.cost)
-              : null,
+                : null,
         });
 
         const formattedDetails = detailsResponse.data.map((detail: any) => ({
@@ -531,12 +553,28 @@ export const useVoucherForm = ({
                 : 0,
           debit: Number(detail.debit) || 0,
           credit: Number(detail.credit) || 0,
-          debit_base: detail.debit_base !== undefined ? Number(detail.debit_base) : (Number(detail.debit) || 0),
-          credit_base: detail.credit_base !== undefined ? Number(detail.credit_base) : (Number(detail.credit) || 0),
-          g_debit: detail.g_debit !== undefined ? Number(detail.g_debit) : (Number(detail.debit_g) || 0),
-          g_credit: detail.g_credit !== undefined ? Number(detail.g_credit) : (Number(detail.credit_g) || 0),
-          g_debit_base: detail.g_debit_base !== undefined ? Number(detail.g_debit_base) : 0,
-          g_credit_base: detail.g_credit_base !== undefined ? Number(detail.g_credit_base) : 0,
+          debit_base:
+            detail.debit_base !== undefined
+              ? Number(detail.debit_base)
+              : Number(detail.debit) || 0,
+          credit_base:
+            detail.credit_base !== undefined
+              ? Number(detail.credit_base)
+              : Number(detail.credit) || 0,
+          g_debit:
+            detail.g_debit !== undefined
+              ? Number(detail.g_debit)
+              : Number(detail.debit_g) || 0,
+          g_credit:
+            detail.g_credit !== undefined
+              ? Number(detail.g_credit)
+              : Number(detail.credit_g) || 0,
+          g_debit_base:
+            detail.g_debit_base !== undefined ? Number(detail.g_debit_base) : 0,
+          g_credit_base:
+            detail.g_credit_base !== undefined
+              ? Number(detail.g_credit_base)
+              : 0,
           gauge: Number(detail.gauge) || 875,
           vouch_notes: detail.vouch_notes || "",
           cr_date: new Date().toISOString(),
@@ -553,7 +591,7 @@ export const useVoucherForm = ({
         }));
         navigation.setSearchTerm("");
         navigation.setSelectedVoucher(null);
-        
+
         // Mark as created from previous and close modal
         setIsCreatedFromPrevious(true);
         setIsModalOpen(false);
@@ -578,6 +616,7 @@ export const useVoucherForm = ({
       } else {
         // If no original data, create a completely new voucher
         const nextId = await voucherService.getNextNumber(vouchType);
+
         state.setVoucher({
           vouch_id: nextId,
           vouch_date: new Date().toISOString(),
@@ -665,4 +704,3 @@ export const useVoucherForm = ({
     handleMasterCostChange,
   };
 };
-

@@ -1,5 +1,6 @@
-import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+
+import prisma from "@/lib/prisma";
 
 export interface UpsertContactInput {
   waId: string;
@@ -206,4 +207,3 @@ class WhatsappRepository {
 export const whatsappRepository = new WhatsappRepository();
 
 export default whatsappRepository;
-

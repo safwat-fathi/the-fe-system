@@ -103,6 +103,7 @@ const AddItem = ({
     if (isViewMode) return;
 
     const file = event.dataTransfer.files?.[0];
+
     if (file && file.type.startsWith("image/")) {
       onChange({
         ...item,
@@ -137,6 +138,7 @@ const AddItem = ({
     if (typeof item.item_img === "string") {
       return `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}${item.item_img}`;
     }
+
     return null;
   };
 
@@ -334,10 +336,10 @@ const AddItem = ({
                   />
                   {!isViewMode && (
                     <button
+                      aria-label="حذف الصورة"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"
                       type="button"
                       onClick={handleRemoveImage}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"
-                      aria-label="حذف الصورة"
                     >
                       <XMarkIcon className="h-4 w-4" />
                     </button>
@@ -346,10 +348,10 @@ const AddItem = ({
                 {!isViewMode && (
                   <div className="mt-4 text-center">
                     <Button
+                      className="border-gray-300"
                       size="sm"
                       variant="bordered"
                       onPress={handleBrowseClick}
-                      className="border-gray-300"
                     >
                       تغيير الصورة
                     </Button>
@@ -358,14 +360,14 @@ const AddItem = ({
               </div>
             ) : (
               <div
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
                 className={`relative border-2 border-dashed rounded-xl p-8 transition-all ${
                   isDragging
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-300 bg-gray-50/50"
                 } ${isViewMode ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-gray-400"}`}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
               >
                 <input
                   ref={fileInputRef}
@@ -379,9 +381,7 @@ const AddItem = ({
                 <div className="flex flex-col items-center justify-center space-y-4">
                   <div
                     className={`rounded-full p-4 transition-colors ${
-                      isDragging
-                        ? "bg-blue-100"
-                        : "bg-gray-100"
+                      isDragging ? "bg-blue-100" : "bg-gray-100"
                     }`}
                   >
                     <CloudArrowUpIcon
@@ -404,10 +404,10 @@ const AddItem = ({
 
                   {!isViewMode && (
                     <Button
+                      className="border-gray-300 bg-white hover:bg-gray-50"
                       size="sm"
                       variant="bordered"
                       onPress={handleBrowseClick}
-                      className="border-gray-300 bg-white hover:bg-gray-50"
                     >
                       تصفح الملفات
                     </Button>

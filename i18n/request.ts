@@ -6,14 +6,14 @@ import { Locale, defaultLocale, locales } from "./config";
 import { getMessages } from "./messages";
 
 export default getRequestConfig(async ({ requestLocale }) => {
-	const rawLocale = (await requestLocale) as Locale | undefined;
-	
-	const resolvedLocale = locales.includes(rawLocale as Locale)
-		? (rawLocale as Locale)
-		: defaultLocale;
+  const rawLocale = (await requestLocale) as Locale | undefined;
 
-	return {
-		locale: resolvedLocale,
-		messages: await getMessages(resolvedLocale),
-	};
+  const resolvedLocale = locales.includes(rawLocale as Locale)
+    ? (rawLocale as Locale)
+    : defaultLocale;
+
+  return {
+    locale: resolvedLocale,
+    messages: await getMessages(resolvedLocale),
+  };
 });

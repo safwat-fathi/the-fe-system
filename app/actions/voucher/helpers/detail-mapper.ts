@@ -39,14 +39,10 @@ export const mapNormalizedDetailToVoucherDetail = (
     typeof detail.payload?.g_credit_base === "number"
       ? detail.payload.g_credit_base
       : detail.gCreditBase,
-  gauge:
-    typeof detail.payload?.gauge === "number"
-      ? detail.payload.gauge
-      : 875,
+  gauge: typeof detail.payload?.gauge === "number" ? detail.payload.gauge : 875,
   vouch_notes: detail.payload?.vouch_notes || "",
   cost_id:
     detail.payload?.cost !== undefined && detail.payload?.cost !== null
       ? Number(detail.payload.cost)
       : null,
 });
-

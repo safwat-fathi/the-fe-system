@@ -23,4 +23,3 @@ export type SaveUserCostCenterPayload = {
   user: number;
   cost: number;
 };
-

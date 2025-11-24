@@ -12,6 +12,7 @@ const maskToken = (value: string): string => {
 const ensureEnv = (key: string, value?: string): string => {
   if (!value) {
     const message = `Missing required WhatsApp environment variable: ${key}`;
+
     logger.error(message);
     throw new Error(message);
   }
@@ -21,14 +22,12 @@ const ensureEnv = (key: string, value?: string): string => {
 
 const baseUrl = ensureEnv("WHATSAPP_BASE_URL", process.env.WHATSAPP_BASE_URL);
 const token = ensureEnv("WHATSAPP_TOKEN", process.env.WHATSAPP_TOKEN);
-const phoneNumberId = ensureEnv(
-  "PHONE_NUMBER_ID",
-  process.env.PHONE_NUMBER_ID,
-);
+const phoneNumberId = ensureEnv("PHONE_NUMBER_ID", process.env.PHONE_NUMBER_ID);
 const verifyToken = ensureEnv("VERIFY_TOKEN", process.env.VERIFY_TOKEN);
 
 if (!baseUrl.startsWith("https://")) {
   const message = "WHATSAPP_BASE_URL must use HTTPS";
+
   logger.error(message);
   throw new Error(message);
 }
@@ -42,4 +41,3 @@ export const whatsappConfig = {
 } as const;
 
 export type WhatsappConfig = typeof whatsappConfig;
-

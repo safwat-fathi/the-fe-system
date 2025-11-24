@@ -41,7 +41,10 @@ const extractChildren = (node: any): any[] => {
   return [];
 };
 
-const normalizeNode = (node: any, parentId: number | null = null): Account | null => {
+const normalizeNode = (
+  node: any,
+  parentId: number | null = null,
+): Account | null => {
   if (!node) {
     return null;
   }
@@ -50,7 +53,8 @@ const normalizeNode = (node: any, parentId: number | null = null): Account | nul
   const accId = toStringSafe(node.acc_id ?? node.acc_code ?? id, String(id));
   const accName =
     toStringSafe(node.acc_name ?? node.name ?? node.acc_name_e, accId) || accId;
-  const accLevel = toNumber(node.acc_level ?? node.level, parentId ? 2 : 1) || 1;
+  const accLevel =
+    toNumber(node.acc_level ?? node.level, parentId ? 2 : 1) || 1;
   const accKind = toNumber(node.acc_kind, 1) || 1;
   const accRep = toNumber(node.acc_rep ?? node.acc_report, 1) || 1;
   const accDigit = toNumber(node.acc_digit ?? node.acc_digits, 0) || 0;
@@ -77,7 +81,9 @@ const normalizeNode = (node: any, parentId: number | null = null): Account | nul
   }
 
   const parentNormalized =
-    parentRawValue === undefined || parentRawValue === null || parentRawValue === 0
+    parentRawValue === undefined ||
+    parentRawValue === null ||
+    parentRawValue === 0
       ? null
       : parentRawValue;
 
@@ -91,8 +97,8 @@ const normalizeNode = (node: any, parentId: number | null = null): Account | nul
         ? toNumber(node.acc_type, normalizedChildren.length > 0 ? 1 : 2) ||
           (normalizedChildren.length > 0 ? 1 : 2)
         : normalizedChildren.length > 0
-        ? 1
-        : 2,
+          ? 1
+          : 2,
     parent: parentNormalized,
     acc_level: accLevel,
     acc_kind: accKind,
@@ -128,14 +134,18 @@ export const normalizeAccountsTree = (tree: any): Account[] => {
       const normalizedChild = {
         ...child,
         parent:
-          child.parent === account.id || child.parent === 0 ? null : child.parent,
+          child.parent === account.id || child.parent === 0
+            ? null
+            : child.parent,
       };
 
       return flattenPlaceholders(normalizedChild);
     });
   };
 
-  const flattened = normalizedNodes.flatMap((account) => flattenPlaceholders(account));
+  const flattened = normalizedNodes.flatMap((account) =>
+    flattenPlaceholders(account),
+  );
 
   const accountMap = new Map<number, Account>();
   const roots: Account[] = [];
@@ -158,6 +168,7 @@ export const normalizeAccountsTree = (tree: any): Account[] => {
 
     if (parentId && accountMap.has(parentId) && parentId !== account.id) {
       const parentAccount = accountMap.get(parentId)!;
+
       parentAccount.children = parentAccount.children
         ? [...parentAccount.children, current]
         : [current];
@@ -186,7 +197,10 @@ export const flattenAccountTree = (tree: Account[]): Account[] => {
   return result;
 };
 
-export const removeAccountFromTree = (tree: Account[], accountId: number): Account[] =>
+export const removeAccountFromTree = (
+  tree: Account[],
+  accountId: number,
+): Account[] =>
   tree
     .map((node) => ({
       ...node,
@@ -211,7 +225,9 @@ export const generateAccountId = (
     return "";
   }
 
-  const siblings = flatAccounts.filter((account) => account.parent === parentId);
+  const siblings = flatAccounts.filter(
+    (account) => account.parent === parentId,
+  );
   const siblingCount = siblings.length;
 
   if (parentAccount && parentAccount.acc_level < 5 && siblingCount >= 9) {
@@ -224,8 +240,7 @@ export const generateAccountId = (
     newSuffix = (siblingCount + 1).toString();
   } else if (parentAccount && parentAccount.acc_level === 4) {
     const siblingNumbers = siblings.map(
-      (sibling) =>
-        parseInt(sibling.acc_id.substring(parentAccId.length)) || 0,
+      (sibling) => parseInt(sibling.acc_id.substring(parentAccId.length)) || 0,
     );
 
     newSuffix = (Math.max(...siblingNumbers, 0) + 1)
@@ -241,9 +256,13 @@ export const generateAccountId = (
 export const findAccountById = (
   accounts: Account[],
   accountId: number,
-): Account | undefined => flattenAccountTree(accounts).find((acc) => acc.id === accountId);
+): Account | undefined =>
+  flattenAccountTree(accounts).find((acc) => acc.id === accountId);
 
-export const getAccountPath = (accounts: Account[], account: Account): Account[] => {
+export const getAccountPath = (
+  accounts: Account[],
+  account: Account,
+): Account[] => {
   const path: Account[] = [account];
   let currentAccount = account;
 
@@ -260,4 +279,3 @@ export const getAccountPath = (accounts: Account[], account: Account): Account[]
 
   return path;
 };
-

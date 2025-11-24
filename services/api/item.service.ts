@@ -7,6 +7,7 @@ import {
   SearchItemsParams,
   SearchItemsVoucherListParams,
 } from "@/types/models/item";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 class ItemService extends HttpService<Item> {
   constructor() {
@@ -49,6 +50,7 @@ class ItemService extends HttpService<Item> {
       return [];
     } catch (error) {
       console.error("Error fetching home settings:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب إعدادات النظام");
     }
   }
@@ -80,10 +82,7 @@ class ItemService extends HttpService<Item> {
     }
   }
 
-  async getItemById(
-    id: number,
-    companyId: number = 1,
-  ): Promise<Item | null> {
+  async getItemById(id: number, companyId: number = 1): Promise<Item | null> {
     try {
       // البحث عن الصنف في جميع الصفحات
       // نبدأ بصفحة واحدة ثم نبحث في النتائج
@@ -110,8 +109,7 @@ class ItemService extends HttpService<Item> {
         );
 
         if (response.success && response.data?.results) {
-          found =
-            response.data.results.find((item) => item.id === id) || null;
+          found = response.data.results.find((item) => item.id === id) || null;
           if (found) break;
         }
 
@@ -188,6 +186,7 @@ class ItemService extends HttpService<Item> {
       };
     } catch (error) {
       console.error("Error fetching items:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
     }
   }
@@ -259,7 +258,10 @@ class ItemService extends HttpService<Item> {
       };
     } catch (error) {
       console.error("Error fetching items for voucher:", error);
-      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف لقائمة سند الاستلام/التسليم");
+      rethrowAuthenticationError(error);
+      throw new Error(
+        "حدث خطأ أثناء جلب بيانات الأصناف لقائمة سند الاستلام/التسليم",
+      );
     }
   }
 
@@ -334,21 +336,32 @@ class ItemService extends HttpService<Item> {
 
       // إذا كان الـ response غير ناجح
       const errorMessage = response.message || "حدث خطأ أثناء حذف الصنف";
-      
+
       // إذا كان الخطأ 500 من الخادم، نعطي رسالة أوضح
-      if (errorMessage.includes("500") || errorMessage.includes("Internal Server Error")) {
-        throw new Error("لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام");
+      if (
+        errorMessage.includes("500") ||
+        errorMessage.includes("Internal Server Error")
+      ) {
+        throw new Error(
+          "لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام",
+        );
       }
-      
+
       return false;
     } catch (error: any) {
       console.error("Error deleting item:", error);
-      
+
       // إذا كان الخطأ 500 من الخادم، نعطي رسالة أوضح
-      if (error?.status === 500 || error?.message?.includes("500") || error?.message?.includes("Internal Server Error")) {
-        throw new Error("لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام");
+      if (
+        error?.status === 500 ||
+        error?.message?.includes("500") ||
+        error?.message?.includes("Internal Server Error")
+      ) {
+        throw new Error(
+          "لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام",
+        );
       }
-      
+
       // إذا كان الخطأ من نوع آخر، نعرض الرسالة الأصلية
       throw new Error(error?.message || "حدث خطأ أثناء حذف الصنف");
     }

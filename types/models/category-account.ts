@@ -53,4 +53,3 @@ export type UpsertCategoryAccountPayload = {
   cost_acc?: number | string | null;
   cost_acc2?: number | string | null;
 };
-

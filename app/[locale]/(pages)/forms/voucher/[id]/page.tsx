@@ -168,12 +168,30 @@ export default async function VoucherEditPage({
       cost_id: costId, // قد يكون undefined أو رقم
       debit: parseFloat(detail.debit) || 0,
       credit: parseFloat(detail.credit) || 0,
-      debit_base: detail.debit_base !== undefined ? parseFloat(String(detail.debit_base)) : (parseFloat(detail.debit) || 0),
-      credit_base: detail.credit_base !== undefined ? parseFloat(String(detail.credit_base)) : (parseFloat(detail.credit) || 0),
-      g_debit: detail.g_debit !== undefined ? parseFloat(String(detail.g_debit)) : (parseFloat(detail.debit_g) || 0),
-      g_credit: detail.g_credit !== undefined ? parseFloat(String(detail.g_credit)) : (parseFloat(detail.credit_g) || 0),
-      g_debit_base: detail.g_debit_base !== undefined ? parseFloat(String(detail.g_debit_base)) : 0,
-      g_credit_base: detail.g_credit_base !== undefined ? parseFloat(String(detail.g_credit_base)) : 0,
+      debit_base:
+        detail.debit_base !== undefined
+          ? parseFloat(String(detail.debit_base))
+          : parseFloat(detail.debit) || 0,
+      credit_base:
+        detail.credit_base !== undefined
+          ? parseFloat(String(detail.credit_base))
+          : parseFloat(detail.credit) || 0,
+      g_debit:
+        detail.g_debit !== undefined
+          ? parseFloat(String(detail.g_debit))
+          : parseFloat(detail.debit_g) || 0,
+      g_credit:
+        detail.g_credit !== undefined
+          ? parseFloat(String(detail.g_credit))
+          : parseFloat(detail.credit_g) || 0,
+      g_debit_base:
+        detail.g_debit_base !== undefined
+          ? parseFloat(String(detail.g_debit_base))
+          : 0,
+      g_credit_base:
+        detail.g_credit_base !== undefined
+          ? parseFloat(String(detail.g_credit_base))
+          : 0,
       gauge: parseFloat(detail.gauge) || 875,
       tax: parseFloat(detail.tax) || 0,
       tax_prc: parseFloat(detail.tax_prc) || 0,
@@ -197,7 +215,7 @@ export default async function VoucherEditPage({
     commit: targetVoucher.commit || false,
     post: targetVoucher.post || false,
     print: targetVoucher.print || false,
-      cost_id: resolvedVoucherCost,
+    cost_id: resolvedVoucherCost,
   };
 
   const parseNavId = (value: unknown): number | null => {
@@ -219,8 +237,7 @@ export default async function VoucherEditPage({
       (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
     ),
     first: parseNavId(
-      (targetVoucher as any).first_voucher_id ??
-        (targetVoucher as any).first,
+      (targetVoucher as any).first_voucher_id ?? (targetVoucher as any).first,
     ),
     last: parseNavId(
       (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
@@ -269,10 +286,10 @@ export default async function VoucherEditPage({
         costCenters={formData.costCenters}
         formMode={formMode}
         isNewVoucher={false}
+        navigationInfo={navigationInfo}
         newVoucherHref={newVoucherHref}
         startInEditMode={startInEditMode}
         vouchType={formattedVoucher.vouch_type}
-        navigationInfo={navigationInfo}
         voucherData={formattedVoucher}
         voucherDetailsData={details}
         voucherRecordId={targetVoucher.id}

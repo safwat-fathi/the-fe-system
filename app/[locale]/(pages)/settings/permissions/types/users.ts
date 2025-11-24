@@ -45,4 +45,3 @@ export interface UserPermissions {
 export interface UserPermissionsResponse {
   data: UserPermissions;
 }
-

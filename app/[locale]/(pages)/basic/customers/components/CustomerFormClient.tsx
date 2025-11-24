@@ -3,14 +3,7 @@ import type { ChangeEvent } from "react";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Checkbox,
-  type Selection,
-} from "@heroui/react";
+import { Button, Input, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
@@ -85,34 +78,38 @@ const CustomerFormClient = ({
   const handleNumberInputChange =
     (key: keyof Customer) => (event: ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
+
       setCustomer({
         ...customer,
         [key]: value ? Number(value) : null,
       });
     };
 
-  const handleCheckboxChange =
-    (key: "expt" | "hide") => (value: boolean) => {
-      setCustomer({
-        ...customer,
-        [key]: value,
-      });
-    };
+  const handleCheckboxChange = (key: "expt" | "hide") => (value: boolean) => {
+    setCustomer({
+      ...customer,
+      [key]: value,
+    });
+  };
 
   const getTitle = () => {
     if (isAddMode) return "إضافة عميل جديد";
-    if (isViewMode) return `عرض ${customer.cust_name || customer.cust_code || "العميل"}`;
+    if (isViewMode)
+      return `عرض ${customer.cust_name || customer.cust_code || "العميل"}`;
+
     return `تعديل ${customer.cust_name || customer.cust_code || "العميل"}`;
   };
 
   const handleSave = async () => {
     if (!customer.cust_name) {
       toast.error("⚠️ يرجى إدخال اسم العميل");
+
       return;
     }
 
     if (!customer.cust_type) {
       toast.error("⚠️ يرجى إدخال نوع العميل");
+
       return;
     }
 
@@ -145,12 +142,12 @@ const CustomerFormClient = ({
 
       if (isAddMode) {
         result = await customerService.createCustomer(
-          cleanedCustomer as Omit<Customer, "id">
+          cleanedCustomer as Omit<Customer, "id">,
         );
       } else if (customer.id) {
         result = await customerService.updateCustomer(
           customer.id,
-          cleanedCustomer
+          cleanedCustomer,
         );
       }
 
@@ -158,7 +155,7 @@ const CustomerFormClient = ({
         toast.success(
           isAddMode
             ? "✅ تم إضافة العميل بنجاح"
-            : "✅ تم تحديث بيانات العميل بنجاح"
+            : "✅ تم تحديث بيانات العميل بنجاح",
         );
 
         router.push("/basic/customers");
@@ -185,27 +182,25 @@ const CustomerFormClient = ({
         <h2 className="text-xl font-bold">{getTitle()}</h2>
         <div className="flex gap-2">
           <Button
-            variant="flat"
             startContent={<ArrowLeftIcon className="h-4 w-4" />}
+            variant="flat"
             onPress={handleCancel}
           >
             رجوع
           </Button>
           {isViewMode && (
             <Button
-              variant="flat"
               color="warning"
-              onPress={() => router.push(`/basic/customers/${customer.id}?mode=edit`)}
+              variant="flat"
+              onPress={() =>
+                router.push(`/basic/customers/${customer.id}?mode=edit`)
+              }
             >
               تعديل
             </Button>
           )}
           {!isViewMode && (
-            <Button
-              color="primary"
-              isLoading={isSaving}
-              onPress={handleSave}
-            >
+            <Button color="primary" isLoading={isSaving} onPress={handleSave}>
               {isAddMode ? "حفظ" : "تحديث"}
             </Button>
           )}
@@ -226,11 +221,11 @@ const CustomerFormClient = ({
           onChange={handleInputChange("cust_code")}
         />
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="اسم العميل"
           value={customer.cust_name || ""}
           onChange={handleInputChange("cust_name")}
-          isRequired
         />
         <Input
           isDisabled={isViewMode}
@@ -357,8 +352,9 @@ const CustomerFormClient = ({
               customer.acc
                 ? (() => {
                     const selectedAcc = accounts.find(
-                      (acc) => acc.id === customer.acc
+                      (acc) => acc.id === customer.acc,
                     );
+
                     return selectedAcc
                       ? {
                           value: selectedAcc.id,
@@ -373,8 +369,9 @@ const CustomerFormClient = ({
             }
             onChange={(selectedOption) => {
               const accObj = accounts.find(
-                (acc) => acc.id === selectedOption?.value
+                (acc) => acc.id === selectedOption?.value,
               );
+
               if (accObj) {
                 setCustomer({
                   ...customer,
@@ -414,9 +411,8 @@ const CustomerFormClient = ({
                 ? {
                     value: customer.box_type,
                     label:
-                      boxTypes.find(
-                        (b) => b.code_id === customer.box_type
-                      )?.code_desc || "",
+                      boxTypes.find((b) => b.code_id === customer.box_type)
+                        ?.code_desc || "",
                   }
                 : null
             }
@@ -457,9 +453,8 @@ const CustomerFormClient = ({
                 ? {
                     value: customer.cust_type,
                     label:
-                      customerTypes.find(
-                        (t) => t.id === customer.cust_type
-                      )?.type_name || "",
+                      customerTypes.find((t) => t.id === customer.cust_type)
+                        ?.type_name || "",
                   }
                 : null
             }
@@ -527,7 +522,7 @@ const CustomerFormClient = ({
                     value: customer.cust_status,
                     label:
                       customerStatus.find(
-                        (b) => b.code_id === customer.cust_status
+                        (b) => b.code_id === customer.cust_status,
                       )?.code_desc || "",
                   }
                 : null
@@ -563,4 +558,3 @@ const CustomerFormClient = ({
 };
 
 export default CustomerFormClient;
-

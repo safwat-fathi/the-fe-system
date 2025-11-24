@@ -61,22 +61,21 @@ export default async function CategoryDetailPage({
     accountService.getAllAccounts(companyId).catch(() => []),
   ]);
 
-  const categoryAccount =
-    await ensureCategoryAccountAction({
+  const categoryAccount = await ensureCategoryAccountAction({
+    companyId,
+    categoryId,
+  }).catch(async () => {
+    const fallbackAccounts = await getCategoryAccountsAction({
       companyId,
       categoryId,
-    }).catch(async () => {
-      const fallbackAccounts = await getCategoryAccountsAction({
-        companyId,
-        categoryId,
-      }).catch(() => []);
+    }).catch(() => []);
 
-      return (
-        fallbackAccounts.find(
-          (record) => Number(record.cat) === Number(categoryId),
-        ) ?? null
-      );
-    });
+    return (
+      fallbackAccounts.find(
+        (record) => Number(record.cat) === Number(categoryId),
+      ) ?? null
+    );
+  });
 
   return (
     <div className="responsive-container font-cairo">
@@ -92,14 +91,13 @@ export default async function CategoryDetailPage({
         ]}
       />
       <CategoryFormClient
-        companyId={companyId}
         boxes={boxesData as any}
-        initialCategory={category}
+        companyId={companyId}
         initialAccounts={accountsData as any}
+        initialCategory={category}
         initialCategoryAccount={categoryAccount}
         mode={formMode}
       />
     </div>
   );
 }
-

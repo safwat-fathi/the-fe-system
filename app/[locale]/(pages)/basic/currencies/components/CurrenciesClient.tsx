@@ -66,7 +66,9 @@ export default function CurrenciesClient({
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [currencyToDelete, setCurrencyToDelete] = useState<Currency | null>(null);
+  const [currencyToDelete, setCurrencyToDelete] = useState<Currency | null>(
+    null,
+  );
 
   const rowsPerPage = 12;
 
@@ -110,6 +112,7 @@ export default function CurrenciesClient({
   const handleDeleteClick = (currency: Currency) => {
     if (!currency.id) {
       toast.error("❌ لا يمكن حذف عملة بدون معرف");
+
       return;
     }
 
@@ -121,12 +124,13 @@ export default function CurrenciesClient({
     if (!currencyToDelete?.id) {
       setDeleteModalOpen(false);
       setCurrencyToDelete(null);
+
       return;
     }
 
     // Optimistic delete
     setCurrencies((prevCurrencies) =>
-      prevCurrencies.filter((c) => c.id !== currencyToDelete.id)
+      prevCurrencies.filter((c) => c.id !== currencyToDelete.id),
     );
 
     try {
@@ -207,8 +211,8 @@ export default function CurrenciesClient({
         <h2 className="text-base font-semibold">إدارة العملات</h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
-          variant="bordered"
           className="bg-gray-100"
+          variant="bordered"
           onPress={() => router.push("/basic/currencies/new")}
         >
           <PlusIcon className="h-3 w-3" />
@@ -218,10 +222,12 @@ export default function CurrenciesClient({
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder="بحث بالاسم..."
+            size="sm"
+            startContent={
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            startContent={<MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />}
-            size="sm"
           />
         </div>
       </div>
@@ -262,15 +268,15 @@ export default function CurrenciesClient({
       </div>
 
       <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف العملة "${currencyToDelete?.cur_name}"؟`}
-        confirmText="حذف"
         cancelText="إلغاء"
         confirmColor="danger"
+        confirmText="حذف"
+        isOpen={deleteModalOpen}
+        message={`هل أنت متأكد من حذف العملة "${currencyToDelete?.cur_name}"؟`}
         size="md"
+        title="تأكيد الحذف"
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
     </>
   );

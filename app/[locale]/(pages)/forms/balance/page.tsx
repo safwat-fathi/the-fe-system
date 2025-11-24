@@ -53,22 +53,22 @@ const getExistingBalanceVoucher = cache(async () => {
 // Cache the voucher details for better performance
 const getVoucherDetails = cache(
   async (voucherId: number, branchId?: number | string) => {
-      try {
-        if (!voucherId || isNaN(voucherId)) {
-          return [];
-        }
+    try {
+      if (!voucherId || isNaN(voucherId)) {
+        return [];
+      }
 
-        const parsedBranchId = Number(branchId ?? 1) || 1;
+      const parsedBranchId = Number(branchId ?? 1) || 1;
 
-        const detailsResponse = await voucherService.getDetails(voucherId, {
-          xcom_id: parsedBranchId,
-        });
+      const detailsResponse = await voucherService.getDetails(voucherId, {
+        xcom_id: parsedBranchId,
+      });
 
-        if (!detailsResponse.success || !detailsResponse.data) {
-          return [];
-        }
+      if (!detailsResponse.success || !detailsResponse.data) {
+        return [];
+      }
 
-        return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
+      return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
     } catch (error) {
       console.error("Error fetching voucher details:", error);
 
@@ -127,28 +127,28 @@ export default async function BalanceVoucherPage({
         debit_base:
           detail.debit_base !== undefined && detail.debit_base !== null
             ? parseFloat(String(detail.debit_base))
-            : (detail.debit !== undefined && detail.debit !== null
+            : detail.debit !== undefined && detail.debit !== null
               ? parseFloat(String(detail.debit))
-              : undefined),
+              : undefined,
         credit_base:
           detail.credit_base !== undefined && detail.credit_base !== null
             ? parseFloat(String(detail.credit_base))
-            : (detail.credit !== undefined && detail.credit !== null
+            : detail.credit !== undefined && detail.credit !== null
               ? parseFloat(String(detail.credit))
-              : undefined),
+              : undefined,
         gauge: parseFloat(detail.gauge) || 875,
         g_debit:
           detail.g_debit !== undefined && detail.g_debit !== null
             ? parseFloat(String(detail.g_debit))
-            : (detail.debit_g !== undefined && detail.debit_g !== null
+            : detail.debit_g !== undefined && detail.debit_g !== null
               ? parseFloat(String(detail.debit_g))
-              : undefined),
+              : undefined,
         g_credit:
           detail.g_credit !== undefined && detail.g_credit !== null
             ? parseFloat(String(detail.g_credit))
-            : (detail.credit_g !== undefined && detail.credit_g !== null
+            : detail.credit_g !== undefined && detail.credit_g !== null
               ? parseFloat(String(detail.credit_g))
-              : undefined),
+              : undefined,
         g_debit_base:
           detail.g_debit_base !== undefined && detail.g_debit_base !== null
             ? parseFloat(String(detail.g_debit_base))

@@ -1,6 +1,12 @@
 "use client";
 
-import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
+import {
+  Button,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/react";
 import { Squares2X2Icon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
 import { PERMISSION_TYPES } from "../../types/permissions";
@@ -30,7 +36,7 @@ export default function QuickPermissionActions({
       <div className="flex gap-2">
         <Dropdown>
           <DropdownTrigger>
-            <Button size="sm" variant="flat" color="primary">
+            <Button color="primary" size="sm" variant="flat">
               تطبيق صلاحية
             </Button>
           </DropdownTrigger>
@@ -50,10 +56,10 @@ export default function QuickPermissionActions({
           </DropdownMenu>
         </Dropdown>
         <Button
-          size="sm"
-          variant="flat"
           color="success"
+          size="sm"
           startContent={<ArrowPathIcon className="h-4 w-4" />}
+          variant="flat"
           onPress={onApplyAll}
         >
           تطبيق الكل
@@ -65,4 +71,3 @@ export default function QuickPermissionActions({
     </div>
   );
 }
-

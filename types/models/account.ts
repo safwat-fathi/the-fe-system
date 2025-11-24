@@ -15,4 +15,3 @@ export type Account = {
   cur?: number | null;
   children?: Account[];
 };
-

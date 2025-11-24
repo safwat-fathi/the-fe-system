@@ -3,10 +3,12 @@
  * العمليات على السند (حفظ، تحديث، طباعة)
  */
 
+import type { Voucher, VoucherDetail } from "@/types/voucher";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import type { Voucher, VoucherDetail } from "@/types/voucher";
+
 import { voucherService } from "@/services/api";
 import {
   createVoucherAction,
@@ -57,21 +59,25 @@ export const useVoucherActions = ({
 
     if (voucherDate > today) {
       toast.error("لا يمكن إنشاء قيد بتاريخ أكبر من تاريخ اليوم");
+
       return;
     }
 
     if (!isCashBalanced) {
       toast.error("يجب أن يكون إجمالي المدين مساوي لإجمالي الدائن (نقداً)");
+
       return;
     }
 
     if (!isGoldBalanced) {
       toast.error("يجب أن يكون إجمالي المدين مساوي لإجمالي الدائن (ذهباً)");
+
       return;
     }
 
     if (details.length === 0) {
       toast.error("يجب إضافة تفاصيل للقيد");
+
       return;
     }
 
@@ -81,6 +87,7 @@ export const useVoucherActions = ({
 
     if (emptyAccountDetails.length > 0) {
       toast.error("يرجى اختيار حساب لجميع الصفوف قبل الحفظ");
+
       return;
     }
 
@@ -90,6 +97,7 @@ export const useVoucherActions = ({
 
     if (validDetails.length === 0) {
       toast.error("يرجى إدخال حساب صحيح على الأقل");
+
       return;
     }
 
@@ -99,6 +107,7 @@ export const useVoucherActions = ({
       !isFinite(voucher.vouch_id)
     ) {
       toast.error("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
+
       return;
     }
 
@@ -114,10 +123,10 @@ export const useVoucherActions = ({
         pay_type: voucher.pay_type,
         ref_no: voucher.ref_no || "",
         opps_vouch: voucher.opps_vouch || 0,
-      cost_id:
-        voucher.cost_id !== undefined && voucher.cost_id !== null
-          ? voucher.cost_id
-          : null,
+        cost_id:
+          voucher.cost_id !== undefined && voucher.cost_id !== null
+            ? voucher.cost_id
+            : null,
       };
 
       const detailsData = details
@@ -128,10 +137,16 @@ export const useVoucherActions = ({
           acc_id: detail.acc_id,
           debit: detail.debit,
           credit: detail.credit,
-          debit_base: detail.debit_base !== undefined ? detail.debit_base : detail.debit,
-          credit_base: detail.credit_base !== undefined ? detail.credit_base : detail.credit,
-          g_debit: detail.g_debit !== undefined ? detail.g_debit : detail.debit_g,
-          g_credit: detail.g_credit !== undefined ? detail.g_credit : detail.credit_g,
+          debit_base:
+            detail.debit_base !== undefined ? detail.debit_base : detail.debit,
+          credit_base:
+            detail.credit_base !== undefined
+              ? detail.credit_base
+              : detail.credit,
+          g_debit:
+            detail.g_debit !== undefined ? detail.g_debit : detail.debit_g,
+          g_credit:
+            detail.g_credit !== undefined ? detail.g_credit : detail.credit_g,
           g_debit_base: detail.g_debit_base,
           g_credit_base: detail.g_credit_base,
           gauge: detail.gauge,
@@ -384,8 +399,14 @@ export const useVoucherActions = ({
                       );
                       const debit = detail.debit || 0;
                       const credit = detail.credit || 0;
-                      const debitG = detail.g_debit !== undefined ? detail.g_debit : (detail.debit_g || 0);
-                      const creditG = detail.g_credit !== undefined ? detail.g_credit : (detail.credit_g || 0);
+                      const debitG =
+                        detail.g_debit !== undefined
+                          ? detail.g_debit
+                          : detail.debit_g || 0;
+                      const creditG =
+                        detail.g_credit !== undefined
+                          ? detail.g_credit
+                          : detail.credit_g || 0;
                       const gauge = detail.gauge || 875;
 
                       return `
@@ -439,4 +460,3 @@ export const useVoucherActions = ({
     printVoucher,
   };
 };
-

@@ -1,5 +1,7 @@
-import { create } from "zustand";
 import type { Table as TanTable } from "@tanstack/react-table";
+
+import { create } from "zustand";
+
 import { printTableInNewWindow } from "@/utilities/table/print";
 
 type ReportTableState = {
@@ -19,6 +21,7 @@ export const useReportTableStore = create<ReportTableState>((set, get) => ({
   },
   print: () => {
     const table = get().table;
+
     if (!table) return;
     printTableInNewWindow(table, {
       title: "تقارير الفواتير",
@@ -35,4 +38,3 @@ export const useReportTableStore = create<ReportTableState>((set, get) => ({
     });
   },
 }));
-

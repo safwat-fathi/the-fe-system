@@ -2,16 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardBody, Button, Spinner } from "@heroui/react";
-import {
-  UserGroupIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+import { UserGroupIcon, PlusIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import GroupsList from "./GroupsList";
+import { Group } from "../../types/groups";
+
 import GroupsTable from "./GroupsTable";
 import GroupForm from "./GroupForm";
-import { Group } from "../../types/groups";
 
 export default function GroupsManager() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -28,6 +25,7 @@ export default function GroupsManager() {
       setLoading(true);
       const { groupService } = await import("../../services");
       const groups = await groupService.getAll();
+
       setGroups(groups);
     } catch (error) {
       console.error("Error loading groups:", error);
@@ -115,4 +113,3 @@ export default function GroupsManager() {
     </div>
   );
 }
-

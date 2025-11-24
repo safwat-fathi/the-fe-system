@@ -5,7 +5,7 @@
 
 "use client";
 
-import { Input, Button, Select, SelectItem } from "@heroui/react";
+import { Input, Button } from "@heroui/react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 interface ReportFiltersProps {
@@ -36,11 +36,11 @@ export default function ReportFilters({
               من تاريخ
             </label>
             <Input
+              className="w-full"
+              size="sm"
               type="date"
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
-              size="sm"
-              className="w-full"
             />
           </div>
 
@@ -49,11 +49,11 @@ export default function ReportFilters({
               إلى تاريخ
             </label>
             <Input
+              className="w-full"
+              size="sm"
               type="date"
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
-              size="sm"
-              className="w-full"
             />
           </div>
         </>
@@ -64,9 +64,9 @@ export default function ReportFilters({
       <div>
         <Button
           className="btn-secondary w-full"
+          size="md"
           variant="bordered"
           onPress={onClearFilters}
-          size="md"
         >
           <MagnifyingGlassIcon className="h-4 w-4" /> مسح الفلاتر
         </Button>
@@ -74,4 +74,3 @@ export default function ReportFilters({
     </div>
   );
 }
-

@@ -1,5 +1,11 @@
 "use client";
 
+import type { Account } from "@/types/models/account";
+import type {
+  CategoryAccount,
+  UpsertCategoryAccountPayload,
+} from "@/types/models/category-account";
+
 import React, {
   useCallback,
   useEffect,
@@ -39,11 +45,6 @@ import {
 } from "@/app/actions/category-accounts.action";
 import { ConfirmationModal } from "@/components/Modal";
 import categoryService from "@/services/api/category.service";
-import type { Account } from "@/types/models/account";
-import type {
-  CategoryAccount,
-  UpsertCategoryAccountPayload,
-} from "@/types/models/category-account";
 
 const columns = [
   { name: "رقم الفئة", uid: "id" },
@@ -172,18 +173,21 @@ interface CategoriesClientProps {
 const mapAccountToFormState = (
   record: CategoryAccount | null | undefined,
 ): CategoryAccountFormState => {
-  return ACCOUNT_KEYS.reduce((acc, field) => {
-    const value = record?.[field as keyof CategoryAccount];
-    let output = "";
+  return ACCOUNT_KEYS.reduce(
+    (acc, field) => {
+      const value = record?.[field as keyof CategoryAccount];
+      let output = "";
 
-    if (typeof value === "string") {
-      output = value;
-    } else if (typeof value === "number") {
-      output = Number.isNaN(value) ? "" : String(value);
-    }
+      if (typeof value === "string") {
+        output = value;
+      } else if (typeof value === "number") {
+        output = Number.isNaN(value) ? "" : String(value);
+      }
 
-    return { ...acc, [field]: output };
-  }, { ...EMPTY_ACCOUNT_FORM });
+      return { ...acc, [field]: output };
+    },
+    { ...EMPTY_ACCOUNT_FORM },
+  );
 };
 
 export default function CategoriesClient({
@@ -198,6 +202,7 @@ export default function CategoriesClient({
   const router = useRouter();
   const boxMap = useMemo(() => {
     const map = new Map<number, string>();
+
     initialBoxes.forEach((box) => {
       if (box?.id !== undefined && box?.id !== null) {
         map.set(Number(box.id), box.box_name);
@@ -209,6 +214,7 @@ export default function CategoriesClient({
 
   const catTypeMap = useMemo(() => {
     const map = new Map<string, string>();
+
     catTypes.forEach((type) => {
       map.set(String(type.id), type.name);
     });
@@ -218,6 +224,7 @@ export default function CategoriesClient({
 
   const catStatusMap = useMemo(() => {
     const map = new Map<string, string>();
+
     catStatuses.forEach((status) => {
       map.set(String(status.id), status.name);
     });
@@ -311,8 +318,9 @@ export default function CategoriesClient({
   const initialAccountFormState = mapAccountToFormState(
     initialCategoryAccounts?.[0],
   );
-  const [accountForm, setAccountForm] =
-    useState<CategoryAccountFormState>(initialAccountFormState);
+  const [accountForm, setAccountForm] = useState<CategoryAccountFormState>(
+    initialAccountFormState,
+  );
   const [accountFormSnapshot, setAccountFormSnapshot] =
     useState<CategoryAccountFormState>(initialAccountFormState);
   const [isAccountsLoading, setIsAccountsLoading] = useState(false);
@@ -368,6 +376,7 @@ export default function CategoriesClient({
     try {
       const categoriesList = await categoryService.getAllCategories(companyId);
       const sanitized = categoriesList.map(mapCategoryToRow);
+
       setCategories(sanitized);
     } catch (error) {
       console.error("فشل في جلب البيانات:", error);
@@ -378,6 +387,7 @@ export default function CategoriesClient({
   useEffect(() => {
     if (categories.length === 0) {
       setSelectedCategoryId(null);
+
       return;
     }
 
@@ -427,8 +437,7 @@ export default function CategoriesClient({
   );
 
   const selectedCategory = useMemo(
-    () =>
-      categories.find((cat) => cat.id === selectedCategoryId) ?? null,
+    () => categories.find((cat) => cat.id === selectedCategoryId) ?? null,
     [categories, selectedCategoryId],
   );
 
@@ -441,6 +450,7 @@ export default function CategoriesClient({
   const handleDeleteClick = (category: CategoryRow) => {
     if (!category.id) {
       toast.error("❌ لا يمكن حذف فئة بدون معرف");
+
       return;
     }
 
@@ -452,6 +462,7 @@ export default function CategoriesClient({
     if (!categoryToDelete?.id) {
       setDeleteModalOpen(false);
       setCategoryToDelete(null);
+
       return;
     }
 
@@ -485,8 +496,10 @@ export default function CategoriesClient({
 
   const handleCategorySelectionChange = (keys: any) => {
     const key = Array.from(keys)?.[0];
+
     if (!key) return;
     const categoryId = Number(key);
+
     if (Number.isNaN(categoryId)) return;
     setSelectedCategoryId(categoryId);
   };
@@ -501,9 +514,9 @@ export default function CategoriesClient({
         });
 
         let record =
-          records.find(
-            (item) => Number(item.cat) === Number(categoryId),
-          ) ?? records[0] ?? null;
+          records.find((item) => Number(item.cat) === Number(categoryId)) ??
+          records[0] ??
+          null;
 
         if (!record) {
           record = await ensureCategoryAccountAction({
@@ -513,6 +526,7 @@ export default function CategoriesClient({
         }
 
         const formState = mapAccountToFormState(record);
+
         setAccountForm(formState);
         setAccountFormSnapshot(formState);
         setAccountRecordId(record?.id ?? null);
@@ -534,6 +548,7 @@ export default function CategoriesClient({
       setAccountForm({ ...EMPTY_ACCOUNT_FORM });
       setAccountFormSnapshot({ ...EMPTY_ACCOUNT_FORM });
       setAccountRecordId(null);
+
       return;
     }
 
@@ -548,10 +563,12 @@ export default function CategoriesClient({
         ) ?? initialCategoryAccounts[0];
 
       const initialForm = mapAccountToFormState(initialRecord);
+
       setAccountForm(initialForm);
       setAccountFormSnapshot(initialForm);
       setAccountRecordId(initialRecord?.id ?? null);
       hasHydratedInitialAccount.current = true;
+
       return;
     }
 
@@ -580,30 +597,29 @@ export default function CategoriesClient({
   const handleSaveAccounts = async () => {
     if (!selectedCategoryId) {
       toast.error("❌ يرجى اختيار فئة أولاً");
+
       return;
     }
 
     setIsSavingAccounts(true);
     try {
-      const sanitizedPayload = ACCOUNT_KEYS.reduce(
-        (acc, key) => {
-          const raw = accountForm[key]?.trim();
-          if (!raw) {
-            acc[key] = null;
+      const sanitizedPayload = ACCOUNT_KEYS.reduce((acc, key) => {
+        const raw = accountForm[key]?.trim();
 
-            return acc;
-          }
-
-          const normalized = raw.includes("-")
-            ? raw.split("-")[0].trim()
-            : raw.trim();
-
-          acc[key] = normalized || null;
+        if (!raw) {
+          acc[key] = null;
 
           return acc;
-        },
-        {} as Partial<UpsertCategoryAccountPayload>,
-      );
+        }
+
+        const normalized = raw.includes("-")
+          ? raw.split("-")[0].trim()
+          : raw.trim();
+
+        acc[key] = normalized || null;
+
+        return acc;
+      }, {} as Partial<UpsertCategoryAccountPayload>);
 
       const result = await saveCategoryAccountAction({
         id: accountRecordId ?? undefined,
@@ -614,6 +630,7 @@ export default function CategoriesClient({
 
       if (result) {
         const nextState = mapAccountToFormState(result);
+
         setAccountForm(nextState);
         setAccountFormSnapshot(nextState);
         setAccountRecordId(result.id);
@@ -665,8 +682,8 @@ export default function CategoriesClient({
         <h2 className="text-base font-semibold">إدارة الفئات</h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
-          variant="bordered"
           className="bg-gray-100"
+          variant="bordered"
           onPress={() => router.push("/basic/categories/new")}
         >
           <PlusIcon className="h-3 w-3" />
@@ -676,25 +693,27 @@ export default function CategoriesClient({
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder="بحث بالاسم..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            size="sm"
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
             }
-            size="sm"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
         <Table
-          aria-label="جدول الفئات"
-          selectionMode="single"
-          selectedKeys={
-            selectedCategoryId ? new Set([String(selectedCategoryId)]) : new Set()
-          }
-          onSelectionChange={handleCategorySelectionChange}
           removeWrapper
+          aria-label="جدول الفئات"
+          selectedKeys={
+            selectedCategoryId
+              ? new Set([String(selectedCategoryId)])
+              : new Set()
+          }
+          selectionMode="single"
+          onSelectionChange={handleCategorySelectionChange}
         >
           <TableHeader>
             {columns.map((col) => (
@@ -749,19 +768,21 @@ export default function CategoriesClient({
           </div>
           <div className="flex items-center gap-2">
             <Button
+              isDisabled={
+                !isAccountFormDirty || isAccountsLoading || isSavingAccounts
+              }
               variant="light"
               onPress={handleResetAccountForm}
-              isDisabled={!isAccountFormDirty || isAccountsLoading || isSavingAccounts}
             >
               إعادة تعيين
             </Button>
             <Button
               color="success"
-              onPress={handleSaveAccounts}
               isDisabled={
                 !selectedCategoryId || isAccountsLoading || !isAccountFormDirty
               }
               isLoading={isSavingAccounts}
+              onPress={handleSaveAccounts}
             >
               حفظ التعديلات
             </Button>
@@ -790,7 +811,9 @@ export default function CategoriesClient({
             <div className="divide-y divide-gray-100" dir="rtl">
               {ACCOUNT_ROWS.map(({ label, valueKey, wageKey }) => {
                 const valueSelected = accountForm[valueKey] ?? "";
-                const wageSelected = wageKey ? accountForm[wageKey] ?? "" : "";
+                const wageSelected = wageKey
+                  ? (accountForm[wageKey] ?? "")
+                  : "";
 
                 const renderAutocomplete = (
                   key: AccountFieldKey,
@@ -815,9 +838,9 @@ export default function CategoriesClient({
 
                   return (
                     <Autocomplete
-                    allowsCustomValue
-                    aria-label={ariaLabel}
-                    className="max-w-full text-right leading-tight"
+                      allowsCustomValue
+                      aria-label={ariaLabel}
+                      className="max-w-full text-right leading-tight"
                       classNames={{
                         trigger:
                           column === "wage"
@@ -826,45 +849,45 @@ export default function CategoriesClient({
                         inputWrapper: "min-h-[36px]",
                         listbox: "text-right",
                       }}
-                    inputValue={getAccountDisplayValue(text)}
+                      inputValue={getAccountDisplayValue(text)}
                       items={filteredOptions}
-                    menuTrigger="input"
-                    selectedKey={null}
-                    variant="bordered"
-                    onInputChange={(value) => {
-                      const option = getAccountOption(value);
+                      menuTrigger="input"
+                      placeholder="اكتب اسم الحساب أو رقمه"
+                      selectedKey={null}
+                      variant="bordered"
+                      onInputChange={(value) => {
+                        const option = getAccountOption(value);
 
-                      if (option) {
-                        handleAccountFieldChange(
-                          key,
-                          option.code || option.name || option.key,
+                        if (option) {
+                          handleAccountFieldChange(
+                            key,
+                            option.code || option.name || option.key,
+                          );
+
+                          return;
+                        }
+
+                        handleAccountFieldChange(key, value);
+                      }}
+                      onSelectionChange={(selection) => {
+                        if (!selection) {
+                          handleAccountFieldChange(key, "");
+
+                          return;
+                        }
+
+                        const option = accountOptions.find(
+                          (item) => item.key === selection,
                         );
 
-                        return;
-                      }
-
-                      handleAccountFieldChange(key, value);
-                    }}
-                    onSelectionChange={(selection) => {
-                      if (!selection) {
-                        handleAccountFieldChange(key, "");
-
-                        return;
-                      }
-
-                      const option = accountOptions.find(
-                        (item) => item.key === selection,
-                      );
-
-                      if (option) {
-                        handleAccountFieldChange(
-                          key,
-                          option.code || option.name || option.key,
-                        );
-                      }
-                    }}
-                    placeholder="اكتب اسم الحساب أو رقمه"
-                  >
+                        if (option) {
+                          handleAccountFieldChange(
+                            key,
+                            option.code || option.name || option.key,
+                          );
+                        }
+                      }}
+                    >
                       {(option) => (
                         <AutocompleteItem
                           key={option.key}
@@ -903,18 +926,18 @@ export default function CategoriesClient({
                       )}
                     </div>
                     <div className="px-3 py-1.5">
-                      {wageKey
-                        ? renderAutocomplete(
-                            wageKey,
-                            `اختيار الحساب (أجور) لـ ${label}`,
-                            "wage",
-                            wageSelected,
-                          )
-                        : (
-                          <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
-                            -
-                          </div>
-                        )}
+                      {wageKey ? (
+                        renderAutocomplete(
+                          wageKey,
+                          `اختيار الحساب (أجور) لـ ${label}`,
+                          "wage",
+                          wageSelected,
+                        )
+                      ) : (
+                        <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
+                          -
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -925,15 +948,15 @@ export default function CategoriesClient({
       </div>
 
       <ConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="تأكيد الحذف"
-        message={`هل أنت متأكد من حذف الفئة "${categoryToDelete?.cat_name}"؟`}
-        confirmText="حذف"
         cancelText="إلغاء"
         confirmColor="danger"
+        confirmText="حذف"
+        isOpen={deleteModalOpen}
+        message={`هل أنت متأكد من حذف الفئة "${categoryToDelete?.cat_name}"؟`}
         size="md"
+        title="تأكيد الحذف"
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
       />
     </div>
   );

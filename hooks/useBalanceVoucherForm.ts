@@ -48,10 +48,7 @@ export const useBalanceVoucherForm = ({
     if (voucherData) {
       return {
         ...voucherData,
-        cost_id:
-          voucherData.cost_id ??
-          (voucherData as any).cost ??
-          null,
+        cost_id: voucherData.cost_id ?? (voucherData as any).cost ?? null,
       };
     }
 
@@ -347,11 +344,11 @@ export const useBalanceVoucherForm = ({
   ) => {
     if (field === "acc_id" && value) {
       const numericValue = Number(value);
+
       if (Number.isFinite(numericValue) && numericValue > 0) {
         const isDuplicate = details.some(
           (detail, detailIndex) =>
-            detailIndex !== index &&
-            Number(detail.acc_id) === numericValue,
+            detailIndex !== index && Number(detail.acc_id) === numericValue,
         );
 
         if (isDuplicate) {
@@ -385,6 +382,7 @@ export const useBalanceVoucherForm = ({
             newDetail.gauge = gauge;
 
             const baseGauge = 875;
+
             if (
               newDetail.g_debit !== undefined &&
               newDetail.g_debit !== null &&
@@ -465,6 +463,7 @@ export const useBalanceVoucherForm = ({
             const normalizedBase = parseFloat(
               gDebitBaseValue.toFixed(2),
             ) as number;
+
             newDetail.g_debit_base = normalizedBase;
 
             if (debitActual > 0) {
@@ -474,6 +473,7 @@ export const useBalanceVoucherForm = ({
                 baseGauge,
                 3,
               );
+
               newDetail.gauge = derivedGauge;
 
               const creditActual = parseNumber(
@@ -518,6 +518,7 @@ export const useBalanceVoucherForm = ({
             const normalizedBase = parseFloat(
               gCreditBaseValue.toFixed(2),
             ) as number;
+
             newDetail.g_credit_base = normalizedBase;
 
             if (creditActual > 0) {
@@ -527,6 +528,7 @@ export const useBalanceVoucherForm = ({
                 baseGauge,
                 3,
               );
+
               newDetail.gauge = derivedGauge;
 
               const debitActual = parseNumber(
@@ -550,7 +552,8 @@ export const useBalanceVoucherForm = ({
                 baseGauge,
               );
 
-              newDetail.g_credit = derivedCredit > 0 ? derivedCredit : undefined;
+              newDetail.g_credit =
+                derivedCredit > 0 ? derivedCredit : undefined;
             }
           } else {
             newDetail.g_credit_base = undefined;
@@ -788,24 +791,26 @@ export const useBalanceVoucherForm = ({
           acc_id: detail.acc_id,
           debit: detail.debit,
           credit: detail.credit,
-          debit_base: detail.debit_base !== undefined ? detail.debit_base : detail.debit,
-          credit_base: detail.credit_base !== undefined ? detail.credit_base : detail.credit,
+          debit_base:
+            detail.debit_base !== undefined ? detail.debit_base : detail.debit,
+          credit_base:
+            detail.credit_base !== undefined
+              ? detail.credit_base
+              : detail.credit,
           gauge: detail.gauge,
-          g_debit: detail.g_debit !== undefined ? detail.g_debit : detail.debit_g,
-          g_credit: detail.g_credit !== undefined ? detail.g_credit : detail.credit_g,
+          g_debit:
+            detail.g_debit !== undefined ? detail.g_debit : detail.debit_g,
+          g_credit:
+            detail.g_credit !== undefined ? detail.g_credit : detail.credit_g,
           // التأكد من أن g_debit_base و g_credit_base موجودة أو تساوي 0
           // تقريب إلى منزلتين عشريتين حسب متطلبات الـ backend
           g_debit_base:
             detail.g_debit_base !== undefined && detail.g_debit_base !== null
-              ? parseFloat(
-                  Number(detail.g_debit_base ?? 0).toFixed(2),
-                )
+              ? parseFloat(Number(detail.g_debit_base ?? 0).toFixed(2))
               : 0,
           g_credit_base:
             detail.g_credit_base !== undefined && detail.g_credit_base !== null
-              ? parseFloat(
-                  Number(detail.g_credit_base ?? 0).toFixed(2),
-                )
+              ? parseFloat(Number(detail.g_credit_base ?? 0).toFixed(2))
               : 0,
           vouch_notes: detail.vouch_notes || "",
           cost_id:
@@ -918,7 +923,6 @@ export const useBalanceVoucherForm = ({
       toast.success("✅ تم تفعيل وضع التعديل");
     }
   };
-
 
   const handleUnbalancedConfirm = async () => {
     setShowUnbalancedModal(false);

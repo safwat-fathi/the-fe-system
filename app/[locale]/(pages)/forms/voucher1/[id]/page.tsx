@@ -184,12 +184,30 @@ export default async function ReceiptVoucherEditPage({
       cost_id: costId, // قد يكون null أو رقم
       debit: parseFloat(detail.debit) || 0,
       credit: parseFloat(detail.credit) || 0,
-      debit_base: detail.debit_base !== undefined ? parseFloat(String(detail.debit_base)) : (parseFloat(detail.debit) || 0),
-      credit_base: detail.credit_base !== undefined ? parseFloat(String(detail.credit_base)) : (parseFloat(detail.credit) || 0),
-      g_debit: detail.g_debit !== undefined ? parseFloat(String(detail.g_debit)) : (parseFloat(detail.debit_g) || 0),
-      g_credit: detail.g_credit !== undefined ? parseFloat(String(detail.g_credit)) : (parseFloat(detail.credit_g) || 0),
-      g_debit_base: detail.g_debit_base !== undefined ? parseFloat(String(detail.g_debit_base)) : 0,
-      g_credit_base: detail.g_credit_base !== undefined ? parseFloat(String(detail.g_credit_base)) : 0,
+      debit_base:
+        detail.debit_base !== undefined
+          ? parseFloat(String(detail.debit_base))
+          : parseFloat(detail.debit) || 0,
+      credit_base:
+        detail.credit_base !== undefined
+          ? parseFloat(String(detail.credit_base))
+          : parseFloat(detail.credit) || 0,
+      g_debit:
+        detail.g_debit !== undefined
+          ? parseFloat(String(detail.g_debit))
+          : parseFloat(detail.debit_g) || 0,
+      g_credit:
+        detail.g_credit !== undefined
+          ? parseFloat(String(detail.g_credit))
+          : parseFloat(detail.credit_g) || 0,
+      g_debit_base:
+        detail.g_debit_base !== undefined
+          ? parseFloat(String(detail.g_debit_base))
+          : 0,
+      g_credit_base:
+        detail.g_credit_base !== undefined
+          ? parseFloat(String(detail.g_credit_base))
+          : 0,
       gauge: parseFloat(detail.gauge) || 875,
       vouch_notes: detail.vouch_notes || "",
       cr_date: detail.cr_date || new Date().toISOString(),
@@ -336,8 +354,7 @@ export default async function ReceiptVoucherEditPage({
       (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
     ),
     first: parseNavId(
-      (targetVoucher as any).first_voucher_id ??
-        (targetVoucher as any).first,
+      (targetVoucher as any).first_voucher_id ?? (targetVoucher as any).first,
     ),
     last: parseNavId(
       (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
@@ -363,9 +380,9 @@ export default async function ReceiptVoucherEditPage({
         costCenters={formData.costCenters}
         formMode={formMode}
         isNewVoucher={false}
+        navigationInfo={navigationInfo}
         startInEditMode={startInEditMode}
         vouchType={1}
-        navigationInfo={navigationInfo}
         voucherBoxes={boxes}
         voucherData={formattedVoucher}
         voucherDetailsData={details}

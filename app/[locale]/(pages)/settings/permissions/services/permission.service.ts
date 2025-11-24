@@ -3,8 +3,9 @@
  * API service for permissions management
  */
 
-import HttpService from "@/services/base/http.service";
 import { UserPermissions, UserPermissionsResponse } from "../types/users";
+
+import HttpService from "@/services/base/http.service";
 
 class PermissionService extends HttpService {
   constructor() {
@@ -120,4 +121,3 @@ class PermissionService extends HttpService {
 }
 
 export default new PermissionService();
-

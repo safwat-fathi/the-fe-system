@@ -1,6 +1,7 @@
-import { whatsappService } from "@/services/external/whatsapp.service";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+
+import { whatsappService } from "@/services/external/whatsapp.service";
 
 export const runtime = "nodejs";
 
@@ -76,4 +77,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -1,5 +1,9 @@
 "use client";
 
+import type { Account } from "@/types/models/account";
+import type { CategoryAccount } from "@/types/models/category-account";
+import type { UpsertCategoryAccountPayload } from "@/types/models/category-account";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -19,9 +23,6 @@ import {
   saveCategoryAccountAction,
 } from "@/app/actions/category-accounts.action";
 import categoryService from "@/services/api/category.service";
-import type { Account } from "@/types/models/account";
-import type { CategoryAccount } from "@/types/models/category-account";
-import type { UpsertCategoryAccountPayload } from "@/types/models/category-account";
 
 type CategoryFormMode = "view" | "edit" | "add";
 
@@ -112,18 +113,21 @@ const EMPTY_ACCOUNT_FORM = ACCOUNT_KEYS.reduce(
 const mapAccountToFormState = (
   record: CategoryAccount | null | undefined,
 ): CategoryAccountFormState => {
-  return ACCOUNT_KEYS.reduce((acc, field) => {
-    const value = record?.[field as keyof CategoryAccount];
-    let output = "";
+  return ACCOUNT_KEYS.reduce(
+    (acc, field) => {
+      const value = record?.[field as keyof CategoryAccount];
+      let output = "";
 
-    if (typeof value === "string") {
-      output = value;
-    } else if (typeof value === "number") {
-      output = Number.isNaN(value) ? "" : String(value);
-    }
+      if (typeof value === "string") {
+        output = value;
+      } else if (typeof value === "number") {
+        output = Number.isNaN(value) ? "" : String(value);
+      }
 
-    return { ...acc, [field]: output };
-  }, { ...EMPTY_ACCOUNT_FORM });
+      return { ...acc, [field]: output };
+    },
+    { ...EMPTY_ACCOUNT_FORM },
+  );
 };
 
 const CategoryFormClient = ({
@@ -154,6 +158,7 @@ const CategoryFormClient = ({
 
   useEffect(() => {
     const nextState = mapAccountToFormState(initialCategoryAccount);
+
     setAccountForm(nextState);
     setAccountFormSnapshot(nextState);
     setAccountRecordId(initialCategoryAccount?.id ?? null);
@@ -204,15 +209,14 @@ const CategoryFormClient = ({
 
   const isAccountFormDirty = useMemo(
     () =>
-      ACCOUNT_KEYS.some(
-        (key) => accountForm[key] !== accountFormSnapshot[key],
-      ),
+      ACCOUNT_KEYS.some((key) => accountForm[key] !== accountFormSnapshot[key]),
     [accountForm, accountFormSnapshot],
   );
 
   const handleSave = async () => {
     if (!category.cat_name || !category.cat_name_e) {
       toast.error("❌ يجب ملء جميع الحقول المطلوبة");
+
       return;
     }
 
@@ -243,31 +247,26 @@ const CategoryFormClient = ({
             });
             setAccountRecordId(ensuredRecord?.id ?? accountRecordId);
           } catch (error) {
-            console.error(
-              "❌ خطأ أثناء ضمان وجود سجل حسابات الفئة:",
-              error,
-            );
+            console.error("❌ خطأ أثناء ضمان وجود سجل حسابات الفئة:", error);
           }
 
-          const sanitizedPayload = ACCOUNT_KEYS.reduce(
-            (acc, key) => {
-              const raw = accountForm[key]?.trim();
-              if (!raw) {
-                acc[key] = null;
+          const sanitizedPayload = ACCOUNT_KEYS.reduce((acc, key) => {
+            const raw = accountForm[key]?.trim();
 
-                return acc;
-              }
-
-              const normalized = raw.includes("-")
-                ? raw.split("-")[0].trim()
-                : raw.trim();
-
-              acc[key] = normalized || null;
+            if (!raw) {
+              acc[key] = null;
 
               return acc;
-            },
-            {} as Partial<UpsertCategoryAccountPayload>,
-          );
+            }
+
+            const normalized = raw.includes("-")
+              ? raw.split("-")[0].trim()
+              : raw.trim();
+
+            acc[key] = normalized || null;
+
+            return acc;
+          }, {} as Partial<UpsertCategoryAccountPayload>);
 
           try {
             const accountResult = await saveCategoryAccountAction({
@@ -279,6 +278,7 @@ const CategoryFormClient = ({
 
             if (accountResult) {
               const normalized = mapAccountToFormState(accountResult);
+
               setAccountForm(normalized);
               setAccountFormSnapshot(normalized);
               setAccountRecordId(accountResult.id);
@@ -286,14 +286,13 @@ const CategoryFormClient = ({
           } catch (error) {
             console.error("❌ خطأ أثناء حفظ حسابات الفئة:", error);
             toast.error("❌ حدث خطأ أثناء حفظ حسابات الفئة");
+
             return;
           }
         }
 
         toast.success(
-          isAddMode
-            ? "✅ تم إضافة الفئة بنجاح"
-            : "✅ تم تعديل الفئة بنجاح",
+          isAddMode ? "✅ تم إضافة الفئة بنجاح" : "✅ تم تعديل الفئة بنجاح",
         );
         router.push("/basic/categories");
         router.refresh();
@@ -325,12 +324,14 @@ const CategoryFormClient = ({
   const getTitle = () => {
     if (isViewMode) return `عرض ${category.cat_name || "الفئة"}`;
     if (isAddMode) return "إضافة فئة جديدة";
+
     return `تعديل ${category.cat_name || "الفئة"}`;
   };
 
   const getDescription = () => {
     if (isViewMode) return "عرض تفاصيل الفئة";
     if (isAddMode) return "قم بإضافة فئة جديدة إلى النظام";
+
     return "قم بتعديل بيانات الفئة";
   };
 
@@ -363,11 +364,7 @@ const CategoryFormClient = ({
               >
                 إلغاء
               </Button>
-              <Button
-                color="success"
-                isLoading={isSaving}
-                onPress={handleSave}
-              >
+              <Button color="success" isLoading={isSaving} onPress={handleSave}>
                 {isAddMode ? "حفظ" : "تحديث"}
               </Button>
             </>
@@ -378,22 +375,22 @@ const CategoryFormClient = ({
       {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="اسم الفئة"
           value={category.cat_name || ""}
           onChange={(e) =>
             setCategory({ ...category, cat_name: e.target.value })
           }
-          isRequired
         />
         <Input
+          isRequired
           isDisabled={isViewMode}
           label="الاسم بالإنجليزي"
           value={category.cat_name_e || ""}
           onChange={(e) =>
             setCategory({ ...category, cat_name_e: e.target.value })
           }
-          isRequired
         />
         <Input
           isDisabled={isViewMode}
@@ -405,18 +402,15 @@ const CategoryFormClient = ({
           isDisabled={isViewMode}
           label="المعيارية"
           value={category.purity || ""}
-          onChange={(e) =>
-            setCategory({ ...category, purity: e.target.value })
-          }
+          onChange={(e) => setCategory({ ...category, purity: e.target.value })}
         />
         <Select
           isDisabled={isViewMode}
           label="الصندوق"
-          selectedKeys={
-            category.box !== null ? [String(category.box)] : []
-          }
+          selectedKeys={category.box !== null ? [String(category.box)] : []}
           onSelectionChange={(keys) => {
             const id = Number(Array.from(keys)[0]);
+
             setCategory({ ...category, box: id });
           }}
         >
@@ -450,9 +444,7 @@ const CategoryFormClient = ({
           <Checkbox
             isDisabled={isViewMode}
             isSelected={Boolean(category.tax_type)}
-            onValueChange={(val) =>
-              setCategory({ ...category, tax_type: val })
-            }
+            onValueChange={(val) => setCategory({ ...category, tax_type: val })}
           >
             خاضعة للضريبة
           </Checkbox>
@@ -490,7 +482,7 @@ const CategoryFormClient = ({
           <div className="divide-y divide-gray-100">
             {ACCOUNT_ROWS.map(({ label, valueKey, wageKey }) => {
               const valueSelected = accountForm[valueKey] ?? "";
-              const wageSelected = wageKey ? accountForm[wageKey] ?? "" : "";
+              const wageSelected = wageKey ? (accountForm[wageKey] ?? "") : "";
 
               if (isViewMode) {
                 return (
@@ -548,6 +540,7 @@ const CategoryFormClient = ({
                     inputValue={getAccountDisplayValue(text)}
                     items={filteredOptions}
                     menuTrigger="input"
+                    placeholder="اكتب اسم الحساب أو رقمه"
                     selectedKey={null}
                     variant="bordered"
                     onInputChange={(value) => {
@@ -582,10 +575,12 @@ const CategoryFormClient = ({
                         );
                       }
                     }}
-                    placeholder="اكتب اسم الحساب أو رقمه"
                   >
                     {(option) => (
-                      <AutocompleteItem key={option.key} textValue={option.label}>
+                      <AutocompleteItem
+                        key={option.key}
+                        textValue={option.label}
+                      >
                         <div className="flex flex-col items-start">
                           <span className="text-sm font-medium text-gray-800">
                             {option.name}
@@ -619,18 +614,18 @@ const CategoryFormClient = ({
                     )}
                   </div>
                   <div className="px-3 py-1.5">
-                    {wageKey
-                      ? renderAutocomplete(
-                          wageKey,
-                          `اختيار الحساب (أجور) لـ ${label}`,
-                          "wage",
-                          wageSelected,
-                        )
-                      : (
-                        <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
-                          -
-                        </div>
-                      )}
+                    {wageKey ? (
+                      renderAutocomplete(
+                        wageKey,
+                        `اختيار الحساب (أجور) لـ ${label}`,
+                        "wage",
+                        wageSelected,
+                      )
+                    ) : (
+                      <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
+                        -
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -649,4 +644,3 @@ const CategoryFormClient = ({
 };
 
 export default CategoryFormClient;
-

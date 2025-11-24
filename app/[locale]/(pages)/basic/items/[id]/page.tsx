@@ -46,6 +46,7 @@ export default async function ItemDetailPage({
 
   // جلب بيانات الصنف
   let item: Item | null = null;
+
   try {
     item = await itemService.getItemById(itemId, companyId);
   } catch (error) {
@@ -105,8 +106,8 @@ export default async function ItemDetailPage({
         ]}
       />
       <ItemFormClient
-        companyId={companyId}
         categories={categoriesData}
+        companyId={companyId}
         initialItem={itemForm}
         itemTypes={itemTypesData}
         mode={formMode}
@@ -115,4 +116,3 @@ export default async function ItemDetailPage({
     </div>
   );
 }
-

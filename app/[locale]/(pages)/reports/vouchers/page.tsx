@@ -66,10 +66,10 @@ export default async function VoucherReportsPage({
         <VouchersReportClient
           initialVoucherTypes={voucherTypes}
           initialVouchers={vouchers}
+          overallTotals={voucherTotals}
           searchParams={queryParams}
           totalPages={totalPages}
           totalVouchers={count}
-          overallTotals={voucherTotals}
         />
       </Suspense>
     </div>
