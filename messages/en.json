@@ -111,5 +111,16 @@
       "dec": "December"
     },
     "error": "Failed to load dashboard data"
+  },
+  "globalError": {
+    "titleDev": "Oops!",
+    "subtitleDev": "An error occurred in development mode.",
+    "detailsTitle": "Error details:",
+    "titleProd": "We’re sorry!",
+    "subtitleProd": "An unexpected error occurred. Our team has been notified and is working to fix it.",
+    "retry": "Try again",
+    "backHome": "Back to home",
+    "helpText": "Need help? Contact support at",
+    "supportEmailLabel": "support@nafeesweb.com"
   }
 }

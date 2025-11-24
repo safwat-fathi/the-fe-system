@@ -1,4 +1,5 @@
 import { HttpService } from "@/services/base";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 export interface Category {
   id: number;
@@ -40,6 +41,7 @@ class CategoryService extends HttpService<Category> {
       return [];
     } catch (error) {
       console.error("Error fetching categories:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات الفئات");
     }
   }
@@ -76,6 +78,7 @@ class CategoryService extends HttpService<Category> {
       return null;
     } catch (error) {
       console.error("Error creating category:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء إنشاء الفئة");
     }
   }
@@ -101,6 +104,7 @@ class CategoryService extends HttpService<Category> {
       return null;
     } catch (error) {
       console.error("Error updating category:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء تحديث الفئة");
     }
   }
@@ -118,6 +122,7 @@ class CategoryService extends HttpService<Category> {
       return response.success;
     } catch (error) {
       console.error("Error deleting category:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء حذف الفئة");
     }
   }

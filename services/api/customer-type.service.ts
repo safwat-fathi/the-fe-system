@@ -1,4 +1,5 @@
 import { HttpService } from "@/services/base";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 interface CustomerType {
   id: number;
@@ -36,6 +37,7 @@ class CustomerTypeService extends HttpService<CustomerType> {
       return [];
     } catch (error) {
       console.error("Error fetching customer types:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات أنواع العملاء");
     }
   }
@@ -60,6 +62,7 @@ class CustomerTypeService extends HttpService<CustomerType> {
       return null;
     } catch (error) {
       console.error("Error creating customer type:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء إنشاء نوع العميل");
     }
   }
@@ -85,6 +88,7 @@ class CustomerTypeService extends HttpService<CustomerType> {
       return null;
     } catch (error) {
       console.error("Error updating customer type:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء تحديث نوع العميل");
     }
   }
@@ -102,6 +106,7 @@ class CustomerTypeService extends HttpService<CustomerType> {
       return response.success;
     } catch (error) {
       console.error("Error deleting customer type:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء حذف نوع العميل");
     }
   }

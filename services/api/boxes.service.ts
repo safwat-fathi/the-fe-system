@@ -1,6 +1,7 @@
 import type { Box, GetBoxesParams } from "@/types/models/box";
 
 import { HttpService } from "@/services/base";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 class BoxesService extends HttpService<Box> {
   constructor() {
@@ -40,6 +41,7 @@ class BoxesService extends HttpService<Box> {
 
       return [];
     } catch (error) {
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات الصناديق");
     }
   }
@@ -79,6 +81,7 @@ class BoxesService extends HttpService<Box> {
 
       return [];
     } catch (error) {
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب صناديق الذهب");
     }
   }

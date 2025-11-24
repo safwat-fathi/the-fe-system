@@ -1,4 +1,5 @@
 import { HttpService } from "@/services/base";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 interface CostCenter {
   id: number;
@@ -61,6 +62,7 @@ class CostCenterService extends HttpService<CostCenter> {
       return [];
     } catch (error) {
       console.error("Error fetching cost centers:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات مراكز التكلفة");
     }
   }
@@ -105,6 +107,7 @@ class CostCenterService extends HttpService<CostCenter> {
       return null;
     } catch (error) {
       console.error("Error creating cost center:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء إنشاء مركز التكلفة");
     }
   }
@@ -150,6 +153,7 @@ class CostCenterService extends HttpService<CostCenter> {
       return null;
     } catch (error) {
       console.error("Error updating cost center:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء تحديث مركز التكلفة");
     }
   }
@@ -163,6 +167,7 @@ class CostCenterService extends HttpService<CostCenter> {
       return response.success;
     } catch (error) {
       console.error("Error deleting cost center:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء حذف مركز التكلفة");
     }
   }

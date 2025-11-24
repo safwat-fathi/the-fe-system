@@ -7,6 +7,7 @@ import {
   SearchItemsParams,
   SearchItemsVoucherListParams,
 } from "@/types/models/item";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 class ItemService extends HttpService<Item> {
   constructor() {
@@ -49,6 +50,7 @@ class ItemService extends HttpService<Item> {
       return [];
     } catch (error) {
       console.error("Error fetching home settings:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب إعدادات النظام");
     }
   }
@@ -120,7 +122,6 @@ class ItemService extends HttpService<Item> {
       return found;
     } catch (error) {
       console.error("Error fetching item by id:", error);
-
       return null;
     }
   }
@@ -185,6 +186,7 @@ class ItemService extends HttpService<Item> {
       };
     } catch (error) {
       console.error("Error fetching items:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
     }
   }
@@ -256,6 +258,7 @@ class ItemService extends HttpService<Item> {
       };
     } catch (error) {
       console.error("Error fetching items for voucher:", error);
+      rethrowAuthenticationError(error);
       throw new Error(
         "حدث خطأ أثناء جلب بيانات الأصناف لقائمة سند الاستلام/التسليم",
       );

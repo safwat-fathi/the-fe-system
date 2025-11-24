@@ -4,6 +4,7 @@ import permissionService from "../api/permission.service";
 
 import { MenuObject, MergedPermissions } from "@/types/models/menu";
 import { filterMenuByPermissions } from "@/utilities/permissions";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 /**
  * BFF Service for Sidebar Data
@@ -53,6 +54,10 @@ class SidebarDataService extends HttpService<SidebarData> {
       };
     } catch (error) {
       console.error("Error fetching sidebar data:", error);
+
+      if (error instanceof AuthenticationError) {
+        throw error;
+      }
 
       return null;
     }

@@ -1,6 +1,7 @@
 import HttpService from "@/services/base/http.service";
 import { ServiceResponse } from "@/services/base/http.service";
 import { logger } from "@/utilities/logger";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 // Table configuration mapping
 interface TableConfig {
@@ -280,6 +281,7 @@ class GenericService extends HttpService<any> {
       };
     } catch (error) {
       logger.error("❌ Error fetching table data:", error);
+      rethrowAuthenticationError(error);
 
       return {
         success: false,

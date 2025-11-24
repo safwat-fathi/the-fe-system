@@ -1,6 +1,7 @@
 import type { Box } from "@/types/models/box";
 
 import { HttpService } from "@/services/base";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 interface BoxType {
   id: number;
@@ -153,6 +154,8 @@ class BoxService extends HttpService<Box> {
 
       throw new Error(errorMessage);
     } catch (error) {
+      rethrowAuthenticationError(error);
+
       if (error instanceof Error) {
         throw error;
       }
@@ -282,6 +285,8 @@ class BoxService extends HttpService<Box> {
 
       throw new Error(errorMessage);
     } catch (error) {
+      rethrowAuthenticationError(error);
+
       if (error instanceof Error) {
         throw error;
       }

@@ -3,6 +3,7 @@ import {
   CategoryAccount,
   UpsertCategoryAccountPayload,
 } from "@/types/models/category-account";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 const baseTags = ["category-accounts"];
 
@@ -66,6 +67,7 @@ class CategoryAccountService extends HttpService<CategoryAccount> {
       return [];
     } catch (error) {
       console.error("Error fetching category accounts:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب حسابات الفئات");
     }
   }
@@ -90,6 +92,7 @@ class CategoryAccountService extends HttpService<CategoryAccount> {
       return null;
     } catch (error) {
       console.error("Error creating category account:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء إنشاء حساب الفئة");
     }
   }
@@ -115,6 +118,7 @@ class CategoryAccountService extends HttpService<CategoryAccount> {
       return null;
     } catch (error) {
       console.error("Error updating category account:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء تحديث حساب الفئة");
     }
   }
@@ -132,6 +136,7 @@ class CategoryAccountService extends HttpService<CategoryAccount> {
       return response.success;
     } catch (error) {
       console.error("Error deleting category account:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء حذف حساب الفئة");
     }
   }

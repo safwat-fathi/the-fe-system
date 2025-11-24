@@ -1,4 +1,5 @@
 import { HttpService } from "@/services/base";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 interface Currency {
   id: number;
@@ -40,6 +41,7 @@ class CurrencyService extends HttpService<Currency> {
       return [];
     } catch (error) {
       console.error("Error fetching currencies:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات العملات");
     }
   }
@@ -102,6 +104,7 @@ class CurrencyService extends HttpService<Currency> {
       return null;
     } catch (error) {
       console.error("Error creating currency:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء إنشاء العملة");
     }
   }
@@ -169,6 +172,7 @@ class CurrencyService extends HttpService<Currency> {
       return null;
     } catch (error) {
       console.error("Error updating currency:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء تحديث العملة");
     }
   }
@@ -186,6 +190,7 @@ class CurrencyService extends HttpService<Currency> {
       return response.success;
     } catch (error) {
       console.error("Error deleting currency:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء حذف العملة");
     }
   }
