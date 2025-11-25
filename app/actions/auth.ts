@@ -11,6 +11,7 @@ import { STORAGE_KEYS } from "@/constants";
 import { defaultLocale, locales } from "@/i18n/config";
 import { authService } from "@/services/api";
 import { generateCSRFToken } from "@/utilities/csrf";
+import { getLocale } from "next-intl/server";
 
 interface LoginResult {
   success: boolean;
@@ -28,18 +29,9 @@ export async function loginAction(
   // Validate form data using Zod schema
   const result = loginSchema.safeParse(formData);
   const redirectPath = (formData.get("redirect") as string) || "/";
-  const cookieStore = await cookies();
-  const locale = cookieStore.get("NEXT_LOCALE")?.value ?? defaultLocale;
-  // const csrfToken = formData.get("csrfToken") as string;
 
-  // Validate CSRF token
-  // const isCSRFValid = await validateCSRFToken(csrfToken);
-  // if (!isCSRFValid) {
-  //   return {
-  //     success: false,
-  //     message: "طلب غير مصرح به. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى.",
-  //   };
-  // }
+  // const locale = cookieStore.get("NEXT_LOCALE")?.value ?? defaultLocale;
+  const locale = await getLocale();
 
   if (!result.success) {
     // Return validation errors
@@ -59,7 +51,7 @@ export async function loginAction(
   let loginResult: LoginResult | null = null;
 
   const requestOptions: RequestInit = {
-    signal: AbortSignal.timeout(30000), // 30 seconds
+    signal: AbortSignal.timeout(3000), // 30 seconds
   };
 
   try {
@@ -118,8 +110,6 @@ export async function loginAction(
       };
     }
   } catch (error) {
-    console.error("خطأ في تسجيل الدخول:", error);
-
     // Handle different types of errors
     if (error instanceof Error) {
       if (
@@ -169,14 +159,21 @@ export async function loginAction(
   }
 }
 
-export async function onLogoutAction() {
+export async function deleteCredentials() {
   const cookieStore = await cookies();
 
   cookieStore.set(STORAGE_KEYS.ACCESS_TOKEN, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.REFRESH_TOKEN, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.CSRF_TOKEN, "", { maxAge: 0 });
+}
+export async function onLogoutAction() {
+  // const locale = cookieStore.get("NEXT_LOCALE")?.value ?? defaultLocale;
+  await deleteCredentials();
+  await redirectToLogin();
+}
 
-  const locale = cookieStore.get("NEXT_LOCALE")?.value ?? defaultLocale;
+export async function redirectToLogin() {
+  const locale = await getLocale();
 
   redirect(`/${locale}/auth/login`);
 }

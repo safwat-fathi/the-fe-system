@@ -8,6 +8,8 @@ import { getBranchParams } from "@/app/actions/branch-params";
 import helperService from "@/services/api/helper.service";
 import itemService from "@/services/api/item.service";
 import { Item } from "@/types/models/item";
+import { redirectToLogin } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export const metadata: Metadata = {
   title: "عرض الصنف - NafeesWeb",
@@ -50,7 +52,11 @@ export default async function ItemDetailPage({
   try {
     item = await itemService.getItemById(itemId, companyId);
   } catch (error) {
-    console.error("Error fetching item:", error);
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
+    }
+
+    throw error;
   }
 
   if (!item) {

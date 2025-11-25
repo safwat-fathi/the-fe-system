@@ -91,12 +91,6 @@ class DashboardService extends HttpService<any> {
           }),
         ]);
 
-      // console.log(
-      //   "🚀 ~ :28 ~ DashboardService ~ getDashboardStats ~  items:",
-      //   items,
-      // );
-      if (!invoices) return null;
-
       // Calculate monthly sales
       const invoicesList = Array.isArray(invoices?.results)
         ? invoices.results
@@ -119,12 +113,13 @@ class DashboardService extends HttpService<any> {
         monthlySales,
       };
     } catch (error) {
-      if (error instanceof AuthenticationError) {
-        // Bubble up auth errors so the page can redirect.
-        throw error;
-      }
+      console.log("🚀 ~ :122 ~ DashboardService ~ getDashboardStats ~ error:");
+      // if (error instanceof AuthenticationError) {
+      //   // Bubble up auth errors so the page can redirect.
+      //   throw error;
+      // }
 
-      throw new Error("حدث خطأ أثناء  إحصائيات لوحة التحكم");
+      throw error;
     }
   }
 }

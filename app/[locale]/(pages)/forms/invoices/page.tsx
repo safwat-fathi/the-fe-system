@@ -8,6 +8,8 @@ import Breadcrumb from "@/components/Breadcrumb";
 import invoiceFormDataService from "@/services/bff/invoice-form-data.service";
 import invoiceService from "@/services/api/invoice.service";
 import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
+import { redirectToLogin } from "@/app/actions/auth";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 type InvoiceFormMode = "new" | "edit" | "preview";
@@ -112,49 +114,57 @@ export default async function InvoicePage({
   let invoiceData: Invoice | null = null;
   let invoiceDetails: InvoiceDetail[] = [];
 
-  if ((mode === "edit" || mode === "preview") && editId) {
-    const lookupId = editId ?? "";
+	try {
+    if ((mode === "edit" || mode === "preview") && editId) {
+      const lookupId = editId ?? "";
 
-    invoiceData = await invoiceService.getInvoiceById(
-      lookupId,
-      config.transType,
-    );
+      invoiceData = await invoiceService.getInvoiceById(
+        lookupId,
+        config.transType,
+      );
 
-    if (!invoiceData) {
-      notFound();
-    }
+      if (!invoiceData) {
+        notFound();
+      }
 
-    if (
-      invoiceData.trans_type &&
-      Number(invoiceData.trans_type) !== Number(config.transType)
-    ) {
-      notFound();
-    }
+      if (
+        invoiceData.trans_type &&
+        Number(invoiceData.trans_type) !== Number(config.transType)
+      ) {
+        notFound();
+      }
 
-    // Prefer record id first, then invoice number, then raw param
-    const detailKeys = Array.from(
-      new Set(
-        [
-          invoiceData?.id ? String(invoiceData.id) : null,
-          invoiceData?.inv_id,
-          editId,
-        ]
-          .filter((key): key is string =>
-            Boolean(key && `${key}`.trim().length),
-          )
-          .map((key) => String(key).trim()),
-      ),
-    );
+      // Prefer record id first, then invoice number, then raw param
+      const detailKeys = Array.from(
+        new Set(
+          [
+            invoiceData?.id ? String(invoiceData.id) : null,
+            invoiceData?.inv_id,
+            editId,
+          ]
+            .filter((key): key is string =>
+              Boolean(key && `${key}`.trim().length),
+            )
+            .map((key) => String(key).trim()),
+        ),
+      );
 
-    for (const key of detailKeys) {
-      const fetchedDetails =
-        (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
+      for (const key of detailKeys) {
+        const fetchedDetails =
+          (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
 
-      if (fetchedDetails.length > 0) {
-        invoiceDetails = fetchedDetails;
-        break;
+        if (fetchedDetails.length > 0) {
+          invoiceDetails = fetchedDetails;
+          break;
+        }
       }
     }
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
+    }
+
+    throw error;
   }
 
   const formData = await getInvoiceFormData();

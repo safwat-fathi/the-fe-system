@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import { redirect } from "next/navigation";
 
 import DashboardClient from "./components/DashboardClient";
 
@@ -9,7 +8,7 @@ import { StatCard } from "@/components/Card";
 import Breadcrumb from "@/components/Breadcrumb";
 import dashboardService from "@/services/bff/dashboard.service";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
-import { defaultLocale } from "@/i18n/config";
+import { redirectToLogin } from "@/app/actions/auth";
 
 // Revalidate dashboard data every 60 seconds (1 minute)
 export const revalidate = 60;
@@ -37,12 +36,9 @@ export default async function DashboardPage() {
     dashboardData = await dashboardService.getDashboardStats();
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      const locale = cookieStore.get("NEXT_LOCALE")?.value ?? defaultLocale;
-
-      redirect(`/${locale}/auth/login`);
+      await redirectToLogin();
     }
 
-    
     throw error;
   }
 

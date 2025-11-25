@@ -5,8 +5,6 @@ import LoginForm from "./components/LoginForm";
 export default async function Login() {
   const t = await getTranslations("auth.login");
 
-  console.log("asdas", t("brand.title"));
-
   return (
     <div className="bg-[#f5f5f5] font-['Cairo'] min-h-screen flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8 border border-gray-200">

@@ -9,10 +9,7 @@ import {
   InvoiceMaxIdPrimitive,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
-import {
-  AuthenticationError,
-  rethrowAuthenticationError,
-} from "@/utilities/errors/Authentication";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 export interface GetAllInvoicesParams {
   page?: string;
@@ -88,7 +85,7 @@ class InvoiceService extends HttpService<Invoice> {
       return null;
     } catch (error) {
       rethrowAuthenticationError(error);
-      throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
+      return null;
     }
   }
 
