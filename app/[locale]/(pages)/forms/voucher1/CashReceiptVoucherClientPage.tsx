@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect from "react-select";
@@ -26,6 +26,8 @@ import {
   Textarea,
 } from "@heroui/react";
 
+import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
+import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 import { useCashReceiptVoucherForm } from "@/hooks/useCashReceiptVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
@@ -156,6 +158,80 @@ export default function CashReceiptVoucherClientPage({
     router.push(`/forms/voucher1/${targetId}?mode=preview`);
     router.refresh();
   };
+
+  // Refs for keyboard navigation
+  const selectorsRef = useRef<HTMLDivElement>(null);
+
+  // Hook for Enter key navigation in top form fields
+  const {
+    handleKeyDown: handleKeyDownSelectors,
+    handleF4KeyForSelect,
+  } = useKeyAsTab({
+    keys: ["Enter"],
+    containerRef: selectorsRef,
+    disabled: !isEditing,
+    shouldIgnoreEvent: (event) => {
+      const target = event.target as HTMLElement | null;
+
+      if (!target) return false;
+
+      // Ignore elements with data-skip-key-as-tab="true"
+      if (target.closest("[data-skip-key-as-tab='true']")) {
+        return true;
+      }
+
+      // Ignore textareas and buttons
+      const tagName = target.tagName.toLowerCase();
+
+      if (tagName === "textarea" || tagName === "button") {
+        return true;
+      }
+
+      // Ignore if inside an open dropdown list
+      const listboxElement = target.closest('[role="listbox"]');
+
+      if (listboxElement) {
+        return true;
+      }
+
+      // Ignore if inside an open popover or dropdown
+      const popoverElement = target.closest(
+        '[role="dialog"], [role="menu"], [data-headlessui-state]',
+      );
+
+      if (popoverElement) {
+        return true;
+      }
+
+      // Ignore select button itself when Enter is pressed (don't open it)
+      const selectButton = target.closest('[role="combobox"]');
+
+      if (selectButton) {
+        const isExpanded =
+          selectButton.getAttribute("aria-expanded") === "true";
+
+        if (!isExpanded) {
+          return true; // Ignore select on Enter if closed
+        }
+      }
+
+      return false;
+    },
+  });
+
+  // Hook for Enter key navigation in table rows
+  const {
+    setInputRef,
+    handleKeyDown: handleKeyDownTable,
+    focusFirstInRow,
+  } = useEnterKeyNavigation({
+    rows: details,
+    rowHasValue: (row) => {
+      return !!(row?.acc_id || (row?.amount && row.amount > 0));
+    },
+    onAddRow: addDetailRow,
+    handleF4KeyForSelect,
+  });
 
   const toAmount = (value: unknown) => {
     const numeric = Number(value);
@@ -585,7 +661,11 @@ export default function CashReceiptVoucherClientPage({
       </div>
 
       {/* Form Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
+      <div
+        ref={selectorsRef}
+        className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2"
+        onKeyDownCapture={handleKeyDownSelectors}
+      >
         {/* رقم المرجع */}
         <div className="md:col-span-1">
           <label className="block text-xs font-medium text-slate-700 mb-0.5">
@@ -1032,77 +1112,87 @@ export default function CashReceiptVoucherClientPage({
                 {details.map((detail, index) => (
                   <tr key={index} className="border-b">
                     <td className="p-0 border">
-                      <AsyncCreatableSelect
-                        isClearable
-                        isSearchable
-                        className="text-xs"
-                        classNamePrefix="select"
-                        components={{ IndicatorSeparator: () => null }}
-                        formatCreateLabel={(inputValue) =>
-                          `إضافة حساب جديد: "${inputValue}"`
-                        }
-                        instanceId={`account-select-${index}`}
-                        isDisabled={!isEditing}
-                        loadOptions={loadAccountOptions}
-                        menuPortalTarget={
-                          typeof window !== "undefined" ? document.body : null
-                        }
-                        menuPosition="fixed"
-                        placeholder="اختر الحساب..."
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            minHeight: "100%",
-                            height: "100%",
-                            border: "none",
-                            borderRadius: 0,
-                            boxShadow: "none",
-                            cursor: !isEditing ? "not-allowed" : base.cursor,
-                            backgroundColor: "transparent",
-                            "&:hover": {
+                      <div
+                        onKeyDownCapture={(e) => {
+                          // معالجة F4 لفتح/إغلاق القائمة باستخدام الدالة العامة
+                          if (handleF4KeyForSelect(e)) {
+                            return;
+                          }
+                        }}
+                      >
+                        <AsyncCreatableSelect
+                          isClearable
+                          isSearchable
+                          className="text-xs"
+                          classNamePrefix="select"
+                          components={{ IndicatorSeparator: () => null }}
+                          formatCreateLabel={(inputValue) =>
+                            `إضافة حساب جديد: "${inputValue}"`
+                          }
+                          instanceId={`account-select-${index}`}
+                          isDisabled={!isEditing}
+                          loadOptions={loadAccountOptions}
+                          menuPortalTarget={
+                            typeof window !== "undefined" ? document.body : null
+                          }
+                          menuPosition="fixed"
+                          placeholder="اختر الحساب..."
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              minHeight: "100%",
+                              height: "100%",
                               border: "none",
+                              borderRadius: 0,
                               boxShadow: "none",
-                            },
-                          }),
-                          valueContainer: (base) => ({
-                            ...base,
-                            padding: "0.125rem 0.25rem",
-                            height: "100%",
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            margin: 0,
-                            padding: 0,
-                          }),
-                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                        }}
-                        value={getAccountSelectValue(detail)}
-                        onChange={(selectedOption: any) => {
-                          if (!isEditing) return;
-                          const opt: any = selectedOption;
-                          const selected =
-                            opt?.account ||
-                            accounts.find((acc) => acc.id === opt?.value);
+                              cursor: !isEditing ? "not-allowed" : base.cursor,
+                              backgroundColor: "transparent",
+                              "&:hover": {
+                                border: "none",
+                                boxShadow: "none",
+                              },
+                            }),
+                            valueContainer: (base) => ({
+                              ...base,
+                              padding: "0.125rem 0.25rem",
+                              height: "100%",
+                            }),
+                            input: (base) => ({
+                              ...base,
+                              margin: 0,
+                              padding: 0,
+                            }),
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          }}
+                          value={getAccountSelectValue(detail)}
+                          onChange={(selectedOption: any) => {
+                            if (!isEditing) return;
+                            const opt: any = selectedOption;
+                            const selected =
+                              opt?.account ||
+                              accounts.find((acc) => acc.id === opt?.value);
 
-                          if (!selected) return;
+                            if (!selected) return;
 
-                          updateAccountsList(selected);
-                          updateDetail(index, "acc_id", selected.id ?? null);
-                          updateDetail(
-                            index,
-                            "acc_code",
-                            selected.acc_code ?? selected.code ?? "",
-                          );
-                          updateDetail(
-                            index,
-                            "acc_name",
-                            selected.acc_name ?? selected.name ?? "",
-                          );
-                        }}
-                      />
+                            updateAccountsList(selected);
+                            updateDetail(index, "acc_id", selected.id ?? null);
+                            updateDetail(
+                              index,
+                              "acc_code",
+                              selected.acc_code ?? selected.code ?? "",
+                            );
+                            updateDetail(
+                              index,
+                              "acc_name",
+                              selected.acc_name ?? selected.name ?? "",
+                            );
+                          }}
+                        />
+                      </div>
                     </td>
                     <td className="p-0 border">
                       <input
+                        ref={setInputRef(index, "amount")}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
                         disabled={!isEditing}
                         min="0"
@@ -1143,15 +1233,14 @@ export default function CashReceiptVoucherClientPage({
                           }
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            e.preventDefault();
-                          }
+                          handleKeyDownTable(e, index, "amount");
                         }}
                         onWheel={(e) => e.currentTarget.blur()}
                       />
                     </td>
                     <td className="p-0 border">
                       <input
+                        ref={setInputRef(index, "notes")}
                         className="w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0"
                         disabled={!isEditing}
                         readOnly={!isEditing}
@@ -1160,6 +1249,9 @@ export default function CashReceiptVoucherClientPage({
                         onChange={(e) =>
                           updateDetail(index, "vouch_notes", e.target.value)
                         }
+                        onKeyDown={(e) => {
+                          handleKeyDownTable(e, index, "notes");
+                        }}
                       />
                     </td>
                     <td className="p-0 border">
