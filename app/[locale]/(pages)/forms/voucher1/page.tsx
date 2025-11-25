@@ -6,6 +6,9 @@ import CashReceiptVoucherClientPage from "./CashReceiptVoucherClientPage";
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import Breadcrumb from "@/components/Breadcrumb";
+import { redirectToLogin } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
+import { formData } from "zod-form-data";
 
 export const metadata: Metadata = {
   title: "سند قبض - NafeesWeb",
@@ -45,61 +48,71 @@ const getReceiptVoucherForNavigation = cache(async () => {
 });
 
 export default async function ReceiptVoucherPage() {
-  const [formData, voucherForNav] = await Promise.all([
-    getVoucherFormData(),
-    getReceiptVoucherForNavigation(),
-  ]);
+	try {
+    const [formData, voucherForNav] = await Promise.all([
+      getVoucherFormData(),
+      getReceiptVoucherForNavigation(),
+    ]);
 
-  // بناء navigationInfo من آخر سند قبض
-  const parseNavId = (value: unknown): number | null => {
-    if (value === null || value === undefined || value === "") {
-      return null;
+    // بناء navigationInfo من آخر سند قبض
+    const parseNavId = (value: unknown): number | null => {
+      if (value === null || value === undefined || value === "") {
+        return null;
+      }
+
+      const numeric = Number(value);
+
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    };
+
+    const navigationInfo = voucherForNav
+      ? {
+          previous: parseNavId(
+            (voucherForNav as any).previous_voucher_id ??
+              (voucherForNav as any).previous,
+          ),
+          next: parseNavId(
+            (voucherForNav as any).next_voucher_id ??
+              (voucherForNav as any).next,
+          ),
+          first: parseNavId(
+            (voucherForNav as any).first_voucher_id ??
+              (voucherForNav as any).first,
+          ),
+          last: parseNavId(
+            (voucherForNav as any).last_voucher_id ??
+              (voucherForNav as any).last,
+          ),
+        }
+      : undefined;
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
     }
 
-    const numeric = Number(value);
-
-    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-  };
-
-  const navigationInfo = voucherForNav
-    ? {
-        previous: parseNavId(
-          (voucherForNav as any).previous_voucher_id ??
-            (voucherForNav as any).previous,
-        ),
-        next: parseNavId(
-          (voucherForNav as any).next_voucher_id ?? (voucherForNav as any).next,
-        ),
-        first: parseNavId(
-          (voucherForNav as any).first_voucher_id ??
-            (voucherForNav as any).first,
-        ),
-        last: parseNavId(
-          (voucherForNav as any).last_voucher_id ?? (voucherForNav as any).last,
-        ),
-      }
-    : undefined;
-
-  return (
-    <div className="container mx-auto p-4">
-      <Breadcrumb
-        items={[
-          { name: "سند قبض", href: "/forms/voucher1" },
-          { name: "جديدة" },
-        ]}
-      />
-      <CashReceiptVoucherClientPage
-        accounts={formData.accounts}
-        boxes={formData.boxes}
-        costCenters={formData.costCenters}
-        formMode="new"
-        isNewVoucher={true}
-        navigationInfo={navigationInfo}
-        startInEditMode={true}
-        vouchType={1}
-        voucherStatuses={formData.voucherStatuses}
-        voucherTypes={formData.voucherTypes}
-      />
-    </div>
-  );
+    throw error;
+  }
+		
+		return (
+      <div className="container mx-auto p-4">
+        <Breadcrumb
+          items={[
+            { name: "سند قبض", href: "/forms/voucher1" },
+            { name: "جديدة" },
+          ]}
+        />
+        <CashReceiptVoucherClientPage
+          accounts={formData.accounts}
+          boxes={formData.boxes}
+          costCenters={formData.costCenters}
+          formMode="new"
+          isNewVoucher={true}
+          navigationInfo={navigationInfo}
+          startInEditMode={true}
+          vouchType={1}
+          voucherStatuses={formData.voucherStatuses}
+          voucherTypes={formData.voucherTypes}
+        />
+      </div>
+    );
 }

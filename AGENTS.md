@@ -62,9 +62,11 @@ No testing framework is used in this project.
 
 ### Building pages
 
-- Use the same as `auth/login` and `reports/invoices` pages
+- Use the same as `app/[locale]/(pages)/page.tsx`, `auth/login` and `reports/invoices` pages
 - Use server-side components for page components
 - Use latest practices for page architecture from Next.js v15 Example:
+- Always fetch data on page level then pass it down to client components as props if needed
+- Alwyas fetch data on try-catch block and use `notFound()` if fetch fails, If error error instanceof AuthenticationError then redirect to login page
 
 ``` javascript
 export const metadata: Metadata = {

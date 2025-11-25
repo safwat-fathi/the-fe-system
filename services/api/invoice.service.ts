@@ -9,10 +9,7 @@ import {
   InvoiceMaxIdPrimitive,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
-import {
-  AuthenticationError,
-  rethrowAuthenticationError,
-} from "@/utilities/errors/Authentication";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 export interface GetAllInvoicesParams {
   page?: string;
