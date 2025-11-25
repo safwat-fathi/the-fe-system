@@ -6,6 +6,8 @@ import Breadcrumb from "@/components/Breadcrumb";
 import accountService from "@/services/api/account.service";
 import { Account } from "@/types/models/account";
 import { Currency } from "@/types/models/currency";
+import { redirectToLogin } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export const metadata: Metadata = {
   title: "دليل الحسابات - NafeesWeb",
@@ -13,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountsPage() {
+  try {
   const rootRequestPayload = {
     id: 0,
     acc_id: "0",
@@ -43,4 +46,11 @@ export default async function AccountsPage() {
       />
     </div>
   );
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
+    }
+
+    throw error;
+  }
 }

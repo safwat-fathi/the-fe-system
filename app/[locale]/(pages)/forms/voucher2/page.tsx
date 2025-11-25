@@ -6,6 +6,8 @@ import CashReceiptVoucherClientPage from "../voucher1/CashReceiptVoucherClientPa
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import Breadcrumb from "@/components/Breadcrumb";
+import { redirectToLogin } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export const metadata: Metadata = {
   title: "سند صرف - NafeesWeb",
@@ -45,6 +47,7 @@ const getPaymentVoucherForNavigation = cache(async () => {
 });
 
 export default async function PaymentVoucherPage() {
+  try {
   const [formData, voucherForNav] = await Promise.all([
     getVoucherFormData(),
     getPaymentVoucherForNavigation(),
@@ -102,4 +105,11 @@ export default async function PaymentVoucherPage() {
       />
     </div>
   );
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
+    }
+
+    throw error;
+  }
 }

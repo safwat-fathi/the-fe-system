@@ -20,7 +20,7 @@ import {
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
-import useEnterKeyNavigation from "@/app/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
+
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import SearchableSelect from "@/components/SearchableSelect";
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
@@ -29,6 +29,7 @@ import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
+import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
 
 interface DeliveryVoucherClientPageProps {
   voucherData?: Voucher | null;

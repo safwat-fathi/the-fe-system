@@ -8,6 +8,8 @@ import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import Breadcrumb from "@/components/Breadcrumb";
+import { redirectToLogin } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export const metadata: Metadata = {
   title: "عرض سند تسليم - NafeesWeb",
@@ -110,6 +112,7 @@ export default async function DeliveryVoucherEditPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  try {
   const { id } = await params;
   const searchParamsData = await searchParams;
   const mode = Array.isArray(searchParamsData.mode)
@@ -352,4 +355,11 @@ export default async function DeliveryVoucherEditPage({
       />
     </div>
   );
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
+    }
+
+    throw error;
+  }
 }

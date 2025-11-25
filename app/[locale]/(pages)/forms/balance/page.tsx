@@ -7,6 +7,8 @@ import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
 import Breadcrumb from "@/components/Breadcrumb";
+import { redirectToLogin } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export const metadata: Metadata = {
   title: "قيد افتتاحي - NafeesWeb",
@@ -82,6 +84,7 @@ export default async function BalanceVoucherPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  try {
   const searchParamsData = await searchParams;
   const mode = Array.isArray(searchParamsData.mode)
     ? searchParamsData.mode[0]
@@ -220,4 +223,11 @@ export default async function BalanceVoucherPage({
       />
     </div>
   );
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
+    }
+
+    throw error;
+  }
 }

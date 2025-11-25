@@ -85,15 +85,8 @@ export default async function ReceiptVoucherPage() {
           ),
         }
       : undefined;
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      await redirectToLogin();
-    }
 
-    throw error;
-  }
-		
-		return (
+    return (
       <div className="container mx-auto p-4">
         <Breadcrumb
           items={[
@@ -115,4 +108,13 @@ export default async function ReceiptVoucherPage() {
         />
       </div>
     );
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
+    }
+
+    throw error;
+  }
+		
+	
 }

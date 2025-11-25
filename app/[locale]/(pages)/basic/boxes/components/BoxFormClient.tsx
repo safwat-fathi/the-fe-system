@@ -86,7 +86,7 @@ const BoxFormClient = ({
         updatedBox.cust_code = updatedBox.id ? String(updatedBox.id) : "";
       }
 
-      const { acc_name, ...rest } = updatedBox;
+      const { ...rest } = updatedBox;
       const normalizeNumberField = (value: unknown): number | undefined => {
         if (value === null || value === undefined || value === "") {
           return undefined;
@@ -220,7 +220,7 @@ const BoxFormClient = ({
         <Input
           isDisabled={isViewMode}
           label="كود الصندوق"
-          value={box.cust_code || ""}
+          value={(box.cust_code as string) || ""}
           onChange={handleInputChange("cust_code")}
         />
         <Input

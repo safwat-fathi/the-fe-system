@@ -125,31 +125,23 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       //   response.status,
       // );
       if (response.status === 401) {
-				console.log("**********************************");
-        console.log("response.status === 401");
-        console.log("**********************************");
-
         // throw new AuthenticationError("Session expired");
         // Signal authentication failure to the caller.
-        try {
-          const res = await fetch("http://localhost:3000/api/auth/refresh", {
-            method: "POST",
-            // credentials: "include",
-            // TODO: send refresh token
-            body: JSON.stringify({}),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
+        // try {
+        //   const res = await fetch("http://localhost:3000/api/auth/refresh", {
+        //     method: "POST",
+        //     // credentials: "include",
+        //     // TODO: send refresh token
+        //     body: JSON.stringify({}),
+        //     headers: {
+        //       "Content-Type": "application/json",
+        //     },
+        //   });
 
-          const data = await res.json();
-          console.log(
-            "🚀 ~ :136 ~ HttpService ~ _request ~ res***********************:",
-            data.message,
-          );
-        } catch (error) {
-          console.log("🚀 ~ :147 ~ HttpService ~ _request ~ error:", error);
-        }
+        //   const data = await res.json();
+        // } catch (error) {
+        //   throw new AuthenticationError("Session expired");
+        // }
         throw new AuthenticationError("Session expired");
       }
 

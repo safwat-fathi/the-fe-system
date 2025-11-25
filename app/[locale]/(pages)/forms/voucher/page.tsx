@@ -7,6 +7,8 @@ import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
 import Breadcrumb from "@/components/Breadcrumb";
+import { redirectToLogin } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 type VoucherPageType = "adjustment" | "receipt" | "payment" | "opening";
 type VoucherFormMode = "new" | "edit" | "preview";
@@ -131,6 +133,7 @@ export default async function VoucherPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  try {
   const params = await searchParams;
 
   const voucherType = resolveVoucherType(toSingleValue(params.type));
@@ -301,4 +304,11 @@ export default async function VoucherPage({
       />
     </div>
   );
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
+    }
+
+    throw error;
+  }
 }
