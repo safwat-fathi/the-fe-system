@@ -95,7 +95,7 @@ class DashboardService extends HttpService<any> {
       //   "🚀 ~ :28 ~ DashboardService ~ getDashboardStats ~  items:",
       //   items,
       // );
-      if (!invoices) return null;
+      if (!invoices) throw new Error("Error fetching invoices");
 
       // Calculate monthly sales
       const invoicesList = Array.isArray(invoices?.results)
@@ -119,12 +119,13 @@ class DashboardService extends HttpService<any> {
         monthlySales,
       };
     } catch (error) {
-      if (error instanceof AuthenticationError) {
-        // Bubble up auth errors so the page can redirect.
-        throw error;
-      }
+      console.log("🚀 ~ :122 ~ DashboardService ~ getDashboardStats ~ error:");
+      // if (error instanceof AuthenticationError) {
+      //   // Bubble up auth errors so the page can redirect.
+      //   throw error;
+      // }
 
-      throw new Error("حدث خطأ أثناء  إحصائيات لوحة التحكم");
+      throw error;
     }
   }
 }
