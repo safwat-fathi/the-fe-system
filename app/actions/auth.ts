@@ -26,8 +26,6 @@ export async function loginAction(
   state: unknown,
   formData: FormData,
 ): Promise<LoginResult | void> {
-  await deleteCredentials();
-
   // Validate form data using Zod schema
   const result = loginSchema.safeParse(formData);
   const redirectPath = (formData.get("redirect") as string) || "/";

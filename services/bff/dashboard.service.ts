@@ -91,12 +91,6 @@ class DashboardService extends HttpService<any> {
           }),
         ]);
 
-      // console.log(
-      //   "🚀 ~ :28 ~ DashboardService ~ getDashboardStats ~  items:",
-      //   items,
-      // );
-      if (!invoices) throw new Error("Error fetching invoices");
-
       // Calculate monthly sales
       const invoicesList = Array.isArray(invoices?.results)
         ? invoices.results
