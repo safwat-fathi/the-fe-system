@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect from "react-select";
@@ -27,6 +27,8 @@ import {
   ForwardIcon,
 } from "@heroicons/react/24/outline";
 
+import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
+import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { useVoucherForm } from "@/hooks/useVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
@@ -144,6 +146,83 @@ export default function VoucherClientPage({
     vouchType,
     formMode,
     newVoucherHref,
+  });
+
+  // Refs for keyboard navigation
+  const selectorsRef = useRef<HTMLDivElement>(null);
+
+  // Hook for Enter key navigation in top form fields
+  const {
+    handleKeyDown: handleKeyDownSelectors,
+    handleF4KeyForSelect,
+  } = useKeyAsTab({
+    keys: ["Enter"],
+    containerRef: selectorsRef,
+    disabled: !isEditing,
+    shouldIgnoreEvent: (event) => {
+      const target = event.target as HTMLElement | null;
+
+      if (!target) return false;
+
+      // Ignore elements with data-skip-key-as-tab="true"
+      if (target.closest("[data-skip-key-as-tab='true']")) {
+        return true;
+      }
+
+      // Ignore textareas and buttons
+      const tagName = target.tagName.toLowerCase();
+
+      if (tagName === "textarea" || tagName === "button") {
+        return true;
+      }
+
+      // Ignore if inside an open dropdown list
+      const listboxElement = target.closest('[role="listbox"]');
+
+      if (listboxElement) {
+        return true;
+      }
+
+      // Ignore if inside an open popover or dropdown
+      const popoverElement = target.closest(
+        '[role="dialog"], [role="menu"], [data-headlessui-state]',
+      );
+
+      if (popoverElement) {
+        return true;
+      }
+
+      // Ignore select button itself when Enter is pressed (don't open it)
+      const selectButton = target.closest('[role="combobox"]');
+
+      if (selectButton) {
+        const isExpanded =
+          selectButton.getAttribute("aria-expanded") === "true";
+
+        if (!isExpanded) {
+          return true; // Ignore select on Enter if closed
+        }
+      }
+
+      return false;
+    },
+  });
+
+  // Hook for Enter key navigation in table rows
+  const {
+    setInputRef,
+    handleKeyDown: handleKeyDownTable,
+    focusFirstInRow,
+  } = useEnterKeyNavigation({
+    rows: details,
+    rowHasValue: (row) => {
+      return !!(
+        row?.acc_id ||
+        (row?.debit && row.debit > 0) ||
+        (row?.credit && row.credit > 0)
+      );
+    },
+    onAddRow: addDetailRow,
   });
 
   const toAmount = (value: unknown) => {
@@ -489,7 +568,11 @@ export default function VoucherClientPage({
 
         {/* نموذج بيانات القيد */}
         <div className="bg-white rounded-lg border border-slate-200 mb-2">
-          <div className="p-2">
+          <div
+            ref={selectorsRef}
+            className="p-2"
+            onKeyDownCapture={handleKeyDownSelectors}
+          >
             <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               {/* رقم المرجع - أضيق */}
               <div className="flex flex-col gap-1 md:col-span-1">
@@ -848,86 +931,98 @@ export default function VoucherClientPage({
                       }`}
                     >
                       <td className="p-0 border bg-white">
-                        <AsyncCreatableSelect
-                          isClearable
-                          isSearchable
-                          className="text-xs"
-                          classNamePrefix="select"
-                          components={{ IndicatorSeparator: () => null }}
-                          formatCreateLabel={(inputValue) =>
-                            `إضافة حساب جديد: "${inputValue}"`
-                          }
-                          instanceId={`account-select-${index}`}
-                          isDisabled={!isEditing}
-                          loadOptions={loadAccountOptions}
-                          menuPortalTarget={
-                            typeof window !== "undefined" ? document.body : null
-                          }
-                          menuPosition="fixed"
-                          placeholder="اختر الحساب..."
-                          styles={{
-                            control: (base, state) => ({
-                              ...base,
-                              minHeight: "100%",
-                              height: "100%",
-                              border: "none",
-                              borderRadius: 0,
-                              boxShadow: "none",
-                              cursor: !isEditing ? "not-allowed" : base.cursor,
-                              backgroundColor: "transparent",
-                              "&:hover": {
-                                border: "none",
-                                boxShadow: "none",
-                              },
-                            }),
-                            valueContainer: (base) => ({
-                              ...base,
-                              padding: "0.125rem 0.25rem",
-                              height: "100%",
-                            }),
-                            input: (base) => ({
-                              ...base,
-                              margin: 0,
-                              padding: 0,
-                            }),
-                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                          }}
-                          value={getAccountSelectValue(detail)}
-                          onChange={(selectedOption: any) => {
-                            if (!isEditing) return;
-                            const opt: any = selectedOption;
-                            const selected =
-                              opt?.account ||
-                              accounts.find((acc) => acc.id === opt?.value);
-
-                            if (!selected) return;
-
-                            if (!accounts.find((a) => a.id === selected.id)) {
-                              updateAccountsList(selected);
+                        <div
+                          onKeyDownCapture={(e) => {
+                            // معالجة F4 لفتح/إغلاق القائمة باستخدام الدالة العامة
+                            if (handleF4KeyForSelect(e)) {
+                              return;
                             }
-
-                            updateDetail(index, "acc_id", selected.id ?? null);
-                            updateDetail(
-                              index,
-                              "acc_code",
-                              selected.acc_code ?? selected.code ?? "",
-                            );
-                            updateDetail(
-                              index,
-                              "acc_name",
-                              selected.acc_name ?? selected.name ?? "",
-                            );
                           }}
-                        />
+                        >
+                          <AsyncCreatableSelect
+                            isClearable
+                            isSearchable
+                            className="text-xs"
+                            classNamePrefix="select"
+                            components={{ IndicatorSeparator: () => null }}
+                            formatCreateLabel={(inputValue) =>
+                              `إضافة حساب جديد: "${inputValue}"`
+                            }
+                            instanceId={`account-select-${index}`}
+                            isDisabled={!isEditing}
+                            loadOptions={loadAccountOptions}
+                            menuPortalTarget={
+                              typeof window !== "undefined" ? document.body : null
+                            }
+                            menuPosition="fixed"
+                            placeholder="اختر الحساب..."
+                            styles={{
+                              control: (base, state) => ({
+                                ...base,
+                                minHeight: "100%",
+                                height: "100%",
+                                border: "none",
+                                borderRadius: 0,
+                                boxShadow: "none",
+                                cursor: !isEditing ? "not-allowed" : base.cursor,
+                                backgroundColor: "transparent",
+                                "&:hover": {
+                                  border: "none",
+                                  boxShadow: "none",
+                                },
+                              }),
+                              valueContainer: (base) => ({
+                                ...base,
+                                padding: "0.125rem 0.25rem",
+                                height: "100%",
+                              }),
+                              input: (base) => ({
+                                ...base,
+                                margin: 0,
+                                padding: 0,
+                              }),
+                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                            }}
+                            value={getAccountSelectValue(detail)}
+                            onChange={(selectedOption: any) => {
+                              if (!isEditing) return;
+                              const opt: any = selectedOption;
+                              const selected =
+                                opt?.account ||
+                                accounts.find((acc) => acc.id === opt?.value);
+
+                              if (!selected) return;
+
+                              if (!accounts.find((a) => a.id === selected.id)) {
+                                updateAccountsList(selected);
+                              }
+
+                              updateDetail(index, "acc_id", selected.id ?? null);
+                              updateDetail(
+                                index,
+                                "acc_code",
+                                selected.acc_code ?? selected.code ?? "",
+                              );
+                              updateDetail(
+                                index,
+                                "acc_name",
+                                selected.acc_name ?? selected.name ?? "",
+                              );
+                            }}
+                          />
+                        </div>
                       </td>
 
                       <td className="p-0 border">
                         <input
+                          data-row={index}
+                          data-col={1}
                           className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
                           disabled={!isEditing}
                           min="0"
                           placeholder="0.00"
                           readOnly={!isEditing}
+                          ref={(el) => setInputRef(index, 1, el)}
                           step="0.01"
                           style={{
                             MozAppearance: "textfield",
@@ -951,6 +1046,7 @@ export default function VoucherClientPage({
                             if (e.key === "ArrowUp" || e.key === "ArrowDown") {
                               e.preventDefault();
                             }
+                            handleKeyDownTable(e, index, 1);
                           }}
                           onWheel={(e) => e.currentTarget.blur()}
                         />
@@ -958,11 +1054,14 @@ export default function VoucherClientPage({
 
                       <td className="p-0 border">
                         <input
+                          data-row={index}
+                          data-col={2}
                           className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
                           disabled={!isEditing}
                           min="0"
                           placeholder="0.00"
                           readOnly={!isEditing}
+                          ref={(el) => setInputRef(index, 2, el)}
                           step="0.01"
                           style={{
                             MozAppearance: "textfield",
@@ -986,6 +1085,7 @@ export default function VoucherClientPage({
                             if (e.key === "ArrowUp" || e.key === "ArrowDown") {
                               e.preventDefault();
                             }
+                            handleKeyDownTable(e, index, 2);
                           }}
                           onWheel={(e) => e.currentTarget.blur()}
                         />
