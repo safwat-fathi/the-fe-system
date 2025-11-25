@@ -21,7 +21,7 @@ import {
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
-import useEnterKeyNavigation from "@/app/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
+import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { ConfirmationModal } from "@/components/Modal";
 import SearchableSelect from "@/components/SearchableSelect";
@@ -183,50 +183,11 @@ export default function BalanceVoucherClientPage({
   // Refs for keyboard navigation
   const selectorsRef = useRef<HTMLDivElement>(null);
 
-  // Handle F4 key to open select dropdowns
-  const handleF4KeyForSelect = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === "F4") {
-      const target = event.target as HTMLElement;
-      const selectButton = target.closest('[role="combobox"]') as HTMLElement;
-
-      if (selectButton) {
-        event.preventDefault();
-        event.stopPropagation();
-        const isExpanded =
-          selectButton.getAttribute("aria-expanded") === "true";
-
-        if (!isExpanded) {
-          selectButton.click();
-          setTimeout(() => {
-            const listbox =
-              selectButton
-                .closest(".react-select__control")
-                ?.nextElementSibling?.querySelector('[role="listbox"]') ||
-              document.querySelector('[id*="-listbox"]');
-
-            if (listbox) {
-              const firstOption = listbox.querySelector(
-                '[role="option"]',
-              ) as HTMLElement;
-
-              if (firstOption) {
-                firstOption.focus();
-              }
-            }
-          }, 100);
-        } else {
-          selectButton.click();
-        }
-
-        return true;
-      }
-    }
-
-    return false;
-  }, []);
-
   // Hook for Enter key navigation in top form fields
-  const { handleKeyDown: handleKeyDownSelectors } = useKeyAsTab({
+  const {
+    handleKeyDown: handleKeyDownSelectors,
+    handleF4KeyForSelect,
+  } = useKeyAsTab({
     keys: ["Enter"],
     containerRef: selectorsRef,
     disabled: !isEditing,
@@ -953,6 +914,11 @@ export default function BalanceVoucherClientPage({
 
                                     // التحقق من وجود target
                                     if (!target) {
+                                      return;
+                                    }
+
+                                    // معالجة F4 لفتح/إغلاق القائمة باستخدام الدالة العامة
+                                    if (handleF4KeyForSelect(e)) {
                                       return;
                                     }
 
