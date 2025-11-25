@@ -29,7 +29,6 @@ import { useBalanceVoucherForm } from "@/hooks/useBalanceVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
 
 interface BalanceVoucherClientPageProps {
   voucherData?: any;
