@@ -21,7 +21,7 @@ import {
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
-import useEnterKeyNavigation from "@/app/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
+
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { ConfirmationModal } from "@/components/Modal";
 import SearchableSelect from "@/components/SearchableSelect";
@@ -29,6 +29,7 @@ import { useBalanceVoucherForm } from "@/hooks/useBalanceVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
 
 interface BalanceVoucherClientPageProps {
   voucherData?: any;
