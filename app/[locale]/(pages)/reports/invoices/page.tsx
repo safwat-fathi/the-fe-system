@@ -11,6 +11,11 @@ import invoiceService, {
 } from "@/services/api/invoice.service";
 import AppPagination from "@/components/AppPagination";
 import AppLoading from "@/components/AppLoading";
+import { redirectToLogin } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
+import { count } from "console";
+import { Invoice } from "@/types/models/invoice";
+import { IPaginatedResponse } from "@/types/services/base";
 
 export const revalidate = 3600;
 
@@ -30,7 +35,17 @@ export default async function InvoicesPage({
 }) {
   const queryParams = await searchParams;
 
-  const invoices = await invoiceService.getAllInvoices(queryParams);
+  let invoices: IPaginatedResponse<Invoice> | null = null;
+
+  try {
+    invoices = await invoiceService.getAllInvoices(queryParams);
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
+    }
+
+    throw error;
+  }
 
   const count = invoices?.count || 0;
   const itemsPerPage = 20;
