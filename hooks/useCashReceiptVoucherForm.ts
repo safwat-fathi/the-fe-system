@@ -363,6 +363,18 @@ export const useCashReceiptVoucherForm = ({
   };
 
   const addVoucherBoxRow = () => {
+    // التحقق مما إذا كان السطر الأخير فارغاً
+    if (voucherBoxes.length > 0) {
+      const lastBox = voucherBoxes[voucherBoxes.length - 1];
+      const isEmpty =
+        (!lastBox.box_id || lastBox.box_id === 0) &&
+        (!lastBox.amount || lastBox.amount === 0);
+
+      if (isEmpty) {
+        return;
+      }
+    }
+
     setVoucherBoxes((prev) => [
       ...prev,
       {
@@ -398,6 +410,19 @@ export const useCashReceiptVoucherForm = ({
   };
 
   const addDetailRow = () => {
+    // التحقق مما إذا كان السطر الأخير فارغاً
+    if (details.length > 0) {
+      const lastDetail = details[details.length - 1];
+      const isEmpty =
+        (!lastDetail.acc_id || lastDetail.acc_id === 0) &&
+        (!lastDetail.debit || lastDetail.debit === 0) &&
+        (!lastDetail.credit || lastDetail.credit === 0);
+
+      if (isEmpty) {
+        return;
+      }
+    }
+
     setDetails((prev) => [
       ...prev,
       {
@@ -511,25 +536,68 @@ export const useCashReceiptVoucherForm = ({
       return;
     }
 
-    const validBoxes = voucherBoxes.filter(
-      (box) => box.box_id && box.box_id > 0 && box.amount && box.amount > 0,
-    );
+    // إزالة الصفوف الفارغة من جدول النقدية
+    let currentBoxes = [...voucherBoxes];
 
-    if (validBoxes.length === 0) {
+    if (currentBoxes.length > 0) {
+      const lastBox = currentBoxes[currentBoxes.length - 1];
+      const isEmpty =
+        (!lastBox.box_id || lastBox.box_id === 0) &&
+        (!lastBox.amount || lastBox.amount === 0);
+
+      if (isEmpty) {
+        currentBoxes.pop();
+        setVoucherBoxes(currentBoxes);
+      }
+    }
+
+    // إزالة جميع الصفوف الفارغة الأخرى من جدول النقدية
+    currentBoxes = currentBoxes.filter((box) => {
+      const hasBox = box.box_id && box.box_id > 0;
+      const hasAmount = box.amount && box.amount > 0;
+
+      return hasBox && hasAmount;
+    });
+
+    // إزالة الصفوف الفارغة من جدول الحسابات
+    let currentDetails = [...details];
+
+    if (currentDetails.length > 0) {
+      const lastDetail = currentDetails[currentDetails.length - 1];
+      const isEmpty =
+        (!lastDetail.acc_id || lastDetail.acc_id === 0) &&
+        (!lastDetail.debit || lastDetail.debit === 0) &&
+        (!lastDetail.credit || lastDetail.credit === 0);
+
+      if (isEmpty) {
+        currentDetails.pop();
+        setDetails(currentDetails);
+      }
+    }
+
+    // إزالة جميع الصفوف الفارغة الأخرى من جدول الحسابات
+    currentDetails = currentDetails.filter((detail) => {
+      const hasAccount = detail.acc_id && detail.acc_id > 0;
+      const hasDebit = detail.debit && detail.debit > 0;
+      const hasCredit = detail.credit && detail.credit > 0;
+
+      return hasAccount && (hasDebit || hasCredit);
+    });
+
+    if (currentBoxes.length === 0) {
       toast.error("يرجى إدخال صندوق واحد على الأقل");
 
       return;
     }
 
-    const validDetails = details.filter(
-      (detail) => detail.acc_id && detail.acc_id > 0,
-    );
-
-    if (validDetails.length === 0) {
+    if (currentDetails.length === 0) {
       toast.error("يرجى إدخال حساب واحد على الأقل");
 
       return;
     }
+
+    const validBoxes = currentBoxes;
+    const validDetails = currentDetails;
 
     setIsLoading(true);
 

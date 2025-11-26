@@ -48,7 +48,7 @@ const getReceiptVoucherForNavigation = cache(async () => {
 });
 
 export default async function ReceiptVoucherPage() {
-	try {
+  try {
     const [formData, voucherForNav] = await Promise.all([
       getVoucherFormData(),
       getReceiptVoucherForNavigation(),

@@ -312,6 +312,21 @@ export const useBalanceVoucherForm = ({
   };
 
   const addDetailRow = () => {
+    // التحقق مما إذا كان السطر الأخير فارغاً
+    if (details.length > 0) {
+      const lastDetail = details[details.length - 1];
+      const isEmpty =
+        (!lastDetail.acc_id || lastDetail.acc_id === 0) &&
+        (lastDetail.debit === undefined || lastDetail.debit === null) &&
+        (lastDetail.credit === undefined || lastDetail.credit === null) &&
+        (lastDetail.g_debit === undefined || lastDetail.g_debit === null) &&
+        (lastDetail.g_credit === undefined || lastDetail.g_credit === null);
+
+      if (isEmpty) {
+        return;
+      }
+    }
+
     const newDetail: VoucherDetail = {
       id: 0,
       vouch_id: voucher.vouch_id,
@@ -722,10 +737,55 @@ export const useBalanceVoucherForm = ({
   };
 
   const proceedWithSave = async () => {
-    const detailsWithAccounts = details.filter(
+    // إزالة السطر الأخير إذا كان فارغاً
+    let currentDetails = [...details];
+
+    if (currentDetails.length > 0) {
+      const lastDetail = currentDetails[currentDetails.length - 1];
+      const isEmpty =
+        (!lastDetail.acc_id || lastDetail.acc_id === 0) &&
+        (lastDetail.debit === undefined || lastDetail.debit === null) &&
+        (lastDetail.credit === undefined || lastDetail.credit === null) &&
+        (lastDetail.g_debit === undefined || lastDetail.g_debit === null) &&
+        (lastDetail.g_credit === undefined || lastDetail.g_credit === null);
+
+      if (isEmpty) {
+        currentDetails.pop();
+        setDetails(currentDetails);
+      }
+    }
+
+    // إزالة جميع الصفوف الفارغة الأخرى (الصفوف التي لا تحتوي على حساب ولا قيم)
+    currentDetails = currentDetails.filter((detail) => {
+      const hasAccount = detail.acc_id && detail.acc_id > 0;
+      const hasDebit = detail.debit !== undefined && detail.debit !== null;
+      const hasCredit = detail.credit !== undefined && detail.credit !== null;
+      const hasGoldDebit =
+        detail.g_debit !== undefined && detail.g_debit !== null;
+      const hasGoldCredit =
+        detail.g_credit !== undefined && detail.g_credit !== null;
+
+      // الصف الفارغ: لا حساب ولا أي قيم
+      const isEmpty =
+        !hasAccount &&
+        !hasDebit &&
+        !hasCredit &&
+        !hasGoldDebit &&
+        !hasGoldCredit;
+
+      return !isEmpty;
+    });
+
+    if (currentDetails.length === 0) {
+      toast.error("يجب إضافة تفاصيل للقيد");
+
+      return;
+    }
+
+    const detailsWithAccounts = currentDetails.filter(
       (detail) => detail.acc_id && detail.acc_id > 0,
     );
-    const detailsWithoutAccounts = details.filter(
+    const detailsWithoutAccounts = currentDetails.filter(
       (detail) => !detail.acc_id || detail.acc_id === 0,
     );
 
@@ -783,7 +843,7 @@ export const useBalanceVoucherForm = ({
         cost_id: masterCostId,
       };
 
-      const detailsData = details
+      const detailsData = currentDetails
         .filter((detail) => detail.acc_id && detail.acc_id > 0)
         .map((detail) => ({
           id: detail.id || 0,
