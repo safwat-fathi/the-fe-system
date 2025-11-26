@@ -86,7 +86,6 @@ const BoxFormClient = ({
         updatedBox.cust_code = updatedBox.id ? String(updatedBox.id) : "";
       }
 
-      const { acc_name, ...rest } = updatedBox;
       const normalizeNumberField = (value: unknown): number | undefined => {
         if (value === null || value === undefined || value === "") {
           return undefined;
@@ -97,8 +96,11 @@ const BoxFormClient = ({
         return Number.isFinite(numeric) ? numeric : undefined;
       };
 
+      // Extract acc_name if it exists (it's not part of Box type but might be in initialBox)
+      const { acc_name, ...boxWithoutAccName } = updatedBox as typeof updatedBox & { acc_name?: string };
+
       const cleanedBox = {
-        ...rest,
+        ...boxWithoutAccName,
         acc: normalizeNumberField(updatedBox.acc),
         vat_no: normalizeNumberField(updatedBox.vat_no),
         cr_no: normalizeNumberField(updatedBox.cr_no),
