@@ -63,7 +63,9 @@ export const useVoucherFormState = ({
   const [caratTypes, setCaratTypes] = useState<any[]>(initialCaratTypes);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [isEditing, setIsEditing] = useState(startInEditMode);
+  const [isEditing, setIsEditing] = useState(
+    formMode === "new" ? true : startInEditMode,
+  );
   const [defaultAccountOptions, setDefaultAccountOptions] = useState<any[]>([]);
 
   // Initialize component

@@ -228,16 +228,50 @@ export default function useKeyAsTab(
 
       const normalized = normalizeKey(event.key);
 
+      // ✅ معالجة الأسهم للتنقل
+      let direction: 1 | -1 | null = null;
+      if (event.key === "ArrowDown" || event.key === "ArrowLeft") {
+        direction = 1; // الحقل التالي
+      } else if (event.key === "ArrowUp" || event.key === "ArrowRight") {
+        direction = -1; // الحقل السابق
+      }
+
+      if (direction !== null) {
+        const target = (event.target as HTMLElement | null) || (event.currentTarget as HTMLElement | null);
+        
+        if (!target) return;
+
+        const listboxElement = target.closest('[role="listbox"]');
+        const selectButton = target.closest('[role="combobox"]');
+        const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+
+        // إذا كنا داخل قائمة مفتوحة، نسمح بالتفاعل الطبيعي
+        if (listboxElement || isExpanded) {
+          return;
+        }
+
+        // إذا كنا على select مغلق أو input عادي، ننتقل بين الحقول
+        const fallbackElement = target;
+        const moved = moveFocus(direction, fallbackElement);
+
+        if (moved) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        return;
+      }
+
       if (!keySet.has(normalized)) {
         return;
       }
 
-      const direction: 1 | -1 = event.shiftKey ? -1 : 1;
+      const tabDirection: 1 | -1 = event.shiftKey ? -1 : 1;
       const fallbackElement =
         (event.target instanceof HTMLElement ? event.target : null) ||
         (event.currentTarget as HTMLElement | null);
 
-      const moved = moveFocus(direction, fallbackElement);
+      const moved = moveFocus(tabDirection, fallbackElement);
 
       if (moved) {
         event.preventDefault();

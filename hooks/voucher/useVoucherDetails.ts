@@ -14,6 +14,7 @@ import {
   calculateVoucherTotals,
   calculateCalibratedGold,
   calculateReverseCalibratedGold,
+  calculateGaugeFromCalibrated,
 } from "@/utilities/voucherForm";
 import { isVoucherBalanced } from "@/utilities/voucher/balance";
 
@@ -99,6 +100,19 @@ export const useVoucherDetails = ({
 
   // Add detail row
   const addDetailRow = () => {
+    // التحقق مما إذا كان السطر الأخير فارغاً
+    if (details.length > 0) {
+      const lastDetail = details[details.length - 1];
+      const isEmpty =
+        (!lastDetail.acc_id || lastDetail.acc_id === 0) &&
+        (lastDetail.debit === undefined || lastDetail.debit === null) &&
+        (lastDetail.credit === undefined || lastDetail.credit === null);
+
+      if (isEmpty) {
+        return;
+      }
+    }
+
     const newDetail: VoucherDetail = {
       id: 0,
       vouch_id: voucherId,
@@ -189,33 +203,119 @@ export const useVoucherDetails = ({
           }
         }
 
+        // حساب g_debit من g_debit_base (الحساب العكسي)
         if (field === "g_debit_base") {
           const gDebitBaseValue =
             value !== undefined && value !== null ? parseNumber(value) : 0;
 
-          if (gDebitBaseValue > 0 && currentGauge > 0) {
-            newDetail.g_debit = calculateReverseCalibratedGold(
-              gDebitBaseValue,
-              currentGauge,
-              baseGauge,
-            );
+          if (gDebitBaseValue > 0) {
+            const debitActual = parseNumber(
+              newDetail.g_debit !== undefined && newDetail.g_debit !== null
+                ? newDetail.g_debit
+                : (newDetail as any).debit_g || 0,
+            ) as number;
+
+            // تقريب g_debit_base إلى منزلتين عشريتين
+            const normalizedBase = parseFloat(
+              gDebitBaseValue.toFixed(2),
+            ) as number;
+
+            newDetail.g_debit_base = normalizedBase;
+
+            if (debitActual > 0) {
+              // حساب المعايرة من القيمة المعايرة والقيمة الفعلية
+              const derivedGauge = calculateGaugeFromCalibrated(
+                normalizedBase,
+                debitActual,
+                baseGauge,
+                3,
+              );
+
+              newDetail.gauge = derivedGauge;
+
+              // إعادة حساب g_credit_base إذا كان g_credit موجود
+              const creditActual = parseNumber(
+                newDetail.g_credit !== undefined && newDetail.g_credit !== null
+                  ? newDetail.g_credit
+                  : (newDetail as any).credit_g || 0,
+              ) as number;
+
+              if (creditActual > 0) {
+                newDetail.g_credit_base = calculateCalibratedGold(
+                  creditActual,
+                  derivedGauge,
+                  baseGauge,
+                  2,
+                );
+              }
+            } else {
+              // إذا لم يكن g_debit موجود، نحسبه من g_debit_base
+              newDetail.g_debit = calculateReverseCalibratedGold(
+                normalizedBase,
+                currentGauge,
+                baseGauge,
+              );
+            }
           } else {
-            newDetail.g_debit = undefined;
+            newDetail.g_debit_base = undefined;
           }
         }
 
+        // حساب g_credit من g_credit_base (الحساب العكسي)
         if (field === "g_credit_base") {
           const gCreditBaseValue =
             value !== undefined && value !== null ? parseNumber(value) : 0;
 
-          if (gCreditBaseValue > 0 && currentGauge > 0) {
-            newDetail.g_credit = calculateReverseCalibratedGold(
-              gCreditBaseValue,
-              currentGauge,
-              baseGauge,
-            );
+          if (gCreditBaseValue > 0) {
+            const creditActual = parseNumber(
+              newDetail.g_credit !== undefined && newDetail.g_credit !== null
+                ? newDetail.g_credit
+                : (newDetail as any).credit_g || 0,
+            ) as number;
+
+            // تقريب g_credit_base إلى منزلتين عشريتين
+            const normalizedBase = parseFloat(
+              gCreditBaseValue.toFixed(2),
+            ) as number;
+
+            newDetail.g_credit_base = normalizedBase;
+
+            if (creditActual > 0) {
+              // حساب المعايرة من القيمة المعايرة والقيمة الفعلية
+              const derivedGauge = calculateGaugeFromCalibrated(
+                normalizedBase,
+                creditActual,
+                baseGauge,
+                3,
+              );
+
+              newDetail.gauge = derivedGauge;
+
+              // إعادة حساب g_debit_base إذا كان g_debit موجود
+              const debitActual = parseNumber(
+                newDetail.g_debit !== undefined && newDetail.g_debit !== null
+                  ? newDetail.g_debit
+                  : (newDetail as any).debit_g || 0,
+              ) as number;
+
+              if (debitActual > 0) {
+                newDetail.g_debit_base = calculateCalibratedGold(
+                  debitActual,
+                  derivedGauge,
+                  baseGauge,
+                  2,
+                );
+              }
+            } else {
+              // إذا لم يكن g_credit موجود، نحسبه من g_credit_base
+              newDetail.g_credit = calculateReverseCalibratedGold(
+                normalizedBase,
+                currentGauge,
+                baseGauge,
+              );
+            }
           } else {
-            newDetail.g_credit = undefined;
+            newDetail.g_credit_base = undefined;
           }
         }
 
