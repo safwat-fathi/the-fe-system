@@ -22,7 +22,9 @@ const getLocaleAndPathname = (pathname: string) => {
   }
 
   const potentialLocale = segments[0];
-  const hasLocale = locales.includes(potentialLocale as (typeof locales)[number]);
+  const hasLocale = locales.includes(
+    potentialLocale as (typeof locales)[number],
+  );
 
   const locale = hasLocale ? potentialLocale : defaultLocale;
   const remainingSegments = hasLocale ? segments.slice(1) : segments;
@@ -87,7 +89,7 @@ const authMiddleware: MiddlewareFactory = (next) => {
 
       // Token exists, allow the request to proceed
       return next(request, event);
-    } catch (error) {
+    } catch {
       // If there's an error checking auth, redirect to localized login
       // Don't redirect if we're already on the login page
       if (isLoginRoute) {

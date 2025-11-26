@@ -241,7 +241,11 @@ export default function CategoriesClient({
           ? null
           : Number(boxIdRaw);
       const catTypeId = cat.cat_type ?? cat.catType ?? null;
-      const catStatusId = cat.cat_status ?? cat.catStatus ?? null;
+      const rawStatusId = cat.cat_status ?? cat.catStatus ?? null;
+      const catStatusId =
+        typeof rawStatusId === "boolean"
+          ? Number(rawStatusId)
+          : rawStatusId;
       const taxTypeRaw = cat.tax_type;
       const isTaxable =
         typeof taxTypeRaw === "boolean"
@@ -480,7 +484,7 @@ export default function CategoriesClient({
         toast.error("فشل في الحذف ❌");
         await loadData();
       }
-    } catch (error) {
+    } catch {
       toast.error("خطأ أثناء الاتصال بالسيرفر");
       await loadData();
     } finally {
@@ -842,11 +846,10 @@ export default function CategoriesClient({
                       aria-label={ariaLabel}
                       className="max-w-full text-right leading-tight"
                       classNames={{
-                        trigger:
+                        selectorButton:
                           column === "wage"
                             ? "bg-amber-100 border-amber-300"
                             : "bg-white border-gray-200",
-                        inputWrapper: "min-h-[36px]",
                         listbox: "text-right",
                       }}
                       inputValue={getAccountDisplayValue(text)}

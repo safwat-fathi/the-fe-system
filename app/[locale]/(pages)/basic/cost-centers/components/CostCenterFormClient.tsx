@@ -37,16 +37,6 @@ interface CostCenterFormClientProps {
   costCenters: CostCenter[];
 }
 
-const getCostCenterTypeLabel = (type: number): string => {
-  const types: Record<number, string> = {
-    1: "مركز تكلفة رئيسي",
-    2: "مركز تكلفة فرعي",
-    3: "مركز تكلفة نشاط",
-  };
-
-  return types[type] || `نوع ${type}`;
-};
-
 const CostCenterFormClient = ({
   mode,
   initialCostCenter,
@@ -192,13 +182,13 @@ const CostCenterFormClient = ({
             setCostCenter({ ...costCenter, cost_type: type });
           }}
         >
-          <SelectItem key="1" value="1">
+          <SelectItem key="1">
             مركز تكلفة رئيسي
           </SelectItem>
-          <SelectItem key="2" value="2">
+          <SelectItem key="2">
             مركز تكلفة فرعي
           </SelectItem>
-          <SelectItem key="3" value="3">
+          <SelectItem key="3">
             مركز تكلفة نشاط
           </SelectItem>
         </Select>

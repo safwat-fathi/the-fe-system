@@ -98,7 +98,7 @@ export default function CostCentersClient({
       const data = await costCenterService.getAllCostCenters();
 
       setCostCenters(data);
-    } catch (error) {
+    } catch {
       toast.error("فشل في جلب مراكز التكلفة");
       setCostCenters([]);
     }
@@ -144,7 +144,7 @@ export default function CostCentersClient({
         toast.error("❌ فشل في حذف مركز التكلفة");
         loadCostCenters();
       }
-    } catch (error) {
+    } catch {
       toast.error("❌ حدث خطأ أثناء الحذف");
       loadCostCenters();
     } finally {

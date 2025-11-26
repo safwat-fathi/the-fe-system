@@ -60,8 +60,7 @@ export default function GLTransactionsClient({
   initialHealthSummary,
 }: GLTransactionsClientProps) {
   const router = useRouter();
-  const [transactions, setTransactions] =
-    useState<GLTransaction[]>(initialTransactions);
+  const [transactions] = useState<GLTransaction[]>(initialTransactions);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [healthSummary] = useState<GLHealthSummary | undefined>(
     initialHealthSummary,

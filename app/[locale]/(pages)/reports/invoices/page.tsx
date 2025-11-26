@@ -13,7 +13,6 @@ import AppPagination from "@/components/AppPagination";
 import AppLoading from "@/components/AppLoading";
 import { redirectToLogin } from "@/app/actions/auth";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
-import { count } from "console";
 import { Invoice } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 

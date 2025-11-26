@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -93,10 +92,8 @@ interface VATInvoice {
 }
 
 export default function VATReportPage() {
-  const router = useRouter();
   const fractions = useFractions() as { frac: number; frac2: number };
   const [invoices, setInvoices] = useState<VATInvoice[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("summary");
 
   // فلاتر
@@ -109,15 +106,12 @@ export default function VATReportPage() {
 
   const loadInvoices = useCallback(async () => {
     try {
-      setLoading(true);
       const data = await fetchData<VATInvoice[]>(API_ENDPOINTS.INVOICES_LIST);
 
       setInvoices(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error("خطأ في تحميل الفواتير");
       console.error("Error loading invoices:", error);
-    } finally {
-      setLoading(false);
     }
   }, []);
 

@@ -8,7 +8,6 @@ import { voucherService } from "@/services/api";
 import Breadcrumb from "@/components/Breadcrumb";
 import { redirectToLogin } from "@/app/actions/auth";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
-import { formData } from "zod-form-data";
 
 export const metadata: Metadata = {
   title: "سند قبض - NafeesWeb",
@@ -48,7 +47,7 @@ const getReceiptVoucherForNavigation = cache(async () => {
 });
 
 export default async function ReceiptVoucherPage() {
-	try {
+  try {
     const [formData, voucherForNav] = await Promise.all([
       getVoucherFormData(),
       getReceiptVoucherForNavigation(),
@@ -115,6 +114,4 @@ export default async function ReceiptVoucherPage() {
 
     throw error;
   }
-		
-	
 }

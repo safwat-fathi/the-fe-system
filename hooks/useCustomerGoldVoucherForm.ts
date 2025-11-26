@@ -72,12 +72,12 @@ export const useCustomerGoldVoucherForm = ({
   const [goldDetails, setGoldDetails] = useState<GVoucherDetail[]>(
     initialGoldDetails || [],
   );
-  const [accounts, setAccounts] = useState<any[]>(initialAccounts);
-  const [boxes, setBoxes] = useState<any[]>(initialBoxes);
-  const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
+  const [accounts] = useState<any[]>(initialAccounts);
+  const [boxes] = useState<any[]>(initialBoxes);
+  const [costCenters] = useState<any[]>(initialCostCenters);
   const [customers, setCustomers] = useState<any[]>(initialCustomers);
   const [items, setItems] = useState<any[]>(initialItems);
-  const [voucherTypes, setVoucherTypes] = useState<any[]>(initialVoucherTypes);
+  const [voucherTypes] = useState<any[]>(initialVoucherTypes);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(startInEditMode);
@@ -215,7 +215,7 @@ export const useCustomerGoldVoucherForm = ({
         cr_date: new Date().toISOString(),
       }));
       hasGeneratedVoucherNumber.current = true;
-    } catch (error) {
+    } catch {
       setVoucher((prev) => ({
         ...prev,
         vouch_id: 1,

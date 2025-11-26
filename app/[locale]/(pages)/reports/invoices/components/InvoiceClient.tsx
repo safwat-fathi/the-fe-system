@@ -20,11 +20,10 @@ import {
 import { useTranslations } from "next-intl";
 
 import Card from "@/components/Card";
-import useFractions from "@/utilities/useFractions";
+import useFractions, { Fractions } from "@/utilities/useFractions";
 import AppDataTable from "@/components/AppDataTable";
 import { useReportTableStore } from "@/hooks/useReportTableStore";
 import InvoiceAnalytics from "@/components/InvoiceAnalytics";
-import { Fractions } from "@/utilities/useFractions";
 import { Invoice } from "@/types/models/invoice";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import { INVOICE_TYPE_FILTERS } from "@/types/constants/invoice";
@@ -177,9 +176,7 @@ export default function InvoiceClient({
               }
             >
               {INVOICE_TYPE_FILTERS.map((type) => (
-                <SelectItem key={type.key} value={type.key}>
-                  {t(type.labelKey)}
-                </SelectItem>
+                <SelectItem key={type.key}>{t(type.labelKey)}</SelectItem>
               ))}
             </Select>
 

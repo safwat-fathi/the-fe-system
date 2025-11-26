@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 
-import CustomerFormClient from "../components/CustomerFormClient";
+import CustomerFormClient, {
+  type CustomerFormValues,
+} from "../components/CustomerFormClient";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
@@ -78,7 +80,7 @@ export default async function CustomerDetailPage({
     ]);
 
   // تحويل Customer إلى CustomerForm
-  const customerForm = {
+  const customerForm: Partial<CustomerFormValues> = {
     id: customer.id,
     cust_code: customer.cust_code?.toString() || "",
     cust_name: customer.cust_name || "",
@@ -87,7 +89,7 @@ export default async function CustomerDetailPage({
     email: customer.email || "",
     address: customer.address || "",
     vat_no: customer.vat_no || null,
-    cr_no: customer.cr_no || null,
+    cr_no: Number(customer.cr_no) || null,
     phone: customer.phone || "",
     fax: customer.fax || "",
     gov: customer.gov || "",
@@ -97,13 +99,13 @@ export default async function CustomerDetailPage({
     build_no: customer.build_no || "",
     post_code: customer.post_code || "",
     cust_status: customer.cust_status || 1,
-    acc: customer.acc || null,
+    acc: Number(customer.acc),
     acc_name: customer.acc_name || "",
     cust_type: customer.cust_type || undefined,
     box_type: customer.box_type || "",
     handling: customer.handling || "",
     handling_e: customer.handling_e || "",
-    perc: customer.perc || null,
+    perc: customer.perc || undefined,
     expt: customer.expt || false,
     hide: customer.hide || false,
   };

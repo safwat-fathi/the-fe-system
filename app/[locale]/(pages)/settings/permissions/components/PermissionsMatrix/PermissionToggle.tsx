@@ -18,7 +18,6 @@ interface PermissionToggleProps {
 }
 
 export default function PermissionToggle({
-  screen,
   permissions = [],
   onPermissionChange,
   readOnly = false,

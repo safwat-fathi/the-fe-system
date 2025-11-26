@@ -132,7 +132,6 @@ export default function InvoiceSelectors({
   goldPrice,
   note,
   setNote,
-  onInvoiceSelect,
   // البحث بالباركود
   searchValue,
   setSearchValue,
@@ -147,7 +146,7 @@ export default function InvoiceSelectors({
   const selectorsRef = useRef<HTMLDivElement | null>(null);
   const customerSelectRef = useRef<SelectInstance<CustomerOption> | null>(null);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen] = useState(false);
   const [customerInvoices, setCustomerInvoices] = useState<Invoice[]>([]);
   const [isCustomerInvoicesLoading, setIsCustomerInvoicesLoading] =
     useState(false);
@@ -719,15 +718,9 @@ export default function InvoiceSelectors({
         </div>
 
         {/* مربع معلومات العنوان */}
-        <div
-          className="bg-white border border-gray-200 rounded-lg overflow-hidden"
-          tabIndex={-1}
-        >
+        <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           {/* Header with Toggle Button */}
-          <div
-            className="flex items-center justify-between p-2 md:p-3 cursor-pointer hover:bg-gray-50 transition-colors"
-            onClick={() => setIsOpen(!isOpen)}
-          >
+          <div className="flex items-center justify-between p-2 md:p-3 hover:bg-gray-50 transition-colors">
             <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
               <span>📍</span>
               <span>معلومات العنوان</span>
@@ -762,12 +755,16 @@ export default function InvoiceSelectors({
               {selectedCustomer ? (
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mt-3">
                   <div>
-                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                    <label
+                      className="block mb-1 text-xs font-medium text-gray-600"
+                      htmlFor="cr-no"
+                    >
                       السجل التجاري:
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
                       disabled={!isEditing}
+                      id="cr-no"
                       type="text"
                       value={crNo}
                       onChange={(e) => setCrNo(e.target.value)}
@@ -789,60 +786,80 @@ export default function InvoiceSelectors({
                     />
                   </div>
                   <div>
-                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                    <label
+                      className="block mb-1 text-xs font-medium text-gray-600"
+                      htmlFor="gov"
+                    >
                       المحافظة:
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
                       disabled={!isEditing}
+                      id="gov"
                       type="text"
                       value={gov}
                       onChange={(e) => setGov(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                    <label
+                      className="block mb-1 text-xs font-medium text-gray-600"
+                      htmlFor="city"
+                    >
                       المدينة:
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
                       disabled={!isEditing}
+                      id="city"
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                    <label
+                      className="block mb-1 text-xs font-medium text-gray-600"
+                      htmlFor="area"
+                    >
                       المنطقة:
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
                       disabled={!isEditing}
+                      id="area"
                       type="text"
                       value={area}
                       onChange={(e) => setArea(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                    <label
+                      className="block mb-1 text-xs font-medium text-gray-600"
+                      htmlFor="street"
+                    >
                       الشارع:
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
                       disabled={!isEditing}
+                      id="street"
                       type="text"
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                    <label
+                      className="block mb-1 text-xs font-medium text-gray-600"
+                      htmlFor="build-no"
+                    >
                       رقم المبنى:
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
                       disabled={!isEditing}
+                      id="build-no"
                       type="text"
                       value={buildNo}
                       onChange={(e) => setBuildNo(e.target.value)}
@@ -864,24 +881,32 @@ export default function InvoiceSelectors({
                     />
                   </div>
                   <div>
-                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                    <label
+                      className="block mb-1 text-xs font-medium text-gray-600"
+                      htmlFor="post-no"
+                    >
                       صندوق البريد:
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
                       disabled={!isEditing}
+                      id="post-no"
                       type="text"
                       value={postNo}
                       onChange={(e) => setPostNo(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                    <label
+                      className="block mb-1 text-xs font-medium text-gray-600"
+                      htmlFor="post-code"
+                    >
                       الرمز البريدي:
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
                       disabled={!isEditing}
+                      id="post-code"
                       type="text"
                       value={postCode}
                       onChange={(e) => setPostCode(e.target.value)}
@@ -903,7 +928,7 @@ export default function InvoiceSelectors({
               )}
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

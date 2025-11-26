@@ -29,10 +29,13 @@ class TaxRateService extends HttpService<RawTaxRate> {
         return DEFAULT_TAX_RATES;
       }
 
-      const records = Array.isArray(response.data)
+      const records: RawTaxRate[] = Array.isArray(response.data)
         ? response.data
-        : Array.isArray((response.data as any)?.results)
-          ? (response.data as any).results
+        : Array.isArray(
+              (response.data as { results?: RawTaxRate[] } | undefined)
+                ?.results,
+            )
+          ? ((response.data as { results?: RawTaxRate[] }).results ?? [])
           : [];
 
       if (records.length === 0) {

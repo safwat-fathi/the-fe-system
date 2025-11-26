@@ -74,8 +74,8 @@ const SearchableSelect = ({
   className = "",
   error = "",
   required = false,
-  renderOption = null,
-  onCreateNew = null,
+  renderOption,
+  onCreateNew,
   emptyMessage = "لا توجد نتائج",
   dropdownMaxHeight = "max-h-60",
   inputId,
@@ -615,6 +615,7 @@ const SearchableSelect = ({
         ref={buttonRef}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
+        aria-controls={`searchable-select-listbox-${inputId || "default"}`}
         className={clsx(
           "flex h-10 w-full items-center justify-between rounded-md border border-input bg-white px-3 py-2 text-sm",
           "ring-offset-background placeholder:text-muted-foreground",

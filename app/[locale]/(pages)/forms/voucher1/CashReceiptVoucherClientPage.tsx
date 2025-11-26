@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
@@ -74,7 +74,6 @@ export default function CashReceiptVoucherClientPage({
 }: CashReceiptVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   // Handle search - must be before any conditional returns (Rules of Hooks)
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,16 +85,13 @@ export default function CashReceiptVoucherClientPage({
     voucherBoxes,
     details,
     accounts,
-    setAccounts,
     boxes,
     costCenters,
     voucherTypes,
     voucherStatuses,
     isLoading,
     isEditing,
-    setIsEditing,
     isPrinting,
-    currentTime,
     isClient,
     // defaultAccountOptions,
 
@@ -155,66 +151,6 @@ export default function CashReceiptVoucherClientPage({
 
     router.push(`/forms/voucher1/${targetId}?mode=preview`);
     router.refresh();
-  };
-
-  const toAmount = (value: unknown) => {
-    const numeric = Number(value);
-
-    return Number.isFinite(numeric) ? numeric : 0;
-  };
-
-  const PREVIEW_TOLERANCE = 0.01;
-
-  const getPreviewAccountName = (
-    accId: number | string | null | undefined,
-    fallback?: string | null,
-  ): string => {
-    if (fallback && fallback.trim().length > 0) {
-      return fallback;
-    }
-
-    if (accId === null || accId === undefined || accId === "") {
-      return "";
-    }
-
-    const numericId = Number(accId);
-
-    if (!Number.isFinite(numericId)) {
-      return "";
-    }
-
-    const account = accounts?.find((acc: any) => {
-      const candidate = acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
-
-      return Number(candidate) === numericId;
-    });
-
-    return account?.acc_name || account?.name || account?.label || "";
-  };
-
-  const getBoxAccountName = (
-    boxId: number | string | null | undefined,
-  ): { name: string; code: string | number | null } => {
-    if (boxId === null || boxId === undefined || boxId === "") {
-      return { name: "", code: null };
-    }
-
-    const numericId = Number(boxId);
-
-    if (!Number.isFinite(numericId)) {
-      return { name: "", code: boxId };
-    }
-
-    const boxItem = boxes?.find((box: any) => {
-      const candidate = box?.id ?? box?.box_id ?? box?.box;
-
-      return Number(candidate) === numericId;
-    });
-
-    return {
-      name: boxItem?.box_name || boxItem?.name || boxItem?.label || "",
-      code: boxItem?.acc ?? boxItem?.acc_id ?? boxId,
-    };
   };
 
   // Helper functions for box select
@@ -588,12 +524,16 @@ export default function CashReceiptVoucherClientPage({
       <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
         {/* رقم المرجع */}
         <div className="md:col-span-1">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="cash-receipt-ref-no"
+          >
             رقم المرجع
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="cash-receipt-ref-no"
             readOnly={!isEditing}
             type="text"
             value={voucher.ref_no || ""}
@@ -605,12 +545,16 @@ export default function CashReceiptVoucherClientPage({
 
         {/* التاريخ والوقت */}
         <div className="md:col-span-1">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="cash-receipt-date-time"
+          >
             التاريخ والوقت
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="cash-receipt-date-time"
             readOnly={!isEditing}
             type="datetime-local"
             value={
@@ -629,7 +573,10 @@ export default function CashReceiptVoucherClientPage({
 
         {costCenters.length > 0 && (
           <div className="md:col-span-1">
-            <label className="block text-xs font-medium text-slate-700 mb-0.5">
+            <label
+              className="block text-xs font-medium text-slate-700 mb-0.5"
+              htmlFor="cash-receipt-cost-center"
+            >
               مركز التكلفة
             </label>
             <ReactSelect
@@ -637,6 +584,7 @@ export default function CashReceiptVoucherClientPage({
               className="text-xs"
               classNamePrefix="react-select"
               components={{ IndicatorSeparator: () => null }}
+              inputId="cash-receipt-cost-center"
               instanceId="voucher-cost-center-select"
               isDisabled={!isEditing}
               menuPortalTarget={
@@ -685,12 +633,16 @@ export default function CashReceiptVoucherClientPage({
 
         {/* الحالة */}
         <div className="md:col-span-1">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="cash-receipt-status"
+          >
             الحالة
           </label>
           <select
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="cash-receipt-status"
             value={String(voucher.vouch_status ?? 1)}
             onChange={(e) =>
               setVoucher((prev) => ({
@@ -733,13 +685,17 @@ export default function CashReceiptVoucherClientPage({
 
       {/* البيان */}
       <div className="mb-2">
-        <label className="block text-xs font-medium text-slate-700 mb-0.5">
+        <label
+          className="block text-xs font-medium text-slate-700 mb-0.5"
+          htmlFor="cash-receipt-notes"
+        >
           البيان
         </label>
         <div className="relative">
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
             disabled={!isEditing}
+            id="cash-receipt-notes"
             placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
             readOnly={!isEditing}
             type="text"
@@ -1050,7 +1006,7 @@ export default function CashReceiptVoucherClientPage({
                         menuPosition="fixed"
                         placeholder="اختر الحساب..."
                         styles={{
-                          control: (base, state) => ({
+                          control: (base, _state) => ({
                             ...base,
                             minHeight: "100%",
                             height: "100%",

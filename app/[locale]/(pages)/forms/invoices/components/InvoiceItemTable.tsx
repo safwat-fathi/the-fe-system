@@ -71,8 +71,6 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       setInvoiceItems,
       goldPrice,
       payType,
-      categories,
-      homePurity,
       isEditing,
       onItemRemoved,
     },
@@ -336,7 +334,6 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       }
 
       // recalc totals & tax using numeric conversion
-      const qty = toNum(updated[index].qty);
       const weight = toNum(updated[index].weight);
       const g_weight = toNum(updated[index].g_weight);
       const price = toNum(updated[index].price);

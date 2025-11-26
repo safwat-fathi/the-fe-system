@@ -48,63 +48,65 @@ const getPaymentVoucherForNavigation = cache(async () => {
 
 export default async function PaymentVoucherPage() {
   try {
-  const [formData, voucherForNav] = await Promise.all([
-    getVoucherFormData(),
-    getPaymentVoucherForNavigation(),
-  ]);
+    const [formData, voucherForNav] = await Promise.all([
+      getVoucherFormData(),
+      getPaymentVoucherForNavigation(),
+    ]);
 
-  // بناء navigationInfo من سند الصرف
-  const parseNavId = (value: unknown): number | null => {
-    if (value === null || value === undefined || value === "") {
-      return null;
-    }
-
-    const numeric = Number(value);
-
-    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-  };
-
-  const navigationInfo = voucherForNav
-    ? {
-        previous: parseNavId(
-          (voucherForNav as any).previous_voucher_id ??
-            (voucherForNav as any).previous,
-        ),
-        next: parseNavId(
-          (voucherForNav as any).next_voucher_id ?? (voucherForNav as any).next,
-        ),
-        first: parseNavId(
-          (voucherForNav as any).first_voucher_id ??
-            (voucherForNav as any).first,
-        ),
-        last: parseNavId(
-          (voucherForNav as any).last_voucher_id ?? (voucherForNav as any).last,
-        ),
+    // بناء navigationInfo من سند الصرف
+    const parseNavId = (value: unknown): number | null => {
+      if (value === null || value === undefined || value === "") {
+        return null;
       }
-    : undefined;
 
-  return (
-    <div className="container mx-auto p-4">
-      <Breadcrumb
-        items={[
-          { name: "سند صرف", href: "/forms/voucher2" },
-          { name: "جديدة" },
-        ]}
-      />
-      <CashReceiptVoucherClientPage
-        accounts={formData.accounts}
-        boxes={formData.boxes}
-        costCenters={formData.costCenters}
-        formMode="new"
-        isNewVoucher={true}
-        navigationInfo={navigationInfo}
-        startInEditMode={true}
-        vouchType={2}
-        voucherStatuses={formData.voucherStatuses}
-        voucherTypes={formData.voucherTypes}
-      />
-    </div>
-  );
+      const numeric = Number(value);
+
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    };
+
+    const navigationInfo = voucherForNav
+      ? {
+          previous: parseNavId(
+            (voucherForNav as any).previous_voucher_id ??
+              (voucherForNav as any).previous,
+          ),
+          next: parseNavId(
+            (voucherForNav as any).next_voucher_id ??
+              (voucherForNav as any).next,
+          ),
+          first: parseNavId(
+            (voucherForNav as any).first_voucher_id ??
+              (voucherForNav as any).first,
+          ),
+          last: parseNavId(
+            (voucherForNav as any).last_voucher_id ??
+              (voucherForNav as any).last,
+          ),
+        }
+      : undefined;
+
+    return (
+      <div className="container mx-auto p-4">
+        <Breadcrumb
+          items={[
+            { name: "سند صرف", href: "/forms/voucher2" },
+            { name: "جديدة" },
+          ]}
+        />
+        <CashReceiptVoucherClientPage
+          accounts={formData.accounts}
+          boxes={formData.boxes}
+          costCenters={formData.costCenters}
+          formMode="new"
+          isNewVoucher={true}
+          navigationInfo={navigationInfo}
+          startInEditMode={true}
+          vouchType={2}
+          voucherStatuses={formData.voucherStatuses}
+          voucherTypes={formData.voucherTypes}
+        />
+      </div>
+    );
   } catch (error) {
     if (error instanceof AuthenticationError) {
       await redirectToLogin();

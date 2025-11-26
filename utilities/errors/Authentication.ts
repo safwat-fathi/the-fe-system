@@ -16,4 +16,4 @@ export const rethrowAuthenticationError = (error: unknown): void => {
   if (error instanceof AuthenticationError) {
     throw error;
   }
-}
+};

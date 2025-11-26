@@ -3,14 +3,12 @@
  * إدارة الحالة الأساسية للنموذج
  */
 
-import type { Voucher, VoucherDetail } from "@/types/voucher";
+import type { Voucher } from "@/types/voucher";
 
 import { useEffect, useState } from "react";
 
 interface UseVoucherFormStateProps {
   voucherData?: Voucher | null;
-  voucherDetailsData?: VoucherDetail[];
-  isNewVoucher?: boolean;
   vouchType?: number;
   formMode?: "new" | "edit" | "preview";
   startInEditMode?: boolean;
@@ -23,8 +21,6 @@ interface UseVoucherFormStateProps {
 
 export const useVoucherFormState = ({
   voucherData,
-  voucherDetailsData,
-  isNewVoucher = true,
   vouchType = 2,
   formMode = "new",
   startInEditMode = false,
@@ -55,12 +51,12 @@ export const useVoucherFormState = ({
   const [currentTime, setCurrentTime] = useState("");
   const [isClient, setIsClient] = useState(false);
   const [accounts, setAccounts] = useState<any[]>(initialAccounts);
-  const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
-  const [voucherTypes, setVoucherTypes] = useState<any[]>(initialVoucherTypes);
+  const [costCenters] = useState<any[]>(initialCostCenters);
+  const [voucherTypes] = useState<any[]>(initialVoucherTypes);
   const [voucherStatuses, setVoucherStatuses] = useState<any[]>(
     initialVoucherStatuses || [],
   );
-  const [caratTypes, setCaratTypes] = useState<any[]>(initialCaratTypes);
+  const [caratTypes] = useState<any[]>(initialCaratTypes);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(startInEditMode);

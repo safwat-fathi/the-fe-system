@@ -49,4 +49,4 @@ export interface PermissionCheckResult {
   requiredPermissions: string[];
 }
 
-export { ObjectPermission, MergedPermissions };
+export type { ObjectPermission, MergedPermissions };

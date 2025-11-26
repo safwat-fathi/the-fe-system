@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   Modal,
@@ -36,7 +36,7 @@ interface CustomerGoldVoucherClientPageProps {
   goldDetailsData?: GVoucherDetail[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
-  accounts: any[];
+  accounts?: any[];
   boxes: any[];
   goldBoxes?: any[];
   costCenters: any[];
@@ -55,7 +55,7 @@ export default function CustomerGoldVoucherClientPage({
   goldDetailsData: initialGoldDetails = [],
   isNewVoucher = true,
   voucherRecordId,
-  accounts: initialAccounts,
+  accounts: initialAccounts = [],
   boxes: initialBoxes,
   goldBoxes: initialGoldBoxes = [],
   costCenters: initialCostCenters,
@@ -69,7 +69,6 @@ export default function CustomerGoldVoucherClientPage({
 }: CustomerGoldVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   // State Management
   const [voucher, setVoucher] = useState<Voucher>(
@@ -95,7 +94,6 @@ export default function CustomerGoldVoucherClientPage({
         },
   );
 
-  const [currentTime, setCurrentTime] = useState("");
   const [isClient, setIsClient] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -105,17 +103,17 @@ export default function CustomerGoldVoucherClientPage({
   const [goldDetails, setGoldDetails] = useState<GVoucherDetail[]>(
     initialGoldDetails || [],
   );
-  const [accounts, setAccounts] = useState<any[]>(initialAccounts);
-  const [boxes, setBoxes] = useState<any[]>(initialBoxes);
+  const [accounts] = useState<any[]>(initialAccounts);
+  const [boxes] = useState<any[]>(initialBoxes);
   const [goldBoxOptions, setGoldBoxOptions] = useState<any[]>(
     initialGoldBoxes && initialGoldBoxes.length > 0
       ? initialGoldBoxes
       : initialBoxes,
   );
-  const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
+  const [costCenters] = useState<any[]>(initialCostCenters);
   const [customers, setCustomers] = useState<any[]>(initialCustomers);
   const [items, setItems] = useState<any[]>(initialItems);
-  const [voucherTypes, setVoucherTypes] = useState<any[]>(initialVoucherTypes);
+  const [voucherTypes] = useState<any[]>(initialVoucherTypes);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(startInEditMode);
@@ -173,7 +171,6 @@ export default function CustomerGoldVoucherClientPage({
   // Initialize component
   useEffect(() => {
     setIsClient(true);
-    updateCurrentTime();
 
     if (isNewVoucher) {
       generateNextVoucherNumber();
@@ -291,18 +288,6 @@ export default function CustomerGoldVoucherClientPage({
     }
   }, [formMode, startInEditMode]);
 
-  const updateCurrentTime = () => {
-    const now = new Date();
-
-    setCurrentTime(now.toLocaleTimeString("ar-EG"));
-  };
-
-  useEffect(() => {
-    const interval = setInterval(updateCurrentTime, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   const generateNextVoucherNumber = async () => {
     try {
       const nextId = await voucherService.getNextNumber(vouchType);
@@ -313,7 +298,7 @@ export default function CustomerGoldVoucherClientPage({
         vouch_date: new Date().toISOString(),
         cr_date: new Date().toISOString(),
       }));
-    } catch (error) {
+    } catch {
       setVoucher((prev) => ({
         ...prev,
         vouch_id: 1,
@@ -575,7 +560,7 @@ export default function CustomerGoldVoucherClientPage({
   // Load item options with pagination
   const loadItemOptions = async (
     search: string,
-    loadedOptions: readonly any[] = [],
+    _loadedOptions: readonly any[] = [],
     additional: { page?: number } = { page: 1 },
   ) => {
     const trimmed = search.trim();
@@ -765,13 +750,6 @@ export default function CustomerGoldVoucherClientPage({
     };
   };
 
-  const boxSelectOptions = useMemo(() => {
-    return (boxes || []).map((box) => ({
-      value: String(box.id),
-      label: box.cust_name || box.name || box.box_name || `صندوق ${box.id}`,
-    }));
-  }, [boxes]);
-
   const getCostCenterSelectValue = (costId: number | null | undefined) => {
     if (!costId || costId <= 0) {
       return null;
@@ -886,18 +864,15 @@ export default function CustomerGoldVoucherClientPage({
   });
 
   // Hook for Enter key navigation in gold details table
-  const {
-    setInputRef: setGoldInputRef,
-    handleKeyDown: handleGoldKeyDownBase,
-    focusFirstInRow: focusFirstInGoldRow,
-  } = useEnterKeyNavigation({
-    rows: goldDetails,
-    rowHasValue: (row) => {
-      // السماح بالتنقل حتى في الصفوف الفارغة
-      return true;
-    },
-    onAddRow: addGoldDetailRow,
-  });
+  const { setInputRef: setGoldInputRef, handleKeyDown: handleGoldKeyDownBase } =
+    useEnterKeyNavigation({
+      rows: goldDetails,
+      rowHasValue: () => {
+        // السماح بالتنقل حتى في الصفوف الفارغة
+        return true;
+      },
+      onAddRow: addGoldDetailRow,
+    });
 
   // Wrapper function للتحقق من الحقول المعطلة وتخطيها
   const handleGoldKeyDown = useCallback(
@@ -954,18 +929,15 @@ export default function CustomerGoldVoucherClientPage({
   );
 
   // Hook for Enter key navigation in voucher boxes table
-  const {
-    setInputRef: setBoxInputRef,
-    handleKeyDown: handleBoxKeyDownBase,
-    focusFirstInRow: focusFirstInBoxRow,
-  } = useEnterKeyNavigation({
-    rows: voucherBoxes,
-    rowHasValue: (row) => {
-      // السماح بالتنقل حتى في الصفوف الفارغة
-      return true;
-    },
-    onAddRow: addVoucherBoxRow,
-  });
+  const { setInputRef: setBoxInputRef, handleKeyDown: handleBoxKeyDownBase } =
+    useEnterKeyNavigation({
+      rows: voucherBoxes,
+      rowHasValue: () => {
+        // السماح بالتنقل حتى في الصفوف الفارغة
+        return true;
+      },
+      onAddRow: addVoucherBoxRow,
+    });
 
   const handleBoxKeyDown = handleBoxKeyDownBase;
 
@@ -1061,7 +1033,9 @@ export default function CustomerGoldVoucherClientPage({
         // إزالة _hasNext من النتائج قبل الإرجاع
         const cleanResults = Array.isArray(results)
           ? results.map((r: any) => {
-              const { _hasNext, ...rest } = r;
+              const rest = { ...r };
+
+              delete (rest as any)._hasNext;
 
               return rest;
             })
@@ -1103,7 +1077,9 @@ export default function CustomerGoldVoucherClientPage({
       if (Array.isArray(results)) {
         // إزالة _hasNext من النتائج قبل الإرجاع
         return results.map((r: any) => {
-          const { _hasNext, ...rest } = r;
+          const rest = { ...r };
+
+          delete (rest as any)._hasNext;
 
           return rest;
         });
@@ -1147,7 +1123,9 @@ export default function CustomerGoldVoucherClientPage({
         // إزالة _hasNext من النتائج قبل الإرجاع
         const cleanResults = Array.isArray(results)
           ? results.map((r: any) => {
-              const { _hasNext, ...rest } = r;
+              const rest = { ...r };
+
+              delete (rest as any)._hasNext;
 
               return rest;
             })
@@ -1392,12 +1370,6 @@ export default function CustomerGoldVoucherClientPage({
           const center = costCenters.find((c) => c.id === costId);
 
           return center?.name || center?.cost_name || `مركز ${costId}`;
-        };
-
-        const getItemName = (itemId: number) => {
-          const item = items.find((itm) => itm.id === itemId);
-
-          return item?.item_name || `صنف ${itemId}`;
         };
 
         const getCustomerName = () => {
@@ -2105,12 +2077,16 @@ export default function CustomerGoldVoucherClientPage({
       >
         {/* رقم المرجع - أضيق */}
         <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="gold-ref-no"
+          >
             رقم المرجع
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="gold-ref-no"
             readOnly={!isEditing}
             type="text"
             value={voucher.ref_no || ""}
@@ -2122,12 +2098,16 @@ export default function CustomerGoldVoucherClientPage({
 
         {/* التاريخ والوقت - توسع قليلاً */}
         <div className="md:col-span-3">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="gold-datetime"
+          >
             التاريخ والوقت
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="gold-datetime"
             readOnly={!isEditing}
             type="datetime-local"
             value={
@@ -2146,13 +2126,17 @@ export default function CustomerGoldVoucherClientPage({
 
         {/* البيان - أوسع مع زر توسيع */}
         <div className="md:col-span-7">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="gold-notes"
+          >
             البيان
           </label>
           <div className="relative">
             <input
               className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
               disabled={!isEditing}
+              id="gold-notes"
               placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
               readOnly={!isEditing}
               type="text"
@@ -2213,7 +2197,10 @@ export default function CustomerGoldVoucherClientPage({
       <div className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
         {/* العميل */}
         <div className="md:col-span-4">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="gold-customer-select"
+          >
             العميل
           </label>
           <div
@@ -2252,7 +2239,7 @@ export default function CustomerGoldVoucherClientPage({
               defaultOptions={defaultCustomerOptions}
               disabled={!isEditing}
               emptyMessage="لا يوجد عملاء"
-              inputId="customer-select"
+              inputId="gold-customer-select"
               options={[]}
               placeholder="اختر العميل..."
               searchPlaceholder="ابحث عن العميل..."
@@ -2301,12 +2288,16 @@ export default function CustomerGoldVoucherClientPage({
 
         {/* مناولة */}
         <div className="md:col-span-3">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="gold-handling"
+          >
             مناولة
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="gold-handling"
             placeholder="مناولة"
             readOnly={!isEditing}
             type="text"
@@ -2347,7 +2338,10 @@ export default function CustomerGoldVoucherClientPage({
 
         {/* مركز التكلفة */}
         <div className="md:col-span-5">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="gold-cost-center-select"
+          >
             مركز التكلفة
           </label>
           <div

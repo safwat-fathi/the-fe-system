@@ -23,9 +23,6 @@ export const API_BASE_URL: string =
  */
 export async function loginUser(username: string, password: string) {
   try {
-    console.log("محاولة تسجيل الدخول إلى:", `${API_BASE_URL}/login`);
-    console.log("بيانات تسجيل الدخول:", { username, password: "***" });
-
     const response = await fetch(`${API_BASE_URL}/login`, {
       method: "POST",
       headers: {
@@ -34,13 +31,10 @@ export async function loginUser(username: string, password: string) {
       body: JSON.stringify({ username, password }),
     });
 
-    console.log("استجابة الخادم:", response.status, response.statusText);
-
     let data;
 
     try {
       data = await response.json();
-      console.log("بيانات الاستجابة:", data);
     } catch (jsonError) {
       console.error("خطأ في تحليل JSON:", jsonError);
       throw new Error("استجابة غير صحيحة من الخادم");
@@ -209,9 +203,7 @@ export async function fetchData<T>(
   body?: any,
 ): Promise<T | null> {
   try {
-    console.log(`Fetching: ${url} with method: ${method}`);
     url = appendBranchParams(url);
-    console.log(`Final URL: ${url}`);
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
@@ -252,8 +244,6 @@ export async function fetchData<T>(
     }
 
     const data = await response.json();
-
-    console.log(`Success response from ${url}:`, data);
 
     return data;
   } catch (error) {
@@ -442,8 +432,6 @@ export function fetchCompanies() {
  */
 export async function fetchItemByBarcode(barcode: string): Promise<any | null> {
   try {
-    console.log("البحث بالباركود:", barcode);
-
     const response = await fetch(API_ENDPOINTS.ITEM_BARCODE_SEARCH(barcode), {
       method: "GET",
       headers: {
@@ -454,8 +442,6 @@ export async function fetchItemByBarcode(barcode: string): Promise<any | null> {
 
     if (!response.ok) {
       if (response.status === 404) {
-        console.log("لم يتم العثور على الصنف بالباركود:", barcode);
-
         return null;
       }
       throw new Error(`خطأ في البحث: ${response.status}`);
@@ -463,16 +449,10 @@ export async function fetchItemByBarcode(barcode: string): Promise<any | null> {
 
     const data = await response.json();
 
-    console.log("نتيجة البحث بالباركود:", data);
-
     // API يعيد مصفوفة، نأخذ العنصر الأول
     if (Array.isArray(data) && data.length > 0) {
-      console.log("تم العثور على الصنف:", data[0]);
-
       return data[0];
     } else if (Array.isArray(data) && data.length === 0) {
-      console.log("لم يتم العثور على الصنف بالباركود:", barcode);
-
       return null;
     } else {
       // إذا لم تكن مصفوفة، نعيد البيانات كما هي
@@ -492,8 +472,6 @@ export async function searchAccounts(
   page: number = 1,
 ): Promise<any> {
   try {
-    console.log("البحث في الحسابات:", query);
-
     const response = await fetch(API_ENDPOINTS.SEARCH_ACCOUNTS(query, page), {
       method: "GET",
       headers: {
@@ -507,8 +485,6 @@ export async function searchAccounts(
     }
 
     const data = await response.json();
-
-    console.log("نتيجة البحث في الحسابات:", data);
 
     return data;
   } catch (error) {

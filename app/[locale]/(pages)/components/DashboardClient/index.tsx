@@ -35,15 +35,11 @@ interface Invoice {
 interface DashboardClientProps {
   salesChartData: any;
   invoices: Invoice[];
-  branch: string;
-  year: string;
 }
 
 export default function DashboardClient({
   salesChartData,
   invoices,
-  branch,
-  year,
 }: DashboardClientProps) {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");

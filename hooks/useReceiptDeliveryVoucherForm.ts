@@ -82,17 +82,17 @@ export const useReceiptDeliveryVoucherForm = ({
   const [goldDetails, setGoldDetails] = useState<GVoucherDetail[]>(
     initialGoldDetails || [],
   );
-  const [accounts, setAccounts] = useState<any[]>(initialAccounts);
-  const [boxes, setBoxes] = useState<any[]>(initialBoxes);
+  const [accounts] = useState<any[]>(initialAccounts);
+  const [boxes] = useState<any[]>(initialBoxes);
   const [goldBoxes, setGoldBoxes] = useState<any[]>(
     initialGoldBoxes && initialGoldBoxes.length > 0
       ? initialGoldBoxes
       : initialBoxes,
   );
-  const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
+  const [costCenters] = useState<any[]>(initialCostCenters);
   const [customers, setCustomers] = useState<any[]>(initialCustomers);
   const [items, setItems] = useState<any[]>(initialItems);
-  const [voucherTypes, setVoucherTypes] = useState<any[]>(initialVoucherTypes);
+  const [voucherTypes] = useState<any[]>(initialVoucherTypes);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(startInEditMode);
@@ -318,7 +318,7 @@ export const useReceiptDeliveryVoucherForm = ({
         cr_date: new Date().toISOString(),
       }));
       hasGeneratedVoucherNumber.current = true;
-    } catch (error) {
+    } catch {
       setVoucher((prev) => ({
         ...prev,
         vouch_id: 1,
@@ -334,7 +334,7 @@ export const useReceiptDeliveryVoucherForm = ({
   // عند التمرير: تحميل الصفحات التالية تلقائياً
   const loadItemOptions = async (
     search: string,
-    loadedOptions: readonly any[] = [],
+    _loadedOptions: readonly any[] = [],
     additional: { page?: number } = { page: 1 },
   ) => {
     const trimmed = search.trim();
@@ -534,7 +534,7 @@ export const useReceiptDeliveryVoucherForm = ({
   // نستخدم result.next من الصفحة الحالية
   const hasMoreItems = async (
     currentPage: number,
-    searchTerm: string = "",
+    _searchTerm: string = "",
   ): Promise<boolean> => {
     try {
       // نحمل الصفحة الحالية للتحقق من result.next

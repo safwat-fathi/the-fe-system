@@ -16,32 +16,32 @@ const getVoucherFormData = voucherFormDataService.getVoucherFormData;
 
 export default async function DeliveryVoucherPage() {
   try {
-  const formData = await getVoucherFormData({ goldBoxes: true });
+    const formData = await getVoucherFormData({ goldBoxes: true });
 
-  return (
-    <div className="container mx-auto p-4">
-      <Breadcrumb
-        items={[
-          { name: "سند تسليم", href: "/forms/delivery" },
-          { name: "جديدة" },
-        ]}
-      />
-      <DeliveryVoucherClientPage
-        accounts={formData.accounts}
-        boxes={formData.boxes || []}
-        categories={formData.categories || []}
-        costCenters={formData.costCenters}
-        customers={formData.customers || []}
-        formMode="new"
-        goldBoxes={formData.goldBoxes || formData.boxes || []}
-        isNewVoucher={true}
-        items={formData.items || []}
-        startInEditMode={true}
-        vouchType={222}
-        voucherTypes={formData.voucherTypes}
-      />
-    </div>
-  );
+    return (
+      <div className="container mx-auto p-4">
+        <Breadcrumb
+          items={[
+            { name: "سند تسليم", href: "/forms/delivery" },
+            { name: "جديدة" },
+          ]}
+        />
+        <DeliveryVoucherClientPage
+          accounts={formData.accounts}
+          boxes={formData.boxes || []}
+          categories={formData.categories || []}
+          costCenters={formData.costCenters}
+          customers={formData.customers || []}
+          formMode="new"
+          goldBoxes={formData.goldBoxes || formData.boxes || []}
+          isNewVoucher={true}
+          items={formData.items || []}
+          startInEditMode={true}
+          vouchType={222}
+          voucherTypes={formData.voucherTypes}
+        />
+      </div>
+    );
   } catch (error) {
     if (error instanceof AuthenticationError) {
       await redirectToLogin();

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-
 import { useLocale, useTranslations } from "next-intl";
 
 import { getLocaleDir, Locale } from "@/i18n/config";

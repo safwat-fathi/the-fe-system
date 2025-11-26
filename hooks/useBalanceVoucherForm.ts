@@ -36,7 +36,6 @@ export const useBalanceVoucherForm = ({
   voucherData,
   voucherDetailsData,
   formData,
-  formMode: initialFormMode = "new",
   voucherRecordId,
   isNewVoucher = true,
   startInEditMode: propStartInEditMode,
@@ -73,18 +72,10 @@ export const useBalanceVoucherForm = ({
     voucherDetailsData || [],
   );
   const [accounts, setAccounts] = useState<any[]>(formData.accounts || []);
-  const [costCenters, setCostCenters] = useState<any[]>(
-    formData.costCenters || [],
-  );
-  const [voucherTypes, setVoucherTypes] = useState<any[]>(
-    formData.voucherTypes || [],
-  );
-  const [voucherStatuses, setVoucherStatuses] = useState<any[]>(
-    formData.voucherStatuses || [],
-  );
-  const [caratTypes, setCaratTypes] = useState<any[]>(
-    formData.caratTypes || [],
-  );
+  const [costCenters] = useState<any[]>(formData.costCenters || []);
+  const [voucherTypes] = useState<any[]>(formData.voucherTypes || []);
+  const [voucherStatuses] = useState<any[]>(formData.voucherStatuses || []);
+  const [caratTypes] = useState<any[]>(formData.caratTypes || []);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditing, setIsEditing] = useState(
@@ -107,7 +98,7 @@ export const useBalanceVoucherForm = ({
     if (isNewVoucher && details.length === 0) {
       const newDetail: VoucherDetail = {
         id: 0,
-        vouch_id: voucher.vouch_id,
+        vouch_id: Number(voucher.vouch_id),
         acc_id: 0,
         acc_code: "",
         acc_name: "",
@@ -314,7 +305,7 @@ export const useBalanceVoucherForm = ({
   const addDetailRow = () => {
     const newDetail: VoucherDetail = {
       id: 0,
-      vouch_id: voucher.vouch_id,
+      vouch_id: Number(voucher.vouch_id),
       acc_id: 0,
       acc_code: "",
       acc_name: "",
@@ -739,7 +730,9 @@ export const useBalanceVoucherForm = ({
 
     if (
       isNewVoucher &&
-      (!finalVouchId || finalVouchId <= 0 || !isFinite(finalVouchId))
+      (!finalVouchId ||
+        Number(finalVouchId) <= 0 ||
+        !isFinite(Number(finalVouchId)))
     ) {
       try {
         finalVouchId = await getNextVoucherNumber(0);
@@ -755,7 +748,11 @@ export const useBalanceVoucherForm = ({
       }
     }
 
-    if (!finalVouchId || finalVouchId <= 0 || !isFinite(finalVouchId)) {
+    if (
+      !finalVouchId ||
+      Number(finalVouchId) <= 0 ||
+      !isFinite(Number(finalVouchId))
+    ) {
       toast.error("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
 
       return;
@@ -827,7 +824,7 @@ export const useBalanceVoucherForm = ({
       let result;
 
       if (isNewVoucher || !voucherRecordId) {
-        result = await createVoucherAction(voucherData, detailsData);
+        result = await createVoucherAction(voucherData, detailsData as any);
       } else {
         const currentDetailIds = detailsData
           .map((d) => d.id)
@@ -841,7 +838,7 @@ export const useBalanceVoucherForm = ({
 
         result = await updateVoucherAction(
           voucherData,
-          detailsData,
+          detailsData as any,
           deletedDetailIds,
           Number(voucherRecordId),
         );

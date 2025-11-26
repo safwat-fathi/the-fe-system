@@ -1,35 +1,44 @@
 export interface Voucher {
   id?: number;
-  vouch_id: number;
+  vouch_id: number | string;
   vouch_date: string;
   vouch_type: number;
-  vouch_amt: number;
-  vouch_notes?: string;
-  vouch_status?: number;
-  cr_date: string;
-  acc_id?: number;
-  cur_id?: number;
-  cust_id?: number;
+  vouch_amt?: number | null;
+  vouch_notes?: string | null;
+  vouch_status?: number | null;
+  cr_date?: string;
+  acc_id?: number | null;
+  cur_id?: number | null;
+  cust_id?: number | null;
+  cust?: number | null;
+  cust_name?: string | null;
   cr_user?: string;
   upd_date?: string;
   upd_user?: string;
-  Address?: number;
-  attachments?: string;
-  bag_wt?: number;
+  address?: string | null;
+  attachments?: string | null;
+  bag_wt?: number | null;
   commit?: boolean;
-  inv_id_id?: number;
-  mobile?: number;
-  opps_vouch?: number;
-  pay_type: number;
+  com?: number | null;
+  com_id?: number | null;
+  cost_id?: number | null;
+  box_id?: number | null;
+  cur_name?: string | null;
+  details?: VoucherDetail[];
+  handling?: string | null;
+  handling_e?: string | null;
+  inv_id?: number | null;
+  mobile?: string | null;
+  opps_vouch?: number | null;
+  pay_type?: number | null;
+  phone?: string | null;
   post?: boolean;
   print?: boolean;
-  ref_no?: string;
-  vat_no?: number;
-  com_id?: number;
-  year_id?: number;
-  details?: VoucherDetail[];
-  handling?: string; // مناولة
-  cost_id?: number | null; // مركز التكلفة
+  ref_no?: string | null;
+  vat_no?: number | string | null;
+  year_id?: number | null;
+  non_field_errors?: string[] | string | null;
+  [key: string]: unknown;
 }
 
 export interface VoucherDetail {
@@ -42,28 +51,33 @@ export interface VoucherDetail {
   vouch_status?: number;
   cr_date: string;
   acc_id: number;
-  acc_code?: string; // رمز الحساب
-  acc_name?: string; // اسم الحساب
+  acc_code?: string;
+  acc_name?: string;
   cr_user?: string;
   upd_date?: string;
   upd_user?: string;
   vouch_id: number;
-  credit_base?: number; // دائن اساس
-  debit_base?: number; // مدين اساس
-  p_credit?: number; // دائن مدفوع (غير مستخدم حالياً)
-  p_debit?: number; // مدين مدفوع (غير مستخدم حالياً)
+  credit_base?: number | null;
+  debit_base?: number | null;
+  base_credit?: number | null;
+  base_debit?: number | null;
+  p_credit?: number | null;
+  p_debit?: number | null;
   change?: number;
-  com_id?: number;
-  cost_id?: number;
-  g_credit?: number | undefined; // دائن (ذهب)
-  cur_id?: number;
-  cust_id?: number;
-  g_debit?: number | undefined; // مدين (ذهب)
-  gauge?: number; // العيار
-  g_credit_base?: number; // دائن معاير (ذهب)
-  g_debit_base?: number; // مدين معاير (ذهب)
-  inv_id?: number;
+  com_id?: number | null;
+  cost_id?: number | null;
+  g_credit?: number | undefined;
+  credit_g?: number | undefined;
+  cur_id?: number | null;
+  cust_id?: number | null;
+  g_debit?: number | undefined;
+  debit_g?: number | undefined;
+  gauge?: number;
+  g_credit_base?: number | null;
+  g_debit_base?: number | null;
+  inv_id?: number | null;
   vat_no?: number;
+  [key: string]: unknown;
 }
 
 export interface VoucherBox {
@@ -76,19 +90,23 @@ export interface VoucherBox {
     name?: string;
     cust_code?: string;
     box_type?: number;
-  }; // حقل box من voucher_box (معلومات الصندوق الكاملة)
-  amount: number; // vouch_amt في vouchers_box
+  };
+  amount: number;
   amount_g?: number;
   total_amount?: number;
   vouch_notes?: string;
-  cost_id?: number; // مركز التكلفة
-  inv_id?: number; // رقم الفاتورة
-  close_weight?: number; // وزن التسكير
+  cost_id?: number | null;
+  inv_id?: number | null;
+  close_weight?: number | null;
   cr_date: string;
   cr_user?: string;
   upd_date?: string;
   upd_user?: string;
-  com_id?: number;
+  com_id?: number | null;
+  vat_no?: number | null;
+  tax_prc?: number | null;
+  tax?: number | null;
+  [key: string]: unknown;
 }
 
 export interface GVoucherDetail {

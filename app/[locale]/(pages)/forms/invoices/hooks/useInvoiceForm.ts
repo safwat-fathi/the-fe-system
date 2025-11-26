@@ -239,7 +239,7 @@ export default function useInvoiceForm({
   const defaultTransType = invoiceConfig.transType;
   const contactLabel = invoiceConfig.contactLabel;
   const filterCustomers = useMemo(
-    () => invoiceConfig.customerFilter ?? ((customer: any) => true),
+    () => invoiceConfig.customerFilter ?? (() => true),
     [invoiceConfig],
   );
   const resolvedInvoiceCustomerCode =
@@ -266,8 +266,8 @@ export default function useInvoiceForm({
   const [isEditing, setIsEditing] = useState<boolean>(isNewInvoice);
   const [isLoading, setIsLoading] = useState<boolean>(false); // No more loading since data is provided
 
-  const [goldPrice, setGoldPrice] = useState<number | null>(initialGoldPrice);
-  const [homePurity, setHomePurity] = useState<number>(initialHomePurity);
+  const [goldPrice] = useState<number | null>(initialGoldPrice);
+  const [homePurity] = useState<number>(initialHomePurity);
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [handlingMethod, setHandlingMethod] = useState<string>("");
   const [mobileMethod, setMobileMethod] = useState<string>("");
@@ -755,15 +755,15 @@ export default function useInvoiceForm({
         }
 
         const wCalc =
-          row.weight < 1 && row.g_weight > row.weight
-            ? row.weight * 1000
-            : row.weight;
+          Number(row.weight) < 1 && row.g_weight > row.weight
+            ? Number(row.weight) * 1000
+            : Number(row.weight);
 
         row.total_a =
           form.pay_type === INVOICE_PAY_TYPES.WAGES
-            ? wCalc * (row.price_w ?? 0)
-            : wCalc * (row.price ?? 0);
-        row.total_w = wCalc * (row.price_w ?? 0);
+            ? wCalc * (Number(row.price_w) ?? 0)
+            : wCalc * (Number(row.price) ?? 0);
+        row.total_w = wCalc * (Number(row.price_w) ?? 0);
 
         const base =
           (form.pay_type === INVOICE_PAY_TYPES.VALUE
@@ -771,9 +771,9 @@ export default function useInvoiceForm({
             : form.pay_type === INVOICE_PAY_TYPES.WAGES
               ? row.total_w
               : (row.total_a || 0) + (row.total_w || 0)) -
-          (row.item_disc_amt ?? 0);
+          (Number(row.item_disc_amt) ?? 0);
 
-        row.tax = (base * (row.tax_prc ?? 15)) / 100;
+        row.tax = (base * (Number(row.tax_prc) ?? 15)) / 100;
         row.total = base + row.tax;
 
         updated[targetIndex] = row;
@@ -788,7 +788,7 @@ export default function useInvoiceForm({
         const isRowFilled =
           updated[targetIndex].item_id ||
           updated[targetIndex].item_name ||
-          updated[targetIndex].weight > 0;
+          Number(updated[targetIndex].weight) > 0;
 
         if (isLastRow && isRowFilled)
           setInvoiceItems((prev) => [...prev, makeEmptyRow()]);

@@ -19,7 +19,7 @@ export interface CreateMessageInput {
   contactId: string;
   direction: "inbound" | "outbound";
   type: string;
-  bodyJson: Prisma.JsonValue;
+  bodyJson: Prisma.InputJsonValue;
   waMsgId?: string;
   status?: string;
   errorCode?: string | null;

@@ -17,7 +17,7 @@ interface GroupPermissionsViewProps {
 }
 
 export default function GroupPermissionsView({
-  group,
+  group: _group,
   permissions,
 }: GroupPermissionsViewProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -57,7 +57,15 @@ export default function GroupPermissionsView({
             >
               <div
                 className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                role="button"
+                tabIndex={0}
                 onClick={() => toggleSection(section.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggleSection(section.id);
+                  }
+                }}
               >
                 <div className="flex items-center gap-3">
                   <span className="font-medium text-gray-900">
@@ -71,7 +79,10 @@ export default function GroupPermissionsView({
                   isIconOnly
                   size="sm"
                   variant="light"
-                  onPress={() => toggleSection(section.id)}
+                  onPress={(event) => {
+                    event?.preventDefault?.();
+                    toggleSection(section.id);
+                  }}
                 >
                   <EyeIcon
                     className={`h-4 w-4 transition-transform ${

@@ -22,7 +22,7 @@ export default function NotFoundClient() {
 
         setPreviousPath(path || "/");
       }
-    } catch (error) {
+    } catch {
       // ignore invalid referrer values
     }
   }, []);

@@ -77,7 +77,7 @@ const CurrencyFormClient = ({
       } else {
         toast.error("❌ فشل في العملية");
       }
-    } catch (error) {
+    } catch {
       toast.error("❌ حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا");
     } finally {
       setIsSaving(false);
@@ -128,7 +128,7 @@ const CurrencyFormClient = ({
               duration: 4000,
             });
           }
-        } catch (error) {
+        } catch {
           toast.success(`تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`);
           toast("⚠️ لم يتم جلب سعر الصرف. يرجى إدخال السعر يدوياً", {
             icon: "ℹ️",
@@ -175,7 +175,7 @@ const CurrencyFormClient = ({
       } else {
         toast.error("⚠️ لم يتم جلب سعر الصرف");
       }
-    } catch (error) {
+    } catch {
       toast.error("⚠️ حدث خطأ أثناء جلب سعر الصرف");
     } finally {
       setIsLoadingPrice(false);

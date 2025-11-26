@@ -51,15 +51,15 @@ export async function updateVoucherAction(
       return null;
     };
 
-    const normalizeCustomerCostValue = (value: unknown): number | null => {
-      if (value === undefined || value === null) {
-        return null;
-      }
+    // const normalizeCustomerCostValue = (value: unknown): number | null => {
+    //   if (value === undefined || value === null) {
+    //     return null;
+    //   }
 
-      const numeric = Number(value);
+    //   const numeric = Number(value);
 
-      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-    };
+    //   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    // };
 
     // التحقق من صحة البيانات
     if (!voucherData.vouch_id || voucherData.vouch_id <= 0) {
@@ -186,9 +186,6 @@ export async function updateVoucherAction(
       };
     }
 
-    // تحديث الصناديق
-    let normalizedBoxes = voucherBoxes;
-
     if (requiresBoxes(voucherData.vouch_type)) {
       const boxesResult = await updateVoucherBoxes(
         realVoucherId,
@@ -205,8 +202,6 @@ export async function updateVoucherAction(
           message: boxesResult.error || "خطأ في تحديث الصناديق",
         };
       }
-    } else {
-      normalizedBoxes = [];
     }
 
     // تحديث التفاصيل

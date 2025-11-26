@@ -111,9 +111,16 @@ export default function PermissionsTree({
             className="border border-gray-200 rounded-lg overflow-hidden bg-white"
           >
             {/* System Header */}
-            <div
-              className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 cursor-pointer transition-colors"
+            <button
+              className="flex w-full items-center gap-3 p-4 text-left bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 cursor-pointer transition-colors"
+              type="button"
               onClick={() => toggleSystem(system.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  toggleSystem(system.id);
+                }
+              }}
             >
               <div className="flex items-center gap-2 flex-1">
                 {isSystemExpanded ? (
@@ -138,7 +145,7 @@ export default function PermissionsTree({
                   {system.sections.length} أقسام
                 </Chip>
               </div>
-            </div>
+            </button>
 
             {/* System Sections */}
             {isSystemExpanded && (
@@ -152,9 +159,16 @@ export default function PermissionsTree({
                       className="border-b border-gray-200 last:border-b-0"
                     >
                       {/* Section Header */}
-                      <div
-                        className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+                      <button
+                        className="flex w-full items-center gap-3 p-3 text-left bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+                        type="button"
                         onClick={() => toggleSection(section.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            toggleSection(section.id);
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-2 flex-1">
                           {isSectionExpanded ? (
@@ -170,7 +184,7 @@ export default function PermissionsTree({
                             {section.screens.length} شاشات
                           </Chip>
                         </div>
-                      </div>
+                      </button>
 
                       {/* Section Screens */}
                       {isSectionExpanded && (
@@ -231,14 +245,15 @@ export default function PermissionsTree({
                                         getPermissionLabel(permission);
 
                                       return (
-                                        <div
+                                        <button
                                           key={permission}
-                                          className={`flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer hover:shadow-sm ${getBgColor(
+                                          className={`flex items-center gap-2 p-2 rounded-lg border transition-all text-left hover:shadow-sm ${getBgColor(
                                             isChecked,
                                             color,
-                                          )} ${readOnly ? "cursor-not-allowed opacity-50" : ""}`}
+                                          )}`}
+                                          disabled={readOnly}
+                                          type="button"
                                           onClick={() =>
-                                            !readOnly &&
                                             onPermissionChange(
                                               screen.id,
                                               permission,
@@ -306,7 +321,7 @@ export default function PermissionsTree({
                                               {label}
                                             </span>
                                           </Chip>
-                                        </div>
+                                        </button>
                                       );
                                     },
                                   )}

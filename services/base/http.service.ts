@@ -4,12 +4,10 @@ import {
   IParams,
   TMethod,
 } from "@/types/services/base";
-import { getCookieAction, setCookieAction } from "@/app/actions/cookie-store";
+import { getCookieAction } from "@/app/actions/cookie-store";
 import { createParams } from "@/utilities/qs";
 import { STORAGE_KEYS } from "@/constants";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
-import { getBranchParams } from "@/app/actions/branch-params";
-import { redirectToLogin } from "@/app/actions/auth";
 
 // Enhanced response type for better type safety
 export interface ServiceResponse<T = any> {
@@ -55,7 +53,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     method: TMethod,
     options: RequestInit = {},
     params?: IParams,
-    retryCount = 0,
+    _retryCount: number = 0,
   ): Promise<ServiceResponse<R>> {
     try {
       // Validate base URL is configured

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   Modal,
@@ -20,6 +20,7 @@ import {
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
+import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
 
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import SearchableSelect from "@/components/SearchableSelect";
@@ -29,7 +30,6 @@ import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
-import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
 
 interface DeliveryVoucherClientPageProps {
   voucherData?: Voucher | null;
@@ -70,7 +70,6 @@ export default function DeliveryVoucherClientPage({
 }: DeliveryVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   // Use the hook for all state management and business logic
   const {
@@ -79,24 +78,18 @@ export default function DeliveryVoucherClientPage({
     setVoucher,
     voucherBoxes,
     goldDetails,
-    accounts,
     boxes,
     goldBoxes,
     costCenters,
     customers,
-    setCustomers,
     items,
-    setItems,
     voucherTypes,
     isLoading,
     isEditing,
-    setIsEditing,
     isPrinting,
-    selectedCustomer,
     setSelectedCustomer,
     defaultCustomerOptions,
     isClient,
-    currentTime,
 
     // Totals
     totals,
@@ -215,18 +208,15 @@ export default function DeliveryVoucherClientPage({
   });
 
   // Hook for Enter key navigation in gold details table
-  const {
-    setInputRef: setGoldInputRef,
-    handleKeyDown: handleGoldKeyDownBase,
-    focusFirstInRow: focusFirstInGoldRow,
-  } = useEnterKeyNavigation({
-    rows: goldDetails,
-    rowHasValue: (row) => {
-      // السماح بالتنقل حتى في الصفوف الفارغة
-      return true;
-    },
-    onAddRow: addGoldDetailRow,
-  });
+  const { setInputRef: setGoldInputRef, handleKeyDown: handleGoldKeyDownBase } =
+    useEnterKeyNavigation({
+      rows: goldDetails,
+      rowHasValue: () => {
+        // السماح بالتنقل حتى في الصفوف الفارغة
+        return true;
+      },
+      onAddRow: addGoldDetailRow,
+    });
 
   // Wrapper function للتحقق من الحقول المعطلة وتخطيها
   const handleGoldKeyDown = useCallback(
@@ -316,18 +306,15 @@ export default function DeliveryVoucherClientPage({
   );
 
   // Hook for Enter key navigation in voucher boxes table
-  const {
-    setInputRef: setBoxInputRef,
-    handleKeyDown: handleBoxKeyDownBase,
-    focusFirstInRow: focusFirstInBoxRow,
-  } = useEnterKeyNavigation({
-    rows: voucherBoxes,
-    rowHasValue: (row) => {
-      // السماح بالتنقل حتى في الصفوف الفارغة
-      return true;
-    },
-    onAddRow: addVoucherBoxRow,
-  });
+  const { setInputRef: setBoxInputRef, handleKeyDown: handleBoxKeyDownBase } =
+    useEnterKeyNavigation({
+      rows: voucherBoxes,
+      rowHasValue: () => {
+        // السماح بالتنقل حتى في الصفوف الفارغة
+        return true;
+      },
+      onAddRow: addVoucherBoxRow,
+    });
 
   const handleBoxKeyDown = handleBoxKeyDownBase;
 
@@ -383,7 +370,9 @@ export default function DeliveryVoucherClientPage({
         // إزالة _hasNext من النتائج قبل الإرجاع
         const cleanResults = Array.isArray(results)
           ? results.map((r: any) => {
-              const { _hasNext, ...rest } = r;
+              const rest = { ...r };
+
+              delete (rest as any)._hasNext;
 
               return rest;
             })
@@ -422,7 +411,9 @@ export default function DeliveryVoucherClientPage({
       if (Array.isArray(results)) {
         // إزالة _hasNext من النتائج قبل الإرجاع
         return results.map((r: any) => {
-          const { _hasNext, ...rest } = r;
+          const rest = { ...r };
+
+          delete (rest as any)._hasNext;
 
           return rest;
         });
@@ -461,7 +452,9 @@ export default function DeliveryVoucherClientPage({
         // إزالة _hasNext من النتائج قبل الإرجاع
         const cleanResults = Array.isArray(results)
           ? results.map((r: any) => {
-              const { _hasNext, ...rest } = r;
+              const rest = { ...r };
+
+              delete (rest as any)._hasNext;
 
               return rest;
             })
@@ -798,12 +791,16 @@ export default function DeliveryVoucherClientPage({
       >
         {/* رقم المرجع - أضيق */}
         <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="delivery-ref-no"
+          >
             رقم المرجع
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="delivery-ref-no"
             readOnly={!isEditing}
             type="text"
             value={voucher.ref_no || ""}
@@ -815,12 +812,16 @@ export default function DeliveryVoucherClientPage({
 
         {/* التاريخ والوقت - توسع قليلاً */}
         <div className="md:col-span-3">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="delivery-datetime"
+          >
             التاريخ والوقت
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="delivery-datetime"
             readOnly={!isEditing}
             type="datetime-local"
             value={
@@ -839,13 +840,17 @@ export default function DeliveryVoucherClientPage({
 
         {/* البيان - أوسع مع زر توسيع */}
         <div className="md:col-span-7">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="delivery-notes"
+          >
             البيان
           </label>
           <div className="relative">
             <input
               className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
               disabled={!isEditing}
+              id="delivery-notes"
               placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
               readOnly={!isEditing}
               type="text"
@@ -907,7 +912,10 @@ export default function DeliveryVoucherClientPage({
       <div className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
         {/* العميل */}
         <div className="md:col-span-4">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="customer-select"
+          >
             العميل
           </label>
           <div
@@ -1001,12 +1009,16 @@ export default function DeliveryVoucherClientPage({
 
         {/* مناولة */}
         <div className="md:col-span-3">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="delivery-handling"
+          >
             مناولة
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="delivery-handling"
             placeholder="مناولة"
             readOnly={!isEditing}
             type="text"
@@ -1047,7 +1059,10 @@ export default function DeliveryVoucherClientPage({
 
         {/* مركز التكلفة */}
         <div className="md:col-span-5">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="delivery-cost-center-select"
+          >
             مركز التكلفة
           </label>
           <div

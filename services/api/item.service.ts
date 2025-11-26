@@ -122,6 +122,7 @@ class ItemService extends HttpService<Item> {
       return found;
     } catch (error) {
       console.error("Error fetching item by id:", error);
+
       return null;
     }
   }

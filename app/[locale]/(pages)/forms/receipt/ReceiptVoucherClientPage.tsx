@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
 import {
   Modal,
@@ -36,7 +36,6 @@ interface ReceiptVoucherClientPageProps {
   goldDetailsData?: GVoucherDetail[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
-  accounts: any[];
   boxes: any[];
   goldBoxes?: any[];
   costCenters: any[];
@@ -55,7 +54,6 @@ export default function ReceiptVoucherClientPage({
   goldDetailsData: initialGoldDetails = [],
   isNewVoucher = true,
   voucherRecordId,
-  accounts: initialAccounts,
   boxes: initialBoxes,
   goldBoxes: initialGoldBoxes = [],
   costCenters: initialCostCenters,
@@ -69,7 +67,6 @@ export default function ReceiptVoucherClientPage({
 }: ReceiptVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   // Use the hook for all state management and business logic
   const {
@@ -78,24 +75,18 @@ export default function ReceiptVoucherClientPage({
     setVoucher,
     voucherBoxes,
     goldDetails,
-    accounts,
     boxes,
     goldBoxes,
     costCenters,
     customers,
-    setCustomers,
     items,
-    setItems,
     voucherTypes,
     isLoading,
     isEditing,
-    setIsEditing,
     isPrinting,
-    selectedCustomer,
     setSelectedCustomer,
     defaultCustomerOptions,
     isClient,
-    currentTime,
 
     // Totals
     totals,
@@ -121,7 +112,6 @@ export default function ReceiptVoucherClientPage({
     goldDetailsData: initialGoldDetails,
     isNewVoucher,
     voucherRecordId,
-    accounts: initialAccounts,
     boxes: initialBoxes,
     goldBoxes: initialGoldBoxes,
     costCenters: initialCostCenters,
@@ -214,18 +204,15 @@ export default function ReceiptVoucherClientPage({
   });
 
   // Hook for Enter key navigation in gold details table
-  const {
-    setInputRef: setGoldInputRef,
-    handleKeyDown: handleGoldKeyDownBase,
-    focusFirstInRow: focusFirstInGoldRow,
-  } = useEnterKeyNavigation({
-    rows: goldDetails,
-    rowHasValue: (row) => {
-      // السماح بالتنقل حتى في الصفوف الفارغة
-      return true;
-    },
-    onAddRow: addGoldDetailRow,
-  });
+  const { setInputRef: setGoldInputRef, handleKeyDown: handleGoldKeyDownBase } =
+    useEnterKeyNavigation({
+      rows: goldDetails,
+      rowHasValue: () => {
+        // السماح بالتنقل حتى في الصفوف الفارغة
+        return true;
+      },
+      onAddRow: addGoldDetailRow,
+    });
 
   // Wrapper function للتحقق من الحقول المعطلة وتخطيها
   const handleGoldKeyDown = useCallback(
@@ -315,18 +302,15 @@ export default function ReceiptVoucherClientPage({
   );
 
   // Hook for Enter key navigation in voucher boxes table
-  const {
-    setInputRef: setBoxInputRef,
-    handleKeyDown: handleBoxKeyDownBase,
-    focusFirstInRow: focusFirstInBoxRow,
-  } = useEnterKeyNavigation({
-    rows: voucherBoxes,
-    rowHasValue: (row) => {
-      // السماح بالتنقل حتى في الصفوف الفارغة
-      return true;
-    },
-    onAddRow: addVoucherBoxRow,
-  });
+  const { setInputRef: setBoxInputRef, handleKeyDown: handleBoxKeyDownBase } =
+    useEnterKeyNavigation({
+      rows: voucherBoxes,
+      rowHasValue: () => {
+        // السماح بالتنقل حتى في الصفوف الفارغة
+        return true;
+      },
+      onAddRow: addVoucherBoxRow,
+    });
 
   const handleBoxKeyDown = handleBoxKeyDownBase;
 
@@ -382,7 +366,9 @@ export default function ReceiptVoucherClientPage({
         // إزالة _hasNext من النتائج قبل الإرجاع
         const cleanResults = Array.isArray(results)
           ? results.map((r: any) => {
-              const { _hasNext, ...rest } = r;
+              const rest = { ...r };
+
+              delete (rest as any)._hasNext;
 
               return rest;
             })
@@ -421,7 +407,9 @@ export default function ReceiptVoucherClientPage({
       if (Array.isArray(results)) {
         // إزالة _hasNext من النتائج قبل الإرجاع
         return results.map((r: any) => {
-          const { _hasNext, ...rest } = r;
+          const rest = { ...r };
+
+          delete (rest as any)._hasNext;
 
           return rest;
         });
@@ -460,7 +448,9 @@ export default function ReceiptVoucherClientPage({
         // إزالة _hasNext من النتائج قبل الإرجاع
         const cleanResults = Array.isArray(results)
           ? results.map((r: any) => {
-              const { _hasNext, ...rest } = r;
+              const rest = { ...r };
+
+              delete (rest as any)._hasNext;
 
               return rest;
             })
@@ -798,12 +788,16 @@ export default function ReceiptVoucherClientPage({
       >
         {/* رقم المرجع - أضيق */}
         <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="receipt-ref-no"
+          >
             رقم المرجع
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="receipt-ref-no"
             readOnly={!isEditing}
             type="text"
             value={voucher.ref_no || ""}
@@ -815,12 +809,16 @@ export default function ReceiptVoucherClientPage({
 
         {/* التاريخ والوقت - توسع قليلاً */}
         <div className="md:col-span-3">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="receipt-datetime"
+          >
             التاريخ والوقت
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="receipt-datetime"
             readOnly={!isEditing}
             type="datetime-local"
             value={
@@ -839,13 +837,17 @@ export default function ReceiptVoucherClientPage({
 
         {/* البيان - أوسع مع زر توسيع */}
         <div className="md:col-span-7">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="receipt-notes"
+          >
             البيان
           </label>
           <div className="relative">
             <input
               className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
               disabled={!isEditing}
+              id="receipt-notes"
               placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
               readOnly={!isEditing}
               type="text"
@@ -907,7 +909,10 @@ export default function ReceiptVoucherClientPage({
       <div className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
         {/* العميل */}
         <div className="md:col-span-4">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="customer-select"
+          >
             العميل
           </label>
           <div
@@ -1001,12 +1006,16 @@ export default function ReceiptVoucherClientPage({
 
         {/* مناولة */}
         <div className="md:col-span-3">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="receipt-handling"
+          >
             مناولة
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="receipt-handling"
             placeholder="مناولة"
             readOnly={!isEditing}
             type="text"
@@ -1047,7 +1056,10 @@ export default function ReceiptVoucherClientPage({
 
         {/* مركز التكلفة */}
         <div className="md:col-span-5">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="receipt-cost-center-select"
+          >
             مركز التكلفة
           </label>
           <div

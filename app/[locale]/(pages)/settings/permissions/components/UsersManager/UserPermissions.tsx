@@ -111,20 +111,6 @@ export default function UserPermissions({
     });
   };
 
-  const toggleScreenSelection = (screenId: string) => {
-    setSelectedScreens((prev) => {
-      const newSet = new Set(prev);
-
-      if (newSet.has(screenId)) {
-        newSet.delete(screenId);
-      } else {
-        newSet.add(screenId);
-      }
-
-      return newSet;
-    });
-  };
-
   const selectAllScreens = () => {
     const allScreenIds = new Set<string>();
 
@@ -195,18 +181,6 @@ export default function UserPermissions({
     setSelectedScreens(new Set());
   };
 
-  const filterScreens = (
-    screens: (typeof SYSTEM_MAP.systems)[0]["sections"][0]["screens"],
-  ) => {
-    if (!searchTerm) return screens;
-
-    return screens.filter(
-      (screen) =>
-        screen.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        screen.path?.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  };
-
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -231,21 +205,6 @@ export default function UserPermissions({
     } finally {
       setSaving(false);
     }
-  };
-
-  const hasAllPermissions = (screenId: string): boolean => {
-    const screenPerms = permissions[screenId] || [];
-
-    return screenPerms.length === Object.values(PERMISSION_TYPES).length;
-  };
-
-  const hasSomePermissions = (screenId: string): boolean => {
-    const screenPerms = permissions[screenId] || [];
-
-    return (
-      screenPerms.length > 0 &&
-      screenPerms.length < Object.values(PERMISSION_TYPES).length
-    );
   };
 
   if (user.is_staff) {

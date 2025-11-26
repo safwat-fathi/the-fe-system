@@ -10,7 +10,6 @@ import {
   Divider,
 } from "@heroui/react";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import { API_ENDPOINTS, apiFetch } from "@/utilities/api";
@@ -70,25 +69,24 @@ const ACCOUNT_FIELDS = [
   { key: "Vat_perc", label: " % نسبة ضريبة القيمة المضافة" },
 ];
 
-const ZATCA_FIELDS = [
-  {
-    key: "Enable_EInvoice",
-    label: "تفعيل الفاتورة الإلكترونية",
-    type: "checkbox",
-  },
-  { key: "LT", label: "نوع الربط  " },
-  { key: "LTD", label: "تاريخ تفعيل الربط", type: "date" },
-  { key: "Xml_Path", label: "مسار ملفات XML" },
-  { key: "USERNAME", label: "اسم المستخدم" },
-  { key: "PASSWORD", label: "كلمة المرور" },
-  { key: "comp_csr", label: "الشهادة" },
-  { key: "comp_private_key", label: "المفتاح الخاص" },
-  { key: "Last_PIH", label: "آخر PIH" },
-  { key: "Last_ICV", label: "آخر ICV" },
-];
+// const ZATCA_FIELDS = [
+//   {
+//     key: "Enable_EInvoice",
+//     label: "تفعيل الفاتورة الإلكترونية",
+//     type: "checkbox",
+//   },
+//   { key: "LT", label: "نوع الربط  " },
+//   { key: "LTD", label: "تاريخ تفعيل الربط", type: "date" },
+//   { key: "Xml_Path", label: "مسار ملفات XML" },
+//   { key: "USERNAME", label: "اسم المستخدم" },
+//   { key: "PASSWORD", label: "كلمة المرور" },
+//   { key: "comp_csr", label: "الشهادة" },
+//   { key: "comp_private_key", label: "المفتاح الخاص" },
+//   { key: "Last_PIH", label: "آخر PIH" },
+//   { key: "Last_ICV", label: "آخر ICV" },
+// ];
 
 export default function SettingsPage() {
-  const router = useRouter();
   const [activeSection, setActiveSection] = useState("general");
   const [settings, setSettings] = useState<HomeSettings>({});
   const [originalSettings, setOriginalSettings] = useState<HomeSettings>({});

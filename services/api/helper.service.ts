@@ -102,7 +102,7 @@ class HelperService extends HttpService {
           const branchParams = await getBranchParams();
 
           companyId = branchParams.com || "1";
-        } catch (error) {
+        } catch {
           // إذا فشل جلب branch params، استخدم القيمة الافتراضية
           companyId = "1";
         }

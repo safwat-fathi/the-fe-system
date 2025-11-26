@@ -65,7 +65,6 @@ export function BaseModal({
   className = "",
   showCloseButton = true,
   closeOnOverlayClick = true,
-  closeOnEscape = true,
 }: BaseModalProps) {
   return (
     <HeroModal

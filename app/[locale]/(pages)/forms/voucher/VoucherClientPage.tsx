@@ -1,5 +1,7 @@
 "use client";
 
+import type { Voucher, VoucherDetail } from "@/types/voucher";
+
 import { useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
@@ -33,8 +35,6 @@ import { formatAmount } from "@/utilities/formatAmount";
 import { formatDateTime } from "@/utilities/dateUtils";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
-
-import type { Voucher, VoucherDetail } from "@/types/voucher";
 
 interface VoucherClientPageProps {
   voucherData?: Voucher | null;
@@ -88,28 +88,19 @@ export default function VoucherClientPage({
     costCenters,
     voucherTypes,
     voucherStatuses,
-    caratTypes,
     isLoading,
     isEditing,
-    setIsEditing,
     isPrinting,
     showValidationErrors,
     isClient,
-    currentRecord,
-    totalRecords,
     searchTerm,
     setSearchTerm,
-    selectedVoucher,
-    setSelectedVoucher,
     vouchersList,
     isModalOpen,
     setIsModalOpen,
-    defaultAccountOptions,
 
     // Totals and balances
     totals,
-    cashBalance,
-    goldBalance,
     isCashBalanced,
     isGoldBalanced,
     isBalanced,
@@ -128,7 +119,6 @@ export default function VoucherClientPage({
     loadAccountOptions,
     getAccountSelectValue,
     updateAccountsList,
-    navigateToVoucher,
     handleMasterCostChange,
   } = useVoucherForm({
     voucherData,
@@ -145,12 +135,6 @@ export default function VoucherClientPage({
     formMode,
     newVoucherHref,
   });
-
-  const toAmount = (value: unknown) => {
-    const numeric = Number(value);
-
-    return Number.isFinite(numeric) ? numeric : 0;
-  };
 
   const navigationTargets = useMemo(
     () => ({
@@ -209,35 +193,6 @@ export default function VoucherClientPage({
 
     router.push(`/forms/voucher/${targetId}?mode=preview`);
     router.refresh();
-  };
-
-  const PREVIEW_TOLERANCE = 0.01;
-
-  const getPreviewAccountName = (
-    accId: number | string | null | undefined,
-    fallback?: string | null,
-  ): string => {
-    if (fallback && fallback.trim().length > 0) {
-      return fallback;
-    }
-
-    if (accId === null || accId === undefined || accId === "") {
-      return "";
-    }
-
-    const numericId = Number(accId);
-
-    if (!Number.isFinite(numericId)) {
-      return "";
-    }
-
-    const account = accounts?.find((acc: any) => {
-      const candidate = acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
-
-      return Number(candidate) === numericId;
-    });
-
-    return account?.acc_name || account?.name || account?.label || "";
   };
 
   if (!isClient) {
@@ -493,12 +448,16 @@ export default function VoucherClientPage({
             <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               {/* رقم المرجع - أضيق */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-ref-no"
+                >
                   رقم المرجع
                 </label>
                 <input
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 h-10 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
                   disabled={!isEditing}
+                  id="voucher-ref-no"
                   placeholder="أدخل رقم المرجع"
                   readOnly={!isEditing}
                   value={voucher.ref_no || ""}
@@ -510,12 +469,16 @@ export default function VoucherClientPage({
 
               {/* تاريخ ووقت القيد - تصغير قليلاً */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-date-time"
+                >
                   تاريخ ووقت القيد
                 </label>
                 <input
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 h-10 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
                   disabled={!isEditing}
+                  id="voucher-date-time"
                   max={new Date().toISOString().slice(0, 16)}
                   readOnly={!isEditing}
                   type="datetime-local"
@@ -535,12 +498,16 @@ export default function VoucherClientPage({
 
               {/* حالة القيد - تصغير قليلاً */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-status"
+                >
                   حالة القيد
                 </label>
                 <select
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 h-10 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
                   disabled={!isEditing}
+                  id="voucher-status"
                   value={String(voucher.vouch_status ?? 1)}
                   onChange={(e) =>
                     setVoucher((prev) => ({
@@ -585,12 +552,16 @@ export default function VoucherClientPage({
 
               {/* نوع القيد - توسيع قليلاً */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-type"
+                >
                   نوع القيد
                 </label>
                 <select
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 h-10 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
                   disabled={!isEditing}
+                  id="voucher-type"
                   value={voucher.vouch_type || 2}
                   onChange={(e) => updateVoucherType(parseInt(e.target.value))}
                 >
@@ -621,7 +592,10 @@ export default function VoucherClientPage({
 
               {/* مركز التكلفة */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-cost-center-select"
+                >
                   مركز التكلفة
                 </label>
                 <ReactSelect
@@ -629,6 +603,7 @@ export default function VoucherClientPage({
                   className="text-sm"
                   classNamePrefix="react-select"
                   components={{ IndicatorSeparator: () => null }}
+                  inputId="voucher-cost-center-select"
                   instanceId="voucher-cost-center-select"
                   isDisabled={!isEditing || costCenters.length === 0}
                   menuPortalTarget={
@@ -679,11 +654,17 @@ export default function VoucherClientPage({
 
         {/* البيان */}
         <div className="mb-2">
-          <label className="text-sm font-medium text-slate-700">البيان</label>
+          <label
+            className="text-sm font-medium text-slate-700"
+            htmlFor="voucher-notes"
+          >
+            البيان
+          </label>
           <div className="relative">
             <input
               className="text-sm border border-slate-300 rounded-md px-3 py-2 pr-10 h-10 w-full focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
               disabled={!isEditing}
+              id="voucher-notes"
               placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
               readOnly={!isEditing}
               value={voucher.vouch_notes || ""}
@@ -866,7 +847,7 @@ export default function VoucherClientPage({
                           menuPosition="fixed"
                           placeholder="اختر الحساب..."
                           styles={{
-                            control: (base, state) => ({
+                            control: (base, _state) => ({
                               ...base,
                               minHeight: "100%",
                               height: "100%",
