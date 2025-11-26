@@ -6,6 +6,7 @@ interface UseEnterKeyNavigationOptions<Row> {
   rows: Row[];
   rowHasValue: (row: Row | undefined) => boolean;
   onAddRow: () => void;
+  onLastCell?: () => void;
 }
 
 interface HandleKeyDownOptions {
@@ -31,12 +32,69 @@ interface UseEnterKeyNavigationResult {
 export default function useEnterKeyNavigation<Row>(
   options: UseEnterKeyNavigationOptions<Row>,
 ): UseEnterKeyNavigationResult {
-  const { rows, rowHasValue, onAddRow } = options;
+  const { rows, rowHasValue, onAddRow, onLastCell } = options;
   const inputRefs = useRef<NullableInput[][]>([]);
+
+  // ✅ دالة مساعدة للبحث المباشر عن combobox في حقل معين
+  const findComboboxByCol = (rowIndex: number, colIndex: number): HTMLElement | null => {
+    // حقل الحساب (col 0)
+    if (colIndex === 0) {
+      // محاولة 1: البحث المباشر
+      const accountSelect = document.querySelector(`#account-select-${rowIndex}`);
+      if (accountSelect) {
+        const combobox = accountSelect.querySelector('[role="combobox"]') as HTMLElement;
+        if (combobox) return combobox;
+      }
+      
+      // محاولة 2: البحث في جميع comboboxes
+      const allComboboxes = document.querySelectorAll('[role="combobox"]');
+      for (let i = 0; i < allComboboxes.length; i += 1) {
+        const cb = allComboboxes[i] as HTMLElement;
+        const parent = cb.closest('[id^="account-select-"]');
+        if (parent && parent.id === `account-select-${rowIndex}`) {
+          return cb;
+        }
+      }
+    }
+    
+    // مركز التكلفة (col 8)
+    if (colIndex === 8) {
+      // محاولة 1: البحث المباشر
+      const costCenterSelect = document.querySelector(`#cost-center-detail-select-${rowIndex}`);
+      if (costCenterSelect) {
+        const combobox = costCenterSelect.querySelector('[role="combobox"]') as HTMLElement;
+        if (combobox) return combobox;
+      }
+      
+      // محاولة 2: البحث في جميع comboboxes
+      const allComboboxes = document.querySelectorAll('[role="combobox"]');
+      for (let i = 0; i < allComboboxes.length; i += 1) {
+        const cb = allComboboxes[i] as HTMLElement;
+        const parent = cb.closest('[id^="cost-center-detail-select-"]');
+        if (parent && parent.id === `cost-center-detail-select-${rowIndex}`) {
+          return cb;
+        }
+      }
+    }
+    
+    return null;
+  };
 
   const focusNode = (node: NullableInput) => {
     try {
       if (!node) return;
+
+      const nodeElement = node as HTMLElement;
+
+      // ✅ التحقق من node نفسه أولاً - إذا كان combobox
+      if (nodeElement.getAttribute?.("role") === "combobox") {
+        // ✅ إضافة tabIndex إذا لم يكن موجوداً أو كان -1
+        if (!nodeElement.hasAttribute('tabindex') || nodeElement.getAttribute('tabindex') === '-1') {
+          nodeElement.setAttribute('tabindex', '0');
+        }
+        nodeElement.focus();
+        return;
+      }
 
       // إذا كان HTMLInputElement أو HTMLSelectElement مباشر
       if (
@@ -55,9 +113,6 @@ export default function useEnterKeyNavigation<Row>(
         return;
       }
 
-      // البحث عن input داخل العنصر
-      const nodeElement = node as HTMLElement;
-
       if (nodeElement) {
         // البحث عن input باستخدام inputId
         const inputId = nodeElement.id || nodeElement.getAttribute?.("id");
@@ -74,6 +129,20 @@ export default function useEnterKeyNavigation<Row>(
           }
         }
 
+        // ✅ البحث عن combobox داخل العنصر أولاً
+        const comboboxInside = nodeElement.querySelector?.(
+          '[role="combobox"]',
+        ) as HTMLElement;
+
+        if (comboboxInside) {
+          // ✅ إضافة tabIndex
+          if (!comboboxInside.hasAttribute('tabindex') || comboboxInside.getAttribute('tabindex') === '-1') {
+            comboboxInside.setAttribute('tabindex', '0');
+          }
+          comboboxInside.focus();
+          return;
+        }
+
         // البحث عن input داخل العنصر
         const inputInside = nodeElement.querySelector?.(
           "input",
@@ -85,12 +154,16 @@ export default function useEnterKeyNavigation<Row>(
           return;
         }
 
-        // البحث عن combobox button
+        // البحث عن combobox button باستخدام closest
         const combobox = nodeElement.closest?.(
           '[role="combobox"]',
         ) as HTMLElement;
 
         if (combobox) {
+          // ✅ إضافة tabIndex
+          if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
+            combobox.setAttribute('tabindex', '0');
+          }
           combobox.focus();
 
           return;
@@ -113,8 +186,20 @@ export default function useEnterKeyNavigation<Row>(
   };
 
   const focusFirstInRow = useCallback((rowIndex: number) => {
+    // ✅ محاولة 1: البحث عن combobox في حقل الحساب أولاً
+    const accountCombobox = findComboboxByCol(rowIndex, 0);
+    if (accountCombobox) {
+      // ✅ إضافة tabIndex
+      if (!accountCombobox.hasAttribute('tabindex') || accountCombobox.getAttribute('tabindex') === '-1') {
+        accountCombobox.setAttribute('tabindex', '0');
+      }
+      accountCombobox.focus();
+      return true;
+    }
+
     const rowRefs = inputRefs.current[rowIndex] || [];
 
+    // ✅ محاولة 2: استخدام refs
     for (let i = 0; i < rowRefs.length; i += 1) {
       const el = rowRefs[i];
 
@@ -123,6 +208,16 @@ export default function useEnterKeyNavigation<Row>(
 
         return true;
       }
+    }
+
+    // ✅ محاولة 3: البحث باستخدام data-col
+    const firstInput = document.querySelector(
+      `input[data-row="${rowIndex}"][data-col="0"]`,
+    ) as HTMLInputElement;
+
+    if (firstInput) {
+      firstInput.focus();
+      return true;
     }
 
     return false;
@@ -183,9 +278,11 @@ export default function useEnterKeyNavigation<Row>(
       }
 
       const rowRefs = inputRefs.current[rowIndex] || [];
-      const lastColIndex = rowRefs.length - 1;
+      const lastColIndex = rowRefs.length > 0 ? rowRefs.length - 1 : -1;
       const atLastCol =
-        typeof isLastCol === "boolean" ? isLastCol : colIndex >= lastColIndex;
+        typeof isLastCol === "boolean"
+          ? isLastCol
+          : lastColIndex >= 0 && colIndex >= lastColIndex;
       const isLastRow = rowIndex === rows.length - 1;
       const hasValue = rowHasValue(rows[rowIndex]);
 
@@ -196,6 +293,7 @@ export default function useEnterKeyNavigation<Row>(
         if (colIndex > 0) {
           // الانتقال للحقل السابق في نفس الصف (في RTL، السهم الأيمن = السابق)
           const prevInRow = rowRefs[colIndex - 1];
+          const prevCol = colIndex - 1;
 
           if (prevInRow) {
             focusNode(prevInRow);
@@ -207,6 +305,31 @@ export default function useEnterKeyNavigation<Row>(
                 input.select();
               }
             }, 0);
+          } else {
+            // ✅ إذا لم يكن هناك ref، نبحث مباشرة عن combobox أولاً
+            const combobox = findComboboxByCol(rowIndex, prevCol);
+            if (combobox) {
+              // ✅ إضافة tabIndex
+              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
+                combobox.setAttribute('tabindex', '0');
+              }
+              combobox.focus();
+              return;
+            }
+
+            // ✅ البحث باستخدام data-col
+            const prevInput = document.querySelector(
+              `input[data-row="${rowIndex}"][data-col="${prevCol}"]`,
+            ) as HTMLInputElement;
+
+            if (prevInput) {
+              prevInput.focus();
+              setTimeout(() => {
+                if (prevInput.select && typeof prevInput.select === "function") {
+                  prevInput.select();
+                }
+              }, 0);
+            }
           }
         }
 
@@ -219,6 +342,7 @@ export default function useEnterKeyNavigation<Row>(
         if (!atLastCol) {
           // الانتقال للحقل التالي في نفس الصف (في RTL، السهم الأيسر = التالي)
           const nextInRow = rowRefs[colIndex + 1];
+          const nextCol = colIndex + 1;
 
           if (nextInRow) {
             focusNode(nextInRow);
@@ -230,6 +354,31 @@ export default function useEnterKeyNavigation<Row>(
                 input.select();
               }
             }, 0);
+          } else {
+            // ✅ إذا لم يكن هناك ref، نبحث مباشرة عن combobox أولاً
+            const combobox = findComboboxByCol(rowIndex, nextCol);
+            if (combobox) {
+              // ✅ إضافة tabIndex
+              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
+                combobox.setAttribute('tabindex', '0');
+              }
+              combobox.focus();
+              return;
+            }
+
+            // ✅ البحث باستخدام data-col
+            const nextInput = document.querySelector(
+              `input[data-row="${rowIndex}"][data-col="${nextCol}"]`,
+            ) as HTMLInputElement;
+
+            if (nextInput) {
+              nextInput.focus();
+              setTimeout(() => {
+                if (nextInput.select && typeof nextInput.select === "function") {
+                  nextInput.select();
+                }
+              }, 0);
+            }
           }
         }
 
@@ -255,8 +404,33 @@ export default function useEnterKeyNavigation<Row>(
               }
             }, 0);
           } else {
-            // إذا لم يوجد، ننتقل لأول حقل في الصف التالي
-            focusFirstInRow(rowIndex + 1);
+            // ✅ إذا لم يوجد ref، نبحث مباشرة عن combobox أولاً
+            const combobox = findComboboxByCol(rowIndex + 1, colIndex);
+            if (combobox) {
+              // ✅ إضافة tabIndex
+              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
+                combobox.setAttribute('tabindex', '0');
+              }
+              combobox.focus();
+              return;
+            }
+
+            // ✅ البحث باستخدام data-col
+            const sameColInput = document.querySelector(
+              `input[data-row="${rowIndex + 1}"][data-col="${colIndex}"]`,
+            ) as HTMLInputElement;
+
+            if (sameColInput) {
+              sameColInput.focus();
+              setTimeout(() => {
+                if (sameColInput.select && typeof sameColInput.select === "function") {
+                  sameColInput.select();
+                }
+              }, 0);
+            } else {
+              // إذا لم يوجد، ننتقل لأول حقل في الصف التالي
+              focusFirstInRow(rowIndex + 1);
+            }
           }
         } else {
           // إذا كان آخر صف، نضيف صف جديد
@@ -286,8 +460,33 @@ export default function useEnterKeyNavigation<Row>(
               }
             }, 0);
           } else {
-            // إذا لم يوجد، ننتقل لأول حقل في الصف السابق
-            focusFirstInRow(rowIndex - 1);
+            // ✅ إذا لم يوجد ref، نبحث مباشرة عن combobox أولاً
+            const combobox = findComboboxByCol(rowIndex - 1, colIndex);
+            if (combobox) {
+              // ✅ إضافة tabIndex
+              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
+                combobox.setAttribute('tabindex', '0');
+              }
+              combobox.focus();
+              return;
+            }
+
+            // ✅ البحث باستخدام data-col
+            const sameColInput = document.querySelector(
+              `input[data-row="${rowIndex - 1}"][data-col="${colIndex}"]`,
+            ) as HTMLInputElement;
+
+            if (sameColInput) {
+              sameColInput.focus();
+              setTimeout(() => {
+                if (sameColInput.select && typeof sameColInput.select === "function") {
+                  sameColInput.select();
+                }
+              }, 0);
+            } else {
+              // إذا لم يوجد، ننتقل لأول حقل في الصف السابق
+              focusFirstInRow(rowIndex - 1);
+            }
           }
         }
 
@@ -298,17 +497,16 @@ export default function useEnterKeyNavigation<Row>(
       if (key !== "Tab" && key !== "Enter") return;
       if (key === "Tab" && (event as any).shiftKey) return;
 
+      // السماح بالتنقل دائماً حتى في الصفوف الفارغة (مثل سند قبض وصرف عملاء)
+      // إذا كان hasValue false، نسمح بالتنقل الطبيعي للـ Tab و Enter
       if (!hasValue) {
         if (key === "Tab") {
-          event.preventDefault();
-
+          // نسمح بالتنقل الطبيعي للـ Tab حتى في الصفوف الفارغة
           return;
-        } else if (key === "Enter" && !allowEnterDefaultWhenRowMissing) {
-          event.preventDefault();
-
-          return;
+        } else if (key === "Enter") {
+          // نسمح بالتنقل للـ Enter حتى في الصفوف الفارغة
+          // لا نمنع التنقل، نستمر في التنقل الطبيعي
         }
-        // إذا كان Enter و allowEnterDefaultWhenRowMissing = true، نستمر في التنقل
       }
 
       if (key === "Enter") {
@@ -316,15 +514,60 @@ export default function useEnterKeyNavigation<Row>(
 
         if (!atLastCol) {
           const nextInRow = rowRefs[colIndex + 1];
+          const nextCol = colIndex + 1;
 
-          if (nextInRow) focusNode(nextInRow);
+          if (nextInRow) {
+            focusNode(nextInRow);
+          } else {
+            // ✅ إذا لم يكن هناك ref، نبحث مباشرة عن combobox أولاً
+            const combobox = findComboboxByCol(rowIndex, nextCol);
+            if (combobox) {
+              // ✅ إضافة tabIndex
+              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
+                combobox.setAttribute('tabindex', '0');
+              }
+              combobox.focus();
+              return;
+            }
+
+            // ✅ البحث باستخدام data-col
+            const nextInput = document.querySelector(
+              `input[data-row="${rowIndex}"][data-col="${nextCol}"]`,
+            ) as HTMLInputElement;
+
+            if (nextInput) {
+              nextInput.focus();
+              return;
+            }
+
+            // محاولة بعد تأخير
+            setTimeout(() => {
+              const nextRowRefs = inputRefs.current[rowIndex] || [];
+              const nextInRowAfterDelay = nextRowRefs[colIndex + 1];
+
+              if (nextInRowAfterDelay) {
+                focusNode(nextInRowAfterDelay);
+              } else {
+                // ✅ محاولة أخيرة: البحث المباشر
+                const comboboxAfterDelay = findComboboxByCol(rowIndex, nextCol);
+                if (comboboxAfterDelay) {
+                  // ✅ إضافة tabIndex
+                  if (!comboboxAfterDelay.hasAttribute('tabindex') || comboboxAfterDelay.getAttribute('tabindex') === '-1') {
+                    comboboxAfterDelay.setAttribute('tabindex', '0');
+                  }
+                  comboboxAfterDelay.focus();
+                }
+              }
+            }, 50);
+          }
 
           return;
         }
 
-        if (!hasValue) {
-          return;
-        }
+        // السماح بالتنقل حتى في الصفوف الفارغة
+        // if (!hasValue) {
+        //   return;
+        // }
 
         if (!isLastRow) {
           focusFirstInRow(rowIndex + 1);
@@ -332,6 +575,13 @@ export default function useEnterKeyNavigation<Row>(
           return;
         }
 
+        // إذا كان آخر صف وآخر عمود، نتحقق من onLastCell callback
+        if (onLastCell) {
+          onLastCell();
+          return;
+        }
+
+        // إذا كان الصف فارغاً، نضيف صف جديد
         onAddRow();
         focusNextRowFirstCell(rowIndex + 1);
 
@@ -340,12 +590,22 @@ export default function useEnterKeyNavigation<Row>(
 
       // Tab key
       if (!atLastCol) {
+        // إذا لم نكن في آخر عمود، نسمح بالتنقل الطبيعي للـ Tab
+        // لا نمنع التنقل الطبيعي للـ Tab
         return;
       }
 
-      if (!hasValue) {
+      // إذا كنا في آخر عمود ولكن الصف فارغ، نسمح بالتنقل للصف التالي
+      if (!hasValue && !isLastRow) {
+        event.preventDefault();
+        focusFirstInRow(rowIndex + 1);
         return;
       }
+
+      // السماح بالتنقل حتى في الصفوف الفارغة
+      // if (!hasValue) {
+      //   return;
+      // }
 
       event.preventDefault();
       if (!isLastRow) {
@@ -354,10 +614,17 @@ export default function useEnterKeyNavigation<Row>(
         return;
       }
 
+      // إذا كان آخر صف وآخر عمود، نتحقق من onLastCell callback
+      if (onLastCell) {
+        onLastCell();
+        return;
+      }
+
+      // إذا كان الصف فارغاً، نضيف صف جديد
       onAddRow();
       focusNextRowFirstCell(rowIndex + 1);
     },
-    [focusFirstInRow, focusNextRowFirstCell, onAddRow, rowHasValue, rows],
+    [focusFirstInRow, focusNextRowFirstCell, onAddRow, rowHasValue, rows, onLastCell],
   );
 
   const setInputRef = useCallback(

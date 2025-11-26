@@ -17,7 +17,14 @@ export function Providers({ children, themeProps }: ProvidersProps) {
 
   return (
     <HeroUIProvider navigate={router.push}>
-      <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+      <NextThemesProvider
+        {...themeProps}
+        enableSystem={false}
+        disableTransitionOnChange
+        suppressHydrationWarning
+      >
+        {children}
+      </NextThemesProvider>
     </HeroUIProvider>
   );
 }

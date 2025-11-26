@@ -49,6 +49,13 @@ export interface UseKeyAsTabResult {
    * Attach to `onKeyDown` for any focusable that should honor the alternate Tab key(s).
    */
   handleKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  /**
+   * Handle F4 key to toggle select dropdowns (open/close).
+   * Attach to `onKeyDown` on select elements.
+   */
+  handleF4KeyForSelect: (
+    event: KeyboardEvent<HTMLElement> | KeyboardEvent<Element>,
+  ) => boolean;
 }
 
 const DEFAULT_FOCUSABLE_SELECTOR = [
@@ -66,14 +73,18 @@ const DEFAULT_FOCUSABLE_SELECTOR = [
 
 const normalizeKey = (key: string): string => {
   if (key === " ") return "Space";
+
   const lower = key.toLowerCase();
+  const keyMap: Record<string, string> = {
+    space: "Space",
+    spacebar: "Space",
+    enter: "Enter",
+    tab: "Tab",
+    escape: "Escape",
+    esc: "Escape",
+  };
 
-  if (lower === "space" || lower === "spacebar") return "Space";
-  if (lower === "enter") return "Enter";
-  if (lower === "tab") return "Tab";
-  if (lower === "escape" || lower === "esc") return "Escape";
-
-  return key;
+  return keyMap[lower] || key;
 };
 
 const isElementVisible = (element: HTMLElement) => {
@@ -119,11 +130,12 @@ const isElementVisible = (element: HTMLElement) => {
 };
 
 const baseFilter = (element: HTMLElement) => {
-  if (element.hasAttribute("disabled")) return false;
-  if (element.getAttribute("aria-hidden") === "true") return false;
-  if (element.tabIndex < 0) return false;
-
-  return isElementVisible(element);
+  return (
+    !element.hasAttribute("disabled") &&
+    element.getAttribute("aria-hidden") !== "true" &&
+    element.tabIndex >= 0 &&
+    isElementVisible(element)
+  );
 };
 
 export default function useKeyAsTab(
@@ -148,12 +160,7 @@ export default function useKeyAsTab(
 
   const mergedFilter = useCallback(
     (element: HTMLElement) => {
-      if (!baseFilter(element)) return false;
-      if (typeof filterElement === "function") {
-        return filterElement(element);
-      }
-
-      return true;
+      return baseFilter(element) && (typeof filterElement !== "function" || filterElement(element));
     },
     [filterElement],
   );
@@ -163,32 +170,19 @@ export default function useKeyAsTab(
       if (typeof document === "undefined") return false;
 
       const root = containerRef?.current ?? document.body;
-
       if (!root) return false;
 
-      const nodeList = root.querySelectorAll<HTMLElement>(focusableSelector);
-      const candidates: HTMLElement[] = [];
+      const candidates = Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter(mergedFilter);
 
-      nodeList.forEach((node) => {
-        if (mergedFilter(node)) {
-          candidates.push(node);
-        }
-      });
-
-      if (candidates.length === 0) {
-        return false;
-      }
+      if (candidates.length === 0) return false;
 
       const activeElement =
-        fallbackActiveElement && candidates.includes(fallbackActiveElement)
-          ? fallbackActiveElement
-          : document.activeElement instanceof HTMLElement &&
-              root.contains(document.activeElement)
-            ? document.activeElement
-            : null;
+        (fallbackActiveElement && candidates.includes(fallbackActiveElement) ? fallbackActiveElement : null) ||
+        (document.activeElement instanceof HTMLElement && root.contains(document.activeElement)
+          ? document.activeElement
+          : null);
 
       let currentIndex = activeElement ? candidates.indexOf(activeElement) : -1;
-
       if (currentIndex === -1 && fallbackActiveElement) {
         currentIndex = candidates.indexOf(fallbackActiveElement);
       }
@@ -202,15 +196,8 @@ export default function useKeyAsTab(
 
       if (nextIndex < 0 || nextIndex >= candidates.length) {
         if (!wrap) {
-          if (direction === 1 && typeof onBoundaryFocus === "function") {
-            const handled = onBoundaryFocus(direction);
-
-            if (handled) return true;
-          }
-          if (direction === -1 && typeof onBoundaryFocus === "function") {
-            const handled = onBoundaryFocus(direction);
-
-            if (handled) return true;
+          if (typeof onBoundaryFocus === "function" && onBoundaryFocus(direction)) {
+            return true;
           }
 
           return false;
@@ -220,12 +207,10 @@ export default function useKeyAsTab(
       }
 
       const nextElement = candidates[nextIndex];
-
       if (!nextElement) return false;
 
       try {
         nextElement.focus();
-
         return true;
       } catch {
         return false;
@@ -243,16 +228,50 @@ export default function useKeyAsTab(
 
       const normalized = normalizeKey(event.key);
 
+      // ✅ معالجة الأسهم للتنقل
+      let direction: 1 | -1 | null = null;
+      if (event.key === "ArrowDown" || event.key === "ArrowLeft") {
+        direction = 1; // الحقل التالي
+      } else if (event.key === "ArrowUp" || event.key === "ArrowRight") {
+        direction = -1; // الحقل السابق
+      }
+
+      if (direction !== null) {
+        const target = (event.target as HTMLElement | null) || (event.currentTarget as HTMLElement | null);
+        
+        if (!target) return;
+
+        const listboxElement = target.closest('[role="listbox"]');
+        const selectButton = target.closest('[role="combobox"]');
+        const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+
+        // إذا كنا داخل قائمة مفتوحة، نسمح بالتفاعل الطبيعي
+        if (listboxElement || isExpanded) {
+          return;
+        }
+
+        // إذا كنا على select مغلق أو input عادي، ننتقل بين الحقول
+        const fallbackElement = target;
+        const moved = moveFocus(direction, fallbackElement);
+
+        if (moved) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
+        return;
+      }
+
       if (!keySet.has(normalized)) {
         return;
       }
 
-      const direction: 1 | -1 = event.shiftKey ? -1 : 1;
+      const tabDirection: 1 | -1 = event.shiftKey ? -1 : 1;
       const fallbackElement =
-        event.target instanceof HTMLElement
-          ? event.target
-          : ((event.currentTarget as HTMLElement | null) ?? null);
-      const moved = moveFocus(direction, fallbackElement);
+        (event.target instanceof HTMLElement ? event.target : null) ||
+        (event.currentTarget as HTMLElement | null);
+
+      const moved = moveFocus(tabDirection, fallbackElement);
 
       if (moved) {
         event.preventDefault();
@@ -261,7 +280,150 @@ export default function useKeyAsTab(
     [disabled, keySet, moveFocus, shouldIgnoreEvent],
   );
 
+  /**
+   * Helper: البحث عن select button المرتبط بـ listbox
+   */
+  const findSelectButtonFromListbox = useCallback(
+    (listboxElement: HTMLElement): HTMLElement | null => {
+      const menuContainer = listboxElement.closest(".react-select__menu");
+      const reactSelectContainer = menuContainer?.previousElementSibling;
+
+      if (reactSelectContainer) {
+        return reactSelectContainer.querySelector(
+          '[role="combobox"]',
+        ) as HTMLElement | null;
+      }
+
+      if (listboxElement.id) {
+        const instanceId = listboxElement.id.replace("-listbox", "");
+        const element = document.querySelector(`[id*="${instanceId}"]`);
+
+        return element?.closest('[role="combobox"]') as HTMLElement | null;
+      }
+
+      return null;
+    },
+    [],
+  );
+
+  /**
+   * Helper: البحث عن listbox وتركيز على أول عنصر
+   */
+  const focusFirstListboxItem = useCallback(
+    (selectButton: HTMLElement) => {
+      const listbox =
+        selectButton
+          .closest(".react-select__control")
+          ?.nextElementSibling?.querySelector('[role="listbox"]') ||
+        document.querySelector('[id*="-listbox"], [role="listbox"]');
+
+      if (!listbox) return;
+
+      const firstOption = listbox.querySelector('[role="option"]') as HTMLElement;
+      const focusTarget = firstOption || (listbox.querySelector('input[type="text"]') as HTMLInputElement);
+
+      if (focusTarget) {
+        focusTarget.focus();
+      }
+    },
+    [],
+  );
+
+  /**
+   * Helper: إغلاق القائمة المفتوحة
+   */
+  const closeSelect = useCallback((selectButton: HTMLElement) => {
+    const escapeEvent = new KeyboardEvent("keydown", {
+      key: "Escape",
+      code: "Escape",
+      keyCode: 27,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    selectButton.dispatchEvent(escapeEvent);
+
+    // تأكيد الإغلاق
+    setTimeout(() => {
+      if (
+        selectButton.getAttribute("aria-expanded") === "true" &&
+        typeof selectButton.click === "function"
+      ) {
+        selectButton.click();
+      }
+    }, 50);
+  }, []);
+
+  /**
+   * Helper: التحقق من أن هذا ليس SearchableSelect
+   */
+  const isSearchableSelect = useCallback(
+    (element: HTMLElement | Element): boolean => {
+      const htmlElement = element as HTMLElement;
+
+      return !!(
+        htmlElement.closest('[data-component="searchable-select"], .searchable-select-wrapper')
+      );
+    },
+    [],
+  );
+
+  /**
+   * Handle F4 key to toggle select dropdowns (open/close)
+   * يعمل toggle: الضغط الأولى يفتح القائمة، الضغط الثانية يغلقها (حتى لو لم تختر شيئاً)
+   */
+  const handleF4KeyForSelect = useCallback(
+    (event: KeyboardEvent<HTMLElement> | KeyboardEvent<Element>) => {
+      if (event.key !== "F4") return false;
+
+      const target = (event.target as HTMLElement | null) || (event.currentTarget as HTMLElement | null);
+
+      if (!target) return false;
+
+      // إذا كنا داخل listbox، نغلق القائمة
+      const listboxElement = target.closest('[role="listbox"]') as HTMLElement | null;
+
+      if (listboxElement) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const selectButton = findSelectButtonFromListbox(listboxElement);
+
+        if (selectButton?.click) {
+          selectButton.click();
+          setTimeout(() => selectButton.focus?.(), 50);
+        }
+
+        return true;
+      }
+
+      // إذا كنا على select button
+      const selectButton = target.closest('[role="combobox"]') as HTMLElement;
+
+      if (!selectButton) return false;
+
+      // SearchableSelect يتعامل مع F4 داخلياً
+      if (isSearchableSelect(selectButton)) return false;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const isExpanded = selectButton.getAttribute("aria-expanded") === "true";
+
+      if (isExpanded) {
+        closeSelect(selectButton);
+      } else {
+        selectButton.click();
+        setTimeout(() => focusFirstListboxItem(selectButton), 150);
+      }
+
+      return true;
+    },
+    [findSelectButtonFromListbox, focusFirstListboxItem, closeSelect, isSearchableSelect],
+  );
+
   return {
     handleKeyDown,
+    handleF4KeyForSelect,
   };
 }

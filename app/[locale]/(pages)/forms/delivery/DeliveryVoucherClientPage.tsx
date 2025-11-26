@@ -136,7 +136,10 @@ export default function DeliveryVoucherClientPage({
   const selectorsRef = useRef<HTMLDivElement>(null);
 
   // Hook for Enter key navigation in top form fields
-  const { handleKeyDown: handleKeyDownSelectors } = useKeyAsTab({
+  const {
+    handleKeyDown: handleKeyDownSelectors,
+    handleF4KeyForSelect,
+  } = useKeyAsTab({
     keys: ["Enter"],
     containerRef: selectorsRef,
     disabled: !isEditing,
@@ -920,6 +923,11 @@ export default function DeliveryVoucherClientPage({
           </label>
           <div
             onKeyDownCapture={(e) => {
+              // معالجة F4 لفتح/إغلاق القائمة باستخدام الدالة العامة
+              if (handleF4KeyForSelect(e)) {
+                return;
+              }
+
               const target = e.target as HTMLElement;
               const selectButton = target.closest('[role="combobox"]');
               const isInListbox = target.closest('[role="listbox"]');

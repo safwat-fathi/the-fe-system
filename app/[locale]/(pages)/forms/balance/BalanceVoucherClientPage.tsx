@@ -126,7 +126,9 @@ export default function BalanceVoucherClientPage({
   const selectorsRef = useRef<HTMLDivElement>(null);
 
   // Hook for Enter key navigation in top form fields
-  const { handleKeyDown: handleKeyDownSelectors } = useKeyAsTab({
+  const {
+    handleKeyDown: handleKeyDownSelectors,
+  } = useKeyAsTab({
     keys: ["Enter"],
     containerRef: selectorsRef,
     disabled: !isEditing,
@@ -433,52 +435,46 @@ export default function BalanceVoucherClientPage({
                 >
                   مركز التكلفة
                 </label>
-                <div
-                  onKeyDownCapture={(e) => {
-                    const target = e.target as HTMLElement;
-                    const selectButton = target.closest('[role="combobox"]');
-                    const isInListbox = target.closest('[role="listbox"]');
-
-                    if (isInListbox) {
-                      return;
-                    }
-
-                    if (selectButton) {
-                      const isExpanded =
-                        selectButton.getAttribute("aria-expanded") === "true";
-
-                      if (e.key === "Enter" && !isExpanded) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const notesInput = selectorsRef.current?.querySelector(
-                          'input[placeholder*="بيان"]',
-                        ) as HTMLInputElement;
-
-                        if (notesInput) {
-                          notesInput.focus();
-                        }
-
-                        return;
-                      }
-
-                      if (e.key === "Escape") {
-                        return;
-                      }
-                    }
-                  }}
-                >
-                  <SearchableSelect
+                <div>
+                  <ReactSelect
+                    isSearchable
                     className="text-sm"
-                    disabled={!isEditing}
-                    inputId="balance-cost-center-select"
+                    classNamePrefix="react-select"
+                    components={{ IndicatorSeparator: () => null }}
+                    instanceId="balance-cost-center-select"
+                    isDisabled={!isEditing || costCenters.length === 0}
+                    menuPortalTarget={
+                      typeof window !== "undefined" ? document.body : null
+                    }
+                    menuPosition="fixed"
                     options={costCenterSelectOptions}
                     placeholder="اختر مركز التكلفة..."
-                    searchPlaceholder="ابحث عن مركز التكلفة..."
-                    value={voucher.cost_id ? String(voucher.cost_id) : null}
-                    onChange={(selectedValue) => {
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        minHeight: "40px",
+                        height: "40px",
+                        fontSize: "14px",
+                      }),
+                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                      option: (base) => ({
+                        ...base,
+                        fontSize: "14px",
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        fontSize: "14px",
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        fontSize: "14px",
+                      }),
+                    }}
+                    value={getCostCenterSelectValue(voucher.cost_id)}
+                    onChange={(selectedOption: any) => {
                       if (!isEditing) return;
-                      const selected = selectedValue
-                        ? Number(selectedValue)
+                      const selected = selectedOption?.value
+                        ? Number(selectedOption.value)
                         : null;
 
                       handleMasterCostChange(
@@ -487,6 +483,43 @@ export default function BalanceVoucherClientPage({
                           : null,
                       );
                     }}
+                    onKeyDown={(e) => {
+                      const target = e.target as HTMLElement | null;
+
+                      if (!target) return;
+
+                      const isInListbox = target.closest('[role="listbox"]');
+                      if (isInListbox) {
+                        return;
+                      }
+
+                      const selectButton = target.closest('[role="combobox"]');
+                      if (selectButton) {
+                        const isExpanded =
+                          selectButton.getAttribute("aria-expanded") === "true";
+
+                        // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
+                        if (isExpanded && e.key !== "Escape") {
+                          return;
+                        }
+
+                        if (e.key === "Enter" && !isExpanded) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const notesInput = selectorsRef.current?.querySelector(
+                            'input[placeholder*="بيان"]',
+                          ) as HTMLInputElement;
+
+                          if (notesInput) {
+                            notesInput.focus();
+                          }
+                        }
+
+                        if (e.key === "Escape") {
+                          return;
+                        }
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -494,9 +527,8 @@ export default function BalanceVoucherClientPage({
 
             {/* البيان - أوسع مع زر توسيع */}
             <div
-              className={`flex flex-col gap-1 ${
-                costCenters.length > 0 ? "md:col-span-5" : "md:col-span-7"
-              }`}
+              className={`flex flex-col gap-1 ${costCenters.length > 0 ? "md:col-span-5" : "md:col-span-7"
+                }`}
             >
               <label
                 className="text-sm font-medium text-slate-700"
@@ -574,11 +606,10 @@ export default function BalanceVoucherClientPage({
           <h3 className="text-sm font-semibold text-slate-800">تفاصيل القيد</h3>
           <div className="flex items-center gap-2">
             <span
-              className={`text-xs px-2 py-1 rounded-full font-bold ${
-                isBalanced
-                  ? "bg-emerald-200 text-emerald-900"
-                  : "bg-red-200 text-red-900"
-              }`}
+              className={`text-xs px-2 py-1 rounded-full font-bold ${isBalanced
+                ? "bg-emerald-200 text-emerald-900"
+                : "bg-red-200 text-red-900"
+                }`}
             >
               <i
                 className={`bi ${isBalanced ? "bi-check-circle" : "bi-exclamation-triangle"} me-1`}
@@ -691,32 +722,6 @@ export default function BalanceVoucherClientPage({
                           {(() => {
                             const thisCol = ++currentColIndex; // 0
 
-                            // دالة البحث الديناميكي
-                            const handleAccountSearch = async (
-                              searchTerm: string,
-                            ) => {
-                              try {
-                                // loadAccountOptions يتعامل مع البحث والترتيب داخلياً
-                                // نمرر searchTerm حتى لو كان فارغاً (loadAccountOptions ستعيد defaultOptions)
-                                const results =
-                                  await loadAccountOptions(searchTerm);
-
-                                if (!results || !Array.isArray(results)) {
-                                  return [];
-                                }
-
-                                // loadAccountOptions تعيد بالفعل format صحيح {value, label, account}
-                                return results;
-                              } catch (error) {
-                                console.error(
-                                  "Error in handleAccountSearch:",
-                                  error,
-                                );
-
-                                return [];
-                              }
-                            };
-
                             // الحصول على القيمة المحددة
                             const accountValue = getAccountSelectValue(detail);
                             const selectedAccountValue = accountValue
@@ -737,7 +742,7 @@ export default function BalanceVoucherClientPage({
                                 // إضافة القيمة المحددة كخيار
                                 const selectedLabel =
                                   accountValue &&
-                                  typeof accountValue === "object"
+                                    typeof accountValue === "object"
                                     ? accountValue.label
                                     : `حساب رقم: ${selectedAccountValue}`;
 
@@ -758,112 +763,208 @@ export default function BalanceVoucherClientPage({
 
                             return (
                               <div
+                                id={`account-select-${index}`}
                                 ref={(el) => {
                                   const refSetter = setInputRef(index, thisCol);
 
                                   if (el) {
-                                    // البحث عن زر القائمة
-                                    setTimeout(() => {
-                                      const selectButton =
-                                        document.querySelector(
-                                          `#account-select-${index}`,
-                                        ) as HTMLButtonElement;
+                                    // البحث عن combobox مباشرة
+                                    const findAndSetRef = () => {
+                                      const combobox = el.querySelector(
+                                        '[role="combobox"]',
+                                      ) as HTMLElement;
 
-                                      if (selectButton) {
+                                      if (combobox) {
                                         refSetter(
-                                          (selectButton as unknown as HTMLInputElement) ||
-                                            null,
+                                          combobox as unknown as HTMLInputElement,
                                         );
-                                      } else {
-                                        refSetter(null);
+                                        return true;
                                       }
-                                    }, 50);
+
+                                      return false;
+                                    };
+
+                                    // محاولة فورية
+                                    if (!findAndSetRef()) {
+                                      // محاولة بعد requestAnimationFrame
+                                      requestAnimationFrame(() => {
+                                        if (!findAndSetRef()) {
+                                          // محاولة بعد setTimeout
+                                          setTimeout(() => {
+                                            findAndSetRef();
+                                          }, 10);
+                                        }
+                                      });
+                                    }
+
+                                    // محاولات إضافية
+                                    setTimeout(() => {
+                                      findAndSetRef();
+                                    }, 100);
                                   } else {
                                     refSetter(null);
                                   }
                                 }}
                                 className="h-full"
                               >
-                                <SearchableSelect
-                                  className="text-xs h-full"
+                                <AsyncCreatableSelect
+                                  isClearable
+                                  isSearchable
+                                  className="text-xs"
+                                  classNamePrefix="select"
+                                  components={{ IndicatorSeparator: () => null }}
                                   defaultOptions={optionsWithSelected}
-                                  disabled={!isEditing}
-                                  emptyMessage="لا توجد حسابات"
-                                  inputId={`account-select-${index}`}
-                                  options={[]}
+                                  formatCreateLabel={(inputValue) =>
+                                    `إضافة حساب جديد: "${inputValue}"`
+                                  }
+                                  instanceId={`account-select-${index}`}
+                                  isDisabled={!isEditing}
+                                  loadOptions={loadAccountOptions}
+                                  cacheOptions
+                                  menuPortalTarget={
+                                    typeof window !== "undefined"
+                                      ? document.body
+                                      : null
+                                  }
+                                  menuPosition="fixed"
                                   placeholder="اختر الحساب..."
-                                  searchPlaceholder="ابحث عن الحساب..."
-                                  value={selectedAccountValue}
-                                  onChange={(selectedValue) => {
+                                  onMenuOpen={() => {
+                                    setTimeout(() => {
+                                      const combobox = document.querySelector(
+                                        `#account-select-${index} [role="combobox"]`,
+                                      ) as HTMLElement;
+                                      if (
+                                        combobox &&
+                                        document.activeElement !== combobox
+                                      ) {
+                                        combobox.focus();
+                                      }
+                                    }, 0);
+                                  }}
+                                  styles={{
+                                    control: (base, state) => ({
+                                      ...base,
+                                      minHeight: "100%",
+                                      height: "100%",
+                                      border: "none",
+                                      borderRadius: 0,
+                                      boxShadow: "none",
+                                      cursor: !isEditing
+                                        ? "not-allowed"
+                                        : base.cursor,
+                                      backgroundColor: "transparent",
+                                      "&:hover": {
+                                        border: "none",
+                                        boxShadow: "none",
+                                      },
+                                    }),
+                                    valueContainer: (base) => ({
+                                      ...base,
+                                      padding: "0.125rem 0.25rem",
+                                      height: "100%",
+                                    }),
+                                    input: (base) => ({
+                                      ...base,
+                                      margin: 0,
+                                      padding: 0,
+                                    }),
+                                    menuPortal: (base) => ({
+                                      ...base,
+                                      zIndex: 9999,
+                                    }),
+                                  }}
+                                  value={getAccountSelectValue(detail)}
+                                  onChange={(selectedOption: any) => {
                                     if (!isEditing) return;
-                                    if (!selectedValue) {
+                                    const opt: any = selectedOption;
+                                    const selected =
+                                      opt?.account ||
+                                      accounts.find((acc) => acc.id === opt?.value);
+
+                                    if (!selected) {
+                                      // إذا تم مسح الحساب
                                       updateDetail(index, "acc_id", null);
                                       updateDetail(index, "acc_code", "");
                                       updateDetail(index, "acc_name", "");
 
+                                      setTimeout(() => {
+                                        const moved = focusNextField(
+                                          index,
+                                          thisCol,
+                                        );
+
+                                        if (!moved) {
+                                          const firstDebitInput =
+                                            document.querySelector(
+                                              `input[data-row="${index}"][data-col="1"]`,
+                                            ) as HTMLInputElement;
+
+                                          if (firstDebitInput) {
+                                            firstDebitInput.focus();
+                                          }
+                                        }
+                                      }, 100);
+
                                       return;
                                     }
 
-                                    // البحث عن الحساب المحدد في accounts أولاً
-                                    let selected = accounts.find(
-                                      (acc) => acc.id === selectedValue,
+                                    if (!accounts.find((a) => a.id === selected.id)) {
+                                      updateAccountsList(selected);
+                                    }
+
+                                    updateDetail(index, "acc_id", selected.id ?? null);
+                                    updateDetail(
+                                      index,
+                                      "acc_code",
+                                      selected.acc_code ?? selected.code ?? "",
+                                    );
+                                    updateDetail(
+                                      index,
+                                      "acc_name",
+                                      selected.acc_name ?? selected.name ?? "",
                                     );
 
-                                    // إذا لم نجده، نبحث في defaultAccountOptions
-                                    if (!selected) {
-                                      const option = accountDefaultOptions.find(
-                                        (opt) => opt.value === selectedValue,
-                                      );
+                                    // الانتقال للحقل التالي بعد اختيار الحساب
+                                    setTimeout(() => {
+                                      const moved = focusNextField(index, thisCol);
 
-                                      if (option?.account) {
-                                        selected = option.account;
+                                      if (!moved) {
+                                        const selectButton = document.querySelector(
+                                          `#account-select-${index}`,
+                                        ) as HTMLButtonElement;
+
+                                        if (selectButton) {
+                                          const syntheticEvent = {
+                                            key: "Enter",
+                                            preventDefault: () => {},
+                                            stopPropagation: () => {},
+                                            target: selectButton,
+                                            currentTarget: selectButton,
+                                            nativeEvent: {} as any,
+                                            bubbles: true,
+                                            cancelable: true,
+                                            defaultPrevented: false,
+                                            eventPhase: 0,
+                                            isTrusted: false,
+                                            timeStamp: Date.now(),
+                                            type: "keydown",
+                                          } as unknown as React.KeyboardEvent;
+
+                                          handleKeyDownTable(
+                                            syntheticEvent,
+                                            index,
+                                            thisCol,
+                                            {
+                                              allowEnterDefaultWhenRowMissing: true,
+                                            },
+                                          );
+                                        }
                                       }
-                                    }
-
-                                    // إذا لم نجده بعد، نحاول البحث في loadedOptions من خلال loadAccountOptions
-                                    if (!selected) {
-                                      // نبحث في accounts مرة أخرى بعد تحديثها
-                                      selected = accounts.find(
-                                        (acc) => acc.id === selectedValue,
-                                      );
-                                    }
-
-                                    if (selected) {
-                                      updateAccountsList(selected);
-                                      updateDetail(
-                                        index,
-                                        "acc_id",
-                                        selected.id ?? null,
-                                      );
-                                      updateDetail(
-                                        index,
-                                        "acc_code",
-                                        selected.acc_code ??
-                                          selected.code ??
-                                          "",
-                                      );
-                                      updateDetail(
-                                        index,
-                                        "acc_name",
-                                        selected.acc_name ??
-                                          selected.name ??
-                                          "",
-                                      );
-                                    } else {
-                                      // إذا لم نجد الحساب، نحفظ القيمة فقط
-                                      // سيتم جلب بيانات الحساب من الخادم عند الحفظ
-                                      updateDetail(
-                                        index,
-                                        "acc_id",
-                                        selectedValue,
-                                      );
-                                    }
+                                    }, 100);
                                   }}
                                   onKeyDown={(e) => {
-                                    const target =
-                                      e.target as HTMLElement | null;
+                                    const target = e.target as HTMLElement | null;
 
-                                    // التحقق من وجود target
                                     if (!target) {
                                       return;
                                     }
@@ -887,6 +988,12 @@ export default function BalanceVoucherClientPage({
                                           "aria-expanded",
                                         ) === "true";
 
+                                      // إذا كان combobox مفتوحاً، نسمح بالتفاعل الطبيعي مع القائمة
+                                      if (isExpanded) {
+                                        return; // لا نمنع - نسمح بالتفاعل الطبيعي
+                                      }
+
+                                      // إذا كان مغلقاً، ننتقل للحقل التالي
                                       if (!isExpanded) {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -898,56 +1005,29 @@ export default function BalanceVoucherClientPage({
                                         return;
                                       }
                                     }
-                                  }}
-                                  onSearch={handleAccountSearch}
-                                  onSelectComplete={() => {
-                                    // الانتقال للحقل التالي بعد اختيار العنصر
-                                    // نستخدم setTimeout لضمان تحديث state أولاً
-                                    setTimeout(() => {
-                                      // محاولة الانتقال للحقل التالي مباشرة
-                                      const moved = focusNextField(
-                                        index,
-                                        thisCol,
-                                      );
 
-                                      if (!moved) {
-                                        // إذا لم نتمكن من الانتقال مباشرة، نستخدم handleKeyDownTable
-                                        const selectButton =
-                                          document.querySelector(
-                                            `#account-select-${index}`,
-                                          ) as HTMLButtonElement;
+                                    // ✅ معالجة الأسهم عندما تكون القائمة مغلقة
+                                    if (
+                                      e.key === "ArrowUp" ||
+                                      e.key === "ArrowDown" ||
+                                      e.key === "ArrowLeft" ||
+                                      e.key === "ArrowRight"
+                                    ) {
+                                      const selectButton =
+                                        target.closest('[role="combobox"]');
+                                      const isExpanded =
+                                        selectButton?.getAttribute(
+                                          "aria-expanded",
+                                        ) === "true";
 
-                                        if (selectButton) {
-                                          // إنشاء event حقيقي مع target صحيح
-                                          const syntheticEvent = {
-                                            key: "Enter",
-                                            preventDefault: () => {},
-                                            stopPropagation: () => {},
-                                            target: selectButton,
-                                            currentTarget: selectButton,
-                                            nativeEvent: {} as any,
-                                            bubbles: true,
-                                            cancelable: true,
-                                            defaultPrevented: false,
-                                            eventPhase: 0,
-                                            isTrusted: false,
-                                            timeStamp: Date.now(),
-                                            type: "keydown",
-                                          } as React.KeyboardEvent;
-
-                                          // استخدام handleKeyDownTable مع event صحيح
-                                          handleKeyDownTable(
-                                            syntheticEvent,
-                                            index,
-                                            thisCol,
-                                            {
-                                              allowEnterDefaultWhenRowMissing:
-                                                true,
-                                            },
-                                          );
-                                        }
+                                      // إذا كانت القائمة مغلقة، ننتقل للصف التالي/السابق أو الحقل التالي/السابق
+                                      if (!isExpanded) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleKeyDownTable(e, index, thisCol);
+                                        return;
                                       }
-                                    }, 100);
+                                    }
                                   }}
                                 />
                               </div>
@@ -1183,11 +1263,10 @@ export default function BalanceVoucherClientPage({
                             return (
                               <input
                                 ref={setInputRef(index, thisCol)}
-                                className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${
-                                  isEditing
-                                    ? "bg-amber-50"
-                                    : "cursor-not-allowed bg-amber-100"
-                                }`}
+                                className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${isEditing
+                                  ? "bg-amber-50"
+                                  : "cursor-not-allowed bg-amber-100"
+                                  }`}
                                 data-col={thisCol}
                                 data-row={index}
                                 disabled={!isEditing}
@@ -1204,7 +1283,7 @@ export default function BalanceVoucherClientPage({
                                 type="number"
                                 value={
                                   detail.g_debit_base !== undefined &&
-                                  detail.g_debit_base !== null
+                                    detail.g_debit_base !== null
                                     ? String(detail.g_debit_base)
                                     : ""
                                 }
@@ -1236,11 +1315,10 @@ export default function BalanceVoucherClientPage({
                             return (
                               <input
                                 ref={setInputRef(index, thisCol)}
-                                className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${
-                                  isEditing
-                                    ? "bg-amber-50"
-                                    : "cursor-not-allowed bg-amber-100"
-                                }`}
+                                className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${isEditing
+                                  ? "bg-amber-50"
+                                  : "cursor-not-allowed bg-amber-100"
+                                  }`}
                                 data-col={thisCol}
                                 data-row={index}
                                 disabled={!isEditing}
@@ -1257,7 +1335,7 @@ export default function BalanceVoucherClientPage({
                                 type="number"
                                 value={
                                   detail.g_credit_base !== undefined &&
-                                  detail.g_credit_base !== null
+                                    detail.g_credit_base !== null
                                     ? String(detail.g_credit_base)
                                     : ""
                                 }
@@ -1289,6 +1367,7 @@ export default function BalanceVoucherClientPage({
 
                               return (
                                 <div
+                                  id={`cost-center-detail-select-${index}`}
                                   ref={(el) => {
                                     const refSetter = setInputRef(
                                       index,
@@ -1296,93 +1375,124 @@ export default function BalanceVoucherClientPage({
                                     );
 
                                     if (el) {
-                                      // حفظ ref مباشرة باستخدام setTimeout لضمان وجود DOM
-                                      setTimeout(() => {
-                                        const selectButton =
-                                          document.querySelector(
-                                            `#cost-center-detail-select-${index}`,
-                                          ) as HTMLButtonElement;
+                                      // البحث عن combobox مباشرة
+                                      const findAndSetRef = () => {
+                                        const combobox = el.querySelector(
+                                          '[role="combobox"]',
+                                        ) as HTMLElement;
 
-                                        if (selectButton) {
+                                        if (combobox) {
                                           refSetter(
-                                            (selectButton as unknown as HTMLInputElement) ||
-                                              null,
+                                            combobox as unknown as HTMLInputElement,
                                           );
-                                        } else {
-                                          refSetter(null);
+                                          return true;
                                         }
-                                      }, 100);
 
-                                      // محاولة إضافية بعد وقت أطول
-                                      setTimeout(() => {
-                                        const selectButton =
-                                          document.querySelector(
-                                            `#cost-center-detail-select-${index}`,
-                                          ) as HTMLButtonElement;
+                                        return false;
+                                      };
 
-                                        if (selectButton) {
-                                          refSetter(
-                                            (selectButton as unknown as HTMLInputElement) ||
-                                              null,
-                                          );
-                                        }
-                                      }, 300);
+                                      // محاولة فورية
+                                      if (!findAndSetRef()) {
+                                        setTimeout(() => {
+                                          findAndSetRef();
+                                        }, 100);
+                                      }
                                     } else {
                                       refSetter(null);
                                     }
                                   }}
-                                  onKeyDownCapture={(e) => {
-                                    const target = e.target as HTMLElement;
-                                    const selectButton =
-                                      target.closest('[role="combobox"]');
-                                    const isInListbox =
-                                      target.closest('[role="listbox"]');
-
-                                    if (isInListbox) {
-                                      return;
-                                    }
-
-                                    if (selectButton) {
-                                      const isExpanded =
-                                        selectButton.getAttribute(
-                                          "aria-expanded",
-                                        ) === "true";
-
-                                      if (e.key === "Enter" && !isExpanded) {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleKeyDownTable(e, index, thisCol);
-
-                                        return;
-                                      }
-
-                                      if (e.key === "Escape") {
-                                        return;
-                                      }
-                                    }
-                                  }}
                                 >
-                                  <SearchableSelect
+                                  <ReactSelect
+                                    isSearchable
                                     className="text-xs"
-                                    disabled={!isEditing}
-                                    inputId={`cost-center-detail-select-${index}`}
-                                    options={costCenterSelectOptions}
-                                    placeholder="مركز التكلفة..."
-                                    searchPlaceholder="ابحث..."
-                                    value={
-                                      detail.cost_id
-                                        ? String(detail.cost_id)
+                                    classNamePrefix="react-select"
+                                    components={{ IndicatorSeparator: () => null }}
+                                    instanceId={`cost-center-detail-select-${index}`}
+                                    isDisabled={!isEditing}
+                                    menuPortalTarget={
+                                      typeof window !== "undefined"
+                                        ? document.body
                                         : null
                                     }
-                                    onChange={(selectedValue) => {
+                                    menuPosition="fixed"
+                                    options={costCenterSelectOptions}
+                                    placeholder="مركز التكلفة..."
+                                    styles={{
+                                      control: (base) => ({
+                                        ...base,
+                                        minHeight: "32px",
+                                        height: "32px",
+                                        fontSize: "12px",
+                                        border: "none",
+                                        borderRadius: "0",
+                                        boxShadow: "none",
+                                        cursor: isEditing
+                                          ? "pointer"
+                                          : "not-allowed",
+                                        backgroundColor: "transparent",
+                                      }),
+                                      menuPortal: (base) => ({
+                                        ...base,
+                                        zIndex: 9999,
+                                      }),
+                                      option: (base) => ({
+                                        ...base,
+                                        fontSize: "12px",
+                                      }),
+                                      placeholder: (base) => ({
+                                        ...base,
+                                        fontSize: "12px",
+                                      }),
+                                      singleValue: (base) => ({
+                                        ...base,
+                                        fontSize: "12px",
+                                      }),
+                                    }}
+                                    value={getCostCenterSelectValue(detail.cost_id)}
+                                    onChange={(selectedOption: any) => {
                                       if (!isEditing) return;
                                       updateDetail(
                                         index,
                                         "cost_id",
-                                        selectedValue
-                                          ? parseInt(String(selectedValue))
+                                        selectedOption?.value
+                                          ? parseInt(selectedOption.value)
                                           : null,
                                       );
+
+                                      // الانتقال للحقل التالي (البيان) بعد الاختيار
+                                      setTimeout(() => {
+                                        const moved = focusNextField(index, thisCol);
+
+                                        if (!moved) {
+                                          const selectButton = document.querySelector(
+                                            `#cost-center-detail-select-${index} [role="combobox"]`,
+                                          ) as HTMLElement;
+
+                                          if (selectButton) {
+                                            const syntheticEvent = {
+                                              key: "Enter",
+                                              preventDefault: () => {},
+                                              stopPropagation: () => {},
+                                              target: selectButton,
+                                              currentTarget: selectButton,
+                                              nativeEvent: {} as any,
+                                              bubbles: true,
+                                              cancelable: true,
+                                              defaultPrevented: false,
+                                              eventPhase: 0,
+                                              isTrusted: false,
+                                              timeStamp: Date.now(),
+                                              type: "keydown",
+                                            } as unknown as React.KeyboardEvent;
+
+                                            handleKeyDownTable(
+                                              syntheticEvent,
+                                              index,
+                                              thisCol,
+                                            );
+                                          }
+                                        }
+                                      }, 100);
                                     }}
                                     onKeyDown={(e) => {
                                       const target = e.target as HTMLElement;
@@ -1408,6 +1518,24 @@ export default function BalanceVoucherClientPage({
 
                                           return;
                                         }
+
+                                        // ✅ معالجة الأسهم عندما تكون القائمة مغلقة
+                                        if (
+                                          (e.key === "ArrowUp" ||
+                                            e.key === "ArrowDown" ||
+                                            e.key === "ArrowLeft" ||
+                                            e.key === "ArrowRight") &&
+                                          !isExpanded
+                                        ) {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          handleKeyDownTable(e, index, thisCol);
+                                          return;
+                                        }
+                                      }
+
+                                      if (e.key === "Escape") {
+                                        return;
                                       }
                                     }}
                                   />
