@@ -61,7 +61,9 @@ export default async function RootLayout({
           >
             <div className="relative flex flex-col min-h-screen">
               <Toaster position="top-center" />
-              <div className="flex-grow">{children}</div>
+              <div className="flex-grow" suppressHydrationWarning>
+                {children}
+              </div>
             </div>
           </Providers>
         </NextIntlClientProvider>
