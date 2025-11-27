@@ -62,7 +62,8 @@ export async function updateVoucherAction(
     // };
 
     // التحقق من صحة البيانات
-    if (!voucherData.vouch_id || voucherData.vouch_id <= 0) {
+    const voucherIdNumeric = Number(voucherData.vouch_id ?? 0);
+    if (!Number.isFinite(voucherIdNumeric) || voucherIdNumeric <= 0) {
       return {
         success: false,
         message: "معرف القيد غير صحيح",

@@ -123,8 +123,8 @@ export const useVoucherActions = ({
 
     if (
       !voucher.vouch_id ||
-      voucher.vouch_id <= 0 ||
-      !isFinite(voucher.vouch_id)
+      Number(voucher.vouch_id) <= 0 ||
+      !isFinite(Number(voucher.vouch_id))
     ) {
       toast.error("خطأ: رقم القيد غير صحيح. يرجى إعادة تحميل الصفحة.");
 

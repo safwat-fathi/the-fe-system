@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import type { Invoice as InvoiceModel } from "@/types/models/invoice";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,22 +25,18 @@ ChartJS.register(
   Legend,
 );
 
-interface Invoice {
-  id: number;
-  inv_date: string;
-  inv_amt?: string;
-  inv_net?: string;
-  gold_price?: string;
-}
-
 interface DashboardClientProps {
   salesChartData: any;
-  invoices: Invoice[];
+  invoices: InvoiceModel[];
+  branch: string;
+  year: string;
 }
 
 export default function DashboardClient({
   salesChartData,
   invoices,
+  branch,
+  year,
 }: DashboardClientProps) {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -53,10 +50,10 @@ export default function DashboardClient({
 
         return (!from || date >= from) && (!to || date <= to);
       })
-      .filter((inv) => !isNaN(parseFloat(inv.gold_price ?? "0")))
+      .filter((inv) => Number.isFinite(Number(inv.gold_price ?? 0)))
       .map((inv) => ({
         date: new Date(inv.inv_date).toLocaleDateString("ar-EG"),
-        price: parseFloat(inv.gold_price ?? "0"),
+        price: Number(inv.gold_price ?? 0),
       }));
   }, [invoices, startDate, endDate]);
 

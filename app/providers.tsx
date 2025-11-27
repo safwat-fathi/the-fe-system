@@ -21,7 +21,6 @@ export function Providers({ children, themeProps }: ProvidersProps) {
         {...themeProps}
         enableSystem={false}
         disableTransitionOnChange
-        suppressHydrationWarning
       >
         {children}
       </NextThemesProvider>

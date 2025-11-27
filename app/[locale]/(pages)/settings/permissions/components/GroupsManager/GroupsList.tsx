@@ -48,7 +48,7 @@ export default function GroupsList({
     try {
       const { groupService } = await import("../../services");
 
-      await groupService.delete(group.id);
+      await groupService.remove(group.id);
       toast.success("تم حذف المجموعة بنجاح");
       onRefresh();
     } catch (error) {

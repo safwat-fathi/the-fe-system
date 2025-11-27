@@ -42,7 +42,7 @@ export default function UsersList({
     try {
       const { userService } = await import("../../services");
 
-      await userService.delete(user.id);
+      await userService.remove(user.id);
       toast.success("تم حذف المستخدم بنجاح");
       onRefresh();
     } catch (error) {

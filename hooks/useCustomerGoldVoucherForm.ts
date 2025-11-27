@@ -47,22 +47,24 @@ export const useCustomerGoldVoucherForm = ({
   const router = useRouter();
 
   // State Management
-  const [voucher, setVoucher] = useState<Voucher>(
-    voucherData || {
-      vouch_id: 0,
-      vouch_date: new Date().toISOString(),
-      vouch_type: vouchType,
-      vouch_amt: 0,
-      pay_type: 1,
-      cr_date: new Date().toISOString(),
-      vouch_status: 1,
-      commit: false,
-      post: false,
-      print: false,
-      opps_vouch: 0,
-      handling: voucherData?.handling || "",
-    },
-  );
+  const initialVoucherState: Voucher = voucherData
+    ? { ...voucherData, handling: voucherData.handling ?? "" }
+    : {
+        vouch_id: 0,
+        vouch_date: new Date().toISOString(),
+        vouch_type: vouchType,
+        vouch_amt: 0,
+        pay_type: 1,
+        cr_date: new Date().toISOString(),
+        vouch_status: 1,
+        commit: false,
+        post: false,
+        print: false,
+        opps_vouch: 0,
+        handling: "",
+      };
+
+  const [voucher, setVoucher] = useState<Voucher>(initialVoucherState);
 
   const [currentTime, setCurrentTime] = useState("");
   const [isClient, setIsClient] = useState(false);

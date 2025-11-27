@@ -5,7 +5,8 @@
 
 import { create } from "zustand";
 
-import { UserPermissions, MergedPermissions } from "../types/users";
+import type { UserPermissions } from "../types/users";
+import type { MergedPermissions } from "../types/permissions";
 
 interface PermissionState {
   permissions: UserPermissions | null;

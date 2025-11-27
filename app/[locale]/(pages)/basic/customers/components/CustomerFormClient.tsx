@@ -129,9 +129,10 @@ const CustomerFormClient = ({
 
       const cleanedCustomer: Partial<CustomerModel> = {
         ...updatedCustomer,
+        mobile: String(updatedCustomer.mobile) || null,
         acc: Number(updatedCustomer.acc) || null,
         vat_no: Number(updatedCustomer.vat_no) || null,
-        cr_no: Number(updatedCustomer.cr_no) || null,
+        cr_no: String(updatedCustomer.cr_no) || null,
         perc: Number(updatedCustomer.perc) || null,
         cust_type: Number(updatedCustomer.cust_type) || null,
         expt: !!updatedCustomer.expt,

@@ -265,10 +265,13 @@ async function handleDuplicateVoucherNumber(
   voucherData: SaveVoucherData,
   voucherPayload: any,
 ): Promise<DuplicateResolution> {
+  const responseData = response?.data as {
+    non_field_errors?: string[];
+  } | null;
   const nonFieldErrors: string[] | undefined = Array.isArray(
-    response?.data?.non_field_errors,
+    responseData?.non_field_errors,
   )
-    ? response.data.non_field_errors
+    ? responseData?.non_field_errors
     : undefined;
 
   const hasDuplicateError = nonFieldErrors?.some((err) =>

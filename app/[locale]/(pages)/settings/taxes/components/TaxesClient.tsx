@@ -278,7 +278,7 @@ export default function TaxesClient({
               <Button
                 color="primary"
                 onPress={() => {
-                  toast.info(
+                  toast(
                     "الميزة قيد التطوير - سيتم إضافة API للإنشاء والتعديل قريباً",
                   );
                   setIsModalOpen(false);

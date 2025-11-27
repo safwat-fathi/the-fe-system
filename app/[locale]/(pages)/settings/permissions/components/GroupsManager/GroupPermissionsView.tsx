@@ -79,10 +79,7 @@ export default function GroupPermissionsView({
                   isIconOnly
                   size="sm"
                   variant="light"
-                  onPress={(event) => {
-                    event?.preventDefault?.();
-                    toggleSection(section.id);
-                  }}
+                  onPress={() => toggleSection(section.id)}
                 >
                   <EyeIcon
                     className={`h-4 w-4 transition-transform ${
