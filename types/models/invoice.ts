@@ -44,15 +44,15 @@ export enum PaymentTypes {
 }
 
 export interface Invoice {
-  id: string;
-  inv_id: string;
+  id: string | number;
+  inv_id: string | number;
   inv_date: string;
-  inv_amt?: string;
-  inv_net?: string;
-  gold_price?: string | null;
-  com?: number;
-  year?: number;
-  cust?: number;
+  inv_amt?: number | null;
+  inv_net?: number | null;
+  gold_price?: number | null;
+  com?: number | null;
+  year?: number | null;
+  cust?: number | null;
   inv_type: InvoiceTypes;
   trans_type: TransTypes;
   pay_type: InvoicePayType;
@@ -61,26 +61,26 @@ export interface Invoice {
   cust_name: string;
   mobile: string | null;
   address: string | null;
-  vat_no: string;
-  disc_amount: string | null;
-  disc_percent: string | null;
-  price: string | null;
-  price2: string | null;
-  charge: string | null;
-  inv_amt_g: string | null;
-  emp_id?: string;
+  vat_no: string | null;
+  disc_amount: number | null;
+  disc_percent: number | null;
+  price: number | null;
+  price2: number | null;
+  charge: number | null;
+  inv_amt_g: number | null;
+  emp_id?: string | null;
   commit?: boolean;
   print?: boolean;
-  cr_no?: string;
-  gov?: string;
-  city?: string;
-  area?: string;
-  street?: string;
-  build_no?: string;
-  post_no?: string;
-  post_code?: string;
-  inv_notes?: string;
-  handling?: string;
+  cr_no?: string | null;
+  gov?: string | null;
+  city?: string | null;
+  area?: string | null;
+  street?: string | null;
+  build_no?: string | null;
+  post_no?: string | null;
+  post_code?: string | null;
+  inv_notes?: string | null;
+  handling?: string | null;
   inv_status?: number;
   is_done?: boolean;
   is_ok?: boolean;
@@ -93,6 +93,7 @@ export interface Invoice {
   inv_QR?: string | null;
   store?: string | null;
   gold_box?: string | null;
+  tax?: number | null;
   first_invoice_id: string | null;
   last_invoice_id: string | null;
   next_invoice_id: string | null;
@@ -125,6 +126,8 @@ export interface InvoiceDetail {
   item_disc_amt: string | number; // '0.0000...' or numeric value
   sn: string; // ''
   item_desc: string; // ''
+  item_code?: string;
+  note?: string | null;
   price2: string | null;
   price2_w: string | null;
   total_a2: string | null;

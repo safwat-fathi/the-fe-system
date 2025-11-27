@@ -19,7 +19,6 @@ export default function VATSummary({
   totalPurchasesVAT,
   netVAT,
   totalInvoices,
-  period,
 }: VATSummaryProps) {
   const fractions = useFractions() as { frac: number; frac2: number };
 

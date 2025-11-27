@@ -76,7 +76,6 @@ export default function CashReceiptVoucherClientPage({
 }: CashReceiptVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   // Handle search - must be before any conditional returns (Rules of Hooks)
   const [searchTerm, setSearchTerm] = useState("");
@@ -88,16 +87,13 @@ export default function CashReceiptVoucherClientPage({
     voucherBoxes,
     details,
     accounts,
-    setAccounts,
     boxes,
     costCenters,
     voucherTypes,
     voucherStatuses,
     isLoading,
     isEditing,
-    setIsEditing,
     isPrinting,
-    currentTime,
     isClient,
     // defaultAccountOptions,
 
@@ -544,7 +540,7 @@ export default function CashReceiptVoucherClientPage({
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
                 #
-                {voucher.vouch_id && voucher.vouch_id > 0
+                {voucher.vouch_id && Number(voucher.vouch_id) > 0
                   ? voucher.vouch_id
                   : "جاري الترقيم..."}
               </span>
@@ -624,7 +620,7 @@ export default function CashReceiptVoucherClientPage({
 
             <Button
               className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
               isLoading={isPrinting}
               size="sm"
               startContent={
@@ -722,13 +718,16 @@ export default function CashReceiptVoucherClientPage({
       >
         {/* رقم المرجع */}
         <div className="md:col-span-1">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="cash-receipt-ref-no"
+          >
             رقم المرجع
           </label>
           <input
-            id="ref_no"
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="cash-receipt-ref-no"
             readOnly={!isEditing}
             type="text"
             value={voucher.ref_no || ""}
@@ -740,12 +739,16 @@ export default function CashReceiptVoucherClientPage({
 
         {/* التاريخ والوقت */}
         <div className="md:col-span-1">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="cash-receipt-date-time"
+          >
             التاريخ والوقت
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="cash-receipt-date-time"
             readOnly={!isEditing}
             type="datetime-local"
             value={
@@ -764,7 +767,10 @@ export default function CashReceiptVoucherClientPage({
 
         {costCenters.length > 0 && (
           <div className="md:col-span-1">
-            <label className="block text-xs font-medium text-slate-700 mb-0.5">
+            <label
+              className="block text-xs font-medium text-slate-700 mb-0.5"
+              htmlFor="cash-receipt-cost-center"
+            >
               مركز التكلفة
             </label>
             <div>
@@ -847,12 +853,16 @@ export default function CashReceiptVoucherClientPage({
 
         {/* الحالة */}
         <div className="md:col-span-1">
-          <label className="block text-xs font-medium text-slate-700 mb-0.5">
+          <label
+            className="block text-xs font-medium text-slate-700 mb-0.5"
+            htmlFor="cash-receipt-status"
+          >
             الحالة
           </label>
           <select
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
+            id="cash-receipt-status"
             value={String(voucher.vouch_status ?? 1)}
             onChange={(e) =>
               setVoucher((prev) => ({
@@ -862,8 +872,8 @@ export default function CashReceiptVoucherClientPage({
             }
           >
             {voucherStatuses &&
-              Array.isArray(voucherStatuses) &&
-              voucherStatuses.length > 0 ? (
+            Array.isArray(voucherStatuses) &&
+            voucherStatuses.length > 0 ? (
               voucherStatuses.map((status) => {
                 const statusValue =
                   status.code_id !== undefined && status.code_id !== null
@@ -895,7 +905,10 @@ export default function CashReceiptVoucherClientPage({
 
       {/* البيان */}
       <div className="mb-2">
-        <label className="block text-xs font-medium text-slate-700 mb-0.5">
+        <label
+          className="block text-xs font-medium text-slate-700 mb-0.5"
+          htmlFor="cash-receipt-notes"
+        >
           البيان
         </label>
         <div className="relative">
@@ -903,6 +916,7 @@ export default function CashReceiptVoucherClientPage({
             ref={notesInputRef}
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
             disabled={!isEditing}
+            id="cash-receipt-notes"
             placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
             readOnly={!isEditing}
             type="text"
@@ -979,10 +993,15 @@ export default function CashReceiptVoucherClientPage({
                           return (
                             <input
                               ref={(el) => {
-                                const refSetter = setCashInputRef(index, thisCol);
+                                const refSetter = setCashInputRef(
+                                  index,
+                                  thisCol,
+                                );
 
                                 if (index === 0 && el) {
-                                  (firstCashTableInputRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
+                                  (
+                                    firstCashTableInputRef as React.MutableRefObject<HTMLInputElement | null>
+                                  ).current = el;
                                 }
 
                                 refSetter(el);
@@ -1002,7 +1021,9 @@ export default function CashReceiptVoucherClientPage({
                                 updateVoucherBox(
                                   index,
                                   "amount",
-                                  e.target.value ? parseFloat(e.target.value) : 0,
+                                  e.target.value
+                                    ? parseFloat(e.target.value)
+                                    : 0,
                                 )
                               }
                               onKeyDown={(e) => {
@@ -1023,7 +1044,10 @@ export default function CashReceiptVoucherClientPage({
                             <div
                               id={`box-select-${index}`}
                               ref={(el) => {
-                                const refSetter = setCashInputRef(index, thisCol);
+                                const refSetter = setCashInputRef(
+                                  index,
+                                  thisCol,
+                                );
 
                                 if (el) {
                                   const findAndSetRef = () => {
@@ -1051,8 +1075,10 @@ export default function CashReceiptVoucherClientPage({
                               }}
                               onKeyDownCapture={(e) => {
                                 const target = e.target as HTMLElement;
-                                const combobox = target.closest('[role="combobox"]');
-                                const isInListbox = target.closest('[role="listbox"]');
+                                const combobox =
+                                  target.closest('[role="combobox"]');
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
 
                                 if (isInListbox) {
                                   return;
@@ -1060,7 +1086,8 @@ export default function CashReceiptVoucherClientPage({
 
                                 if (combobox) {
                                   const isExpanded =
-                                    combobox.getAttribute("aria-expanded") === "true";
+                                    combobox.getAttribute("aria-expanded") ===
+                                    "true";
 
                                   if (e.key === "Enter" && !isExpanded) {
                                     e.preventDefault();
@@ -1155,7 +1182,11 @@ export default function CashReceiptVoucherClientPage({
                                     (b) => b.id === selectedBoxId,
                                   );
 
-                                  updateVoucherBox(index, "box_id", selectedBoxId);
+                                  updateVoucherBox(
+                                    index,
+                                    "box_id",
+                                    selectedBoxId,
+                                  );
                                   // تحديث معلومات box object إذا كان الصندوق محدداً
                                   if (selectedBox) {
                                     updateVoucherBox(index, "box", {
@@ -1175,15 +1206,19 @@ export default function CashReceiptVoucherClientPage({
 
                                   if (!target) return;
 
-                                  const isInListbox = target.closest('[role="listbox"]');
+                                  const isInListbox =
+                                    target.closest('[role="listbox"]');
                                   if (isInListbox) {
                                     return;
                                   }
 
-                                  const selectButton = target.closest('[role="combobox"]');
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
                                   if (selectButton) {
                                     const isExpanded =
-                                      selectButton.getAttribute("aria-expanded") === "true";
+                                      selectButton.getAttribute(
+                                        "aria-expanded",
+                                      ) === "true";
 
                                     // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
                                     if (isExpanded && e.key !== "Escape") {
@@ -1236,7 +1271,10 @@ export default function CashReceiptVoucherClientPage({
                             <div
                               id={`cost-center-box-select-${index}`}
                               ref={(el) => {
-                                const refSetter = setCashInputRef(index, thisCol);
+                                const refSetter = setCashInputRef(
+                                  index,
+                                  thisCol,
+                                );
 
                                 if (el) {
                                   const findAndSetRef = () => {
@@ -1264,8 +1302,10 @@ export default function CashReceiptVoucherClientPage({
                               }}
                               onKeyDownCapture={(e) => {
                                 const target = e.target as HTMLElement;
-                                const combobox = target.closest('[role="combobox"]');
-                                const isInListbox = target.closest('[role="listbox"]');
+                                const combobox =
+                                  target.closest('[role="combobox"]');
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
 
                                 if (isInListbox) {
                                   return;
@@ -1273,7 +1313,8 @@ export default function CashReceiptVoucherClientPage({
 
                                 if (combobox) {
                                   const isExpanded =
-                                    combobox.getAttribute("aria-expanded") === "true";
+                                    combobox.getAttribute("aria-expanded") ===
+                                    "true";
 
                                   if (e.key === "Enter" && !isExpanded) {
                                     e.preventDefault();
@@ -1375,15 +1416,19 @@ export default function CashReceiptVoucherClientPage({
 
                                   if (!target) return;
 
-                                  const isInListbox = target.closest('[role="listbox"]');
+                                  const isInListbox =
+                                    target.closest('[role="listbox"]');
                                   if (isInListbox) {
                                     return;
                                   }
 
-                                  const selectButton = target.closest('[role="combobox"]');
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
                                   if (selectButton) {
                                     const isExpanded =
-                                      selectButton.getAttribute("aria-expanded") === "true";
+                                      selectButton.getAttribute(
+                                        "aria-expanded",
+                                      ) === "true";
 
                                     // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
                                     if (isExpanded && e.key !== "Escape") {
@@ -1511,7 +1556,9 @@ export default function CashReceiptVoucherClientPage({
                                       );
                                       // إضافة ref لأول حقل في جدول الحسابات
                                       if (index === 0) {
-                                        (firstAccountTableInputRef as React.MutableRefObject<HTMLInputElement | null>).current =
+                                        (
+                                          firstAccountTableInputRef as React.MutableRefObject<HTMLInputElement | null>
+                                        ).current =
                                           combobox as unknown as HTMLInputElement;
                                       }
                                       return true;
@@ -1530,8 +1577,10 @@ export default function CashReceiptVoucherClientPage({
                               }}
                               onKeyDownCapture={(e) => {
                                 const target = e.target as HTMLElement;
-                                const combobox = target.closest('[role="combobox"]');
-                                const isInListbox = target.closest('[role="listbox"]');
+                                const combobox =
+                                  target.closest('[role="combobox"]');
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
 
                                 if (isInListbox) {
                                   return;
@@ -1539,7 +1588,8 @@ export default function CashReceiptVoucherClientPage({
 
                                 if (combobox) {
                                   const isExpanded =
-                                    combobox.getAttribute("aria-expanded") === "true";
+                                    combobox.getAttribute("aria-expanded") ===
+                                    "true";
 
                                   // إذا كان combobox مفتوحاً، نسمح بالتفاعل الطبيعي مع القائمة
                                   if (isExpanded && e.key !== "Escape") {
@@ -1639,7 +1689,9 @@ export default function CashReceiptVoucherClientPage({
                                   const opt: any = selectedOption;
                                   const selected =
                                     opt?.account ||
-                                    accounts.find((acc) => acc.id === opt?.value);
+                                    accounts.find(
+                                      (acc) => acc.id === opt?.value,
+                                    );
 
                                   if (!selected) return;
 
@@ -1797,7 +1849,11 @@ export default function CashReceiptVoucherClientPage({
                               type="text"
                               value={detail.vouch_notes || ""}
                               onChange={(e) =>
-                                updateDetail(index, "vouch_notes", e.target.value)
+                                updateDetail(
+                                  index,
+                                  "vouch_notes",
+                                  e.target.value,
+                                )
                               }
                               onKeyDown={(e) => {
                                 handleKeyDownTable(e, index, thisCol);
@@ -1842,8 +1898,10 @@ export default function CashReceiptVoucherClientPage({
                               }}
                               onKeyDownCapture={(e) => {
                                 const target = e.target as HTMLElement;
-                                const combobox = target.closest('[role="combobox"]');
-                                const isInListbox = target.closest('[role="listbox"]');
+                                const combobox =
+                                  target.closest('[role="combobox"]');
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
 
                                 if (isInListbox) {
                                   return;
@@ -1851,7 +1909,8 @@ export default function CashReceiptVoucherClientPage({
 
                                 if (combobox) {
                                   const isExpanded =
-                                    combobox.getAttribute("aria-expanded") === "true";
+                                    combobox.getAttribute("aria-expanded") ===
+                                    "true";
 
                                   if (e.key === "Enter" && !isExpanded) {
                                     e.preventDefault();
@@ -1947,15 +2006,19 @@ export default function CashReceiptVoucherClientPage({
 
                                   if (!target) return;
 
-                                  const isInListbox = target.closest('[role="listbox"]');
+                                  const isInListbox =
+                                    target.closest('[role="listbox"]');
                                   if (isInListbox) {
                                     return;
                                   }
 
-                                  const selectButton = target.closest('[role="combobox"]');
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
                                   if (selectButton) {
                                     const isExpanded =
-                                      selectButton.getAttribute("aria-expanded") === "true";
+                                      selectButton.getAttribute(
+                                        "aria-expanded",
+                                      ) === "true";
 
                                     // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
                                     if (isExpanded && e.key !== "Escape") {
@@ -2046,8 +2109,9 @@ export default function CashReceiptVoucherClientPage({
           <div className="flex items-center gap-2">
             <span className="text-gray-700 font-medium">الحالة:</span>
             <span
-              className={`font-semibold ${isBalanced ? "text-green-700" : "text-red-700"
-                }`}
+              className={`font-semibold ${
+                isBalanced ? "text-green-700" : "text-red-700"
+              }`}
             >
               {isBalanced ? "متزن" : "غير متزن"}
             </span>

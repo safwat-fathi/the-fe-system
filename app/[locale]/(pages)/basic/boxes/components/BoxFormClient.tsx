@@ -1,8 +1,7 @@
 "use client";
-import type { ChangeEvent } from "react";
 import type { Box as BoxModel } from "@/types/models/box";
 
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -50,16 +49,6 @@ const BoxFormClient = ({
       setBox({
         ...box,
         [key]: event.target.value,
-      });
-    };
-
-  const handleNumberInputChange =
-    (key: keyof Box) => (event: ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-
-      setBox({
-        ...box,
-        [key]: value ? Number(value) : null,
       });
     };
 
@@ -222,7 +211,7 @@ const BoxFormClient = ({
         <Input
           isDisabled={isViewMode}
           label="كود الصندوق"
-          value={box.cust_code || ""}
+          value={(box.cust_code as string) || ""}
           onChange={handleInputChange("cust_code")}
         />
         <Input
@@ -239,12 +228,17 @@ const BoxFormClient = ({
           onChange={handleInputChange("cust_name_e")}
         />
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            className="block text-sm font-medium text-gray-700 mb-1"
+            htmlFor="box-type"
+          >
             نوع الصندوق
           </label>
           <ReactSelect
             className="react-select-container"
             classNamePrefix="react-select"
+            id="box-type"
+            inputId="box-type"
             isDisabled={isViewMode}
             options={boxTypeOptions}
             placeholder="اختر نوع الصندوق"
@@ -337,13 +331,18 @@ const BoxFormClient = ({
           onChange={handleInputChange("handling_e")}
         />
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            className="block text-sm font-medium text-gray-700 mb-1"
+            htmlFor="box-account"
+          >
             الحساب المرتبط
           </label>
           <ReactSelect
             isClearable
             className="react-select-container"
             classNamePrefix="react-select"
+            id="box-account"
+            inputId="box-account"
             isDisabled={isViewMode}
             options={accountOptions}
             placeholder="اختر الحساب (اختياري)"

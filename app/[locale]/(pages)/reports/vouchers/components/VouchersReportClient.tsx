@@ -9,8 +9,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Button, Tabs, Tab, Tooltip } from "@heroui/react";
-import { CardBody } from "@heroui/react";
+import { Button, Tabs, Tab, Tooltip, CardBody } from "@heroui/react";
 import {
   PlusIcon,
   ChevronLeftIcon,
@@ -106,9 +105,8 @@ const VouchersReportClient = ({
   });
 
   // State
-  const [vouchers, setVouchers] = useState<Voucher[]>(initialVouchers);
-  const [voucherTypes, setVoucherTypes] =
-    useState<VoucherType[]>(initialVoucherTypes);
+  const [vouchers] = useState<Voucher[]>(initialVouchers);
+  const [voucherTypes] = useState<VoucherType[]>(initialVoucherTypes);
   const [searchQ, setSearchQ] = useState(params.xvouch_id || "");
   const [activeTab, setActiveTab] = useState("all");
   const [, startTransition] = useTransition();
@@ -226,7 +224,7 @@ const VouchersReportClient = ({
         "@/app/actions/voucher.action"
       );
 
-      const result = await deleteVoucherAction(voucher.vouch_id);
+      const result = await deleteVoucherAction(Number(voucher.vouch_id));
 
       if (result.success) {
         toast.success(result.message);
@@ -244,47 +242,10 @@ const VouchersReportClient = ({
     router.push("/forms/voucher");
   };
 
-  // Calculate totals - استخدام useMemo لتحسين الأداء
-  const totals = useMemo(() => {
-    return vouchers.reduce(
-      (acc, voucher) => {
-        // استخدام vouch_amt مباشرة (أسرع بكثير)
-        acc.totalAmount += parseFloat(String(voucher.vouch_amt || 0));
-        acc.totalCount += 1;
-
-        return acc;
-      },
-      { totalAmount: 0, totalCount: 0 },
-    );
-  }, [vouchers]);
-
   // State for storing voucher details
   const [voucherDetails, setVoucherDetails] = useState<Record<number, any[]>>(
     {},
   );
-
-  // Fetch details for a specific voucher
-  const fetchVoucherDetails = async (voucherId: number) => {
-    if (voucherDetails[voucherId]) {
-      return voucherDetails[voucherId];
-    }
-
-    try {
-      const response = await voucherService.getDetails(voucherId);
-
-      if (response.success && response.data) {
-        const details = Array.isArray(response.data) ? response.data : [];
-
-        setVoucherDetails((prev) => ({ ...prev, [voucherId]: details }));
-
-        return details;
-      }
-    } catch (error) {
-      console.error("Error fetching voucher details:", error);
-    }
-
-    return [];
-  };
 
   // Calculate cash totals for each voucher - محسن للأداء
   const calculateVoucherCashTotal = (voucher: Voucher) => {
@@ -299,7 +260,7 @@ const VouchersReportClient = ({
 
     // ثانياً: استخدام التفاصيل المحملة إذا كانت متوفرة
     const voucherId = voucher.id || voucher.vouch_id;
-    const details = voucherDetails[voucherId] || [];
+    const details = voucherDetails[Number(voucherId)] || [];
 
     if (details.length > 0) {
       return details.reduce((total: number, detail: any) => {
@@ -326,7 +287,7 @@ const VouchersReportClient = ({
 
     // ثانياً: استخدام التفاصيل المحملة إذا كانت متوفرة
     const voucherId = voucher.id || voucher.vouch_id;
-    const details = voucherDetails[voucherId] || [];
+    const details = voucherDetails[Number(voucherId)] || [];
 
     if (details.length > 0) {
       return details.reduce((total: number, detail: any) => {
@@ -340,20 +301,6 @@ const VouchersReportClient = ({
     return 0;
   };
 
-  // Calculate total cash amount for all vouchers - استخدام useMemo مع voucherDetails
-  const calculateTotalCash = useMemo(() => {
-    return vouchers.reduce((total, voucher) => {
-      return total + calculateVoucherCashTotal(voucher);
-    }, 0);
-  }, [vouchers, voucherDetails]);
-
-  // Calculate total gold amount for all vouchers - استخدام useMemo مع voucherDetails
-  const calculateTotalGold = useMemo(() => {
-    return vouchers.reduce((total, voucher) => {
-      return total + calculateVoucherGoldTotal(voucher);
-    }, 0);
-  }, [vouchers, voucherDetails]);
-
   // Fetch voucher details in parallel - optimized version
   useEffect(() => {
     const fetchAllVoucherDetails = async () => {
@@ -364,8 +311,8 @@ const VouchersReportClient = ({
 
         // Skip if already fetched
         if (
-          voucherDetails[voucherId] &&
-          Array.isArray(voucherDetails[voucherId])
+          voucherDetails[Number(voucherId)] &&
+          Array.isArray(voucherDetails[Number(voucherId)])
         ) {
           return false;
         }
@@ -384,7 +331,7 @@ const VouchersReportClient = ({
           if (!voucherId) return null;
 
           const branchId = Number(voucher.com_id ?? voucher.com ?? 1) || 1;
-          const response = await voucherService.getDetails(voucherId, {
+          const response = await voucherService.getDetails(Number(voucherId), {
             xcom_id: branchId,
           });
 
@@ -405,7 +352,7 @@ const VouchersReportClient = ({
 
           results.forEach((result) => {
             if (result && result.voucherId && result.details.length >= 0) {
-              updated[result.voucherId] = result.details;
+              updated[Number(result.voucherId)] = result.details;
             }
           });
 

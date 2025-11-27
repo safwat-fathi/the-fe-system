@@ -113,12 +113,6 @@ class DashboardService extends HttpService<any> {
         monthlySales,
       };
     } catch (error) {
-      console.log("🚀 ~ :122 ~ DashboardService ~ getDashboardStats ~ error:");
-      // if (error instanceof AuthenticationError) {
-      //   // Bubble up auth errors so the page can redirect.
-      //   throw error;
-      // }
-
       throw error;
     }
   }

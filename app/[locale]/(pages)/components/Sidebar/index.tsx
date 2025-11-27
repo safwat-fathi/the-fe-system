@@ -189,7 +189,6 @@ const goldFormLinks = [
 
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [version] = useState("ver.251103");
 
   // نظام الحسابات
   const [showAccountingSystem, setShowAccountingSystem] = useState(true);
@@ -340,7 +339,15 @@ const Sidebar = () => {
         <div className="mt-4">
           <div
             className="px-3 py-2.5 text-sm font-semibold text-slate-200 cursor-pointer flex justify-between items-center hover:text-white hover:bg-white/5 rounded-lg transition-all"
+            role="button"
+            tabIndex={0}
             onClick={() => setShowAccountingSystem(!showAccountingSystem)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowAccountingSystem(!showAccountingSystem);
+              }
+            }}
           >
             <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
               نظام الحسابات
@@ -369,7 +376,15 @@ const Sidebar = () => {
                 {/* البيانات الأساسية - نظام الحسابات */}
                 <div
                   className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setShowAccountingBasic(!showAccountingBasic)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setShowAccountingBasic(!showAccountingBasic);
+                    }
+                  }}
                 >
                   <span
                     className={clsx({
@@ -433,9 +448,17 @@ const Sidebar = () => {
                   <>
                     <div
                       className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
+                      role="button"
+                      tabIndex={0}
                       onClick={() =>
                         setShowAccountingForms(!showAccountingForms)
                       }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setShowAccountingForms(!showAccountingForms);
+                        }
+                      }}
                     >
                       <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                         النماذج
@@ -534,7 +557,15 @@ const Sidebar = () => {
         <div className="mt-4">
           <div
             className="px-3 py-2.5 text-sm font-semibold text-slate-200 cursor-pointer flex justify-between items-center hover:text-white hover:bg-white/5 rounded-lg transition-all"
+            role="button"
+            tabIndex={0}
             onClick={() => setShowGoldSystem(!showGoldSystem)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowGoldSystem(!showGoldSystem);
+              }
+            }}
           >
             <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
               نظام الذهب
@@ -563,7 +594,15 @@ const Sidebar = () => {
                 {/* البيانات الأساسية - نظام الذهب */}
                 <div
                   className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setShowGoldBasic(!showGoldBasic)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setShowGoldBasic(!showGoldBasic);
+                    }
+                  }}
                 >
                   <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                     البيانات الأساسية
@@ -621,7 +660,15 @@ const Sidebar = () => {
                 {/* النماذج - نظام الذهب */}
                 <div
                   className="px-3 py-2 text-xs text-slate-400 cursor-pointer flex justify-between items-center hover:text-slate-200 hover:bg-white/5 rounded-lg transition-all"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setShowGoldForms(!showGoldForms)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setShowGoldForms(!showGoldForms);
+                    }
+                  }}
                 >
                   <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
                     النماذج
@@ -682,7 +729,15 @@ const Sidebar = () => {
         <div className="mt-4">
           <div
             className="px-3 py-2.5 text-sm font-semibold text-slate-200 cursor-pointer flex justify-between items-center hover:text-white hover:bg-white/5 rounded-lg transition-all"
+            role="button"
+            tabIndex={0}
             onClick={() => setShowSettingsLinks(!showSettingsLinks)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setShowSettingsLinks(!showSettingsLinks);
+              }
+            }}
           >
             <span className={`${isSidebarOpen ? "block" : "hidden"}`}>
               الإعدادات

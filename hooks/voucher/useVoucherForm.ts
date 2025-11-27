@@ -44,7 +44,7 @@ export const useVoucherForm = ({
   startInEditMode = false,
   vouchType = 2,
   formMode = "new",
-  newVoucherHref,
+  newVoucherHref: _newVoucherHref,
 }: UseVoucherFormProps) => {
   const hasGeneratedVoucherNumber = useRef(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,8 +59,6 @@ export const useVoucherForm = ({
   // State management
   const state = useVoucherFormState({
     voucherData,
-    voucherDetailsData,
-    isNewVoucher,
     vouchType,
     formMode,
     startInEditMode,
@@ -270,7 +268,7 @@ export const useVoucherForm = ({
         vouch_date: new Date().toISOString(),
         cr_date: new Date().toISOString(),
       }));
-    } catch (error) {
+    } catch {
       state.setVoucher((prev) => ({
         ...prev,
         vouch_id: 1,

@@ -139,7 +139,7 @@ export default function IntegrationsClient() {
 
       setGeideaConfig((prev) => ({ ...prev, status: "connected" }));
       toast.success("تم حفظ إعدادات جيديا بنجاح");
-    } catch (error) {
+    } catch {
       toast.error("حدث خطأ أثناء حفظ الإعدادات");
     } finally {
       setIsSaving(false);
@@ -164,7 +164,7 @@ export default function IntegrationsClient() {
 
       setEnjazatekConfig((prev) => ({ ...prev, status: "connected" }));
       toast.success("تم حفظ إعدادات Enjazatek بنجاح");
-    } catch (error) {
+    } catch {
       toast.error("حدث خطأ أثناء حفظ إعدادات Enjazatek");
     } finally {
       setIsSavingEnjazatek(false);
@@ -189,7 +189,7 @@ export default function IntegrationsClient() {
 
       toast.success("تم الاتصال بنجاح مع جيديا");
       setGeideaConfig((prev) => ({ ...prev, status: "connected" }));
-    } catch (error) {
+    } catch {
       toast.error("فشل الاتصال مع جيديا. يرجى التحقق من بيانات الاتصال");
       setGeideaConfig((prev) => ({ ...prev, status: "disconnected" }));
     } finally {
@@ -214,7 +214,7 @@ export default function IntegrationsClient() {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       toast.success("تم الاتصال مع Enjazatek بنجاح (اختبار تجريبي)");
       setEnjazatekConfig((prev) => ({ ...prev, status: "connected" }));
-    } catch (error) {
+    } catch {
       toast.error("فشل الاتصال مع Enjazatek، يرجى التحقق من البيانات");
       setEnjazatekConfig((prev) => ({ ...prev, status: "disconnected" }));
     } finally {
@@ -273,7 +273,7 @@ export default function IntegrationsClient() {
 
       setFatooraConfig((prev) => ({ ...prev, status: "connected" }));
       toast.success("تم حفظ إعدادات فاتورة بنجاح");
-    } catch (error) {
+    } catch {
       toast.error("حدث خطأ أثناء حفظ الإعدادات");
     } finally {
       setIsSavingFatoora(false);
@@ -289,7 +289,7 @@ export default function IntegrationsClient() {
 
       toast.success("تم الاتصال بنجاح مع فاتورة");
       setFatooraConfig((prev) => ({ ...prev, status: "connected" }));
-    } catch (error) {
+    } catch {
       toast.error("فشل الاتصال مع فاتورة. يرجى التحقق من بيانات الاتصال");
       setFatooraConfig((prev) => ({ ...prev, status: "disconnected" }));
     } finally {
@@ -676,12 +676,16 @@ export default function IntegrationsClient() {
 
                 {/* البيئة */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label
+                    className="text-sm font-medium text-slate-700"
+                    htmlFor="geidea-environment"
+                  >
                     البيئة (Environment)
                   </label>
                   <select
                     className="w-full h-10 text-sm border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                     disabled={!showGeideaSetup && !geideaConfig.enabled}
+                    id="geidea-environment"
                     value={geideaConfig.environment}
                     onChange={(e) =>
                       setGeideaConfig((prev) => ({

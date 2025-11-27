@@ -5,9 +5,8 @@
 
 "use client";
 
-import { Input, Button, Select, SelectItem } from "@heroui/react";
+import { Input, Button, Select, SelectItem, CardBody } from "@heroui/react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { CardBody } from "@heroui/react";
 
 import Card from "@/components/Card";
 

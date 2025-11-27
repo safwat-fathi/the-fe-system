@@ -102,7 +102,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       const data = await boxService.getBoxTypes();
 
       setBoxTypes(data);
-    } catch (error) {
+    } catch {
       toast.error("خطأ في تحميل أنواع الصناديق");
       setBoxTypes([]);
     }
@@ -147,7 +147,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         toast.error("❌ فشل في حذف الصندوق");
         router.refresh();
       }
-    } catch (error) {
+    } catch {
       toast.error("❌ حدث خطأ أثناء الحذف");
       router.refresh();
     } finally {

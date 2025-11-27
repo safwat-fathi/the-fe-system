@@ -54,7 +54,9 @@ class InvoiceFormDataService extends HttpService<any> {
         const homeSettings = await itemService.getHomeSettings();
 
         if (homeSettings && homeSettings.length > 0) {
-          const purityValue = parseFloat(homeSettings[0]?.purity);
+          const purityValue = parseFloat(
+            String(homeSettings[0]?.purity ?? "0"),
+          );
 
           if (!isNaN(purityValue)) {
             homePurity = purityValue;

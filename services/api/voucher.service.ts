@@ -2,6 +2,7 @@ import { HttpService } from "@/services/base";
 import { IParams, IPaginatedResponse } from "@/types/services/base";
 
 export interface Voucher {
+  id?: number;
   vouch_id?: number;
   vouch_date: string;
   vouch_type: number;
@@ -14,6 +15,12 @@ export interface Voucher {
   acc_id?: number;
   cost_id?: number;
   opps_vouch?: number;
+  com_id?: number;
+  com?: number;
+  cust_id?: number;
+  commit?: boolean;
+  post?: boolean;
+  print?: boolean;
 }
 
 export interface VoucherDetail {
@@ -125,7 +132,11 @@ class VoucherService extends HttpService<Voucher> {
     const requestedPageNumber = toPositiveInt(requestedPageRaw, 1);
     const safeRequestedPage = requestedPageNumber > 0 ? requestedPageNumber : 1;
 
-    const { page: _ignoredPage, ...filters } = params || {};
+    const filters: IParams = { ...(params || {}) };
+
+    if ("page" in filters) {
+      delete filters.page;
+    }
 
     const totals = {
       totalAmount: 0,
@@ -255,7 +266,7 @@ class VoucherService extends HttpService<Voucher> {
 
       // البحث بالـ ID يمكن أن يكون id (primary key) أو vouch_id (رقم القيد)
       const requestedId = String(id).trim();
-      const isNumericId = !Number.isNaN(Number(requestedId));
+      const numericRequestedId = Number(id);
 
       const queryParams: IParams = {
         xcom_id: branchParam,
@@ -274,20 +285,21 @@ class VoucherService extends HttpService<Voucher> {
 
       if (response.success && response.data) {
         const data: any = response.data;
-        const requestedId = Number(id);
 
         // Helper to pick best match from a list
         const pickFromList = (list: any[]): Voucher | null => {
           if (!Array.isArray(list)) return null;
 
           // البحث أولاً بـ id (primary key)
-          const byId = list.find((v: any) => Number(v?.id) === requestedId);
+          const byId = list.find(
+            (v: any) => Number(v?.id) === numericRequestedId,
+          );
 
           if (byId) return byId as Voucher;
 
           // Fallback إلى vouch_id
           const byVouchId = list.find(
-            (v: any) => Number(v?.vouch_id) === requestedId,
+            (v: any) => Number(v?.vouch_id) === numericRequestedId,
           );
 
           if (byVouchId) return byVouchId as Voucher;
@@ -308,8 +320,8 @@ class VoucherService extends HttpService<Voucher> {
         // إذا كان object مباشر
         if (data && typeof data === "object") {
           if (
-            Number(data.id) === requestedId ||
-            Number(data.vouch_id) === requestedId
+            Number(data.id) === numericRequestedId ||
+            Number(data.vouch_id) === numericRequestedId
           ) {
             return data as Voucher;
           }
@@ -361,7 +373,12 @@ class VoucherService extends HttpService<Voucher> {
       "1";
 
     // إزالة com من البارامترات لعدم إرساله في الطلب
-    const { com, com_id, xcomp_id, ...cleanParams } = params || {};
+
+    const cleanParams: IParams = { ...(params || {}) };
+
+    delete cleanParams.com;
+    delete cleanParams.com_id;
+    delete cleanParams.xcomp_id;
 
     const queryParams: IParams = {
       ...cleanParams,
@@ -446,7 +463,12 @@ class VoucherService extends HttpService<Voucher> {
       "1";
 
     // إزالة com من البارامترات لعدم إرساله في الطلب
-    const { com, com_id, xcomp_id, ...cleanParams } = params || {};
+
+    const cleanParams: IParams = { ...(params || {}) };
+
+    delete cleanParams.com;
+    delete cleanParams.com_id;
+    delete cleanParams.xcomp_id;
 
     const queryParams: IParams = {
       ...cleanParams,
@@ -627,7 +649,7 @@ class VoucherService extends HttpService<Voucher> {
       }, 0);
 
       return maxId + 1;
-    } catch (error) {
+    } catch {
       return 1;
     }
   }
@@ -659,7 +681,12 @@ class VoucherService extends HttpService<Voucher> {
       "1";
 
     // إزالة com من البارامترات لعدم إرساله في الطلب
-    const { com, com_id, xcomp_id, ...cleanParams } = params || {};
+
+    const cleanParams: IParams = { ...(params || {}) };
+
+    delete cleanParams.com;
+    delete cleanParams.com_id;
+    delete cleanParams.xcomp_id;
 
     const queryParams: IParams = {
       ...cleanParams,

@@ -2,6 +2,7 @@
  * Logger utility for conditional logging based on environment
  * Only logs in development mode to avoid performance issues in production
  */
+/* eslint-disable no-console */
 
 const isDevelopment = process.env.NODE_ENV === "development";
 

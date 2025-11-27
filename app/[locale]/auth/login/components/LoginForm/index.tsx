@@ -27,12 +27,12 @@ const LoginForm = () => {
       />
 
       <Input
+        required
         label={t("passwordLabel")}
         name="password"
         placeholder={t("passwordPlaceholder")}
         type="password"
         variant="bordered"
-        required
         // className="text-right"
       />
 

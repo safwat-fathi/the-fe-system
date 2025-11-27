@@ -194,7 +194,7 @@ export default function TaxDailyJournalClient() {
                 <TableColumn>الإجراءات</TableColumn>
               </TableHeader>
               <TableBody emptyContent="لا توجد بيانات">
-                {entries.map((entry, index) => (
+                {entries.map((entry, _index) => (
                   <TableRow key={entry.documentNumber}>
                     <TableCell>
                       <Checkbox

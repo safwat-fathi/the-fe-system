@@ -11,8 +11,11 @@ export async function getBranchParams() {
     cookieStore.get("selectedYear")?.value ||
     new Date().getFullYear().toString();
 
+  const com = Number(selectedBranch) || 1;
+  const year = Number(selectedYear) || new Date().getFullYear();
+
   return {
-    com: selectedBranch,
-    year: selectedYear,
+    com,
+    year,
   };
 }

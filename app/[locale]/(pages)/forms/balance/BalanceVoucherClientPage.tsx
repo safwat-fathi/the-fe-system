@@ -1,32 +1,34 @@
 "use client";
 
-import { useMemo, useState, useRef, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-
-import AsyncCreatableSelect from "react-select/async-creatable";
-import ReactSelect from "react-select";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+// import AsyncCreatableSelect from "react-select/async-creatable";
+// import ReactSelect from "react-select";
 import {
   Button,
   Modal,
-  ModalContent,
-  ModalHeader,
   ModalBody,
+  ModalContent,
   ModalFooter,
+  ModalHeader,
   Textarea,
 } from "@heroui/react";
 import {
+  ArrowsPointingOutIcon,
   CheckIcon,
   PencilIcon,
   PrinterIcon,
-  ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
-import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
-import useKeyAsTab from "@/hooks/useKeyAsTab";
+import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
+
 import { ConfirmationModal } from "@/components/Modal";
-import { useBalanceVoucherForm } from "@/hooks/useBalanceVoucherForm";
+import SearchableSelect from "@/components/SearchableSelect";
 import { RiyalIcon } from "@/components/RiyalIcon";
+import useKeyAsTab from "@/hooks/useKeyAsTab";
+import { useBalanceVoucherForm } from "@/hooks/useBalanceVoucherForm";
 import { formatAmount } from "@/utilities/formatAmount";
+
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 interface BalanceVoucherClientPageProps {
@@ -48,16 +50,11 @@ export default function BalanceVoucherClientPage({
   isNewVoucher = true,
   startInEditMode: propStartInEditMode,
 }: BalanceVoucherClientPageProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") || initialFormMode;
   const formMode = (
     mode === "new" ? "new" : mode === "edit" ? "edit" : "preview"
   ) as "new" | "edit" | "preview";
-  const startInEditMode =
-    propStartInEditMode !== undefined
-      ? propStartInEditMode
-      : formMode === "edit" || formMode === "new";
 
   // حالة المودال لتوسيع البيان
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -71,11 +68,8 @@ export default function BalanceVoucherClientPage({
     accounts,
     costCenters,
     voucherTypes,
-    voucherStatuses,
-    caratTypes,
     isLoading,
     isEditing,
-    setIsEditing,
     isPrinting,
     isClient,
     showUnbalancedModal,
@@ -111,57 +105,6 @@ export default function BalanceVoucherClientPage({
     isNewVoucher,
     startInEditMode: propStartInEditMode,
   });
-
-  const toAmount = (value: unknown) => {
-    const numeric = Number(value);
-
-    return Number.isFinite(numeric) ? numeric : 0;
-  };
-
-  const getPreviewAccountName = (
-    accId: number | string | null | undefined,
-    fallback?: string | null,
-  ): string => {
-    if (fallback && fallback.trim().length > 0) {
-      return fallback;
-    }
-
-    if (accId === null || accId === undefined || accId === "") {
-      return "";
-    }
-
-    const numericId = Number(accId);
-
-    if (!Number.isFinite(numericId)) {
-      return "";
-    }
-
-    const account = accounts.find((acc: any) => {
-      const candidate = acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
-
-      return Number(candidate) === numericId;
-    });
-
-    return account?.acc_name || account?.name || account?.label || "";
-  };
-
-  // Helper functions for cost center select (must be before any early return)
-  const getCostCenterSelectValue = (costId: number | null | undefined) => {
-    if (!costId || costId <= 0) {
-      return null;
-    }
-
-    const center = costCenters.find((c) => c.id === costId);
-
-    if (!center) {
-      return null;
-    }
-
-    return {
-      value: String(center.id),
-      label: center.name || center.cost_name || `مركز ${center.id}`,
-    };
-  };
 
   const costCenterSelectOptions = useMemo(() => {
     return (costCenters || []).map((center) => ({
@@ -275,23 +218,20 @@ export default function BalanceVoucherClientPage({
   });
 
   // Hook for Enter key navigation in table rows
-  const {
-    setInputRef,
-    handleKeyDown: handleKeyDownTable,
-    focusFirstInRow,
-  } = useEnterKeyNavigation({
-    rows: details,
-    rowHasValue: (row) => {
-      return !!(
-        row?.acc_id ||
-        (row?.debit && row.debit > 0) ||
-        (row?.credit && row.credit > 0) ||
-        (row?.g_debit && row.g_debit > 0) ||
-        (row?.g_credit && row.g_credit > 0)
-      );
-    },
-    onAddRow: addDetailRow,
-  });
+  const { setInputRef, handleKeyDown: handleKeyDownTable } =
+    useEnterKeyNavigation({
+      rows: details,
+      rowHasValue: (row) => {
+        return !!(
+          row?.acc_id ||
+          (row?.debit && row.debit > 0) ||
+          (row?.credit && row.credit > 0) ||
+          (row?.g_debit && row.g_debit > 0) ||
+          (row?.g_credit && row.g_credit > 0)
+        );
+      },
+      onAddRow: addDetailRow,
+    });
 
   // دالة مساعدة للانتقال للحقل التالي مباشرة
   const focusNextField = useCallback((rowIndex: number, colIndex: number) => {
@@ -335,9 +275,9 @@ export default function BalanceVoucherClientPage({
                 <span className="text-slate-600 font-medium">
                   #
                   {voucher.vouch_id &&
-                    voucher.vouch_id > 0 &&
-                    isFinite(voucher.vouch_id)
-                    ? voucher.vouch_id
+                  Number(voucher.vouch_id) > 0 &&
+                  isFinite(Number(voucher.vouch_id))
+                    ? Number(voucher.vouch_id)
                     : voucher.id
                       ? `DB-${voucher.id}`
                       : "جاري الترقيم..."}
@@ -382,7 +322,7 @@ export default function BalanceVoucherClientPage({
 
             <Button
               className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
               isLoading={isPrinting}
               size="sm"
               startContent={
@@ -440,12 +380,16 @@ export default function BalanceVoucherClientPage({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
             {/* رقم المرجع - أضيق */}
             <div className="flex flex-col gap-1 md:col-span-2">
-              <label className="text-sm font-medium text-slate-700">
+              <label
+                className="text-sm font-medium text-slate-700"
+                htmlFor="balance-ref-no"
+              >
                 رقم المرجع
               </label>
               <input
                 className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                 disabled={!isEditing}
+                id="balance-ref-no"
                 placeholder="أدخل رقم المرجع"
                 readOnly={!isEditing}
                 value={voucher.ref_no || ""}
@@ -457,12 +401,16 @@ export default function BalanceVoucherClientPage({
 
             {/* تاريخ ووقت القيد - توسع قليلاً */}
             <div className="flex flex-col gap-1 md:col-span-3">
-              <label className="text-sm font-medium text-slate-700">
+              <label
+                className="text-sm font-medium text-slate-700"
+                htmlFor="balance-vouch-datetime"
+              >
                 تاريخ ووقت القيد
               </label>
               <input
                 className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                 disabled={!isEditing}
+                id="balance-vouch-datetime"
                 readOnly={!isEditing}
                 type="datetime-local"
                 value={
@@ -481,7 +429,10 @@ export default function BalanceVoucherClientPage({
 
             {costCenters.length > 0 && (
               <div className="flex flex-col gap-1 md:col-span-2">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="balance-cost-center-select"
+                >
                   مركز التكلفة
                 </label>
                 <div>
@@ -579,13 +530,17 @@ export default function BalanceVoucherClientPage({
               className={`flex flex-col gap-1 ${costCenters.length > 0 ? "md:col-span-5" : "md:col-span-7"
                 }`}
             >
-              <label className="text-sm font-medium text-slate-700">
+              <label
+                className="text-sm font-medium text-slate-700"
+                htmlFor="balance-vouch-notes"
+              >
                 البيان
               </label>
               <div className="relative">
                 <input
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 pr-10 w-full focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                   disabled={!isEditing}
+                  id="balance-vouch-notes"
                   placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
                   readOnly={!isEditing}
                   value={voucher.vouch_notes || ""}

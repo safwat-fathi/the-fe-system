@@ -47,15 +47,15 @@ export async function createVoucherAction(
       return null;
     };
 
-    const normalizeCustomerCostValue = (value: unknown): number | null => {
-      if (value === undefined || value === null) {
-        return null;
-      }
+    // const normalizeCustomerCostValue = (value: unknown): number | null => {
+    //   if (value === undefined || value === null) {
+    //     return null;
+    //   }
 
-      const numeric = Number(value);
+    //   const numeric = Number(value);
 
-      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-    };
+    //   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    // };
 
     // التحقق من البيانات - تمرير goldDetails للتحقق في سندات الذهب
     const validation = validateVoucherData(
@@ -172,8 +172,6 @@ export async function createVoucherAction(
       };
     }
 
-    let normalizedBoxes = voucherBoxes;
-
     if (requiresBoxes(voucherData.vouch_type)) {
       const boxesResult = await processVoucherBoxes(
         masterId,
@@ -189,8 +187,6 @@ export async function createVoucherAction(
           message: boxesResult.error || "خطأ في حفظ الصناديق",
         };
       }
-    } else {
-      normalizedBoxes = [];
     }
 
     // حفظ التفاصيل

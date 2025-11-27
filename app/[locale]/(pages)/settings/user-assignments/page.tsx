@@ -62,7 +62,7 @@ function extractResults<T>(payload: ServiceResponse<T> | any): T[] {
   return [];
 }
 
-function mapUsersToOptions(users: UserApiRecord[]): Option[] {
+function mapUsersToOptions(users: UserApiRecord[]) {
   return users
     .map((user) => {
       const id = Number(user.id);
@@ -84,8 +84,8 @@ function mapUsersToOptions(users: UserApiRecord[]): Option[] {
         helper: user.username,
       };
     })
-    .filter((item): item is Option => item !== null)
-    .sort((a, b) => a.label.localeCompare(b.label, "ar"));
+    .filter((item) => item !== null)
+    .sort((a, b) => a?.label.localeCompare(b.label, "ar"));
 }
 
 function mapBranchesToOptions(branches: BranchApiRecord[]): Option[] {

@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState, useRef, useCallback, useEffect } from "react";
+import type { Voucher, VoucherDetail } from "@/types/voucher";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect from "react-select";
@@ -35,8 +37,6 @@ import { formatAmount } from "@/utilities/formatAmount";
 import { formatDateTime } from "@/utilities/dateUtils";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
-
-import type { Voucher, VoucherDetail } from "@/types/voucher";
 
 interface VoucherClientPageProps {
   voucherData?: Voucher | null;
@@ -90,28 +90,19 @@ export default function VoucherClientPage({
     costCenters,
     voucherTypes,
     voucherStatuses,
-    caratTypes,
     isLoading,
     isEditing,
-    setIsEditing,
     isPrinting,
     showValidationErrors,
     isClient,
-    currentRecord,
-    totalRecords,
     searchTerm,
     setSearchTerm,
-    selectedVoucher,
-    setSelectedVoucher,
     vouchersList,
     isModalOpen,
     setIsModalOpen,
-    defaultAccountOptions,
 
     // Totals and balances
     totals,
-    cashBalance,
-    goldBalance,
     isCashBalanced,
     isGoldBalanced,
     isBalanced,
@@ -130,7 +121,6 @@ export default function VoucherClientPage({
     loadAccountOptions,
     getAccountSelectValue,
     updateAccountsList,
-    navigateToVoucher,
     handleMasterCostChange,
   } = useVoucherForm({
     voucherData,
@@ -422,35 +412,6 @@ export default function VoucherClientPage({
     router.refresh();
   };
 
-  const PREVIEW_TOLERANCE = 0.01;
-
-  const getPreviewAccountName = (
-    accId: number | string | null | undefined,
-    fallback?: string | null,
-  ): string => {
-    if (fallback && fallback.trim().length > 0) {
-      return fallback;
-    }
-
-    if (accId === null || accId === undefined || accId === "") {
-      return "";
-    }
-
-    const numericId = Number(accId);
-
-    if (!Number.isFinite(numericId)) {
-      return "";
-    }
-
-    const account = accounts?.find((acc: any) => {
-      const candidate = acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
-
-      return Number(candidate) === numericId;
-    });
-
-    return account?.acc_name || account?.name || account?.label || "";
-  };
-
   if (!isClient) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -484,8 +445,8 @@ export default function VoucherClientPage({
                   <span className="text-slate-600 font-medium">
                     #
                     {voucher.vouch_id &&
-                      voucher.vouch_id > 0 &&
-                      isFinite(voucher.vouch_id)
+                      Number(voucher.vouch_id) > 0 &&
+                      isFinite(Number(voucher.vouch_id))
                       ? voucher.vouch_id
                       : voucher.id
                         ? `DB-${voucher.id}`
@@ -585,7 +546,7 @@ export default function VoucherClientPage({
 
               <Button
                 className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-                isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+                isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
                 isLoading={isPrinting}
                 size="sm"
                 startContent={
@@ -708,11 +669,14 @@ export default function VoucherClientPage({
             <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               {/* رقم المرجع - أضيق */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-ref-no"
+                >
                   رقم المرجع
                 </label>
                 <input
-                  id="ref_no"
+                  id="voucher-ref-no"
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 h-10 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
                   disabled={!isEditing}
                   placeholder="أدخل رقم المرجع"
@@ -726,12 +690,16 @@ export default function VoucherClientPage({
 
               {/* تاريخ ووقت القيد - تصغير قليلاً */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-date-time"
+                >
                   تاريخ ووقت القيد
                 </label>
                 <input
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 h-10 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
                   disabled={!isEditing}
+                  id="voucher-date-time"
                   max={new Date().toISOString().slice(0, 16)}
                   readOnly={!isEditing}
                   type="datetime-local"
@@ -751,12 +719,16 @@ export default function VoucherClientPage({
 
               {/* حالة القيد - تصغير قليلاً */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-status"
+                >
                   حالة القيد
                 </label>
                 <select
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 h-10 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
                   disabled={!isEditing}
+                  id="voucher-status"
                   value={String(voucher.vouch_status ?? 1)}
                   onChange={(e) =>
                     setVoucher((prev) => ({
@@ -809,12 +781,16 @@ export default function VoucherClientPage({
 
               {/* نوع القيد - توسيع قليلاً */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-type"
+                >
                   نوع القيد
                 </label>
                 <select
                   className="text-sm border border-slate-300 rounded-md px-3 py-2 h-10 focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
                   disabled={!isEditing}
+                  id="voucher-type"
                   value={voucher.vouch_type || 2}
                   onChange={(e) => updateVoucherType(parseInt(e.target.value))}
                   onKeyDown={(e) => {
@@ -853,7 +829,10 @@ export default function VoucherClientPage({
 
               {/* مركز التكلفة */}
               <div className="flex flex-col gap-1 md:col-span-1">
-                <label className="text-sm font-medium text-slate-700">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="voucher-cost-center-select"
+                >
                   مركز التكلفة
                 </label>
                 <ReactSelect
@@ -861,6 +840,7 @@ export default function VoucherClientPage({
                   className="text-sm"
                   classNamePrefix="react-select"
                   components={{ IndicatorSeparator: () => null }}
+                  inputId="voucher-cost-center-select"
                   instanceId="voucher-cost-center-select"
                   isDisabled={!isEditing || costCenters.length === 0}
                   menuPortalTarget={
@@ -959,11 +939,17 @@ export default function VoucherClientPage({
 
         {/* البيان */}
         <div className="mb-2">
-          <label className="text-sm font-medium text-slate-700">البيان</label>
+          <label
+            className="text-sm font-medium text-slate-700"
+            htmlFor="voucher-notes"
+          >
+            البيان
+          </label>
           <div className="relative">
             <input
               className="text-sm border border-slate-300 rounded-md px-3 py-2 pr-10 h-10 w-full focus:border-slate-500 focus:ring-1 focus:ring-slate-500 disabled:cursor-not-allowed disabled:bg-slate-50"
               disabled={!isEditing}
+              id="voucher-notes"
               placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
               readOnly={!isEditing}
               value={voucher.vouch_notes || ""}

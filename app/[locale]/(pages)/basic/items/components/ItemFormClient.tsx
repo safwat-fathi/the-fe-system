@@ -1,8 +1,7 @@
 "use client";
-import type { ChangeEvent, DragEvent } from "react";
 import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
 
-import { useState, useRef } from "react";
+import { useState, useRef, type ChangeEvent, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Button,
@@ -172,7 +171,7 @@ const ItemFormClient = ({
           toast.error("❌ فشل في تحديث الصنف");
         }
       }
-    } catch (error) {
+    } catch {
       toast.error(
         isAddMode
           ? "❌ حدث خطأ أثناء إضافة الصنف"

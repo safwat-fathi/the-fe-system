@@ -4,12 +4,10 @@ import {
   IParams,
   TMethod,
 } from "@/types/services/base";
-import { getCookieAction, setCookieAction } from "@/app/actions/cookie-store";
+import { getCookieAction } from "@/app/actions/cookie-store";
 import { createParams } from "@/utilities/qs";
 import { STORAGE_KEYS } from "@/constants";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
-import { getBranchParams } from "@/app/actions/branch-params";
-import { redirectToLogin } from "@/app/actions/auth";
 
 // Enhanced response type for better type safety
 export interface ServiceResponse<T = any> {
@@ -55,7 +53,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     method: TMethod,
     options: RequestInit = {},
     params?: IParams,
-    retryCount = 0,
+    _retryCount: number = 0,
   ): Promise<ServiceResponse<R>> {
     try {
       // Validate base URL is configured
@@ -125,31 +123,23 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       //   response.status,
       // );
       if (response.status === 401) {
-				console.log("**********************************");
-        console.log("response.status === 401");
-        console.log("**********************************");
-
         // throw new AuthenticationError("Session expired");
         // Signal authentication failure to the caller.
-        try {
-          const res = await fetch("http://localhost:3000/api/auth/refresh", {
-            method: "POST",
-            // credentials: "include",
-            // TODO: send refresh token
-            body: JSON.stringify({}),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
+        // try {
+        //   const res = await fetch("http://localhost:3000/api/auth/refresh", {
+        //     method: "POST",
+        //     // credentials: "include",
+        //     // TODO: send refresh token
+        //     body: JSON.stringify({}),
+        //     headers: {
+        //       "Content-Type": "application/json",
+        //     },
+        //   });
 
-          const data = await res.json();
-          console.log(
-            "🚀 ~ :136 ~ HttpService ~ _request ~ res***********************:",
-            data.message,
-          );
-        } catch (error) {
-          console.log("🚀 ~ :147 ~ HttpService ~ _request ~ error:", error);
-        }
+        //   const data = await res.json();
+        // } catch (error) {
+        //   throw new AuthenticationError("Session expired");
+        // }
         throw new AuthenticationError("Session expired");
       }
 

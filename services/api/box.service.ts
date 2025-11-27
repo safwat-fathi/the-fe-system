@@ -57,7 +57,7 @@ class BoxService extends HttpService<Box> {
       }
 
       // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
-      const { acc_name, ...rest } = box as any;
+      const { ...rest } = box as any;
       const boxData = {
         ...rest,
         com: companyId, // إضافة حقل com المطلوب
@@ -180,7 +180,7 @@ class BoxService extends HttpService<Box> {
       }
 
       // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
-      const { acc_name, ...rest } = box as any;
+      const { ...rest } = box as any;
       const boxData = {
         ...rest,
         com: companyId, // إضافة حقل com المطلوب

@@ -13,7 +13,6 @@ interface MenuItemProps {
   item: MenuObject;
   isOpen: boolean;
   pathname: string;
-  onToggle?: (itemId: number) => void;
 }
 
 const animationVariants = {
@@ -23,12 +22,7 @@ const animationVariants = {
 
 const transition = { duration: 0.3, ease: "easeInOut", delay: 0.05 };
 
-export default function MenuItem({
-  item,
-  isOpen,
-  pathname,
-  onToggle,
-}: MenuItemProps) {
+export default function MenuItem({ item, isOpen, pathname }: MenuItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const hasChildren = item.children && item.children.length > 0;
@@ -79,7 +73,15 @@ export default function MenuItem({
             "text-xs text-gray-400 hover:text-gray-200": isSection,
           },
         )}
+        role="button"
+        tabIndex={0}
         onClick={handleToggle}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            handleToggle();
+          }
+        }}
       >
         <div className="flex items-center gap-2">
           <div className="text-sm">

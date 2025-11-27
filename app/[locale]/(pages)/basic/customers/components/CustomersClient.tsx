@@ -85,14 +85,10 @@ export default function CustomersClient({
   initialCustomers,
   initialCustomerTypes,
   initialCustomerStatus,
-  initialAccounts,
-  initialBoxTypes,
 }: CustomersClientProps) {
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [customerTypes] = useState<CustomerType[]>(initialCustomerTypes);
   const [customerStatus] = useState<any[]>(initialCustomerStatus);
-  const [accounts] = useState<any[]>(initialAccounts);
-  const [boxTypes] = useState<any[]>(initialBoxTypes);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [custTypeFilter, setCustTypeFilter] = useState<number | null>(null);
@@ -148,7 +144,7 @@ export default function CustomersClient({
         toast.error("❌ فشل في حذف العميل");
         loadCustomers();
       }
-    } catch (error) {
+    } catch {
       toast.error("❌ حدث خطأ أثناء الحذف");
       loadCustomers();
     } finally {
@@ -305,13 +301,13 @@ export default function CustomersClient({
 
       <div className="responsive-table">
         <Table aria-label="جدول العملاء">
-          <TableHeader>
-            {columns.map((col) => (
-              <TableColumn key={col.uid}>{col.name}</TableColumn>
-            ))}
+          <TableHeader columns={columns}>
+            {(column) => (
+              <TableColumn key={column.uid}>{column.name}</TableColumn>
+            )}
           </TableHeader>
-          <TableBody>
-            {paginatedCustomers.map((cust) => (
+          <TableBody items={paginatedCustomers}>
+            {(cust) => (
               <TableRow key={cust.id}>
                 <TableCell>{cust.cust_code}</TableCell>
                 <TableCell>{cust.cust_name}</TableCell>
@@ -324,7 +320,7 @@ export default function CustomersClient({
                 </TableCell>
                 <TableCell>{renderActions(cust)}</TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </div>

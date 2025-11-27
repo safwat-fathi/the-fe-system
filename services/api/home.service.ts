@@ -41,15 +41,6 @@ class HomeService extends HttpService<HomeSettings> {
       if (params?.com) queryParams.com = params.com;
       if (params?.year) queryParams.year = params.year;
 
-      if (process.env.NODE_ENV === "development") {
-        console.info("🔍 HomeService Request:");
-        console.info("  - URL: home_list");
-        console.info("  - Params:", queryParams);
-        console.info("  - Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
-      }
-
-      const startTime = Date.now();
-
       const response = await this.get<HomeSettings[]>(
         "home_list",
         queryParams,
@@ -57,13 +48,6 @@ class HomeService extends HttpService<HomeSettings> {
           cache: "no-store",
         },
       );
-
-      const endTime = Date.now();
-
-      if (process.env.NODE_ENV === "development") {
-        console.info(`⏱️ Request took: ${endTime - startTime}ms`);
-        console.info("✅ HomeService Response:", response);
-      }
 
       if (response.success) {
         if (Array.isArray(response.data)) {

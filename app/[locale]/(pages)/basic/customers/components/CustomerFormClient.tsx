@@ -1,7 +1,5 @@
 "use client";
-import type { ChangeEvent } from "react";
-
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -9,10 +7,11 @@ import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 
 import customerService from "@/services/api/customer.service";
+import type { Customer as CustomerModel } from "@/types/models/customer";
 
 type CustomerFormMode = "view" | "edit" | "add";
 
-interface Customer {
+export interface CustomerFormValues {
   id: number;
   cust_code?: string;
   cust_name: string;
@@ -44,7 +43,7 @@ interface Customer {
 
 interface CustomerFormClientProps {
   mode: CustomerFormMode;
-  initialCustomer: Partial<Customer>;
+  initialCustomer: Partial<CustomerFormValues>;
   customerTypes: any[];
   customerStatus: any[];
   accounts: any[];
@@ -64,11 +63,13 @@ const CustomerFormClient = ({
   const router = useRouter();
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
-  const [customer, setCustomer] = useState<Partial<Customer>>(initialCustomer);
+  const [customer, setCustomer] =
+    useState<Partial<CustomerFormValues>>(initialCustomer);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleInputChange =
-    (key: keyof Customer) => (event: ChangeEvent<HTMLInputElement>) => {
+    (key: keyof CustomerFormValues) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
       setCustomer({
         ...customer,
         [key]: event.target.value,
@@ -76,7 +77,8 @@ const CustomerFormClient = ({
     };
 
   const handleNumberInputChange =
-    (key: keyof Customer) => (event: ChangeEvent<HTMLInputElement>) => {
+    (key: keyof CustomerFormValues) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
 
       setCustomer({
@@ -85,7 +87,8 @@ const CustomerFormClient = ({
       });
     };
 
-  const handleCheckboxChange = (key: "expt" | "hide") => (value: boolean) => {
+  const handleCheckboxChange =
+    (key: "expt" | "hide") => (value: boolean) => {
     setCustomer({
       ...customer,
       [key]: value,
@@ -124,9 +127,8 @@ const CustomerFormClient = ({
           : "";
       }
 
-      const { acc_name, ...rest } = updatedCustomer;
-      const cleanedCustomer = {
-        ...rest,
+      const cleanedCustomer: Partial<CustomerModel> = {
+        ...updatedCustomer,
         acc: Number(updatedCustomer.acc) || null,
         vat_no: Number(updatedCustomer.vat_no) || null,
         cr_no: Number(updatedCustomer.cr_no) || null,
@@ -138,11 +140,11 @@ const CustomerFormClient = ({
         com: companyId,
       };
 
-      let result: Customer | null = null;
+      let result: CustomerModel | null = null;
 
       if (isAddMode) {
         result = await customerService.createCustomer(
-          cleanedCustomer as Omit<Customer, "id">,
+          cleanedCustomer as Omit<CustomerModel, "id">,
         );
       } else if (customer.id) {
         result = await customerService.updateCustomer(
@@ -324,7 +326,10 @@ const CustomerFormClient = ({
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium mb-2">
+          <label
+            className="block text-sm font-medium mb-2"
+            htmlFor="customer-account"
+          >
             الحساب المحاسبي
           </label>
           <ReactSelect
@@ -334,6 +339,7 @@ const CustomerFormClient = ({
             components={{
               IndicatorSeparator: () => null,
             }}
+            inputId="customer-account"
             isDisabled={isViewMode}
             menuPlacement="auto"
             menuPortalTarget={
@@ -384,7 +390,12 @@ const CustomerFormClient = ({
         </div>
 
         <div className="col-span-1">
-          <label className="block text-sm font-medium mb-2">نوع الصندوق</label>
+          <label
+            className="block text-sm font-medium mb-2"
+            htmlFor="customer-box-type"
+          >
+            نوع الصندوق
+          </label>
           <ReactSelect
             isSearchable
             className="w-full text-sm"
@@ -392,6 +403,7 @@ const CustomerFormClient = ({
             components={{
               IndicatorSeparator: () => null,
             }}
+            inputId="customer-box-type"
             isDisabled={isViewMode}
             menuPlacement="auto"
             menuPortalTarget={
@@ -426,7 +438,12 @@ const CustomerFormClient = ({
         </div>
 
         <div className="col-span-1">
-          <label className="block text-sm font-medium mb-2">نوع العميل</label>
+          <label
+            className="block text-sm font-medium mb-2"
+            htmlFor="customer-type"
+          >
+            نوع العميل
+          </label>
           <ReactSelect
             isSearchable
             className="w-full text-sm"
@@ -434,6 +451,7 @@ const CustomerFormClient = ({
             components={{
               IndicatorSeparator: () => null,
             }}
+            inputId="customer-type"
             isDisabled={isViewMode}
             menuPlacement="auto"
             menuPortalTarget={
@@ -494,7 +512,12 @@ const CustomerFormClient = ({
         />
 
         <div className="col-span-1">
-          <label className="block text-sm font-medium mb-2">حالة العميل</label>
+          <label
+            className="block text-sm font-medium mb-2"
+            htmlFor="customer-status"
+          >
+            حالة العميل
+          </label>
           <ReactSelect
             isSearchable
             className="w-full text-sm"
@@ -502,6 +525,7 @@ const CustomerFormClient = ({
             components={{
               IndicatorSeparator: () => null,
             }}
+            inputId="customer-status"
             isDisabled={isViewMode}
             menuPlacement="auto"
             menuPortalTarget={

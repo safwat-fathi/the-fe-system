@@ -114,7 +114,7 @@ export default async function InvoicePage({
   let invoiceData: Invoice | null = null;
   let invoiceDetails: InvoiceDetail[] = [];
 
-	try {
+  try {
     if ((mode === "edit" || mode === "preview") && editId) {
       const lookupId = editId ?? "";
 

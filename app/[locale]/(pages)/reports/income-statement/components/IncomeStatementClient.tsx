@@ -119,13 +119,13 @@ export default function IncomeStatementClient() {
               setLevel(val);
             }}
           >
-            <SelectItem key="7" value="7">
+            <SelectItem key="7">
               المستوى 7
             </SelectItem>
-            <SelectItem key="6" value="6">
+            <SelectItem key="6">
               المستوى 6
             </SelectItem>
-            <SelectItem key="5" value="5">
+            <SelectItem key="5">
               المستوى 5
             </SelectItem>
           </Select>
@@ -140,13 +140,13 @@ export default function IncomeStatementClient() {
               setPeriod(val);
             }}
           >
-            <SelectItem key="monthly" value="monthly">
+            <SelectItem key="monthly">
               شهري
             </SelectItem>
-            <SelectItem key="quarterly" value="quarterly">
+            <SelectItem key="quarterly">
               ربع سنوي
             </SelectItem>
-            <SelectItem key="yearly" value="yearly">
+            <SelectItem key="yearly">
               سنوي
             </SelectItem>
           </Select>
@@ -181,18 +181,30 @@ export default function IncomeStatementClient() {
           {/* Date Range Selectors */}
           <div className="mb-6 flex gap-4 justify-center">
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-gray-600">من تاريخ</label>
+              <label
+                className="text-sm text-gray-600"
+                htmlFor="income-start-date"
+              >
+                من تاريخ
+              </label>
               <Input
                 className="min-w-[200px]"
+                id="income-start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label className="text-sm text-gray-600">إلى تاريخ</label>
+              <label
+                className="text-sm text-gray-600"
+                htmlFor="income-end-date"
+              >
+                إلى تاريخ
+              </label>
               <Input
                 className="min-w-[200px]"
+                id="income-end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}

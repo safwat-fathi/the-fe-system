@@ -1,14 +1,5 @@
 // خدمة لجلب أسعار صرف العملات من API خارجي
 // استخدام exchangerate-api.com (API مجاني بدون مفتاح للاستخدام الأساسي)
-
-interface ExchangeRateResponse {
-  result?: string;
-  conversion_rates?: Record<string, number>;
-  rates?: Record<string, number>;
-  base_code?: string;
-  time_last_update_utc?: string;
-}
-
 class CurrencyExchangeService {
   /**
    * جلب سعر صرف العملة مقابل الريال السعودي (SAR)

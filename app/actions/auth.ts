@@ -3,15 +3,15 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { getLocale } from "next-intl/server";
 
 import { setCookieAction } from "./cookie-store";
 
 import { loginSchema } from "@/app/[locale]/auth/login/components/LoginForm/login.schema";
 import { STORAGE_KEYS } from "@/constants";
-import { defaultLocale, locales } from "@/i18n/config";
+import { locales } from "@/i18n/config";
 import { authService } from "@/services/api";
 import { generateCSRFToken } from "@/utilities/csrf";
-import { getLocale } from "next-intl/server";
 
 interface LoginResult {
   success: boolean;

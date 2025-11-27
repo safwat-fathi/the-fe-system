@@ -1,11 +1,13 @@
 import crypto from "node:crypto";
 
-import { Message } from "@prisma/client";
-
 import { whatsappConfig } from "@/config/whatsapp";
 import whatsappHttpService from "@/services/external/whatsapp-http.service";
 import whatsappRepository from "@/services/external/whatsapp.repository";
 import logger from "@/utilities/logger";
+
+type WhatsappMessageRecord = {
+  createdAt?: Date | string | null;
+} | null;
 
 interface SendTextPayload {
   to: string;
@@ -80,7 +82,7 @@ class WhatsappService {
     });
   }
 
-  private isWithinSessionWindow(message?: Message | null) {
+  private isWithinSessionWindow(message?: WhatsappMessageRecord) {
     if (!message?.createdAt) return false;
 
     const now = Date.now();
@@ -179,13 +181,13 @@ class WhatsappService {
 
       logger.error("[WhatsappService] sendText failed", { code, message });
 
-      const storedMessage = await this.recordOutboundMessage({
-        contactId: contact.id,
-        conversationId: conversation.id,
-        type: "text",
-        payload: { ...requestBody, error: message },
-        clientMsgId,
-      });
+      // const storedMessage = await this.recordOutboundMessage({
+      //   contactId: contact.id,
+      //   conversationId: conversation.id,
+      //   type: "text",
+      //   payload: { ...requestBody, error: message },
+      //   clientMsgId,
+      // });
 
       await whatsappRepository.createMessage({
         conversationId: conversation.id,

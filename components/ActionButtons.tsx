@@ -20,7 +20,7 @@ export default function ActionButtons({
   buttons,
   className = "",
 }: ActionButtonsProps) {
-  const getButtonClasses = (color: string, variant: string) => {
+  const getButtonClasses = (color: string, _variant: string) => {
     const baseClasses =
       "font-medium px-4 py-2.5 rounded-lg transition-all duration-200";
 

@@ -29,7 +29,7 @@ interface BulkPermissionsProps {
 
 export default function BulkPermissions({
   selectedScreens,
-  currentPermissions,
+
   onApply,
   onClose,
 }: BulkPermissionsProps) {
@@ -120,7 +120,15 @@ export default function BulkPermissions({
                                 : "bg-gray-50 border-gray-200"
                         : "bg-white border-gray-200 hover:bg-gray-50"
                     }`}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => togglePermission(permission)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        togglePermission(permission);
+                      }
+                    }}
                   >
                     <Checkbox
                       isSelected={isSelected}

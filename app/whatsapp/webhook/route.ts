@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     await processWhatsappWebhook(body);
 
     return new NextResponse(null, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         message: "Failed to process webhook",

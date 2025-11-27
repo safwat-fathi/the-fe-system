@@ -85,6 +85,7 @@ class InvoiceService extends HttpService<Invoice> {
       return null;
     } catch (error) {
       rethrowAuthenticationError(error);
+
       return null;
     }
   }
@@ -177,7 +178,7 @@ class InvoiceService extends HttpService<Invoice> {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
     }
   }
@@ -262,7 +263,7 @@ class InvoiceService extends HttpService<Invoice> {
       }
 
       return [];
-    } catch (error) {
+    } catch {
       throw new Error("حدث خطأ أثناء جلب تفاصيل الفاتورة");
     }
   }
@@ -570,7 +571,9 @@ class InvoiceService extends HttpService<Invoice> {
       const date = new Date(inv.inv_date);
       const month = date.getMonth();
 
-      monthlySales[month] += parseFloat(inv.inv_amt ?? inv.inv_net ?? "0");
+      monthlySales[month] += parseFloat(
+        String(inv.inv_amt ?? inv.inv_net ?? "0"),
+      );
     });
 
     return monthlySales;

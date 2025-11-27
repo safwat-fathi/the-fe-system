@@ -88,7 +88,6 @@ const getBalanceVoucherFormData = cache(
       voucherTypes,
       voucherStatuses,
       caratTypes,
-      boxes: [], // فارغ للقيد الافتتاحي
     };
   },
 );
