@@ -7,7 +7,7 @@ import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import SystemsTree from "./SystemsTree";
 
 export default function PermissionsMatrix() {
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
   return (
     <div className="space-y-6">

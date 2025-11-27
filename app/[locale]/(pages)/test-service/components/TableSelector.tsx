@@ -52,12 +52,16 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {/* Dropdown for common tables */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-700">
+          <label
+            className="block text-sm font-medium mb-2 text-gray-700"
+            htmlFor="table-selector-dropdown"
+          >
             اختر من القائمة:
           </label>
           <Select
             aria-label="اختر جدول من القائمة"
             className="max-w-full"
+            id="table-selector-dropdown"
             placeholder="اختر جدول"
             selectedKeys={[selectedTable]}
             onSelectionChange={(keys) => {
@@ -69,7 +73,7 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
             }}
           >
             {COMMON_TABLES.map((table) => (
-              <SelectItem key={table.value} value={table.value}>
+              <SelectItem key={table.value}>
                 {table.label}
               </SelectItem>
             ))}
@@ -78,12 +82,16 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
 
         {/* Custom input for any table */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-700">
+          <label
+            className="block text-sm font-medium mb-2 text-gray-700"
+            htmlFor="table-selector-input"
+          >
             أو اكتب اسم الجدول:
           </label>
           <Input
             aria-label="اكتب اسم الجدول يدوياً"
             className="max-w-full"
+            id="table-selector-input"
             placeholder="مثال: home_list"
             value={customTable}
             onChange={(e) => {

@@ -53,8 +53,8 @@ class UserCompanyService extends HttpService<UserCompany> {
     return this.patch<UserCompany>(`api_update_user_company/${id}`, payload);
   }
 
-  async delete(id: number) {
-    return this.delete(`api_delete_user_company/${id}`);
+  async remove(id: number) {
+    return super.delete(`api_delete_user_company/${id}`);
   }
 }
 

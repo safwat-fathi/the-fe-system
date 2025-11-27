@@ -1,5 +1,4 @@
-import HttpService from "@/services/base/http.service";
-import { ServiceResponse } from "@/services/base/http.service";
+import HttpService, { ServiceResponse } from "@/services/base/http.service";
 import { logger } from "@/utilities/logger";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
@@ -183,8 +182,6 @@ class GenericService extends HttpService<any> {
         finalParams = undefined;
       }
 
-      const startTime = Date.now();
-
       // Optimize caching based on table type
       let cacheTime = 300; // Default 5 minutes
 
@@ -218,8 +215,6 @@ class GenericService extends HttpService<any> {
           ],
         },
       });
-
-      const endTime = Date.now();
 
       // Check if response data is HTML (404 error) - BEFORE any other checks
       const responseDataStr = String(response.data || "");

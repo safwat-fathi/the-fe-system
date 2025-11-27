@@ -1,8 +1,44 @@
+export type NullableString = string | null;
+export type NullableNumber = number | null;
+
 export interface Customer {
   id: number;
-  cust_code: number;
-  cust_name: string; // Arabic name
-  cust_name_e: string; // English name
-  cust_type: number;
-  acc: number; // Account ID
+  cust_code: string | number;
+  cust_name: string;
+  cust_name_e: NullableString;
+  cust_type: NullableNumber;
+  cust_status?: NullableNumber;
+  acc: NullableNumber;
+  acc_name?: NullableString;
+  acc_name_e?: NullableString;
+  address?: NullableString;
+  area?: NullableString;
+  build_no?: NullableString;
+  city?: NullableString;
+  gov?: NullableString;
+  street?: NullableString;
+  post_code?: NullableString;
+  post_no?: NullableString;
+  cr_no?: NullableString;
+  vat_no?: NullableNumber;
+  mobile?: NullableString;
+  phone?: NullableString;
+  fax?: NullableString;
+  email?: NullableString;
+  box_type?: string | number | null;
+  handling?: NullableString;
+  handling_e?: NullableString;
+  perc?: NullableNumber;
+  expt?: boolean | null;
+  hide?: boolean | null;
+  com?: NullableNumber;
+  acc_branch?: NullableNumber;
+  acc_code?: NullableString;
+  acc_cur?: NullableNumber;
+  acc_id?: NullableNumber;
+  cust_type_e?: NullableString;
+  cust_type_name?: NullableString;
+  created_at?: NullableString;
+  updated_at?: NullableString;
+  [key: string]: unknown;
 }

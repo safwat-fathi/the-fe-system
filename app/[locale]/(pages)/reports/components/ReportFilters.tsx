@@ -32,11 +32,15 @@ export default function ReportFilters({
       {showDateFilters && (
         <>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              className="block text-sm font-medium text-gray-700 mb-1"
+              htmlFor="report-filter-start-date"
+            >
               من تاريخ
             </label>
             <Input
               className="w-full"
+              id="report-filter-start-date"
               size="sm"
               type="date"
               value={startDate}
@@ -45,11 +49,15 @@ export default function ReportFilters({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              className="block text-sm font-medium text-gray-700 mb-1"
+              htmlFor="report-filter-end-date"
+            >
               إلى تاريخ
             </label>
             <Input
               className="w-full"
+              id="report-filter-end-date"
               size="sm"
               type="date"
               value={endDate}

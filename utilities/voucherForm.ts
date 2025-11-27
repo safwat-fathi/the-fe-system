@@ -256,6 +256,8 @@ export const calculateVoucherTotals = (
   totalCredit: number;
   totalDebitG: number;
   totalCreditG: number;
+  totalBaseDebit: number;
+  totalBaseCredit: number;
 } => {
   return details.reduce(
     (totals, detail) => {
@@ -290,6 +292,8 @@ export const calculateVoucherTotals = (
         totalCredit: totals.totalCredit + credit + baseCredit,
         totalDebitG: totals.totalDebitG + debitG,
         totalCreditG: totals.totalCreditG + creditG,
+        totalBaseDebit: totals.totalBaseDebit + baseDebit,
+        totalBaseCredit: totals.totalBaseCredit + baseCredit,
       };
     },
     {
@@ -297,6 +301,8 @@ export const calculateVoucherTotals = (
       totalCredit: 0,
       totalDebitG: 0,
       totalCreditG: 0,
+      totalBaseDebit: 0,
+      totalBaseCredit: 0,
     },
   );
 };

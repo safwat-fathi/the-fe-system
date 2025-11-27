@@ -156,7 +156,7 @@ export async function deleteUserCompanyAction(
   id: number,
 ): Promise<ActionResult> {
   try {
-    const response = await userCompanyService.delete(id);
+    const response = await userCompanyService.remove(id);
 
     if (!response.success) {
       throw new Error(response.message || "تعذر حذف فرع المستخدم");
@@ -233,7 +233,7 @@ export async function deleteUserCostCenterAction(
   id: number,
 ): Promise<ActionResult> {
   try {
-    const response = await userCostCenterService.delete(id);
+    const response = await userCostCenterService.remove(id);
 
     if (!response.success) {
       throw new Error(response.message || "تعذر حذف مركز التكلفة");

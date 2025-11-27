@@ -3,7 +3,14 @@
 import type { Category, ItemType, Unit } from "@/types/items";
 import type { Item as ItemModel } from "@/types/models/item";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  useCallback,
+} from "react";
 import { Button, Input, Select, SelectItem, Pagination } from "@heroui/react";
 import {
   FunnelIcon,
@@ -23,13 +30,13 @@ import { ConfirmationModal } from "@/components/Modal";
 type ItemsClientProps = {
   initialItems: ItemModel[];
   totalItems: number;
-  totalPages: number;
-  currentPage: number;
-  initialQuery: string;
   initialCategories: Category[];
   initialItemTypes: ItemType[];
   initialUnits: Unit[];
   companyId: number;
+  currentPage?: number;
+  initialQuery?: string;
+  totalPages?: number;
 };
 
 type FilterParams = {
@@ -57,19 +64,14 @@ const DEFAULT_FILTERS: FilterParams = {
 export default function ItemsClient({
   initialItems,
   totalItems,
-  totalPages,
-  currentPage,
-  initialQuery,
   initialCategories,
   initialItemTypes,
-  initialUnits,
   companyId,
 }: ItemsClientProps) {
   const [items, setItems] = useState<ItemModel[]>(initialItems);
-  const [itemsCount, setItemsCount] = useState(totalItems);
+  const [, setItemsCount] = useState(totalItems);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [itemTypesState] = useState<ItemType[]>(initialItemTypes);
-  const [units] = useState<Unit[]>(initialUnits);
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
   const [, startTransition] = useTransition();
@@ -167,7 +169,7 @@ export default function ItemsClient({
     router.push("/basic/items/new");
   };
 
-  const handleDeleteClick = (item: ItemModel) => {
+  const handleDeleteClick = useCallback((item: ItemModel) => {
     if (!item.id) {
       toast.error("❌ لا يمكن حذف صنف بدون معرف");
 
@@ -176,7 +178,7 @@ export default function ItemsClient({
 
     setItemToDelete(item);
     setDeleteModalOpen(true);
-  };
+  }, []);
 
   const handleDeleteConfirm = async () => {
     if (!itemToDelete?.id) {
@@ -228,7 +230,6 @@ export default function ItemsClient({
   // Client-side pagination: نعرض 10 أصناف من الـ 20 المحملة
   // حساب صفحة API بناءً على صفحة الجدول
   const itemsPerTablePage = 10; // عدد الأصناف المعروضة في الجدول
-  const itemsPerApiPage = 20; // عدد الأصناف التي يعيدها API
   const currentPageNum = Number(params.page ?? "1") || 1;
 
   // حساب صفحة API: كل صفحتين من الجدول = صفحة واحدة من API

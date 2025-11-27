@@ -33,7 +33,7 @@ export const createItemColumns = ({
   getCategoryLabel,
   getItemTypeLabel,
   onDelete,
-}: CreateItemColumnsOptions): ColumnDef<Item>[] => {
+}: CreateItemColumnsOptions) => {
   // Create a component that uses router
   const ActionsCell = ({ item }: { item: Item }) => {
     const router = useRouter();

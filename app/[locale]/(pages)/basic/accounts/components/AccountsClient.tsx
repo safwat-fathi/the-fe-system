@@ -1,7 +1,5 @@
 "use client";
 
-import type { BreadcrumbItem } from "@/components/Breadcrumb";
-
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, CardBody, Input, Select, SelectItem } from "@heroui/react";
@@ -26,7 +24,7 @@ import {
 
 import accountService from "@/services/api/account.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
-import Breadcrumb from "@/components/Breadcrumb";
+import Breadcrumb, { BreadcrumbItem } from "@/components/Breadcrumb";
 import { Account } from "@/types/models/account";
 import { Currency } from "@/types/models/currency";
 
@@ -65,7 +63,7 @@ export default function AccountsClient({
   const [accounts, setAccounts] = useState<Account[]>(
     normalizeAccountsTree(initialAccounts),
   );
-  const [currencies, setCurrencies] = useState<Currency[]>(initialCurrencies);
+  const [currencies] = useState<Currency[]>(initialCurrencies);
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
@@ -160,7 +158,7 @@ export default function AccountsClient({
 
       // الحسابات الرئيسية مقفلة افتراضياً
       setExpandedNodes(new Set());
-    } catch (error) {
+    } catch {
       toast.error("فشل في تحميل الحسابات");
     }
   };
@@ -268,7 +266,7 @@ export default function AccountsClient({
 
       // Fetch fresh data from server
       fetchAccounts();
-    } catch (error) {
+    } catch {
       // Rollback on error
       setAccounts(previousAccounts);
       toast.error("خطأ في الاتصال بالخادم. تحقق من الرابط أو الإعدادات.");
@@ -304,11 +302,22 @@ export default function AccountsClient({
               ${!isSelected && !matchesSearch ? "hover:bg-gray-50" : ""}
               ${level > 0 ? "mr-" + level * 4 : ""}
             `}
+            role="button"
+            tabIndex={0}
             onClick={() => {
               setSelectedAccount(account);
               // إذا كان الحساب يحتوي على حسابات فرعية، قم بتبديل حالة التوسعة
               if (hasChildren) {
                 toggleNode(account.id);
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setSelectedAccount(account);
+                if (hasChildren) {
+                  toggleNode(account.id);
+                }
               }
             }}
           >

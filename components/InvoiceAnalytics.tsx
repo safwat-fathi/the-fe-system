@@ -1,6 +1,6 @@
 "use client";
 
-import type { Invoice } from "@/types/invoice";
+import type { Invoice } from "@/types/models/invoice";
 
 import { useMemo } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/react";

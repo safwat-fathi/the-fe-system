@@ -24,8 +24,6 @@ import {
 import { PlusIcon, EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
-import taxService from "@/services/api/tax.service";
-
 const columns = [
   { name: "رقم الضريبة", uid: "id" },
   { name: "الاسم", uid: "tax_name" },
@@ -51,7 +49,7 @@ export default function TaxesClient({
   initialTaxes,
   initialAccounts,
 }: TaxesClientProps) {
-  const [taxes, setTaxes] = useState<Tax[]>(initialTaxes);
+  const [taxes] = useState<Tax[]>(initialTaxes);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [rowsPerPage] = useState(10);
@@ -67,29 +65,6 @@ export default function TaxesClient({
     tax_prc: 0,
     tax_account: undefined,
   });
-
-  const sanitizeTax = (tax: any): Tax => ({
-    id: tax.id ?? 0,
-    tax_name: tax.tax_name ?? tax.name ?? "-",
-    tax_name_e: tax.tax_name_e ?? tax.name_e ?? tax.name_en ?? "-",
-    tax_symbol: tax.tax_symbol ?? tax.symbol ?? "-",
-    tax_prc: tax.tax_prc ?? tax.value ?? 0,
-    tax_account: tax.tax_account ?? tax.account ?? undefined,
-    acc_name: tax.acc_name ?? tax.account_name ?? undefined,
-    acc_id: tax.acc_id ?? tax.account_id ?? undefined,
-  });
-
-  const loadData = async () => {
-    try {
-      const taxesList = await taxService.getAllTaxes();
-      const sanitized = taxesList.map(sanitizeTax);
-
-      setTaxes(sanitized);
-    } catch (error) {
-      console.error("فشل في جلب البيانات:", error);
-      setTaxes([]);
-    }
-  };
 
   const filteredTaxes = useMemo(() => {
     if (!searchQuery) return taxes;

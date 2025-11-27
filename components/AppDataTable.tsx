@@ -225,7 +225,9 @@ export default function AppDataTable<TData>({
 
       <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
         <span>إجمالي النتائج: {table.getFilteredRowModel().rows.length}</span>
-        {globalFilter && <span>نتائج البحث عن: "{globalFilter}"</span>}
+        {globalFilter && (
+          <span>نتائج البحث عن: &quot;{globalFilter}&quot;</span>
+        )}
       </div>
     </div>
   );

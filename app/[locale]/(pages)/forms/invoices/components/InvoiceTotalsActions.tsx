@@ -19,7 +19,6 @@ import {
 import { SearchIcon } from "../../../../../../components/icons";
 
 import { useInvoiceTotalsStore } from "@/stores/invoiceTotalsStore";
-import { TransTypes } from "@/types/models/invoice";
 
 export default function InvoiceTotalsActions() {
   const router = useRouter();
@@ -37,29 +36,12 @@ export default function InvoiceTotalsActions() {
     isDone,
     isEditing,
     onEdit,
-    invoiceType,
     searchNumber,
     setSearchNumber,
     onInvoiceSearch,
     newInvoiceHref,
     isNewInvoice,
   } = useInvoiceTotalsStore();
-
-  // دالة لتحديد عنوان الفاتورة
-  const getInvoiceTitle = () => {
-    switch (invoiceType) {
-      case TransTypes.SALES_RETURN:
-        return "مردود بيع";
-      case TransTypes.PURCHASE:
-        return "شراء";
-      case TransTypes.PURCHASE_RETURN:
-        return "مردود شراء";
-      default:
-        return "بيع";
-    }
-  };
-
-  const invoiceTitle = getInvoiceTitle();
 
   return (
     <div className="relative bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 border border-slate-200">

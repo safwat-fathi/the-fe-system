@@ -36,7 +36,7 @@ const ROUTE_PERMISSIONS: Record<string, string[]> = {
 };
 
 // Function to get user permissions from the API
-const getUserPermissions = async (username: string): Promise<string[]> => {
+const getUserPermissions = async (): Promise<string[]> => {
   try {
     // In a real implementation, you would call the API to get permissions
     // const response = await UserService.getUserPermissions(username);
@@ -91,7 +91,7 @@ const rbacMiddleware: MiddlewareFactory = () => {
       }
 
       // Get user permissions
-      const userPermissions = await getUserPermissions(username);
+      const userPermissions = await getUserPermissions();
 
       // Find permissions required for the current path
       let requiredPermissions: string[] = [];

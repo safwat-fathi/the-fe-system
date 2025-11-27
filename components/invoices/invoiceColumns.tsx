@@ -21,9 +21,7 @@ const TRANS_TYPE_TO_FORM_TYPE: Record<
   [TransTypes.PURCHASE_RETURN]: "purchase-return",
 };
 
-export const createInvoiceColumns = (
-  fractions: Fractions,
-): ColumnDef<Invoice>[] => [
+export const createInvoiceColumns = (fractions: Fractions) => [
   columnHelper.accessor("inv_id", {
     header: () => "رقم الفاتورة",
     cell: (info) => info.getValue(),

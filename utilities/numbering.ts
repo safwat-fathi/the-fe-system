@@ -1,5 +1,4 @@
-import { voucherService } from "@/services/api";
-import { invoiceService } from "@/services/api";
+import { voucherService, invoiceService } from "@/services/api";
 
 export interface NumberingConfig {
   type:
@@ -20,7 +19,6 @@ export const getNextNumber = async (
   config: NumberingConfig,
 ): Promise<number> => {
   try {
-    let response;
     let data: any[] = [];
 
     if (config.type === "invoice") {
@@ -30,13 +28,13 @@ export const getNextNumber = async (
       if (config.transType) {
         params.trans_type = config.transType;
       }
-      response = await invoiceService.getAll(params);
-      if (response.success && response.data) {
-        data = Array.isArray(response.data) ? response.data : [];
+      const response = await invoiceService.getAllInvoices(params);
+      if (response?.results && Array.isArray(response.results)) {
+        data = response.results;
       }
     } else {
       // استخدام voucher service
-      response = await voucherService.getAll();
+      const response = await voucherService.getAll();
       if (response.success && response.data) {
         data = Array.isArray(response.data) ? response.data : [];
       }

@@ -1,8 +1,10 @@
 "use client";
 
 import type { Account } from "@/types/models/account";
-import type { CategoryAccount } from "@/types/models/category-account";
-import type { UpsertCategoryAccountPayload } from "@/types/models/category-account";
+import type {
+  CategoryAccount,
+  UpsertCategoryAccountPayload,
+} from "@/types/models/category-account";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -153,7 +155,7 @@ const CategoryFormClient = ({
   );
   const [accountForm, setAccountForm] =
     useState<CategoryAccountFormState>(initialAccountForm);
-  const [accountFormSnapshot, setAccountFormSnapshot] =
+  const [, setAccountFormSnapshot] =
     useState<CategoryAccountFormState>(initialAccountForm);
 
   useEffect(() => {
@@ -167,7 +169,6 @@ const CategoryFormClient = ({
   const accountOptions = useMemo(() => {
     return initialAccounts.map((account) => {
       const code = account.acc_id;
-      const codeLabel = code ? ` ${code}` : "";
 
       return {
         id: account.id,
@@ -206,12 +207,6 @@ const CategoryFormClient = ({
 
     return value;
   };
-
-  const isAccountFormDirty = useMemo(
-    () =>
-      ACCOUNT_KEYS.some((key) => accountForm[key] !== accountFormSnapshot[key]),
-    [accountForm, accountFormSnapshot],
-  );
 
   const handleSave = async () => {
     if (!category.cat_name || !category.cat_name_e) {
@@ -530,11 +525,10 @@ const CategoryFormClient = ({
                     aria-label={ariaLabel}
                     className="max-w-full text-right leading-tight"
                     classNames={{
-                      trigger:
+                      selectorButton:
                         column === "wage"
                           ? "bg-amber-100 border-amber-300"
                           : "bg-white border-gray-200",
-                      inputWrapper: "min-h-[36px]",
                       listbox: "text-right",
                     }}
                     inputValue={getAccountDisplayValue(text)}

@@ -47,8 +47,7 @@ export default async function ItemsPage({
 
   // حساب صفحة API بناءً على صفحة الجدول
   // كل صفحتين من الجدول (10 أصناف لكل صفحة) = صفحة واحدة من API (20 صنف)
-  const itemsPerTablePage = 10;
-  const itemsPerApiPage = 20;
+
   const apiPage = Math.ceil(currentPage / 2);
 
   // جلب البيانات من API مع الفلاتر

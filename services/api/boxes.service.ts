@@ -35,8 +35,9 @@ class BoxesService extends HttpService<Box> {
         return data;
       }
 
-      if (Array.isArray((data as { results?: unknown[] })?.results)) {
-        return (data as { results?: Box[] }).results ?? [];
+      const paginated = (data as { results?: Box[] } | undefined)?.results;
+      if (Array.isArray(paginated)) {
+        return paginated;
       }
 
       return [];
@@ -75,8 +76,9 @@ class BoxesService extends HttpService<Box> {
         return data;
       }
 
-      if (Array.isArray((data as { results?: unknown[] })?.results)) {
-        return (data as { results?: Box[] }).results ?? [];
+      const paginated = (data as { results?: Box[] } | undefined)?.results;
+      if (Array.isArray(paginated)) {
+        return paginated;
       }
 
       return [];

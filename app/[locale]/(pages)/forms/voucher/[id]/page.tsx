@@ -8,6 +8,8 @@ import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
 import Breadcrumb from "@/components/Breadcrumb";
+import { redirectToLogin } from "@/app/actions/auth";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export const metadata: Metadata = {
   title: "تعديل قيد تسوية - NafeesWeb",
@@ -80,222 +82,231 @@ export default async function VoucherEditPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { id } = await params;
-  const searchParamsData = await searchParams;
-  const mode = Array.isArray(searchParamsData.mode)
-    ? searchParamsData.mode[0]
-    : searchParamsData.mode;
+  try {
+    const { id } = await params;
+    const searchParamsData = await searchParams;
+    const mode = Array.isArray(searchParamsData.mode)
+      ? searchParamsData.mode[0]
+      : searchParamsData.mode;
 
-  // تحديد الوضع: preview (افتراضي بعد الحفظ) أو edit
-  const formMode = mode === "edit" ? "edit" : "preview";
-  const startInEditMode = mode === "edit";
+    // تحديد الوضع: preview (افتراضي بعد الحفظ) أو edit
+    const formMode = mode === "edit" ? "edit" : "preview";
+    const startInEditMode = mode === "edit";
 
-  const voucherId = parseInt(id);
+    const voucherId = parseInt(id);
 
-  // التحقق من صحة المعرف
-  if (isNaN(voucherId) || voucherId <= 0) {
-    notFound();
-  }
-
-  // جلب البيانات بشكل متوازي
-  const [targetVoucher, formData] = await Promise.all([
-    getVoucherById(voucherId),
-    voucherFormDataService.getVoucherFormData(),
-  ]);
-
-  if (!targetVoucher) {
-    notFound();
-  }
-
-  // جلب تفاصيل القيد - استخدام id (primary key) من targetVoucher
-  const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
-  // استخدام id (primary key) لجلب التفاصيل (مثل voucher1 و gvoucher4)
-  const [detailsData] = await Promise.all([
-    getVoucherDetails(targetVoucher.id, branchId),
-  ]);
-
-  // معالجة تفاصيل القيد
-  // ملاحظة: API يستخدم vouch (id من vouchers), acc, cost
-  const normalizeCost = (value: unknown): number | undefined => {
-    if (value === undefined || value === null || value === "") {
-      return undefined;
+    // التحقق من صحة المعرف
+    if (isNaN(voucherId) || voucherId <= 0) {
+      notFound();
     }
 
-    const numeric = Number(value);
+    // جلب البيانات بشكل متوازي
+    const [targetVoucher, formData] = await Promise.all([
+      getVoucherById(voucherId),
+      voucherFormDataService.getVoucherFormData(),
+    ]);
 
-    return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
-  };
-
-  const resolvedVoucherCost =
-    normalizeCost(targetVoucher.cost_id) ??
-    normalizeCost((targetVoucher as any).cost) ??
-    null;
-
-  const details: VoucherDetail[] = detailsData.map((detail: any) => {
-    const account = formData.accounts.find(
-      (acc: any) => acc.id === (detail.acc_id || detail.acc),
-    );
-
-    // معالجة cost_id - قد يكون cost أو cost_id، وأحياناً يكون null
-    let costId: number | undefined = undefined;
-
-    if (detail.hasOwnProperty("cost")) {
-      // الحقل cost موجود في الاستجابة (حتى لو null)
-      if (
-        detail.cost !== null &&
-        detail.cost !== undefined &&
-        detail.cost !== ""
-      ) {
-        costId = Number(detail.cost);
-      }
-    } else if (detail.hasOwnProperty("cost_id")) {
-      // الحقل cost_id موجود في الاستجابة
-      if (
-        detail.cost_id !== null &&
-        detail.cost_id !== undefined &&
-        detail.cost_id !== ""
-      ) {
-        costId = Number(detail.cost_id);
-      }
+    if (!targetVoucher) {
+      notFound();
     }
 
-    return {
-      id: detail.id || 0,
-      vouch_id: targetVoucher.vouch_id || 0, // vouch_id من voucher الرئيسي
-      acc_id: detail.acc_id || detail.acc || 0,
-      acc_code: (account as any)?.acc_code || detail.acc_code || "",
-      acc_name: (account as any)?.acc_name || detail.acc_name || "",
-      cost_id: costId, // قد يكون undefined أو رقم
-      debit: parseFloat(detail.debit) || 0,
-      credit: parseFloat(detail.credit) || 0,
-      debit_base:
-        detail.debit_base !== undefined
-          ? parseFloat(String(detail.debit_base))
-          : parseFloat(detail.debit) || 0,
-      credit_base:
-        detail.credit_base !== undefined
-          ? parseFloat(String(detail.credit_base))
-          : parseFloat(detail.credit) || 0,
-      g_debit:
-        detail.g_debit !== undefined
-          ? parseFloat(String(detail.g_debit))
-          : parseFloat(detail.debit_g) || 0,
-      g_credit:
-        detail.g_credit !== undefined
-          ? parseFloat(String(detail.g_credit))
-          : parseFloat(detail.credit_g) || 0,
-      g_debit_base:
-        detail.g_debit_base !== undefined
-          ? parseFloat(String(detail.g_debit_base))
-          : 0,
-      g_credit_base:
-        detail.g_credit_base !== undefined
-          ? parseFloat(String(detail.g_credit_base))
-          : 0,
-      gauge: parseFloat(detail.gauge) || 875,
-      tax: parseFloat(detail.tax) || 0,
-      tax_prc: parseFloat(detail.tax_prc) || 0,
-      vat_no: parseInt(detail.vat_no) || 0,
-      vouch_notes: detail.vouch_notes || "",
-      cr_date: detail.cr_date || new Date().toISOString(),
+    // جلب تفاصيل القيد - استخدام id (primary key) من targetVoucher
+    const branchId =
+      Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
+    // استخدام id (primary key) لجلب التفاصيل (مثل voucher1 و gvoucher4)
+    const [detailsData] = await Promise.all([
+      getVoucherDetails(targetVoucher.id, branchId),
+    ]);
+
+    // معالجة تفاصيل القيد
+    // ملاحظة: API يستخدم vouch (id من vouchers), acc, cost
+    const normalizeCost = (value: unknown): number | undefined => {
+      if (value === undefined || value === null || value === "") {
+        return undefined;
+      }
+
+      const numeric = Number(value);
+
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
     };
-  });
 
-  // تنسيق بيانات القيد
-  const formattedVoucher: Voucher = {
-    ...targetVoucher,
-    vouch_date: targetVoucher.vouch_date || new Date().toISOString(),
-    cr_date: targetVoucher.cr_date || new Date().toISOString(),
-    vouch_id: targetVoucher.vouch_id || 0,
-    vouch_amt: targetVoucher.vouch_amt || 0,
-    ref_no: targetVoucher.ref_no || "",
-    vouch_notes: targetVoucher.vouch_notes || "",
-    vouch_status: targetVoucher.vouch_status || 1,
-    pay_type: targetVoucher.pay_type || 1,
-    commit: targetVoucher.commit || false,
-    post: targetVoucher.post || false,
-    print: targetVoucher.print || false,
-    cost_id: resolvedVoucherCost,
-  };
+    const resolvedVoucherCost =
+      normalizeCost(targetVoucher.cost_id) ??
+      normalizeCost((targetVoucher as any).cost) ??
+      null;
 
-  const parseNavId = (value: unknown): number | null => {
-    if (value === null || value === undefined || value === "") {
-      return null;
+    const details: VoucherDetail[] = detailsData.map((detail: any) => {
+      const account = formData.accounts.find(
+        (acc: any) => acc.id === (detail.acc_id || detail.acc),
+      );
+
+      // معالجة cost_id - قد يكون cost أو cost_id، وأحياناً يكون null
+      let costId: number | undefined = undefined;
+
+      if (detail.hasOwnProperty("cost")) {
+        // الحقل cost موجود في الاستجابة (حتى لو null)
+        if (
+          detail.cost !== null &&
+          detail.cost !== undefined &&
+          detail.cost !== ""
+        ) {
+          costId = Number(detail.cost);
+        }
+      } else if (detail.hasOwnProperty("cost_id")) {
+        // الحقل cost_id موجود في الاستجابة
+        if (
+          detail.cost_id !== null &&
+          detail.cost_id !== undefined &&
+          detail.cost_id !== ""
+        ) {
+          costId = Number(detail.cost_id);
+        }
+      }
+
+      return {
+        id: detail.id || 0,
+        vouch_id: targetVoucher.vouch_id || 0, // vouch_id من voucher الرئيسي
+        acc_id: detail.acc_id || detail.acc || 0,
+        acc_code: (account as any)?.acc_code || detail.acc_code || "",
+        acc_name: (account as any)?.acc_name || detail.acc_name || "",
+        cost_id: costId, // قد يكون undefined أو رقم
+        debit: parseFloat(detail.debit) || 0,
+        credit: parseFloat(detail.credit) || 0,
+        debit_base:
+          detail.debit_base !== undefined
+            ? parseFloat(String(detail.debit_base))
+            : parseFloat(detail.debit) || 0,
+        credit_base:
+          detail.credit_base !== undefined
+            ? parseFloat(String(detail.credit_base))
+            : parseFloat(detail.credit) || 0,
+        g_debit:
+          detail.g_debit !== undefined
+            ? parseFloat(String(detail.g_debit))
+            : parseFloat(detail.debit_g) || 0,
+        g_credit:
+          detail.g_credit !== undefined
+            ? parseFloat(String(detail.g_credit))
+            : parseFloat(detail.credit_g) || 0,
+        g_debit_base:
+          detail.g_debit_base !== undefined
+            ? parseFloat(String(detail.g_debit_base))
+            : 0,
+        g_credit_base:
+          detail.g_credit_base !== undefined
+            ? parseFloat(String(detail.g_credit_base))
+            : 0,
+        gauge: parseFloat(detail.gauge) || 875,
+        tax: parseFloat(detail.tax) || 0,
+        tax_prc: parseFloat(detail.tax_prc) || 0,
+        vat_no: parseInt(detail.vat_no) || 0,
+        vouch_notes: detail.vouch_notes || "",
+        cr_date: detail.cr_date || new Date().toISOString(),
+      };
+    });
+
+    // تنسيق بيانات القيد
+    const formattedVoucher: Voucher = {
+      ...targetVoucher,
+      vouch_date: targetVoucher.vouch_date || new Date().toISOString(),
+      cr_date: targetVoucher.cr_date || new Date().toISOString(),
+      vouch_id: targetVoucher.vouch_id || 0,
+      vouch_amt: targetVoucher.vouch_amt || 0,
+      ref_no: targetVoucher.ref_no || "",
+      vouch_notes: targetVoucher.vouch_notes || "",
+      vouch_status: targetVoucher.vouch_status || 1,
+      pay_type: targetVoucher.pay_type || 1,
+      commit: targetVoucher.commit || false,
+      post: targetVoucher.post || false,
+      print: targetVoucher.print || false,
+      cost_id: resolvedVoucherCost,
+    };
+
+    const parseNavId = (value: unknown): number | null => {
+      if (value === null || value === undefined || value === "") {
+        return null;
+      }
+
+      const numeric = Number(value);
+
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    };
+
+    const navigationInfo = {
+      previous: parseNavId(
+        (targetVoucher as any).previous_voucher_id ??
+          (targetVoucher as any).previous,
+      ),
+      next: parseNavId(
+        (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
+      ),
+      first: parseNavId(
+        (targetVoucher as any).first_voucher_id ?? (targetVoucher as any).first,
+      ),
+      last: parseNavId(
+        (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
+      ),
+    };
+
+    // تحديد عنوان القيد بناءً على النوع
+    const getVoucherTitle = (vouchType: number) => {
+      switch (vouchType) {
+        case 1:
+          return "سند قبض";
+        case 2:
+          return "سند صرف";
+        case 3:
+          return "قيد تسوية";
+        default:
+          return "قيد";
+      }
+    };
+
+    const voucherTitle = getVoucherTitle(formattedVoucher.vouch_type || 3);
+    const newVoucherHref = `/forms/voucher?type=${
+      formattedVoucher.vouch_type === 1
+        ? "receipt"
+        : formattedVoucher.vouch_type === 2
+          ? "payment"
+          : "adjustment"
+    }&mode=new`;
+
+    return (
+      <div className="container mx-auto p-4">
+        <Breadcrumb
+          items={[
+            { name: voucherTitle, href: newVoucherHref },
+            {
+              name:
+                formMode === "edit"
+                  ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
+                  : "معاينة",
+            },
+          ]}
+        />
+        <VoucherClientPage
+          accounts={formData.accounts}
+          caratTypes={formData.caratTypes}
+          costCenters={formData.costCenters}
+          formMode={formMode}
+          isNewVoucher={false}
+          navigationInfo={navigationInfo}
+          newVoucherHref={newVoucherHref}
+          startInEditMode={startInEditMode}
+          vouchType={formattedVoucher.vouch_type}
+          voucherData={formattedVoucher}
+          voucherDetailsData={details}
+          voucherRecordId={targetVoucher.id}
+          voucherStatuses={formData.voucherStatuses}
+          voucherTypes={formData.voucherTypes}
+        />
+      </div>
+    );
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      await redirectToLogin();
     }
 
-    const numeric = Number(value);
-
-    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-  };
-
-  const navigationInfo = {
-    previous: parseNavId(
-      (targetVoucher as any).previous_voucher_id ??
-        (targetVoucher as any).previous,
-    ),
-    next: parseNavId(
-      (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
-    ),
-    first: parseNavId(
-      (targetVoucher as any).first_voucher_id ?? (targetVoucher as any).first,
-    ),
-    last: parseNavId(
-      (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
-    ),
-  };
-
-  // تحديد عنوان القيد بناءً على النوع
-  const getVoucherTitle = (vouchType: number) => {
-    switch (vouchType) {
-      case 1:
-        return "سند قبض";
-      case 2:
-        return "سند صرف";
-      case 3:
-        return "قيد تسوية";
-      default:
-        return "قيد";
-    }
-  };
-
-  const voucherTitle = getVoucherTitle(formattedVoucher.vouch_type || 3);
-  const newVoucherHref = `/forms/voucher?type=${
-    formattedVoucher.vouch_type === 1
-      ? "receipt"
-      : formattedVoucher.vouch_type === 2
-        ? "payment"
-        : "adjustment"
-  }&mode=new`;
-
-  return (
-    <div className="container mx-auto p-4">
-      <Breadcrumb
-        items={[
-          { name: voucherTitle, href: newVoucherHref },
-          {
-            name:
-              formMode === "edit"
-                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
-                : "معاينة",
-          },
-        ]}
-      />
-      <VoucherClientPage
-        accounts={formData.accounts}
-        caratTypes={formData.caratTypes}
-        costCenters={formData.costCenters}
-        formMode={formMode}
-        isNewVoucher={false}
-        navigationInfo={navigationInfo}
-        newVoucherHref={newVoucherHref}
-        startInEditMode={startInEditMode}
-        vouchType={formattedVoucher.vouch_type}
-        voucherData={formattedVoucher}
-        voucherDetailsData={details}
-        voucherRecordId={targetVoucher.id}
-        voucherStatuses={formData.voucherStatuses}
-        voucherTypes={formData.voucherTypes}
-      />
-    </div>
-  );
+    throw error;
+  }
 }

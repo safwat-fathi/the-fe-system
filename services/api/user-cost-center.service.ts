@@ -53,8 +53,8 @@ class UserCostCenterService extends HttpService<UserCostCenter> {
     return this.patch<UserCostCenter>(`api_update_user_cost/${id}`, payload);
   }
 
-  async delete(id: number) {
-    return this.delete(`api_delete_user_cost/${id}`);
+  async remove(id: number) {
+    return super.delete(`api_delete_user_cost/${id}`);
   }
 }
 

@@ -59,7 +59,7 @@ interface CurrenciesClientProps {
 
 export default function CurrenciesClient({
   initialData,
-  error,
+  error: _error,
 }: CurrenciesClientProps) {
   const router = useRouter();
   const [currencies, setCurrencies] = useState<Currency[]>(initialData);
@@ -82,7 +82,7 @@ export default function CurrenciesClient({
       const data = await currencyService.getAllCurrencies();
 
       setCurrencies(data);
-    } catch (error) {
+    } catch {
       toast.error("فشل في جلب العملات");
       setCurrencies([]);
     }
@@ -147,7 +147,7 @@ export default function CurrenciesClient({
         toast.error("❌ فشل في حذف العملة");
         loadCurrencies();
       }
-    } catch (error) {
+    } catch {
       toast.error("❌ حدث خطأ أثناء الحذف");
       loadCurrencies();
     } finally {

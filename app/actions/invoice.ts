@@ -1,10 +1,10 @@
 "use server";
 
-import type { GetAllInvoicesParams } from "@/services/api/invoice.service";
-
 import { revalidatePath, revalidateTag } from "next/cache";
 
-import invoiceService from "@/services/api/invoice.service";
+import invoiceService, {
+  type GetAllInvoicesParams,
+} from "@/services/api/invoice.service";
 import { type Invoice, type InvoiceDetail } from "@/types/models/invoice";
 
 export async function getAllInvoicesAction(params?: GetAllInvoicesParams) {

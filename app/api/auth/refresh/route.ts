@@ -1,10 +1,11 @@
-import { deleteCredentials, onLogoutAction } from "@/app/actions/auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
+import { deleteCredentials } from "@/app/actions/auth";
+
+export async function POST() {
   try {
-		// TODO: Implement refresh token
-		await deleteCredentials();
+    // TODO: Implement refresh token
+    await deleteCredentials();
 
     return NextResponse.json(
       { message: "token refreshed successfully" },
@@ -14,9 +15,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         message:
-          error instanceof Error
-            ? error.message
-            : "Failed to process request",
+          error instanceof Error ? error.message : "Failed to process request",
       },
       { status: 500 },
     );

@@ -1,3 +1,2 @@
-// export function handleLanguageChange(e: React.FocusEvent<HTMLInputElement>) {
-//     e.target.setAttribute("lang", "en");
-//   }
+// Placeholder for future global utilities. Keeping the module so export * works safely.
+export {};

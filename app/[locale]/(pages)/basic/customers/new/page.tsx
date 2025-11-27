@@ -1,6 +1,8 @@
 import { Metadata } from "next";
 
-import CustomerFormClient from "../components/CustomerFormClient";
+import CustomerFormClient, {
+  type CustomerFormValues,
+} from "../components/CustomerFormClient";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
@@ -30,7 +32,7 @@ export default async function NewCustomerPage() {
     ]);
 
   // إنشاء عميل فارغ
-  const emptyCustomer = {
+  const emptyCustomer: Partial<CustomerFormValues> = {
     id: 0,
     cust_code: "",
     cust_name: "",

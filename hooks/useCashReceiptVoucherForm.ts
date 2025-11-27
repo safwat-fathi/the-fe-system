@@ -79,9 +79,9 @@ export const useCashReceiptVoucherForm = ({
     voucherDetailsData || [],
   );
   const [accounts, setAccounts] = useState<any[]>(initialAccounts);
-  const [boxes, setBoxes] = useState<any[]>(initialBoxes);
-  const [costCenters, setCostCenters] = useState<any[]>(initialCostCenters);
-  const [voucherTypes, setVoucherTypes] = useState<any[]>(initialVoucherTypes);
+  const [boxes] = useState<any[]>(initialBoxes);
+  const [costCenters] = useState<any[]>(initialCostCenters);
+  const [voucherTypes] = useState<any[]>(initialVoucherTypes);
   const [voucherStatuses, setVoucherStatuses] = useState<any[]>(
     initialVoucherStatuses || [],
   );
@@ -261,7 +261,7 @@ export const useCashReceiptVoucherForm = ({
         vouch_date: new Date().toISOString(),
         cr_date: new Date().toISOString(),
       }));
-    } catch (error) {
+    } catch {
       setVoucher((prev) => ({
         ...prev,
         vouch_id: 1,
@@ -730,19 +730,6 @@ export const useCashReceiptVoucherForm = ({
           (b) => b.box_id && b.box_id > 0 && b.amount && b.amount > 0,
         );
         const validDetails = details.filter((d) => d.acc_id && d.acc_id > 0);
-
-        const getBoxName = (boxId: number) => {
-          const box = boxes.find((b) => b.id === boxId);
-
-          return box?.cust_name || box?.name || `صندوق ${boxId}`;
-        };
-
-        const getCostCenterName = (costId: number | null | undefined) => {
-          if (!costId || costId === 0) return "-";
-          const center = costCenters.find((c) => c.id === costId);
-
-          return center?.name || center?.cost_name || `مركز ${costId}`;
-        };
 
         const voucherTypeName = vouchType === 1 ? "سند قبض" : "سند صرف";
 

@@ -69,8 +69,8 @@ export function validateVoucherData(
     // التحقق من رقم السند
     if (
       !voucherData.vouch_id ||
-      voucherData.vouch_id <= 0 ||
-      !isFinite(voucherData.vouch_id)
+      Number(voucherData.vouch_id) <= 0 ||
+      !isFinite(Number(voucherData.vouch_id))
     ) {
       return {
         isValid: false,
@@ -117,7 +117,7 @@ export function validateVoucherData(
 
   // التحقق من التوازن
   const balanceValidation = validateVoucherBalance(
-    validDetails,
+    validDetails as any[],
     voucherBoxes,
     voucherData.vouch_type,
   );
@@ -129,8 +129,8 @@ export function validateVoucherData(
   // التحقق من رقم السند
   if (
     !voucherData.vouch_id ||
-    voucherData.vouch_id <= 0 ||
-    !isFinite(voucherData.vouch_id)
+    Number(voucherData.vouch_id) <= 0 ||
+    !isFinite(Number(voucherData.vouch_id))
   ) {
     return {
       isValid: false,

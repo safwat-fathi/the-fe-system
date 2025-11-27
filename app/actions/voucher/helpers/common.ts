@@ -28,10 +28,10 @@ export async function getCurrentUsername(): Promise<string | null> {
       const parsedUserData = JSON.parse(decodeURIComponent(userData));
 
       return parsedUserData.username || parsedUserData.email || null;
-    } catch (error) {
+    } catch {
       return null;
     }
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -61,7 +61,7 @@ export async function getCustomerInfo(
           ? Number(customer.acc)
           : null,
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -108,7 +108,7 @@ export function extractDateAndTime(dateString: string): {
     const timeStr = date.toISOString(); // YYYY-MM-DDThh:mm:ss.sssZ
 
     return { date: dateStr, time: timeStr };
-  } catch (error) {
+  } catch {
     const now = new Date();
 
     return {

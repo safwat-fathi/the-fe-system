@@ -38,7 +38,7 @@ export default function ResponsiveTable({
           aria-label={ariaLabel}
           className={compact ? "text-xs sm:text-sm" : ""}
         >
-          {children}
+          {children as React.ReactNode as any}
         </Table>
       </div>
     </div>
