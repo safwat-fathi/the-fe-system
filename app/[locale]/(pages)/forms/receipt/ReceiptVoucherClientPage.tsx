@@ -36,6 +36,7 @@ interface ReceiptVoucherClientPageProps {
   goldDetailsData?: GVoucherDetail[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
+  accounts: any[];
   boxes: any[];
   goldBoxes?: any[];
   costCenters: any[];
@@ -54,6 +55,7 @@ export default function ReceiptVoucherClientPage({
   goldDetailsData: initialGoldDetails = [],
   isNewVoucher = true,
   voucherRecordId,
+  accounts: initialAccounts,
   boxes: initialBoxes,
   goldBoxes: initialGoldBoxes = [],
   costCenters: initialCostCenters,
@@ -112,6 +114,7 @@ export default function ReceiptVoucherClientPage({
     goldDetailsData: initialGoldDetails,
     isNewVoucher,
     voucherRecordId,
+    accounts: initialAccounts,
     boxes: initialBoxes,
     goldBoxes: initialGoldBoxes,
     costCenters: initialCostCenters,
@@ -127,6 +130,8 @@ export default function ReceiptVoucherClientPage({
   // Handle search
   const [searchTerm, setSearchTerm] = useState("");
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const numericVoucherId = Number(voucher.vouch_id ?? 0);
+  const hasVoucherId = Number.isFinite(numericVoucherId) && numericVoucherId > 0;
 
   // Ref للحقول العلوية للتنقل
   const selectorsRef = useRef<HTMLDivElement>(null);
@@ -663,9 +668,7 @@ export default function ReceiptVoucherClientPage({
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
                 #
-                {voucher.vouch_id && voucher.vouch_id > 0
-                  ? voucher.vouch_id
-                  : "جاري الترقيم..."}
+                {hasVoucherId ? voucher.vouch_id : "جاري الترقيم..."}
               </span>
               <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
@@ -736,7 +739,7 @@ export default function ReceiptVoucherClientPage({
 
             <Button
               className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              isDisabled={!hasVoucherId}
               isLoading={isPrinting}
               size="sm"
               startContent={

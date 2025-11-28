@@ -98,6 +98,16 @@ export default function CustomersClient({
   );
   const router = useRouter();
   const rowsPerPage = 12;
+  const customerTypeOptions = useMemo(
+    () => [
+      { key: "all", label: "الكل" },
+      ...customerTypes.map((type) => ({
+        key: String(type.id),
+        label: type.type_name,
+      })),
+    ],
+    [customerTypes],
+  );
 
   const loadCustomers = async () => {
     try {
@@ -254,6 +264,7 @@ export default function CustomersClient({
         {/* حقول الفرز */}
         <div className="flex flex-wrap items-center gap-2 flex-1">
           <Select
+            items={customerTypeOptions}
             className="input-field flex-1 min-w-[120px]"
             placeholder="نوع العميل"
             selectedKeys={
@@ -265,10 +276,11 @@ export default function CustomersClient({
               setCustTypeFilter(key === "all" ? null : Number(key));
             }}
           >
-            <SelectItem key="all">الكل</SelectItem>
-            {customerTypes.map((type) => (
-              <SelectItem key={String(type.id)}>{type.type_name}</SelectItem>
-            ))}
+            {(option) => (
+              <SelectItem key={option.key} textValue={option.label}>
+                {option.label}
+              </SelectItem>
+            )}
           </Select>
 
           <Button

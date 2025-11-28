@@ -56,7 +56,7 @@ export interface VoucherDetail {
   cr_user?: string;
   upd_date?: string;
   upd_user?: string;
-  vouch_id: number;
+  vouch_id: number | string;
   credit_base?: number | null;
   debit_base?: number | null;
   base_credit?: number | null;
@@ -111,7 +111,7 @@ export interface VoucherBox {
 
 export interface GVoucherDetail {
   id?: number;
-  vouch_id: number;
+  vouch_id: number | string;
   item_id: number; // item (ForeignKey to Items)
   item_code?: string; // رمز الصنف
   item_name?: string; // اسم الصنف

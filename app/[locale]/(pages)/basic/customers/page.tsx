@@ -16,6 +16,11 @@ export const metadata: Metadata = {
 export default async function CustomersPage() {
   // جلب معاملات الفرع
   const branchParams = await getBranchParams();
+  const parsedCompanyId = Number(branchParams.com ?? "1");
+  const companyId =
+    Number.isFinite(parsedCompanyId) && parsedCompanyId > 0
+      ? parsedCompanyId
+      : 1;
 
   // جلب البيانات بالتوازي للأداء الأفضل
   const [
@@ -26,7 +31,7 @@ export default async function CustomersPage() {
     boxTypesData,
   ] = await Promise.all([
     customerService
-      .getAllCustomers({ xcom_id: branchParams.com })
+      .getAllCustomers({ xcom_id: companyId })
       .catch(() => []),
     helperService.getCustomerTypes().catch(() => []),
     helperService.getCustomerStatuses().catch(() => []),

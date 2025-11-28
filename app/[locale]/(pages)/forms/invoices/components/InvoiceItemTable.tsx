@@ -21,6 +21,7 @@ import {
 import itemService from "@/services/api/item.service";
 import taxRateService from "@/services/api/tax-rate.service";
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
+import { InvoiceItemRow } from "@/utilities/invoiceForm";
 
 const AsyncCreatableSelect = withAsyncPaginate(CreatableSelect);
 
@@ -48,14 +49,14 @@ interface Category {
 interface Props {
   items: Item[];
   setItems: React.Dispatch<React.SetStateAction<Item[]>>;
-  invoiceItems: InvoiceDetail[];
-  setInvoiceItems: (items: InvoiceDetail[]) => void;
+  invoiceItems: InvoiceItemRow[];
+  setInvoiceItems: React.Dispatch<React.SetStateAction<InvoiceItemRow[]>>;
   goldPrice: number | null;
   payType: InvoicePayType;
   categories: Category[];
   homePurity: number;
   isEditing: boolean;
-  onItemRemoved?: (removedItem: InvoiceDetail) => void;
+  onItemRemoved?: (removedItem: InvoiceItemRow) => void;
 }
 
 export type InvoiceItemTableHandle = {
@@ -246,7 +247,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       }
     };
 
-    const rowHasItem = (row: InvoiceDetail | undefined): boolean => {
+    const rowHasItem = (row: InvoiceItemRow | undefined): boolean => {
       if (!row) return false;
 
       const numericItemId = Number(
@@ -292,7 +293,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
     // when a field changed — update invoiceItems and recalc totals/tax
     const handleFieldChange = (
       index: number,
-      field: keyof InvoiceDetail,
+      field: keyof InvoiceItemRow,
       value: any,
     ) => {
       const updated = [...invoiceItems];
@@ -301,7 +302,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
 
       // store as string where interface expects a string
       // fields in interface that are strings and represent numbers:
-      const numericStringFields: (keyof InvoiceDetail)[] = [
+      const numericStringFields: (keyof InvoiceItemRow)[] = [
         "qty",
         "price",
         "price_w",
@@ -327,10 +328,10 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         updated[index] = {
           ...updated[index],
           [field]: sanitized,
-        } as InvoiceDetail;
+        };
       } else {
         // non-numeric fields (strings)
-        updated[index] = { ...updated[index], [field]: value } as InvoiceDetail;
+        updated[index] = { ...updated[index], [field]: value };
       }
 
       // recalc totals & tax using numeric conversion
@@ -368,7 +369,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         tax: String(Number.isFinite(tax) ? tax : 0),
         item_disc_amt: String(item_disc_amt),
         tax_prc: String(tax_prc),
-      } as InvoiceDetail;
+      };
 
       setInvoiceItems(updated);
     };
@@ -402,7 +403,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
           stones: null,
           item_desc: "",
           sn: "",
-        } as InvoiceDetail;
+        };
         setInvoiceItems(updated);
 
         return;
@@ -453,7 +454,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       };
 
       // Use functional update to avoid stale closures when multiple updates queue
-      setInvoiceItems((prev) => [...prev, newItem]);
+      setInvoiceItems((prev: any) => [...prev, newItem]);
     };
 
     // change total (user edits final total including tax) -> distribute back
@@ -564,7 +565,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
     };
 
     const { setInputRef, handleKeyDown, focusFirstInRow } =
-      useEnterKeyNavigation({
+      useEnterKeyNavigation<InvoiceItemRow>({
         rows: invoiceItems,
         rowHasValue: rowHasItem,
         onAddRow: addRow,
@@ -653,13 +654,13 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                             classNamePrefix="select"
                             components={{ IndicatorSeparator: () => null }}
                             defaultOptions={staticItemOptions}
-                            formatCreateLabel={(inputValue) =>
-                              `إضافة صنف جديد: "${inputValue}"`
-                            }
+                            // formatCreateLabel={(inputValue) =>
+                            //   `إضافة صنف جديد: "${inputValue}"`
+                            // }
                             inputId={`item-${index}${thisCol}`}
                             instanceId={`item-select-${index}`}
                             isDisabled={!isEditing}
-                            loadOptions={loadItemOptions}
+                            loadOptions={loadItemOptions as any}
                             menuPortalTarget={
                               typeof window !== "undefined"
                                 ? document.body
@@ -746,7 +747,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                                     0,
                                 ),
                                 stones: selected.stones ?? null,
-                              } as InvoiceDetail;
+                              };
 
                               // recalc totals
                               const w = toNum(updated[index].weight);
@@ -774,38 +775,38 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
 
                               setInvoiceItems(updated);
                             }}
-                            onCreateOption={(inputValue) => {
-                              const newItem = {
-                                id: Math.floor(Math.random() * 1000000),
-                                item_code: "000000",
-                                item_name: inputValue,
-                                item_price: 0,
-                                item_weight: 0,
-                                item_g_weight: 0,
-                                work_price: 0,
-                              } as Item;
+                            // onCreateOption={(inputValue: any) => {
+                            //   const newItem = {
+                            //     id: Math.floor(Math.random() * 1000000),
+                            //     item_code: "000000",
+                            //     item_name: inputValue,
+                            //     item_price: 0,
+                            //     item_weight: 0,
+                            //     item_g_weight: 0,
+                            //     work_price: 0,
+                            //   } as Item;
 
-                              setItems((prev) => [...prev, newItem]);
-                              const updated = [...invoiceItems];
+                            //   setItems((prev) => [...prev, newItem]);
+                            //   const updated = [...invoiceItems];
 
-                              updated[index] = {
-                                ...updated[index],
-                                item: newItem.id,
-                                item_id: newItem.id,
-                                item_desc: newItem.item_name,
-                                price: String(
-                                  goldPrice ?? newItem.item_price ?? 0,
-                                ),
-                                price_w: String(newItem.work_price ?? 0),
-                                weight: String(newItem.item_weight ?? 0),
-                                g_weight: String(
-                                  newItem.item_g_weight ??
-                                    newItem.item_weight ??
-                                    0,
-                                ),
-                              } as InvoiceDetail;
-                              setInvoiceItems(updated);
-                            }}
+                            //   updated[index] = {
+                            //     ...updated[index],
+                            //     item: newItem.id,
+                            //     item_id: newItem.id,
+                            //     item_desc: newItem.item_name,
+                            //     price: String(
+                            //       goldPrice ?? newItem.item_price ?? 0,
+                            //     ),
+                            //     price_w: String(newItem.work_price ?? 0),
+                            //     weight: String(newItem.item_weight ?? 0),
+                            //     g_weight: String(
+                            //       newItem.item_g_weight ??
+                            //         newItem.item_weight ??
+                            //         0,
+                            //     ),
+                            //   } ;
+                            //   setInvoiceItems(updated);
+                            // }}
                             onKeyDown={(e) =>
                               handleKeyDown(e, index, thisCol, {
                                 allowEnterDefaultWhenRowMissing: true,
@@ -1172,7 +1173,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
 
                         return (
                           <select
-                            ref={setInputRef(index, thisCol)}
+                            ref={setInputRef(index, thisCol) as any}
                             className="border w-full p-1 text-xs text-center"
                             disabled={!isEditing}
                             id={`taxprc-${index}${thisCol}`}

@@ -102,7 +102,7 @@ export default async function CustomerDetailPage({
     acc: Number(customer.acc),
     acc_name: customer.acc_name || "",
     cust_type: customer.cust_type || undefined,
-    box_type: customer.box_type || "",
+    box_type: String(customer.box_type) || "",
     handling: customer.handling || "",
     handling_e: customer.handling_e || "",
     perc: customer.perc || undefined,

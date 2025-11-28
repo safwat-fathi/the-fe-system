@@ -19,6 +19,8 @@ export interface NormalizedDetail {
   gCreditBase: number;
   id?: number;
   isUpdate?: boolean;
+  trans_type?: number | null;
+  vouch_type?: number | null;
 }
 
 const formatParallelErrors = (context: string, messages: string[]): string => {

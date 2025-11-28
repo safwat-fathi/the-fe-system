@@ -16,6 +16,7 @@ import {
   INVOICE_PAY_TYPES,
   type Invoice,
   type InvoicePayType,
+  PaymentTypes,
   TransTypes,
 } from "@/types/models/invoice";
 import { getCustomerInvoicesAction } from "@/app/actions/customer";
@@ -47,13 +48,13 @@ interface Props {
   selectedCustomerName: string;
   setSelectedCustomer: Dispatch<SetStateAction<string | null>>;
   setSelectedCustomerName: (val: string) => void;
-  paymentMethod: string;
-  setPaymentMethod: (value: string) => void;
+  paymentMethod: PaymentTypes;
+  setPaymentMethod: (value: PaymentTypes) => void;
   payType: InvoicePayType;
   setPayType: (val: InvoicePayType) => void;
   referenceNumber: string;
   setReferenceNumber: (val: string) => void;
-  vatNumber: string;
+
   setVatNumber: (val: string) => void;
   crNo: string;
   setCrNo: (val: string) => void;
@@ -105,7 +106,6 @@ export default function InvoiceSelectors({
   setPayType,
   referenceNumber,
   setReferenceNumber,
-  vatNumber,
   setVatNumber,
   crNo,
   setCrNo,
@@ -234,7 +234,9 @@ export default function InvoiceSelectors({
   };
 
   const filteredCustomers = customers.filter((cust) =>
-    paymentMethod === "cash" ? cust.cust_type === 99 : cust.cust_type !== 99,
+    paymentMethod === PaymentTypes.CASH
+      ? cust.cust_type === 99
+      : cust.cust_type !== 99,
   );
 
   const mapCustomerToOption = (cust: Customer): CustomerOption => {
@@ -479,13 +481,15 @@ export default function InvoiceSelectors({
                 <div className="w-full h-[32px] border rounded flex items-center justify-around px-2 bg-gray-50 text-xs">
                   <label className="flex items-center gap-1">
                     <input
-                      checked={paymentMethod === "cash"}
+                      checked={paymentMethod === PaymentTypes.CASH}
                       disabled={!isEditing}
                       name="payment"
                       type="radio"
                       value="cash"
                       onChange={(e) => {
-                        setPaymentMethod(e.target.value);
+                        setPaymentMethod(
+                          e.target.value as unknown as PaymentTypes,
+                        );
                         setSelectedCustomer(null);
                         setSelectedCustomerName("");
                       }}
@@ -494,13 +498,15 @@ export default function InvoiceSelectors({
                   </label>
                   <label className="flex items-center gap-1">
                     <input
-                      checked={paymentMethod === "credit"}
+                      checked={paymentMethod === PaymentTypes.CREDIT}
                       disabled={!isEditing}
                       name="payment"
                       type="radio"
                       value="credit"
                       onChange={(e) => {
-                        setPaymentMethod(e.target.value);
+                        setPaymentMethod(
+                          e.target.value as unknown as PaymentTypes,
+                        );
                         setSelectedCustomer(null);
                         setSelectedCustomerName("");
                       }}
@@ -539,8 +545,7 @@ export default function InvoiceSelectors({
                     htmlFor="reference-number"
                   >
                     فواتير{" "}
-                    {invoiceType === TransTypes.PURCHASE ||
-                    invoiceType === TransTypes.PURCHASE_RETURN
+                    {invoiceType === TransTypes.PURCHASE_RETURN
                       ? "المورد"
                       : "العميل"}
                     :
@@ -782,7 +787,7 @@ export default function InvoiceSelectors({
                       className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
                       disabled={!isEditing}
                       type="text"
-                      value={vatNumber}
+                      onChange={(e) => setVatNumber(e.target.value)}
                     />
                   </div>
                   <div>

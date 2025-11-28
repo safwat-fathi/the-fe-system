@@ -375,6 +375,7 @@ export default async function ReceiptVoucherEditPage({
           ]}
         />
         <ReceiptVoucherClientPage
+          accounts={formData.accounts || []}
           boxes={formData.boxes || []}
           categories={formData.categories || []}
           costCenters={formData.costCenters}

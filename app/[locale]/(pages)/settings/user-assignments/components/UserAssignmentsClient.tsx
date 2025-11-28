@@ -1,7 +1,5 @@
 "use client";
 
-import type { Selection } from "@react-types/shared";
-
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -37,6 +35,8 @@ type Option = {
   label: string;
   helper?: string | null;
 };
+
+type SelectionValue = "all" | Set<React.Key>;
 
 type Props = {
   users: Option[];
@@ -164,7 +164,7 @@ export default function UserAssignmentsClient({
     }
   };
 
-  const handleUserSelectionChange = async (keys: Selection) => {
+  const handleUserSelectionChange = async (keys: SelectionValue) => {
     if (keys === "all") {
       return;
     }

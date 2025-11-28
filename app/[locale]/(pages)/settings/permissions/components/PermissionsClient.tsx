@@ -198,9 +198,9 @@ export default function PermissionsClient() {
 
     try {
       if (viewMode === "groups") {
-        await groupService.delete((item as Group).id);
+        await groupService.remove((item as Group).id);
       } else {
-        await userService.delete((item as User).id);
+        await userService.remove((item as User).id);
       }
       toast.success("تم الحذف بنجاح");
       loadData();
@@ -304,7 +304,7 @@ export default function PermissionsClient() {
           startContent={<PlusIcon className="h-5 w-5" />}
           onPress={() => {
             // TODO: Open add modal
-            toast.info("ميزة الإضافة قيد التطوير");
+            toast("ميزة الإضافة قيد التطوير");
           }}
         >
           إضافة جديد
@@ -471,7 +471,7 @@ export default function PermissionsClient() {
                         size="sm"
                         variant="light"
                         onPress={() => {
-                          toast.info("ميزة التعديل قيد التطوير");
+                          toast("ميزة التعديل قيد التطوير");
                         }}
                       >
                         <PencilIcon className="h-4 w-4" />

@@ -73,7 +73,7 @@ export const useVoucherForm = ({
   const details = useVoucherDetails({
     initialDetails: voucherDetailsData,
     isNewVoucher,
-    voucherId: state.voucher.vouch_id,
+    voucherId: Number(state.voucher.vouch_id ?? 0),
     accounts: state.accounts,
     caratTypes: state.caratTypes,
   });

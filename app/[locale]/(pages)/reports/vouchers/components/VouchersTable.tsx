@@ -24,7 +24,6 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { Voucher } from "@/types/voucher";
-import { formatAmount } from "@/utilities/formatAmount";
 import { getVoucherTypeName } from "@/utilities/voucher/routing";
 import { formatVoucherDate } from "@/utilities/voucher/formatting";
 
@@ -47,7 +46,12 @@ export default function VouchersTable({
   calculateVoucherCashTotal,
   calculateVoucherGoldTotal,
 }: VouchersTableProps) {
-  const getStatusChip = (status?: number) => {
+  const formatAmountValue = (value: number | null | undefined) =>
+    Number(value ?? 0).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  const getStatusChip = (status?: number | null) => {
     const colorMap: Record<number, "success" | "warning" | "default"> = {
       0: "default",
       1: "success",
@@ -94,12 +98,12 @@ export default function VouchersTable({
             </TableCell>
             <TableCell>
               <span className="font-semibold text-green-600">
-                {formatAmount(calculateVoucherCashTotal(voucher))}
+                {formatAmountValue(calculateVoucherCashTotal(voucher))}
               </span>
             </TableCell>
             <TableCell>
               <span className="font-semibold text-yellow-600 flex items-center gap-1">
-                {formatAmount(calculateVoucherGoldTotal(voucher))}
+                {formatAmountValue(calculateVoucherGoldTotal(voucher))}
                 <span className="text-xs text-yellow-500">جم</span>
               </span>
             </TableCell>

@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { useSearchParams } from "next/navigation";
-// import AsyncCreatableSelect from "react-select/async-creatable";
-// import ReactSelect from "react-select";
+import AsyncCreatableSelect from "react-select/async-creatable";
+import ReactSelect, { type CSSObjectWithLabel } from "react-select";
 import {
   Button,
   Modal,
@@ -40,6 +46,11 @@ interface BalanceVoucherClientPageProps {
   isNewVoucher?: boolean;
   startInEditMode?: boolean;
 }
+
+type BasicSelectOption = {
+  value: string;
+  label: string;
+};
 
 export default function BalanceVoucherClientPage({
   voucherData,
@@ -106,12 +117,27 @@ export default function BalanceVoucherClientPage({
     startInEditMode: propStartInEditMode,
   });
 
-  const costCenterSelectOptions = useMemo(() => {
+  const costCenterSelectOptions = useMemo<BasicSelectOption[]>(() => {
     return (costCenters || []).map((center) => ({
       value: String(center.id),
       label: center.name || center.cost_name || `مركز ${center.id}`,
     }));
   }, [costCenters]);
+
+  const getCostCenterSelectValue = useCallback(
+    (costId?: number | null) => {
+      if (costId === null || costId === undefined) {
+        return null;
+      }
+
+      return (
+        costCenterSelectOptions.find(
+          (option) => Number(option.value) === Number(costId),
+        ) ?? null
+      );
+    },
+    [costCenterSelectOptions],
+  );
 
   // تحويل defaultAccountOptions إلى format مناسب
   const accountDefaultOptions = useMemo(() => {
@@ -450,22 +476,25 @@ export default function BalanceVoucherClientPage({
                     options={costCenterSelectOptions}
                     placeholder="اختر مركز التكلفة..."
                     styles={{
-                      control: (base) => ({
+                      control: (base: CSSObjectWithLabel) => ({
                         ...base,
                         minHeight: "40px",
                         height: "40px",
                         fontSize: "14px",
                       }),
-                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                      option: (base) => ({
+                      menuPortal: (base: CSSObjectWithLabel) => ({
+                        ...base,
+                        zIndex: 9999,
+                      }),
+                      option: (base: CSSObjectWithLabel) => ({
                         ...base,
                         fontSize: "14px",
                       }),
-                      placeholder: (base) => ({
+                      placeholder: (base: CSSObjectWithLabel) => ({
                         ...base,
                         fontSize: "14px",
                       }),
-                      singleValue: (base) => ({
+                      singleValue: (base: CSSObjectWithLabel) => ({
                         ...base,
                         fontSize: "14px",
                       }),
@@ -483,7 +512,7 @@ export default function BalanceVoucherClientPage({
                           : null,
                       );
                     }}
-                    onKeyDown={(e) => {
+                    onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                       const target = e.target as HTMLElement | null;
 
                       if (!target) return;
@@ -555,7 +584,7 @@ export default function BalanceVoucherClientPage({
                       setIsNotesModalOpen(true);
                     }
                   }}
-                  onKeyDown={(e) => {
+                  onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                     if (e.key === "Enter" && !e.isDefaultPrevented()) {
                       e.preventDefault();
                       e.stopPropagation();
@@ -814,7 +843,7 @@ export default function BalanceVoucherClientPage({
                                   classNamePrefix="select"
                                   components={{ IndicatorSeparator: () => null }}
                                   defaultOptions={optionsWithSelected}
-                                  formatCreateLabel={(inputValue) =>
+                                  formatCreateLabel={(inputValue: string) =>
                                     `إضافة حساب جديد: "${inputValue}"`
                                   }
                                   instanceId={`account-select-${index}`}
@@ -842,7 +871,7 @@ export default function BalanceVoucherClientPage({
                                     }, 0);
                                   }}
                                   styles={{
-                                    control: (base, state) => ({
+                                    control: (base: CSSObjectWithLabel) => ({
                                       ...base,
                                       minHeight: "100%",
                                       height: "100%",
@@ -858,17 +887,17 @@ export default function BalanceVoucherClientPage({
                                         boxShadow: "none",
                                       },
                                     }),
-                                    valueContainer: (base) => ({
+                                    valueContainer: (base: CSSObjectWithLabel) => ({
                                       ...base,
                                       padding: "0.125rem 0.25rem",
                                       height: "100%",
                                     }),
-                                    input: (base) => ({
+                                    input: (base: CSSObjectWithLabel) => ({
                                       ...base,
                                       margin: 0,
                                       padding: 0,
                                     }),
-                                    menuPortal: (base) => ({
+                                    menuPortal: (base: CSSObjectWithLabel) => ({
                                       ...base,
                                       zIndex: 9999,
                                     }),
@@ -948,7 +977,7 @@ export default function BalanceVoucherClientPage({
                                             isTrusted: false,
                                             timeStamp: Date.now(),
                                             type: "keydown",
-                                          } as unknown as React.KeyboardEvent;
+                                          } as unknown as ReactKeyboardEvent;
 
                                           handleKeyDownTable(
                                             syntheticEvent,
@@ -962,7 +991,7 @@ export default function BalanceVoucherClientPage({
                                       }
                                     }, 100);
                                   }}
-                                  onKeyDown={(e) => {
+                                  onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                     const target = e.target as HTMLElement | null;
 
                                     if (!target) {
@@ -1068,7 +1097,7 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1112,7 +1141,7 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1157,7 +1186,7 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1201,7 +1230,7 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1246,7 +1275,7 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1299,7 +1328,7 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1351,7 +1380,7 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1418,7 +1447,7 @@ export default function BalanceVoucherClientPage({
                                     options={costCenterSelectOptions}
                                     placeholder="مركز التكلفة..."
                                     styles={{
-                                      control: (base) => ({
+                                      control: (base: CSSObjectWithLabel) => ({
                                         ...base,
                                         minHeight: "32px",
                                         height: "32px",
@@ -1431,19 +1460,19 @@ export default function BalanceVoucherClientPage({
                                           : "not-allowed",
                                         backgroundColor: "transparent",
                                       }),
-                                      menuPortal: (base) => ({
+                                      menuPortal: (base: CSSObjectWithLabel) => ({
                                         ...base,
                                         zIndex: 9999,
                                       }),
-                                      option: (base) => ({
+                                      option: (base: CSSObjectWithLabel) => ({
                                         ...base,
                                         fontSize: "12px",
                                       }),
-                                      placeholder: (base) => ({
+                                      placeholder: (base: CSSObjectWithLabel) => ({
                                         ...base,
                                         fontSize: "12px",
                                       }),
-                                      singleValue: (base) => ({
+                                      singleValue: (base: CSSObjectWithLabel) => ({
                                         ...base,
                                         fontSize: "12px",
                                       }),
@@ -1483,7 +1512,7 @@ export default function BalanceVoucherClientPage({
                                               isTrusted: false,
                                               timeStamp: Date.now(),
                                               type: "keydown",
-                                            } as unknown as React.KeyboardEvent;
+                                            } as unknown as ReactKeyboardEvent;
 
                                             handleKeyDownTable(
                                               syntheticEvent,
@@ -1494,7 +1523,7 @@ export default function BalanceVoucherClientPage({
                                         }
                                       }, 100);
                                     }}
-                                    onKeyDown={(e) => {
+                                    onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                       const target = e.target as HTMLElement;
                                       const selectButton =
                                         target.closest('[role="combobox"]');
@@ -1567,7 +1596,7 @@ export default function BalanceVoucherClientPage({
                                     e.target.value,
                                   )
                                 }
-                                onKeyDown={(e) => {
+                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
                                   handleKeyDownTable(e, index, thisCol, {
                                     isLastCol: true,
                                   });

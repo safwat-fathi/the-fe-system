@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Chip } from "@heroui/react";
+import { Button, Chip, type ChipProps } from "@heroui/react";
 
 import { PERMISSION_TYPES } from "../../types/permissions";
 import {
@@ -45,11 +45,13 @@ export default function PermissionFilters({
           return (
             <Chip
               key={permission}
-              isPressable
+              as="button"
               className="cursor-pointer"
-              color={isSelected ? (color as any) : "default"}
+              color={
+                (isSelected ? color : "default") as ChipProps["color"]
+              }
               variant={isSelected ? "flat" : "bordered"}
-              onPress={() => onTogglePermission(permission)}
+              onClick={() => onTogglePermission(permission)}
             >
               {label}
             </Chip>

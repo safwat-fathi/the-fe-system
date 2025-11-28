@@ -20,7 +20,7 @@ export type VoucherDetailRow = {
 };
 
 export type ComparableDetail = {
-  accId: number;
+  accId: number | null;
   debit: number;
   credit: number;
   debitG: number;

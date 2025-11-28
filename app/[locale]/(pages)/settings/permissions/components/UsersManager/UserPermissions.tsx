@@ -276,7 +276,7 @@ export default function UserPermissions({
           </div>
         </ModalHeader>
         <ModalBody>
-          <Alert className="mb-4" color="info" variant="flat">
+          <Alert className="mb-4" color="primary" variant="flat">
             هذه الصلاحيات خاصة بالمستخدم وتتجاوز صلاحيات المجموعات التي ينتمي
             إليها
           </Alert>
