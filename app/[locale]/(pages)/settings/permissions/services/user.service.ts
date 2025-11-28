@@ -95,11 +95,11 @@ class UserPermissionService extends HttpService {
   /**
    * Delete a user
    */
-  async delete(id: number): Promise<boolean> {
+  async remove(id: number): Promise<boolean> {
     try {
-      const response = await this.delete(`api_delete_user/${id}`);
+      const response = await super.delete(`api_delete_user/${id}`);
 
-      return response.success;
+      return Boolean(response.success);
     } catch (error) {
       console.error("Error deleting user:", error);
       throw error;

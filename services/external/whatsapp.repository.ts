@@ -1,5 +1,3 @@
-import { Prisma } from "@prisma/client";
-
 import prisma from "@/lib/prisma";
 
 export interface UpsertContactInput {
@@ -19,7 +17,7 @@ export interface CreateMessageInput {
   contactId: string;
   direction: "inbound" | "outbound";
   type: string;
-  bodyJson: Prisma.InputJsonValue;
+  bodyJson: any;
   waMsgId?: string;
   status?: string;
   errorCode?: string | null;

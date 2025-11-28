@@ -18,6 +18,7 @@ import {
   Card,
   CardBody,
   CardHeader,
+  type ChipProps,
 } from "@heroui/react";
 import {
   PrinterIcon,
@@ -692,7 +693,9 @@ export default function VATReportPage() {
                       <TableCell>{inv.cust_name}</TableCell>
                       <TableCell>
                         <Chip
-                          color={getInvoiceTypeColor(inv.trans_type)}
+                          color={
+                            getInvoiceTypeColor(inv.trans_type) as ChipProps["color"]
+                          }
                           size="sm"
                         >
                           {getInvoiceTypeLabel(inv.trans_type)}

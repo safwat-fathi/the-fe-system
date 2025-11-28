@@ -96,11 +96,11 @@ class GroupService extends HttpService {
   /**
    * Delete a group
    */
-  async delete(id: number): Promise<boolean> {
+  async remove(id: number): Promise<boolean> {
     try {
-      const response = await this.delete(`api_delete_group/${id}`);
+      const response = await super.delete(`api_delete_group/${id}`);
 
-      return response.success;
+      return Boolean(response.success);
     } catch (error) {
       console.error("Error deleting group:", error);
       throw error;

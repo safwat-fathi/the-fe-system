@@ -8,7 +8,12 @@ import InvoiceSelectors from "@/app/[locale]/(pages)/forms/invoices/components/I
 import InvoiceItemTable, {
   type InvoiceItemTableHandle,
 } from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
-import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
+import {
+  Invoice,
+  InvoiceDetail,
+  PaymentTypes,
+  TransTypes,
+} from "@/types/models/invoice";
 import useInvoiceForm from "@/app/[locale]/(pages)/forms/invoices/hooks/useInvoiceForm";
 import {
   hydrateInvoiceTotalsStore,
@@ -34,14 +39,11 @@ const SELECTOR_TYPE_MAP: Record<InvoicePageType, TransTypes> = {
   "purchase-return": TransTypes.PURCHASE_RETURN,
 };
 
-const TOTALS_TYPE_MAP: Record<
-  InvoicePageType,
-  "sales" | "purchase" | "sales_return" | "purchase_return"
-> = {
-  sale: "sales",
-  purchase: "purchase",
-  "sale-return": "sales_return",
-  "purchase-return": "purchase_return",
+const TOTALS_TYPE_MAP: Record<InvoicePageType, TransTypes> = {
+  sale: TransTypes.SALES,
+  purchase: TransTypes.PURCHASE,
+  "sale-return": TransTypes.SALES_RETURN,
+  "purchase-return": TransTypes.PURCHASE_RETURN,
 };
 
 export interface InvoiceClientPageProps {
@@ -343,7 +345,7 @@ export default function InvoiceClientPage({
       setSearchNumber,
       onInvoiceSearch: handleSearchByInvoiceId,
       totalGWeight: totalGWeight ?? 0,
-      paymentMethod: paymentMethod ?? "cash",
+      paymentMethod: paymentMethod ?? PaymentTypes.CASH,
       newInvoiceHref: resolvedNewInvoiceHref,
       isNewInvoice,
     });
@@ -402,7 +404,7 @@ export default function InvoiceClientPage({
         customers={customers}
         employee={employee}
         goldPrice={goldPrice}
-        goldPriceValue={goldPrice ?? maybeGoldPrice}
+        // goldPriceValue={goldPrice ?? maybeGoldPrice}
         gov={form.gov}
         handlingMethod={handlingMethod}
         invoiceType={selectorsInvoiceType}

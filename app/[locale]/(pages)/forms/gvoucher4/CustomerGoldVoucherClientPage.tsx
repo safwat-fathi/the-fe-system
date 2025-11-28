@@ -121,6 +121,9 @@ export default function CustomerGoldVoucherClientPage({
   const [originalGoldDetails, setOriginalGoldDetails] = useState<
     GVoucherDetail[]
   >([]);
+
+  const numericVoucherId = Number(voucher.vouch_id ?? 0);
+  const hasVoucherId = Number.isFinite(numericVoucherId) && numericVoucherId > 0;
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>(
     [],
@@ -1164,6 +1167,17 @@ export default function CustomerGoldVoucherClientPage({
     return { totalBoxes, totalGoldWeight, totalGoldGWeight };
   }, [voucherBoxes, goldDetails]);
 
+  const isBalanced = useMemo(() => {
+    const goldDiff = Math.abs(
+      (totals.totalGoldWeight || 0) - (totals.totalGoldGWeight || 0),
+    );
+    const cashDiff = Math.abs(
+      (totals.totalBoxes || 0) - Number(voucher.vouch_amt ?? 0),
+    );
+
+    return goldDiff < 0.00001 && cashDiff < 0.01;
+  }, [totals.totalGoldWeight, totals.totalGoldGWeight, totals.totalBoxes, voucher.vouch_amt]);
+
   // Save voucher
   const saveVoucher = async () => {
     // التحقق من التاريخ
@@ -1946,9 +1960,7 @@ export default function CustomerGoldVoucherClientPage({
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
                 #
-                {voucher.vouch_id && voucher.vouch_id > 0
-                  ? voucher.vouch_id
-                  : "جاري الترقيم..."}
+                {hasVoucherId ? voucher.vouch_id : "جاري الترقيم..."}
               </span>
               <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
@@ -2025,7 +2037,7 @@ export default function CustomerGoldVoucherClientPage({
 
             <Button
               className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              isDisabled={!hasVoucherId}
               isLoading={isPrinting}
               size="sm"
               startContent={

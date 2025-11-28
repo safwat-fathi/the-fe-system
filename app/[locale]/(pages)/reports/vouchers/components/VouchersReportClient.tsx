@@ -250,12 +250,10 @@ const VouchersReportClient = ({
   // Calculate cash totals for each voucher - محسن للأداء
   const calculateVoucherCashTotal = (voucher: Voucher) => {
     // أولاً: استخدام vouch_amt مباشرة إذا كان متوفراً (أسرع)
-    if (
-      voucher.vouch_amt !== undefined &&
-      voucher.vouch_amt !== null &&
-      voucher.vouch_amt > 0
-    ) {
-      return parseFloat(String(voucher.vouch_amt)) || 0;
+    const voucherAmount = Number(voucher.vouch_amt ?? 0);
+
+    if (Number.isFinite(voucherAmount) && voucherAmount > 0) {
+      return voucherAmount;
     }
 
     // ثانياً: استخدام التفاصيل المحملة إذا كانت متوفرة

@@ -24,7 +24,7 @@ export const useVoucherDetailsFetch = ({
   vouchers,
   enabled = true,
 }: UseVoucherDetailsFetchProps) => {
-  const [voucherDetails, setVoucherDetails] = useState<Record<number, any[]>>(
+  const [voucherDetails, setVoucherDetails] = useState<Record<string, any[]>>(
     {},
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -38,12 +38,10 @@ export const useVoucherDetailsFetch = ({
       const voucherId = voucher.id || voucher.vouch_id;
 
       if (!voucherId) return false;
+      const key = String(voucherId);
 
       // Skip if already fetched
-      if (
-        voucherDetails[voucherId] &&
-        Array.isArray(voucherDetails[voucherId])
-      ) {
+      if (voucherDetails[key] && Array.isArray(voucherDetails[key])) {
         return false;
       }
 
@@ -62,19 +60,24 @@ export const useVoucherDetailsFetch = ({
           const voucherId = voucher.id || voucher.vouch_id;
 
           if (!voucherId) return null;
+          const numericId = Number(voucherId);
+
+          if (!Number.isFinite(numericId)) {
+            return null;
+          }
 
           const branchId = Number(voucher.com_id ?? voucher.com ?? 1) || 1;
-          const response = await voucherService.getDetails(voucherId, {
+          const response = await voucherService.getDetails(numericId, {
             xcom_id: branchId,
           });
 
           if (response.success && response.data) {
             const details = Array.isArray(response.data) ? response.data : [];
 
-            return { voucherId, details };
+            return { voucherId: numericId, details };
           }
 
-          return { voucherId, details: [] };
+          return { voucherId: numericId, details: [] };
         },
         {
           batchSize: 10,
@@ -93,7 +96,7 @@ export const useVoucherDetailsFetch = ({
 
         results.forEach((result) => {
           if (result && result.voucherId && result.details.length >= 0) {
-            updated[result.voucherId] = result.details;
+            updated[String(result.voucherId)] = result.details;
           }
         });
 

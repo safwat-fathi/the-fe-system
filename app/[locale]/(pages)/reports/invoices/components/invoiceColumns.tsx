@@ -57,7 +57,7 @@ type InvoiceColumnMessages = {
 export const createInvoiceColumns = (
   fractions: Fractions,
   messages: InvoiceColumnMessages,
-): ColumnDef<Invoice>[] => [
+) => [
   columnHelper.accessor("inv_id", {
     header: () => messages.columns.invoiceNumber,
     cell: (info) => info.getValue(),

@@ -3,6 +3,7 @@ import type { Table } from "@tanstack/react-table";
 import { InvoiceItemRow } from "../invoiceForm";
 
 import { FormState } from "@/app/[locale]/(pages)/forms/invoices/hooks/useInvoiceForm";
+import { TransTypes } from "@/types/models/invoice";
 
 // Collect all rows before pagination (i.e., across all pages) using TanStack Table v8 API.
 // Falls back to the current row model if pre‑pagination is unavailable.
@@ -214,7 +215,7 @@ export const buildInvoicePrintHtml = ({
     totalDiscount: number;
     totalGWeight?: number;
   };
-  invoiceType: "sale" | "sale_return" | "purchase" | "purchase_return";
+  invoiceType: TransTypes;
   selectedCustomer: any;
   fractions: { frac: number; frac2: number };
 }): string => {
@@ -224,11 +225,11 @@ export const buildInvoicePrintHtml = ({
   // Determine invoice title
   const getInvoiceTitle = () => {
     switch (invoiceType) {
-      case "sale_return":
+      case TransTypes.SALES_RETURN:
         return "مردود بيع";
-      case "purchase":
+      case TransTypes.PURCHASE:
         return "شراء";
-      case "purchase_return":
+      case TransTypes.PURCHASE_RETURN:
         return "مردود شراء";
       default:
         return "بيع";
@@ -319,7 +320,7 @@ export const buildInvoicePrintHtml = ({
 				<p style="margin: 5px 0;"><strong>الهاتف:</strong> ${escapeHtml(selectedCustomer?.mobile || "غير متوفر")}</p>
 			</div>
 			<div>
-				<p style="margin: 5px 0;"><strong>العنوان:</strong> ${escapeHtml(invoice.address || "غير متوفر")}</p>
+				<p style="margin: 5px 0;"><strong>العنوان:</strong> ${escapeHtml(selectedCustomer?.address || "غير متوفر")}</p>
 				<p style="margin: 5px 0;"><strong>الرقم الضريبي:</strong> ${escapeHtml(invoice.vat_no)}</p>
 				<p style="margin: 5px 0;"><strong>رقم المراجع:</strong> ${escapeHtml(invoice.ref_no || "لا يوجد")}</p>
 			</div>

@@ -655,6 +655,8 @@ export default function DeliveryVoucherClientPage({
 
   const voucherTypeName =
     voucherTypes.find((t) => (t.Id || t.id) === vouchType)?.name || "سند تسليم";
+  const numericVoucherId = Number(voucher.vouch_id ?? 0);
+  const hasVoucherId = Number.isFinite(numericVoucherId) && numericVoucherId > 0;
 
   return (
     <div className="p-2 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
@@ -666,9 +668,7 @@ export default function DeliveryVoucherClientPage({
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
                 #
-                {voucher.vouch_id && voucher.vouch_id > 0
-                  ? voucher.vouch_id
-                  : "جاري الترقيم..."}
+                {hasVoucherId ? voucher.vouch_id : "جاري الترقيم..."}
               </span>
               <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
@@ -739,7 +739,7 @@ export default function DeliveryVoucherClientPage({
 
             <Button
               className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-              isDisabled={!voucher.vouch_id || voucher.vouch_id <= 0}
+              isDisabled={!hasVoucherId}
               isLoading={isPrinting}
               size="sm"
               startContent={

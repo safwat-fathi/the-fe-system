@@ -188,7 +188,6 @@ export default function CopyPermissions({
                 <SelectItem
                   key={target.id.toString()}
                   textValue={"name" in target ? target.name : target.username}
-                  value={target.id.toString()}
                 >
                   <div className="flex items-center gap-2">
                     <span>

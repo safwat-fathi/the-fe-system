@@ -16,6 +16,7 @@ import {
   InvoicePayType,
   INVOICE_PAY_TYPES,
   TransTypes,
+  PaymentTypes,
 } from "@/types/models/invoice";
 import {
   createInvoiceAction,
@@ -113,6 +114,11 @@ const PAYMENT_METHOD_INV_TYPES = {
   cash: 1,
   credit: 2,
 } as const;
+
+const getPaymentMethodKey = (
+  method?: PaymentTypes | null,
+): keyof typeof PAYMENT_METHOD_INV_TYPES =>
+  method === PaymentTypes.CREDIT ? "credit" : "cash";
 
 const PAY_TYPE_VALUES = Object.values(INVOICE_PAY_TYPES) as InvoicePayType[];
 
@@ -268,7 +274,9 @@ export default function useInvoiceForm({
 
   const [goldPrice] = useState<number | null>(initialGoldPrice);
   const [homePurity] = useState<number>(initialHomePurity);
-  const [paymentMethod, setPaymentMethod] = useState<string>("cash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentTypes>(
+    PaymentTypes.CASH,
+  );
   const [handlingMethod, setHandlingMethod] = useState<string>("");
   const [mobileMethod, setMobileMethod] = useState<string>("");
   const [searchNumber, setSearchNumber] = useState<string>("");
@@ -303,13 +311,14 @@ export default function useInvoiceForm({
   }, [invoiceData, resolvedInvoiceCustomerCode]);
 
   const customers = useMemo(
-    () => (paymentMethod === "cash" ? cashCustomers : creditCustomers),
+    () =>
+      paymentMethod === PaymentTypes.CASH ? cashCustomers : creditCustomers,
     [cashCustomers, creditCustomers, paymentMethod],
   );
 
   const setCustomers = useCallback(
     (updater: SetStateAction<any[]>) => {
-      if (paymentMethod === "cash") {
+      if (paymentMethod === PaymentTypes.CASH) {
         setCashCustomers((prev) =>
           typeof updater === "function"
             ? (updater as (value: any[]) => any[])(prev)
@@ -521,7 +530,7 @@ export default function useInvoiceForm({
     }
 
     const secondaryList =
-      paymentMethod === "cash" ? creditCustomers : cashCustomers;
+      paymentMethod === PaymentTypes.CASH ? creditCustomers : cashCustomers;
     const secondaryMatch = findCustomerInList(secondaryList);
 
     if (secondaryMatch) {
@@ -590,8 +599,8 @@ export default function useInvoiceForm({
     if (invoiceData.inv_type) {
       setPaymentMethod(
         invoiceData.inv_type === PAYMENT_METHOD_INV_TYPES.credit
-          ? "credit"
-          : "cash",
+          ? PaymentTypes.CREDIT
+          : PaymentTypes.CASH,
       );
     }
 
@@ -832,7 +841,7 @@ export default function useInvoiceForm({
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
 
-      return;
+      return { ok: false };
     }
 
     const validItems = invoiceItems.filter((item) => {
@@ -850,7 +859,7 @@ export default function useInvoiceForm({
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
 
-      return;
+      return { ok: false };
     }
 
     if (
@@ -864,7 +873,7 @@ export default function useInvoiceForm({
       if (missingWageRate) {
         toast.error("يرجى إدخال أجرة الجرام لكل الأصناف قبل الحفظ");
 
-        return;
+        return { ok: false };
       }
     }
 
@@ -914,9 +923,7 @@ export default function useInvoiceForm({
         trans_type: defaultTransType,
         cr_date: form.inv_date,
         inv_type:
-          PAYMENT_METHOD_INV_TYPES[
-            (paymentMethod ?? "cash") as keyof typeof PAYMENT_METHOD_INV_TYPES
-          ] ?? 1,
+          PAYMENT_METHOD_INV_TYPES[getPaymentMethodKey(paymentMethod)] ?? 1,
         emp_id: EMPLOYEE_CODE_MAP[employee] ?? null,
         inv_notes:
           form.inv_notes && form.inv_notes.trim().length > 0
@@ -1239,7 +1246,7 @@ export default function useInvoiceForm({
         invoice: form,
         invoiceItems: validItems,
         totals,
-        invoiceType: context,
+        invoiceType: defaultTransType,
         selectedCustomer,
         fractions: { frac, frac2 },
       });
@@ -1320,7 +1327,7 @@ export default function useInvoiceForm({
     setDeletedItemIds([]);
     setInvoicePk(null);
     setEmployee("");
-    setPaymentMethod("cash");
+    setPaymentMethod(PaymentTypes.CASH);
     setHandlingMethod("");
     setMobileMethod("");
     setSearchNumber("");
@@ -1402,7 +1409,7 @@ export default function useInvoiceForm({
   );
 
   const handleItemRemoved = useCallback(
-    (removedItem: InvoiceDetail) => {
+    (removedItem: InvoiceItemRow) => {
       const removedId = parseNumber(removedItem?.id);
       const existsOriginally = originalInvoiceItems.some(
         (item) => item.id === removedId,
