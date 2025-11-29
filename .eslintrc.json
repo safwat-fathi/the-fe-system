@@ -7,10 +7,10 @@
   },
   "extends": [
     "plugin:react/recommended",
-    "plugin:prettier/recommended",
     "plugin:react-hooks/recommended",
     "plugin:jsx-a11y/recommended",
-    "plugin:@next/next/recommended"
+    "plugin:@next/next/recommended",
+    "plugin:prettier/recommended"
   ],
   "plugins": [
     "react",
@@ -18,7 +18,9 @@
     "import",
     "@typescript-eslint",
     "jsx-a11y",
-    "prettier"
+    "prettier",
+    "security",
+    "sonarjs"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
