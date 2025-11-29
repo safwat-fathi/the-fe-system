@@ -68,6 +68,57 @@
           "purchaseReturn": "مردود الشراء",
           "salesReturn": "مردود البيع"
         }
+      },
+      "analytics": {
+        "stats": {
+          "totalInvoices": "إجمالي الفواتير",
+          "totalSales": "إجمالي المبيعات",
+          "totalTax": "إجمالي الضريبة",
+          "averageInvoice": "متوسط قيمة الفاتورة",
+          "taxRate": "نسبة الضريبة"
+        },
+        "charts": {
+          "monthlySales": "المبيعات الشهرية",
+          "typesDistribution": "توزيع أنواع الفواتير",
+          "dailyInvoices": "الفواتير حسب اليوم",
+          "monthlyInvoicesDataset": "عدد الفواتير",
+          "monthlyAmountDataset": "إجمالي المبيعات"
+        },
+        "summary": {
+          "title": "ملخص سريع",
+          "topMonths": "أفضل الشهور أداءً",
+          "topDays": "أفضل أيام الأسبوع"
+        },
+        "labels": {
+          "purchaseInvoices": "فواتير الشراء",
+          "salesInvoices": "فواتير البيع",
+          "purchaseReturns": "مردود الشراء",
+          "salesReturns": "مردود البيع",
+          "invoiceCount": "{count} فاتورة"
+        },
+        "months": {
+          "jan": "يناير",
+          "feb": "فبراير",
+          "mar": "مارس",
+          "apr": "أبريل",
+          "may": "مايو",
+          "jun": "يونيو",
+          "jul": "يوليو",
+          "aug": "أغسطس",
+          "sep": "سبتمبر",
+          "oct": "أكتوبر",
+          "nov": "نوفمبر",
+          "dec": "ديسمبر"
+        },
+        "weekdays": {
+          "sun": "الأحد",
+          "mon": "الاثنين",
+          "tue": "الثلاثاء",
+          "wed": "الأربعاء",
+          "thu": "الخميس",
+          "fri": "الجمعة",
+          "sat": "السبت"
+        }
       }
     }
   },

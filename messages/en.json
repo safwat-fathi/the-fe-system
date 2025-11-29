@@ -68,6 +68,57 @@
           "purchaseReturn": "Purchase returns",
           "salesReturn": "Sales returns"
         }
+      },
+      "analytics": {
+        "stats": {
+          "totalInvoices": "Total invoices",
+          "totalSales": "Total sales",
+          "totalTax": "Total tax",
+          "averageInvoice": "Average invoice value",
+          "taxRate": "Tax rate"
+        },
+        "charts": {
+          "monthlySales": "Monthly sales",
+          "typesDistribution": "Invoice type distribution",
+          "dailyInvoices": "Invoices by day",
+          "monthlyInvoicesDataset": "Invoices count",
+          "monthlyAmountDataset": "Total sales"
+        },
+        "summary": {
+          "title": "Quick summary",
+          "topMonths": "Top performing months",
+          "topDays": "Best weekdays"
+        },
+        "labels": {
+          "purchaseInvoices": "Purchase invoices",
+          "salesInvoices": "Sales invoices",
+          "purchaseReturns": "Purchase returns",
+          "salesReturns": "Sales returns",
+          "invoiceCount": "{count} invoices"
+        },
+        "months": {
+          "jan": "January",
+          "feb": "February",
+          "mar": "March",
+          "apr": "April",
+          "may": "May",
+          "jun": "June",
+          "jul": "July",
+          "aug": "August",
+          "sep": "September",
+          "oct": "October",
+          "nov": "November",
+          "dec": "December"
+        },
+        "weekdays": {
+          "sun": "Sunday",
+          "mon": "Monday",
+          "tue": "Tuesday",
+          "wed": "Wednesday",
+          "thu": "Thursday",
+          "fri": "Friday",
+          "sat": "Saturday"
+        }
       }
     }
   },
