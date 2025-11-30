@@ -1,11 +1,12 @@
 "use client";
 
-import type { HTMLAttributes, MouseEvent } from "react";
+import type { HTMLAttributes, MouseEvent, ReactNode } from "react";
 
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import { useTranslations } from "next-intl";
 
 import { Locale, locales } from "@/i18n/config";
 
@@ -15,6 +16,7 @@ export interface BreadcrumbItem {
   onClick?: (
     event: MouseEvent<HTMLAnchorElement | HTMLButtonElement | HTMLSpanElement>,
   ) => void;
+  segmentKey?: string;
 }
 
 type BreadcrumbProps = HTMLAttributes<HTMLBaseElement> & {
@@ -23,64 +25,75 @@ type BreadcrumbProps = HTMLAttributes<HTMLBaseElement> & {
   className?: string;
 };
 
-// Mapping for better Arabic names
-const pathNameMap: Record<string, string> = {
+const breadcrumbSegmentKeyMap: Record<string, string> = {
   // Main sections
-  reports: "تقارير",
-  forms: "النماذج",
-  basic: "القوائم الأساسية",
-  settings: "الإعدادات",
+  reports: "segments.reports",
+  forms: "segments.forms",
+  basic: "segments.basic",
+  settings: "segments.settings",
 
   // Reports
-  "account-statement": "كشف حساب",
-  vouchers: "تقرير السندات",
-  "income-statement": "قائمة الدخل",
-  "trial-balance": "ميزان المراجعة",
-  "balance-sheet": "الميزانية العمومية",
-  "journal-ledger": "دفتر القيود",
-  "general-ledger": "دفتر الأستاذ",
-  invoices: "قائمة الفواتير",
-  vat: "تقرير الضريبة",
-  tax: "التقارير الضريبية",
-  "daily-journal": "دفتر اليومية الضريبية",
-  "sales-invoices": "فواتير المبيعات",
-  "purchase-invoices": "فواتير المشتريات",
-  "credit-notes": "إشعارات دائنة",
-  "debit-notes": "إشعارات مدينة",
+  "account-statement": "segments.account-statement",
+  vouchers: "segments.vouchers",
+  "income-statement": "segments.income-statement",
+  "trial-balance": "segments.trial-balance",
+  "balance-sheet": "segments.balance-sheet",
+  "journal-ledger": "segments.journal-ledger",
+  "general-ledger": "segments.general-ledger",
+  invoices: "segments.invoices",
+  vat: "segments.vat",
+  tax: "segments.tax",
+  "daily-journal": "segments.daily-journal",
+  "sales-invoices": "segments.sales-invoices",
+  "purchase-invoices": "segments.purchase-invoices",
+  "credit-notes": "segments.credit-notes",
+  "debit-notes": "segments.debit-notes",
 
   // Forms - Vouchers
-  voucher: "القيود",
-  voucher1: "سند قبض",
-  voucher2: "سند صرف",
-  gvoucher4: "سند قبض عميل",
-  gvoucher5: "سند صرف عميل",
-  receipt: "سند استلام",
-  delivery: "سند تسليم",
-  balance: "قيد افتتاحي",
+  voucher: "segments.voucher",
+  voucher1: "segments.voucher1",
+  voucher2: "segments.voucher2",
+  gvoucher4: "segments.gvoucher4",
+  gvoucher5: "segments.gvoucher5",
+  receipt: "segments.receipt",
+  delivery: "segments.delivery",
+  balance: "segments.balance",
 
   // Basic
-  accounts: "الحسابات",
-  customers: "العملاء",
-  items: "الأصناف",
-  boxes: "الصناديق",
-  units: "الوحدات",
-  categories: "الفئات",
-  currencies: "العملات",
-  "cost-centers": "مراكز التكلفة",
-  cust_type: "أنواع العملاء",
+  accounts: "segments.accounts",
+  customers: "segments.customers",
+  items: "segments.items",
+  boxes: "segments.boxes",
+  units: "segments.units",
+  categories: "segments.categories",
+  currencies: "segments.currencies",
+  "cost-centers": "segments.cost-centers",
+  cust_type: "segments.cust_type",
 
   // Settings
-  permissions: "الصلاحيات",
-  "gl-transactions": "القيود المحاسبية",
-  taxes: "الضرائب",
-  integrations: "التكاملات",
+  permissions: "segments.permissions",
+  "gl-transactions": "segments.gl-transactions",
+  taxes: "segments.taxes",
+  integrations: "segments.integrations",
 
   // Actions
-  new: "جديدة",
-  edit: "تعديل",
-  preview: "معاينة",
-  payment: "دفع",
+  new: "segments.new",
+  edit: "segments.edit",
+  preview: "segments.preview",
+  payment: "segments.payment",
 };
+
+const highlightSegmentClassMap: Record<string, string> = {
+  preview: "text-blue-600 font-semibold",
+  edit: "text-yellow-600 font-semibold",
+};
+
+const formatSegmentFallback = (segment: string) =>
+  segment
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
 const Breadcrumb = ({
   items = [],
@@ -88,6 +101,16 @@ const Breadcrumb = ({
   className,
 }: BreadcrumbProps) => {
   const pathname = usePathname();
+  const tBreadcrumbs = useTranslations("navigation.breadcrumbs");
+
+  const getSegmentLabel = (segment: string) => {
+    const translationKey = breadcrumbSegmentKeyMap[segment];
+    const fallback = formatSegmentFallback(segment);
+
+    return translationKey
+      ? tBreadcrumbs(translationKey, { fallback })
+      : fallback;
+  };
 
   // Generate breadcrumbs from the current pathname if no items are provided
   const generateBreadcrumbs = (): BreadcrumbItem[] => {
@@ -116,23 +139,24 @@ const Breadcrumb = ({
       // Handle dynamic segments (like [id])
       // If segment is a number, it's likely an ID - use parent segment name
       let name: string;
+      let segmentKey: string | undefined = segment;
 
       if (!isNaN(Number(segment)) && filteredIndex > 0) {
         // This is a dynamic ID segment, use parent name with ID
         const parentSegment = segmentsToShow[filteredIndex - 1];
-        const parentName = pathNameMap[parentSegment] || parentSegment;
+        const parentName = getSegmentLabel(parentSegment);
 
         name = `${parentName} #${segment}`;
+        segmentKey = undefined;
       } else {
         // Use mapped name if available, otherwise capitalize
-        name =
-          pathNameMap[segment] ||
-          segment.charAt(0).toUpperCase() + segment.slice(1);
+        name = getSegmentLabel(segment);
       }
 
       return {
         name,
         href: filteredIndex < segmentsToShow.length - 1 ? href : undefined, // No link for current page
+        segmentKey,
       };
     });
   };
@@ -156,66 +180,53 @@ const Breadcrumb = ({
               className="inline-flex items-center font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
               href="/"
             >
-              الرئيسية
+              {tBreadcrumbs("home")}
             </Link>
           </li>
         )}
 
         {breadcrumbs.map((item, index) => {
-          // تحديد إذا كان النص يحتوي على "عرض" أو "تعديل"
-          const name = item.name;
-          const hasView = name.includes("عرض");
-          const hasEdit = name.includes("تعديل");
+          let renderName: ReactNode = item.name;
+          const highlightClass =
+            (item.segmentKey && highlightSegmentClassMap[item.segmentKey]) ||
+            undefined;
 
-          // استخراج الكلمة والبقية من النص
-          let renderName: React.ReactNode = name;
+          if (highlightClass) {
+            renderName = (
+              <span className={highlightClass}>
+                {item.name}
+              </span>
+            );
+          }
 
-          if (hasView || hasEdit) {
-            const parts: React.ReactNode[] = [];
-            let remainingText = name;
+          let renderedContent: ReactNode;
 
-            if (hasView) {
-              const viewIndex = remainingText.indexOf("عرض");
-
-              if (viewIndex !== -1) {
-                // إضافة النص قبل "عرض"
-                if (viewIndex > 0) {
-                  parts.push(remainingText.substring(0, viewIndex));
-                }
-                // إضافة "عرض" باللون الأزرق
-                parts.push(
-                  <span key="view" className="text-blue-600 font-semibold">
-                    عرض
-                  </span>,
-                );
-                // البقية بعد "عرض"
-                remainingText = remainingText.substring(viewIndex + 3);
-              }
-            } else if (hasEdit) {
-              const editIndex = remainingText.indexOf("تعديل");
-
-              if (editIndex !== -1) {
-                // إضافة النص قبل "تعديل"
-                if (editIndex > 0) {
-                  parts.push(remainingText.substring(0, editIndex));
-                }
-                // إضافة "تعديل" باللون الأصفر
-                parts.push(
-                  <span key="edit" className="text-yellow-600 font-semibold">
-                    تعديل
-                  </span>,
-                );
-                // البقية بعد "تعديل"
-                remainingText = remainingText.substring(editIndex + 5);
-              }
-            }
-
-            // إضافة البقية إذا كان هناك نص متبقي
-            if (remainingText) {
-              parts.push(remainingText);
-            }
-
-            renderName = <>{parts}</>;
+          if (item.href) {
+            renderedContent = (
+              <Link
+                className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
+                href={item.href}
+                onClick={item.onClick}
+              >
+                {renderName}
+              </Link>
+            );
+          } else if (item.onClick) {
+            renderedContent = (
+              <button
+                className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
+                type="button"
+                onClick={item.onClick}
+              >
+                {renderName}
+              </button>
+            );
+          } else {
+            renderedContent = (
+              <span className="font-medium text-gray-500 leading-none">
+                {renderName}
+              </span>
+            );
           }
 
           return (
@@ -228,27 +239,7 @@ const Breadcrumb = ({
             >
               <div className="flex items-center">
                 <ChevronRightIcon className="h-4 w-4 text-gray-400 mx-2 rtl:rotate-180" />
-                {item.href ? (
-                  <Link
-                    className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
-                    href={item.href}
-                    onClick={item.onClick}
-                  >
-                    {renderName}
-                  </Link>
-                ) : item.onClick ? (
-                  <button
-                    className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
-                    type="button"
-                    onClick={item.onClick}
-                  >
-                    {renderName}
-                  </button>
-                ) : (
-                  <span className="font-medium text-gray-500 leading-none">
-                    {renderName}
-                  </span>
-                )}
+                {renderedContent}
               </div>
             </li>
           );

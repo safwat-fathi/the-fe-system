@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import type { Invoice as InvoiceModel } from "@/types/models/invoice";
+
+import { useState, useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,6 +15,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Input } from "@heroui/react";
+import { useLocale, useTranslations } from "next-intl";
 
 ChartJS.register(
   CategoryScale,
@@ -28,18 +30,21 @@ ChartJS.register(
 interface DashboardClientProps {
   salesChartData: any;
   invoices: InvoiceModel[];
-  branch: string;
-  year: string;
 }
 
-export default function DashboardClient({
-  salesChartData,
-  invoices,
-  branch,
-  year,
-}: DashboardClientProps) {
+export default function DashboardClient({ salesChartData, invoices }: DashboardClientProps) {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const locale = useLocale();
+  const tDashboard = useTranslations("dashboard");
+
+  const dateFormatter = useMemo(() => {
+    return new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }, [locale]);
 
   const filteredGoldData = useMemo(() => {
     return invoices
@@ -52,16 +57,16 @@ export default function DashboardClient({
       })
       .filter((inv) => Number.isFinite(Number(inv.gold_price ?? 0)))
       .map((inv) => ({
-        date: new Date(inv.inv_date).toLocaleDateString("ar-EG"),
+        date: dateFormatter.format(new Date(inv.inv_date)),
         price: Number(inv.gold_price ?? 0),
       }));
-  }, [invoices, startDate, endDate]);
+  }, [dateFormatter, invoices, startDate, endDate]);
 
   const goldChartData = {
     labels: filteredGoldData.map((d) => d.date),
     datasets: [
       {
-        label: "سعر الذهب (من الفواتير)",
+        label: tDashboard("goldChart.datasetLabel"),
         data: filteredGoldData.map((d) => d.price),
         borderColor: "#f59e0b",
         backgroundColor: "#facc15",
@@ -79,20 +84,22 @@ export default function DashboardClient({
         <div className="card p-6 space-y-4">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-800">
-              تحليل أسعار الذهب
+              {tDashboard("goldChart.title")}
             </h2>
             <div className="flex flex-wrap gap-3 items-center">
               <Input
                 className="max-w-[140px]"
-                placeholder="من تاريخ"
+                placeholder={tDashboard("goldChart.fromPlaceholder")}
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
-              <span className="text-sm text-gray-500">إلى</span>
+              <span className="text-sm text-gray-500">
+                {tDashboard("goldChart.rangeSeparator")}
+              </span>
               <Input
                 className="max-w-[140px]"
-                placeholder="إلى تاريخ"
+                placeholder={tDashboard("goldChart.toPlaceholder")}
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -123,7 +130,7 @@ export default function DashboardClient({
         {/* Sales Chart */}
         <div className="card p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-800">
-            المبيعات الشهرية
+            {tDashboard("salesChart.title")}
           </h2>
           <div className="h-64">
             <Line
