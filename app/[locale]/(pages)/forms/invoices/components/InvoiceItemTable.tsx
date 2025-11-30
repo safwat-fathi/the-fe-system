@@ -36,11 +36,7 @@ type ItemSelectAdditional = {
   page: number;
 };
 
-const AsyncCreatableSelect = withAsyncPaginate<
-  ItemOption,
-  false,
-  ItemSelectAdditional
->(CreatableSelect);
+const AsyncCreatableSelect = withAsyncPaginate(CreatableSelect);
 
 interface Item {
   id: number;
@@ -141,9 +137,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
     const [taxRates, setTaxRates] = useState<number[]>([0, 5, 10, 15, 20]);
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const getDisplayValue = (fieldKey: string, rawValue: string) =>
-      focusedField === fieldKey
-        ? rawValue
-        : formatForDisplay(rawValue);
+      focusedField === fieldKey ? rawValue : formatForDisplay(rawValue);
 
     // load tax rates from API
     useEffect(() => {
@@ -155,7 +149,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
             setTaxRates(rates);
           }
         } catch (error) {
-        console.error("فشل في تحميل قائمة الضرائب:", error);
+          console.error("فشل في تحميل قائمة الضرائب:", error);
         }
       };
 
@@ -427,10 +421,6 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       const item_disc_amt = toNum(updated[index].item_disc_amt);
       const tax_prc = toNum(updated[index].tax_prc ?? "15");
 
-      // decide totals per payType
-      let total_a = 0;
-      let total_w = 0;
-
       const getTotalsForPayType = () => {
         if (payType === INVOICE_PAY_TYPES.VALUE) {
           return {
@@ -607,9 +597,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
 
     const calculateBaseAndTax = (row: InvoiceItemRow) => {
       const base =
-        toNum(row.total_a) +
-        toNum(row.total_w) -
-        toNum(row.item_disc_amt);
+        toNum(row.total_a) + toNum(row.total_w) - toNum(row.item_disc_amt);
       const tax = (base * toNum(row.tax_prc ?? "15")) / 100;
 
       return { base, tax };
@@ -639,15 +627,11 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         item: selected.id ?? 0,
         ...(selected.id ? { item_id: selected.id } : {}),
         item_desc:
-          selected.item_name ??
-          selected.item_code ??
-          String(selected.id),
+          selected.item_name ?? selected.item_code ?? String(selected.id),
         price: String(goldPrice ?? selected.item_price ?? 0),
         price_w: String(selected.work_price ?? 0),
         weight: String(selected.item_weight ?? 0),
-        g_weight: String(
-          selected.item_g_weight ?? selected.item_weight ?? 0,
-        ),
+        g_weight: String(selected.item_g_weight ?? selected.item_weight ?? 0),
         stones: selected.stones ?? null,
       };
 
@@ -777,15 +761,11 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                 <th className="w-[80px]">{columnLabels.stones}</th>
                 {(payType === INVOICE_PAY_TYPES.VALUE ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                  <th className="w-[100px]">
-                    {columnLabels.pricePerGram}
-                  </th>
+                  <th className="w-[100px]">{columnLabels.pricePerGram}</th>
                 )}
                 {(payType === INVOICE_PAY_TYPES.WAGES ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                  <th className="w-[100px]">
-                    {columnLabels.wagePerGram}
-                  </th>
+                  <th className="w-[100px]">{columnLabels.wagePerGram}</th>
                 )}
                 {(payType === INVOICE_PAY_TYPES.VALUE ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
@@ -895,9 +875,10 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                 const itemSelectRef = (
                   instance: SelectInstance<ItemOption> | null,
                 ) =>
-                  setInputRef(index, itemSelectCol)(
-                    (instance as unknown as HTMLInputElement | null) || null,
-                  );
+                  setInputRef(
+                    index,
+                    itemSelectCol,
+                  )((instance as unknown as HTMLInputElement | null) || null);
 
                 const showValueCols =
                   payType === INVOICE_PAY_TYPES.VALUE ||
@@ -926,7 +907,8 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                   inputMode: "decimal",
                   step: stepFromDigits(weightDigits),
                   alignMiddle: true,
-                  onChange: (value) => handleFieldChange(index, "weight", value),
+                  onChange: (value) =>
+                    handleFieldChange(index, "weight", value),
                 });
 
                 registerCell({
@@ -980,7 +962,8 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                   required:
                     payType === INVOICE_PAY_TYPES.WAGES ||
                     payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES,
-                  onChange: (value) => handleFieldChange(index, "price_w", value),
+                  onChange: (value) =>
+                    handleFieldChange(index, "price_w", value),
                 });
 
                 registerCell({
@@ -1048,7 +1031,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                         inputId={`item-${index}${itemSelectCol}`}
                         instanceId={`item-select-${index}`}
                         isDisabled={!isEditing}
-                        loadOptions={loadItemOptions}
+                        loadOptions={loadItemOptions as any}
                         menuPortalTarget={
                           typeof window !== "undefined" ? document.body : null
                         }
@@ -1118,9 +1101,10 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                     <td>
                       <select
                         ref={(node: HTMLSelectElement | null) =>
-                          setInputRef(index, taxRateCol)(
-                            node as unknown as HTMLInputElement | null,
-                          )
+                          setInputRef(
+                            index,
+                            taxRateCol,
+                          )(node as unknown as HTMLInputElement | null)
                         }
                         className="border w-full p-1 text-xs text-center"
                         disabled={!isEditing}

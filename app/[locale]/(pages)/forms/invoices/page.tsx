@@ -26,24 +26,37 @@ const INVOICE_TYPE_CONFIG: Record<
   InvoicePageType,
   {
     transType: TransTypes;
-    translationKey: string;
+    titleKey:
+      | "types.sale.title"
+      | "types.purchase.title"
+      | "types.saleReturn.title"
+      | "types.purchaseReturn.title";
+    descriptionKey:
+      | "types.sale.description"
+      | "types.purchase.description"
+      | "types.saleReturn.description"
+      | "types.purchaseReturn.description";
   }
 > = {
   sale: {
     transType: TransTypes.SALES,
-    translationKey: "types.sale",
+    titleKey: "types.sale.title",
+    descriptionKey: "types.sale.description",
   },
   purchase: {
     transType: TransTypes.PURCHASE,
-    translationKey: "types.purchase",
+    titleKey: "types.purchase.title",
+    descriptionKey: "types.purchase.description",
   },
   "sale-return": {
     transType: TransTypes.SALES_RETURN,
-    translationKey: "types.saleReturn",
+    titleKey: "types.saleReturn.title",
+    descriptionKey: "types.saleReturn.description",
   },
   "purchase-return": {
     transType: TransTypes.PURCHASE_RETURN,
-    translationKey: "types.purchaseReturn",
+    titleKey: "types.purchaseReturn.title",
+    descriptionKey: "types.purchaseReturn.description",
   },
 };
 
@@ -83,8 +96,8 @@ export async function generateMetadata({
   const t = await getTranslations("forms.invoices");
 
   return {
-    title: t(`${config.translationKey}.title`),
-    description: t(`${config.translationKey}.description`),
+    title: t(config.titleKey),
+    description: t(config.descriptionKey),
   };
 }
 
@@ -212,7 +225,7 @@ export default async function InvoicePage({
   }
 
   const config = INVOICE_TYPE_CONFIG[invoiceType];
-  const typeTitle = t(`${config.translationKey}.title`);
+  const typeTitle = t(config.titleKey);
 
   let invoiceData: Invoice | null = null;
   let invoiceDetails: InvoiceDetail[] = [];
