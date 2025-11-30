@@ -4,6 +4,7 @@ import { Button, Checkbox } from "@heroui/react";
 import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   CalendarIcon,
   CheckCircleIcon,
@@ -22,6 +23,7 @@ import { useInvoiceTotalsStore } from "@/stores/invoiceTotalsStore";
 
 export default function InvoiceTotalsActions() {
   const router = useRouter();
+  const t = useTranslations("forms.invoices.actions");
   const {
     metadata,
     invoiceNumber,
@@ -45,7 +47,7 @@ export default function InvoiceTotalsActions() {
 
   return (
     <div className="relative bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 border border-slate-200">
-      <div className="absolute left-0 -top-[50px]">
+      <div className="absolute ltr:right-0 rtl:left-0 -top-[50px]">
         <span className="text-slate-600 font-medium text-sm sm:text-base">
           #{invoiceNumber}
         </span>
@@ -77,7 +79,7 @@ export default function InvoiceTotalsActions() {
               onClick={saveInvoice}
             >
               <CheckCircleIcon className="w-4 h-4 " />
-              <span className="hidden sm:inline">حفظ</span>
+              <span className="hidden sm:inline">{t("save")}</span>
             </Button>
           )}
 
@@ -87,7 +89,7 @@ export default function InvoiceTotalsActions() {
               onClick={onEdit}
             >
               <PencilIcon className="w-4 h-4 text-slate-500" />
-              <span className="hidden sm:inline">تعديل</span>
+              <span className="hidden sm:inline">{t("edit")}</span>
             </Button>
           )}
 
@@ -96,7 +98,7 @@ export default function InvoiceTotalsActions() {
             onClick={() => router.push(newInvoiceHref)}
           >
             <PlusCircleIcon className="w-4 h-4 " />
-            <span className="hidden sm:inline">جديد</span>
+            <span className="hidden sm:inline">{t("new")}</span>
           </Button>
 
           {!isNewInvoice && (
@@ -105,7 +107,7 @@ export default function InvoiceTotalsActions() {
               onClick={previewInvoice}
             >
               <PrinterIcon className="w-4 h-4 " />
-              <span className="hidden sm:inline">طباعة</span>
+              <span className="hidden sm:inline">{t("print")}</span>
             </Button>
           )}
 
@@ -144,7 +146,10 @@ export default function InvoiceTotalsActions() {
                 <ChevronRightIcon className="w-4 h-4 " />
               </Link>
               <span className="text-xs text-slate-600 px-2 font-medium">
-                {invoiceNumber} من {metadata.totalInvoices}
+                {t("invoicePosition", {
+                  current: invoiceNumber,
+                  total: metadata.totalInvoices ?? "-",
+                })}
               </span>
               <Link
                 className={clsx(
@@ -189,7 +194,9 @@ export default function InvoiceTotalsActions() {
               size="sm"
               onValueChange={setCommit}
             />
-            <span className="text-xs text-slate-600">حُفظ</span>
+            <span className="text-xs text-slate-600">
+              {t("status.committed")}
+            </span>
           </div>
 
           <div className="flex items-center gap-1">
@@ -200,12 +207,14 @@ export default function InvoiceTotalsActions() {
               size="sm"
               onValueChange={setPrint}
             />
-            <span className="text-xs text-slate-600">طُبع</span>
+            <span className="text-xs text-slate-600">
+              {t("status.printed")}
+            </span>
           </div>
 
           <div className="flex items-center gap-1">
             <Checkbox isDisabled color="warning" isSelected={isOk} size="sm" />
-            <span className="text-xs text-slate-600">OK</span>
+            <span className="text-xs text-slate-600">{t("status.ok")}</span>
           </div>
 
           <div className="flex items-center gap-1">
@@ -215,7 +224,7 @@ export default function InvoiceTotalsActions() {
               isSelected={isDone}
               size="sm"
             />
-            <span className="text-xs text-slate-600">Done</span>
+            <span className="text-xs text-slate-600">{t("status.done")}</span>
           </div>
         </div>
 
@@ -224,7 +233,7 @@ export default function InvoiceTotalsActions() {
           <input
             className="flex-1 ps-2 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-0 focus:outline-none"
             // placeholder="بحث..."
-            placeholder="بحث برقم الفاتورة..."
+            placeholder={t("searchPlaceholder")}
             type="number"
             value={searchNumber}
             onChange={(e) => setSearchNumber(e.target.value)}
