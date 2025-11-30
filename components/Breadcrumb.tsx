@@ -25,7 +25,7 @@ type BreadcrumbProps = HTMLAttributes<HTMLBaseElement> & {
   className?: string;
 };
 
-const breadcrumbSegmentKeyMap: Record<string, string> = {
+const breadcrumbSegmentKeyMap = {
   // Main sections
   reports: "segments.reports",
   forms: "segments.forms",
@@ -81,7 +81,12 @@ const breadcrumbSegmentKeyMap: Record<string, string> = {
   edit: "segments.edit",
   preview: "segments.preview",
   payment: "segments.payment",
-};
+} as const;
+
+type BreadcrumbSegmentKey = keyof typeof breadcrumbSegmentKeyMap;
+
+const isBreadcrumbSegmentKey = (value: string): value is BreadcrumbSegmentKey =>
+  Object.prototype.hasOwnProperty.call(breadcrumbSegmentKeyMap, value);
 
 const highlightSegmentClassMap: Record<string, string> = {
   preview: "text-blue-600 font-semibold",
@@ -104,12 +109,15 @@ const Breadcrumb = ({
   const tBreadcrumbs = useTranslations("navigation.breadcrumbs");
 
   const getSegmentLabel = (segment: string) => {
-    const translationKey = breadcrumbSegmentKeyMap[segment];
     const fallback = formatSegmentFallback(segment);
 
-    return translationKey
-      ? tBreadcrumbs(translationKey, { fallback })
-      : fallback;
+    if (isBreadcrumbSegmentKey(segment)) {
+      const translationKey = breadcrumbSegmentKeyMap[segment];
+
+      return tBreadcrumbs(translationKey, { fallback });
+    }
+
+    return fallback;
   };
 
   // Generate breadcrumbs from the current pathname if no items are provided

@@ -32,19 +32,20 @@ interface DashboardClientProps {
   invoices: InvoiceModel[];
 }
 
+const dateFormatter = (locale: string) => {
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
 export default function DashboardClient({ salesChartData, invoices }: DashboardClientProps) {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const locale = useLocale();
   const tDashboard = useTranslations("dashboard");
 
-  const dateFormatter = useMemo(() => {
-    return new Intl.DateTimeFormat(locale, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  }, [locale]);
 
   const filteredGoldData = useMemo(() => {
     return invoices
@@ -57,10 +58,10 @@ export default function DashboardClient({ salesChartData, invoices }: DashboardC
       })
       .filter((inv) => Number.isFinite(Number(inv.gold_price ?? 0)))
       .map((inv) => ({
-        date: dateFormatter.format(new Date(inv.inv_date)),
+        date: dateFormatter(locale).format(new Date(inv.inv_date)),
         price: Number(inv.gold_price ?? 0),
       }));
-  }, [dateFormatter, invoices, startDate, endDate]);
+  }, [invoices, startDate, endDate]);
 
   const goldChartData = {
     labels: filteredGoldData.map((d) => d.date),
