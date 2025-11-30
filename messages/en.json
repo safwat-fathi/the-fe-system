@@ -15,6 +15,134 @@
     "reports": "Reports",
     "settings": "Settings"
   },
+  "forms": {
+    "invoices": {
+      "types": {
+        "sale": {
+          "title": "Sales invoice",
+          "description": "Manage sales invoices"
+        },
+        "purchase": {
+          "title": "Purchase invoice",
+          "description": "Manage purchase invoices"
+        },
+        "saleReturn": {
+          "title": "Sales return",
+          "description": "Manage sales return invoices"
+        },
+        "purchaseReturn": {
+          "title": "Purchase return",
+          "description": "Manage purchase return invoices"
+        }
+      },
+      "breadcrumbs": {
+        "list": "Invoices",
+        "new": "New",
+        "preview": "Preview",
+        "edit": "Edit",
+        "editWithId": "Edit {id}"
+      },
+      "actions": {
+        "save": "Save",
+        "edit": "Edit",
+        "new": "New",
+        "print": "Print",
+        "searchPlaceholder": "Search by invoice number...",
+        "invoicePosition": "{current} of {total}",
+        "status": {
+          "committed": "Committed",
+          "printed": "Printed",
+          "ok": "OK",
+          "done": "Done"
+        }
+      },
+      "selectors": {
+        "invoiceDateLabel": "Invoice date & time",
+        "customerLabel": {
+          "customer": "Customer",
+          "supplier": "Supplier"
+        },
+        "customerPlaceholder": {
+          "customer": "Select a customer...",
+          "supplier": "Select a supplier..."
+        },
+        "fallbackName": {
+          "customer": "Customer {code}",
+          "supplier": "Supplier {code}"
+        },
+        "paymentMethodLabel": "Payment method",
+        "paymentMethods": {
+          "cash": "Cash",
+          "credit": "Credit"
+        },
+        "payTypeLabel": "Apply to",
+        "payTypeOptions": {
+          "value": "Value",
+          "wages": "Wages",
+          "valueAndWages": "Value & wages"
+        },
+        "customerInvoicesLabel": {
+          "customer": "Customer invoices",
+          "supplier": "Supplier invoices"
+        },
+        "customerInvoicesPlaceholder": "Select an invoice...",
+        "referenceLabel": "Reference number",
+        "referencePlaceholder": "Reference",
+        "handlingLabel": "Handling",
+        "employeeLabel": "Salesperson",
+        "employeePlaceholder": "-- Select --",
+        "goldPriceLabel": "Gold price (SAR)",
+        "goldPriceLoading": "Loading...",
+        "noteLabel": "Description",
+        "barcodeLabel": "Barcode",
+        "barcodePlaceholder": "Search by barcode",
+        "fields": {
+          "mobile": "Mobile",
+          "crNumber": "Commercial register",
+          "vatNumber": "VAT number",
+          "gov": "Governorate",
+          "city": "City",
+          "area": "District",
+          "street": "Street",
+          "building": "Building number",
+          "postBox": "P.O. box",
+          "postCode": "Postal code"
+        },
+        "address": {
+          "title": "Address information",
+          "empty": {
+            "customer": "Select a customer to show the address information",
+            "supplier": "Select a supplier to show the address information"
+          }
+        }
+      },
+      "items": {
+        "columns": {
+          "item": "Item",
+          "quantity": "Qty",
+          "grossWeight": "Gross weight",
+          "netWeight": "Net weight",
+          "stones": "Stones",
+          "pricePerGram": "Price / gram",
+          "wagePerGram": "Wages / gram",
+          "totalValue": "Total value",
+          "totalWages": "Total wages",
+          "discount": "Discount",
+          "taxRate": "Tax rate",
+          "tax": "Tax",
+          "totalWithTax": "Total incl. tax",
+          "description": "Description",
+          "delete": "Delete"
+        },
+        "placeholders": {
+          "selectItem": "Select an item..."
+        },
+        "actions": {
+          "addItem": "Add item"
+        }
+      }
+    }
+  },
   "notFound": {
     "title": "Page not found - 404",
     "description": "Sorry, we couldn't find the page you're looking for.",

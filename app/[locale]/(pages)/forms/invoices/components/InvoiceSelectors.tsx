@@ -4,12 +4,14 @@ import {
   ChangeEvent,
   Dispatch,
   SetStateAction,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import ReactSelect, { type SelectInstance } from "react-select";
+import { useTranslations } from "next-intl";
 
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import {
@@ -41,6 +43,82 @@ interface Customer {
 }
 
 type CustomerOption = { value: string; label: string };
+
+const useCustomerInvoices = ({
+  isReturnInvoice,
+  hasCustomerId,
+  invoiceType,
+  numericCustomerId,
+}: {
+  isReturnInvoice: boolean;
+  hasCustomerId: boolean;
+  invoiceType: TransTypes;
+  numericCustomerId: number;
+}) => {
+  const [customerInvoices, setCustomerInvoices] = useState<Invoice[]>([]);
+  const [isCustomerInvoicesLoading, setIsCustomerInvoicesLoading] =
+    useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (!isReturnInvoice || !hasCustomerId) {
+      setCustomerInvoices([]);
+
+      return;
+    }
+
+    const loadCustomerInvoices = async () => {
+      setIsCustomerInvoicesLoading(true);
+
+      try {
+        const transType =
+          invoiceType === TransTypes.PURCHASE_RETURN
+            ? TransTypes.PURCHASE_RETURN
+            : TransTypes.SALES_RETURN;
+        const invoices = await getCustomerInvoicesAction({
+          xcust_id: Number(numericCustomerId),
+          xtrans_type: transType,
+        });
+
+        if (!ignore) {
+          setCustomerInvoices(Array.isArray(invoices) ? invoices : []);
+        }
+      } catch (error) {
+        if (!ignore) {
+          console.error("Error loading customer invoices:", error);
+          setCustomerInvoices([]);
+        }
+      } finally {
+        if (!ignore) {
+          setIsCustomerInvoicesLoading(false);
+        }
+      }
+    };
+
+    loadCustomerInvoices();
+
+    return () => {
+      ignore = true;
+    };
+  }, [hasCustomerId, invoiceType, isReturnInvoice, numericCustomerId]);
+
+  const customerInvoiceOptions = useMemo(() => {
+    return customerInvoices.map((invoice) => {
+      const dateLabel = invoice.inv_date ? invoice.inv_date.split("T")[0] : "";
+      const label = dateLabel
+        ? `${invoice.inv_id} - ${dateLabel}`
+        : String(invoice.inv_id);
+
+      return {
+        value: String(invoice.inv_id),
+        label,
+      };
+    });
+  }, [customerInvoices]);
+
+  return { customerInvoiceOptions, isCustomerInvoicesLoading };
+};
 
 interface Props {
   customers: Customer[];
@@ -145,11 +223,22 @@ export default function InvoiceSelectors({
 }: Props) {
   const selectorsRef = useRef<HTMLDivElement | null>(null);
   const customerSelectRef = useRef<SelectInstance<CustomerOption> | null>(null);
+  const t = useTranslations("forms.invoices.selectors");
 
-  const [isOpen] = useState(false);
-  const [customerInvoices, setCustomerInvoices] = useState<Invoice[]>([]);
-  const [isCustomerInvoicesLoading, setIsCustomerInvoicesLoading] =
-    useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const partyKey: "customer" | "supplier" =
+    invoiceType === TransTypes.PURCHASE ||
+    invoiceType === TransTypes.PURCHASE_RETURN
+      ? "supplier"
+      : "customer";
+  const partyLabel = t(`customerLabel.${partyKey}`);
+  const partyPlaceholder = t(`customerPlaceholder.${partyKey}`);
+  const customerInvoicesLabel = t(`customerInvoicesLabel.${partyKey}`);
+  const addressEmptyText = t(`address.empty.${partyKey}`);
+  const getFallbackName = useCallback(
+    (code: string) => t(`fallbackName.${partyKey}`, { code }),
+    [partyKey, t],
+  );
 
   const { handleKeyDown } = useKeyAsTab({
     keys: ["Enter"],
@@ -194,9 +283,12 @@ export default function InvoiceSelectors({
   });
 
   const payTypeOptions = [
-    { value: INVOICE_PAY_TYPES.VALUE, label: "القيمة" },
-    { value: INVOICE_PAY_TYPES.WAGES, label: "الأجور" },
-    { value: INVOICE_PAY_TYPES.VALUE_AND_WAGES, label: "قيمة وأجور" },
+    { value: INVOICE_PAY_TYPES.VALUE, label: t("payTypeOptions.value") },
+    { value: INVOICE_PAY_TYPES.WAGES, label: t("payTypeOptions.wages") },
+    {
+      value: INVOICE_PAY_TYPES.VALUE_AND_WAGES,
+      label: t("payTypeOptions.valueAndWages"),
+    },
   ] as const;
 
   const handlePayTypeChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -211,66 +303,91 @@ export default function InvoiceSelectors({
   const resolveCustomerValue = (cust: Customer) =>
     String(cust.cust_code ?? cust.id ?? "");
 
-  const findCustomerByValue = (value: string | null): Customer | null => {
-    if (!value) return null;
-    const normalized = String(value);
+  const findCustomerByValue = useCallback(
+    (value: string | null): Customer | null => {
+      if (!value) return null;
+      const normalized = String(value);
 
-    const matchByCode = customers.find(
-      (cust) =>
-        cust.cust_code !== undefined &&
-        cust.cust_code !== null &&
-        String(cust.cust_code) === normalized,
-    );
+      const matchByCode = customers.find(
+        (cust) =>
+          cust.cust_code !== undefined &&
+          cust.cust_code !== null &&
+          String(cust.cust_code) === normalized,
+      );
 
-    if (matchByCode) return matchByCode;
+      if (matchByCode) return matchByCode;
 
-    const matchById = customers.find(
-      (cust) => String(cust.id ?? "") === normalized,
-    );
+      const matchById = customers.find(
+        (cust) => String(cust.id ?? "") === normalized,
+      );
 
-    if (matchById) return matchById;
+      if (matchById) return matchById;
 
-    return null;
-  };
-
-  const filteredCustomers = customers.filter((cust) =>
-    paymentMethod === PaymentTypes.CASH
-      ? cust.cust_type === 99
-      : cust.cust_type !== 99,
+      return null;
+    },
+    [customers],
   );
 
-  const mapCustomerToOption = (cust: Customer): CustomerOption => {
-    const value = resolveCustomerValue(cust);
-    const codeToShow =
-      cust.cust_code !== undefined && cust.cust_code !== null
-        ? String(cust.cust_code)
-        : String(cust.id ?? "");
-    const displayName =
-      cust.cust_name && cust.cust_name.trim().length > 0
-        ? cust.cust_name
-        : `عميل ${codeToShow}`;
+  const filteredCustomers = useMemo(
+    () =>
+      customers.filter((cust) =>
+        paymentMethod === PaymentTypes.CASH
+          ? cust.cust_type === 99
+          : cust.cust_type !== 99,
+      ),
+    [customers, paymentMethod],
+  );
+
+  const mapCustomerToOption = useCallback(
+    (cust: Customer): CustomerOption => {
+      const value = resolveCustomerValue(cust);
+      const codeToShow =
+        cust.cust_code !== undefined && cust.cust_code !== null
+          ? String(cust.cust_code)
+          : String(cust.id ?? "");
+      const displayName =
+        cust.cust_name && cust.cust_name.trim().length > 0
+          ? cust.cust_name
+          : getFallbackName(codeToShow);
+
+      return {
+        value,
+        label: `${displayName} - ${codeToShow}`,
+      };
+    },
+    [getFallbackName],
+  );
+
+  const filteredCustomersOptions = useMemo(
+    () => filteredCustomers.map(mapCustomerToOption),
+    [filteredCustomers, mapCustomerToOption],
+  );
+
+  const currentCustomer = useMemo(
+    () => findCustomerByValue(selectedCustomer),
+    [findCustomerByValue, selectedCustomer],
+  );
+
+  const selectedOption = useMemo(() => {
+    if (selectedCustomer === null || selectedCustomer === undefined) {
+      return null;
+    }
+
+    if (currentCustomer) {
+      return mapCustomerToOption(currentCustomer);
+    }
+
+    const fallbackLabel =
+      selectedCustomerName && selectedCustomerName.trim().length > 0
+        ? `${selectedCustomerName} - ${selectedCustomer}`
+        : String(selectedCustomer);
 
     return {
-      value,
-      label: `${displayName} - ${codeToShow}`,
+      value: String(selectedCustomer),
+      label: fallbackLabel,
     };
-  };
+  }, [currentCustomer, mapCustomerToOption, selectedCustomer, selectedCustomerName]);
 
-  const filteredCustomersOptions = filteredCustomers.map(mapCustomerToOption);
-
-  const currentCustomer = findCustomerByValue(selectedCustomer);
-  const selectedOption =
-    selectedCustomer !== null && selectedCustomer !== undefined
-      ? currentCustomer
-        ? mapCustomerToOption(currentCustomer)
-        : {
-            value: String(selectedCustomer),
-            label:
-              selectedCustomerName && selectedCustomerName.trim().length > 0
-                ? `${selectedCustomerName} - ${selectedCustomer}`
-                : String(selectedCustomer),
-          }
-      : null;
   const isReturnInvoice =
     invoiceType === TransTypes.PURCHASE_RETURN ||
     invoiceType === TransTypes.SALES_RETURN;
@@ -286,79 +403,57 @@ export default function InvoiceSelectors({
       : NaN;
   const hasCustomerId = Number.isFinite(numericCustomerId);
 
+  const { customerInvoiceOptions, isCustomerInvoicesLoading } =
+    useCustomerInvoices({
+      isReturnInvoice,
+      hasCustomerId,
+      invoiceType,
+      numericCustomerId,
+    });
+
   useEffect(() => {
     if (isEditing) {
       customerSelectRef.current?.focus();
     }
   }, [isEditing]);
 
-  useEffect(() => {
-    let ignore = false;
-
-    if (!isReturnInvoice || !hasCustomerId) {
-      setCustomerInvoices([]);
-
-      return;
+  const selectedReferenceOption = useMemo(() => {
+    if (!referenceNumber || referenceNumber.trim().length === 0) {
+      return null;
     }
 
-    const loadCustomerInvoices = async () => {
-      setIsCustomerInvoicesLoading(true);
-
-      try {
-        const transType =
-          invoiceType === TransTypes.PURCHASE_RETURN
-            ? TransTypes.PURCHASE_RETURN
-            : TransTypes.SALES_RETURN;
-        const invoices = await getCustomerInvoicesAction({
-          xcust_id: Number(numericCustomerId),
-          xtrans_type: transType,
-        });
-
-        if (!ignore) {
-          setCustomerInvoices(Array.isArray(invoices) ? invoices : []);
-        }
-      } catch (error) {
-        if (!ignore) {
-          console.error("Error loading customer invoices:", error);
-          setCustomerInvoices([]);
-        }
-      } finally {
-        if (!ignore) {
-          setIsCustomerInvoicesLoading(false);
-        }
+    return (
+      customerInvoiceOptions.find(
+        (option) => String(option.value) === String(referenceNumber),
+      ) ?? {
+        value: referenceNumber,
+        label: referenceNumber,
       }
-    };
+    );
+  }, [customerInvoiceOptions, referenceNumber]);
 
-    loadCustomerInvoices();
+  const applyCustomerFields = (selectedCust: Customer | null) => {
+    setSelectedCustomerName(selectedCust?.cust_name ?? "");
+    setMobileMethod(selectedCust?.mobile ?? "");
+    setHandlingMethod(selectedCust?.handling?.toString() ?? "");
+    setVatNumber(selectedCust?.vat_no ?? "");
+    setCrNo(selectedCust?.cr_no ?? "");
+    setGov(selectedCust?.gov ?? "");
+    setCity(selectedCust?.city ?? "");
+    setArea(selectedCust?.area ?? "");
+    setStreet(selectedCust?.street ?? "");
+    setBuildNo(selectedCust?.build_no ?? "");
+    setPostNo(selectedCust?.post_no ?? "");
+    setPostCode(selectedCust?.post_code ?? "");
+  };
 
-    return () => {
-      ignore = true;
-    };
-  }, [hasCustomerId, invoiceType, isReturnInvoice, numericCustomerId]);
+  const handleCustomerChange = (option: CustomerOption | null) => {
+    const nextValue = option?.value ?? null;
 
-  const customerInvoiceOptions = useMemo(() => {
-    return customerInvoices.map((invoice) => {
-      const dateLabel = invoice.inv_date ? invoice.inv_date.split("T")[0] : "";
-      const label = dateLabel
-        ? `${invoice.inv_id} - ${dateLabel}`
-        : String(invoice.inv_id);
-
-      return {
-        value: String(invoice.inv_id),
-        label,
-      };
-    });
-  }, [customerInvoices]);
-
-  const selectedReferenceOption =
-    referenceNumber && referenceNumber.trim().length > 0
-      ? (customerInvoiceOptions.find(
-          (option) => String(option.value) === String(referenceNumber),
-        ) ?? {
-          value: referenceNumber,
-          label: referenceNumber,
-        })
-      : null;
+    setSelectedCustomer(nextValue);
+    setReferenceNumber("");
+    applyCustomerFields(findCustomerByValue(nextValue));
+  };
 
   return (
     <div ref={selectorsRef} onKeyDownCapture={handleKeyDown}>
@@ -373,7 +468,7 @@ export default function InvoiceSelectors({
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="invoice-date"
                 >
-                  تاريخ ووقت الفاتورة:
+                  {`${t("invoiceDateLabel")}:`}
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -396,10 +491,7 @@ export default function InvoiceSelectors({
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="customer-select"
                 >
-                  {invoiceType === TransTypes.PURCHASE ||
-                  invoiceType === TransTypes.PURCHASE_RETURN
-                    ? "المورد:"
-                    : "العميل:"}
+                  {partyLabel + ":"}
                 </label>
                 <ReactSelect
                   ref={customerSelectRef}
@@ -414,12 +506,7 @@ export default function InvoiceSelectors({
                   }
                   menuPosition="fixed"
                   options={filteredCustomersOptions}
-                  placeholder={
-                    invoiceType === TransTypes.PURCHASE ||
-                    invoiceType === TransTypes.PURCHASE_RETURN
-                      ? "اختر المورد..."
-                      : "اختر العميل..."
-                  }
+                  placeholder={partyPlaceholder}
                   styles={{
                     control: (base) => ({
                       ...base,
@@ -433,50 +520,13 @@ export default function InvoiceSelectors({
                     singleValue: (base) => ({ ...base, fontSize: "12px" }),
                   }}
                   value={selectedOption}
-                  onChange={(selectedOption) => {
-                    const nextValue = selectedOption?.value ?? null;
-
-                    setSelectedCustomer(nextValue);
-                    setReferenceNumber("");
-
-                    const selectedCust = findCustomerByValue(nextValue);
-
-                    if (selectedCust) {
-                      setSelectedCustomerName(selectedCust.cust_name ?? "");
-                      setMobileMethod(selectedCust.mobile ?? "");
-                      setHandlingMethod(
-                        selectedCust.handling?.toString() ?? "",
-                      );
-                      setVatNumber(selectedCust.vat_no ?? "");
-                      setCrNo(selectedCust.cr_no ?? "");
-                      setGov(selectedCust.gov ?? "");
-                      setCity(selectedCust.city ?? "");
-                      setArea(selectedCust.area ?? "");
-                      setStreet(selectedCust.street ?? "");
-                      setBuildNo(selectedCust.build_no ?? "");
-                      setPostNo(selectedCust.post_no ?? "");
-                      setPostCode(selectedCust.post_code ?? "");
-                    } else {
-                      setSelectedCustomerName("");
-                      setMobileMethod("");
-                      setHandlingMethod("");
-                      setVatNumber("");
-                      setCrNo("");
-                      setGov("");
-                      setCity("");
-                      setArea("");
-                      setStreet("");
-                      setBuildNo("");
-                      setPostNo("");
-                      setPostCode("");
-                    }
-                  }}
+                  onChange={handleCustomerChange}
                 />
               </div>
 
               <div>
                 <span className="block mb-1 font-medium text-gray-700 text-xs">
-                  طريقة الدفع:
+                  {`${t("paymentMethodLabel")}:`}
                 </span>
                 <div className="w-full h-[32px] border rounded flex items-center justify-around px-2 bg-gray-50 text-xs">
                   <label className="flex items-center gap-1">
@@ -494,7 +544,7 @@ export default function InvoiceSelectors({
                         setSelectedCustomerName("");
                       }}
                     />
-                    نقداً
+                    {t("paymentMethods.cash")}
                   </label>
                   <label className="flex items-center gap-1">
                     <input
@@ -511,7 +561,7 @@ export default function InvoiceSelectors({
                         setSelectedCustomerName("");
                       }}
                     />
-                    أجل
+                    {t("paymentMethods.credit")}
                   </label>
                 </div>
               </div>
@@ -521,7 +571,7 @@ export default function InvoiceSelectors({
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="pay-type"
                 >
-                  على:
+                  {`${t("payTypeLabel")}:`}
                 </label>
                 <select
                   className="w-full h-[32px] border px-2 rounded text-xs"
@@ -544,11 +594,7 @@ export default function InvoiceSelectors({
                     className="block mb-1 font-medium text-gray-700 text-xs"
                     htmlFor="reference-number"
                   >
-                    فواتير{" "}
-                    {invoiceType === TransTypes.PURCHASE_RETURN
-                      ? "المورد"
-                      : "العميل"}
-                    :
+                    {customerInvoicesLabel + ":"}
                   </label>
                   <ReactSelect
                     isSearchable
@@ -564,7 +610,7 @@ export default function InvoiceSelectors({
                     }
                     menuPosition="fixed"
                     options={customerInvoiceOptions}
-                    placeholder="اختر الفاتورة..."
+                    placeholder={t("customerInvoicesPlaceholder")}
                     styles={{
                       control: (base) => ({
                         ...base,
@@ -582,18 +628,6 @@ export default function InvoiceSelectors({
                       const val = opt?.value ? String(opt.value) : "";
 
                       setReferenceNumber(val);
-                      // if (opt?.value && onInvoiceSelect) {
-                      //   const confirmLoad = window.confirm(
-                      //     "هل تريد تنزيل أصناف الفاتورة المختارة؟",
-                      //   );
-
-                      //   if (confirmLoad) {
-                      //     const parsedId = Number(opt.value);
-                      //     if (Number.isFinite(parsedId)) {
-                      //       onInvoiceSelect(parsedId);
-                      //     }
-                      //   }
-                      // }
                     }}
                   />
                 </div>
@@ -603,13 +637,13 @@ export default function InvoiceSelectors({
                     className="block mb-1 font-medium text-gray-700 text-xs"
                     htmlFor="reference-number"
                   >
-                    رقم المرجع:
+                    {`${t("referenceLabel")}:`}
                   </label>
                   <input
                     className="w-full h-[32px] border px-2 rounded text-xs"
                     disabled={!isEditing}
                     id="reference-number"
-                    placeholder="المرجع"
+                    placeholder={t("referencePlaceholder")}
                     type="text"
                     value={referenceNumber}
                     onChange={(e) => setReferenceNumber(e.target.value)}
@@ -624,7 +658,7 @@ export default function InvoiceSelectors({
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="handling-method"
                 >
-                  مناولة:
+                  {`${t("handlingLabel")}:`}
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs"
@@ -640,7 +674,7 @@ export default function InvoiceSelectors({
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="employee"
                 >
-                  البائع:
+                  {`${t("employeeLabel")}:`}
                 </label>
                 <select
                   className="w-full h-[32px] border px-2 rounded text-xs"
@@ -649,7 +683,7 @@ export default function InvoiceSelectors({
                   value={employee}
                   onChange={(e) => setEmployee(e.target.value)}
                 >
-                  <option value="">-- اختر --</option>
+                  <option value="">{t("employeePlaceholder")}</option>
                   <option value="hashem">هاشم</option>
                   <option value="othman">عثمان</option>
                 </select>
@@ -660,14 +694,14 @@ export default function InvoiceSelectors({
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="gold-price"
                 >
-                  سعر الذهب بالريال:
+                  {`${t("goldPriceLabel")}:`}
                 </label>
                 <input
                   readOnly
                   className="w-full h-[32px] border px-2 rounded bg-gray-100 text-xs"
                   disabled={!isEditing}
                   type="text"
-                  value={goldPrice ? `${goldPrice} ﷼` : "جاري التحميل..."}
+                  value={goldPrice ? `${goldPrice} ﷼` : t("goldPriceLoading")}
                 />
               </div>
               <div>
@@ -675,7 +709,7 @@ export default function InvoiceSelectors({
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="note"
                 >
-                  البيان:
+                  {`${t("noteLabel")}:`}
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs"
@@ -693,13 +727,13 @@ export default function InvoiceSelectors({
                   className="block mb-1 font-medium text-gray-700 text-xs"
                   htmlFor="search-barcode"
                 >
-                  الباركود:
+                  {`${t("barcodeLabel")}:`}
                 </label>
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs"
                   disabled={!isEditing}
                   id="search-barcode"
-                  placeholder="بحث بالباركود"
+                  placeholder={t("barcodePlaceholder")}
                   type="text"
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
@@ -725,13 +759,17 @@ export default function InvoiceSelectors({
         {/* مربع معلومات العنوان */}
         <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           {/* Header with Toggle Button */}
-          <div className="flex items-center justify-between p-2 md:p-3 hover:bg-gray-50 transition-colors">
+          <div
+            role="button"
+            className="flex items-center justify-between p-2 md:p-3 hover:bg-gray-50 transition-colors"
+            onClick={() => setIsOpen(!isOpen)}
+          >
             <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
               <span>📍</span>
-              <span>معلومات العنوان</span>
+              <span>{t("address.title")}</span>
             </h3>
             <button
-              className="text-gray-600 hover:text-gray-800 transition-transform duration-200"
+              className="pointer-events-none text-gray-600 hover:text-gray-800 transition-transform duration-200"
               style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
               tabIndex={-1}
             >
@@ -764,7 +802,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 text-xs font-medium text-gray-600"
                       htmlFor="cr-no"
                     >
-                      السجل التجاري:
+                      {`${t("fields.crNumber")}:`}
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
@@ -780,7 +818,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 font-medium text-gray-700 text-xs"
                       htmlFor="vat-number"
                     >
-                      الرقم الضريبي:
+                      {`${t("fields.vatNumber")}:`}
                     </label>
                     <input
                       readOnly
@@ -795,7 +833,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 text-xs font-medium text-gray-600"
                       htmlFor="gov"
                     >
-                      المحافظة:
+                      {`${t("fields.gov")}:`}
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
@@ -811,7 +849,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 text-xs font-medium text-gray-600"
                       htmlFor="city"
                     >
-                      المدينة:
+                      {`${t("fields.city")}:`}
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
@@ -827,7 +865,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 text-xs font-medium text-gray-600"
                       htmlFor="area"
                     >
-                      المنطقة:
+                      {`${t("fields.area")}:`}
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
@@ -843,7 +881,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 text-xs font-medium text-gray-600"
                       htmlFor="street"
                     >
-                      الشارع:
+                      {`${t("fields.street")}:`}
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
@@ -859,7 +897,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 text-xs font-medium text-gray-600"
                       htmlFor="build-no"
                     >
-                      رقم المبنى:
+                      {`${t("fields.building")}:`}
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
@@ -875,7 +913,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 font-medium text-gray-700 text-xs"
                       htmlFor="mobile-method"
                     >
-                      جوال:
+                      {`${t("fields.mobile")}:`}
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-xs"
@@ -890,7 +928,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 text-xs font-medium text-gray-600"
                       htmlFor="post-no"
                     >
-                      صندوق البريد:
+                      {`${t("fields.postBox")}:`}
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
@@ -906,7 +944,7 @@ export default function InvoiceSelectors({
                       className="block mb-1 text-xs font-medium text-gray-600"
                       htmlFor="post-code"
                     >
-                      الرمز البريدي:
+                      {`${t("fields.postCode")}:`}
                     </label>
                     <input
                       className="w-full h-[32px] border px-2 rounded text-sm bg-white"
@@ -921,14 +959,7 @@ export default function InvoiceSelectors({
               ) : (
                 <div className="text-center text-gray-500 py-6 md:py-8">
                   <div className="text-2xl mb-2">📍</div>
-                  <p className="text-xs sm:text-sm">
-                    اختر{" "}
-                    {invoiceType === TransTypes.PURCHASE ||
-                    invoiceType === TransTypes.PURCHASE_RETURN
-                      ? "مورداً"
-                      : "عميلاً"}{" "}
-                    لعرض معلومات العنوان
-                  </p>
+                  <p className="text-xs sm:text-sm">{addressEmptyText}</p>
                 </div>
               )}
             </div>

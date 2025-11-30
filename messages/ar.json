@@ -15,6 +15,134 @@
     "reports": "التقارير",
     "settings": "الإعدادات"
   },
+  "forms": {
+    "invoices": {
+      "types": {
+        "sale": {
+          "title": "فاتورة بيع",
+          "description": "إدارة فواتير البيع"
+        },
+        "purchase": {
+          "title": "فاتورة شراء",
+          "description": "إدارة فواتير الشراء"
+        },
+        "saleReturn": {
+          "title": "مردود بيع",
+          "description": "إدارة فواتير مردود البيع"
+        },
+        "purchaseReturn": {
+          "title": "مردود شراء",
+          "description": "إدارة فواتير مردود الشراء"
+        }
+      },
+      "breadcrumbs": {
+        "list": "الفواتير",
+        "new": "جديدة",
+        "preview": "معاينة",
+        "edit": "تعديل",
+        "editWithId": "تعديل {id}"
+      },
+      "actions": {
+        "save": "حفظ",
+        "edit": "تعديل",
+        "new": "جديد",
+        "print": "طباعة",
+        "searchPlaceholder": "بحث برقم الفاتورة...",
+        "invoicePosition": "{current} من {total}",
+        "status": {
+          "committed": "حُفظ",
+          "printed": "طُبع",
+          "ok": "موافق",
+          "done": "منجز"
+        }
+      },
+      "selectors": {
+        "invoiceDateLabel": "تاريخ ووقت الفاتورة",
+        "customerLabel": {
+          "customer": "العميل",
+          "supplier": "المورد"
+        },
+        "customerPlaceholder": {
+          "customer": "اختر العميل...",
+          "supplier": "اختر المورد..."
+        },
+        "fallbackName": {
+          "customer": "عميل {code}",
+          "supplier": "مورد {code}"
+        },
+        "paymentMethodLabel": "طريقة الدفع",
+        "paymentMethods": {
+          "cash": "نقداً",
+          "credit": "آجل"
+        },
+        "payTypeLabel": "على",
+        "payTypeOptions": {
+          "value": "القيمة",
+          "wages": "الأجور",
+          "valueAndWages": "قيمة وأجور"
+        },
+        "customerInvoicesLabel": {
+          "customer": "فواتير العميل",
+          "supplier": "فواتير المورد"
+        },
+        "customerInvoicesPlaceholder": "اختر الفاتورة...",
+        "referenceLabel": "رقم المرجع",
+        "referencePlaceholder": "المرجع",
+        "handlingLabel": "مناولة",
+        "employeeLabel": "البائع",
+        "employeePlaceholder": "-- اختر --",
+        "goldPriceLabel": "سعر الذهب بالريال",
+        "goldPriceLoading": "جاري التحميل...",
+        "noteLabel": "البيان",
+        "barcodeLabel": "الباركود",
+        "barcodePlaceholder": "بحث بالباركود",
+        "fields": {
+          "mobile": "جوال",
+          "crNumber": "السجل التجاري",
+          "vatNumber": "الرقم الضريبي",
+          "gov": "المحافظة",
+          "city": "المدينة",
+          "area": "المنطقة",
+          "street": "الشارع",
+          "building": "رقم المبنى",
+          "postBox": "صندوق البريد",
+          "postCode": "الرمز البريدي"
+        },
+        "address": {
+          "title": "معلومات العنوان",
+          "empty": {
+            "customer": "اختر عميلاً لعرض معلومات العنوان",
+            "supplier": "اختر مورداً لعرض معلومات العنوان"
+          }
+        }
+      },
+      "items": {
+        "columns": {
+          "item": "الصنف",
+          "quantity": "العدد",
+          "grossWeight": "الوزن القائم",
+          "netWeight": "الوزن المعاير",
+          "stones": "الأحجار",
+          "pricePerGram": "سعر الجرام",
+          "wagePerGram": "أجرة الجرام",
+          "totalValue": "إجمالي القيمة",
+          "totalWages": "إجمالي الأجور",
+          "discount": "الخصم",
+          "taxRate": "نسبة الضريبة",
+          "tax": "الضريبة",
+          "totalWithTax": "الإجمالي شامل الضريبة",
+          "description": "البيان",
+          "delete": "حذف"
+        },
+        "placeholders": {
+          "selectItem": "اختر الصنف..."
+        },
+        "actions": {
+          "addItem": "إضافة صنف"
+        }
+      }
+    }
+  },
   "notFound": {
     "title": "الصفحة غير موجودة - 404",
     "description": "عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها.",

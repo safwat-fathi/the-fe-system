@@ -1,5 +1,7 @@
 "use client";
 
+import type { SelectInstance } from "react-select";
+
 import React, {
   forwardRef,
   useEffect,
@@ -10,6 +12,7 @@ import React, {
 } from "react";
 import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
+import { useTranslations } from "next-intl";
 
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
@@ -23,7 +26,21 @@ import taxRateService from "@/services/api/tax-rate.service";
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import { InvoiceItemRow } from "@/utilities/invoiceForm";
 
-const AsyncCreatableSelect = withAsyncPaginate(CreatableSelect);
+type ItemOption = {
+  value: number;
+  label: string;
+  item: Item;
+};
+
+type ItemSelectAdditional = {
+  page: number;
+};
+
+const AsyncCreatableSelect = withAsyncPaginate<
+  ItemOption,
+  false,
+  ItemSelectAdditional
+>(CreatableSelect);
 
 interface Item {
   id: number;
@@ -77,6 +94,31 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
     },
     ref,
   ) {
+    const tItems = useTranslations("forms.invoices.items");
+    const columnLabels = {
+      item: tItems("columns.item"),
+      quantity: tItems("columns.quantity"),
+      grossWeight: tItems("columns.grossWeight"),
+      netWeight: tItems("columns.netWeight"),
+      stones: tItems("columns.stones"),
+      pricePerGram: tItems("columns.pricePerGram"),
+      wagePerGram: tItems("columns.wagePerGram"),
+      totalValue: tItems("columns.totalValue"),
+      totalWages: tItems("columns.totalWages"),
+      discount: tItems("columns.discount"),
+      taxRate: tItems("columns.taxRate"),
+      tax: tItems("columns.tax"),
+      totalWithTax: tItems("columns.totalWithTax"),
+      description: tItems("columns.description"),
+      delete: tItems("columns.delete"),
+    } as const;
+    const placeholders = {
+      selectItem: tItems("placeholders.selectItem"),
+    } as const;
+    const actionLabels = {
+      addItem: tItems("actions.addItem"),
+    } as const;
+
     // number of decimals per field
     const weightDigits = useFractions("weight") as number;
     const gWeightDigits = useFractions("g_weight") as number;
@@ -98,6 +140,10 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
     const [tempTotals, setTempTotals] = useState<Record<number, string>>({});
     const [taxRates, setTaxRates] = useState<number[]>([0, 5, 10, 15, 20]);
     const [focusedField, setFocusedField] = useState<string | null>(null);
+    const getDisplayValue = (fieldKey: string, rawValue: string) =>
+      focusedField === fieldKey
+        ? rawValue
+        : formatForDisplay(rawValue);
 
     // load tax rates from API
     useEffect(() => {
@@ -109,7 +155,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
             setTaxRates(rates);
           }
         } catch (error) {
-          console.error("فشل في تحميل قائمة الضرائب:", error);
+        console.error("فشل في تحميل قائمة الضرائب:", error);
         }
       };
 
@@ -128,6 +174,45 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       };
     };
 
+    type InvoiceItemRowWithLegacy = InvoiceItemRow & {
+      item_id?: number | string | null;
+    };
+
+    const getRowItemId = (row: InvoiceItemRowWithLegacy) => {
+      const rawId = row.item ?? row.item_id;
+
+      return Number(rawId ?? 0);
+    };
+
+    const resolveSelectedOption = (
+      row: InvoiceItemRowWithLegacy,
+    ): ItemOption | null => {
+      const itemId = getRowItemId(row);
+
+      if (!Number.isFinite(itemId) || itemId <= 0) return null;
+
+      const existing = items.find((it) => it.id === itemId);
+
+      if (existing) return buildOption(existing);
+
+      return buildOption({
+        id: itemId,
+        item_code: row.item_code ?? String(itemId),
+        item_name: row.item_desc ?? row.item_code ?? String(itemId),
+      });
+    };
+
+    const calculateRowBase = (
+      type: InvoicePayType,
+      totalA: number,
+      totalW: number,
+    ) => {
+      if (type === INVOICE_PAY_TYPES.VALUE) return totalA;
+      if (type === INVOICE_PAY_TYPES.WAGES) return totalW;
+
+      return totalA + totalW;
+    };
+
     const staticItemOptions = useMemo(
       () => items.map((it) => buildOption(it)),
       [items],
@@ -135,8 +220,8 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
 
     const loadItemOptions = async (
       search: string,
-      _loaded: any,
-      { page }: { page: number },
+      _loaded: ItemOption[],
+      { page }: ItemSelectAdditional,
     ) => {
       const trimmed = search.trim();
 
@@ -346,16 +431,30 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       let total_a = 0;
       let total_w = 0;
 
-      if (payType === INVOICE_PAY_TYPES.VALUE) {
-        total_a = weight * price;
-        total_w = 0;
-      } else if (payType === INVOICE_PAY_TYPES.WAGES) {
-        total_a = 0;
-        total_w = g_weight * price_w;
-      } else {
-        total_a = weight * price;
-        total_w = g_weight * price_w;
-      }
+      const getTotalsForPayType = () => {
+        if (payType === INVOICE_PAY_TYPES.VALUE) {
+          return {
+            total_a: weight * price,
+            total_w: 0,
+          };
+        }
+
+        if (payType === INVOICE_PAY_TYPES.WAGES) {
+          return {
+            total_a: 0,
+            total_w: g_weight * price_w,
+          };
+        }
+
+        return {
+          total_a: weight * price,
+          total_w: g_weight * price_w,
+        };
+      };
+
+      const totals = getTotalsForPayType();
+      const total_a = totals.total_a;
+      const total_w = totals.total_w;
 
       const base = total_a + total_w - item_disc_amt;
       const tax = (base * tax_prc) / 100;
@@ -457,6 +556,121 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       setInvoiceItems((prev: any) => [...prev, newItem]);
     };
 
+    const distributeTotalsByPayType = ({
+      row,
+      totalWithoutTax,
+    }: {
+      row: InvoiceItemRow;
+      totalWithoutTax: number;
+    }) => {
+      const weight = toNum(row.weight);
+      const existingA = toNum(row.total_a);
+      const existingW = toNum(row.total_w);
+      const sumExisting = existingA + existingW;
+      const priceFromPortion = (portion: number) =>
+        weight > 0 ? String(portion / weight) : undefined;
+
+      if (payType === INVOICE_PAY_TYPES.VALUE) {
+        return {
+          total_a: String(totalWithoutTax),
+          total_w: "0",
+          price: priceFromPortion(totalWithoutTax),
+        };
+      }
+
+      if (payType === INVOICE_PAY_TYPES.WAGES) {
+        return {
+          total_a: "0",
+          total_w: String(totalWithoutTax),
+          price_w: priceFromPortion(totalWithoutTax),
+        };
+      }
+
+      if (sumExisting > 0) {
+        const newA = (existingA / sumExisting) * totalWithoutTax;
+        const newW = (existingW / sumExisting) * totalWithoutTax;
+
+        return {
+          total_a: String(newA),
+          total_w: String(newW),
+          price: priceFromPortion(newA),
+          price_w: priceFromPortion(newW),
+        };
+      }
+
+      return {
+        total_a: String(totalWithoutTax),
+        total_w: "0",
+        price: priceFromPortion(totalWithoutTax),
+      };
+    };
+
+    const calculateBaseAndTax = (row: InvoiceItemRow) => {
+      const base =
+        toNum(row.total_a) +
+        toNum(row.total_w) -
+        toNum(row.item_disc_amt);
+      const tax = (base * toNum(row.tax_prc ?? "15")) / 100;
+
+      return { base, tax };
+    };
+
+    const handleSelectItemChange = (
+      rowIndex: number,
+      option: ItemOption | null,
+    ) => {
+      if (!option) return;
+      const selected =
+        option.item || items.find((it) => it.id === option.value);
+
+      if (!selected) return;
+      setItems((prev) => {
+        if (prev.some((i) => i.id === selected.id)) {
+          return prev;
+        }
+
+        return [...prev, selected];
+      });
+
+      const updated = [...invoiceItems];
+
+      updated[rowIndex] = {
+        ...updated[rowIndex],
+        item: selected.id ?? 0,
+        ...(selected.id ? { item_id: selected.id } : {}),
+        item_desc:
+          selected.item_name ??
+          selected.item_code ??
+          String(selected.id),
+        price: String(goldPrice ?? selected.item_price ?? 0),
+        price_w: String(selected.work_price ?? 0),
+        weight: String(selected.item_weight ?? 0),
+        g_weight: String(
+          selected.item_g_weight ?? selected.item_weight ?? 0,
+        ),
+        stones: selected.stones ?? null,
+      };
+
+      const w = toNum(updated[rowIndex].weight);
+      const gw = toNum(updated[rowIndex].g_weight);
+      const pr = toNum(updated[rowIndex].price);
+      const prw = toNum(updated[rowIndex].price_w);
+      const updatedTotalA = w * pr;
+      const updatedTotalW = gw * prw;
+      const baseCalc =
+        calculateRowBase(payType, updatedTotalA, updatedTotalW) -
+        toNum(updated[rowIndex].item_disc_amt);
+      const taxCalc =
+        (baseCalc * toNum(updated[rowIndex].tax_prc ?? "15")) / 100;
+
+      updated[rowIndex].total_a = String(updatedTotalA);
+      updated[rowIndex].total_w = String(updatedTotalW);
+      updated[rowIndex].tax = String(taxCalc);
+      updated[rowIndex].total = String(baseCalc + taxCalc);
+
+      setInvoiceItems(updated);
+    };
+
     // change total (user edits final total including tax) -> distribute back
     const handleTotalChange = (index: number, value: any) => {
       const updated = [...invoiceItems];
@@ -466,61 +680,28 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       const tax_prc = toNum(updated[index].tax_prc ?? "15");
       const totalWithoutTax = entered / (1 + tax_prc / 100);
 
-      // set total
       updated[index].total = String(entered);
 
-      // distribute to total_a/total_w depending on payType, preserve proportions if present
-      const existingA = toNum(updated[index].total_a);
-      const existingW = toNum(updated[index].total_w);
-      const sumExisting = existingA + existingW;
+      const distribution = distributeTotalsByPayType({
+        row: updated[index],
+        totalWithoutTax,
+      });
 
-      if (payType === INVOICE_PAY_TYPES.VALUE) {
-        updated[index].total_a = String(totalWithoutTax);
-        updated[index].total_w = "0";
-        if (toNum(updated[index].weight) > 0)
-          updated[index].price = String(
-            totalWithoutTax / toNum(updated[index].weight),
-          );
-      } else if (payType === INVOICE_PAY_TYPES.WAGES) {
-        updated[index].total_w = String(totalWithoutTax);
-        updated[index].total_a = "0";
-        if (toNum(updated[index].weight) > 0)
-          updated[index].price_w = String(
-            totalWithoutTax / toNum(updated[index].weight),
-          );
-      } else {
-        // split according to existing ratio; if none, put all into total_a
-        if (sumExisting > 0) {
-          const newA = (existingA / sumExisting) * totalWithoutTax;
-          const newW = (existingW / sumExisting) * totalWithoutTax;
+      updated[index] = {
+        ...updated[index],
+        total_a: distribution.total_a,
+        total_w: distribution.total_w,
+        ...(distribution.price !== undefined
+          ? { price: distribution.price }
+          : {}),
+        ...(distribution.price_w !== undefined
+          ? { price_w: distribution.price_w }
+          : {}),
+      };
 
-          updated[index].total_a = String(newA);
-          updated[index].total_w = String(newW);
-          if (toNum(updated[index].weight) > 0) {
-            updated[index].price = String(newA / toNum(updated[index].weight));
-            updated[index].price_w = String(
-              newW / toNum(updated[index].weight),
-            );
-          }
-        } else {
-          updated[index].total_a = String(totalWithoutTax);
-          updated[index].total_w = "0";
-          if (toNum(updated[index].weight) > 0)
-            updated[index].price = String(
-              totalWithoutTax / toNum(updated[index].weight),
-            );
-        }
-      }
-
-      // recalc tax
-      const base =
-        toNum(updated[index].total_a) +
-        toNum(updated[index].total_w) -
-        toNum(updated[index].item_disc_amt);
-      const tax = (base * tax_prc) / 100;
+      const { tax } = calculateBaseAndTax(updated[index]);
 
       updated[index].tax = String(tax);
-      // total already set to entered
       setInvoiceItems(updated);
     };
 
@@ -589,695 +770,416 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
           <table className="min-w-[1000px] border text-sm text-center table-fixed">
             <thead className="bg-gray-100 text-xs font-semibold">
               <tr>
-                <th className="w-[400px]">الصنف</th>
-                <th className="w-[60px]">العدد</th>
-                <th className="w-[100px]">الوزن القائم</th>
-                <th className="w-[80px]">الوزن المعاير</th>
-                <th className="w-[80px]">الاحجار</th>
+                <th className="w-[400px]">{columnLabels.item}</th>
+                <th className="w-[60px]">{columnLabels.quantity}</th>
+                <th className="w-[100px]">{columnLabels.grossWeight}</th>
+                <th className="w-[80px]">{columnLabels.netWeight}</th>
+                <th className="w-[80px]">{columnLabels.stones}</th>
                 {(payType === INVOICE_PAY_TYPES.VALUE ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                  <th className="w-[100px]">سعر الجرام</th>
+                  <th className="w-[100px]">
+                    {columnLabels.pricePerGram}
+                  </th>
                 )}
                 {(payType === INVOICE_PAY_TYPES.WAGES ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                  <th className="w-[100px]">أجرة الجرام</th>
+                  <th className="w-[100px]">
+                    {columnLabels.wagePerGram}
+                  </th>
                 )}
                 {(payType === INVOICE_PAY_TYPES.VALUE ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                  <th className="w-[100px]">اجمالي القيمة</th>
+                  <th className="w-[100px]">{columnLabels.totalValue}</th>
                 )}
                 {(payType === INVOICE_PAY_TYPES.WAGES ||
                   payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                  <th className="w-[100px]">اجمالي الاجور</th>
+                  <th className="w-[100px]">{columnLabels.totalWages}</th>
                 )}
-                <th className="w-[100px]">الخصم</th>
-                <th className="w-[80px]">نسبة الضريبة</th>
-                <th className="w-[100px]">الضريبة</th>
-                <th className="w-[120px]">الاجمالي شامل الضريبة</th>
-                <th className="w-[200px]">البيان</th>
-                <th className="w-[60px]">حذف</th>
+                <th className="w-[100px]">{columnLabels.discount}</th>
+                <th className="w-[80px]">{columnLabels.taxRate}</th>
+                <th className="w-[100px]">{columnLabels.tax}</th>
+                <th className="w-[120px]">{columnLabels.totalWithTax}</th>
+                <th className="w-[200px]">{columnLabels.description}</th>
+                <th className="w-[60px]">{columnLabels.delete}</th>
               </tr>
             </thead>
             <tbody>
               {invoiceItems.map((item, index) => {
+                type RegisteredCell = {
+                  key: string;
+                  columnIndex: number;
+                  fieldKey: string;
+                  displayValue: string;
+                  id: string;
+                  inputMode: "numeric" | "decimal";
+                  step: string;
+                  alignMiddle?: boolean;
+                  required?: boolean;
+                  pattern?: string;
+                  onChange: (value: string) => void;
+                };
+
                 let col = -1;
+                const nextCol = () => {
+                  col += 1;
+
+                  return col;
+                };
+                const registerCells: RegisteredCell[] = [];
+                const registerCell = ({
+                  key,
+                  fieldKey,
+                  rawValue,
+                  idPrefix,
+                  inputMode,
+                  step,
+                  alignMiddle,
+                  required,
+                  pattern,
+                  onChange,
+                  show = true,
+                  formatValue = true,
+                }: {
+                  key: string;
+                  fieldKey: string;
+                  rawValue: string;
+                  idPrefix: string;
+                  inputMode: "numeric" | "decimal";
+                  step: string;
+                  alignMiddle?: boolean;
+                  required?: boolean;
+                  pattern?: string;
+                  onChange: (value: string) => void;
+                  show?: boolean;
+                  formatValue?: boolean;
+                }) => {
+                  if (!show) return;
+                  const columnIndex = nextCol();
+                  const id = `${idPrefix}-${index}${columnIndex}`;
+                  const displayValue = formatValue
+                    ? getDisplayValue(fieldKey, rawValue)
+                    : rawValue;
+
+                  registerCells.push({
+                    key,
+                    columnIndex,
+                    fieldKey,
+                    displayValue,
+                    id,
+                    inputMode,
+                    step,
+                    alignMiddle,
+                    required,
+                    pattern,
+                    onChange,
+                  });
+                };
+
                 const weight = toNum(item.weight);
                 const gWeight = toNum(item.g_weight);
                 const price = toNum(item.price);
                 const priceW = toNum(item.price_w);
-
-                // calculate totals client-side for display (base calculations)
                 const totalA = weight * price;
                 const totalW = gWeight * priceW;
-                let rowBase = 0;
-
-                if (payType === INVOICE_PAY_TYPES.VALUE) rowBase = totalA;
-                else if (payType === INVOICE_PAY_TYPES.WAGES) rowBase = totalW;
-                else rowBase = totalA + totalW;
-
+                const rowBase = calculateRowBase(payType, totalA, totalW);
                 const base = rowBase - toNum(item.item_disc_amt);
                 const tax = (base * toNum(item.tax_prc ?? "15")) / 100;
                 const totalWithTax = base + tax;
 
+                const itemSelectCol = nextCol();
+                const selectedOption = resolveSelectedOption(
+                  item as InvoiceItemRowWithLegacy,
+                );
+                const handleSelectChange = (option: ItemOption | null) =>
+                  handleSelectItemChange(index, option);
+                const itemSelectRef = (
+                  instance: SelectInstance<ItemOption> | null,
+                ) =>
+                  setInputRef(index, itemSelectCol)(
+                    (instance as unknown as HTMLInputElement | null) || null,
+                  );
+
+                const showValueCols =
+                  payType === INVOICE_PAY_TYPES.VALUE ||
+                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES;
+                const showWageCols =
+                  payType === INVOICE_PAY_TYPES.WAGES ||
+                  payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES;
+
+                registerCell({
+                  key: `qty-${item.id}`,
+                  fieldKey: makeFieldKey(item.id, "qty"),
+                  rawValue: String(item.qty ?? ""),
+                  idPrefix: "qty",
+                  inputMode: "numeric",
+                  step: "1",
+                  alignMiddle: true,
+                  pattern: "[0-9]*",
+                  onChange: (value) => handleFieldChange(index, "qty", value),
+                });
+
+                registerCell({
+                  key: `weight-${item.id}`,
+                  fieldKey: makeFieldKey(item.id, "weight"),
+                  rawValue: String(item.weight ?? ""),
+                  idPrefix: "weight",
+                  inputMode: "decimal",
+                  step: stepFromDigits(weightDigits),
+                  alignMiddle: true,
+                  onChange: (value) => handleFieldChange(index, "weight", value),
+                });
+
+                registerCell({
+                  key: `gweight-${item.id}`,
+                  fieldKey: makeFieldKey(item.id, "g_weight"),
+                  rawValue: String(item.g_weight ?? ""),
+                  idPrefix: "gweight",
+                  inputMode: "decimal",
+                  step: stepFromDigits(gWeightDigits),
+                  alignMiddle: true,
+                  onChange: (value) =>
+                    handleFieldChange(index, "g_weight", value),
+                });
+
+                registerCell({
+                  key: `stones-${item.id}`,
+                  fieldKey: makeFieldKey(item.id, "stones"),
+                  rawValue: String(item.stones ?? ""),
+                  idPrefix: "stones",
+                  inputMode: "numeric",
+                  step: "1",
+                  pattern: "[0-9]*",
+                  onChange: (value) =>
+                    handleFieldChange(
+                      index,
+                      "stones",
+                      sanitizeNumericInput(value, false),
+                    ),
+                  formatValue: false,
+                });
+
+                registerCell({
+                  key: `price-${item.id}`,
+                  fieldKey: makeFieldKey(item.id, "price"),
+                  rawValue: String(item.price ?? ""),
+                  idPrefix: "price",
+                  inputMode: "decimal",
+                  step: stepFromDigits(priceDigits),
+                  show: showValueCols,
+                  onChange: (value) => handleFieldChange(index, "price", value),
+                });
+
+                registerCell({
+                  key: `pricew-${item.id}`,
+                  fieldKey: makeFieldKey(item.id, "price_w"),
+                  rawValue: String(item.price_w ?? ""),
+                  idPrefix: "pricew",
+                  inputMode: "decimal",
+                  step: stepFromDigits(priceWDigits),
+                  show: showWageCols,
+                  required:
+                    payType === INVOICE_PAY_TYPES.WAGES ||
+                    payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES,
+                  onChange: (value) => handleFieldChange(index, "price_w", value),
+                });
+
+                registerCell({
+                  key: `totala-${item.id}`,
+                  fieldKey: makeFieldKey(item.id, "total_a"),
+                  rawValue: String(item.total_a ?? ""),
+                  idPrefix: "totala",
+                  inputMode: "decimal",
+                  step: stepFromDigits(totalADigits),
+                  show: showValueCols,
+                  onChange: (value) => handleTotalAChange(index, value),
+                });
+
+                registerCell({
+                  key: `totalw-${item.id}`,
+                  fieldKey: makeFieldKey(item.id, "total_w"),
+                  rawValue: String(item.total_w ?? ""),
+                  idPrefix: "totalw",
+                  inputMode: "decimal",
+                  step: stepFromDigits(totalWDigits),
+                  show: showWageCols,
+                  onChange: (value) => handleTotalWChange(index, value),
+                });
+
+                registerCell({
+                  key: `discount-${item.id}`,
+                  fieldKey: makeFieldKey(item.id, "item_disc_amt"),
+                  rawValue: String(item.item_disc_amt ?? ""),
+                  idPrefix: "disc",
+                  inputMode: "decimal",
+                  step: stepFromDigits(itemDiscDigits),
+                  onChange: (value) =>
+                    handleFieldChange(index, "item_disc_amt", value),
+                });
+
+                const taxRateCol = nextCol();
+
+                const storedTotal = Number.isFinite(totalWithTax)
+                  ? totalWithTax
+                  : toNum(item.total);
+                const totalCol = nextCol();
+                const totalFieldKey = makeFieldKey(item.id, "total");
+                const rawTotalValue =
+                  tempTotals[item.id] !== undefined
+                    ? tempTotals[item.id]
+                    : String(storedTotal ?? "");
+                const totalDisplayValue = getDisplayValue(
+                  totalFieldKey,
+                  rawTotalValue,
+                );
+
+                const descCol = nextCol();
+
                 return (
                   <tr key={item.id}>
                     <td className="p-1">
-                      {(() => {
-                        const thisCol = ++col;
-
-                        return (
-                          <AsyncCreatableSelect
-                            isClearable
-                            isSearchable
-                            additional={{ page: 1 }}
-                            className="text-xs"
-                            classNamePrefix="select"
-                            components={{ IndicatorSeparator: () => null }}
-                            defaultOptions={staticItemOptions}
-                            // formatCreateLabel={(inputValue) =>
-                            //   `إضافة صنف جديد: "${inputValue}"`
-                            // }
-                            inputId={`item-${index}${thisCol}`}
-                            instanceId={`item-select-${index}`}
-                            isDisabled={!isEditing}
-                            loadOptions={loadItemOptions as any}
-                            menuPortalTarget={
-                              typeof window !== "undefined"
-                                ? document.body
-                                : null
-                            }
-                            menuPosition="fixed"
-                            placeholder="اختر الصنف..."
-                            selectRef={(instance) =>
-                              setInputRef(
-                                index,
-                                thisCol,
-                              )(
-                                (instance as unknown as HTMLInputElement) ||
-                                  null,
-                              )
-                            }
-                            styles={{
-                              control: (base) => ({
-                                ...base,
-                                minHeight: 30,
-                                height: 30,
-                              }),
-                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                      <AsyncCreatableSelect
+                        isClearable
+                        isSearchable
+                        additional={{ page: 1 }}
+                        className="text-xs"
+                        classNamePrefix="select"
+                        components={{ IndicatorSeparator: () => null }}
+                        defaultOptions={staticItemOptions}
+                        inputId={`item-${index}${itemSelectCol}`}
+                        instanceId={`item-select-${index}`}
+                        isDisabled={!isEditing}
+                        loadOptions={loadItemOptions}
+                        menuPortalTarget={
+                          typeof window !== "undefined" ? document.body : null
+                        }
+                        menuPosition="fixed"
+                        placeholder={placeholders.selectItem}
+                        selectRef={itemSelectRef}
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            minHeight: 30,
+                            height: 30,
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                        }}
+                        value={selectedOption}
+                        onChange={handleSelectChange}
+                        onKeyDown={(e) =>
+                          handleKeyDown(e, index, itemSelectCol, {
+                            allowEnterDefaultWhenRowMissing: true,
+                          })
+                        }
+                      />
+                    </td>
+                    {registerCells.map(
+                      ({
+                        key,
+                        columnIndex,
+                        fieldKey,
+                        displayValue,
+                        id,
+                        inputMode,
+                        step,
+                        alignMiddle,
+                        required: cellRequired,
+                        pattern,
+                        onChange,
+                      }) => (
+                        <td
+                          key={key}
+                          className={alignMiddle ? "align-middle" : undefined}
+                        >
+                          <input
+                            ref={setInputRef(index, columnIndex)}
+                            className="border w-full p-1 text-xs text-center"
+                            dir="ltr"
+                            disabled={!isEditing}
+                            id={id}
+                            inputMode={inputMode}
+                            pattern={pattern}
+                            required={cellRequired}
+                            step={step}
+                            type="number"
+                            value={displayValue}
+                            onBlur={() => {
+                              if (focusedField === fieldKey)
+                                setFocusedField(null);
                             }}
-                            value={(() => {
-                              const rawId = item.item ?? (item as any).item_id;
-                              const itemId = Number(rawId ?? 0);
-
-                              if (!Number.isFinite(itemId) || itemId <= 0)
-                                return null;
-
-                              const existing = items.find(
-                                (it) => it.id === itemId,
-                              );
-
-                              if (existing) return buildOption(existing);
-
-                              return buildOption({
-                                id: itemId,
-                                item_code: item.item_code ?? String(itemId),
-                                item_name:
-                                  item.item_desc ??
-                                  item.item_code ??
-                                  String(itemId),
-                              });
-                            })()}
-                            onChange={(opt: any) => {
-                              const selected =
-                                opt?.item ||
-                                items.find((it) => it.id === opt?.value);
-
-                              if (!selected) return;
-                              // cache option if missing
-                              setItems((prev) => {
-                                if (prev.some((i) => i.id === selected.id)) {
-                                  return prev;
-                                }
-
-                                return [...prev, selected];
-                              });
-
-                              const updated = [...invoiceItems];
-
-                              updated[index] = {
-                                ...updated[index],
-                                item: selected.id ?? 0,
-                                // keep both to avoid stale reads in save mapper
-                                ...(selected.id
-                                  ? { item_id: selected.id }
-                                  : {}),
-                                item_desc:
-                                  selected.item_name ??
-                                  selected.item_code ??
-                                  String(selected.id),
-                                // populate fields present in interface as strings
-                                price: String(
-                                  goldPrice ?? selected.item_price ?? 0,
-                                ),
-                                price_w: String(selected.work_price ?? 0),
-                                weight: String(selected.item_weight ?? 0),
-                                g_weight: String(
-                                  selected.item_g_weight ??
-                                    selected.item_weight ??
-                                    0,
-                                ),
-                                stones: selected.stones ?? null,
-                              };
-
-                              // recalc totals
-                              const w = toNum(updated[index].weight);
-                              const gw = toNum(updated[index].g_weight);
-                              const pr = toNum(updated[index].price);
-                              const prw = toNum(updated[index].price_w);
-                              const totalA = w * pr;
-                              const totalW = gw * prw;
-                              const baseCalc =
-                                (payType === INVOICE_PAY_TYPES.VALUE
-                                  ? totalA
-                                  : payType === INVOICE_PAY_TYPES.WAGES
-                                    ? totalW
-                                    : totalA + totalW) -
-                                toNum(updated[index].item_disc_amt);
-                              const taxCalc =
-                                (baseCalc *
-                                  toNum(updated[index].tax_prc ?? "15")) /
-                                100;
-
-                              updated[index].total_a = String(totalA);
-                              updated[index].total_w = String(totalW);
-                              updated[index].tax = String(taxCalc);
-                              updated[index].total = String(baseCalc + taxCalc);
-
-                              setInvoiceItems(updated);
-                            }}
-                            // onCreateOption={(inputValue: any) => {
-                            //   const newItem = {
-                            //     id: Math.floor(Math.random() * 1000000),
-                            //     item_code: "000000",
-                            //     item_name: inputValue,
-                            //     item_price: 0,
-                            //     item_weight: 0,
-                            //     item_g_weight: 0,
-                            //     work_price: 0,
-                            //   } as Item;
-
-                            //   setItems((prev) => [...prev, newItem]);
-                            //   const updated = [...invoiceItems];
-
-                            //   updated[index] = {
-                            //     ...updated[index],
-                            //     item: newItem.id,
-                            //     item_id: newItem.id,
-                            //     item_desc: newItem.item_name,
-                            //     price: String(
-                            //       goldPrice ?? newItem.item_price ?? 0,
-                            //     ),
-                            //     price_w: String(newItem.work_price ?? 0),
-                            //     weight: String(newItem.item_weight ?? 0),
-                            //     g_weight: String(
-                            //       newItem.item_g_weight ??
-                            //         newItem.item_weight ??
-                            //         0,
-                            //     ),
-                            //   } ;
-                            //   setInvoiceItems(updated);
-                            // }}
+                            onChange={(e) => onChange(e.target.value)}
+                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
                             onKeyDown={(e) =>
-                              handleKeyDown(e, index, thisCol, {
-                                allowEnterDefaultWhenRowMissing: true,
-                              })
+                              handleKeyDown(e, index, columnIndex)
                             }
                           />
-                        );
-                      })()}
-                    </td>
-
-                    <td className="align-middle">
-                      {(() => {
-                        const thisCol = ++col;
-                        const fieldKey = makeFieldKey(item.id, "qty");
-                        const rawValue = String(item.qty ?? "");
-                        const displayValue =
-                          focusedField === fieldKey
-                            ? rawValue
-                            : formatForDisplay(rawValue);
-
-                        return (
-                          <input
-                            ref={setInputRef(index, thisCol)}
-                            className="border w-full p-1 text-xs text-center align-middle"
-                            dir="ltr"
-                            disabled={!isEditing}
-                            id={`qty-${index}${thisCol}`}
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            step={1}
-                            type="number"
-                            value={displayValue}
-                            onBlur={() => {
-                              if (focusedField === fieldKey)
-                                setFocusedField(null);
-                            }}
-                            onChange={(e) =>
-                              handleFieldChange(index, "qty", e.target.value)
-                            }
-                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                          />
-                        );
-                      })()}
-                    </td>
-
-                    <td className="align-middle">
-                      {(() => {
-                        const thisCol = ++col;
-                        const fieldKey = makeFieldKey(item.id, "weight");
-                        const rawValue = String(item.weight ?? "");
-                        const displayValue =
-                          focusedField === fieldKey
-                            ? rawValue
-                            : formatForDisplay(rawValue);
-
-                        return (
-                          <input
-                            ref={setInputRef(index, thisCol)}
-                            className="border w-full p-1 text-xs text-center align-middle"
-                            dir="ltr"
-                            disabled={!isEditing}
-                            id={`weight-${index}${thisCol}`}
-                            inputMode="decimal"
-                            step={stepFromDigits(weightDigits)}
-                            type="number"
-                            value={displayValue}
-                            onBlur={() => {
-                              if (focusedField === fieldKey)
-                                setFocusedField(null);
-                            }}
-                            onChange={(e) =>
-                              handleFieldChange(index, "weight", e.target.value)
-                            }
-                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                          />
-                        );
-                      })()}
-                    </td>
-
-                    <td className="align-middle">
-                      {(() => {
-                        const thisCol = ++col;
-                        const fieldKey = makeFieldKey(item.id, "g_weight");
-                        const rawValue = String(item.g_weight ?? "");
-                        const displayValue =
-                          focusedField === fieldKey
-                            ? rawValue
-                            : formatForDisplay(rawValue);
-
-                        return (
-                          <input
-                            ref={setInputRef(index, thisCol)}
-                            className="border w-full p-1 text-xs text-center align-middle"
-                            dir="ltr"
-                            disabled={!isEditing}
-                            id={`gweight-${index}${thisCol}`}
-                            inputMode="decimal"
-                            step={stepFromDigits(gWeightDigits)}
-                            type="number"
-                            value={displayValue}
-                            onBlur={() => {
-                              if (focusedField === fieldKey)
-                                setFocusedField(null);
-                            }}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                index,
-                                "g_weight",
-                                e.target.value,
-                              )
-                            }
-                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                          />
-                        );
-                      })()}
-                    </td>
-
+                        </td>
+                      ),
+                    )}
                     <td>
-                      {(() => {
-                        const thisCol = ++col;
-
-                        return (
-                          <input
-                            ref={setInputRef(index, thisCol)}
-                            className="border w-full p-1 text-xs text-center"
-                            dir="ltr"
-                            disabled={!isEditing}
-                            id={`stones-${index}${thisCol}`}
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            step={1}
-                            type="number"
-                            value={String(item.stones ?? "")}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                index,
-                                "stones",
-                                sanitizeNumericInput(e.target.value, false),
-                              )
-                            }
-                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                          />
-                        );
-                      })()}
+                      <select
+                        ref={(node: HTMLSelectElement | null) =>
+                          setInputRef(index, taxRateCol)(
+                            node as unknown as HTMLInputElement | null,
+                          )
+                        }
+                        className="border w-full p-1 text-xs text-center"
+                        disabled={!isEditing}
+                        id={`taxprc-${index}${taxRateCol}`}
+                        value={String(Math.round(toNum(item.tax_prc)))}
+                        onChange={(e) =>
+                          handleFieldChange(index, "tax_prc", e.target.value)
+                        }
+                        onKeyDown={(e) => handleKeyDown(e, index, taxRateCol)}
+                      >
+                        {taxRates.map((rate) => (
+                          <option key={rate} value={rate}>
+                            {rate}%
+                          </option>
+                        ))}
+                      </select>
                     </td>
-
-                    {(payType === INVOICE_PAY_TYPES.VALUE ||
-                      payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                      <td>
-                        {(() => {
-                          const thisCol = ++col;
-                          const fieldKey = makeFieldKey(item.id, "price");
-                          const rawValue = String(item.price ?? "");
-                          const displayValue =
-                            focusedField === fieldKey
-                              ? rawValue
-                              : formatForDisplay(rawValue);
-
-                          return (
-                            <input
-                              ref={setInputRef(index, thisCol)}
-                              className="border w-full p-1 text-xs text-center"
-                              dir="ltr"
-                              disabled={!isEditing}
-                              id={`price-${index}${thisCol}`}
-                              inputMode="decimal"
-                              step={stepFromDigits(priceDigits)}
-                              type="number"
-                              value={displayValue}
-                              onBlur={() => {
-                                if (focusedField === fieldKey)
-                                  setFocusedField(null);
-                              }}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  index,
-                                  "price",
-                                  e.target.value,
-                                )
-                              }
-                              onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                              onKeyDown={(e) =>
-                                handleKeyDown(e, index, thisCol)
-                              }
-                            />
-                          );
-                        })()}
-                      </td>
-                    )}
-
-                    {(payType === INVOICE_PAY_TYPES.WAGES ||
-                      payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                      <td>
-                        {(() => {
-                          const thisCol = ++col;
-                          const fieldKey = makeFieldKey(item.id, "price_w");
-                          const rawValue = String(item.price_w ?? "");
-                          const displayValue =
-                            focusedField === fieldKey
-                              ? rawValue
-                              : formatForDisplay(rawValue);
-
-                          return (
-                            <input
-                              ref={setInputRef(index, thisCol)}
-                              className="border w-full p-1 text-xs text-center"
-                              dir="ltr"
-                              disabled={!isEditing}
-                              id={`pricew-${index}${thisCol}`}
-                              inputMode="decimal"
-                              required={
-                                payType === INVOICE_PAY_TYPES.WAGES ||
-                                payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
-                              }
-                              step={stepFromDigits(priceWDigits)}
-                              type="number"
-                              value={displayValue}
-                              onBlur={() => {
-                                if (focusedField === fieldKey)
-                                  setFocusedField(null);
-                              }}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  index,
-                                  "price_w",
-                                  e.target.value,
-                                )
-                              }
-                              onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                              onKeyDown={(e) =>
-                                handleKeyDown(e, index, thisCol)
-                              }
-                            />
-                          );
-                        })()}
-                      </td>
-                    )}
-
-                    {(payType === INVOICE_PAY_TYPES.VALUE ||
-                      payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                      <td>
-                        {(() => {
-                          const thisCol = ++col;
-                          const fieldKey = makeFieldKey(item.id, "total_a");
-                          const rawValue = String(item.total_a ?? "");
-                          const displayValue =
-                            focusedField === fieldKey
-                              ? rawValue
-                              : formatForDisplay(rawValue);
-
-                          return (
-                            <input
-                              ref={setInputRef(index, thisCol)}
-                              className="border w-full p-1 text-xs text-center"
-                              dir="ltr"
-                              disabled={!isEditing}
-                              id={`totala-${index}${thisCol}`}
-                              inputMode="decimal"
-                              step={stepFromDigits(totalADigits)}
-                              type="number"
-                              value={displayValue}
-                              onBlur={() => {
-                                if (focusedField === fieldKey)
-                                  setFocusedField(null);
-                              }}
-                              onChange={(e) =>
-                                handleTotalAChange(index, e.target.value)
-                              }
-                              onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                              onKeyDown={(e) =>
-                                handleKeyDown(e, index, thisCol)
-                              }
-                            />
-                          );
-                        })()}
-                      </td>
-                    )}
-
-                    {(payType === INVOICE_PAY_TYPES.WAGES ||
-                      payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES) && (
-                      <td>
-                        {(() => {
-                          const thisCol = ++col;
-                          const fieldKey = makeFieldKey(item.id, "total_w");
-                          const rawValue = String(item.total_w ?? "");
-                          const displayValue =
-                            focusedField === fieldKey
-                              ? rawValue
-                              : formatForDisplay(rawValue);
-
-                          return (
-                            <input
-                              ref={setInputRef(index, thisCol)}
-                              className="border w-full p-1 text-xs text-center"
-                              dir="ltr"
-                              disabled={!isEditing}
-                              id={`totalw-${index}${thisCol}`}
-                              inputMode="decimal"
-                              step={stepFromDigits(totalWDigits)}
-                              type="number"
-                              value={displayValue}
-                              onBlur={() => {
-                                if (focusedField === fieldKey)
-                                  setFocusedField(null);
-                              }}
-                              onChange={(e) =>
-                                handleTotalWChange(index, e.target.value)
-                              }
-                              onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                              onKeyDown={(e) =>
-                                handleKeyDown(e, index, thisCol)
-                              }
-                            />
-                          );
-                        })()}
-                      </td>
-                    )}
-
-                    <td>
-                      {(() => {
-                        const thisCol = ++col;
-                        const fieldKey = makeFieldKey(item.id, "item_disc_amt");
-                        const rawValue = String(item.item_disc_amt ?? "");
-                        const displayValue =
-                          focusedField === fieldKey
-                            ? rawValue
-                            : formatForDisplay(rawValue);
-
-                        return (
-                          <input
-                            ref={setInputRef(index, thisCol)}
-                            className="border w-full p-1 text-xs text-center"
-                            dir="ltr"
-                            disabled={!isEditing}
-                            id={`disc-${index}${thisCol}`}
-                            inputMode="decimal"
-                            step={stepFromDigits(itemDiscDigits)}
-                            type="number"
-                            value={displayValue}
-                            onBlur={() => {
-                              if (focusedField === fieldKey)
-                                setFocusedField(null);
-                            }}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                index,
-                                "item_disc_amt",
-                                e.target.value,
-                              )
-                            }
-                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                          />
-                        );
-                      })()}
-                    </td>
-
-                    <td>
-                      {(() => {
-                        const thisCol = ++col;
-
-                        return (
-                          <select
-                            ref={setInputRef(index, thisCol) as any}
-                            className="border w-full p-1 text-xs text-center"
-                            disabled={!isEditing}
-                            id={`taxprc-${index}${thisCol}`}
-                            value={String(Math.round(toNum(item.tax_prc)))}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                index,
-                                "tax_prc",
-                                e.target.value,
-                              )
-                            }
-                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                          >
-                            {taxRates.map((rate) => (
-                              <option key={rate} value={rate}>
-                                {rate}%
-                              </option>
-                            ))}
-                          </select>
-                        );
-                      })()}
-                    </td>
-
                     <td>{formatAmount(String(item.tax ?? tax), taxDigits)}</td>
-
                     <td>
-                      {(() => {
-                        const thisCol = ++col;
-                        const fieldKey = makeFieldKey(item.id, "total");
-                        const rawRawValue =
-                          tempTotals[item.id] !== undefined
-                            ? tempTotals[item.id]
-                            : String(
-                                item.total ??
-                                  (Number.isFinite(totalWithTax)
-                                    ? totalWithTax
-                                    : ""),
-                              );
-                        const displayValue =
-                          focusedField === fieldKey
-                            ? rawRawValue
-                            : formatForDisplay(
-                                Number.isFinite(totalWithTax)
-                                  ? totalWithTax
-                                  : item.total,
-                              );
-
-                        return (
-                          <input
-                            ref={setInputRef(index, thisCol)}
-                            className="border w-full p-1 text-xs text-center"
-                            dir="ltr"
-                            disabled={!isEditing}
-                            id={`total-${index}${thisCol}`}
-                            inputMode="decimal"
-                            step={stepFromDigits(totalDigits)}
-                            type="number"
-                            value={displayValue}
-                            onBlur={(e) => {
-                              handleTotalChange(index, e.target.value);
-                              if (focusedField === fieldKey)
-                                setFocusedField(null);
-                            }}
-                            onChange={(e) =>
-                              setTempTotals((prev) => ({
-                                ...prev,
-                                [item.id]: e.target.value,
-                              }))
-                            }
-                            onFocus={(e) => handleNumericFocus(e, fieldKey)}
-                            onKeyDown={(e) => handleKeyDown(e, index, thisCol)}
-                          />
-                        );
-                      })()}
+                      <input
+                        ref={setInputRef(index, totalCol)}
+                        className="border w-full p-1 text-xs text-center"
+                        dir="ltr"
+                        disabled={!isEditing}
+                        id={`total-${index}${totalCol}`}
+                        inputMode="decimal"
+                        step={stepFromDigits(totalDigits)}
+                        type="number"
+                        value={totalDisplayValue}
+                        onBlur={(e) => {
+                          handleTotalChange(index, e.target.value);
+                          if (focusedField === totalFieldKey)
+                            setFocusedField(null);
+                        }}
+                        onChange={(e) =>
+                          setTempTotals((prev) => ({
+                            ...prev,
+                            [item.id]: e.target.value,
+                          }))
+                        }
+                        onFocus={(e) => handleNumericFocus(e, totalFieldKey)}
+                        onKeyDown={(e) => handleKeyDown(e, index, totalCol)}
+                      />
                     </td>
-
                     <td>
-                      {(() => {
-                        const thisCol = ++col;
-
-                        return (
-                          <input
-                            ref={setInputRef(index, thisCol)}
-                            className="border w-full p-1 text-xs text-center"
-                            disabled={!isEditing}
-                            id={`desc-${index}${thisCol}`}
-                            value={item.item_desc ?? ""}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                index,
-                                "item_desc",
-                                e.target.value,
-                              )
-                            }
-                            onKeyDown={(e) =>
-                              handleKeyDown(e, index, thisCol, {
-                                isLastCol: true,
-                              })
-                            }
-                          />
-                        );
-                      })()}
+                      <input
+                        ref={setInputRef(index, descCol)}
+                        className="border w-full p-1 text-xs text-center"
+                        disabled={!isEditing}
+                        id={`desc-${index}${descCol}`}
+                        value={item.item_desc ?? ""}
+                        onChange={(e) =>
+                          handleFieldChange(index, "item_desc", e.target.value)
+                        }
+                        onKeyDown={(e) =>
+                          handleKeyDown(e, index, descCol, { isLastCol: true })
+                        }
+                      />
                     </td>
-
                     <td>
                       <button
                         className="text-red-600 font-bold"
@@ -1300,7 +1202,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
           type="button"
           onClick={addRow}
         >
-          + إضافة صنف
+          + {actionLabels.addItem}
         </button>
       </div>
     );
