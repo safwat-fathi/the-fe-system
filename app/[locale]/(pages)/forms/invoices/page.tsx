@@ -14,7 +14,6 @@ import { redirectToLogin } from "@/app/actions/auth";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 type InvoiceFormMode = "new" | "edit" | "preview";
-type InvoiceTranslations = Awaited<ReturnType<typeof getTranslations>>;
 type RawQueryValue = string | string[] | undefined;
 type RawSearchParams = Promise<Record<string, RawQueryValue>>;
 
@@ -187,28 +186,6 @@ const loadInvoiceData = async ({
   };
 };
 
-const getBreadcrumbModeLabel = ({
-  mode,
-  t,
-  invoiceIdentifier,
-}: {
-  mode: InvoiceFormMode;
-  t: InvoiceTranslations;
-  invoiceIdentifier: string;
-}) => {
-  if (mode === "new") {
-    return t("breadcrumbs.new");
-  }
-
-  if (mode === "edit") {
-    return invoiceIdentifier
-      ? t("breadcrumbs.editWithId", { id: invoiceIdentifier })
-      : t("breadcrumbs.edit");
-  }
-
-  return t("breadcrumbs.preview");
-};
-
 export default async function InvoicePage({
   searchParams,
 }: {
@@ -252,12 +229,16 @@ export default async function InvoicePage({
   const newInvoiceHref = `/forms/invoices?type=${encodeURIComponent(
     invoiceType,
   )}&mode=new`;
-  const invoiceIdentifier = invoiceData?.inv_id ?? editId ?? "";
-  const breadcrumbModeLabel = getBreadcrumbModeLabel({
-    mode,
-    t,
-    invoiceIdentifier,
-  });
+  const invoiceIdentifier = String(invoiceData?.inv_id ?? editId ?? "");
+  let breadcrumbModeLabel = t("breadcrumbs.preview");
+
+  if (mode === "new") {
+    breadcrumbModeLabel = t("breadcrumbs.new");
+  } else if (mode === "edit") {
+    breadcrumbModeLabel = invoiceIdentifier
+      ? t("breadcrumbs.editWithId", { id: invoiceIdentifier })
+      : t("breadcrumbs.edit");
+  }
 
   return (
     <div className="container mx-auto p-2 sm:p-4">
