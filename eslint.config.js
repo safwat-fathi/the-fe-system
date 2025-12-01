@@ -1,8 +1,17 @@
 const { FlatCompat } = require('@eslint/eslintrc');
+const securityPlugin = require('eslint-plugin-security');
+const sonarjsPlugin = require('eslint-plugin-sonarjs');
 const eslintrc = require('./.eslintrc.json');
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
+});
+
+const jsTsFilesGlob = ['**/*.{js,jsx,ts,tsx}'];
+
+const pickRulesConfig = (config) => ({
+  name: config.name,
+  rules: config.rules,
 });
 
 module.exports = [
@@ -11,8 +20,16 @@ module.exports = [
     parser: require.resolve('@typescript-eslint/parser'),
   }).map((c) => ({
     ...c,
-    files: ['**/*.{js,jsx,ts,tsx}'],
+    files: jsTsFilesGlob,
   })),
+  {
+    ...pickRulesConfig(securityPlugin.configs.recommended),
+    files: jsTsFilesGlob,
+  },
+  {
+    ...pickRulesConfig(sonarjsPlugin.configs.recommended),
+    files: jsTsFilesGlob,
+  },
   {
     ignores: [
       '.now/*',

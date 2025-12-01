@@ -17,6 +17,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { useTranslations } from "next-intl";
 
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
@@ -39,6 +40,7 @@ interface InvoiceAnalyticsProps {
 
 export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
   const fractions = useFractions() as { frac: number; frac2: number };
+  const t = useTranslations("reports.invoices.analytics");
 
   const analytics = useMemo(() => {
     const total = invoices.length;
@@ -64,8 +66,15 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
     invoices.forEach((inv) => {
       const month = new Date(inv.inv_date).getMonth();
 
-      byMonth[month]++;
-      byMonthAmount[month] += inv.inv_amt || 0;
+      if (Object.prototype.hasOwnProperty.call(byMonth, month)) {
+        // eslint-disable-next-line security/detect-object-injection -- Month index validated via Date#getMonth result.
+        byMonth[month] += 1;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(byMonthAmount, month)) {
+        // eslint-disable-next-line security/detect-object-injection -- Month index validated via Date#getMonth result.
+        byMonthAmount[month] += inv.inv_amt || 0;
+      }
     });
 
     // حسب اليوم
@@ -74,7 +83,10 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
     invoices.forEach((inv) => {
       const day = new Date(inv.inv_date).getDay();
 
-      byDay[day]++;
+      if (Object.prototype.hasOwnProperty.call(byDay, day)) {
+        // eslint-disable-next-line security/detect-object-injection -- Day index validated via Date#getDay result.
+        byDay[day] += 1;
+      }
     });
 
     return {
@@ -89,36 +101,40 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
     };
   }, [invoices]);
 
-  const monthNames = [
-    "يناير",
-    "فبراير",
-    "مارس",
-    "أبريل",
-    "مايو",
-    "يونيو",
-    "يوليو",
-    "أغسطس",
-    "سبتمبر",
-    "أكتوبر",
-    "نوفمبر",
-    "ديسمبر",
-  ];
+  const monthKeys = [
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec",
+  ] as const;
+  const dayKeys = [
+    "sun",
+    "mon",
+    "tue",
+    "wed",
+    "thu",
+    "fri",
+    "sat",
+  ] as const;
 
-  const dayNames = [
-    "الأحد",
-    "الاثنين",
-    "الثلاثاء",
-    "الأربعاء",
-    "الخميس",
-    "الجمعة",
-    "السبت",
-  ];
+  const monthNames = monthKeys.map((key) => t(`months.${key}`));
+  const dayNames = dayKeys.map((key) => t(`weekdays.${key}`));
+  const invoiceCountLabel = t("charts.monthlyInvoicesDataset");
+  const totalSalesLabel = t("charts.monthlyAmountDataset");
 
   const salesChartData = {
     labels: monthNames,
     datasets: [
       {
-        label: "عدد الفواتير",
+        label: invoiceCountLabel,
         data: analytics.byMonth,
         borderColor: "#3b82f6",
         backgroundColor: "rgba(59, 130, 246, 0.1)",
@@ -126,7 +142,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         yAxisID: "y",
       },
       {
-        label: "إجمالي المبيعات",
+        label: totalSalesLabel,
         data: analytics.byMonthAmount,
         borderColor: "#10b981",
         backgroundColor: "rgba(16, 185, 129, 0.1)",
@@ -137,7 +153,12 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
   };
 
   const typeChartData = {
-    labels: ["فواتير الشراء", "فواتير البيع", "مردود الشراء", "مردود البيع"],
+    labels: [
+      t("labels.purchaseInvoices"),
+      t("labels.salesInvoices"),
+      t("labels.purchaseReturns"),
+      t("labels.salesReturns"),
+    ],
     datasets: [
       {
         data: [
@@ -167,7 +188,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
     labels: dayNames,
     datasets: [
       {
-        label: "عدد الفواتير",
+        label: invoiceCountLabel,
         data: analytics.byDay,
         backgroundColor: "rgba(59, 130, 246, 0.8)",
         borderColor: "rgb(59, 130, 246)",
@@ -196,7 +217,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         position: "left" as const,
         title: {
           display: true,
-          text: "عدد الفواتير",
+          text: invoiceCountLabel,
           font: {
             family: "Cairo",
           },
@@ -208,7 +229,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         position: "right" as const,
         title: {
           display: true,
-          text: "إجمالي المبيعات",
+          text: totalSalesLabel,
           font: {
             family: "Cairo",
           },
@@ -243,7 +264,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
           <CardBody className="p-4">
             <div className="text-center">
               <div className="text-2xl font-bold">{analytics.total}</div>
-              <div className="text-sm opacity-90">إجمالي الفواتير</div>
+              <div className="text-sm opacity-90">{t("stats.totalInvoices")}</div>
             </div>
           </CardBody>
         </Card>
@@ -254,7 +275,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
               <div className="text-2xl font-bold">
                 {formatAmount(analytics.totalAmount, fractions.frac)}
               </div>
-              <div className="text-sm opacity-90">إجمالي المبيعات</div>
+              <div className="text-sm opacity-90">{t("stats.totalSales")}</div>
             </div>
           </CardBody>
         </Card>
@@ -265,7 +286,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
               <div className="text-2xl font-bold">
                 {formatAmount(analytics.totalTax, fractions.frac)}
               </div>
-              <div className="text-sm opacity-90">إجمالي الضريبة</div>
+              <div className="text-sm opacity-90">{t("stats.totalTax")}</div>
             </div>
           </CardBody>
         </Card>
@@ -276,7 +297,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
               <div className="text-2xl font-bold">
                 {formatAmount(analytics.avgAmount, fractions.frac)}
               </div>
-              <div className="text-sm opacity-90">متوسط قيمة الفاتورة</div>
+              <div className="text-sm opacity-90">{t("stats.averageInvoice")}</div>
             </div>
           </CardBody>
         </Card>
@@ -287,7 +308,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         {/* المبيعات الشهرية */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">المبيعات الشهرية</h3>
+            <h3 className="text-lg font-semibold">{t("charts.monthlySales")}</h3>
           </CardHeader>
           <CardBody>
             <div className="h-80">
@@ -299,7 +320,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         {/* أنواع الفواتير */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">توزيع أنواع الفواتير</h3>
+            <h3 className="text-lg font-semibold">{t("charts.typesDistribution")}</h3>
           </CardHeader>
           <CardBody>
             <div className="h-80">
@@ -311,7 +332,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         {/* الفواتير حسب اليوم */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">الفواتير حسب اليوم</h3>
+            <h3 className="text-lg font-semibold">{t("charts.dailyInvoices")}</h3>
           </CardHeader>
           <CardBody>
             <div className="h-80">
@@ -323,36 +344,36 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         {/* ملخص سريع */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">ملخص سريع</h3>
+            <h3 className="text-lg font-semibold">{t("summary.title")}</h3>
           </CardHeader>
           <CardBody>
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span className="font-medium">فواتير الشراء</span>
+                <span className="font-medium">{t("labels.purchaseInvoices")}</span>
                 <span className="text-blue-600 font-bold">
                   {analytics.byType.purchase}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <span className="font-medium">فواتير البيع</span>
+                <span className="font-medium">{t("labels.salesInvoices")}</span>
                 <span className="text-green-600 font-bold">
                   {analytics.byType.sales}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <span className="font-medium">مردود الشراء</span>
+                <span className="font-medium">{t("labels.purchaseReturns")}</span>
                 <span className="text-yellow-600 font-bold">
                   {analytics.byType.purchase_return}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                <span className="font-medium">مردود البيع</span>
+                <span className="font-medium">{t("labels.salesReturns")}</span>
                 <span className="text-red-600 font-bold">
                   {analytics.byType.sales_return}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="font-medium">نسبة الضريبة</span>
+                <span className="font-medium">{t("stats.taxRate")}</span>
                 <span className="text-gray-600 font-bold">
                   {analytics.totalAmount > 0
                     ? (
@@ -373,12 +394,15 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         {/* أفضل الشهور */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">أفضل الشهور أداءً</h3>
+            <h3 className="text-lg font-semibold">{t("summary.topMonths")}</h3>
           </CardHeader>
           <CardBody>
             <div className="space-y-3">
               {analytics.byMonth
-                .map((count, index) => ({ count, month: monthNames[index] }))
+                .map((count, index) => ({
+                  count,
+                  month: monthNames.at(index) ?? "",
+                }))
                 .sort((a, b) => b.count - a.count)
                 .slice(0, 5)
                 .map((item, index) => (
@@ -388,7 +412,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
                   >
                     <span className="font-medium">{item.month}</span>
                     <span className="text-blue-600 font-bold">
-                      {item.count} فاتورة
+                      {t("labels.invoiceCount", { count: item.count })}
                     </span>
                   </div>
                 ))}
@@ -399,12 +423,15 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         {/* أفضل أيام الأسبوع */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">أفضل أيام الأسبوع</h3>
+            <h3 className="text-lg font-semibold">{t("summary.topDays")}</h3>
           </CardHeader>
           <CardBody>
             <div className="space-y-3">
               {analytics.byDay
-                .map((count, index) => ({ count, day: dayNames[index] }))
+                .map((count, index) => ({
+                  count,
+                  day: dayNames.at(index) ?? "",
+                }))
                 .sort((a, b) => b.count - a.count)
                 .map((item, index) => (
                   <div
@@ -413,7 +440,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
                   >
                     <span className="font-medium">{item.day}</span>
                     <span className="text-green-600 font-bold">
-                      {item.count} فاتورة
+                      {t("labels.invoiceCount", { count: item.count })}
                     </span>
                   </div>
                 ))}

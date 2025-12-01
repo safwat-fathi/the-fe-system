@@ -1,6 +1,7 @@
 import { Suspense, cache } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import InvoiceClientPageWrapper from "@/app/[locale]/(pages)/forms/invoices/InvoiceClientPageWrapper";
 import InvoiceTotalsActions from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceTotalsActions";
@@ -13,6 +14,8 @@ import { redirectToLogin } from "@/app/actions/auth";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 type InvoiceFormMode = "new" | "edit" | "preview";
+type RawQueryValue = string | string[] | undefined;
+type RawSearchParams = Promise<Record<string, RawQueryValue>>;
 
 const getInvoiceFormData = cache(() =>
   invoiceFormDataService.getInvoiceFormData(),
@@ -21,38 +24,44 @@ const getInvoiceFormData = cache(() =>
 const INVOICE_TYPE_CONFIG: Record<
   InvoicePageType,
   {
-    title: string;
-    description: string;
     transType: TransTypes;
+    titleKey:
+      | "types.sale.title"
+      | "types.purchase.title"
+      | "types.saleReturn.title"
+      | "types.purchaseReturn.title";
+    descriptionKey:
+      | "types.sale.description"
+      | "types.purchase.description"
+      | "types.saleReturn.description"
+      | "types.purchaseReturn.description";
   }
 > = {
   sale: {
-    title: "فاتورة بيع",
-    description: "إدارة فواتير البيع",
     transType: TransTypes.SALES,
+    titleKey: "types.sale.title",
+    descriptionKey: "types.sale.description",
   },
   purchase: {
-    title: "فاتورة شراء",
-    description: "إدارة فواتير الشراء",
     transType: TransTypes.PURCHASE,
+    titleKey: "types.purchase.title",
+    descriptionKey: "types.purchase.description",
   },
   "sale-return": {
-    title: "مردود بيع",
-    description: "إدارة فواتير مردود البيع",
     transType: TransTypes.SALES_RETURN,
+    titleKey: "types.saleReturn.title",
+    descriptionKey: "types.saleReturn.description",
   },
   "purchase-return": {
-    title: "مردود شراء",
-    description: "إدارة فواتير مردود الشراء",
     transType: TransTypes.PURCHASE_RETURN,
+    titleKey: "types.purchaseReturn.title",
+    descriptionKey: "types.purchaseReturn.description",
   },
 };
 
 const FALLBACK_TYPE: InvoicePageType = "sale";
 
-const toSingleValue = (
-  value: string | string[] | undefined,
-): string | undefined => {
+const toSingleValue = (value: RawQueryValue): string | undefined => {
   if (Array.isArray(value)) return value[0];
 
   return value;
@@ -78,87 +87,135 @@ const resolveFormMode = (rawMode: string | undefined): InvoiceFormMode => {
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: RawSearchParams;
 }): Promise<Metadata> {
   const params = await searchParams;
   const invoiceType = resolveInvoiceType(toSingleValue(params.type));
   const config = INVOICE_TYPE_CONFIG[invoiceType];
+  const t = await getTranslations("forms.invoices");
 
   return {
-    title: config.title,
-    description: config.description,
+    title: t(config.titleKey),
+    description: t(config.descriptionKey),
   };
 }
+
+const parseInvoicePageParams = (
+  params: Record<string, RawQueryValue>,
+): {
+  invoiceType: InvoicePageType;
+  mode: InvoiceFormMode;
+  editId?: string;
+  startInEdit: boolean;
+} => {
+  const invoiceType = resolveInvoiceType(toSingleValue(params.type));
+  const mode = resolveFormMode(toSingleValue(params.mode));
+  const editInvId = toSingleValue(params.inv_id);
+  const editRecordId = toSingleValue(params.id);
+  const editId = editInvId ?? editRecordId ?? undefined;
+  const startInEdit = toSingleValue(params.edit) === "true";
+
+  return {
+    invoiceType,
+    mode,
+    editId,
+    startInEdit,
+  };
+};
+
+const loadInvoiceData = async ({
+  mode,
+  editId,
+  config,
+}: {
+  mode: InvoiceFormMode;
+  editId?: string;
+  config: (typeof INVOICE_TYPE_CONFIG)[InvoicePageType];
+}): Promise<{
+  invoiceData: Invoice | null;
+  invoiceDetails: InvoiceDetail[];
+}> => {
+  if (!(mode === "edit" || mode === "preview") || !editId) {
+    return { invoiceData: null, invoiceDetails: [] };
+  }
+
+  const lookupId = editId ?? "";
+  const invoiceData = await invoiceService.getInvoiceById(
+    lookupId,
+    config.transType,
+  );
+
+  if (!invoiceData) {
+    notFound();
+  }
+
+  if (
+    invoiceData.trans_type &&
+    Number(invoiceData.trans_type) !== Number(config.transType)
+  ) {
+    notFound();
+  }
+
+  const detailKeys = Array.from(
+    new Set(
+      [
+        invoiceData?.id ? String(invoiceData.id) : null,
+        invoiceData?.inv_id,
+        editId,
+      ]
+        .filter((key): key is string => Boolean(key && `${key}`.trim().length))
+        .map((key) => String(key).trim()),
+    ),
+  );
+
+  for (const key of detailKeys) {
+    const fetchedDetails =
+      (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
+
+    if (fetchedDetails.length > 0) {
+      return {
+        invoiceData,
+        invoiceDetails: fetchedDetails,
+      };
+    }
+  }
+
+  return {
+    invoiceData,
+    invoiceDetails: [],
+  };
+};
 
 export default async function InvoicePage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: RawSearchParams;
 }) {
   const params = await searchParams;
+  const t = await getTranslations("forms.invoices");
 
-  const invoiceType = resolveInvoiceType(toSingleValue(params.type));
-  const mode = resolveFormMode(toSingleValue(params.mode));
-  // Support both inv_id (human invoice number) and id (record id)
-  const editInvId = toSingleValue(params.inv_id);
-  const editRecordId = toSingleValue(params.id);
-  const editId = editInvId ?? editRecordId;
-  const startInEdit = toSingleValue(params.edit) === "true";
+  const { invoiceType, mode, editId, startInEdit } =
+    parseInvoicePageParams(params);
 
   if ((mode === "edit" || mode === "preview") && !editId) {
     notFound();
   }
 
   const config = INVOICE_TYPE_CONFIG[invoiceType];
+  const typeTitle = t(config.titleKey);
 
   let invoiceData: Invoice | null = null;
   let invoiceDetails: InvoiceDetail[] = [];
 
   try {
-    if ((mode === "edit" || mode === "preview") && editId) {
-      const lookupId = editId ?? "";
+    const data = await loadInvoiceData({
+      mode,
+      editId,
+      config,
+    });
 
-      invoiceData = await invoiceService.getInvoiceById(
-        lookupId,
-        config.transType,
-      );
-
-      if (!invoiceData) {
-        notFound();
-      }
-
-      if (
-        invoiceData.trans_type &&
-        Number(invoiceData.trans_type) !== Number(config.transType)
-      ) {
-        notFound();
-      }
-
-      // Prefer record id first, then invoice number, then raw param
-      const detailKeys = Array.from(
-        new Set(
-          [
-            invoiceData?.id ? String(invoiceData.id) : null,
-            invoiceData?.inv_id,
-            editId,
-          ]
-            .filter((key): key is string =>
-              Boolean(key && `${key}`.trim().length),
-            )
-            .map((key) => String(key).trim()),
-        ),
-      );
-
-      for (const key of detailKeys) {
-        const fetchedDetails =
-          (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
-
-        if (fetchedDetails.length > 0) {
-          invoiceDetails = fetchedDetails;
-          break;
-        }
-      }
-    }
+    invoiceData = data.invoiceData;
+    invoiceDetails = data.invoiceDetails;
   } catch (error) {
     if (error instanceof AuthenticationError) {
       await redirectToLogin();
@@ -172,24 +229,27 @@ export default async function InvoicePage({
   const newInvoiceHref = `/forms/invoices?type=${encodeURIComponent(
     invoiceType,
   )}&mode=new`;
+  const invoiceIdentifier = String(invoiceData?.inv_id ?? editId ?? "");
+  let breadcrumbModeLabel = t("breadcrumbs.preview");
+
+  if (mode === "new") {
+    breadcrumbModeLabel = t("breadcrumbs.new");
+  } else if (mode === "edit") {
+    breadcrumbModeLabel = invoiceIdentifier
+      ? t("breadcrumbs.editWithId", { id: invoiceIdentifier })
+      : t("breadcrumbs.edit");
+  }
 
   return (
     <div className="container mx-auto p-2 sm:p-4">
       <Breadcrumb
         items={[
-          { name: "الفواتير", href: "/reports/invoices" },
+          { name: t("breadcrumbs.list"), href: "/reports/invoices" },
           {
-            name: INVOICE_TYPE_CONFIG[invoiceType].title,
+            name: typeTitle,
             href: newInvoiceHref,
           },
-          {
-            name:
-              mode === "new"
-                ? "جديدة"
-                : mode === "edit"
-                  ? `تعديل ${invoiceData?.inv_id ?? editId ?? ""}`
-                  : "معاينة",
-          },
+          { name: breadcrumbModeLabel },
         ]}
       />
 
