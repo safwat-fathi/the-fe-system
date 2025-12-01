@@ -19,6 +19,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { onLogoutAction } from "@/app/actions/auth";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
@@ -41,6 +42,7 @@ export default function UserHeader() {
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const tUserHeader = useTranslations("layout.userHeader");
 
   useEffect(() => {
     setIsMounted(true);
@@ -146,19 +148,19 @@ export default function UserHeader() {
                     {STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username}
                   </span>
                   <span className="text-xs text-slate-500 leading-tight">
-                    {STATIC_USER_INFO?.role || "مستخدم"}
+                    {STATIC_USER_INFO?.role || tUserHeader("defaultRole")}
                   </span>
                 </div>
               </Button>
             </DropdownTrigger>
-            <DropdownMenu aria-label="قائمة المستخدم">
+            <DropdownMenu aria-label={tUserHeader("menuLabel")}>
               <DropdownItem
                 key="test"
                 className="text-blue-600"
                 startContent={<BeakerIcon className="w-4 h-4" />}
                 onPress={handleNavigateToTest}
               >
-                صفحة اختبار
+                {tUserHeader("testPage")}
               </DropdownItem>
               <DropdownItem
                 key="logout"
@@ -166,7 +168,7 @@ export default function UserHeader() {
                 startContent={<ArrowRightOnRectangleIcon className="w-4 h-4" />}
                 onPress={handleLogout}
               >
-                تسجيل الخروج
+                {tUserHeader("logout")}
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>
