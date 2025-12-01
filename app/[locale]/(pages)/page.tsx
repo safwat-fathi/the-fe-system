@@ -135,10 +135,8 @@ export default async function DashboardPage() {
       {/* Pass data to client component for interactive charts */}
 
       <DashboardClient
-        branch={branch}
         invoices={dashboardData.invoices?.results || []}
         salesChartData={salesChartData}
-        year={year}
       />
     </div>
   );

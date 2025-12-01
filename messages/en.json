@@ -13,7 +13,64 @@
     "dashboard": "Dashboard",
     "forms": "Forms",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "breadcrumbs": {
+      "home": "Home",
+      "segments": {
+        "reports": "Reports",
+        "forms": "Forms",
+        "basic": "Master data",
+        "settings": "Settings",
+        "account-statement": "Account statement",
+        "vouchers": "Voucher report",
+        "income-statement": "Income statement",
+        "trial-balance": "Trial balance",
+        "balance-sheet": "Balance sheet",
+        "journal-ledger": "Journal ledger",
+        "general-ledger": "General ledger",
+        "invoices": "Invoices",
+        "vat": "VAT report",
+        "tax": "Tax reports",
+        "daily-journal": "Tax daily journal",
+        "sales-invoices": "Sales invoices",
+        "purchase-invoices": "Purchase invoices",
+        "credit-notes": "Credit notes",
+        "debit-notes": "Debit notes",
+        "voucher": "Vouchers",
+        "voucher1": "Receipt voucher",
+        "voucher2": "Payment voucher",
+        "gvoucher4": "Customer receipt",
+        "gvoucher5": "Customer payment",
+        "receipt": "Receipt",
+        "delivery": "Delivery",
+        "balance": "Opening balance",
+        "accounts": "Accounts",
+        "customers": "Customers",
+        "items": "Items",
+        "boxes": "Cash boxes",
+        "units": "Units",
+        "categories": "Categories",
+        "currencies": "Currencies",
+        "cost-centers": "Cost centers",
+        "cust_type": "Customer types",
+        "permissions": "Permissions",
+        "gl-transactions": "GL transactions",
+        "taxes": "Taxes",
+        "integrations": "Integrations",
+        "new": "New",
+        "edit": "Edit",
+        "preview": "Preview",
+        "payment": "Payment"
+      }
+    }
+  },
+  "layout": {
+    "userHeader": {
+      "menuLabel": "User menu",
+      "testPage": "Test page",
+      "logout": "Log out",
+      "defaultRole": "User"
+    }
   },
   "forms": {
     "invoices": {
@@ -275,6 +332,16 @@
     "categories": "Categories",
     "goldPrice": "Gold price per gram",
     "salesDataset": "Sales",
+    "goldChart": {
+      "title": "Gold price analysis",
+      "datasetLabel": "Gold price (from invoices)",
+      "fromPlaceholder": "From date",
+      "toPlaceholder": "To date",
+      "rangeSeparator": "to"
+    },
+    "salesChart": {
+      "title": "Monthly sales"
+    },
     "months": {
       "jan": "January",
       "feb": "February",

@@ -13,7 +13,64 @@
     "dashboard": "لوحة التحكم",
     "forms": "النماذج",
     "reports": "التقارير",
-    "settings": "الإعدادات"
+    "settings": "الإعدادات",
+    "breadcrumbs": {
+      "home": "الرئيسية",
+      "segments": {
+        "reports": "التقارير",
+        "forms": "النماذج",
+        "basic": "القوائم الأساسية",
+        "settings": "الإعدادات",
+        "account-statement": "كشف حساب",
+        "vouchers": "تقرير السندات",
+        "income-statement": "قائمة الدخل",
+        "trial-balance": "ميزان المراجعة",
+        "balance-sheet": "الميزانية العمومية",
+        "journal-ledger": "دفتر القيود",
+        "general-ledger": "دفتر الأستاذ",
+        "invoices": "قائمة الفواتير",
+        "vat": "تقرير الضريبة",
+        "tax": "التقارير الضريبية",
+        "daily-journal": "دفتر اليومية الضريبية",
+        "sales-invoices": "فواتير المبيعات",
+        "purchase-invoices": "فواتير المشتريات",
+        "credit-notes": "إشعارات دائنة",
+        "debit-notes": "إشعارات مدينة",
+        "voucher": "القيود",
+        "voucher1": "سند قبض",
+        "voucher2": "سند صرف",
+        "gvoucher4": "سند قبض عميل",
+        "gvoucher5": "سند صرف عميل",
+        "receipt": "سند استلام",
+        "delivery": "سند تسليم",
+        "balance": "قيد افتتاحي",
+        "accounts": "الحسابات",
+        "customers": "العملاء",
+        "items": "الأصناف",
+        "boxes": "الصناديق",
+        "units": "الوحدات",
+        "categories": "الفئات",
+        "currencies": "العملات",
+        "cost-centers": "مراكز التكلفة",
+        "cust_type": "أنواع العملاء",
+        "permissions": "الصلاحيات",
+        "gl-transactions": "القيود المحاسبية",
+        "taxes": "الضرائب",
+        "integrations": "التكاملات",
+        "new": "جديدة",
+        "edit": "تعديل",
+        "preview": "معاينة",
+        "payment": "دفع"
+      }
+    }
+  },
+  "layout": {
+    "userHeader": {
+      "menuLabel": "قائمة المستخدم",
+      "testPage": "صفحة اختبار",
+      "logout": "تسجيل الخروج",
+      "defaultRole": "مستخدم"
+    }
   },
   "forms": {
     "invoices": {
@@ -275,6 +332,16 @@
     "categories": "الفئات",
     "goldPrice": "سعر الذهب للجرام",
     "salesDataset": "المبيعات",
+    "goldChart": {
+      "title": "تحليل أسعار الذهب",
+      "datasetLabel": "سعر الذهب (من الفواتير)",
+      "fromPlaceholder": "من تاريخ",
+      "toPlaceholder": "إلى تاريخ",
+      "rangeSeparator": "إلى"
+    },
+    "salesChart": {
+      "title": "المبيعات الشهرية"
+    },
     "months": {
       "jan": "يناير",
       "feb": "فبراير",
