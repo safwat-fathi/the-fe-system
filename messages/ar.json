@@ -64,6 +64,25 @@
       }
     }
   },
+  "sidebar": {
+    "sections": {
+      "accountingSystem": "نظام الحسابات",
+      "accountingBasic": "البيانات الأساسية",
+      "accountingForms": "النماذج",
+      "goldSystem": "نظام الذهب",
+      "goldBasic": "البيانات الأساسية",
+      "goldForms": "النماذج",
+      "reports": "التقارير",
+      "settings": "الإعدادات"
+    },
+    "links": {
+      "systemSettings": "إعدادات النظام",
+      "userBranches": "فروع ومراكز المستخدم",
+      "saleReturnInvoices": "فواتير مردود البيع",
+      "purchaseReturnInvoices": "فواتير مردود الشراء",
+      "adjustmentEntry": "قيد تسوية"
+    }
+  },
   "layout": {
     "userHeader": {
       "menuLabel": "قائمة المستخدم",
