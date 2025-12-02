@@ -64,6 +64,25 @@
       }
     }
   },
+  "sidebar": {
+    "sections": {
+      "accountingSystem": "Accounting system",
+      "accountingBasic": "Master data",
+      "accountingForms": "Forms",
+      "goldSystem": "Gold system",
+      "goldBasic": "Master data",
+      "goldForms": "Forms",
+      "reports": "Reports",
+      "settings": "Settings"
+    },
+    "links": {
+      "systemSettings": "System settings",
+      "userBranches": "Branches & user centers",
+      "saleReturnInvoices": "Sales return invoices",
+      "purchaseReturnInvoices": "Purchase return invoices",
+      "adjustmentEntry": "Adjustment entry"
+    }
+  },
   "layout": {
     "userHeader": {
       "menuLabel": "User menu",
