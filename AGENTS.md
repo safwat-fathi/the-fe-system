@@ -1,4 +1,4 @@
-# AGENTS.md             
+# AGENTS.md
 
 This file provides guidelines for AI agents and coding assistants when working with code in this repository
 
@@ -17,10 +17,10 @@ NafeesWeb Gold System is a business management application that provides end-to-
 - `app/actions` contains server actions
 - `middlewares` contains middlewares to be stacked on top of the Next.js middleware stack
 - `types` contains types and global models definitions
-- `services` contains API services and utilities logic 
-	- `services/api` contains API services
-	- `services/base` contains main HTTPService logic
-	- `services/bff` contains BFF services (composed API services in a single service)
+- `services` contains API services and utilities logic
+  - `services/api` contains API services
+  - `services/base` contains main HTTPService logic
+  - `services/bff` contains BFF services (composed API services in a single service)
 - `app/components/(pages)/Sidebar` contains app sidebar
 
 ## Commands
@@ -39,7 +39,7 @@ NafeesWeb Gold System is a business management application that provides end-to-
 - React
 - TailwindCSS
 - Zod
-- HeroUI 
+- HeroUI
 - NPM for package management
 
 ## Testing
@@ -56,7 +56,7 @@ No testing framework is used in this project.
 
 ### Building React components
 
-- Use the same as `auth/login/components/LoginForm` 
+- Use the same as `auth/login/components/LoginForm`
 - Do not use `React.FC` for functional components instead use `const MyComponent = ({ props }: MyComponentProps) => <div>...</div>`
 - Shared components between pages should be defined in `components` directory
 
@@ -68,7 +68,7 @@ No testing framework is used in this project.
 - Always fetch data on page level then pass it down to client components as props if needed
 - Alwyas fetch data on try-catch block and use `notFound()` if fetch fails, If error error instanceof AuthenticationError then redirect to login page
 
-``` javascript
+```javascript
 export const metadata: Metadata = {
 	title: 'NafeesWeb App',
 	description: 'NafeesWeb Application',
@@ -88,9 +88,9 @@ export default async function InvoicesPage({
 ### Styling
 
 - Use TailwindCSS for styling
-- Do not use inline styles you can use `clsx` for combining string `classNames` with conditional ones  
+- Do not use inline styles you can use `clsx` for combining string `classNames` with conditional ones
 
-### Typing 
+### Typing
 
 - Wherever is possible use object defined as const instead of enums
 - Use types instead of interfaces when possible
@@ -103,12 +103,12 @@ export default async function InvoicesPage({
 
 ### State Management
 
-- Do not use React Context API for state management instead use Zustand for global, application-wide state. 
-- use `useReducer` for complex state management. 
+- Do not use React Context API for state management instead use Zustand for global, application-wide state.
+- use `useReducer` for complex state management.
 
 ### Forms
 
-- Use the same as `auth/login` 
+- Use the same as `auth/login`
 - Use Server Actions for form submissions and Zod schema for validations along with CSRF token for security as hidden input
 
 ### Data Fetching
@@ -128,7 +128,7 @@ export default async function InvoicesPage({
 ### Auth
 
 - Use the same as `auth/login`
-- Credentials stored in Cookies 
+- Credentials stored in Cookies
 - Cookies available in server-side only
 
 ## Security considerations
@@ -144,9 +144,9 @@ export default async function InvoicesPage({
 
 ## Global Guidelines
 
-- Wherever is possible use object defined as const instead of enums Example: 
+- Wherever is possible use object defined as const instead of enums Example:
 
-``` javascript
+```javascript
 // Payment Types
 export const PAYMENT_TYPES = {
   GOLD: 1,
@@ -155,9 +155,9 @@ export const PAYMENT_TYPES = {
 } as const;
 ```
 
-- For repeated & reusable strings store as constants Example: 
+- For repeated & reusable strings store as constants Example:
 
-``` javascript
+```javascript
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: process.env.NEXT_PUBLIC_ACCESS_TOKEN || "",
   REFRESH_TOKEN: process.env.NEXT_PUBLIC_REFRESH_TOKEN || "",
@@ -173,9 +173,9 @@ export const STORAGE_KEYS = {
 - Don’t import React just import what you need from its named exports
 - Check already built components inside project before building / using external one
 - The app is intended for Arabic language users
-- Make sure to use context7 mcp if it’s present to get latest documentations for a new feature, page or component 
+- Make sure to use context7 mcp if it’s present to get latest documentations for a new feature, page or component
 - For any feature that requires using 3rd party code or building a custom one check React available ready-to-use code first. For example instead of building a custom useDebounce hook you can use `useDeferredValue` React hook.
-- This is an ERP application do not focus on SEO optimization methodologies 
+- This is an ERP application do not focus on SEO optimization methodologies
 - Shared types, global models (`User`, `Invoice`, `Customer`, etc…) should be defined in types die
 - Use PascalCase for all React component file and component names (e.g., InvoiceForm.tsx, Sidebar.tsx).
 - Prefer to read and summarize before editing.
@@ -187,12 +187,15 @@ export const STORAGE_KEYS = {
 - read and list directories
 - run test commands
 
-## Ask Before 
+## Ask Before
 
 - package installs and dependencies updates
 - git push, pull, merge
 - deleting files, chmod
 - running full build
 
+**Always run `npm run type-check` after any changes, If there are any errors, fix them first**
+
 **Always read & summarize before proposing a clear plan and write your plan in a markdown file and then ask before implementation / committing.**
+
 **Write your plan in a markdown file in `.docs/plans` directory in this format `resource_name-action-description.md` and then ask before implementation / committing.**
