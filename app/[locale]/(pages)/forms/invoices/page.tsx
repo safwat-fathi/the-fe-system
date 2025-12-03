@@ -239,6 +239,7 @@ export default async function InvoicePage({
       ? t("breadcrumbs.editWithId", { id: invoiceIdentifier })
       : t("breadcrumbs.edit");
   }
+console.log("Test");
 
   return (
     <div className="container mx-auto p-2 sm:p-4">
