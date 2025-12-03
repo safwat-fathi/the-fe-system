@@ -76,6 +76,8 @@ export type InvoiceItemTableHandle = {
   focusFirstRow: () => boolean;
 };
 
+export type InvoiceItemTableProps = Props;
+
 const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
   function InvoiceItemTable(
     {

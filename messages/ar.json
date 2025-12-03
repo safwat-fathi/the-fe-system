@@ -83,6 +83,10 @@
       "adjustmentEntry": "قيد تسوية"
     }
   },
+  "loading": {
+    "loading": "جاري التحميل...",
+    "checkingAuth": "جاري التحقق من المصادقة..."
+  },
   "layout": {
     "userHeader": {
       "menuLabel": "قائمة المستخدم",

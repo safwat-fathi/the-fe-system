@@ -1,13 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import type {
+  InvoiceItemTableHandle,
+  InvoiceItemTableProps,
+} from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
+
+import { forwardRef, useCallback, useEffect, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 import InvoiceSelectors from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceSelectors";
-import InvoiceItemTable, {
-  type InvoiceItemTableHandle,
-} from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
+import InvoiceItemTableSkeleton from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTableSkeleton";
 import {
   Invoice,
   InvoiceDetail,
@@ -19,6 +23,26 @@ import {
   hydrateInvoiceTotalsStore,
   resetInvoiceTotalsStore,
 } from "@/stores/invoiceTotalsStore";
+
+const InvoiceItemTable = dynamic(
+  () =>
+    import("@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable").then(
+      (mod) => {
+        const ForwardedInvoiceItemTable = forwardRef<
+          InvoiceItemTableHandle,
+          InvoiceItemTableProps
+        >((props, ref) => <mod.default {...props} ref={ref} />);
+
+        ForwardedInvoiceItemTable.displayName = "InvoiceItemTable";
+
+        return ForwardedInvoiceItemTable;
+      },
+    ),
+  {
+    loading: () => <InvoiceItemTableSkeleton />,
+    ssr: false,
+  },
+);
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 
@@ -228,42 +252,6 @@ export default function InvoiceClientPage({
     },
     [invoiceType, pathname],
   );
-
-  // const resolvedPrevInvoiceHref = () => {
-  // 	if (!invoiceData?.previous_invoice_id) return null;
-
-  //   const searchParams = new URLSearchParams({
-  //     mode: "preview",
-  //     type: invoiceType,
-  //     inv_id: String(invoiceData?.previous_invoice_id),
-  //   });
-
-  //   return `${pathname}?${searchParams.toString()}`;
-  // };
-
-  // const resolvedLastInvoiceHref = () => {
-  // 	if (!invoiceData?.last_invoice_id) return null;
-
-  //   const searchParams = new URLSearchParams({
-  //     mode: "preview",
-  //     type: invoiceType,
-  //     inv_id: String(invoiceData?.last_invoice_id),
-  //   });
-
-  //   return `${pathname}?${searchParams.toString()}`;
-  // };
-
-  // const resolvedFirstInvoiceHref = () => {
-  // 	if (!invoiceData?.first_invoice_id) return null;
-
-  //   const searchParams = new URLSearchParams({
-  //     mode: "preview",
-  //     type: invoiceType,
-  //     inv_id: String(invoiceData?.first_invoice_id),
-  //   });
-
-  //   return `${pathname}?${searchParams.toString()}`;
-  // };
 
   const metadata = useMemo(() => {
     if (!invoiceData) return null;
