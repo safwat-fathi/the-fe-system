@@ -26,7 +26,6 @@ import {
   deleteInvoiceDetailAction,
   getInvoiceByIdAction,
   getInvoiceDetailsAction,
-  getNextInvoiceIdAction,
 } from "@/app/actions/invoice";
 import { generateZatcaQR } from "@/utilities/zatca";
 import {
@@ -41,6 +40,7 @@ import {
   formatNumber as formatNumberUtil,
 } from "@/utilities/invoiceForm";
 import { buildInvoicePrintHtml } from "@/utilities/table/print";
+import { Nullable } from "@/types";
 
 type NumericValue = number | string;
 
@@ -160,6 +160,20 @@ type InvoiceFormContext =
   | "sale_return"
   | "purchase_return";
 
+type UseInvoiceFormParams = {
+  invoiceData: Invoice | null;
+  invoiceDetailsData: InvoiceDetail[];
+  isNewInvoice: boolean;
+  initialBoxes: any[];
+  initialCustomers: any[];
+  initialItems: any[];
+  initialCategories: any[];
+  initialGoldPrice: number | null;
+  initialHomePurity: number;
+  invoiceRecordId?: number | string | null;
+  context?: InvoiceFormContext;
+};
+
 const INVOICE_FORM_CONFIG: Record<
   InvoiceFormContext,
   {
@@ -203,6 +217,329 @@ const getNumericRowId = getNumericRowIdUtil;
 
 const normalizeRowIdentifier = normalizeRowIdentifierUtil;
 
+const getResolvedInvoiceCustomerCode = (invoiceData: Invoice | null) => {
+  if (invoiceData?.cust_code !== undefined && invoiceData?.cust_code !== null) {
+    return String(invoiceData.cust_code);
+  }
+
+  if (invoiceData?.cust !== undefined && invoiceData?.cust !== null) {
+    return String(invoiceData.cust);
+  }
+
+  return null;
+};
+
+const getInitialInvoicePkValue = (
+  invoiceData: Invoice | null,
+  invoiceRecordId?: Nullable<number | string>,
+): number | null => {
+  if (invoiceData?.id) {
+    return Number(invoiceData.id);
+  }
+
+  if (invoiceRecordId !== null && invoiceRecordId !== undefined) {
+    const parsed = Number(invoiceRecordId);
+
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+};
+
+const normalizeCustomerCode = (
+  rawCode: FormState["cust_code"],
+  fallbackCode: string | null,
+): string => {
+  if (rawCode !== null && rawCode !== undefined) {
+    return String(rawCode);
+  }
+
+  return fallbackCode ?? "";
+};
+
+const getRowBaseAmount = (
+  payType: InvoicePayType,
+  totalValue: number,
+  totalWages: number,
+): number => {
+  if (payType === INVOICE_PAY_TYPES.VALUE) {
+    return totalValue;
+  }
+
+  if (payType === INVOICE_PAY_TYPES.WAGES) {
+    return totalWages;
+  }
+
+  return totalValue + totalWages;
+};
+
+const findFirstEditableRowIndex = (rows: InvoiceItemRow[]): number =>
+  rows.findIndex(
+    (row) => (!row.item_id && !row.item_name) || parseNumber(row.weight) === 0,
+  );
+
+const rowHasContent = (row: InvoiceItemRow): boolean =>
+  Boolean(row.item_id || row.item_name || parseNumber(row.weight) > 0);
+
+const prepareRowsForInsertion = (
+  rows: InvoiceItemRow[],
+  createEmptyRow: () => InvoiceItemRow,
+): { rows: InvoiceItemRow[]; targetIndex: number } => {
+  const firstEmptyIndex = findFirstEditableRowIndex(rows);
+  const cloned = [...rows];
+
+  if (firstEmptyIndex === -1) {
+    cloned.unshift(createEmptyRow());
+
+    return { rows: cloned, targetIndex: 0 };
+  }
+
+  return { rows: cloned, targetIndex: firstEmptyIndex };
+};
+
+const findItemBySearchTerm = (collection: any[], searchTerm: string) => {
+  const normalized = searchTerm.trim();
+
+  if (!normalized) return null;
+
+  return (
+    collection.find((item: any) => {
+      const itemBarcode = (item.item_barcode ?? "").toString().trim();
+      const itemCode = (item.item_code ?? "").toString().trim();
+
+      return itemBarcode === normalized || itemCode === normalized;
+    }) ?? null
+  );
+};
+
+const ensureItemTracked = (
+  itemsList: any[],
+  selectedItem: any,
+  setItems: (value: SetStateAction<any[]>) => void,
+) => {
+  if (itemsList.some((item) => item.id === selectedItem.id)) {
+    return;
+  }
+
+  setItems((prev) => [...prev, selectedItem]);
+};
+
+type BuildRowFromItemParams = {
+  baseRow: InvoiceItemRow;
+  selectedItem: any;
+  goldPrice: number | null;
+  homePurity: number;
+  payType: InvoicePayType;
+};
+
+const buildRowFromItem = ({
+  baseRow,
+  selectedItem,
+  goldPrice,
+  homePurity,
+  payType,
+}: BuildRowFromItemParams): InvoiceItemRow => {
+  const priceFromSelected = Number(selectedItem.item_price ?? 0);
+  const workPriceFromSelected = Number(selectedItem.work_price ?? 0);
+  const nextRow: InvoiceItemRow = {
+    ...baseRow,
+    item_id: selectedItem.id ?? null,
+    item: selectedItem.id ?? null,
+    item_code: selectedItem.item_code ?? "",
+    item_name: selectedItem.item_name ?? "",
+    item_desc: selectedItem.item_name ?? baseRow.item_desc ?? "",
+    k: selectedItem.k ?? "",
+    price: goldPrice ?? priceFromSelected,
+    price_w: workPriceFromSelected,
+    purity:
+      selectedItem.purity ?? (homePurity ? String(homePurity) : baseRow.purity),
+    stones: selectedItem.stones ?? baseRow.stones,
+  };
+
+  const hasItemWeight =
+    selectedItem.item_weight !== undefined &&
+    selectedItem.item_weight !== null &&
+    selectedItem.item_weight !== "";
+
+  if (hasItemWeight) {
+    nextRow.weight = Number(selectedItem.item_weight ?? 0);
+    nextRow.g_weight =
+      Number(selectedItem.item_g_weight ?? selectedItem.item_weight ?? 0) || 0;
+  }
+
+  const hasItemGWeight =
+    selectedItem.item_g_weight !== undefined &&
+    selectedItem.item_g_weight !== null &&
+    selectedItem.item_g_weight !== "";
+
+  if (hasItemGWeight) {
+    nextRow.g_weight = Number(selectedItem.item_g_weight);
+  }
+
+  const numericWeight = parseNumber(nextRow.weight);
+  const numericGWeight = parseNumber(nextRow.g_weight);
+  const wCalc =
+    numericWeight < 1 && numericGWeight > numericWeight
+      ? numericWeight * 1000
+      : numericWeight;
+
+  const wagePrice = Number(nextRow.price_w ?? 0);
+  const valuePrice = Number(nextRow.price ?? 0);
+
+  if (payType === INVOICE_PAY_TYPES.WAGES) {
+    nextRow.total_a = wCalc * wagePrice;
+  } else {
+    nextRow.total_a = wCalc * valuePrice;
+  }
+  nextRow.total_w = wCalc * wagePrice;
+
+  const totalValue = parseNumber(nextRow.total_a);
+  const totalWages = parseNumber(nextRow.total_w);
+  const discount = parseNumber(nextRow.item_disc_amt ?? 0);
+  const base = getRowBaseAmount(payType, totalValue, totalWages) - discount;
+  const taxRate = parseNumber(nextRow.tax_prc);
+
+  nextRow.tax = (base * taxRate) / 100;
+  nextRow.total = base + nextRow.tax;
+
+  return nextRow;
+};
+
+const shouldAppendBlankRow = (rows: InvoiceItemRow[], index: number): boolean =>
+  index === rows.length - 1 && rowHasContent(rows[index]);
+
+const collectValidRowKeys = (rows: InvoiceItemRow[]) => {
+  const keys = new Set<string>();
+
+  rows.forEach((item) => {
+    const key = normalizeRowIdentifier(item.id);
+
+    if (key) keys.add(key);
+  });
+
+  return keys;
+};
+
+const deriveDeletedIds = (
+  originalRows: InvoiceItemRow[],
+  validKeys: Set<string>,
+) =>
+  originalRows
+    .map((item) => {
+      const key = normalizeRowIdentifier(item.id);
+      const numericId = getNumericRowId(item.id);
+
+      return { key, numericId };
+    })
+    .filter(
+      ({ key, numericId }) =>
+        key !== null &&
+        !validKeys.has(key) &&
+        numericId !== null &&
+        Number.isFinite(numericId) &&
+        numericId > 0,
+    )
+    .map(({ numericId }) => numericId as number);
+
+const buildOriginalDetailLookup = (originalRows: InvoiceItemRow[]) => {
+  const originalDetailIdSet = new Set(
+    originalRows
+      .map((orig) => getNumericRowId(orig.id))
+      .filter((v): v is number => v !== null),
+  );
+  const originalById = new Map<number, InvoiceItemRow>();
+
+  for (const orig of originalRows) {
+    const idn = getNumericRowId(orig.id);
+
+    if (idn !== null) originalById.set(idn, orig);
+  }
+
+  return { originalDetailIdSet, originalById };
+};
+
+type MapRowToPayloadFn = (
+  row: InvoiceItemRow,
+  invoicePrimaryKey: number,
+  companyId: number,
+  yearId: number,
+) => Record<string, unknown> | null;
+
+type DetailMutationParams = {
+  row: InvoiceItemRow;
+  resolvedInvoicePk: number;
+  resolvedCompanyId: number;
+  resolvedYearId: number;
+  originalDetailIdSet: Set<number>;
+  originalById: Map<number, InvoiceItemRow>;
+};
+
+const mutateDetailRow = async (
+  params: DetailMutationParams,
+  mapRowToApiPayloadFn: MapRowToPayloadFn,
+) => {
+  const {
+    row,
+    resolvedInvoicePk,
+    resolvedCompanyId,
+    resolvedYearId,
+    originalDetailIdSet,
+    originalById,
+  } = params;
+  const detailPayload = mapRowToApiPayloadFn(
+    row,
+    resolvedInvoicePk,
+    resolvedCompanyId,
+    resolvedYearId,
+  );
+
+  if (!detailPayload) return { replacedId: null };
+
+  const numericRowId = getNumericRowId(row.id);
+  const isExistingRow =
+    numericRowId !== null && originalDetailIdSet.has(numericRowId);
+  const currentItemId = getItemIdFromRow(row);
+  const originalRow =
+    numericRowId !== null ? originalById.get(numericRowId) : undefined;
+  const originalItemId = originalRow ? getItemIdFromRow(originalRow) : null;
+  const itemChanged =
+    isExistingRow &&
+    originalItemId !== null &&
+    currentItemId !== null &&
+    originalItemId !== currentItemId;
+
+  if (!isExistingRow) {
+    const createPayload = { ...(detailPayload as any) } as any;
+
+    delete createPayload.id;
+    await createInvoiceDetailAction(createPayload, resolvedInvoicePk);
+
+    return { replacedId: null };
+  }
+
+  if (itemChanged && numericRowId !== null) {
+    const createPayload = { ...(detailPayload as any) } as any;
+
+    delete createPayload.id;
+    await createInvoiceDetailAction(createPayload, resolvedInvoicePk);
+
+    return { replacedId: numericRowId };
+  }
+
+  if (numericRowId !== null) {
+    const updatePayload = { ...(detailPayload as any) } as any;
+
+    delete updatePayload.id;
+    await updateInvoiceDetailAction(
+      numericRowId,
+      updatePayload,
+      resolvedInvoicePk,
+    );
+  }
+
+  return { replacedId: null };
+};
+
 function formReducer(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_FIELD":
@@ -228,19 +565,7 @@ export default function useInvoiceForm({
   initialHomePurity,
   invoiceRecordId = null,
   context = "sale",
-}: {
-  invoiceData: Invoice | null;
-  invoiceDetailsData: InvoiceDetail[];
-  isNewInvoice: boolean;
-  initialBoxes: any[];
-  initialCustomers: any[];
-  initialItems: any[];
-  initialCategories: any[];
-  initialGoldPrice: number | null;
-  initialHomePurity: number;
-  invoiceRecordId?: number | string | null;
-  context?: InvoiceFormContext;
-}) {
+}: UseInvoiceFormParams) {
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
   const defaultTransType = invoiceConfig.transType;
   const contactLabel = invoiceConfig.contactLabel;
@@ -249,11 +574,7 @@ export default function useInvoiceForm({
     [invoiceConfig],
   );
   const resolvedInvoiceCustomerCode =
-    invoiceData?.cust_code !== undefined && invoiceData?.cust_code !== null
-      ? String(invoiceData.cust_code)
-      : invoiceData?.cust !== undefined && invoiceData?.cust !== null
-        ? String(invoiceData.cust)
-        : null;
+    getResolvedInvoiceCustomerCode(invoiceData);
 
   // lists - using initial data directly
   const [items, setItems] = useState<any[]>(initialItems || []);
@@ -338,12 +659,8 @@ export default function useInvoiceForm({
   const fractions = useFractions() as Fractions;
   const frac = fractions?.frac ?? 2;
   const frac2 = fractions?.frac2 ?? 3;
-  const [invoicePk, setInvoicePk] = useState<number | null>(
-    invoiceData?.id
-      ? Number(invoiceData.id)
-      : invoiceRecordId !== null && invoiceRecordId !== undefined
-        ? Number(invoiceRecordId)
-        : null,
+  const [invoicePk, setInvoicePk] = useState<number | null>(() =>
+    getInitialInvoicePkValue(invoiceData, invoiceRecordId),
   );
   const [originalInvoiceItems, setOriginalInvoiceItems] = useState<
     InvoiceItemRow[]
@@ -465,29 +782,11 @@ export default function useInvoiceForm({
     originalInvoiceItems.length > 0 ? originalInvoiceItems : [makeEmptyRow()],
   );
 
-  const originalInvoiceItemMap = useMemo(() => {
-    const map = new Map<string, InvoiceItemRow>();
-
-    for (const item of originalInvoiceItems) {
-      const key = normalizeRowIdentifier(item.id);
-
-      if (key) {
-        map.set(key, item);
-      }
-    }
-
-    return map;
-  }, [originalInvoiceItems]);
-
   const selectedCustomer = useMemo(() => {
-    const rawCode = form.cust_code;
-    const normalizedCode =
-      rawCode !== null && rawCode !== undefined
-        ? String(rawCode)
-        : invoiceData?.cust_code !== undefined &&
-            invoiceData?.cust_code !== null
-          ? String(invoiceData.cust_code)
-          : "";
+    const normalizedCode = normalizeCustomerCode(
+      form.cust_code,
+      resolvedInvoiceCustomerCode,
+    );
 
     if (!normalizedCode) {
       return null;
@@ -569,6 +868,7 @@ export default function useInvoiceForm({
     form.cust_name,
     invoiceData,
     paymentMethod,
+    resolvedInvoiceCustomerCode,
   ]);
 
   const mapRowToApiPayload = useCallback(
@@ -632,12 +932,7 @@ export default function useInvoiceForm({
         const totalA = weight * price;
         const totalW = weight * priceW;
 
-        const rowTotal =
-          payType === INVOICE_PAY_TYPES.VALUE
-            ? totalA
-            : payType === INVOICE_PAY_TYPES.WAGES
-              ? totalW
-              : totalA + totalW;
+        const rowTotal = getRowBaseAmount(payType, totalA, totalW);
 
         return sum + rowTotal - discount;
       }, 0);
@@ -651,12 +946,7 @@ export default function useInvoiceForm({
 
         const totalA = weight * price;
         const totalW = weight * priceW;
-        const rowTotal =
-          payType === INVOICE_PAY_TYPES.VALUE
-            ? totalA
-            : payType === INVOICE_PAY_TYPES.WAGES
-              ? totalW
-              : totalA + totalW;
+        const rowTotal = getRowBaseAmount(payType, totalA, totalW);
         const base = rowTotal - discount;
 
         return sum + base * taxRate;
@@ -694,150 +984,66 @@ export default function useInvoiceForm({
       if (!searchTerm || !isEditing) return;
 
       try {
-        let exactMatch: any | null = null;
+        const selected = findItemBySearchTerm(items, searchTerm);
 
-        exactMatch = items.find((item: any) => {
-          const itemBarcode = (item.item_barcode ?? "").toString().trim();
-          const itemCode = (item.item_code ?? "").toString().trim();
-
-          return itemBarcode === searchTerm || itemCode === searchTerm;
-        });
-
-        if (!exactMatch) {
-          // In the updated version, we should not make API calls here
-          // This would need to be refactored to use a service that can be called from the server component
+        if (!selected) {
           toast.error(`لم يتم العثور على صنف: ${searchTerm}`);
           setSearchValue("");
 
           return;
         }
 
-        const firstEmptyRowIndex = invoiceItems.findIndex(
-          (it) => (!it.item_id && !it.item_name) || Number(it.weight) === 0,
+        const { rows: updatedRows, targetIndex } = prepareRowsForInsertion(
+          invoiceItems,
+          makeEmptyRow,
         );
 
-        const updated = [...invoiceItems];
-        const targetIndex = firstEmptyRowIndex !== -1 ? firstEmptyRowIndex : 0;
+        ensureItemTracked(items, selected, setItems);
 
-        if (firstEmptyRowIndex === -1) updated.unshift(makeEmptyRow());
+        const populatedRow = buildRowFromItem({
+          baseRow: updatedRows[targetIndex],
+          selectedItem: selected,
+          goldPrice,
+          homePurity,
+          payType: form.pay_type,
+        });
 
-        const selected = exactMatch;
-
-        if (!items.find((i) => i.id === selected.id))
-          setItems((prev) => [...prev, selected]);
-
-        const priceFromSelected = Number(selected.item_price ?? 0);
-        const workPriceFromSelected = Number(selected.work_price ?? 0);
-
-        const row = {
-          ...updated[targetIndex],
-          item_id: selected.id ?? null,
-          item: selected.id ?? null,
-          item_code: selected.item_code ?? "",
-          item_name: selected.item_name ?? "",
-          item_desc: selected.item_name ?? updated[targetIndex].item_desc ?? "",
-          k: selected.k ?? "",
-          price: goldPrice ?? priceFromSelected,
-          price_w: workPriceFromSelected,
-          purity:
-            selected.purity ??
-            (homePurity ? String(homePurity) : updated[targetIndex].purity),
-          stones: selected.stones ?? updated[targetIndex].stones,
-        } as InvoiceItemRow;
-
-        if (
-          selected.item_weight !== undefined &&
-          selected.item_weight !== null &&
-          selected.item_weight !== ""
-        ) {
-          row.weight = Number(selected.item_weight ?? 0);
-          row.g_weight =
-            Number(selected.item_g_weight ?? selected.item_weight ?? 0) || 0;
-        }
-
-        if (
-          selected.item_g_weight !== undefined &&
-          selected.item_g_weight !== null &&
-          selected.item_g_weight !== ""
-        ) {
-          row.g_weight = Number(selected.item_g_weight);
-        }
-
-        const wCalc =
-          Number(row.weight) < 1 && row.g_weight > row.weight
-            ? Number(row.weight) * 1000
-            : Number(row.weight);
-
-        row.total_a =
-          form.pay_type === INVOICE_PAY_TYPES.WAGES
-            ? wCalc * (Number(row.price_w) ?? 0)
-            : wCalc * (Number(row.price) ?? 0);
-        row.total_w = wCalc * (Number(row.price_w) ?? 0);
-
-        const base =
-          (form.pay_type === INVOICE_PAY_TYPES.VALUE
-            ? row.total_a
-            : form.pay_type === INVOICE_PAY_TYPES.WAGES
-              ? row.total_w
-              : (row.total_a || 0) + (row.total_w || 0)) -
-          (Number(row.item_disc_amt) ?? 0);
-
-        row.tax = (base * (Number(row.tax_prc) ?? 15)) / 100;
-        row.total = base + row.tax;
-
-        updated[targetIndex] = row;
-        setInvoiceItems(updated);
+        updatedRows[targetIndex] = populatedRow;
+        setInvoiceItems(updatedRows);
         setSearchValue("");
 
         toast.success(
           `✅ تم إضافة الصنف: ${selected.item_name || selected.item_code} (${selected.item_code})`,
         );
 
-        const isLastRow = targetIndex === updated.length - 1;
-        const isRowFilled =
-          updated[targetIndex].item_id ||
-          updated[targetIndex].item_name ||
-          Number(updated[targetIndex].weight) > 0;
-
-        if (isLastRow && isRowFilled)
+        if (shouldAppendBlankRow(updatedRows, targetIndex)) {
           setInvoiceItems((prev) => [...prev, makeEmptyRow()]);
+        }
       } catch (error) {
         console.error("خطأ في البحث بالباركود:", error);
         toast.error("حدث خطأ أثناء البحث بالباركود");
       }
     },
     [
-      invoiceItems,
-      items,
-      makeEmptyRow,
+      form.pay_type,
       goldPrice,
       homePurity,
+      invoiceItems,
       isEditing,
+      items,
+      makeEmptyRow,
       searchValue,
-      form.pay_type,
+      setInvoiceItems,
+      setItems,
+      setSearchValue,
     ],
   );
 
-  const getNextInvoiceNumber = useCallback(async () => {
-    try {
-      const nextInvoiceId = await getNextInvoiceIdAction(
-        Number(defaultTransType),
-      );
+  type ValidationResult =
+    | { ok: true; validItems: InvoiceItemRow[]; customer: any }
+    | { ok: false };
 
-      if (!Number.isFinite(nextInvoiceId) || nextInvoiceId <= 0) {
-        throw new Error("invalid-next-invoice-id");
-      }
-
-      return nextInvoiceId;
-    } catch (error) {
-      console.error("فشل في جلب رقم الفاتورة التالي:", error);
-      throw new Error("تعذر الحصول على رقم فاتورة جديد");
-    }
-  }, [defaultTransType]);
-
-  const saveInvoice = useCallback(async (): Promise<
-    { ok: true; recordId: number; invoiceNumber: number } | { ok: false }
-  > => {
+  const validateBeforeSave = useCallback((): ValidationResult => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
 
@@ -877,14 +1083,36 @@ export default function useInvoiceForm({
       }
     }
 
-    setIsLoading(true);
+    return { ok: true, validItems, customer: selectedCustomer };
+  }, [
+    contactLabel,
+    form.pay_type,
+    invoiceItems,
+    selectedCustomer,
+  ]);
 
-    try {
+  type InvoiceSaveContext = {
+    totals: {
+      totalAmount: number;
+      taxAmount: number;
+      totalDiscount: number;
+      totalGWeight: number;
+      netAmount: number;
+    };
+    invoiceNumber: number | string | null;
+    invoicePayload: Record<string, unknown>;
+    resolvedCompanyId: number;
+    resolvedYearId: number;
+  };
+
+  const buildInvoiceSaveContext = useCallback(
+    (
+      validItems: InvoiceItemRow[],
+      customer: any,
+    ): InvoiceSaveContext => {
       const totals = computeTotals(form.pay_type, validItems);
       const invoiceNumber =
-        !isNewInvoice && form.inv_id
-          ? parseNumber(form.inv_id)
-          : await getNextInvoiceNumber();
+        !isNewInvoice && form.inv_id ? form.inv_id : parseNumber(form.inv_id);
 
       const invoiceQr = generateZatcaQR({
         sellerName: "شركة ثمار الصفاء المتميزة التجارية",
@@ -911,10 +1139,9 @@ export default function useInvoiceForm({
       const invoicePayload: Record<string, unknown> = {
         inv_id: invoiceNumber,
         inv_date: form.inv_date,
-        cust: parseNumber(selectedCustomer.id),
-        cust_name: selectedCustomer.cust_name ?? "",
-        cust_code:
-          selectedCustomer.cust_code ?? String(selectedCustomer.id ?? ""),
+        cust: parseNumber(customer.id),
+        cust_name: customer.cust_name ?? "",
+        cust_code: customer.cust_code ?? String(customer.id ?? ""),
         inv_amt: formatDecimalString(totals.totalAmount, frac2),
         inv_net: formatDecimalString(totals.netAmount, frac2),
         tax: formatDecimalString(totals.taxAmount, frac),
@@ -961,43 +1188,89 @@ export default function useInvoiceForm({
         year: resolvedYearId,
       };
 
-      let savedInvoice: Invoice | null = null;
+      return {
+        totals,
+        invoiceNumber,
+        invoicePayload,
+        resolvedCompanyId,
+        resolvedYearId,
+      };
+    },
+    [
+      computeTotals,
+      defaultTaxPrc,
+      defaultTransType,
+      employee,
+      form.area,
+      form.build_no,
+      form.city,
+      form.commit,
+      form.cr_no,
+      form.gov,
+      form.inv_date,
+      form.inv_id,
+      form.inv_notes,
+      form.pay_type,
+      form.post_code,
+      form.post_no,
+      form.print,
+      form.ref_no,
+      form.street,
+      form.vat_no,
+      frac,
+      frac2,
+      goldPrice,
+      handlingMethod,
+      invoiceData,
+      isNewInvoice,
+      mobileMethod,
+      paymentMethod,
+      selectedBranchId,
+      selectedYearId,
+    ],
+  );
+
+  const runInvoiceMutation = useCallback(
+    async (invoicePayload: Record<string, unknown>) => {
+      const mutationPayload = invoicePayload as Partial<Invoice>;
 
       if (isNewInvoice) {
-        try {
-          savedInvoice = await createInvoiceAction(
-            invoicePayload as Partial<Invoice>,
-          );
-        } catch (actionError) {
-          throw actionError;
+        const savedInvoice = await createInvoiceAction(mutationPayload);
+
+        if (!savedInvoice) {
+          throw new Error("create-invoice-failed");
         }
-      } else {
-        if (!invoicePk) {
-          throw new Error("invoice primary key is missing");
-        }
-        try {
-          savedInvoice = await updateInvoiceAction(
-            invoicePk,
-            invoicePayload as Partial<Invoice>,
-          );
-        } catch (actionError) {
-          throw actionError;
-        }
+
+        return savedInvoice;
       }
+
+      if (!invoicePk) {
+        throw new Error("invoice primary key is missing");
+      }
+
+      const savedInvoice = await updateInvoiceAction(invoicePk, mutationPayload);
 
       if (!savedInvoice) {
-        throw new Error(
-          isNewInvoice ? "create-invoice-failed" : "update-invoice-failed",
-        );
+        throw new Error("update-invoice-failed");
       }
 
-      let resolvedInvoicePk = savedInvoice.id
+      return savedInvoice;
+    },
+    [invoicePk, isNewInvoice],
+  );
+
+  const resolveInvoicePrimaryKey = useCallback(
+    async (
+      savedInvoice: Invoice | null,
+      invoiceNumber: number | string | null,
+    ) => {
+      let resolvedInvoicePk = savedInvoice?.id
         ? parseNumber(savedInvoice.id)
         : invoicePk;
 
       if (!resolvedInvoicePk || resolvedInvoicePk <= 0) {
         const fetchedInvoice = await getInvoiceByIdAction(
-          String(invoiceNumber),
+          String(invoiceNumber ?? ""),
         );
 
         resolvedInvoicePk = fetchedInvoice?.id
@@ -1009,6 +1282,22 @@ export default function useInvoiceForm({
         throw new Error("invoice primary key could not be resolved");
       }
 
+      return resolvedInvoicePk;
+    },
+    [invoicePk],
+  );
+
+  const persistInvoiceRecord = useCallback(
+    async (
+      invoicePayload: Record<string, unknown>,
+      invoiceNumber: number | string | null,
+    ) => {
+      const savedInvoice = await runInvoiceMutation(invoicePayload);
+      const resolvedInvoicePk = await resolveInvoicePrimaryKey(
+        savedInvoice,
+        invoiceNumber,
+      );
+
       setInvoicePk(resolvedInvoicePk);
       dispatchForm({
         type: "SET_FIELD",
@@ -1016,108 +1305,52 @@ export default function useInvoiceForm({
         value: invoiceNumber,
       });
 
-      const currentValidKeys = new Set<string>();
+      return resolvedInvoicePk;
+    },
+    [dispatchForm, resolveInvoicePrimaryKey, runInvoiceMutation, setInvoicePk],
+  );
 
-      validItems.forEach((item) => {
-        const key = normalizeRowIdentifier(item.id);
-
-        if (key) currentValidKeys.add(key);
-      });
-
-      const derivedDeletedIds = originalInvoiceItems
-        .map((item) => {
-          const key = normalizeRowIdentifier(item.id);
-          const numericId = getNumericRowId(item.id);
-
-          return { key, numericId };
-        })
-        .filter(
-          ({ key, numericId }) =>
-            key !== null &&
-            !currentValidKeys.has(key) &&
-            numericId !== null &&
-            Number.isFinite(numericId) &&
-            numericId > 0,
-        )
-        .map(({ numericId }) => numericId as number);
-
+  const syncInvoiceDetails = useCallback(
+    async (
+      validItems: InvoiceItemRow[],
+      resolvedInvoicePk: number,
+      resolvedCompanyId: number,
+      resolvedYearId: number,
+    ) => {
+      const currentValidKeys = collectValidRowKeys(validItems);
+      const derivedDeletedIds = deriveDeletedIds(
+        originalInvoiceItems,
+        currentValidKeys,
+      );
       const baseDeletions = Array.from(
         new Set([
           ...deletedItemIds,
           ...derivedDeletedIds.filter((id) => Number.isFinite(id) && id > 0),
         ]),
       );
-      // Build set/map of original DB detail ids and rows
-      const originalDetailIdSet = new Set(
-        originalInvoiceItems
-          .map((orig) => getNumericRowId(orig.id))
-          .filter((v): v is number => v !== null),
-      );
-      const originalById = new Map<number, InvoiceItemRow>();
 
-      for (const orig of originalInvoiceItems) {
-        const idn = getNumericRowId(orig.id);
-
-        if (idn !== null) originalById.set(idn, orig);
-      }
+      const { originalDetailIdSet, originalById } =
+        buildOriginalDetailLookup(originalInvoiceItems);
       const replacementDeletions: number[] = [];
 
       for (const row of validItems) {
-        const detailPayload = mapRowToApiPayload(
-          row,
-          resolvedInvoicePk,
-          resolvedCompanyId,
-          resolvedYearId,
+        const { replacedId } = await mutateDetailRow(
+          {
+            row,
+            resolvedInvoicePk,
+            resolvedCompanyId,
+            resolvedYearId,
+            originalDetailIdSet,
+            originalById,
+          },
+          mapRowToApiPayload,
         );
 
-        if (!detailPayload) continue;
-
-        const numericRowId = getNumericRowId(row.id);
-        const isExistingRow =
-          numericRowId !== null && originalDetailIdSet.has(numericRowId);
-        const currentItemId = getItemIdFromRow(row);
-        const originalRow =
-          numericRowId !== null ? originalById.get(numericRowId) : undefined;
-        const originalItemId = originalRow
-          ? getItemIdFromRow(originalRow)
-          : null;
-        const itemChanged =
-          isExistingRow &&
-          originalItemId !== null &&
-          currentItemId !== null &&
-          originalItemId !== currentItemId;
-
-        try {
-          if (!isExistingRow) {
-            // Create new detail row
-            const createPayload = { ...(detailPayload as any) } as any;
-
-            delete createPayload.id; // ensure no client id leaks into POST
-            await createInvoiceDetailAction(createPayload, resolvedInvoicePk);
-          } else if (itemChanged && numericRowId !== null) {
-            // Replace: create new detail, then delete original row id
-            const createPayload = { ...(detailPayload as any) } as any;
-
-            delete createPayload.id;
-            await createInvoiceDetailAction(createPayload, resolvedInvoicePk);
-            replacementDeletions.push(numericRowId);
-          } else if (numericRowId !== null) {
-            // Update existing detail row (use path id, not body id)
-            const updatePayload = { ...(detailPayload as any) } as any;
-
-            delete updatePayload.id;
-            await updateInvoiceDetailAction(
-              numericRowId,
-              updatePayload,
-              resolvedInvoicePk,
-            );
-          }
-        } catch (detailError) {
-          console.error(`خطأ أثناء حفظ تفاصيل السطر ${row.id}:`, detailError);
+        if (replacedId) {
+          replacementDeletions.push(replacedId);
         }
       }
 
-      // Perform deletions after creates/updates (user + derived + replacements)
       const finalDeletions = Array.from(
         new Set<number>([...baseDeletions, ...replacementDeletions]),
       );
@@ -1130,7 +1363,12 @@ export default function useInvoiceForm({
           console.error(`فشل حذف السطر ${detailId}:`, deleteError);
         }
       }
+    },
+    [deletedItemIds, mapRowToApiPayload, originalInvoiceItems],
+  );
 
+  const refreshInvoiceDetailsState = useCallback(
+    async (resolvedInvoicePk: number) => {
       const refreshedDetails = await getInvoiceDetailsAction(
         String(resolvedInvoicePk),
       );
@@ -1144,6 +1382,48 @@ export default function useInvoiceForm({
       setOriginalInvoiceItems(mappedDetails);
       setDeletedItemIds([]);
       setIsEditing(false);
+    },
+    [
+      defaultTransType,
+      makeEmptyRow,
+      setDeletedItemIds,
+      setInvoiceItems,
+      setIsEditing,
+      setOriginalInvoiceItems,
+    ],
+  );
+
+
+  const saveInvoice = useCallback(async (): Promise<
+    { ok: true; recordId: number; invoiceNumber: number } | { ok: false }
+  > => {
+    const validation = validateBeforeSave();
+
+    if (!validation.ok) {
+      return { ok: false };
+    }
+
+    setIsLoading(true);
+
+    try {
+      const context = buildInvoiceSaveContext(
+        validation.validItems,
+        validation.customer,
+      );
+
+      const resolvedInvoicePk = await persistInvoiceRecord(
+        context.invoicePayload,
+        context.invoiceNumber,
+      );
+
+      await syncInvoiceDetails(
+        validation.validItems,
+        resolvedInvoicePk,
+        context.resolvedCompanyId,
+        context.resolvedYearId,
+      );
+
+      await refreshInvoiceDetailsState(resolvedInvoicePk);
 
       toast.success(
         isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
@@ -1152,7 +1432,7 @@ export default function useInvoiceForm({
       return {
         ok: true,
         recordId: resolvedInvoicePk,
-        invoiceNumber: Number(invoiceNumber),
+        invoiceNumber: Number(context.invoiceNumber),
       };
     } catch (error) {
       const errorMessage =
@@ -1176,45 +1456,12 @@ export default function useInvoiceForm({
       setIsLoading(false);
     }
   }, [
-    contactLabel,
-    computeTotals,
-    defaultTransType,
-    deletedItemIds,
-    employee,
-    form.commit,
-    form.cr_no,
-    form.gov,
-    form.inv_date,
-    form.inv_id,
-    form.inv_notes,
-    form.pay_type,
-    form.post_code,
-    form.post_no,
-    form.print,
-    form.ref_no,
-    form.street,
-    form.vat_no,
-    form.area,
-    form.city,
-    form.build_no,
-    frac,
-    frac2,
-    defaultTaxPrc,
-    getNextInvoiceNumber,
-    goldPrice,
-    handlingMethod,
-    invoiceItems,
-    invoicePk,
+    buildInvoiceSaveContext,
     isNewInvoice,
-    mapRowToApiPayload,
-    mobileMethod,
-    originalInvoiceItemMap,
-    originalInvoiceItems,
-    paymentMethod,
-    invoiceData,
-    selectedBranchId,
-    selectedYearId,
-    selectedCustomer,
+    persistInvoiceRecord,
+    refreshInvoiceDetailsState,
+    syncInvoiceDetails,
+    validateBeforeSave,
   ]);
 
   const previewInvoice = useCallback(() => {

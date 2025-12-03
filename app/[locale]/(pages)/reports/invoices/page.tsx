@@ -1,16 +1,14 @@
-import { Suspense } from "react";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
-import InvoiceClient from "./components/InvoiceClient";
 import InvoicesHeader from "./components/InvoicesHeader";
+import InvoiceClientWrapper from "./InvoiceClientWrapper";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import invoiceService, {
   GetAllInvoicesParams,
 } from "@/services/api/invoice.service";
 import AppPagination from "@/components/AppPagination";
-import AppLoading from "@/components/AppLoading";
 import { redirectToLogin } from "@/app/actions/auth";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
 import { Invoice } from "@/types/models/invoice";
@@ -55,19 +53,10 @@ export default async function InvoicesPage({
       <Breadcrumb />
       <InvoicesHeader />
 
-      <Suspense
-        key={JSON.stringify(queryParams)}
-        fallback={
-          <div className="py-12">
-            <AppLoading />
-          </div>
-        }
-      >
-        <InvoiceClient
-          invoices={invoices?.results ?? []}
-          totalInvoices={count}
-        />
-      </Suspense>
+      <InvoiceClientWrapper
+        invoices={invoices?.results ?? []}
+        totalInvoices={count}
+      />
 
       <AppPagination total={totalPages} />
     </div>

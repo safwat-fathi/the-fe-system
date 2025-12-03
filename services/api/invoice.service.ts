@@ -4,9 +4,6 @@ import {
   InvoiceDetail,
   InvoiceTypes,
   TransTypes,
-  InvoiceMaxIdPayload,
-  InvoiceMaxIdRecord,
-  InvoiceMaxIdPrimitive,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
@@ -72,8 +69,8 @@ class InvoiceService extends HttpService<Invoice> {
         "invoices_list",
         queryParams,
         {
-          cache: "force-cache", // Disable cache temporarily
-          signal: AbortSignal.timeout(30000), // 30 seconds
+          cache: "force-cache",
+          signal: AbortSignal.timeout(5000), // 30 seconds
           next: { tags: cacheTags },
         },
       );
@@ -265,62 +262,6 @@ class InvoiceService extends HttpService<Invoice> {
       return [];
     } catch {
       throw new Error("حدث خطأ أثناء جلب تفاصيل الفاتورة");
-    }
-  }
-
-  async getNextInvoiceId(transType: TransTypes | number): Promise<number> {
-    try {
-      const resolvedTransType = Number(transType ?? TransTypes.SALES);
-
-      const response = await this.get<InvoiceMaxIdPayload>(
-        "api_max_inv_id",
-        {
-          xcom_id: "1",
-          xtrans_type: String(
-            Number.isFinite(resolvedTransType)
-              ? resolvedTransType
-              : TransTypes.SALES,
-          ),
-        },
-        {
-          cache: "no-store",
-          signal: AbortSignal.timeout(15000),
-        },
-      );
-
-      if (!response.success) {
-        const errorInfo = {
-          message: response.message ?? "No message provided",
-          errors: response.errors,
-          data: response.data,
-        };
-
-        console.error("getNextInvoiceId failed:", errorInfo);
-        throw new Error(
-          `فشل تحديد رقم الفاتورة: ${
-            response.message ?? "استجابة غير متوقعة من الخادم"
-          }`,
-        );
-      }
-
-      const rawValue = extractMaxInvoiceId(response.data);
-      const maxNumber =
-        rawValue !== null && rawValue !== undefined
-          ? Number(rawValue)
-          : Number.NaN;
-
-      if (!Number.isFinite(maxNumber)) {
-        console.error(
-          "getNextInvoiceId received invalid payload:",
-          response.data,
-        );
-        throw new Error("قيمة رقم الفاتورة غير صالحة");
-      }
-
-      return maxNumber + 1;
-    } catch (error) {
-      console.error("Error fetching next invoice id:", error);
-      throw new Error("حدث خطأ أثناء تحديد رقم الفاتورة التالي");
     }
   }
 
@@ -578,64 +519,6 @@ class InvoiceService extends HttpService<Invoice> {
 
     return monthlySales;
   }
-}
-
-function extractMaxInvoiceId(
-  payload: InvoiceMaxIdPayload | undefined,
-): InvoiceMaxIdPrimitive | null {
-  if (payload === null || payload === undefined) {
-    return null;
-  }
-
-  if (typeof payload === "number" || typeof payload === "string") {
-    return payload;
-  }
-
-  if (Array.isArray(payload)) {
-    for (const entry of payload) {
-      const candidate = extractMaxInvoiceId(entry as InvoiceMaxIdPayload);
-
-      if (candidate !== null && candidate !== undefined) {
-        return candidate;
-      }
-    }
-
-    return null;
-  }
-
-  if (typeof payload === "object") {
-    const record = payload as InvoiceMaxIdRecord;
-
-    const directCandidates: Array<InvoiceMaxIdPrimitive> = [
-      record.max_inv_id,
-      record.maxInvId,
-      record.inv_id,
-    ];
-
-    for (const candidate of directCandidates) {
-      if (candidate !== null && candidate !== undefined) {
-        return candidate;
-      }
-    }
-
-    if (record.data !== undefined) {
-      const nested = extractMaxInvoiceId(record.data as InvoiceMaxIdPayload);
-
-      if (nested !== null && nested !== undefined) {
-        return nested;
-      }
-    }
-
-    if (record.results !== undefined) {
-      const nested = extractMaxInvoiceId(record.results as InvoiceMaxIdPayload);
-
-      if (nested !== null && nested !== undefined) {
-        return nested;
-      }
-    }
-  }
-
-  return null;
 }
 
 export default new InvoiceService();
