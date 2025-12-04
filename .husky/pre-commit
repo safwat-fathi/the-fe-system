@@ -8,3 +8,8 @@ case `uname` in
     npx lint-staged
   ;;
 esac
+
+echo "✅ Code style check passed!"
+
+echo "------"
+echo "------"
