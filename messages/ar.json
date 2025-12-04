@@ -92,7 +92,8 @@
       "menuLabel": "قائمة المستخدم",
       "testPage": "صفحة اختبار",
       "logout": "تسجيل الخروج",
-      "defaultRole": "مستخدم"
+      "defaultRole": "مستخدم",
+      "adminRole": "مدير"
     }
   },
   "forms": {

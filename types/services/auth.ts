@@ -6,6 +6,8 @@ export interface LoginRequest {
 export interface LoginResponse {
   access: string;
   refresh: string;
+  user_id?: number;
+  is_admin?: boolean;
 
   success?: boolean;
   message?: string;

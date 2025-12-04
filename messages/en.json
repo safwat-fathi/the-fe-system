@@ -92,7 +92,8 @@
       "menuLabel": "User menu",
       "testPage": "Test page",
       "logout": "Log out",
-      "defaultRole": "User"
+      "defaultRole": "User",
+      "adminRole": "Administrator"
     }
   },
   "forms": {

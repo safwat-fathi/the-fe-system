@@ -5,6 +5,7 @@ npm run type-check
 echo "✅ Checking types passed"
 
 echo "------"
+echo "------"
 
 echo "⏳ Building the project..."
 npm run build
