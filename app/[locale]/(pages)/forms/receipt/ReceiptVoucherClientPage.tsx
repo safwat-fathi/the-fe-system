@@ -703,12 +703,11 @@ export default function ReceiptVoucherClientPage({
         <div className="flex items-center justify-between mt-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Button
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
               isDisabled={!isEditing}
               isLoading={isLoading}
-              size="sm"
               startContent={
-                !isLoading ? <CheckIcon className="h-4 w-4" /> : undefined
+                !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
               }
               variant="solid"
               onPress={saveVoucher}
@@ -717,10 +716,9 @@ export default function ReceiptVoucherClientPage({
             </Button>
 
             <Button
-              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
               isDisabled={formMode === "new" || isEditing || isLoading}
-              size="sm"
-              startContent={<PencilIcon className="h-4 w-4" />}
+              startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
               variant="solid"
               onPress={handleEditClick}
             >
@@ -728,9 +726,8 @@ export default function ReceiptVoucherClientPage({
             </Button>
 
             <Button
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-              size="sm"
-              startContent={<PlusIcon className="h-4 w-4" />}
+              className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+              startContent={<PlusIcon className="w-4 h-4" />}
               variant="solid"
               onPress={() => router.push("/forms/receipt")}
             >
@@ -738,12 +735,11 @@ export default function ReceiptVoucherClientPage({
             </Button>
 
             <Button
-              className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
               isDisabled={!hasVoucherId}
               isLoading={isPrinting}
-              size="sm"
               startContent={
-                !isPrinting ? <PrinterIcon className="h-4 w-4" /> : undefined
+                !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
               }
               variant="solid"
               onPress={printVoucher}

@@ -1,6 +1,6 @@
 import type { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -71,7 +71,7 @@ export const useCashReceiptVoucherForm = ({
   });
 
   const [currentTime, setCurrentTime] = useState("");
-  const [isClient, setIsClient] = useState(false);
+  const [isClient] = useState(() => typeof window !== "undefined");
   const [voucherBoxes, setVoucherBoxes] = useState<VoucherBox[]>(
     initialVoucherBoxes || [],
   );
@@ -90,15 +90,41 @@ export const useCashReceiptVoucherForm = ({
   const [isEditing, setIsEditing] = useState(startInEditMode);
   const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>([]);
   const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
-  const [defaultAccountOptions, setDefaultAccountOptions] = useState<any[]>([]);
 
   const hasGeneratedVoucherNumber = useRef(false);
   const hasLoadedVoucherBoxes = useRef(false);
   const previousVouchNotesRef = useRef<string>(voucher.vouch_notes || "");
 
+  // Helper Functions - يجب تعريفها قبل useEffect
+  // تحسين: استخدام useCallback لتقليل إنشاء الدالة في كل render
+  const updateCurrentTime = useCallback(() => {
+    const now = new Date();
+
+    setCurrentTime(now.toLocaleTimeString("ar-EG"));
+  }, []);
+
+  const generateNextVoucherNumber = async () => {
+    try {
+      const nextId = await voucherService.getNextNumber(vouchType);
+
+      setVoucher((prev) => ({
+        ...prev,
+        vouch_id: nextId,
+        vouch_date: new Date().toISOString(),
+        cr_date: new Date().toISOString(),
+      }));
+    } catch {
+      setVoucher((prev) => ({
+        ...prev,
+        vouch_id: 1,
+        vouch_date: new Date().toISOString(),
+        cr_date: new Date().toISOString(),
+      }));
+    }
+  };
+
   // Initialize component
   useEffect(() => {
-    setIsClient(true);
     updateCurrentTime();
 
     if (isNewVoucher && !hasGeneratedVoucherNumber.current) {
@@ -220,54 +246,24 @@ export const useCashReceiptVoucherForm = ({
     const interval = setInterval(updateCurrentTime, 1000);
 
     return () => clearInterval(interval);
-  }, [isClient]);
+  }, [isClient, updateCurrentTime]);
 
-  useEffect(() => {
+  // تحسين: استخدام useMemo بدلاً من useEffect + useState لتقليل re-renders
+  const defaultAccountOptions = useMemo(() => {
     if (accounts.length === 0) {
-      setDefaultAccountOptions([]);
-
-      return;
+      return [];
     }
 
-    const options = accounts.slice(0, 50).map((acc) => ({
+    return accounts.slice(0, 50).map((acc) => ({
       value: acc.id,
       label: `${acc.acc_code ?? acc.code ?? ""} - ${acc.acc_name ?? acc.name ?? ""}`,
       account: acc,
     }));
-
-    setDefaultAccountOptions(options);
   }, [accounts]);
-
-  // Helper Functions
-  const updateCurrentTime = () => {
-    const now = new Date();
-
-    setCurrentTime(now.toLocaleTimeString("ar-EG"));
-  };
 
   const updateAccountsList = (newAccount: any) => {
     if (!accounts.find((acc) => acc.id === newAccount.id)) {
       setAccounts([...accounts, newAccount]);
-    }
-  };
-
-  const generateNextVoucherNumber = async () => {
-    try {
-      const nextId = await voucherService.getNextNumber(vouchType);
-
-      setVoucher((prev) => ({
-        ...prev,
-        vouch_id: nextId,
-        vouch_date: new Date().toISOString(),
-        cr_date: new Date().toISOString(),
-      }));
-    } catch {
-      setVoucher((prev) => ({
-        ...prev,
-        vouch_id: 1,
-        vouch_date: new Date().toISOString(),
-        cr_date: new Date().toISOString(),
-      }));
     }
   };
 
@@ -319,27 +315,31 @@ export const useCashReceiptVoucherForm = ({
     }
   };
 
-  const getAccountSelectValue = (detail: VoucherDetail) => {
-    if (!detail.acc_id) return null;
+  // تحسين: استخدام useCallback لتقليل إنشاء الدالة في كل render
+  const getAccountSelectValue = useCallback(
+    (detail: VoucherDetail) => {
+      if (!detail.acc_id) return null;
 
-    if (detail.acc_code && detail.acc_name) {
-      return {
-        value: detail.acc_id,
-        label: `${detail.acc_code} - ${detail.acc_name}`,
-      };
-    }
+      if (detail.acc_code && detail.acc_name) {
+        return {
+          value: detail.acc_id,
+          label: `${detail.acc_code} - ${detail.acc_name}`,
+        };
+      }
 
-    const account = accounts.find((acc) => acc.id === detail.acc_id);
+      const account = accounts.find((acc) => acc.id === detail.acc_id);
 
-    if (account) {
-      return {
-        value: detail.acc_id,
-        label: `${account.acc_code ?? ""} - ${account.acc_name ?? ""}`,
-      };
-    }
+      if (account) {
+        return {
+          value: detail.acc_id,
+          label: `${account.acc_code ?? ""} - ${account.acc_name ?? ""}`,
+        };
+      }
 
-    return null;
-  };
+      return null;
+    },
+    [accounts],
+  );
 
   // Voucher Boxes Management
   const updateVoucherBox = (index: number, field: string, value: any) => {
@@ -447,55 +447,63 @@ export const useCashReceiptVoucherForm = ({
     setDetails((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleMasterCostChange = (costId: number | null) => {
-    const previousCost =
-      voucher.cost_id !== undefined && voucher.cost_id !== null
-        ? voucher.cost_id
-        : null;
+  // تحسين: استخدام useCallback لتقليل إنشاء الدالة في كل render
+  const handleMasterCostChange = useCallback(
+    (costId: number | null) => {
+      const previousCost =
+        voucher.cost_id !== undefined && voucher.cost_id !== null
+          ? voucher.cost_id
+          : null;
 
-    setVoucher((prev) => ({
-      ...prev,
-      cost_id: costId ?? null,
-    }));
+      setVoucher((prev) => ({
+        ...prev,
+        cost_id: costId ?? null,
+      }));
 
-    setDetails((prev) =>
-      prev.map((detail) => {
-        const detailCost =
-          detail.cost_id !== undefined && detail.cost_id !== null
-            ? detail.cost_id
-            : 0;
+      setDetails((prev) =>
+        prev.map((detail) => {
+          const detailCost =
+            detail.cost_id !== undefined && detail.cost_id !== null
+              ? detail.cost_id
+              : 0;
 
-        if (
-          detailCost > 0 &&
-          previousCost !== null &&
-          detailCost !== previousCost
-        ) {
-          return detail;
-        }
+          if (
+            detailCost > 0 &&
+            previousCost !== null &&
+            detailCost !== previousCost
+          ) {
+            return detail;
+          }
 
-        return {
-          ...detail,
-          cost_id: costId ?? null,
-        };
-      }),
-    );
+          return {
+            ...detail,
+            cost_id: costId ?? null,
+          };
+        }),
+      );
 
-    setVoucherBoxes((prev) =>
-      prev.map((box) => {
-        const boxCost =
-          box.cost_id !== undefined && box.cost_id !== null ? box.cost_id : 0;
+      setVoucherBoxes((prev) =>
+        prev.map((box) => {
+          const boxCost =
+            box.cost_id !== undefined && box.cost_id !== null ? box.cost_id : 0;
 
-        if (boxCost > 0 && previousCost !== null && boxCost !== previousCost) {
-          return box;
-        }
+          if (
+            boxCost > 0 &&
+            previousCost !== null &&
+            boxCost !== previousCost
+          ) {
+            return box;
+          }
 
-        return {
-          ...box,
-          cost_id: costId ?? null,
-        };
-      }),
-    );
-  };
+          return {
+            ...box,
+            cost_id: costId ?? null,
+          };
+        }),
+      );
+    },
+    [voucher.cost_id],
+  );
 
   // Calculate totals
   const totals = useMemo(() => {

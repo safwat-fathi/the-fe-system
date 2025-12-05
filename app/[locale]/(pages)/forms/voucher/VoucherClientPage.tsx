@@ -3,7 +3,7 @@
 import type { Voucher, VoucherDetail } from "@/types/voucher";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect from "react-select";
 import {
@@ -25,9 +25,13 @@ import {
   DocumentTextIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
   BackwardIcon,
   ForwardIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import clsx from "clsx";
 
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
@@ -48,6 +52,7 @@ interface VoucherClientPageProps {
     next?: number | null;
     first?: number | null;
     last?: number | null;
+    vouchersCount?: number | null;
   };
   accounts: any[];
   costCenters: any[];
@@ -78,6 +83,7 @@ export default function VoucherClientPage({
 }: VoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
 
   // Use the hook for all state management and business logic
@@ -138,33 +144,31 @@ export default function VoucherClientPage({
     newVoucherHref,
   });
 
-  // Focus reference number on load
+  // Focus reference number on load and when pathname changes
   useEffect(() => {
-    // محاولة التركيز على حقل رقم المرجع عند تحميل الصفحة
-    const timer = setTimeout(() => {
-      const refNoInput = document.getElementById("ref_no");
+    // محاولة التركيز على حقل رقم المرجع عند تحميل الصفحة أو تغيير المسار
+    const focusRefNo = () => {
+      const refNoInput = document.getElementById("voucher-ref-no");
 
       if (refNoInput) {
         refNoInput.focus();
+        // تحديد النص إذا كان الحقل فارغاً
+        if (refNoInput instanceof HTMLInputElement && !refNoInput.value) {
+          refNoInput.select();
+        }
       }
-    }, 100);
+    };
 
-    return () => clearTimeout(timer);
-  }, []);
+    // محاولة فورية
+    const timer1 = setTimeout(focusRefNo, 50);
+    // محاولة إضافية بعد تأخير أطول للتأكد
+    const timer2 = setTimeout(focusRefNo, 200);
 
-  // Focus reference number on load
-  useEffect(() => {
-    // محاولة التركيز على حقل رقم المرجع عند تحميل الصفحة
-    const timer = setTimeout(() => {
-      const refNoInput = document.getElementById("ref_no");
-
-      if (refNoInput) {
-        refNoInput.focus();
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [pathname]);
 
   // Refs for keyboard navigation
   const selectorsRef = useRef<HTMLDivElement>(null);
@@ -353,6 +357,37 @@ export default function VoucherClientPage({
     return Number.isFinite(numeric) ? numeric : 0;
   };
 
+  // دالة لبناء روابط التنقل (مثل الفواتير)
+  const resolvePaginatedVoucherHref = useCallback(
+    (vouchId: number | null) => {
+      if (!vouchId) return null;
+
+      // تحديد نوع القيد من searchParams أو vouchType
+      const currentType = searchParams?.get("type") || "adjustment";
+      const searchParamsNew = new URLSearchParams({
+        type: currentType,
+        mode: "preview",
+        id: String(vouchId),
+      });
+
+      return `/forms/voucher?${searchParamsNew.toString()}`;
+    },
+    [searchParams],
+  );
+
+  // metadata للتنقل (مثل الفواتير)
+  const navigationMetadata = useMemo(() => {
+    if (!navigationInfo) return null;
+
+    return {
+      nextVoucherHref: resolvePaginatedVoucherHref(navigationInfo.next ?? null),
+      prevVoucherHref: resolvePaginatedVoucherHref(navigationInfo.previous ?? null),
+      lastVoucherHref: resolvePaginatedVoucherHref(navigationInfo.last ?? null),
+      firstVoucherHref: resolvePaginatedVoucherHref(navigationInfo.first ?? null),
+      totalVouchers: navigationInfo.vouchersCount,
+    };
+  }, [navigationInfo, resolvePaginatedVoucherHref]);
+
   const navigationTargets = useMemo(
     () => ({
       previous: navigationInfo?.previous ?? -1,
@@ -362,6 +397,14 @@ export default function VoucherClientPage({
     }),
     [navigationInfo],
   );
+
+  // رقم السند الحالي
+  const voucherNumber =
+    voucher.vouch_id && Number(voucher.vouch_id) > 0
+      ? String(voucher.vouch_id)
+      : voucher.id
+        ? `DB-${voucher.id}`
+        : "";
 
   // Helper functions for cost center select (must be before any early return)
   const getCostCenterSelectValue = (costId: number | null | undefined) => {
@@ -483,12 +526,11 @@ export default function VoucherClientPage({
             {/* الأزرار من اليسار لليمين */}
             <div className="flex items-center gap-2 flex-wrap">
               <Button
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+                className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
                 isDisabled={!isEditing}
                 isLoading={isLoading}
-                size="sm"
                 startContent={
-                  !isLoading ? <CheckIcon className="h-4 w-4" /> : undefined
+                  !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
                 }
                 variant="solid"
                 onPress={saveVoucher}
@@ -497,10 +539,9 @@ export default function VoucherClientPage({
               </Button>
 
               <Button
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+                className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
                 isDisabled={formMode === "new" || isEditing || isLoading}
-                size="sm"
-                startContent={<PencilIcon className="h-4 w-4" />}
+                startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
                 variant="solid"
                 onPress={() => {
                   // عند فتح وضع التعديل، نلغي commit (تصبح false) حتى يتم الحفظ
@@ -532,9 +573,8 @@ export default function VoucherClientPage({
 
               {/* زر "جديد" */}
               <Button
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-                size="sm"
-                startContent={<PlusIcon className="h-4 w-4" />}
+                className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+                startContent={<PlusIcon className="w-4 h-4" />}
                 variant="solid"
                 onPress={() => {
                   // الانتقال إلى صفحة جديدة
@@ -545,12 +585,11 @@ export default function VoucherClientPage({
               </Button>
 
               <Button
-                className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+                className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
                 isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
                 isLoading={isPrinting}
-                size="sm"
                 startContent={
-                  !isPrinting ? <PrinterIcon className="h-4 w-4" /> : undefined
+                  !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
                 }
                 variant="solid"
                 onPress={printVoucher}
@@ -559,20 +598,18 @@ export default function VoucherClientPage({
               </Button>
 
               <Button
-                className="bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-700 font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[140px]"
-                size="sm"
-                startContent={<DocumentTextIcon className="h-4 w-4" />}
+                className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+                startContent={<DocumentTextIcon className="w-4 h-4 text-slate-500" />}
                 variant="solid"
                 onPress={() => setIsModalOpen(true)}
               >
-                انشاء من قيد سابق
+                <span className="hidden sm:inline">انشاء من قيد سابق</span>
               </Button>
 
               {isCreatedFromPrevious && (
                 <Button
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-                  size="sm"
-                  startContent={<ArrowUturnLeftIcon className="h-4 w-4" />}
+                  className="h-7 px-3 text-xs bg-orange-600 text-white hover:bg-orange-700 border border-orange-600 rounded-md shadow-sm"
+                  startContent={<ArrowUturnLeftIcon className="w-4 h-4" />}
                   variant="solid"
                   onPress={resetToNew}
                 >
@@ -580,48 +617,62 @@ export default function VoucherClientPage({
                 </Button>
               )}
 
-              <div className="flex items-center gap-1 border border-slate-200 rounded-md px-1.5 py-1 bg-white">
-                <Button
-                  isIconOnly
-                  aria-label="أول قيد"
-                  className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
-                  size="sm"
-                  variant="light"
-                  onPress={() => handleNavigate(navigationTargets.first)}
-                >
-                  <BackwardIcon className="h-4 w-4 text-slate-600" />
-                </Button>
-                <Button
-                  isIconOnly
-                  aria-label="السابق"
-                  className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
-                  size="sm"
-                  variant="light"
-                  onPress={() => handleNavigate(navigationTargets.previous)}
-                >
-                  <ChevronRightIcon className="h-4 w-4 text-slate-600" />
-                </Button>
-                <Button
-                  isIconOnly
-                  aria-label="التالي"
-                  className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
-                  size="sm"
-                  variant="light"
-                  onPress={() => handleNavigate(navigationTargets.next)}
-                >
-                  <ChevronLeftIcon className="h-4 w-4 text-slate-600" />
-                </Button>
-                <Button
-                  isIconOnly
-                  aria-label="آخر قيد"
-                  className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
-                  size="sm"
-                  variant="light"
-                  onPress={() => handleNavigate(navigationTargets.last)}
-                >
-                  <ForwardIcon className="h-4 w-4 text-slate-600" />
-                </Button>
-              </div>
+              {/* أزرار التنقل - مثل الفواتير */}
+              {navigationMetadata && !isNewVoucher && (
+                <div className="hidden md:flex items-center gap-1 mr-2">
+                  <Link
+                    className={clsx(
+                      "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                      {
+                        "pointer-events-none opacity-40":
+                          !navigationMetadata.firstVoucherHref,
+                      },
+                    )}
+                    href={navigationMetadata.firstVoucherHref || ""}
+                  >
+                    <ChevronDoubleRightIcon className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    className={clsx(
+                      "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                      {
+                        "pointer-events-none opacity-40":
+                          !navigationMetadata.prevVoucherHref,
+                      },
+                    )}
+                    href={navigationMetadata.prevVoucherHref || ""}
+                  >
+                    <ChevronRightIcon className="w-4 h-4" />
+                  </Link>
+                  <span className="text-xs text-slate-600 px-2 font-medium">
+                    {voucherNumber} من {navigationMetadata.totalVouchers ?? "?"}
+                  </span>
+                  <Link
+                    className={clsx(
+                      "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                      {
+                        "pointer-events-none opacity-40":
+                          !navigationMetadata.nextVoucherHref,
+                      },
+                    )}
+                    href={navigationMetadata.nextVoucherHref || ""}
+                  >
+                    <ChevronLeftIcon className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    className={clsx(
+                      "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                      {
+                        "pointer-events-none opacity-40":
+                          !navigationMetadata.lastVoucherHref,
+                      },
+                    )}
+                    href={navigationMetadata.lastVoucherHref || ""}
+                  >
+                    <ChevronDoubleLeftIcon className="w-4 h-4" />
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* حالة القيد */}
@@ -906,24 +957,137 @@ export default function VoucherClientPage({
                         e.preventDefault();
                         e.stopPropagation();
 
-                        // محاولات متعددة للانتقال إلى حقل البيان
-                        const focusToNotes = () => {
-                          const notesInput = document.querySelector(
-                            'input[placeholder*="بيان القيد"], input[placeholder*="البيان"]',
-                          ) as HTMLInputElement;
+                        // ✅ إضافة صف جديد إذا لم يكن موجوداً
+                        if (details.length === 0) {
+                          addDetailRow();
+                        }
 
-                          if (notesInput) {
-                            notesInput.focus();
-                            notesInput.select?.();
-                            return true;
+                        // ✅ دالة قوية للتركيز على حقل الحساب - تعمل بغض النظر عن أي شرط
+                        const focusToAccountField = (): boolean => {
+                          try {
+                            const accountSelectId = `#account-select-0`;
+                            let accountSelect = document.querySelector(accountSelectId);
+
+                            // ✅ إذا لم نجد accountSelect، نبحث بطريقة أخرى
+                            if (!accountSelect) {
+                              // البحث عن أي div يحتوي على instanceId
+                              const allSelects = document.querySelectorAll(
+                                '[id^="account-select-"]',
+                              );
+                              accountSelect = allSelects[0] || null;
+                            }
+
+                            if (!accountSelect) {
+                              return false;
+                            }
+
+                            // ✅ البحث عن combobox بطرق متعددة
+                            let combobox = accountSelect.querySelector(
+                              '[role="combobox"]',
+                            ) as HTMLElement;
+
+                            // ✅ إذا لم نجد combobox داخل accountSelect، نبحث مباشرة
+                            if (!combobox) {
+                              combobox = document.querySelector(
+                                `#account-select-0 [role="combobox"]`,
+                              ) as HTMLElement;
+                            }
+
+                            // ✅ إذا لم نجد، نبحث في كل الصفحة
+                            if (!combobox) {
+                              const allComboboxes = document.querySelectorAll(
+                                '[role="combobox"]',
+                              );
+                              // نبحث عن combobox في أول صف (index 0)
+                              for (let i = 0; i < allComboboxes.length; i += 1) {
+                                const cb = allComboboxes[i] as HTMLElement;
+                                const parent = cb.closest('[id^="account-select-"]');
+                                if (parent && parent.id === "account-select-0") {
+                                  combobox = cb;
+                                  break;
+                                }
+                              }
+                            }
+
+                            if (combobox) {
+                              // ✅ التركيز مع محاولات متعددة
+                              combobox.focus();
+
+                              // ✅ التأكد من أن combobox قابل للتركيز
+                              if (document.activeElement !== combobox) {
+                                combobox.setAttribute("tabindex", "0");
+                                combobox.focus();
+                              }
+
+                              return true;
+                            }
+
+                            return false;
+                          } catch (error) {
+                            console.error("Error in focusToAccountField:", error);
+                            return false;
                           }
-
-                          return false;
                         };
 
-                        focusToNotes();
-                        setTimeout(() => focusToNotes(), 10);
-                        setTimeout(() => focusToNotes(), 50);
+                        // ✅ محاولة فورية
+                        if (focusToAccountField()) {
+                          return;
+                        }
+
+                        // ✅ محاولة بعد requestAnimationFrame
+                        requestAnimationFrame(() => {
+                          if (focusToAccountField()) {
+                            return;
+                          }
+
+                          // ✅ محاولة بعد setTimeout قصير
+                          setTimeout(() => {
+                            if (focusToAccountField()) {
+                              return;
+                            }
+
+                            // ✅ محاولة بعد setTimeout متوسط
+                            setTimeout(() => {
+                              if (focusToAccountField()) {
+                                return;
+                              }
+
+                              // ✅ محاولة بعد setTimeout طويل
+                              setTimeout(() => {
+                                if (focusToAccountField()) {
+                                  return;
+                                }
+
+                                // ✅ محاولة أخيرة مع focusFirstInRow
+                                focusFirstInRow(0);
+                              }, 100);
+                            }, 50);
+                          }, 10);
+                        });
+
+                        // ✅ محاولة باستخدام focusFirstInRow كحل بديل
+                        focusFirstInRow(0);
+
+                        // ✅ محاولات إضافية مع focusFirstInRow و focusToAccountField
+                        setTimeout(() => {
+                          focusFirstInRow(0);
+                          focusToAccountField();
+                        }, 20);
+
+                        setTimeout(() => {
+                          focusFirstInRow(0);
+                          focusToAccountField();
+                        }, 80);
+
+                        setTimeout(() => {
+                          focusFirstInRow(0);
+                          focusToAccountField();
+                        }, 150);
+
+                        setTimeout(() => {
+                          focusFirstInRow(0);
+                          focusToAccountField();
+                        }, 250);
                       }
 
                       if (e.key === "Escape") {

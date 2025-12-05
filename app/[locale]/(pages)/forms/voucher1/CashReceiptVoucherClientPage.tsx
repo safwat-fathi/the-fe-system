@@ -13,9 +13,13 @@ import {
   ArrowsPointingOutIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
   BackwardIcon,
   ForwardIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import clsx from "clsx";
 import {
   Button,
   Modal,
@@ -47,6 +51,7 @@ interface CashReceiptVoucherClientPageProps {
     next?: number | null;
     first?: number | null;
     last?: number | null;
+    vouchersCount?: number | null;
   };
   accounts: any[];
   boxes: any[];
@@ -131,6 +136,36 @@ export default function CashReceiptVoucherClientPage({
     formMode,
   });
 
+  // دالة لبناء روابط التنقل (مثل الفواتير)
+  const resolvePaginatedVoucherHref = useCallback(
+    (vouchId: number | null) => {
+      if (!vouchId) return null;
+
+      // تحديد المسار بناءً على pathname (voucher1 أو voucher2)
+      const basePath = pathname?.includes("/voucher2")
+        ? "/forms/voucher2"
+        : "/forms/voucher1";
+
+      return `${basePath}/${vouchId}?mode=preview`;
+    },
+    [pathname],
+  );
+
+  // metadata للتنقل (مثل الفواتير)
+  const navigationMetadata = useMemo(() => {
+    if (!navigationInfo) return null;
+
+    const nav = navigationInfo;
+
+    return {
+      nextVoucherHref: resolvePaginatedVoucherHref(nav.next ?? null),
+      prevVoucherHref: resolvePaginatedVoucherHref(nav.previous ?? null),
+      lastVoucherHref: resolvePaginatedVoucherHref(nav.last ?? null),
+      firstVoucherHref: resolvePaginatedVoucherHref(nav.first ?? null),
+      totalVouchers: nav.vouchersCount,
+    };
+  }, [navigationInfo, resolvePaginatedVoucherHref]);
+
   const navigationTargets = useMemo(() => {
     return {
       previous: navigationInfo?.previous ?? -1,
@@ -155,19 +190,34 @@ export default function CashReceiptVoucherClientPage({
     router.refresh();
   };
 
-  // Focus reference number on load
+  // رقم السند الحالي
+  const voucherNumber = voucher.vouch_id ? String(voucher.vouch_id) : "";
+
+  // Focus reference number on load and when pathname changes
   useEffect(() => {
-    // محاولة التركيز على حقل رقم المرجع عند تحميل الصفحة
-    const timer = setTimeout(() => {
-      const refNoInput = document.getElementById("ref_no");
+    // محاولة التركيز على حقل رقم المرجع عند تحميل الصفحة أو تغيير المسار
+    const focusRefNo = () => {
+      const refNoInput = document.getElementById("cash-receipt-ref-no");
 
       if (refNoInput) {
         refNoInput.focus();
+        // تحديد النص إذا كان الحقل فارغاً
+        if (refNoInput instanceof HTMLInputElement && !refNoInput.value) {
+          refNoInput.select();
+        }
       }
-    }, 100);
+    };
 
-    return () => clearTimeout(timer);
-  }, []);
+    // محاولة فورية
+    const timer1 = setTimeout(focusRefNo, 50);
+    // محاولة إضافية بعد تأخير أطول للتأكد
+    const timer2 = setTimeout(focusRefNo, 200);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [pathname]);
 
   // Refs for keyboard navigation
   const selectorsRef = useRef<HTMLDivElement>(null);
@@ -410,95 +460,61 @@ export default function CashReceiptVoucherClientPage({
     }
 
     const searchValue = searchTerm.trim();
+    const searchNumber = Number(searchValue);
+
+    if (!Number.isFinite(searchNumber) || searchNumber <= 0) {
+      toast.error("يرجى إدخال رقم سند صحيح");
+
+      return;
+    }
 
     try {
-      // البحث في السندات بنفس النوع (قبض أو صرف)
-      const vouchersResponse = await voucherService.getAll({
+      // ✅ استخدام getVoucherById مباشرة (مثل الفواتير) - يبحث عن id أو vouch_id
+      let foundVoucher = await voucherService.getVoucherById(searchNumber, {
         xvouch_type: vouchType.toString(), // 1 للقبض، 2 للصرف
-        xvouch_id: searchValue,
-        xcom_id: "1",
-        xyear_id: "0", // كل السنوات
       });
 
-      if (vouchersResponse.success && vouchersResponse.data) {
-        const vouchers = Array.isArray(vouchersResponse.data)
-          ? vouchersResponse.data
-          : [];
-
-        // البحث في النتائج - مطابقة دقيقة أولاً
-        let foundVoucher = vouchers.find(
-          (v: any) =>
-            v.vouch_id?.toString() === searchValue ||
-            v.id?.toString() === searchValue,
-        );
-
-        // إذا لم نجد مطابقة دقيقة، نبحث عن سندات تحتوي على الرقم
-        if (!foundVoucher) {
-          foundVoucher = vouchers.find(
-            (v: any) =>
-              v.vouch_id?.toString().includes(searchValue) ||
-              v.id?.toString().includes(searchValue),
-          );
-        }
-
-        if (foundVoucher) {
-          // استخدام id الحقيقي (primary key) للانتقال إلى صفحة السند
-          const targetId = foundVoucher.id || foundVoucher.vouch_id;
-
-          if (targetId) {
-            const basePath =
-              vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
-
-            router.push(`${basePath}/${targetId}?mode=preview`);
-            setSearchTerm(""); // مسح حقل البحث
-
-            return;
-          }
-        }
+      // إذا لم نجد في النوع المحدد، جرب البحث في جميع الأنواع
+      if (!foundVoucher) {
+        foundVoucher = await voucherService.getVoucherById(searchNumber, {
+          xvouch_type: "0", // جميع الأنواع
+        });
       }
 
-      // إذا لم نجد في السندات من نفس النوع، نبحث في جميع أنواع السندات
-      const allVouchersResponse = await voucherService.getAll({
-        xvouch_type: "0", // جميع الأنواع
-        xvouch_id: searchValue,
-        xcom_id: "1",
-        xyear_id: "0",
-      });
+      if (foundVoucher) {
+        const voucherWithId = foundVoucher as any;
 
-      if (allVouchersResponse.success && allVouchersResponse.data) {
-        const allVouchers = Array.isArray(allVouchersResponse.data)
-          ? allVouchersResponse.data
-          : [];
+        // التحقق من نوع السند
+        if (voucherWithId.vouch_type !== vouchType) {
+          const voucherTypeName = vouchType === 1 ? "سند قبض" : "سند صرف";
 
-        const foundAny = allVouchers.find(
-          (v: any) =>
-            v.vouch_id?.toString() === searchValue ||
-            v.id?.toString() === searchValue,
-        );
+          toast.error(
+            `السند الموجود (${voucherWithId.vouch_id}) ليس من نوع ${voucherTypeName}`,
+          );
 
-        if (foundAny) {
-          // التحقق من نوع السند
-          if (foundAny.vouch_type !== vouchType) {
-            const voucherTypeName = vouchType === 1 ? "سند قبض" : "سند صرف";
+          return;
+        }
 
-            toast.error(
-              `السند الموجود (${foundAny.vouch_id}) ليس من نوع ${voucherTypeName}`,
-            );
+        // ✅ استخدام id الحقيقي (primary key) فقط للانتقال - routing يتوقع id وليس vouch_id
+        const targetId = voucherWithId.id;
 
-            return;
-          }
+        if (targetId && Number(targetId) > 0) {
+          const basePath =
+            vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
 
-          const targetId = foundAny.id || foundAny.vouch_id;
+          router.push(`${basePath}/${targetId}?mode=preview`);
+          router.refresh();
+          setSearchTerm(""); // مسح حقل البحث
 
-          if (targetId) {
-            const basePath =
-              vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
-
-            router.push(`${basePath}/${targetId}?mode=preview`);
-            setSearchTerm("");
-
-            return;
-          }
+          return;
+        } else {
+          console.error(
+            "Voucher found but missing id (primary key):",
+            voucherWithId,
+          );
+          toast.error(
+            "تم العثور على السند لكن لا يمكن الوصول إليه. يرجى المحاولة مرة أخرى.",
+          );
         }
       }
 
@@ -577,12 +593,11 @@ export default function CashReceiptVoucherClientPage({
         <div className="flex items-center justify-between mt-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Button
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
               isDisabled={!isEditing}
               isLoading={isLoading}
-              size="sm"
               startContent={
-                !isLoading ? <CheckIcon className="h-4 w-4" /> : undefined
+                !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
               }
               variant="solid"
               onPress={saveVoucher}
@@ -591,10 +606,9 @@ export default function CashReceiptVoucherClientPage({
             </Button>
 
             <Button
-              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
               isDisabled={formMode === "new" || isEditing || isLoading}
-              size="sm"
-              startContent={<PencilIcon className="h-4 w-4" />}
+              startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
               variant="solid"
               onPress={handleEditClick}
             >
@@ -602,9 +616,8 @@ export default function CashReceiptVoucherClientPage({
             </Button>
 
             <Button
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
-              size="sm"
-              startContent={<PlusIcon className="h-4 w-4" />}
+              className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+              startContent={<PlusIcon className="w-4 h-4" />}
               variant="solid"
               onPress={() => {
                 // تحديد المسار بناءً على pathname أو vouchType
@@ -619,12 +632,11 @@ export default function CashReceiptVoucherClientPage({
             </Button>
 
             <Button
-              className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
               isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
               isLoading={isPrinting}
-              size="sm"
               startContent={
-                !isPrinting ? <PrinterIcon className="h-4 w-4" /> : undefined
+                !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
               }
               variant="solid"
               onPress={printVoucher}
@@ -632,48 +644,62 @@ export default function CashReceiptVoucherClientPage({
               طباعة
             </Button>
 
-            <div className="flex items-center gap-1 border border-slate-200 rounded-md px-1.5 py-1 bg-white">
-              <Button
-                isIconOnly
-                aria-label="أول سند"
-                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
-                size="sm"
-                variant="light"
-                onPress={() => handleNavigate(navigationTargets.first)}
-              >
-                <BackwardIcon className="h-4 w-4 text-slate-600" />
-              </Button>
-              <Button
-                isIconOnly
-                aria-label="السند السابق"
-                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
-                size="sm"
-                variant="light"
-                onPress={() => handleNavigate(navigationTargets.previous)}
-              >
-                <ChevronRightIcon className="h-4 w-4 text-slate-600" />
-              </Button>
-              <Button
-                isIconOnly
-                aria-label="السند التالي"
-                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
-                size="sm"
-                variant="light"
-                onPress={() => handleNavigate(navigationTargets.next)}
-              >
-                <ChevronLeftIcon className="h-4 w-4 text-slate-600" />
-              </Button>
-              <Button
-                isIconOnly
-                aria-label="آخر سند"
-                className="border border-transparent hover:border-slate-300 hover:bg-slate-100"
-                size="sm"
-                variant="light"
-                onPress={() => handleNavigate(navigationTargets.last)}
-              >
-                <ForwardIcon className="h-4 w-4 text-slate-600" />
-              </Button>
-            </div>
+            {/* أزرار التنقل - مثل الفواتير */}
+            {navigationMetadata && !isNewVoucher && (
+              <div className="hidden md:flex items-center gap-1 mr-2">
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata.firstVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata.firstVoucherHref || ""}
+                >
+                  <ChevronDoubleRightIcon className="w-4 h-4" />
+                </Link>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata.prevVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata.prevVoucherHref || ""}
+                >
+                  <ChevronRightIcon className="w-4 h-4" />
+                </Link>
+                <span className="text-xs text-slate-600 px-2 font-medium">
+                  {voucherNumber} من {navigationMetadata.totalVouchers ?? "?"}
+                </span>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata.nextVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata.nextVoucherHref || ""}
+                >
+                  <ChevronLeftIcon className="w-4 h-4" />
+                </Link>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata.lastVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata.lastVoucherHref || ""}
+                >
+                  <ChevronDoubleLeftIcon className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

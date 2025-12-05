@@ -33,6 +33,7 @@ const getAdjustmentVoucherForNavigation = cache(async () => {
   try {
     const vouchersResponse = await voucherService.getAll({
       xvouch_type: "3", // قيد التسوية فقط
+      page: "1", // ✅ جلب الصفحة الأولى فقط
     });
 
     if (!vouchersResponse.success || !vouchersResponse.data) {
@@ -187,7 +188,9 @@ export default async function VoucherPage({
           vouch_status: targetVoucher.vouch_status || 1,
           pay_type: targetVoucher.pay_type || 1,
           cost_id: resolvedVoucherCost,
-        };
+          // ✅ نسخ vouchers_count من targetVoucher
+          vouchers_count: (targetVoucherWithId as any).vouchers_count,
+        } as any;
 
         // جلب تفاصيل السند
         const voucherRecordId = targetVoucherWithId.id || parseInt(lookupId);
@@ -247,26 +250,62 @@ export default async function VoucherPage({
       return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
     };
 
-    const navigationInfo = voucherForNav
+    // بناء navigationInfo من السند (edit/preview) أو من navigation voucher (new)
+    const parseVouchersCount = (value: unknown): number | null => {
+      if (value === null || value === undefined || value === "") {
+        return null;
+      }
+
+      const numeric = Number(value);
+
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    };
+
+    const navigationInfo = voucherData
       ? {
           previous: parseNavId(
-            (voucherForNav as any).previous_voucher_id ??
-              (voucherForNav as any).previous,
+            (voucherData as any).previous_voucher_id ??
+              (voucherData as any).previous,
           ),
           next: parseNavId(
-            (voucherForNav as any).next_voucher_id ??
-              (voucherForNav as any).next,
+            (voucherData as any).next_voucher_id ??
+              (voucherData as any).next,
           ),
           first: parseNavId(
-            (voucherForNav as any).first_voucher_id ??
-              (voucherForNav as any).first,
+            (voucherData as any).first_voucher_id ??
+              (voucherData as any).first,
           ),
           last: parseNavId(
-            (voucherForNav as any).last_voucher_id ??
-              (voucherForNav as any).last,
+            (voucherData as any).last_voucher_id ??
+              (voucherData as any).last,
+          ),
+          vouchersCount: parseVouchersCount(
+            (voucherData as any).vouchers_count,
           ),
         }
-      : undefined;
+      : voucherForNav
+        ? {
+            previous: parseNavId(
+              (voucherForNav as any).previous_voucher_id ??
+                (voucherForNav as any).previous,
+            ),
+            next: parseNavId(
+              (voucherForNav as any).next_voucher_id ??
+                (voucherForNav as any).next,
+            ),
+            first: parseNavId(
+              (voucherForNav as any).first_voucher_id ??
+                (voucherForNav as any).first,
+            ),
+            last: parseNavId(
+              (voucherForNav as any).last_voucher_id ??
+                (voucherForNav as any).last,
+            ),
+            vouchersCount: parseVouchersCount(
+              (voucherForNav as any).vouchers_count,
+            ),
+          }
+        : undefined;
 
     const newVoucherHref = `/forms/voucher?type=${encodeURIComponent(
       voucherType,
