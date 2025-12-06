@@ -32,8 +32,17 @@ const sleep = (ms: number) =>
   });
 
 export class WhatsappHttpService {
-  private baseUrl = whatsappConfig.baseUrl;
-  private token = whatsappConfig.token;
+  private getConfig() {
+    const { baseUrl, token } = whatsappConfig;
+    
+    if (!baseUrl || !token) {
+      throw new Error(
+        "WhatsApp service is not configured. Please set WHATSAPP_BASE_URL and WHATSAPP_TOKEN environment variables."
+      );
+    }
+    
+    return { baseUrl, token };
+  }
 
   private async request<T>(
     options: WhatsappRequestOptions,
@@ -47,12 +56,13 @@ export class WhatsappHttpService {
       retryCount = 0,
     } = options;
 
-    const url = `${this.baseUrl}/${path}`;
+    const { baseUrl, token } = this.getConfig();
+    const url = `${baseUrl}/${path}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
 
     const finalHeaders: Record<string, string> = {
-      Authorization: `Bearer ${this.token}`,
+      Authorization: `Bearer ${token}`,
       ...headers,
     };
 

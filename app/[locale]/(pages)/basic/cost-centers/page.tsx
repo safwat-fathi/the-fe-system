@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CostCentersClient from "./components/CostCentersClient";
 
@@ -33,6 +34,7 @@ interface Account {
 }
 
 export default async function CostCentersPage() {
+  const t = await getTranslations("basic.costCenters");
   // جلب معاملات الفرع والسنة
   const branchParams = await getBranchParams();
 
@@ -45,7 +47,7 @@ export default async function CostCentersPage() {
       })
       .catch(() => ({
         success: false,
-        message: "فشل في جلب مراكز التكلفة",
+        message: t("messages.loadError"),
         data: [],
       })),
     genericService
@@ -55,7 +57,7 @@ export default async function CostCentersPage() {
       })
       .catch(() => ({
         success: false,
-        message: "فشل في جلب الحسابات",
+        message: t("messages.accountsLoadError"),
         data: [],
       })),
   ]);
@@ -67,19 +69,19 @@ export default async function CostCentersPage() {
     ? accountsResponse.data || []
     : [];
   const error = !costCentersResponse.success
-    ? costCentersResponse.message || "فشل في جلب البيانات"
+    ? costCentersResponse.message || t("messages.dataLoadError")
     : null;
 
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-2">مراكز التكلفة</h1>
+      <h1 className="responsive-text-xl font-bold mb-2">{t("title")}</h1>
 
       {/* عرض حالة الطلب */}
       {error && (
         <div className="mb-4">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            <strong>خطأ:</strong> {error}
+            <strong>{t("messages.dataLoadError")}:</strong> {error}
           </div>
         </div>
       )}

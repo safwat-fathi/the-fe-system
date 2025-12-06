@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CurrenciesClient from "./components/CurrenciesClient";
 
@@ -25,6 +26,7 @@ interface Currency {
 }
 
 export default async function CurrenciesPage() {
+  const t = await getTranslations("basic.currencies");
   // جلب معاملات الفرع والسنة
   const branchParams = await getBranchParams();
 
@@ -41,23 +43,23 @@ export default async function CurrenciesPage() {
     if (response.success) {
       currenciesData = response.data || [];
     } else {
-      error = response.message || "فشل في جلب البيانات";
+      error = response.message || t("messages.dataLoadError");
     }
   } catch (err) {
-    error = err instanceof Error ? err.message : "حدث خطأ غير معروف";
+    error = err instanceof Error ? err.message : t("messages.unknownError");
     currenciesData = [];
   }
 
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-2">العملات</h1>
+      <h1 className="responsive-text-xl font-bold mb-2">{t("title")}</h1>
 
       {/* عرض حالة الطلب */}
       {error && (
         <div className="mb-4">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            <strong>خطأ:</strong> {error}
+            <strong>{t("messages.dataLoadError")}:</strong> {error}
           </div>
         </div>
       )}

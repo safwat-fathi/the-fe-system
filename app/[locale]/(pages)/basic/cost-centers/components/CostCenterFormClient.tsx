@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Select, SelectItem, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations, useLocale } from "next-intl";
+import { getLocaleDir } from "@/i18n/config";
 
 import costCenterService from "@/services/api/cost-center.service";
 
@@ -44,6 +46,13 @@ const CostCenterFormClient = ({
   costCenters,
 }: CostCenterFormClientProps) => {
   const router = useRouter();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const t = useTranslations("basic.costCenters");
+  
+  // Dynamic text alignment classes based on locale
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [costCenter, setCostCenter] =
@@ -52,7 +61,7 @@ const CostCenterFormClient = ({
 
   const handleSave = async () => {
     if (!costCenter.cost_name || !costCenter.cost_name_e) {
-      toast.error("❌ يجب ملء جميع الحقول المطلوبة");
+      toast.error(t("messages.requiredFields"));
 
       return;
     }
@@ -76,17 +85,17 @@ const CostCenterFormClient = ({
       if (result) {
         toast.success(
           isAddMode
-            ? "✅ تم إضافة مركز التكلفة بنجاح"
-            : "✅ تم تعديل مركز التكلفة بنجاح",
+            ? t("messages.addSuccess")
+            : t("messages.updateSuccess"),
         );
         router.push("/basic/cost-centers");
         router.refresh();
       } else {
-        toast.error("❌ فشل في العملية");
+        toast.error(t("messages.operationFailed"));
       }
     } catch (error) {
-      console.error("❌ خطأ أثناء الحفظ:", error);
-      toast.error("❌ حدث خطأ أثناء الحفظ");
+      console.error(t("messages.saveError"), error);
+      toast.error(t("messages.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -97,17 +106,22 @@ const CostCenterFormClient = ({
   };
 
   const getTitle = () => {
-    if (isViewMode) return `عرض ${costCenter.cost_name || "مركز التكلفة"}`;
-    if (isAddMode) return "إضافة مركز تكلفة جديد";
+    if (isViewMode)
+      return t("titles.view", {
+        name: costCenter.cost_name || t("titles.defaultName"),
+      });
+    if (isAddMode) return t("titles.add");
 
-    return `تعديل ${costCenter.cost_name || "مركز التكلفة"}`;
+    return t("titles.edit", {
+      name: costCenter.cost_name || t("titles.defaultName"),
+    });
   };
 
   const getDescription = () => {
-    if (isViewMode) return "عرض تفاصيل مركز التكلفة";
-    if (isAddMode) return "قم بإضافة مركز تكلفة جديد إلى النظام";
+    if (isViewMode) return t("descriptions.view");
+    if (isAddMode) return t("descriptions.add");
 
-    return "قم بتعديل بيانات مركز التكلفة";
+    return t("descriptions.edit");
   };
 
   // Filter out current cost center from parent options
@@ -117,9 +131,13 @@ const CostCenterFormClient = ({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">{getTitle()}</h2>
-          <p className="text-sm text-gray-600 mt-1">{getDescription()}</p>
+        <div className={textAlign}>
+          <h2 className={`text-xl font-bold text-gray-900 ${textAlign}`}>
+            {getTitle()}
+          </h2>
+          <p className={`text-sm text-gray-600 mt-1 ${textAlign}`}>
+            {getDescription()}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -127,11 +145,11 @@ const CostCenterFormClient = ({
             onPress={() => router.push("/basic/cost-centers")}
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            رجوع
+            {t("actions.back")}
           </Button>
           {isViewMode && (
             <Button color="primary" onPress={handleEdit}>
-              تعديل
+              {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
@@ -140,10 +158,10 @@ const CostCenterFormClient = ({
                 variant="light"
                 onPress={() => router.push("/basic/cost-centers")}
               >
-                إلغاء
+                {t("actions.cancel")}
               </Button>
               <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? "حفظ" : "تحديث"}
+                {isAddMode ? t("actions.save") : t("actions.update")}
               </Button>
             </>
           )}
@@ -155,7 +173,7 @@ const CostCenterFormClient = ({
         <Input
           isRequired
           isDisabled={isViewMode}
-          label="اسم مركز التكلفة"
+          label={t("fields.costName")}
           value={costCenter.cost_name || ""}
           onChange={(e) =>
             setCostCenter({ ...costCenter, cost_name: e.target.value })
@@ -164,7 +182,7 @@ const CostCenterFormClient = ({
         <Input
           isRequired
           isDisabled={isViewMode}
-          label="الاسم بالإنجليزي"
+          label={t("fields.costNameEn")}
           value={costCenter.cost_name_e || ""}
           onChange={(e) =>
             setCostCenter({ ...costCenter, cost_name_e: e.target.value })
@@ -172,7 +190,7 @@ const CostCenterFormClient = ({
         />
         <Select
           isDisabled={isViewMode}
-          label="نوع المركز"
+          label={t("fields.costType")}
           selectedKeys={
             costCenter.cost_type ? [String(costCenter.cost_type)] : []
           }
@@ -182,19 +200,13 @@ const CostCenterFormClient = ({
             setCostCenter({ ...costCenter, cost_type: type });
           }}
         >
-          <SelectItem key="1">
-            مركز تكلفة رئيسي
-          </SelectItem>
-          <SelectItem key="2">
-            مركز تكلفة فرعي
-          </SelectItem>
-          <SelectItem key="3">
-            مركز تكلفة نشاط
-          </SelectItem>
+          <SelectItem key="1">{t("types.main")}</SelectItem>
+          <SelectItem key="2">{t("types.sub")}</SelectItem>
+          <SelectItem key="3">{t("types.activity")}</SelectItem>
         </Select>
         <Select
           isDisabled={isViewMode}
-          label="الحساب المرتبط"
+          label={t("fields.account")}
           selectedKeys={
             costCenter.acc !== null && costCenter.acc !== undefined
               ? [String(costCenter.acc)]
@@ -214,7 +226,7 @@ const CostCenterFormClient = ({
         </Select>
         <Select
           isDisabled={isViewMode}
-          label="المركز الأب"
+          label={t("fields.parent")}
           selectedKeys={
             costCenter.parent !== null && costCenter.parent !== undefined
               ? [String(costCenter.parent)]
@@ -240,7 +252,7 @@ const CostCenterFormClient = ({
               setCostCenter({ ...costCenter, cost_status: val ? 1 : 0 })
             }
           >
-            الحالة مفعلة
+            {t("labels.statusEnabled")}
           </Checkbox>
         </div>
       </div>

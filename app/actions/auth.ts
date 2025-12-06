@@ -22,6 +22,113 @@ interface LoginResult {
   };
 }
 
+type LoginResponseData = {
+  access?: string;
+  refresh?: string;
+  user_id?: number;
+  is_admin?: boolean;
+};
+
+const buildRedirectPath = (redirectPath: string, locale: string) => {
+  const normalized = redirectPath.startsWith("/")
+    ? redirectPath
+    : `/${redirectPath}`;
+  const hasLocalePrefix = locales.some(
+    (loc) =>
+      normalized === `/${loc}` || normalized.startsWith(`/${loc}/`),
+  );
+
+  if (hasLocalePrefix) {
+    return normalized;
+  }
+
+  const suffix = normalized === "/" ? "" : normalized;
+
+  return `/${locale}${suffix}`;
+};
+
+async function persistCredentials(responseData: LoginResponseData) {
+  const accessToken = responseData.access;
+  const refreshToken = responseData.refresh;
+  const userId = responseData.user_id;
+  const isAdmin = responseData.is_admin;
+
+  if (!accessToken || !refreshToken) {
+    return false;
+  }
+
+  const accessTokenExpires = new Date(Date.now() + 1000 * 60 * 60);
+  const refreshTokenExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+
+  await setCookieAction(STORAGE_KEYS.ACCESS_TOKEN, accessToken, {
+    maxAge: accessTokenExpires.getTime() / 1000,
+    path: "/",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  await setCookieAction(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, {
+    maxAge: refreshTokenExpires.getTime() / 1000,
+    path: "/",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  if (typeof userId !== "undefined") {
+    await setCookieAction(STORAGE_KEYS.USER_ID, String(userId), {
+      maxAge: refreshTokenExpires.getTime() / 1000,
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+  }
+
+  if (typeof isAdmin !== "undefined") {
+    await setCookieAction(STORAGE_KEYS.IS_ADMIN, String(isAdmin), {
+      maxAge: refreshTokenExpires.getTime() / 1000,
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+  }
+
+  await generateCSRFToken();
+
+  return true;
+}
+
+function formatLoginError(error: unknown): LoginResult {
+  if (error instanceof Error) {
+    if (error.message.includes("fetch") || error.message.includes("Network")) {
+      return {
+        success: false,
+        message: "لا يمكن الاتصال بالخادم. تأكد من اتصال الإنترنت.",
+      };
+    }
+
+    if (error.message.includes("JSON")) {
+      return {
+        success: false,
+        message: "استجابة غير صحيحة من الخادم.",
+      };
+    }
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+
+  return {
+    success: false,
+    message: "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.",
+  };
+}
+
 export async function loginAction(
   state: unknown,
   formData: FormData,
@@ -30,7 +137,6 @@ export async function loginAction(
   const result = loginSchema.safeParse(formData);
   const redirectPath = (formData.get("redirect") as string) || "/";
 
-  // const locale = cookieStore.get("NEXT_LOCALE")?.value ?? defaultLocale;
   const locale = await getLocale();
 
   if (!result.success) {
@@ -47,8 +153,6 @@ export async function loginAction(
   }
 
   const { username, password } = result.data;
-  let loginSuccess = false;
-  let loginResult: LoginResult | null = null;
 
   const requestOptions: RequestInit = {
     signal: AbortSignal.timeout(3000), // 30 seconds
@@ -61,102 +165,30 @@ export async function loginAction(
       requestOptions,
     );
 
-    if (response.success && response.data) {
-      // Extract token and user data from response
-      const access_token = response.data.access;
-      const refresh_token = response.data.refresh;
-
-      if (!access_token) {
-        loginResult = {
-          success: false,
-          message: "بيانات تسجيل الدخول غير صحيحة",
-        };
-      } else {
-        // Set secure cookie with access token
-        const accessTokenExpires = new Date(Date.now() + 1000 * 60 * 60); // 1 hour expiration
-
-        await setCookieAction(STORAGE_KEYS.ACCESS_TOKEN, access_token, {
-          maxAge: accessTokenExpires.getTime() / 1000,
-          path: "/",
-          httpOnly: true, // آمن - Server Actions تتعامل مع الطلبات
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-        });
-
-        const refreshTokenExpires = new Date(
-          Date.now() + 1000 * 60 * 60 * 24 * 30,
-        ); // 30 day expiration
-
-        // Set secure cookie with refresh token
-        await setCookieAction(STORAGE_KEYS.REFRESH_TOKEN, refresh_token, {
-          maxAge: refreshTokenExpires.getTime() / 1000,
-          path: "/",
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-        });
-
-        await generateCSRFToken();
-
-        // Mark login as successful
-        loginSuccess = true;
-      }
-    } else {
-      loginResult = {
+    if (!response.success || !response.data) {
+      return {
         success: false,
         message:
           response.message ||
           "فشل في تسجيل الدخول. يرجى التحقق من البيانات المدخلة.",
       };
     }
-  } catch (error) {
-    // Handle different types of errors
-    if (error instanceof Error) {
-      if (
-        error.message.includes("fetch") ||
-        error.message.includes("Network")
-      ) {
-        loginResult = {
-          success: false,
-          message: "لا يمكن الاتصال بالخادم. تأكد من اتصال الإنترنت.",
-        };
-      } else if (error.message.includes("JSON")) {
-        loginResult = {
-          success: false,
-          message: "استجابة غير صحيحة من الخادم.",
-        };
-      } else {
-        loginResult = {
-          success: false,
-          message: error.message,
-        };
-      }
-    } else {
-      loginResult = {
+
+    const persisted = await persistCredentials(response.data);
+
+    if (!persisted) {
+      return {
         success: false,
-        message: "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.",
+        message: "بيانات تسجيل الدخول غير صحيحة",
       };
     }
+  } catch (error) {
+    return formatLoginError(error);
   }
 
-  // Redirect after successful login or return error result
-  if (loginSuccess) {
-    const normalizedRedirect = redirectPath.startsWith("/")
-      ? redirectPath
-      : `/${redirectPath}`;
-    const hasLocalePrefix = locales.some(
-      (loc) =>
-        normalizedRedirect === `/${loc}` ||
-        normalizedRedirect.startsWith(`/${loc}/`),
-    );
-    const finalRedirect = hasLocalePrefix
-      ? normalizedRedirect
-      : `/${locale}${normalizedRedirect === "/" ? "" : normalizedRedirect}`;
+  const finalRedirect = buildRedirectPath(redirectPath, locale);
 
-    redirect(finalRedirect);
-  } else {
-    return loginResult as LoginResult;
-  }
+  redirect(finalRedirect);
 }
 
 export async function deleteCredentials() {
@@ -165,9 +197,10 @@ export async function deleteCredentials() {
   cookieStore.set(STORAGE_KEYS.ACCESS_TOKEN, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.REFRESH_TOKEN, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.CSRF_TOKEN, "", { maxAge: 0 });
+  cookieStore.set(STORAGE_KEYS.USER_ID, "", { maxAge: 0 });
+  cookieStore.set(STORAGE_KEYS.IS_ADMIN, "", { maxAge: 0 });
 }
 export async function onLogoutAction() {
-  // const locale = cookieStore.get("NEXT_LOCALE")?.value ?? defaultLocale;
   await deleteCredentials();
   await redirectToLogin();
 }

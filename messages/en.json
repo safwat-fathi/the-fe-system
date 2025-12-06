@@ -1,6 +1,9 @@
 {
   "common": {
     "appName": "Nafees Gold System",
+    "brandName": "Nafees",
+    "siteName": "NafeesWeb",
+    "systemName": "NafeesWeb System",
     "loading": "Loading…",
     "error": "An unexpected error occurred. Please try again later.",
     "actions": {
@@ -92,7 +95,8 @@
       "menuLabel": "User menu",
       "testPage": "Test page",
       "logout": "Log out",
-      "defaultRole": "User"
+      "defaultRole": "User",
+      "adminRole": "Administrator"
     }
   },
   "forms": {
@@ -221,6 +225,439 @@
           "addItem": "Add item"
         }
       }
+    },
+    "balanceVoucher": {
+      "title": "Opening Entry",
+      "description": "Opening Entry",
+      "breadcrumbs": {
+        "list": "Opening Entry",
+        "vouchers": "Vouchers",
+        "edit": "Edit {id}",
+        "preview": "Preview"
+      },
+      "actions": {
+        "save": "Save",
+        "edit": "Edit",
+        "print": "Print",
+        "addRow": "+ Row",
+        "delete": "Delete Row",
+        "expandNotes": "Expand Notes",
+        "saveNotes": "Save"
+      },
+      "fields": {
+        "refNo": "Reference Number",
+        "refNoPlaceholder": "Enter reference number",
+        "vouchDateTime": "Entry Date and Time",
+        "costCenter": "Cost Center",
+        "costCenterPlaceholder": "Select cost center...",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter entry notes (double-click for extended writing)",
+        "notesModalTitle": "Notes",
+        "notesModalPlaceholder": "Enter entry notes..."
+      },
+      "table": {
+        "columns": {
+          "account": "Account",
+          "accountPlaceholder": "Select account...",
+          "cash": "Cash",
+          "cashDebit": "Debit",
+          "cashCredit": "Credit",
+          "goldStanding": "Standing Gold (g)",
+          "goldStandingDebit": "Debit (g)",
+          "goldStandingCredit": "Credit (g)",
+          "gauge": "Calibration",
+          "gaugePlaceholder": "875",
+          "gaugeTooltip": "Calibrated gold can be edited, calibration will be updated automatically",
+          "goldCalibrated": "Calibrated Gold (g)",
+          "goldCalibratedDebit": "Debit (g)",
+          "goldCalibratedCredit": "Credit (g)",
+          "costCenter": "Cost Center",
+          "costCenterPlaceholder": "Cost center...",
+          "notes": "Notes",
+          "delete": "Delete"
+        },
+        "addAccountLabel": "Add new account: \"{value}\""
+      },
+      "status": {
+        "committed": "Committed",
+        "posted": "Posted",
+        "printed": "Printed",
+        "balanced": "Balanced",
+        "unbalanced": "Unbalanced",
+        "loading": "Loading..."
+      },
+      "totals": {
+        "totalDebit": "Total Debit",
+        "totalCredit": "Total Credit",
+        "cashDifference": "Cash Difference",
+        "debit": "Debit",
+        "credit": "Credit",
+        "totalDebitCalibrated": "Total Calibrated Debit",
+        "totalCreditCalibrated": "Total Calibrated Credit",
+        "goldDifference": "Gold Difference",
+        "gram": "g"
+      },
+      "modals": {
+        "unbalancedTitle": "⚠️ Entry Unbalanced",
+        "unbalancedMessage": "Current entry is unbalanced:",
+        "unbalancedDetails": {
+          "totalDebit": "Total Debit: {value}",
+          "totalCredit": "Total Credit: {value}",
+          "totalGoldDebit": "Total Gold Debit: {value} g",
+          "totalGoldCredit": "Total Gold Credit: {value} g"
+        },
+        "unbalancedQuestion": "Do you want to proceed and save despite the imbalance?",
+        "cancel": "Cancel",
+        "confirm": "Proceed and Save"
+      },
+      "messages": {
+        "voucherType": "Opening Entry",
+        "numbering": "Numbering in progress...",
+        "dateFormat": "Date and Time"
+      }
+    },
+    "cashReceiptVoucher": {
+      "title": "Cash Receipt Voucher",
+      "description": "Manage cash receipt vouchers",
+      "breadcrumbs": {
+        "list": "Cash Receipt Voucher",
+        "new": "New",
+        "edit": "Edit {id}",
+        "preview": "Preview"
+      },
+      "actions": {
+        "save": "Save",
+        "edit": "Edit",
+        "new": "New",
+        "print": "Print",
+        "addRow": "+ Row",
+        "delete": "Delete",
+        "expandNotes": "Expand Notes",
+        "saveNotes": "Save",
+        "search": "Search by voucher number..."
+      },
+      "fields": {
+        "refNo": "Reference Number",
+        "dateTime": "Date and Time",
+        "costCenter": "Cost Center",
+        "costCenterPlaceholder": "Select cost center...",
+        "status": "Status",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter entry notes (double-click for extended writing)",
+        "notesModalTitle": "Notes",
+        "notesModalPlaceholder": "Enter entry notes..."
+      },
+      "tables": {
+        "cash": {
+          "title": "Cash",
+          "columns": {
+            "amount": "Amount",
+            "box": "Box",
+            "boxPlaceholder": "Select box...",
+            "notes": "Notes",
+            "costCenter": "Cost Center",
+            "costCenterPlaceholder": "Cost center...",
+            "invoiceNumber": "Invoice Number",
+            "delete": "Delete"
+          }
+        },
+        "accounts": {
+          "title": "Accounts",
+          "columns": {
+            "account": "Account",
+            "accountPlaceholder": "Select account...",
+            "amount": "Amount",
+            "notes": "Notes",
+            "costCenter": "Cost Center",
+            "costCenterPlaceholder": "Cost center...",
+            "delete": "Delete"
+          },
+          "addAccountLabel": "Add new account: \"{value}\""
+        }
+      },
+      "status": {
+        "committed": "Committed",
+        "posted": "Posted",
+        "printed": "Printed",
+        "balanced": "Balanced",
+        "unbalanced": "Unbalanced",
+        "loading": "Loading...",
+        "numbering": "Numbering in progress..."
+      },
+      "statusOptions": {
+        "cancelled": "Cancelled",
+        "active": "Active",
+        "suspended": "Suspended",
+        "incomplete": "Incomplete"
+      },
+      "totals": {
+        "totalCash": "Total Cash",
+        "totalDetails": "Total Details",
+        "difference": "Difference",
+        "status": "Status",
+        "debit": "Debit",
+        "credit": "Credit"
+      },
+      "navigation": {
+        "position": "{current} of {total}"
+      },
+      "messages": {
+        "searchError": "Please enter voucher number to search",
+        "searchInvalid": "Please enter a valid voucher number",
+        "voucherNotFound": "{type} not found with number: {number}",
+        "voucherWrongType": "Found voucher ({id}) is not of type {type}",
+        "voucherAccessError": "Voucher found but cannot be accessed. Please try again.",
+        "searchErrorGeneric": "An error occurred while searching. Please try again",
+        "voucherTypeReceipt": "Cash Receipt Voucher",
+        "voucherTypePayment": "Cash Payment Voucher"
+      }
+    },
+    "adjustmentVoucher": {
+      "title": "Adjustment Voucher",
+      "description": "Manage adjustment vouchers",
+      "breadcrumbs": {
+        "list": "Adjustment Voucher",
+        "new": "New",
+        "edit": "Edit {id}",
+        "preview": "Preview"
+      },
+      "actions": {
+        "save": "Save",
+        "edit": "Edit",
+        "new": "New",
+        "print": "Print",
+        "addRow": "+ Row",
+        "delete": "Delete",
+        "deleteRow": "Delete Row",
+        "expandNotes": "Expand Notes",
+        "saveNotes": "Save",
+        "search": "Search by voucher number...",
+        "createFromPrevious": "Create from Previous Voucher",
+        "revert": "Revert",
+        "select": "Select",
+        "cancel": "Cancel"
+      },
+      "fields": {
+        "refNo": "Reference Number",
+        "refNoPlaceholder": "Enter reference number",
+        "dateTime": "Date and Time",
+        "status": "Voucher Status",
+        "voucherType": "Voucher Type",
+        "costCenter": "Cost Center",
+        "costCenterPlaceholder": "Select cost center...",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter entry notes (double-click for extended writing)",
+        "notesModalTitle": "Notes",
+        "notesModalPlaceholder": "Enter entry notes..."
+      },
+      "table": {
+        "columns": {
+          "account": "Account",
+          "accountPlaceholder": "Select account...",
+          "cash": "Cash",
+          "cashDebit": "Debit",
+          "cashCredit": "Credit",
+          "goldStanding": "Gold Standing (g)",
+          "goldStandingDebit": "Debit (g)",
+          "goldStandingCredit": "Credit (g)",
+          "gauge": "Gauge",
+          "gaugePlaceholder": "875",
+          "gaugeTooltip": "Calibrated gold can be modified, and calibration will be updated automatically",
+          "goldCalibrated": "Calibrated Gold (g)",
+          "goldCalibratedDebit": "Debit (calibrated g)",
+          "goldCalibratedCredit": "Credit (calibrated g)",
+          "costCenter": "Cost Center",
+          "costCenterPlaceholder": "Cost center...",
+          "notes": "Notes",
+          "delete": "Delete"
+        },
+        "addAccountLabel": "Add new account: \"{value}\"",
+        "validationError": "⚠️ Please select an account for all rows before saving",
+        "minRowsError": "There must be at least two rows"
+      },
+      "status": {
+        "committed": "Committed",
+        "posted": "Posted",
+        "printed": "Printed",
+        "balanced": "Balanced",
+        "unbalanced": "Unbalanced",
+        "loading": "Loading...",
+        "numbering": "Numbering in progress..."
+      },
+      "statusOptions": {
+        "cancelled": "Cancelled",
+        "active": "Active",
+        "suspended": "Suspended",
+        "incomplete": "Incomplete",
+        "unknown": "Unknown"
+      },
+      "voucherTypes": {
+        "daily": "Daily Entry",
+        "reverse": "Reverse Entry",
+        "adjustment": "Adjustment Entry",
+        "currencyDiff": "Currency Difference Entry",
+        "inventoryDiff": "Inventory Difference Entry",
+        "salary": "Salary Entry"
+      },
+      "totals": {
+        "totalDebit": "Total Debit",
+        "totalCredit": "Total Credit",
+        "totalDebitCalibrated": "Total Calibrated Debit",
+        "totalCreditCalibrated": "Total Calibrated Credit",
+        "gram": "g"
+      },
+      "navigation": {
+        "position": "{current} of {total}"
+      },
+      "modals": {
+        "previousVoucher": {
+          "title": "Select Previous Voucher",
+          "searchPlaceholder": "Search vouchers...",
+          "columns": {
+            "voucherNumber": "Voucher Number",
+            "date": "Date",
+            "notes": "Notes",
+            "status": "Status",
+            "action": "Action"
+          }
+        }
+      },
+      "messages": {
+        "voucherType": "Adjustment Voucher",
+        "defaultVoucherType": "Adjustment Voucher"
+      }
+    },
+    "customerGoldVoucher": {
+      "title": {
+        "receipt": "Customer Receipt Voucher",
+        "payment": "Customer Payment Voucher"
+      },
+      "fields": {
+        "refNo": "Reference Number",
+        "dateTime": "Date and Time",
+        "notes": "Description",
+        "customer": "Customer",
+        "handling": "Handling",
+        "costCenter": "Cost Center"
+      },
+      "buttons": {
+        "save": "Save",
+        "edit": "Edit",
+        "new": "New",
+        "print": "Print"
+      },
+      "status": {
+        "saved": "Saved",
+        "posted": "Posted",
+        "printed": "Printed"
+      },
+      "messages": {
+        "loading": "Loading...",
+        "numbering": "Numbering...",
+        "searchPlaceholder": "Search by voucher number...",
+        "searchErrorMissing": "Please enter voucher number to search",
+        "selectCustomer": "Please select a customer",
+        "saveError": "An error occurred while saving",
+        "searchError": "An error occurred while searching. Please try again",
+        "notFound": "No {type} found with number: {number}",
+        "printError": "An error occurred while printing"
+      },
+      "print": {
+        "voucherNumber": "Voucher Number",
+        "goldCount": "Gold Count",
+        "boxesCount": "Boxes Count",
+        "totalGold": "Total Gold"
+      },
+      "tables": {
+        "gold": {
+          "title": "Gold",
+          "addRow": "+ Row",
+          "columns": {
+            "itemNumber": "Item Number",
+            "itemName": "Item Name",
+            "weight": "Standing Weight",
+            "calibration": "Calibration",
+            "calibratedWeight": "Calibrated Weight",
+            "box": "Box",
+            "notes": "Description",
+            "caliberDifference": "Caliber Difference",
+            "sealingAmount": "Sealing Amount",
+            "sealingWeight": "Sealing Weight",
+            "invoiceNumber": "Invoice Number",
+            "costCenter": "Cost Center",
+            "delete": "Delete"
+          },
+          "placeholders": {
+            "selectItem": "Select item...",
+            "selectCostCenter": "Cost Center..."
+          }
+        },
+        "cash": {
+          "title": "Cash",
+          "addRow": "+ Row",
+          "columns": {
+            "amount": "Amount",
+            "box": "Box",
+            "notes": "Description",
+            "invoiceNumber": "Invoice Number",
+            "costCenter": "Cost Center",
+            "delete": "Delete"
+          },
+          "placeholders": {
+            "selectBox": "Select box...",
+            "selectCostCenter": "Cost Center..."
+          }
+        }
+      },
+      "totals": {
+        "totalGoldStanding": "Total Gold (Standing)",
+        "totalGoldCalibrated": "Total Gold (Calibrated)",
+        "totalCash": "Total Cash",
+        "totalWages": "Total Wages",
+        "unit": "g"
+      },
+      "modals": {
+        "notes": {
+          "title": "Description",
+          "placeholder": "Enter entry description...",
+          "expandTitle": "Expand Description",
+          "save": "Save"
+        }
+      },
+      "placeholders": {
+        "selectCustomer": "Select customer...",
+        "handling": "Handling",
+        "selectCostCenter": "Select cost center...",
+        "notesInput": "Enter entry description (double-click for extended writing)"
+      }
+    },
+    "deliveryVoucher": {
+      "title": "Delivery Voucher",
+      "messages": {
+        "notFound": "No delivery voucher found with number: {number}"
+      },
+      "tables": {
+        "gold": {
+          "columns": {
+            "wageRate": "Wage Rate",
+            "wages": "Wages"
+          }
+        }
+      }
+    },
+    "receiptVoucher": {
+      "title": "Receipt Voucher",
+      "messages": {
+        "notFound": "No receipt voucher found with number: {number}"
+      },
+      "tables": {
+        "gold": {
+          "columns": {
+            "wageRate": "Wage Rate",
+            "wages": "Wages"
+          }
+        }
+      }
     }
   },
   "notFound": {
@@ -328,6 +765,232 @@
           "sat": "Saturday"
         }
       }
+    },
+    "vouchers": {
+      "title": "Vouchers Report",
+      "description": "Comprehensive report of all vouchers",
+      "header": "Vouchers Report",
+      "newVoucher": "New Voucher",
+      "navigation": {
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "tabs": {
+        "all": "All Vouchers",
+        "opening": "Opening Entry",
+        "receipt": "Receipt Vouchers",
+        "payment": "Payment Vouchers",
+        "customerReceipt": "Customer Receipt Vouchers",
+        "customerPayment": "Customer Payment Vouchers",
+        "adjustment": "Adjustment Entries",
+        "ariaLabel": "Voucher Types"
+      },
+      "filters": {
+        "searchPlaceholder": "Search by number or description...",
+        "voucherTypePlaceholder": "Voucher Type",
+        "fromDatePlaceholder": "From Date",
+        "toDatePlaceholder": "To Date",
+        "clearFilters": "Clear Filters",
+        "allTypes": "All Types"
+      },
+      "table": {
+        "columns": {
+          "voucherNumber": "Voucher Number",
+          "date": "Date",
+          "voucherType": "Voucher Type",
+          "cashAmount": "Amount (Cash)",
+          "goldAmount": "Grams (Gold)",
+          "notes": "Description",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "status": {
+          "open": "Open",
+          "closed": "Closed",
+          "undefined": "Undefined"
+        },
+        "actions": {
+          "view": "View",
+          "edit": "Edit",
+          "print": "Print",
+          "delete": "Delete"
+        },
+        "goldUnit": "g"
+      },
+      "totals": {
+        "summary": "Total Vouchers: {count} voucher | Total Amount: {amount} | Total Grams: {gold} g"
+      },
+      "messages": {
+        "deleteConfirm": "Are you sure you want to delete this voucher?",
+        "deleteError": "An error occurred while deleting the voucher"
+      }
+    },
+    "main": {
+      "title": "Reports",
+      "description": "All available reports in the system",
+      "header": "Reports",
+      "subheader": "All available reports in the system",
+      "search": {
+        "placeholder": "Search by name",
+        "reset": "Reset"
+      },
+      "categories": {
+        "financial": "Financial Reports",
+        "operational": "Operational Reports",
+        "sales": "Sales Reports",
+        "tax": "Tax Reports"
+      },
+      "reports": {
+        "accountStatement": "Account Statement",
+        "incomeStatement": "Income Statement",
+        "trialBalance": "Trial Balance",
+        "balanceSheet": "Balance Sheet",
+        "journalLedger": "Journal Ledger",
+        "generalLedger": "General Ledger",
+        "invoices": "Invoices List",
+        "taxDeclaration": "Tax Declaration Form",
+        "taxDailyJournal": "Tax Daily Journal"
+      }
+    }
+  },
+  "settings": {
+    "integrations": {
+      "title": "Integration Services",
+      "description": "Manage external integration services",
+      "header": "Integration Services",
+      "status": {
+        "connected": "Connected",
+        "testing": "Testing...",
+        "disconnected": "Disconnected"
+      },
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "actions": {
+        "startSetup": "Start Setup",
+        "saveSettings": "Save Settings",
+        "saving": "Saving...",
+        "testConnection": "Test Connection",
+        "testing": "Testing...",
+        "userGuide": "User Guide",
+        "learnMore": "Learn More",
+        "documentation": "{service} Documentation"
+      },
+      "services": {
+        "geidea": {
+          "name": "Geidea",
+          "description": "Leading electronic payment service in Saudi Arabia. Enables accepting payments via cards and digital wallets.",
+          "descriptionShort": "Geidea provides you with the flexibility to accept payments securely and quickly through smart POS devices.",
+          "fields": {
+            "apiKey": "API Key",
+            "apiKeyPlaceholder": "Enter Geidea API key",
+            "apiKeyDescription": "Available in Geidea dashboard",
+            "apiSecret": "API Secret",
+            "apiSecretPlaceholder": "Enter Geidea secret",
+            "apiSecretDescription": "Secret key for API connection",
+            "merchantId": "Merchant ID",
+            "merchantIdPlaceholder": "Enter merchant ID",
+            "merchantIdDescription": "Your merchant ID in Geidea",
+            "environment": "Environment",
+            "environmentDescription": "Choose Sandbox for testing or Production for actual use",
+            "environmentSandbox": "Sandbox (Testing)",
+            "environmentProduction": "Production"
+          },
+          "messages": {
+            "saveSuccess": "Geidea settings saved successfully",
+            "saveError": "An error occurred while saving settings",
+            "testSuccess": "Successfully connected to Geidea",
+            "testError": "Failed to connect to Geidea. Please check connection data",
+            "enableSuccess": "Geidea service enabled",
+            "disableSuccess": "Geidea service disabled",
+            "enableError": "Please enter connection data first",
+            "testErrorMissing": "Please enter API key and secret first",
+            "saveErrorMissing": "Please enter API key and secret"
+          },
+          "info": {
+            "title": "Important Information:",
+            "items": [
+              "You can get the API key and secret from Geidea dashboard",
+              "Use Sandbox environment for testing before switching to Production",
+              "Make sure to save connection data securely"
+            ]
+          }
+        },
+        "enjazatek": {
+          "name": "Enjazatek WhatsApp",
+          "description": "Enjazatek provides a professional WhatsApp messaging platform for sending notifications and marketing campaigns with full media support.",
+          "descriptionShort": "Professional WhatsApp messaging platform with media and interactive reply support. Perfect for instant notifications and marketing campaigns",
+          "fields": {
+            "apiKey": "API Key",
+            "apiKeyPlaceholder": "Enter Enjazatek key",
+            "apiKeyDescription": "Available in Enjazatek dashboard",
+            "instanceId": "Instance ID",
+            "instanceIdPlaceholder": "Enter instance ID",
+            "instanceIdDescription": "Links the app to your WhatsApp channel",
+            "senderName": "Sender Name",
+            "senderNamePlaceholder": "Name that will appear to recipients",
+            "baseUrl": "API Endpoint",
+            "baseUrlPlaceholder": "Example: https://enjazatik.com/api",
+            "webhookUrl": "Webhook URL (Optional)",
+            "webhookUrlPlaceholder": "Use it to receive delivery reports"
+          },
+          "messages": {
+            "saveSuccess": "Enjazatek settings saved successfully",
+            "saveError": "An error occurred while saving Enjazatek settings",
+            "testSuccess": "Successfully connected to Enjazatek (test)",
+            "testError": "Failed to connect to Enjazatek, please check data",
+            "enableSuccess": "Enjazatek service enabled",
+            "disableSuccess": "Enjazatek service disabled",
+            "enableError": "Please complete Enjazatek data first",
+            "testErrorMissing": "Please complete connection data before testing",
+            "saveErrorMissing": "Please enter API key, sender ID, and instance number first"
+          }
+        },
+        "fatoora": {
+          "name": "Fatoora - Zakat and Income",
+          "description": "Electronic invoice integration service for integrated Zakat and Income management",
+          "fields": {
+            "enableEInvoice": "Enable Electronic Invoice",
+            "connectionType": "Connection Type",
+            "connectionTypePlaceholder": "Enter connection type",
+            "connectionTypeDescription": "Connection type with Fatoora system",
+            "activationDate": "Connection Activation Date",
+            "activationDatePlaceholder": "Connection activation date",
+            "xmlPath": "XML Files Path",
+            "xmlPathPlaceholder": "Enter XML files path",
+            "xmlPathDescription": "XML files folder path",
+            "username": "Username",
+            "usernamePlaceholder": "Enter username",
+            "password": "Password",
+            "passwordPlaceholder": "Enter password",
+            "certificate": "Certificate",
+            "certificatePlaceholder": "Enter certificate",
+            "certificateDescription": "SSL Certificate",
+            "privateKey": "Private Key",
+            "privateKeyPlaceholder": "Enter private key",
+            "privateKeyDescription": "Certificate private key",
+            "lastPIH": "Last PIH",
+            "lastPIHPlaceholder": "Enter last PIH",
+            "lastICV": "Last ICV",
+            "lastICVPlaceholder": "Enter last ICV"
+          },
+          "messages": {
+            "saveSuccess": "Fatoora settings saved successfully",
+            "saveError": "An error occurred while saving settings",
+            "testSuccess": "Successfully connected to Fatoora",
+            "testError": "Failed to connect to Fatoora. Please check connection data",
+            "enableSuccess": "Fatoora service enabled",
+            "disableSuccess": "Fatoora service disabled"
+          },
+          "info": {
+            "title": "Important Information:",
+            "items": [
+              "Make sure to enable electronic invoice before setting up other services",
+              "Save connection data and certificate securely",
+              "Make sure the XML files path is correct"
+            ]
+          }
+        }
+      }
     }
   },
   "auth": {
@@ -380,6 +1043,360 @@
       "dec": "December"
     },
     "error": "Failed to load dashboard data"
+  },
+  "basic": {
+    "accounts": {
+      "title": "Chart of Accounts",
+      "filters": {
+        "type": {
+          "all": "All accounts",
+          "main": "Main accounts",
+          "sub": "Sub accounts"
+        },
+        "report": {
+          "all": "All report types",
+          "pl": "Profit & Loss",
+          "balance": "Balance Sheet"
+        }
+      },
+      "actions": {
+        "add": "Add account",
+        "edit": "Edit",
+        "delete": "Delete",
+        "refresh": "Refresh"
+      },
+      "messages": {
+        "loadError": "Failed to load accounts",
+        "addError": "Failed to add account",
+        "updateError": "Failed to update account",
+        "deleteError": "Failed to delete account",
+        "deleteSuccess": "Account deleted successfully",
+        "maxLevelError": "Cannot add new accounts under level 5.",
+        "maxSiblingsError": "Cannot add more than 9 accounts at this level.",
+        "generateIdError": "Failed to generate new account ID for this parent account.",
+        "deleteConfirm": "Are you sure you want to delete this account?",
+        "serverError": "Server connection error. Check the URL or settings."
+      },
+      "placeholders": {
+        "search": "Search accounts...",
+        "searchByName": "Search by name...",
+        "selectAccount": "Select an account...",
+        "accountType": "Account type",
+        "reportType": "Report type"
+      },
+      "labels": {
+        "addAccount": "Add account",
+        "addFirstAccount": "Add first account",
+        "clearFilters": "Clear filters",
+        "searchAccounts": "Search accounts",
+        "filterByAccountType": "Filter by account type",
+        "filterByReportType": "Filter by report type",
+        "view": "View",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "sections": {
+        "accountDetails": "Account Details",
+        "selectedAccountSubAccounts": "{name} Accounts",
+        "selectedAccountInfo": "Selected Account Information",
+        "directSubAccounts": "Direct Sub Accounts"
+      },
+      "fields": {
+        "accountNumber": "Account Number",
+        "accountName": "Account Name",
+        "accountType": "Account Type",
+        "reportType": "Report Type",
+        "currency": "Currency",
+        "actions": "Actions"
+      },
+      "types": {
+        "main": "Main",
+        "sub": "Sub"
+      },
+      "reportTypes": {
+        "profitLoss": "Profit & Loss",
+        "balanceSheet": "Balance Sheet"
+      },
+      "states": {
+        "noAccounts": "No accounts",
+        "noMatchingAccounts": "No accounts match the search",
+        "foundResults": "Found {count} results",
+        "selectAccountToView": "Select an account to view its details and sub accounts",
+        "currencyNotSet": "Not set"
+      },
+      "tooltips": {
+        "doubleClickToNavigate": "Double click to navigate to next level"
+      }
+    },
+    "costCenters": {
+      "title": "Cost Centers",
+      "columns": {
+        "id": "Center Number",
+        "costName": "Cost Center Name",
+        "costNameEn": "English Name",
+        "costType": "Center Type",
+        "account": "Linked Account",
+        "parent": "Parent Center",
+        "status": "Status",
+        "actions": ""
+      },
+      "types": {
+        "main": "Main Cost Center",
+        "sub": "Sub Cost Center",
+        "activity": "Activity Cost Center",
+        "unknown": "Type {type}"
+      },
+      "actions": {
+        "add": "Add Cost Center",
+        "edit": "Edit",
+        "delete": "Delete",
+        "view": "View",
+        "back": "Back",
+        "cancel": "Cancel",
+        "save": "Save",
+        "update": "Update",
+        "retry": "Retry"
+      },
+      "labels": {
+        "manage": "Manage Cost Centers",
+        "searchPlaceholder": "Search by name...",
+        "tableAriaLabel": "Cost Centers Table",
+        "totalCount": "Total Cost Centers: {count}",
+        "statusEnabled": "Status Enabled"
+      },
+      "fields": {
+        "costName": "Cost Center Name",
+        "costNameEn": "English Name",
+        "costType": "Center Type",
+        "account": "Linked Account",
+        "parent": "Parent Center"
+      },
+      "messages": {
+        "loadError": "Failed to load cost centers",
+        "accountsLoadError": "Failed to load accounts",
+        "dataLoadError": "Failed to load data",
+        "cannotLoadData": "Cannot load data: {error}",
+        "deleteErrorNoId": "Cannot delete cost center without ID",
+        "deleteSuccess": "Cost center deleted successfully",
+        "deleteFailed": "Failed to delete cost center",
+        "deleteError": "Error occurred while deleting",
+        "requiredFields": "All required fields must be filled",
+        "addSuccess": "Cost center added successfully",
+        "updateSuccess": "Cost center updated successfully",
+        "operationFailed": "Operation failed",
+        "saveError": "Error occurred while saving"
+      },
+      "titles": {
+        "view": "View {name}",
+        "add": "Add New Cost Center",
+        "edit": "Edit {name}",
+        "defaultName": "Cost Center"
+      },
+      "descriptions": {
+        "view": "View cost center details",
+        "add": "Add a new cost center to the system",
+        "edit": "Edit cost center data"
+      },
+      "modals": {
+        "deleteTitle": "Confirm Delete",
+        "deleteMessage": "Are you sure you want to delete cost center \"{name}\"?",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      },
+      "breadcrumbs": {
+        "list": "Cost Centers",
+        "add": "Add New Cost Center",
+        "view": "View {name}",
+        "edit": "Edit {name}"
+      }
+    },
+    "boxes": {
+      "title": "Boxes",
+      "columns": {
+        "id": "Box Number",
+        "code": "Box Code",
+        "name": "Box Name",
+        "nameEn": "English Name",
+        "type": "Box Type",
+        "status": "Status",
+        "actions": ""
+      },
+      "actions": {
+        "add": "Add Box",
+        "edit": "Edit",
+        "delete": "Delete",
+        "view": "View",
+        "back": "Back",
+        "cancel": "Cancel",
+        "save": "Save",
+        "update": "Update",
+        "retry": "Retry"
+      },
+      "labels": {
+        "manage": "Manage Boxes",
+        "searchPlaceholder": "Search by name or code...",
+        "tableAriaLabel": "Boxes Table",
+        "totalCount": "Total Boxes: {count}",
+        "statusEnabled": "Enabled",
+        "excludedFromBalance": "Excluded from balance report",
+        "hidden": "Hidden"
+      },
+      "fields": {
+        "code": "Box Code",
+        "name": "Box Name",
+        "nameEn": "English Name",
+        "type": "Box Type",
+        "mobile": "Mobile",
+        "email": "Email",
+        "address": "Address",
+        "gov": "Governorate",
+        "city": "City",
+        "area": "Area",
+        "street": "Street",
+        "building": "Building",
+        "postCode": "Postal Code",
+        "phone": "Phone",
+        "fax": "Fax",
+        "handling": "Handling",
+        "handlingEn": "Handling (English)",
+        "account": "Linked Account"
+      },
+      "placeholders": {
+        "selectType": "Select box type",
+        "selectAccount": "Select account (optional)"
+      },
+      "messages": {
+        "loadError": "Failed to load boxes",
+        "typesLoadError": "Error loading box types",
+        "cannotLoadData": "Cannot load data: {error}",
+        "deleteErrorNoId": "Cannot delete box without ID",
+        "deleteSuccess": "Box deleted successfully",
+        "deleteFailed": "Failed to delete box",
+        "deleteError": "Error occurred while deleting",
+        "nameRequired": "Please enter box name",
+        "addSuccess": "Box added successfully",
+        "updateSuccess": "Box updated successfully",
+        "operationFailed": "Operation failed",
+        "saveError": "Error occurred while saving box"
+      },
+      "titles": {
+        "view": "View {name}",
+        "add": "Add New Box",
+        "edit": "Edit {name}",
+        "defaultName": "Box"
+      },
+      "descriptions": {
+        "view": "View box details",
+        "add": "Add a new box to the system",
+        "edit": "Edit box data"
+      },
+      "modals": {
+        "deleteTitle": "Confirm Delete",
+        "deleteMessage": "Are you sure you want to delete box \"{name}\"?",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      },
+      "breadcrumbs": {
+        "list": "Boxes",
+        "add": "Add New Box",
+        "view": "View {name}",
+        "edit": "Edit {name}"
+      }
+    },
+    "currencies": {
+      "title": "Currencies",
+      "columns": {
+        "name": "Name",
+        "nameEn": "English Name",
+        "part": "Currency Part",
+        "partEn": "Currency Part (English)",
+        "sign": "Symbol",
+        "price": "Price",
+        "tag": "Tag",
+        "status": "Status",
+        "actions": ""
+      },
+      "actions": {
+        "add": "Add Currency",
+        "edit": "Edit",
+        "delete": "Delete",
+        "view": "View",
+        "back": "Back",
+        "cancel": "Cancel",
+        "save": "Save",
+        "update": "Update",
+        "refreshPrice": "Refresh exchange rate from internet"
+      },
+      "labels": {
+        "manage": "Manage Currencies",
+        "searchPlaceholder": "Search by name...",
+        "tableAriaLabel": "Currencies Table",
+        "totalCount": "Total Currencies: {count}",
+        "statusEnabled": "Status Enabled",
+        "selectCurrency": "Select Currency",
+        "currencyDetails": "Currency Details",
+        "selectCurrencyPlaceholder": "Search and select currency from global list",
+        "selectCurrencyHint": "Select a currency from the list to auto-fill fields",
+        "tagDescription": "Tag must be a single character only (first character will be taken automatically)",
+        "tagPlaceholder": "Example: U, E, S",
+        "priceDescription": "Exchange rate against Saudi Riyal",
+        "priceLoading": "Loading exchange rate..."
+      },
+      "fields": {
+        "name": "Currency Name",
+        "nameEn": "Currency Name (English)",
+        "part": "Currency Part",
+        "partEn": "Currency Part (English)",
+        "sign": "Currency Symbol",
+        "tag": "Tag (single character only)",
+        "price": "Price (against Saudi Riyal)"
+      },
+      "messages": {
+        "loadError": "Failed to load currencies",
+        "dataLoadError": "Failed to load data",
+        "unknownError": "Unknown error occurred",
+        "deleteErrorNoId": "Cannot delete currency without ID",
+        "deleteSuccess": "Currency deleted successfully",
+        "deleteFailed": "Failed to delete currency",
+        "deleteError": "Error occurred while deleting",
+        "nameRequired": "Currency name is required",
+        "priceRequired": "Price is required",
+        "addSuccess": "Currency added successfully",
+        "updateSuccess": "Currency updated successfully",
+        "operationFailed": "Operation failed",
+        "saveError": "Error occurred while saving, please try again later",
+        "currencyInfoLoaded": "Loaded {name} information automatically",
+        "currencyInfoWithPriceLoaded": "Loaded {name} information with exchange rate automatically",
+        "exchangeRateNotFetched": "Exchange rate not fetched. Please enter price manually",
+        "priceRefreshSuccess": "Exchange rate updated successfully",
+        "priceRefreshError": "Exchange rate not fetched",
+        "priceRefreshFailed": "Error occurred while fetching exchange rate",
+        "cannotRefreshPrice": "Cannot refresh price without selecting currency"
+      },
+      "titles": {
+        "view": "View {name}",
+        "add": "Add New Currency",
+        "edit": "Edit {name}",
+        "defaultName": "Currency"
+      },
+      "descriptions": {
+        "view": "View currency details",
+        "add": "Add a new currency to the system",
+        "edit": "Edit currency data"
+      },
+      "modals": {
+        "deleteTitle": "Confirm Delete",
+        "deleteMessage": "Are you sure you want to delete currency \"{name}\"?",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      },
+      "breadcrumbs": {
+        "list": "Currencies",
+        "add": "Add New Currency",
+        "view": "View {name}",
+        "edit": "Edit {name}"
+      }
+    }
   },
   "globalError": {
     "titleDev": "Oops!",

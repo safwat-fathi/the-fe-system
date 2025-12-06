@@ -61,7 +61,17 @@ interface WhatsappApiError {
 const generateIdempotencyKey = () => crypto.randomUUID();
 
 class WhatsappService {
-  private phoneNumberId = whatsappConfig.phoneNumberId;
+  private getPhoneNumberId() {
+    const { phoneNumberId } = whatsappConfig;
+    
+    if (!phoneNumberId) {
+      throw new Error(
+        "WhatsApp service is not configured. Please set PHONE_NUMBER_ID environment variable."
+      );
+    }
+    
+    return phoneNumberId;
+  }
 
   private async ensureContact(to: string) {
     return whatsappRepository.upsertContact({
@@ -154,7 +164,7 @@ class WhatsappService {
     try {
       const response =
         await whatsappHttpService.postJson<WhatsappApiMessageResponse>(
-          `${this.phoneNumberId}/messages`,
+          `${this.getPhoneNumberId()}/messages`,
           requestBody,
           clientMsgId,
         );
@@ -235,7 +245,7 @@ class WhatsappService {
     try {
       const response =
         await whatsappHttpService.postJson<WhatsappApiMessageResponse>(
-          `${this.phoneNumberId}/messages`,
+          `${this.getPhoneNumberId()}/messages`,
           requestBody,
           clientMsgId,
         );
@@ -273,7 +283,7 @@ class WhatsappService {
 
     try {
       const response = await whatsappHttpService.postFormData<{ id: string }>(
-        `${this.phoneNumberId}/media`,
+        `${this.getPhoneNumberId()}/media`,
         formData,
       );
 
@@ -318,7 +328,7 @@ class WhatsappService {
     try {
       const response =
         await whatsappHttpService.postJson<WhatsappApiMessageResponse>(
-          `${this.phoneNumberId}/messages`,
+          `${this.getPhoneNumberId()}/messages`,
           requestBody,
           clientMsgId,
         );

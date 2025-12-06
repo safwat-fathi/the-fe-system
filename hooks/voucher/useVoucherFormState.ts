@@ -5,7 +5,7 @@
 
 import type { Voucher } from "@/types/voucher";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UseVoucherFormStateProps {
   voucherData?: Voucher | null;
@@ -49,7 +49,7 @@ export const useVoucherFormState = ({
   );
 
   const [currentTime, setCurrentTime] = useState("");
-  const [isClient, setIsClient] = useState(false);
+  const [isClient] = useState(() => typeof window !== "undefined");
   const [accounts, setAccounts] = useState<any[]>(initialAccounts);
   const [costCenters] = useState<any[]>(initialCostCenters);
   const [voucherTypes] = useState<any[]>(initialVoucherTypes);
@@ -62,13 +62,26 @@ export const useVoucherFormState = ({
   const [isEditing, setIsEditing] = useState(
     formMode === "new" ? true : startInEditMode,
   );
-  const [defaultAccountOptions, setDefaultAccountOptions] = useState<any[]>([]);
+
+  // Helper Functions - يجب تعريفها قبل useEffect
+  // تحسين: استخدام useCallback لتقليل إنشاء الدالة في كل render
+  const updateCurrentTime = useCallback(() => {
+    const now = new Date();
+
+    setCurrentTime(
+      now.toLocaleTimeString("ar-SA", {
+        hour12: true,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+    );
+  }, []);
 
   // Initialize component
   useEffect(() => {
-    setIsClient(true);
     updateCurrentTime();
-  }, []);
+  }, [updateCurrentTime]);
 
   // Update voucher statuses when initialVoucherStatuses changes
   useEffect(() => {
@@ -88,42 +101,28 @@ export const useVoucherFormState = ({
     }
   }, [formMode, startInEditMode]);
 
-  // Load default account options
-  useEffect(() => {
-    const loadDefaultAccounts = () => {
-      const options = accounts.slice(0, 50).map((acc) => ({
-        value: acc.id,
-        label: `${acc.acc_code ?? acc.code ?? ""} - ${acc.acc_name ?? acc.name ?? ""}`,
-        account: acc,
-      }));
-
-      setDefaultAccountOptions(options);
-    };
-
-    if (accounts.length > 0) {
-      loadDefaultAccounts();
+  // تحسين: استخدام useMemo بدلاً من useEffect + useState لتقليل re-renders
+  const defaultAccountOptions = useMemo(() => {
+    if (accounts.length === 0) {
+      return [];
     }
+
+    return accounts.slice(0, 50).map((acc) => ({
+      value: acc.id,
+      label: `${acc.acc_code ?? acc.code ?? ""} - ${acc.acc_name ?? acc.name ?? ""}`,
+      account: acc,
+    }));
   }, [accounts]);
 
-  // Helper Functions
-  const updateCurrentTime = () => {
-    const now = new Date();
-
-    setCurrentTime(
-      now.toLocaleTimeString("ar-SA", {
-        hour12: true,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
-    );
-  };
-
-  const updateAccountsList = (newAccount: any) => {
-    if (!accounts.find((acc) => acc.id === newAccount.id)) {
-      setAccounts([...accounts, newAccount]);
-    }
-  };
+  // تحسين: استخدام useCallback لتقليل إنشاء الدالة في كل render
+  const updateAccountsList = useCallback(
+    (newAccount: any) => {
+      if (!accounts.find((acc) => acc.id === newAccount.id)) {
+        setAccounts([...accounts, newAccount]);
+      }
+    },
+    [accounts],
+  );
 
   return {
     // State

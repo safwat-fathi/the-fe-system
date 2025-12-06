@@ -12,6 +12,7 @@ import {
 import { Button, Input } from "@heroui/react";
 import Link from "next/link";
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 
 type Report = {
   id: string;
@@ -21,104 +22,109 @@ type Report = {
   category: "financial" | "operational" | "sales" | "tax";
 };
 
-// فقط التقارير المتاحة
-const reports: Report[] = [
-  // التقارير المالية
-  {
-    id: "vouchers",
-    name: "تقرير السندات",
-    href: "/reports/vouchers",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-    category: "financial",
-  },
-  {
-    id: "account-statement",
-    name: "كشف حساب",
-    href: "/reports/account-statement",
-    icon: <CalculatorIcon className="h-5 w-5" />,
-    category: "financial",
-  },
-  {
-    id: "income-statement",
-    name: "قائمة الدخل",
-    href: "/reports/income-statement",
-    icon: <CalculatorIcon className="h-5 w-5" />,
-    category: "financial",
-  },
-  {
-    id: "trial-balance",
-    name: "ميزان المراجعة",
-    href: "/reports/trial-balance",
-    icon: <CalculatorIcon className="h-5 w-5" />,
-    category: "financial",
-  },
-  {
-    id: "balance-sheet",
-    name: "الميزانية العمومية",
-    href: "/reports/balance-sheet",
-    icon: <ChartBarIcon className="h-5 w-5" />,
-    category: "financial",
-  },
-  {
-    id: "journal-ledger",
-    name: "دفتر القيود",
-    href: "/reports/journal-ledger",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-    category: "financial",
-  },
-  {
-    id: "general-ledger",
-    name: "دفتر الأستاذ",
-    href: "/reports/general-ledger",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-    category: "financial",
-  },
-  // التقارير التشغيلية
-  {
-    id: "invoices",
-    name: "قائمة الفواتير",
-    href: "/reports/invoices",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-    category: "operational",
-  },
-  // التقارير الضريبية
-  {
-    id: "tax-declaration",
-    name: "نموذج الإقرار الضريبي",
-    href: "/reports/vat",
-    icon: <ReceiptPercentIcon className="h-5 w-5" />,
-    category: "tax",
-  },
-  {
-    id: "tax-daily-journal",
-    name: "دفتر اليومية الضريبية",
-    href: "/reports/tax/daily-journal",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-    category: "tax",
-  },
-];
-
-const categoryConfig = {
-  financial: {
-    title: "التقارير المالية",
-    icon: <CurrencyDollarIcon className="h-6 w-6" />,
-  },
-  operational: {
-    title: "التقارير التشغيلية",
-    icon: <DocumentTextIcon className="h-6 w-6" />,
-  },
-  sales: {
-    title: "التقارير البيعية",
-    icon: <ChartBarIcon className="h-6 w-6" />,
-  },
-  tax: {
-    title: "التقارير الضريبية",
-    icon: <ReceiptPercentIcon className="h-6 w-6" />,
-  },
-};
-
 export default function ReportsClient() {
+  const t = useTranslations("reports.main");
+  const tVouchers = useTranslations("reports.vouchers");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // فقط التقارير المتاحة
+  const reports: Report[] = useMemo(
+    () => [
+      // التقارير المالية
+      {
+        id: "vouchers",
+        name: tVouchers("title"),
+        href: "/reports/vouchers",
+        icon: <DocumentTextIcon className="h-5 w-5" />,
+        category: "financial",
+      },
+      {
+        id: "account-statement",
+        name: t("reports.accountStatement"),
+        href: "/reports/account-statement",
+        icon: <CalculatorIcon className="h-5 w-5" />,
+        category: "financial",
+      },
+      {
+        id: "income-statement",
+        name: t("reports.incomeStatement"),
+        href: "/reports/income-statement",
+        icon: <CalculatorIcon className="h-5 w-5" />,
+        category: "financial",
+      },
+      {
+        id: "trial-balance",
+        name: t("reports.trialBalance"),
+        href: "/reports/trial-balance",
+        icon: <CalculatorIcon className="h-5 w-5" />,
+        category: "financial",
+      },
+      {
+        id: "balance-sheet",
+        name: t("reports.balanceSheet"),
+        href: "/reports/balance-sheet",
+        icon: <ChartBarIcon className="h-5 w-5" />,
+        category: "financial",
+      },
+      {
+        id: "journal-ledger",
+        name: t("reports.journalLedger"),
+        href: "/reports/journal-ledger",
+        icon: <DocumentTextIcon className="h-5 w-5" />,
+        category: "financial",
+      },
+      {
+        id: "general-ledger",
+        name: t("reports.generalLedger"),
+        href: "/reports/general-ledger",
+        icon: <DocumentTextIcon className="h-5 w-5" />,
+        category: "financial",
+      },
+      // التقارير التشغيلية
+      {
+        id: "invoices",
+        name: t("reports.invoices"),
+        href: "/reports/invoices",
+        icon: <DocumentTextIcon className="h-5 w-5" />,
+        category: "operational",
+      },
+      // التقارير الضريبية
+      {
+        id: "tax-declaration",
+        name: t("reports.taxDeclaration"),
+        href: "/reports/vat",
+        icon: <ReceiptPercentIcon className="h-5 w-5" />,
+        category: "tax",
+      },
+      {
+        id: "tax-daily-journal",
+        name: t("reports.taxDailyJournal"),
+        href: "/reports/tax/daily-journal",
+        icon: <DocumentTextIcon className="h-5 w-5" />,
+        category: "tax",
+      },
+    ],
+    [t, tVouchers],
+  );
+
+  const categoryConfig = {
+    financial: {
+      title: t("categories.financial"),
+      icon: <CurrencyDollarIcon className="h-6 w-6" />,
+    },
+    operational: {
+      title: t("categories.operational"),
+      icon: <DocumentTextIcon className="h-6 w-6" />,
+    },
+    sales: {
+      title: t("categories.sales"),
+      icon: <ChartBarIcon className="h-6 w-6" />,
+    },
+    tax: {
+      title: t("categories.tax"),
+      icon: <ReceiptPercentIcon className="h-6 w-6" />,
+    },
+  };
 
   const filteredReports = useMemo(() => {
     if (!searchTerm.trim()) {
@@ -128,7 +134,7 @@ export default function ReportsClient() {
     const term = searchTerm.toLowerCase().trim();
 
     return reports.filter((report) => report.name.toLowerCase().includes(term));
-  }, [searchTerm]);
+  }, [searchTerm, reports]);
 
   const categorizedReports = useMemo(() => {
     const financial = filteredReports.filter((r) => r.category === "financial");
@@ -201,15 +207,15 @@ export default function ReportsClient() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">التقارير</h1>
-          <p className="text-gray-500 mt-1">جميع التقارير المتاحة في النظام</p>
+          <h1 className="text-3xl font-bold text-gray-800">{t("header")}</h1>
+          <p className="text-gray-500 mt-1">{t("subheader")}</p>
         </div>
 
         {/* Search and Reset */}
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Input
             className="flex-1 sm:min-w-[300px]"
-            placeholder="البحث حسب الاسم"
+            placeholder={t("search.placeholder")}
             size="md"
             startContent={
               <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
@@ -220,7 +226,7 @@ export default function ReportsClient() {
           />
           <Button
             isIconOnly
-            aria-label="إعادة تعيين"
+            aria-label={t("search.reset")}
             className="border-gray-300"
             variant="bordered"
             onPress={handleReset}

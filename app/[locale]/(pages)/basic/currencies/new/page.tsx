@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CurrencyFormClient from "../components/CurrencyFormClient";
 
@@ -24,12 +25,14 @@ export default async function NewCurrencyPage() {
     cur_status: true,
   };
 
+  const t = await getTranslations("basic.currencies");
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: "العملات", href: "/basic/currencies" },
-          { name: "إضافة عملة جديدة" },
+          { name: t("breadcrumbs.list"), href: "/basic/currencies" },
+          { name: t("breadcrumbs.add") },
         ]}
       />
       <CurrencyFormClient initialCurrency={emptyCurrency} mode="add" />

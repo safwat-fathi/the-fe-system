@@ -12,6 +12,7 @@ import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect, { type CSSObjectWithLabel } from "react-select";
 import {
   Button,
+  Checkbox,
   Modal,
   ModalBody,
   ModalContent,
@@ -25,6 +26,8 @@ import {
   PencilIcon,
   PrinterIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslations, useLocale } from "next-intl";
+import { getLocaleDir } from "@/i18n/config";
 
 import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
 
@@ -61,6 +64,14 @@ export default function BalanceVoucherClientPage({
   isNewVoucher = true,
   startInEditMode: propStartInEditMode,
 }: BalanceVoucherClientPageProps) {
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const t = useTranslations("forms.balanceVoucher");
+  
+  // Dynamic text alignment classes based on locale
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  const textAlignCenter = "text-center";
+  
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") || initialFormMode;
   const formMode = (
@@ -139,14 +150,8 @@ export default function BalanceVoucherClientPage({
     [costCenterSelectOptions],
   );
 
-  // تحويل defaultAccountOptions إلى format مناسب
-  const accountDefaultOptions = useMemo(() => {
-    return defaultAccountOptions.map((opt: any) => ({
-      value: opt.value,
-      label: opt.label,
-      account: opt.account,
-    }));
-  }, [defaultAccountOptions]);
+  // استخدام defaultAccountOptions مباشرة (تم تحسينها في useBalanceVoucherForm)
+  const accountDefaultOptions = defaultAccountOptions;
 
   // Refs for keyboard navigation
   const selectorsRef = useRef<HTMLDivElement>(null);
@@ -279,24 +284,24 @@ export default function BalanceVoucherClientPage({
 
   if (!isClient) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        جاري التحميل...
+      <div className={`flex justify-center items-center h-screen ${textAlignCenter}`}>
+        {t("status.loading")}
       </div>
     );
   }
 
   return (
-    <div className="p-2 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="p-1 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header - رأس القيد مع الأزرار */}
-      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 mb-2 border border-slate-200">
+      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-1.5 mb-1 border border-slate-200">
         {/* الصف الأول: معلومات القيد */}
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
             <div>
-              <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <h1 className={`text-lg font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}>
                 <span>
-                  {voucherTypes.find((t) => t.id === voucher.vouch_type)
-                    ?.name || "قيد افتتاحي"}
+                  {voucherTypes.find((type) => type.id === voucher.vouch_type)
+                    ?.name || t("messages.voucherType")}
                 </span>
                 <span className="text-slate-600 font-medium">
                   #
@@ -306,11 +311,13 @@ export default function BalanceVoucherClientPage({
                     ? Number(voucher.vouch_id)
                     : voucher.id
                       ? `DB-${voucher.id}`
-                      : "جاري الترقيم..."}
+                      : t("messages.numbering")}
                 </span>
-                <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
+                <span className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}>
                   <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                  {new Date(voucher.vouch_date).toLocaleString("ar-EG")}
+                  {new Date(voucher.vouch_date).toLocaleString(
+                    locale === "ar" ? "ar-EG" : "en-US",
+                  )}
                 </span>
               </h1>
             </div>
@@ -318,105 +325,108 @@ export default function BalanceVoucherClientPage({
         </div>
 
         {/* الصف الثاني: الأزرار والحالة */}
-        <div className="flex items-center justify-between mt-1">
+        <div className="flex items-center justify-between">
           {/* الأزرار من اليسار لليمين */}
           <div className="flex items-center gap-2 flex-wrap">
             <Button
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
               isDisabled={!isEditing}
               isLoading={isLoading}
-              size="sm"
               startContent={
-                !isLoading ? <CheckIcon className="h-4 w-4" /> : undefined
+                !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
               }
               variant="solid"
               onPress={saveVoucher}
             >
-              حفظ
+              {t("actions.save")}
             </Button>
 
             <Button
-              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
               isDisabled={formMode === "new" || isEditing || isLoading}
-              size="sm"
-              startContent={<PencilIcon className="h-4 w-4" />}
+              startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
               variant="solid"
               onPress={handleEditClick}
             >
-              تعديل
+              {t("actions.edit")}
             </Button>
 
             <Button
-              className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-200 min-w-[90px]"
+              className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
               isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
               isLoading={isPrinting}
-              size="sm"
               startContent={
-                !isPrinting ? <PrinterIcon className="h-4 w-4" /> : undefined
+                !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
               }
               variant="solid"
               onPress={printVoucher}
             >
-              طباعة
+              {t("actions.print")}
             </Button>
           </div>
 
           {/* حالة القيد */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.commit}
-                className="w-3 h-3 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500"
-                type="checkbox"
+              <Checkbox
+                color="success"
+                isDisabled
+                isSelected={voucher.commit}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">حُفظ</span>
+              <span className={`text-xs text-slate-600 ${textAlign}`}>
+                {t("status.committed")}
+              </span>
             </div>
 
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.post}
-                className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                type="checkbox"
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={voucher.post}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">مرحل</span>
+              <span className={`text-xs text-slate-600 ${textAlign}`}>
+                {t("status.posted")}
+              </span>
             </div>
 
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.print}
-                className="w-3 h-3 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500"
-                type="checkbox"
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={voucher.print}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">طُبع</span>
+              <span className={`text-xs text-slate-600 ${textAlign}`}>
+                {t("status.printed")}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Form - نموذج بيانات القيد */}
-      <div className="bg-white rounded-lg border border-slate-200 mb-2">
+      <div className="bg-white rounded-lg border border-slate-200 mb-1.5">
         <div
           ref={selectorsRef}
-          className="p-2"
+          className="p-1"
           onKeyDownCapture={handleKeyDownSelectors}
         >
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-1.5">
             {/* رقم المرجع - أضيق */}
-            <div className="flex flex-col gap-1 md:col-span-2">
+            <div className="flex flex-col gap-0.5 md:col-span-2">
               <label
-                className="text-sm font-medium text-slate-700"
+                className={`text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
                 htmlFor="balance-ref-no"
               >
-                رقم المرجع
+                {t("fields.refNo")}
               </label>
               <input
-                className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 disabled:cursor-not-allowed disabled:bg-slate-50"
                 disabled={!isEditing}
                 id="balance-ref-no"
-                placeholder="أدخل رقم المرجع"
+                placeholder={t("fields.refNoPlaceholder")}
                 readOnly={!isEditing}
                 value={voucher.ref_no || ""}
                 onChange={(e) =>
@@ -426,15 +436,15 @@ export default function BalanceVoucherClientPage({
             </div>
 
             {/* تاريخ ووقت القيد - توسع قليلاً */}
-            <div className="flex flex-col gap-1 md:col-span-3">
+            <div className="flex flex-col gap-0.5 md:col-span-3">
               <label
-                className="text-sm font-medium text-slate-700"
+                className={`text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
                 htmlFor="balance-vouch-datetime"
               >
-                تاريخ ووقت القيد
+                {t("fields.vouchDateTime")}
               </label>
               <input
-                className="text-sm border border-slate-300 rounded-md px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 disabled:cursor-not-allowed disabled:bg-slate-50"
                 disabled={!isEditing}
                 id="balance-vouch-datetime"
                 readOnly={!isEditing}
@@ -454,17 +464,17 @@ export default function BalanceVoucherClientPage({
             </div>
 
             {costCenters.length > 0 && (
-              <div className="flex flex-col gap-1 md:col-span-2">
+              <div className="flex flex-col gap-0.5 md:col-span-2">
                 <label
-                  className="text-sm font-medium text-slate-700"
+                  className={`text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
                   htmlFor="balance-cost-center-select"
                 >
-                  مركز التكلفة
+                  {t("fields.costCenter")}
                 </label>
                 <div>
                   <ReactSelect
                     isSearchable
-                    className="text-sm"
+                    className="text-xs"
                     classNamePrefix="react-select"
                     components={{ IndicatorSeparator: () => null }}
                     instanceId="balance-cost-center-select"
@@ -474,13 +484,13 @@ export default function BalanceVoucherClientPage({
                     }
                     menuPosition="fixed"
                     options={costCenterSelectOptions}
-                    placeholder="اختر مركز التكلفة..."
+                    placeholder={t("fields.costCenterPlaceholder")}
                     styles={{
                       control: (base: CSSObjectWithLabel) => ({
                         ...base,
-                        minHeight: "40px",
-                        height: "40px",
-                        fontSize: "14px",
+                        minHeight: "32px",
+                        height: "32px",
+                        fontSize: "12px",
                       }),
                       menuPortal: (base: CSSObjectWithLabel) => ({
                         ...base,
@@ -488,15 +498,15 @@ export default function BalanceVoucherClientPage({
                       }),
                       option: (base: CSSObjectWithLabel) => ({
                         ...base,
-                        fontSize: "14px",
+                        fontSize: "12px",
                       }),
                       placeholder: (base: CSSObjectWithLabel) => ({
                         ...base,
-                        fontSize: "14px",
+                        fontSize: "12px",
                       }),
                       singleValue: (base: CSSObjectWithLabel) => ({
                         ...base,
-                        fontSize: "14px",
+                        fontSize: "12px",
                       }),
                     }}
                     value={getCostCenterSelectValue(voucher.cost_id)}
@@ -556,21 +566,21 @@ export default function BalanceVoucherClientPage({
 
             {/* البيان - أوسع مع زر توسيع */}
             <div
-              className={`flex flex-col gap-1 ${costCenters.length > 0 ? "md:col-span-5" : "md:col-span-7"
+              className={`flex flex-col gap-0.5 ${costCenters.length > 0 ? "md:col-span-5" : "md:col-span-7"
                 }`}
             >
               <label
-                className="text-sm font-medium text-slate-700"
+                className={`text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
                 htmlFor="balance-vouch-notes"
               >
-                البيان
+                {t("fields.notes")}
               </label>
               <div className="relative">
                 <input
-                  className="text-sm border border-slate-300 rounded-md px-3 py-2 pr-10 w-full focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                  className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8 disabled:cursor-not-allowed disabled:bg-slate-50"
                   disabled={!isEditing}
                   id="balance-vouch-notes"
-                  placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
+                  placeholder={t("fields.notesPlaceholder")}
                   readOnly={!isEditing}
                   value={voucher.vouch_notes || ""}
                   onChange={(e) =>
@@ -613,14 +623,14 @@ export default function BalanceVoucherClientPage({
                 />
                 {isEditing && (
                   <button
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
+                    className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
                     data-skip-key-as-tab="true"
                     tabIndex={-1}
-                    title="توسيع البيان"
+                    title={t("actions.expandNotes")}
                     type="button"
                     onClick={() => setIsNotesModalOpen(true)}
                   >
-                    <ArrowsPointingOutIcon className="h-4 w-4" />
+                    <ArrowsPointingOutIcon className="h-3 w-3" />
                   </button>
                 )}
               </div>
@@ -630,111 +640,105 @@ export default function BalanceVoucherClientPage({
       </div>
 
       {/* Details Table - جدول تفاصيل القيد */}
-      <div className="bg-white rounded-lg border border-slate-200 mb-2">
-        <div className="p-1.5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 className="text-sm font-semibold text-slate-800">تفاصيل القيد</h3>
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-xs px-2 py-1 rounded-full font-bold ${isBalanced
-                ? "bg-emerald-200 text-emerald-900"
-                : "bg-red-200 text-red-900"
-                }`}
-            >
-              <i
-                className={`bi ${isBalanced ? "bi-check-circle" : "bi-exclamation-triangle"} me-1`}
-              />
-              {isBalanced ? "متزن" : "غير متزن"}
-            </span>
-          </div>
-        </div>
-
-        <div className="p-1">
-          <div className="flex justify-between mb-1">
+      <div className="bg-white rounded-lg border border-slate-200 mb-1.5">
+        <div className="p-0.5">
+          <div className="flex justify-between items-center mb-0.5">
             <button
-              className="btn"
+              className={`text-xs px-2 py-0.5 btn ${textAlign}`}
               data-skip-key-as-tab="true"
               disabled={!isEditing}
               tabIndex={-1}
               type="button"
               onClick={addDetailRow}
             >
-              + صف
+              {t("actions.addRow")}
             </button>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${isBalanced
+                ? "bg-emerald-200 text-emerald-900"
+                : "bg-red-200 text-red-900"
+                }`}
+            >
+              <i
+                className={`bi ${isBalanced ? "bi-check-circle" : "bi-exclamation-triangle"} me-0.5`}
+              />
+              {isBalanced ? t("status.balanced") : t("status.unbalanced")}
+            </span>
           </div>
-          <div className="overflow-x-auto mb-1">
-            <div className="max-h-[360px] overflow-y-auto">
+          <div className="overflow-x-auto mb-0.5 max-w-full">
+            <div className="max-h-[500px] overflow-y-auto">
               <table className="min-w-[1400px] border text-xs text-center table-fixed">
                 <thead className="sticky top-0 z-10 bg-gray-100 text-xs font-bold">
                   <tr>
                     <th
-                      className="w-64 p-0.5 font-bold text-slate-700 border"
+                      className={`w-64 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
                       rowSpan={2}
                     >
-                      الحساب
+                      {t("table.columns.account")}
                     </th>
                     <th
-                      className="w-40 p-0.5 font-bold text-slate-700 border"
+                      className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
                       colSpan={2}
                     >
-                      نقدي
+                      {t("table.columns.cash")}
                     </th>
                     <th
-                      className="w-40 p-0.5 font-bold text-slate-700 border"
+                      className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
                       colSpan={2}
                     >
-                      ذهب قائم (جم)
+                      {t("table.columns.goldStanding")}
                     </th>
                     <th
-                      className="w-20 p-0.5 font-bold text-slate-700 border"
+                      className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
                       rowSpan={2}
                     >
-                      المعايرة
+                      {t("table.columns.gauge")}
                     </th>
                     <th
-                      className="w-40 p-0.5 font-bold text-slate-700 border"
+                      className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
                       colSpan={2}
                     >
-                      ذهب معاير (جم)
+                      {t("table.columns.goldCalibrated")}
                     </th>
                     {costCenters.length > 0 && (
                       <th
-                        className="w-40 p-0.5 font-bold text-slate-700 border"
+                        className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
                         rowSpan={2}
                       >
-                        مركز التكلفة
+                        {t("table.columns.costCenter")}
                       </th>
                     )}
                     <th
-                      className="w-48 p-0.5 font-bold text-slate-700 border"
+                      className={`w-48 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
                       rowSpan={2}
                     >
-                      البيان
+                      {t("table.columns.notes")}
                     </th>
                     <th
-                      className="w-12 p-0.5 font-bold text-slate-700 border"
+                      className={`w-12 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
                       rowSpan={2}
                     >
-                      حذف
+                      {t("table.columns.delete")}
                     </th>
                   </tr>
                   <tr>
-                    <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                      مدين
+                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                      {t("table.columns.cashDebit")}
                     </th>
-                    <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                      دائن
+                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                      {t("table.columns.cashCredit")}
                     </th>
-                    <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                      مدين (جم)
+                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                      {t("table.columns.goldStandingDebit")}
                     </th>
-                    <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                      دائن (جم)
+                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                      {t("table.columns.goldStandingCredit")}
                     </th>
-                    <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                      مدين (جم)
+                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                      {t("table.columns.goldCalibratedDebit")}
                     </th>
-                    <th className="w-20 p-0.5 font-bold text-slate-700 border">
-                      دائن (جم)
+                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                      {t("table.columns.goldCalibratedCredit")}
                     </th>
                   </tr>
                 </thead>
@@ -844,7 +848,7 @@ export default function BalanceVoucherClientPage({
                                   components={{ IndicatorSeparator: () => null }}
                                   defaultOptions={optionsWithSelected}
                                   formatCreateLabel={(inputValue: string) =>
-                                    `إضافة حساب جديد: "${inputValue}"`
+                                    t("table.addAccountLabel", { value: inputValue })
                                   }
                                   instanceId={`account-select-${index}`}
                                   isDisabled={!isEditing}
@@ -856,7 +860,7 @@ export default function BalanceVoucherClientPage({
                                       : null
                                   }
                                   menuPosition="fixed"
-                                  placeholder="اختر الحساب..."
+                                  placeholder={t("table.columns.accountPlaceholder")}
                                   onMenuOpen={() => {
                                     setTimeout(() => {
                                       const combobox = document.querySelector(
@@ -1252,7 +1256,7 @@ export default function BalanceVoucherClientPage({
                                 data-row={index}
                                 disabled={!isEditing}
                                 min="0"
-                                placeholder="875"
+                                placeholder={t("table.columns.gaugePlaceholder")}
                                 readOnly={!isEditing}
                                 step="0.01"
                                 style={{
@@ -1260,6 +1264,7 @@ export default function BalanceVoucherClientPage({
                                   WebkitAppearance: "none",
                                   appearance: "none",
                                 }}
+                                title={t("table.columns.gaugeTooltip")}
                                 type="number"
                                 value={
                                   detail.gauge ? String(detail.gauge) : "875"
@@ -1292,10 +1297,7 @@ export default function BalanceVoucherClientPage({
                             return (
                               <input
                                 ref={setInputRef(index, thisCol)}
-                                className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${isEditing
-                                  ? "bg-amber-50"
-                                  : "cursor-not-allowed bg-amber-100"
-                                  }`}
+                                className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
                                 data-col={thisCol}
                                 data-row={index}
                                 disabled={!isEditing}
@@ -1344,10 +1346,7 @@ export default function BalanceVoucherClientPage({
                             return (
                               <input
                                 ref={setInputRef(index, thisCol)}
-                                className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${isEditing
-                                  ? "bg-amber-50"
-                                  : "cursor-not-allowed bg-amber-100"
-                                  }`}
+                                className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
                                 data-col={thisCol}
                                 data-row={index}
                                 disabled={!isEditing}
@@ -1360,11 +1359,11 @@ export default function BalanceVoucherClientPage({
                                   WebkitAppearance: "none",
                                   appearance: "none",
                                 }}
-                                title="يمكن تعديل الذهب المعاير، وسيتم تحديث المعايرة تلقائياً"
+                                title={t("table.columns.gaugeTooltip")}
                                 type="number"
                                 value={
                                   detail.g_credit_base !== undefined &&
-                                    detail.g_credit_base !== null
+                                  detail.g_credit_base !== null
                                     ? String(detail.g_credit_base)
                                     : ""
                                 }
@@ -1445,7 +1444,7 @@ export default function BalanceVoucherClientPage({
                                     }
                                     menuPosition="fixed"
                                     options={costCenterSelectOptions}
-                                    placeholder="مركز التكلفة..."
+                                    placeholder={t("table.columns.costCenterPlaceholder")}
                                     styles={{
                                       control: (base: CSSObjectWithLabel) => ({
                                         ...base,
@@ -1585,7 +1584,7 @@ export default function BalanceVoucherClientPage({
                                 data-col={thisCol}
                                 data-row={index}
                                 disabled={!isEditing}
-                                placeholder="البيان"
+                                placeholder={t("table.columns.notes")}
                                 readOnly={!isEditing}
                                 type="text"
                                 value={detail.vouch_notes || ""}
@@ -1611,7 +1610,7 @@ export default function BalanceVoucherClientPage({
                             className="font-bold text-red-600 hover:text-red-800 disabled:text-gray-400 disabled:cursor-not-allowed"
                             disabled={!isEditing}
                             tabIndex={-1}
-                            title="حذف السطر"
+                            title={t("actions.delete")}
                             onClick={() => removeDetailRow(index)}
                           >
                             ×
@@ -1628,66 +1627,74 @@ export default function BalanceVoucherClientPage({
       </div>
 
       {/* Totals - شريط الإجماليات */}
-      <div className="mt-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
+      <div className="mt-1.5 bg-gray-50 rounded-lg p-1.5 border border-gray-200">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">إجمالي المدين:</span>
-            <span className="font-semibold text-emerald-700 flex items-center gap-1">
+          <div className={`flex items-center gap-2 ${textAlign}`}>
+            <span className={`text-gray-700 font-medium ${textAlign}`}>
+              {t("totals.totalDebit")}:
+            </span>
+            <span className={`font-semibold text-emerald-700 flex items-center gap-1 ${textAlign}`}>
               {formatAmount(totals.totalDebit)}
               <RiyalIcon color="currentColor" />
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">إجمالي الدائن:</span>
-            <span className="font-semibold text-red-700 flex items-center gap-1">
+          <div className={`flex items-center gap-2 ${textAlign}`}>
+            <span className={`text-gray-700 font-medium ${textAlign}`}>
+              {t("totals.totalCredit")}:
+            </span>
+            <span className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}>
               {formatAmount(totals.totalCredit)}
               <RiyalIcon color="currentColor" />
             </span>
           </div>
 
           {!isCashBalanced && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-700 font-medium">فارق النقدية:</span>
-              <span className="font-semibold text-red-700 flex items-center gap-1">
+            <div className={`flex items-center gap-2 ${textAlign}`}>
+              <span className={`text-gray-700 font-medium ${textAlign}`}>
+                {t("totals.cashDifference")}:
+              </span>
+              <span className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}>
                 {formatAmount(Math.abs(cashBalance))}
                 <span className="text-xs">
-                  ({cashBalance > 0 ? "مدين" : "دائن"})
+                  ({cashBalance > 0 ? t("totals.debit") : t("totals.credit")})
                 </span>
                 <RiyalIcon color="currentColor" />
               </span>
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <span className="text-amber-800 font-medium">
-              إجمالي المدين المعاير:
+          <div className={`flex items-center gap-2 ${textAlign}`}>
+            <span className={`text-amber-800 font-medium ${textAlign}`}>
+              {t("totals.totalDebitCalibrated")}:
             </span>
-            <span className="font-semibold text-yellow-600 flex items-center gap-1">
+            <span className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}>
               {formatAmount(totals.totalDebitG)}
-              <span className="text-xs text-yellow-500">جم</span>
+              <span className="text-xs text-yellow-500">{t("totals.gram")}</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-amber-800 font-medium">
-              إجمالي الدائن المعاير:
+          <div className={`flex items-center gap-2 ${textAlign}`}>
+            <span className={`text-amber-800 font-medium ${textAlign}`}>
+              {t("totals.totalCreditCalibrated")}:
             </span>
-            <span className="font-semibold text-yellow-600 flex items-center gap-1">
+            <span className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}>
               {formatAmount(totals.totalCreditG)}
-              <span className="text-xs text-yellow-500">جم</span>
+              <span className="text-xs text-yellow-500">{t("totals.gram")}</span>
             </span>
           </div>
 
           {!isGoldBalanced && (
-            <div className="flex items-center gap-2">
-              <span className="text-amber-800 font-medium">فارق الذهب:</span>
-              <span className="font-semibold text-red-700 flex items-center gap-1">
+            <div className={`flex items-center gap-2 ${textAlign}`}>
+              <span className={`text-amber-800 font-medium ${textAlign}`}>
+                {t("totals.goldDifference")}:
+              </span>
+              <span className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}>
                 {formatAmount(Math.abs(goldBalance))}
                 <span className="text-xs">
-                  ({goldBalance > 0 ? "مدين" : "دائن"})
+                  ({goldBalance > 0 ? t("totals.debit") : t("totals.credit")})
                 </span>
-                <span className="text-xs text-yellow-500">جم</span>
+                <span className="text-xs text-yellow-500">{t("totals.gram")}</span>
               </span>
             </div>
           )}
@@ -1695,34 +1702,44 @@ export default function BalanceVoucherClientPage({
       </div>
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="warning"
-        confirmText="متابعة والحفظ"
+        confirmText={t("modals.confirm")}
         isOpen={showUnbalancedModal}
         message={
-          <div className="space-y-2 text-right">
-            <p className="text-gray-700">القيد الحالي غير متزن:</p>
-            <div className="bg-gray-50 p-3 rounded-lg space-y-1">
-              <p className="font-semibold text-gray-800">
-                إجمالي المدين: {totals.totalDebit.toFixed(2)}
+          <div className={`space-y-2 ${textAlign}`}>
+            <p className={`text-gray-700 ${textAlign}`}>
+              {t("modals.unbalancedMessage")}
+            </p>
+            <div className={`bg-gray-50 p-3 rounded-lg space-y-1 ${textAlign}`}>
+              <p className={`font-semibold text-gray-800 ${textAlign}`}>
+                {t("modals.unbalancedDetails.totalDebit", {
+                  value: totals.totalDebit.toFixed(2),
+                })}
               </p>
-              <p className="font-semibold text-gray-800">
-                إجمالي الدائن: {totals.totalCredit.toFixed(2)}
+              <p className={`font-semibold text-gray-800 ${textAlign}`}>
+                {t("modals.unbalancedDetails.totalCredit", {
+                  value: totals.totalCredit.toFixed(2),
+                })}
               </p>
-              <p className="font-semibold text-gray-800">
-                إجمالي الذهب المدين: {totals.totalDebitG.toFixed(6)} جم
+              <p className={`font-semibold text-gray-800 ${textAlign}`}>
+                {t("modals.unbalancedDetails.totalGoldDebit", {
+                  value: totals.totalDebitG.toFixed(6),
+                })}
               </p>
-              <p className="font-semibold text-gray-800">
-                إجمالي الذهب الدائن: {totals.totalCreditG.toFixed(6)} جم
+              <p className={`font-semibold text-gray-800 ${textAlign}`}>
+                {t("modals.unbalancedDetails.totalGoldCredit", {
+                  value: totals.totalCreditG.toFixed(6),
+                })}
               </p>
             </div>
-            <p className="mt-3 text-gray-600 text-sm">
-              هل ترغب بالمتابعة والحفظ رغم عدم التوازن؟
+            <p className={`mt-3 text-gray-600 text-sm ${textAlign}`}>
+              {t("modals.unbalancedQuestion")}
             </p>
           </div>
         }
         size="md"
-        title="⚠️ القيد غير متزن"
+        title={t("modals.unbalancedTitle")}
         onClose={handleUnbalancedCancel}
         onConfirm={handleUnbalancedConfirm}
       />
@@ -1735,8 +1752,10 @@ export default function BalanceVoucherClientPage({
         onClose={() => setIsNotesModalOpen(false)}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <p className="text-lg font-semibold">البيان</p>
+          <ModalHeader className={`flex flex-col gap-1 ${textAlign}`}>
+            <p className={`text-lg font-semibold ${textAlign}`}>
+              {t("fields.notesModalTitle")}
+            </p>
           </ModalHeader>
           <ModalBody>
             <Textarea
@@ -1746,7 +1765,7 @@ export default function BalanceVoucherClientPage({
               disabled={!isEditing}
               maxRows={12}
               minRows={6}
-              placeholder="أدخل بيان القيد..."
+              placeholder={t("fields.notesModalPlaceholder")}
               value={voucher.vouch_notes || ""}
               onChange={(e) =>
                 setVoucher((prev) => ({
@@ -1762,7 +1781,7 @@ export default function BalanceVoucherClientPage({
               variant="solid"
               onPress={() => setIsNotesModalOpen(false)}
             >
-              حفظ
+              {t("actions.saveNotes")}
             </Button>
           </ModalFooter>
         </ModalContent>

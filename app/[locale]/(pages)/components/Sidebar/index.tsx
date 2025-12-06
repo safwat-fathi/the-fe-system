@@ -6,7 +6,7 @@ import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 
 import SidebarHeader from "./SidebarHeader";
 import SidebarLinkList from "./SidebarLinkList";
@@ -21,8 +21,20 @@ import {
   settingsLinks,
 } from "./sidebarConfig";
 import { createIsLinkActive, type TranslateLinkLabel } from "./sidebarUtils";
+import {
+  SIDEBAR_OBJECT_IDS,
+  type SidebarPermissionKey,
+} from "./sidebarPermissions";
 
-const Sidebar = (): JSX.Element => {
+interface SidebarProps {
+  isAdmin?: boolean;
+  allowedObjectIds?: number[];
+}
+
+const Sidebar = ({
+  isAdmin = false,
+  allowedObjectIds = [],
+}: SidebarProps): JSX.Element => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // نظام الحسابات
@@ -40,6 +52,28 @@ const Sidebar = (): JSX.Element => {
   const searchParams = useSearchParams();
   const tSidebar = useTranslations("sidebar");
   const tBreadcrumbs = useTranslations("navigation.breadcrumbs");
+
+  const allowedIdsSet = useMemo(
+    () => new Set(allowedObjectIds ?? []),
+    [allowedObjectIds],
+  );
+
+  const canShowSection = useCallback(
+    (key: SidebarPermissionKey) => {
+      if (isAdmin) {
+        return true;
+      }
+
+      const ids = SIDEBAR_OBJECT_IDS[key];
+
+      if (!ids) {
+        return true;
+      }
+
+      return ids.some((id) => allowedIdsSet.has(id));
+    },
+    [allowedIdsSet, isAdmin],
+  );
 
   const translateLinkLabel: TranslateLinkLabel = (link: SidebarLinkConfig) => {
     if (link.translationSource === "home") {
@@ -97,132 +131,147 @@ const Sidebar = (): JSX.Element => {
         translateLinkLabel={translateLinkLabel}
       />
 
-        <SidebarSection
-          animationVariants={animationVariants}
-          hideLabel={!isSidebarOpen}
-          isOpen={showAccountingSystem}
-          label={tSidebar("sections.accountingSystem")}
-          onToggle={() => setShowAccountingSystem(!showAccountingSystem)}
-          showToggleIcon={isSidebarOpen}
-          transition={transition}
-        >
+        {canShowSection("accountingSystem") && (
           <SidebarSection
             animationVariants={animationVariants}
-            className="mt-0"
-            headerClassName="text-xs text-slate-400 font-normal"
             hideLabel={!isSidebarOpen}
-            isOpen={showAccountingBasic}
-            label={tSidebar("sections.accountingBasic")}
-            onToggle={() => setShowAccountingBasic(!showAccountingBasic)}
+            isOpen={showAccountingSystem}
+            label={tSidebar("sections.accountingSystem")}
+            onToggle={() => setShowAccountingSystem(!showAccountingSystem)}
             showToggleIcon={isSidebarOpen}
             transition={transition}
           >
-            <SidebarLinkList
-              indent="2.5rem"
-              isLinkActive={isLinkActive}
-              isSidebarOpen={isSidebarOpen}
-              links={accountingBasicLinks}
-              translateLinkLabel={translateLinkLabel}
-            />
-          </SidebarSection>
-
-          {accountingFormLinks.length > 0 && (
-            <SidebarSection
-              animationVariants={animationVariants}
-              className="mt-2"
-              headerClassName="text-xs text-slate-400 font-normal"
-              hideLabel={!isSidebarOpen}
-              isOpen={showAccountingForms}
-              label={tSidebar("sections.accountingForms")}
-              onToggle={() => setShowAccountingForms(!showAccountingForms)}
-            showToggleIcon={isSidebarOpen}
-            transition={transition}
-          >
-            <SidebarLinkList
-              indent="2.5rem"
-              isLinkActive={isLinkActive}
-              isSidebarOpen={isSidebarOpen}
-              links={accountingFormLinks}
-              translateLinkLabel={translateLinkLabel}
-            />
-          </SidebarSection>
-          )}
-        </SidebarSection>
-
-        <div className="mt-4">
-          <Link
-            className={clsx(
-              "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
-              {
-                "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30":
-                  reportsIsActive,
-                "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40":
-                  !reportsIsActive,
-              },
+            {canShowSection("accountingBasic") && (
+              <SidebarSection
+                animationVariants={animationVariants}
+                className="mt-0"
+                headerClassName="text-xs text-slate-400 font-normal"
+                hideLabel={!isSidebarOpen}
+                isOpen={showAccountingBasic}
+                label={tSidebar("sections.accountingBasic")}
+                onToggle={() => setShowAccountingBasic(!showAccountingBasic)}
+                showToggleIcon={isSidebarOpen}
+                transition={transition}
+              >
+                <SidebarLinkList
+                  indent="2.5rem"
+                  isLinkActive={isLinkActive}
+                  isSidebarOpen={isSidebarOpen}
+                  links={accountingBasicLinks}
+                  translateLinkLabel={translateLinkLabel}
+                />
+              </SidebarSection>
             )}
-            href="/reports"
-          >
-            <div
-              className={clsx("text-lg transition-all", {
-                "text-white drop-shadow-lg": reportsIsActive,
-                "text-slate-300 group-hover:text-white": !reportsIsActive,
-              })}
+
+            {accountingFormLinks.length > 0 &&
+              canShowSection("accountingForms") && (
+                <SidebarSection
+                  animationVariants={animationVariants}
+                  className="mt-2"
+                  headerClassName="text-xs text-slate-400 font-normal"
+                  hideLabel={!isSidebarOpen}
+                  isOpen={showAccountingForms}
+                  label={tSidebar("sections.accountingForms")}
+                  onToggle={() =>
+                    setShowAccountingForms(!showAccountingForms)
+                  }
+                  showToggleIcon={isSidebarOpen}
+                  transition={transition}
+                >
+                  <SidebarLinkList
+                    indent="2.5rem"
+                    isLinkActive={isLinkActive}
+                    isSidebarOpen={isSidebarOpen}
+                    links={accountingFormLinks}
+                    translateLinkLabel={translateLinkLabel}
+                  />
+                </SidebarSection>
+              )}
+          </SidebarSection>
+        )}
+
+        {canShowSection("reports") && (
+          <div className="mt-4">
+            <Link
+              className={clsx(
+                "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
+                {
+                  "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30":
+                    reportsIsActive,
+                  "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40":
+                    !reportsIsActive,
+                },
+              )}
+              href="/reports"
             >
-              <ReportsIcon className="h-5 w-5" />
-            </div>
-            <SectionToggleLabel label={tSidebar("sections.reports")} />
-          </Link>
-        </div>
+              <div
+                className={clsx("text-lg transition-all", {
+                  "text-white drop-shadow-lg": reportsIsActive,
+                  "text-slate-300 group-hover:text-white": !reportsIsActive,
+                })}
+              >
+                <ReportsIcon className="h-5 w-5" />
+              </div>
+              <SectionToggleLabel label={tSidebar("sections.reports")} />
+            </Link>
+          </div>
+        )}
 
-        <SidebarSection
-          animationVariants={animationVariants}
-          hideLabel={!isSidebarOpen}
-          isOpen={showGoldSystem}
-          label={tSidebar("sections.goldSystem")}
-          onToggle={() => setShowGoldSystem(!showGoldSystem)}
-          showToggleIcon={isSidebarOpen}
-          transition={transition}
-        >
+        {canShowSection("goldSystem") && (
           <SidebarSection
             animationVariants={animationVariants}
-            className="mt-0"
-            headerClassName="text-xs text-slate-400 font-normal"
             hideLabel={!isSidebarOpen}
-            isOpen={showGoldBasic}
-            label={tSidebar("sections.goldBasic")}
-            onToggle={() => setShowGoldBasic(!showGoldBasic)}
+            isOpen={showGoldSystem}
+            label={tSidebar("sections.goldSystem")}
+            onToggle={() => setShowGoldSystem(!showGoldSystem)}
             showToggleIcon={isSidebarOpen}
             transition={transition}
           >
-            <SidebarLinkList
-              indent="2.5rem"
-              isLinkActive={isLinkActive}
-              isSidebarOpen={isSidebarOpen}
-              links={goldBasicLinks}
-              translateLinkLabel={translateLinkLabel}
-            />
-          </SidebarSection>
+            {canShowSection("goldBasic") && (
+              <SidebarSection
+                animationVariants={animationVariants}
+                className="mt-0"
+                headerClassName="text-xs text-slate-400 font-normal"
+                hideLabel={!isSidebarOpen}
+                isOpen={showGoldBasic}
+                label={tSidebar("sections.goldBasic")}
+                onToggle={() => setShowGoldBasic(!showGoldBasic)}
+                showToggleIcon={isSidebarOpen}
+                transition={transition}
+              >
+                <SidebarLinkList
+                  indent="2.5rem"
+                  isLinkActive={isLinkActive}
+                  isSidebarOpen={isSidebarOpen}
+                  links={goldBasicLinks}
+                  translateLinkLabel={translateLinkLabel}
+                />
+              </SidebarSection>
+            )}
 
-          <SidebarSection
-            animationVariants={animationVariants}
-            className="mt-2"
-            headerClassName="text-xs text-slate-400 font-normal"
-            hideLabel={!isSidebarOpen}
-            isOpen={showGoldForms}
-            label={tSidebar("sections.goldForms")}
-            onToggle={() => setShowGoldForms(!showGoldForms)}
-            showToggleIcon={isSidebarOpen}
-            transition={transition}
-          >
-            <SidebarLinkList
-              indent="2.5rem"
-              isLinkActive={isLinkActive}
-              isSidebarOpen={isSidebarOpen}
-              links={goldFormLinks}
-              translateLinkLabel={translateLinkLabel}
-            />
+            {canShowSection("goldForms") && (
+              <SidebarSection
+                animationVariants={animationVariants}
+                className="mt-2"
+                headerClassName="text-xs text-slate-400 font-normal"
+                hideLabel={!isSidebarOpen}
+                isOpen={showGoldForms}
+                label={tSidebar("sections.goldForms")}
+                onToggle={() => setShowGoldForms(!showGoldForms)}
+                showToggleIcon={isSidebarOpen}
+                transition={transition}
+              >
+                <SidebarLinkList
+                  indent="2.5rem"
+                  isLinkActive={isLinkActive}
+                  isSidebarOpen={isSidebarOpen}
+                  links={goldFormLinks}
+                  translateLinkLabel={translateLinkLabel}
+                />
+              </SidebarSection>
+            )}
           </SidebarSection>
-        </SidebarSection>
+        )}
 
         <SidebarSection
           animationVariants={animationVariants}

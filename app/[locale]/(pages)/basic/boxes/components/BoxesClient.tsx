@@ -22,6 +22,8 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations, useLocale } from "next-intl";
+import { getLocaleDir } from "@/i18n/config";
 
 import { ConfirmationModal } from "@/components/Modal";
 import boxService from "@/services/api/box.service";
@@ -63,18 +65,28 @@ interface BoxesClientProps {
   error: string | null;
 }
 
-const columns = [
-  { name: "رقم الصندوق", uid: "id" },
-  { name: "كود الصندوق", uid: "cust_code" },
-  { name: "اسم الصندوق", uid: "cust_name" },
-  { name: "الاسم بالإنجليزي", uid: "cust_name_e" },
-  { name: "نوع الصندوق", uid: "box_type" },
-  { name: "الحالة", uid: "cust_status" },
-  { name: "", uid: "actions" },
-];
-
 export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const t = useTranslations("basic.boxes");
+  
+  // Dynamic text alignment classes based on locale
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  const textAlignCenter = "text-center";
+
+  const columns = useMemo(
+    () => [
+      { name: t("columns.id"), uid: "id" },
+      { name: t("columns.code"), uid: "cust_code" },
+      { name: t("columns.name"), uid: "cust_name" },
+      { name: t("columns.nameEn"), uid: "cust_name_e" },
+      { name: t("columns.type"), uid: "box_type" },
+      { name: t("columns.status"), uid: "cust_status" },
+      { name: t("columns.actions"), uid: "actions" },
+    ],
+    [t],
+  );
   const [boxes, setBoxes] = useState<CustomerBox[]>(initialData);
   const [boxTypes, setBoxTypes] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -103,7 +115,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
       setBoxTypes(data);
     } catch {
-      toast.error("خطأ في تحميل أنواع الصناديق");
+      toast.error(t("messages.typesLoadError"));
       setBoxTypes([]);
     }
   };
@@ -111,11 +123,11 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   // تحميل أنواع الصناديق عند تحميل المكون
   React.useEffect(() => {
     loadBoxTypes();
-  }, []);
+  }, [t]);
 
   const handleDeleteClick = (box: CustomerBox) => {
     if (!box.id) {
-      toast.error("❌ لا يمكن حذف صندوق بدون معرف");
+      toast.error(t("messages.deleteErrorNoId"));
 
       return;
     }
@@ -139,16 +151,16 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       const result = await boxService.deleteBox(boxToDelete.id);
 
       if (result) {
-        toast.success("✅ تم حذف الصندوق بنجاح");
+        toast.success(t("messages.deleteSuccess"));
 
         // Revalidate cache
         await revalidateTableData("boxes_list");
       } else {
-        toast.error("❌ فشل في حذف الصندوق");
+        toast.error(t("messages.deleteFailed"));
         router.refresh();
       }
     } catch {
-      toast.error("❌ حدث خطأ أثناء الحذف");
+      toast.error(t("messages.deleteError"));
       router.refresh();
     } finally {
       setDeleteModalOpen(false);
@@ -181,6 +193,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       <Button
         isIconOnly
         size="sm"
+        title={t("actions.view")}
         variant="light"
         onPress={() => router.push(`/basic/boxes/${box.id}`)}
       >
@@ -189,6 +202,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       <Button
         isIconOnly
         size="sm"
+        title={t("actions.edit")}
         variant="light"
         onPress={() => router.push(`/basic/boxes/${box.id}?mode=edit`)}
       >
@@ -198,6 +212,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         isIconOnly
         color="danger"
         size="sm"
+        title={t("actions.delete")}
         variant="light"
         onPress={() => handleDeleteClick(box)}
       >
@@ -208,9 +223,11 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <p className="text-red-500 mb-4">لا يمكن تحميل البيانات: {error}</p>
-        <Button color="primary">إعادة المحاولة</Button>
+      <div className={`${textAlignCenter} py-8`}>
+        <p className={`text-red-500 mb-4 ${textAlign}`}>
+          {t("messages.cannotLoadData", { error })}
+        </p>
+        <Button color="primary">{t("actions.retry")}</Button>
       </div>
     );
   }
@@ -218,7 +235,9 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className="text-base font-semibold">إدارة الصناديق</h2>
+        <h2 className={`text-base font-semibold ${textAlign}`}>
+          {t("labels.manage")}
+        </h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
           className="bg-gray-100"
@@ -226,12 +245,12 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
           onPress={() => router.push("/basic/boxes/new")}
         >
           <PlusIcon className="h-3 w-3" />
-          إضافة صندوق
+          {t("actions.add")}
         </Button>
         <div className="h-8 w-px bg-gray-300" />
         <div className="flex-1 min-w-[200px]">
           <Input
-            placeholder="بحث بالاسم أو الكود..."
+            placeholder={t("labels.searchPlaceholder")}
             size="sm"
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
@@ -242,7 +261,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         </div>
       </div>
 
-      <Table aria-label="جدول الصناديق">
+      <Table aria-label={t("labels.tableAriaLabel")}>
         <TableHeader>
           {columns.map((col) => (
             <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -271,8 +290,8 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       </Table>
 
       <div className="py-4 flex justify-between items-center">
-        <span className="text-sm text-gray-500">
-          عدد الصناديق: {filtered.length}
+        <span className={`text-sm text-gray-500 ${textAlign}`}>
+          {t("labels.totalCount", { count: filtered.length })}
         </span>
         <Pagination
           color="primary"
@@ -283,13 +302,15 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       </div>
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="danger"
-        confirmText="حذف"
+        confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={`هل أنت متأكد من حذف الصندوق "${boxToDelete?.cust_name}"؟`}
+        message={t("modals.deleteMessage", {
+          name: boxToDelete?.cust_name || "",
+        })}
         size="md"
-        title="تأكيد الحذف"
+        title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />

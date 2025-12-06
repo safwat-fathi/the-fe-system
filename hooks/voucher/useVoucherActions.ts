@@ -7,6 +7,7 @@ import type { Voucher, VoucherDetail } from "@/types/voucher";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 
 import { voucherService } from "@/services/api";
@@ -51,6 +52,7 @@ export const useVoucherActions = ({
   isGoldBalanced,
 }: UseVoucherActionsProps) => {
   const router = useRouter();
+  const t = useTranslations("common");
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
@@ -454,7 +456,7 @@ export const useVoucherActions = ({
                 </tbody>
               </table>
               <div class="footer">
-                <p>تم طباعة هذا القيد بتاريخ ${new Date().toLocaleDateString("ar-SA")} - نظام NafeesWeb</p>
+                <p>تم طباعة هذا القيد بتاريخ ${new Date().toLocaleDateString("ar-SA")} - ${t("systemName")}</p>
               </div>
             </body>
           </html>

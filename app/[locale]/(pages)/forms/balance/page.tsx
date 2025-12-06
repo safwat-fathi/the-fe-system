@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { cache } from "react";
+import { getTranslations } from "next-intl/server";
 
 import BalanceVoucherClientPage from "./BalanceVoucherClientPage";
 
@@ -19,10 +20,13 @@ const getBalanceVoucherFormData =
   voucherFormDataService.getBalanceVoucherFormData;
 
 // البحث عن القيد الافتتاحي الموجود (نوع 0)
+// محسّن: يستخدم معاملات محددة للبحث ويوقف عند العثور على أول نتيجة
 const getExistingBalanceVoucher = cache(async () => {
   try {
+    // استخدام معاملات محددة للبحث عن القيد الافتتاحي فقط
     const vouchersResponse = await voucherService.getAll({
       xvouch_type: "0", // قيد افتتاحي فقط
+      // إضافة limit إذا كان API يدعمه لتقليل البيانات المرسلة
     });
 
     if (vouchersResponse.success && vouchersResponse.data) {
@@ -31,6 +35,7 @@ const getExistingBalanceVoucher = cache(async () => {
         : [];
 
       // البحث عن أول قيد افتتاحي (vouch_type = 0) والتأكد من ذلك
+      // استخدام find() يتوقف عند العثور على أول نتيجة
       const balanceVoucher = vouchers.find(
         (v: any) => v?.vouch_type === 0 || v?.vouch_type === "0",
       );
@@ -84,6 +89,8 @@ export default async function BalanceVoucherPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getTranslations("forms.balanceVoucher");
+  
   try {
     const searchParamsData = await searchParams;
     const mode = Array.isArray(searchParamsData.mode)
@@ -185,12 +192,14 @@ export default async function BalanceVoucherPage({
         <div className="container mx-auto p-4">
           <Breadcrumb
             items={[
-              { name: "قيد افتتاحي", href: "/forms/balance" },
+              { name: t("breadcrumbs.list"), href: "/forms/balance" },
               {
                 name:
                   formMode === "edit"
-                    ? `تعديل ${existingVoucher.vouch_id || existingVoucher.id || ""}`
-                    : "معاينة",
+                    ? t("breadcrumbs.edit", {
+                        id: existingVoucher.vouch_id || existingVoucher.id || "",
+                      })
+                    : t("breadcrumbs.preview"),
               },
             ]}
           />
@@ -212,8 +221,8 @@ export default async function BalanceVoucherPage({
       <div className="container mx-auto p-4">
         <Breadcrumb
           items={[
-            { name: "القيود", href: "/forms/voucher?type=adjustment" },
-            { name: "قيد افتتاحي", href: "/forms/balance" },
+            { name: t("breadcrumbs.vouchers"), href: "/forms/voucher?type=adjustment" },
+            { name: t("breadcrumbs.list"), href: "/forms/balance" },
           ]}
         />
         <BalanceVoucherClientPage

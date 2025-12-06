@@ -3,25 +3,31 @@ import { Metadata, Viewport } from "next";
 import clsx from "clsx";
 import { Toaster } from "react-hot-toast";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { Providers } from "./providers";
 
-import { siteConfig } from "@/config/site";
 import { Locale, defaultLocale, getLocaleDir, locales } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 // import { fontSans } from "@/config/fonts";
 
-export const metadata: Metadata = {
-  title: {
-    default: siteConfig.name,
-    template: `%s - ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations("common");
+  
+  const siteName = t("siteName");
+  
+  return {
+    title: {
+      default: siteName,
+      template: `%s - ${siteName}`,
+    },
+    description: "",
+    icons: {
+      icon: "/favicon.ico",
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [

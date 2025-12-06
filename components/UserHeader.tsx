@@ -18,7 +18,7 @@ import {
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { onLogoutAction } from "@/app/actions/auth";
@@ -35,14 +35,25 @@ const STATIC_USER_INFO: UserInfo = {
   username: "admin",
   full_name: "مدير النظام",
   email: "admin@example.com",
-  role: "مدير",
 };
 
-export default function UserHeader() {
+interface UserHeaderProps {
+  isAdmin?: boolean;
+}
+
+export default function UserHeader({ isAdmin }: UserHeaderProps) {
   const router = useRouter();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const tUserHeader = useTranslations("layout.userHeader");
+
+  const roleLabel = useMemo(() => {
+    if (isAdmin) {
+      return tUserHeader("adminRole");
+    }
+
+    return tUserHeader("defaultRole");
+  }, [isAdmin, tUserHeader]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -148,7 +159,7 @@ export default function UserHeader() {
                     {STATIC_USER_INFO?.full_name || STATIC_USER_INFO?.username}
                   </span>
                   <span className="text-xs text-slate-500 leading-tight">
-                    {STATIC_USER_INFO?.role || tUserHeader("defaultRole")}
+                    {roleLabel}
                   </span>
                 </div>
               </Button>

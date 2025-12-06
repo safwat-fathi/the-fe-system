@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 
 import VouchersReportClient from "./components/VouchersReportClient";
 
@@ -8,10 +9,14 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { voucherService } from "@/services/api";
 import { IParams } from "@/types/services/base";
 
-export const metadata: Metadata = {
-  title: "تقرير السندات - NafeesWeb",
-  description: "تقرير شامل لجميع السندات",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("reports.vouchers");
+  
+  return {
+    title: `${t("title")} - NafeesWeb`,
+    description: t("description"),
+  };
+}
 
 export const revalidate = 3600;
 

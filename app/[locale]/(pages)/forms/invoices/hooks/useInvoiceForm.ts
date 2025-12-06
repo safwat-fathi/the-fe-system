@@ -7,6 +7,7 @@ import {
   useState,
   type SetStateAction,
 } from "react";
+import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 
 import useFractions, { type Fractions } from "@/utilities/useFractions";
@@ -566,6 +567,7 @@ export default function useInvoiceForm({
   invoiceRecordId = null,
   context = "sale",
 }: UseInvoiceFormParams) {
+  const t = useTranslations("common");
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
   const defaultTransType = invoiceConfig.transType;
   const contactLabel = invoiceConfig.contactLabel;
@@ -1496,6 +1498,7 @@ export default function useInvoiceForm({
         invoiceType: defaultTransType,
         selectedCustomer,
         fractions: { frac, frac2 },
+        systemName: t("systemName"),
       });
 
       // Open a new window and print the invoice

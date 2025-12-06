@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { cache } from "react";
+import { getTranslations } from "next-intl/server";
 
 import CashReceiptVoucherClientPage from "./CashReceiptVoucherClientPage";
 
@@ -22,6 +23,7 @@ const getReceiptVoucherForNavigation = cache(async () => {
   try {
     const vouchersResponse = await voucherService.getAll({
       xvouch_type: "1", // سند القبض فقط
+      page: "1", // ✅ جلب الصفحة الأولى فقط
     });
 
     if (!vouchersResponse.success || !vouchersResponse.data) {
@@ -47,6 +49,8 @@ const getReceiptVoucherForNavigation = cache(async () => {
 });
 
 export default async function ReceiptVoucherPage() {
+  const t = await getTranslations("forms.cashReceiptVoucher");
+  
   try {
     const [formData, voucherForNav] = await Promise.all([
       getVoucherFormData(),
@@ -82,6 +86,9 @@ export default async function ReceiptVoucherPage() {
             (voucherForNav as any).last_voucher_id ??
               (voucherForNav as any).last,
           ),
+          vouchersCount: (voucherForNav as any).vouchers_count
+            ? Number((voucherForNav as any).vouchers_count)
+            : null,
         }
       : undefined;
 
@@ -89,8 +96,8 @@ export default async function ReceiptVoucherPage() {
       <div className="container mx-auto p-4">
         <Breadcrumb
           items={[
-            { name: "سند قبض", href: "/forms/voucher1" },
-            { name: "جديدة" },
+            { name: t("breadcrumbs.list"), href: "/forms/voucher1" },
+            { name: t("breadcrumbs.new") },
           ]}
         />
         <CashReceiptVoucherClientPage

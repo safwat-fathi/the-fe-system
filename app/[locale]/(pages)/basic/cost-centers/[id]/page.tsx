@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CostCenterFormClient from "../components/CostCenterFormClient";
 
@@ -71,16 +72,22 @@ export default async function CostCenterDetailPage({
     ? accountsResponse.data || []
     : [];
 
+  const t = await getTranslations("basic.costCenters");
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: "مراكز التكلفة", href: "/basic/cost-centers" },
+          { name: t("breadcrumbs.list"), href: "/basic/cost-centers" },
           {
             name:
               formMode === "edit"
-                ? `تعديل ${costCenter.cost_name || "مركز التكلفة"}`
-                : `عرض ${costCenter.cost_name || "مركز التكلفة"}`,
+                ? t("breadcrumbs.edit", {
+                    name: costCenter.cost_name || t("titles.defaultName"),
+                  })
+                : t("breadcrumbs.view", {
+                    name: costCenter.cost_name || t("titles.defaultName"),
+                  }),
           },
         ]}
       />
