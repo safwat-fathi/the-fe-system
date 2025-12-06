@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cache } from "react";
+import { getTranslations } from "next-intl/server";
 
 import BalanceVoucherClientPage from "../BalanceVoucherClientPage";
 
@@ -97,6 +98,7 @@ export default async function BalanceVoucherEditPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getTranslations("forms.balanceVoucher");
   const { id } = await params;
   const searchParamsData = await searchParams;
   const mode = Array.isArray(searchParamsData.mode)
@@ -232,12 +234,14 @@ export default async function BalanceVoucherEditPage({
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "قيد افتتاحي", href: "/forms/balance" },
+          { name: t("breadcrumbs.list"), href: "/forms/balance" },
           {
             name:
               formMode === "edit"
-                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
-                : "معاينة",
+                ? t("breadcrumbs.edit", {
+                    id: targetVoucher.vouch_id || targetVoucher.id || "",
+                  })
+                : t("breadcrumbs.preview"),
           },
         ]}
       />

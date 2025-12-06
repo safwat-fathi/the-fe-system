@@ -22,6 +22,8 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations, useLocale } from "next-intl";
+import { getLocaleDir } from "@/i18n/config";
 
 import currencyService from "@/services/api/currency.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
@@ -40,18 +42,6 @@ interface Currency {
   cur_status: boolean;
 }
 
-const columns = [
-  { name: "الاسم", uid: "cur_name" },
-  { name: "الاسم بالإنجليزي", uid: "cur_name_e" },
-  { name: "جزء العملة", uid: "cur_part" },
-  { name: "جزء العملة بالإنجليزي", uid: "cur_part_e" },
-  { name: "الرمز", uid: "cur_sign" },
-  { name: "السعر", uid: "cur_price" },
-  { name: "الوسم", uid: "cur_tag" },
-  { name: "الحالة", uid: "cur_status" },
-  { name: "", uid: "actions" },
-];
-
 interface CurrenciesClientProps {
   initialData: Currency[];
   error?: string | null;
@@ -62,6 +52,27 @@ export default function CurrenciesClient({
   error: _error,
 }: CurrenciesClientProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const t = useTranslations("basic.currencies");
+  
+  // Dynamic text alignment classes based on locale
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+
+  const columns = useMemo(
+    () => [
+      { name: t("columns.name"), uid: "cur_name" },
+      { name: t("columns.nameEn"), uid: "cur_name_e" },
+      { name: t("columns.part"), uid: "cur_part" },
+      { name: t("columns.partEn"), uid: "cur_part_e" },
+      { name: t("columns.sign"), uid: "cur_sign" },
+      { name: t("columns.price"), uid: "cur_price" },
+      { name: t("columns.tag"), uid: "cur_tag" },
+      { name: t("columns.status"), uid: "cur_status" },
+      { name: t("columns.actions"), uid: "actions" },
+    ],
+    [t],
+  );
   const [currencies, setCurrencies] = useState<Currency[]>(initialData);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -83,10 +94,10 @@ export default function CurrenciesClient({
 
       setCurrencies(data);
     } catch {
-      toast.error("فشل في جلب العملات");
+      toast.error(t("messages.loadError"));
       setCurrencies([]);
     }
-  }, []);
+  }, [t]);
 
   // إعادة تحميل البيانات عند العودة للصفحة
   useEffect(() => {
@@ -111,7 +122,7 @@ export default function CurrenciesClient({
 
   const handleDeleteClick = (currency: Currency) => {
     if (!currency.id) {
-      toast.error("❌ لا يمكن حذف عملة بدون معرف");
+      toast.error(t("messages.deleteErrorNoId"));
 
       return;
     }
@@ -137,18 +148,18 @@ export default function CurrenciesClient({
       const result = await currencyService.deleteCurrency(currencyToDelete.id);
 
       if (result) {
-        toast.success("✅ تم حذف العملة بنجاح");
+        toast.success(t("messages.deleteSuccess"));
 
         // Revalidate cache
         await revalidateTableData("currencies_list");
 
         loadCurrencies();
       } else {
-        toast.error("❌ فشل في حذف العملة");
+        toast.error(t("messages.deleteFailed"));
         loadCurrencies();
       }
     } catch {
-      toast.error("❌ حدث خطأ أثناء الحذف");
+      toast.error(t("messages.deleteError"));
       loadCurrencies();
     } finally {
       setDeleteModalOpen(false);
@@ -166,6 +177,7 @@ export default function CurrenciesClient({
       <Button
         isIconOnly
         size="sm"
+        title={t("actions.view")}
         variant="light"
         onPress={() => router.push(`/basic/currencies/${cur.id}`)}
       >
@@ -174,6 +186,7 @@ export default function CurrenciesClient({
       <Button
         isIconOnly
         size="sm"
+        title={t("actions.edit")}
         variant="light"
         onPress={() => router.push(`/basic/currencies/${cur.id}?mode=edit`)}
       >
@@ -183,6 +196,7 @@ export default function CurrenciesClient({
         isIconOnly
         color="danger"
         size="sm"
+        title={t("actions.delete")}
         variant="light"
         onPress={() => handleDeleteClick(cur)}
       >
@@ -208,7 +222,9 @@ export default function CurrenciesClient({
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className="text-base font-semibold">إدارة العملات</h2>
+        <h2 className={`text-base font-semibold ${textAlign}`}>
+          {t("labels.manage")}
+        </h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
           className="bg-gray-100"
@@ -216,12 +232,12 @@ export default function CurrenciesClient({
           onPress={() => router.push("/basic/currencies/new")}
         >
           <PlusIcon className="h-3 w-3" />
-          إضافة عملة
+          {t("actions.add")}
         </Button>
         <div className="h-8 w-px bg-gray-300" />
         <div className="flex-1 min-w-[200px]">
           <Input
-            placeholder="بحث بالاسم..."
+            placeholder={t("labels.searchPlaceholder")}
             size="sm"
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
@@ -232,7 +248,7 @@ export default function CurrenciesClient({
         </div>
       </div>
 
-      <Table aria-label="جدول العملات">
+      <Table aria-label={t("labels.tableAriaLabel")}>
         <TableHeader>
           {columns.map((col) => (
             <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -258,7 +274,9 @@ export default function CurrenciesClient({
       </Table>
 
       <div className="flex justify-between items-center py-4">
-        <span>عدد العملات: {filtered.length}</span>
+        <span className={textAlign}>
+          {t("labels.totalCount", { count: filtered.length })}
+        </span>
         <Pagination
           color="primary"
           page={page}
@@ -268,13 +286,15 @@ export default function CurrenciesClient({
       </div>
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="danger"
-        confirmText="حذف"
+        confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={`هل أنت متأكد من حذف العملة "${currencyToDelete?.cur_name}"؟`}
+        message={t("modals.deleteMessage", {
+          name: currencyToDelete?.cur_name || "",
+        })}
         size="md"
-        title="تأكيد الحذف"
+        title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />

@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import VoucherClientPage from "@/app/[locale]/(pages)/forms/voucher/VoucherClientPage";
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
@@ -57,6 +58,7 @@ const getAdjustmentVoucherForNavigation = cache(async () => {
   }
 });
 
+// Note: VOUCHER_TYPE_CONFIG titles/descriptions will be translated in generateMetadata and component
 const VOUCHER_TYPE_CONFIG: Record<
   VoucherPageType,
   {
@@ -134,6 +136,8 @@ export default async function VoucherPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getTranslations("forms.adjustmentVoucher");
+  
   try {
     const params = await searchParams;
 
@@ -319,10 +323,12 @@ export default async function VoucherPage({
             {
               name:
                 mode === "new"
-                  ? "جديدة"
+                  ? t("breadcrumbs.new")
                   : mode === "edit"
-                    ? `تعديل ${voucherData?.vouch_id ?? editId ?? ""}`
-                    : "معاينة",
+                    ? t("breadcrumbs.edit", {
+                        id: voucherData?.vouch_id ?? editId ?? "",
+                      })
+                    : t("breadcrumbs.preview"),
             },
           ]}
         />

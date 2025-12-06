@@ -6,9 +6,11 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations, useLocale } from "next-intl";
 
 import { Voucher } from "@/types/voucher";
 import { formatAmount } from "@/utilities/formatAmount";
+import { getLocaleDir } from "@/i18n/config";
 
 interface VoucherTotalsProps {
   vouchers: Voucher[];
@@ -30,6 +32,11 @@ export default function VoucherTotals({
   overallTotals,
   totalVoucherCount,
 }: VoucherTotalsProps) {
+  const t = useTranslations("reports.vouchers");
+  const locale = useLocale();
+  const dir = getLocaleDir(locale);
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+
   const totals = useMemo(() => {
     if (overallTotals) {
       return {
@@ -60,10 +67,12 @@ export default function VoucherTotals({
 
   return (
     <div className="flex justify-between items-center mt-2">
-      <div className="text-sm text-gray-600">
-        إجمالي السندات: {totals.totalCount} سند | إجمالي المبلغ:{" "}
-        {formatAmount(totals.totalAmount)} | إجمالي الجرام:{" "}
-        {formatAmount(totals.totalGold)} جم
+      <div className={`text-sm text-gray-600 ${textAlign}`}>
+        {t("totals.summary", {
+          count: totals.totalCount,
+          amount: formatAmount(totals.totalAmount),
+          gold: formatAmount(totals.totalGold),
+        })}
       </div>
     </div>
   );

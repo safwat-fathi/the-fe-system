@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CurrencyFormClient from "../components/CurrencyFormClient";
 
@@ -41,16 +42,22 @@ export default async function CurrencyDetailPage({
     notFound();
   }
 
+  const t = await getTranslations("basic.currencies");
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: "العملات", href: "/basic/currencies" },
+          { name: t("breadcrumbs.list"), href: "/basic/currencies" },
           {
             name:
               formMode === "edit"
-                ? `تعديل ${currency.cur_name || "العملة"}`
-                : `عرض ${currency.cur_name || "العملة"}`,
+                ? t("breadcrumbs.edit", {
+                    name: currency.cur_name || t("titles.defaultName"),
+                  })
+                : t("breadcrumbs.view", {
+                    name: currency.cur_name || t("titles.defaultName"),
+                  }),
           },
         ]}
       />

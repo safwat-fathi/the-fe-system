@@ -20,8 +20,11 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import clsx from "clsx";
+import { useTranslations, useLocale } from "next-intl";
+import { getLocaleDir } from "@/i18n/config";
 import {
   Button,
+  Checkbox,
   Modal,
   ModalContent,
   ModalHeader,
@@ -81,6 +84,13 @@ export default function CashReceiptVoucherClientPage({
 }: CashReceiptVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const t = useTranslations("forms.cashReceiptVoucher");
+  
+  // Dynamic text alignment classes based on locale
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  const textAlignCenter = "text-center";
 
   // Handle search - must be before any conditional returns (Rules of Hooks)
   const [searchTerm, setSearchTerm] = useState("");
@@ -445,8 +455,8 @@ export default function CashReceiptVoucherClientPage({
 
   if (!isClient) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        جاري التحميل...
+      <div className={`flex justify-center items-center h-screen ${textAlignCenter}`}>
+        {t("status.loading")}
       </div>
     );
   }
@@ -454,7 +464,7 @@ export default function CashReceiptVoucherClientPage({
   // Handle search
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
-      toast.error("يرجى إدخال رقم السند للبحث");
+      toast.error(t("messages.searchError"));
 
       return;
     }
@@ -463,7 +473,7 @@ export default function CashReceiptVoucherClientPage({
     const searchNumber = Number(searchValue);
 
     if (!Number.isFinite(searchNumber) || searchNumber <= 0) {
-      toast.error("يرجى إدخال رقم سند صحيح");
+      toast.error(t("messages.searchInvalid"));
 
       return;
     }
@@ -486,10 +496,16 @@ export default function CashReceiptVoucherClientPage({
 
         // التحقق من نوع السند
         if (voucherWithId.vouch_type !== vouchType) {
-          const voucherTypeName = vouchType === 1 ? "سند قبض" : "سند صرف";
+          const voucherTypeName =
+            vouchType === 1
+              ? t("messages.voucherTypeReceipt")
+              : t("messages.voucherTypePayment");
 
           toast.error(
-            `السند الموجود (${voucherWithId.vouch_id}) ليس من نوع ${voucherTypeName}`,
+            t("messages.voucherWrongType", {
+              id: voucherWithId.vouch_id,
+              type: voucherTypeName,
+            }),
           );
 
           return;
@@ -512,19 +528,25 @@ export default function CashReceiptVoucherClientPage({
             "Voucher found but missing id (primary key):",
             voucherWithId,
           );
-          toast.error(
-            "تم العثور على السند لكن لا يمكن الوصول إليه. يرجى المحاولة مرة أخرى.",
-          );
+          toast.error(t("messages.voucherAccessError"));
         }
       }
 
       // إذا لم نجد السند نهائياً
-      const voucherTypeName = vouchType === 1 ? "سند قبض" : "سند صرف";
+      const voucherTypeName =
+        vouchType === 1
+          ? t("messages.voucherTypeReceipt")
+          : t("messages.voucherTypePayment");
 
-      toast.error(`لم يتم العثور على ${voucherTypeName} برقم: ${searchValue}`);
+      toast.error(
+        t("messages.voucherNotFound", {
+          type: voucherTypeName,
+          number: searchValue,
+        }),
+      );
     } catch (error) {
       console.error("Error searching voucher:", error);
-      toast.error("حدث خطأ أثناء البحث. يرجى المحاولة مرة أخرى");
+      toast.error(t("messages.searchErrorGeneric"));
     }
   };
 
@@ -543,8 +565,10 @@ export default function CashReceiptVoucherClientPage({
   };
 
   const voucherTypeName =
-    voucherTypes.find((t) => (t.Id || t.id) === vouchType)?.name ||
-    (vouchType === 1 ? "سند قبض" : "سند صرف");
+    voucherTypes.find((type) => (type.Id || type.id) === vouchType)?.name ||
+    (vouchType === 1
+      ? t("messages.voucherTypeReceipt")
+      : t("messages.voucherTypePayment"));
 
   return (
     <div className="p-2 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
@@ -552,17 +576,19 @@ export default function CashReceiptVoucherClientPage({
       <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 mb-2 border border-slate-200">
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <h1 className={`text-xl font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}>
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
                 #
                 {voucher.vouch_id && Number(voucher.vouch_id) > 0
                   ? voucher.vouch_id
-                  : "جاري الترقيم..."}
+                  : t("status.numbering")}
               </span>
-              <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
+              <span className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}>
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                {new Date(voucher.vouch_date).toLocaleString("ar-EG")}
+                {new Date(voucher.vouch_date).toLocaleString(
+                  locale === "ar" ? "ar-EG" : "en-US",
+                )}
               </span>
             </h1>
           </div>
@@ -571,7 +597,7 @@ export default function CashReceiptVoucherClientPage({
           <div className="flex items-center gap-2">
             <input
               className="w-32 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
-              placeholder="بحث برقم السند..."
+              placeholder={t("actions.search")}
               type="number"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -602,7 +628,7 @@ export default function CashReceiptVoucherClientPage({
               variant="solid"
               onPress={saveVoucher}
             >
-              حفظ
+              {t("actions.save")}
             </Button>
 
             <Button
@@ -612,7 +638,7 @@ export default function CashReceiptVoucherClientPage({
               variant="solid"
               onPress={handleEditClick}
             >
-              تعديل
+              {t("actions.edit")}
             </Button>
 
             <Button
@@ -628,7 +654,7 @@ export default function CashReceiptVoucherClientPage({
                 router.push(basePath);
               }}
             >
-              جديد
+              {t("actions.new")}
             </Button>
 
             <Button
@@ -641,96 +667,103 @@ export default function CashReceiptVoucherClientPage({
               variant="solid"
               onPress={printVoucher}
             >
-              طباعة
+              {t("actions.print")}
             </Button>
 
-            {/* أزرار التنقل - مثل الفواتير */}
-            {navigationMetadata && !isNewVoucher && (
-              <div className="hidden md:flex items-center gap-1 mr-2">
-                <Link
-                  className={clsx(
-                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
-                    {
-                      "pointer-events-none opacity-40":
-                        !navigationMetadata.firstVoucherHref,
-                    },
-                  )}
-                  href={navigationMetadata.firstVoucherHref || ""}
-                >
-                  <ChevronDoubleRightIcon className="w-4 h-4" />
-                </Link>
-                <Link
-                  className={clsx(
-                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
-                    {
-                      "pointer-events-none opacity-40":
-                        !navigationMetadata.prevVoucherHref,
-                    },
-                  )}
-                  href={navigationMetadata.prevVoucherHref || ""}
-                >
-                  <ChevronRightIcon className="w-4 h-4" />
-                </Link>
-                <span className="text-xs text-slate-600 px-2 font-medium">
-                  {voucherNumber} من {navigationMetadata.totalVouchers ?? "?"}
-                </span>
-                <Link
-                  className={clsx(
-                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
-                    {
-                      "pointer-events-none opacity-40":
-                        !navigationMetadata.nextVoucherHref,
-                    },
-                  )}
-                  href={navigationMetadata.nextVoucherHref || ""}
-                >
-                  <ChevronLeftIcon className="w-4 h-4" />
-                </Link>
-                <Link
-                  className={clsx(
-                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
-                    {
-                      "pointer-events-none opacity-40":
-                        !navigationMetadata.lastVoucherHref,
-                    },
-                  )}
-                  href={navigationMetadata.lastVoucherHref || ""}
-                >
-                  <ChevronDoubleLeftIcon className="w-4 h-4" />
-                </Link>
-              </div>
-            )}
+            {/* أزرار التنقل - مثل الفواتير - ظاهرة دائماً */}
+            <div className="hidden md:flex items-center gap-1 mr-2">
+              <Link
+                className={clsx(
+                  "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                  {
+                    "pointer-events-none opacity-40":
+                      !navigationMetadata?.firstVoucherHref,
+                  },
+                )}
+                href={navigationMetadata?.firstVoucherHref || ""}
+              >
+                <ChevronDoubleRightIcon className="w-4 h-4" />
+              </Link>
+              <Link
+                className={clsx(
+                  "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                  {
+                    "pointer-events-none opacity-40":
+                      !navigationMetadata?.prevVoucherHref,
+                  },
+                )}
+                href={navigationMetadata?.prevVoucherHref || ""}
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </Link>
+              <span className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}>
+                {t("navigation.position", {
+                  current: voucherNumber,
+                  total: navigationMetadata?.totalVouchers ?? "?",
+                })}
+              </span>
+              <Link
+                className={clsx(
+                  "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                  {
+                    "pointer-events-none opacity-40":
+                      !navigationMetadata?.nextVoucherHref,
+                  },
+                )}
+                href={navigationMetadata?.nextVoucherHref || ""}
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+              </Link>
+              <Link
+                className={clsx(
+                  "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                  {
+                    "pointer-events-none opacity-40":
+                      !navigationMetadata?.lastVoucherHref,
+                  },
+                )}
+                href={navigationMetadata?.lastVoucherHref || ""}
+              >
+                <ChevronDoubleLeftIcon className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.commit}
-                className="w-3 h-3 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500"
-                type="checkbox"
+              <Checkbox
+                color="success"
+                isDisabled
+                isSelected={voucher.commit}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">حُفظ</span>
+              <span className={`text-xs text-slate-600 ${textAlign}`}>
+                {t("status.committed")}
+              </span>
             </div>
 
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.post}
-                className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                type="checkbox"
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={voucher.post}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">مرحل</span>
+              <span className={`text-xs text-slate-600 ${textAlign}`}>
+                {t("status.posted")}
+              </span>
             </div>
 
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.print}
-                className="w-3 h-3 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500"
-                type="checkbox"
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={voucher.print}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">طُبع</span>
+              <span className={`text-xs text-slate-600 ${textAlign}`}>
+                {t("status.printed")}
+              </span>
             </div>
           </div>
         </div>
@@ -745,10 +778,10 @@ export default function CashReceiptVoucherClientPage({
         {/* رقم المرجع */}
         <div className="md:col-span-1">
           <label
-            className="block text-xs font-medium text-slate-700 mb-0.5"
+            className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
             htmlFor="cash-receipt-ref-no"
           >
-            رقم المرجع
+            {t("fields.refNo")}
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
@@ -766,10 +799,10 @@ export default function CashReceiptVoucherClientPage({
         {/* التاريخ والوقت */}
         <div className="md:col-span-1">
           <label
-            className="block text-xs font-medium text-slate-700 mb-0.5"
+            className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
             htmlFor="cash-receipt-date-time"
           >
-            التاريخ والوقت
+            {t("fields.dateTime")}
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
@@ -794,10 +827,10 @@ export default function CashReceiptVoucherClientPage({
         {costCenters.length > 0 && (
           <div className="md:col-span-1">
             <label
-              className="block text-xs font-medium text-slate-700 mb-0.5"
+              className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
               htmlFor="cash-receipt-cost-center"
             >
-              مركز التكلفة
+              {t("fields.costCenter")}
             </label>
             <div>
               <ReactSelect
@@ -812,7 +845,7 @@ export default function CashReceiptVoucherClientPage({
                 }
                 menuPosition="fixed"
                 options={costCenterSelectOptions}
-                placeholder="اختر مركز التكلفة..."
+                placeholder={t("fields.costCenterPlaceholder")}
                 styles={{
                   control: (base) => ({
                     ...base,
@@ -880,10 +913,10 @@ export default function CashReceiptVoucherClientPage({
         {/* الحالة */}
         <div className="md:col-span-1">
           <label
-            className="block text-xs font-medium text-slate-700 mb-0.5"
+            className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
             htmlFor="cash-receipt-status"
           >
-            الحالة
+            {t("fields.status")}
           </label>
           <select
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
@@ -909,7 +942,7 @@ export default function CashReceiptVoucherClientPage({
                   status.code_desc ||
                   status["Code Desc"] ||
                   status.name ||
-                  "غير محدد";
+                  "";
 
                 return (
                   <option key={status.id || status.Id} value={statusValue}>
@@ -919,10 +952,10 @@ export default function CashReceiptVoucherClientPage({
               })
             ) : (
               <>
-                <option value="0">ملغي</option>
-                <option value="1">فعال</option>
-                <option value="2">معلق</option>
-                <option value="3">غير مكتمل</option>
+                <option value="0">{t("statusOptions.cancelled")}</option>
+                <option value="1">{t("statusOptions.active")}</option>
+                <option value="2">{t("statusOptions.suspended")}</option>
+                <option value="3">{t("statusOptions.incomplete")}</option>
               </>
             )}
           </select>
@@ -932,10 +965,10 @@ export default function CashReceiptVoucherClientPage({
       {/* البيان */}
       <div className="mb-2">
         <label
-          className="block text-xs font-medium text-slate-700 mb-0.5"
+          className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
           htmlFor="cash-receipt-notes"
         >
-          البيان
+          {t("fields.notes")}
         </label>
         <div className="relative">
           <input
@@ -943,7 +976,7 @@ export default function CashReceiptVoucherClientPage({
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
             disabled={!isEditing}
             id="cash-receipt-notes"
-            placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
+            placeholder={t("fields.notesPlaceholder")}
             readOnly={!isEditing}
             type="text"
             value={voucher.vouch_notes || ""}
@@ -967,7 +1000,7 @@ export default function CashReceiptVoucherClientPage({
             <button
               className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
               data-skip-key-as-tab="true"
-              title="توسيع البيان"
+              title={t("actions.expandNotes")}
               type="button"
               onClick={() => setIsNotesModalOpen(true)}
             >
@@ -980,30 +1013,44 @@ export default function CashReceiptVoucherClientPage({
       {/* Cash Table */}
       <div className="bg-white rounded-lg border border-slate-200 mb-2">
         <div className="p-1.5 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-sm font-semibold text-slate-800">النقدية</h3>
+          <h3 className={`text-sm font-semibold text-slate-800 ${textAlign}`}>
+            {t("tables.cash.title")}
+          </h3>
         </div>
         <div className="p-1">
           <div className="flex justify-between mb-1">
             <button
-              className="btn"
+              className={`btn ${textAlign}`}
               data-skip-key-as-tab="true"
               disabled={!isEditing}
               type="button"
               onClick={addVoucherBoxRow}
             >
-              + صف
+              {t("actions.addRow")}
             </button>
           </div>
           <div className="overflow-x-auto mb-1 max-w-full">
             <table className="min-w-[1200px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-32 p-1 border">المبلغ</th>
-                  <th className="w-48 p-1 border">الصندوق</th>
-                  <th className="w-80 p-1 border">البيان</th>
-                  <th className="w-48 p-1 border">مركز التكلفة</th>
-                  <th className="w-32 p-1 border">رقم الفاتورة</th>
-                  <th className="w-12 p-1 border">حذف</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.amount")}
+                  </th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.box")}
+                  </th>
+                  <th className={`w-80 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.notes")}
+                  </th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.costCenter")}
+                  </th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.invoiceNumber")}
+                  </th>
+                  <th className={`w-12 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.delete")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -1166,7 +1213,7 @@ export default function CashReceiptVoucherClientPage({
                                 }
                                 menuPosition="fixed"
                                 options={boxSelectOptions}
-                                placeholder="اختر الصندوق..."
+                                placeholder={t("tables.cash.columns.boxPlaceholder")}
                                 styles={{
                                   control: (base) => ({
                                     ...base,
@@ -1393,7 +1440,7 @@ export default function CashReceiptVoucherClientPage({
                                 }
                                 menuPosition="fixed"
                                 options={costCenterSelectOptions}
-                                placeholder="مركز التكلفة..."
+                                placeholder={t("tables.cash.columns.costCenterPlaceholder")}
                                 styles={{
                                   control: (base) => ({
                                     ...base,
@@ -1529,29 +1576,41 @@ export default function CashReceiptVoucherClientPage({
       {/* Details Table */}
       <div className="bg-white rounded-lg border border-slate-200 mb-2">
         <div className="p-1.5 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-sm font-semibold text-slate-800">الحسابات</h3>
+          <h3 className={`text-sm font-semibold text-slate-800 ${textAlign}`}>
+            {t("tables.accounts.title")}
+          </h3>
         </div>
         <div className="p-1">
           <div className="flex justify-between mb-1">
             <button
-              className="btn"
+              className={`btn ${textAlign}`}
               data-skip-key-as-tab="true"
               disabled={!isEditing}
               type="button"
               onClick={addDetailRow}
             >
-              + صف
+              {t("actions.addRow")}
             </button>
           </div>
           <div className="overflow-x-auto mb-1 max-w-full">
             <table className="min-w-[1200px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-80 p-2 border">الحساب</th>
-                  <th className="w-32 p-2 border">المبلغ</th>
-                  <th className="w-80 p-2 border">البيان</th>
-                  <th className="w-48 p-2 border">مركز التكلفة</th>
-                  <th className="w-12 p-2 border">حذف</th>
+                  <th className={`w-80 p-2 border ${textAlignCenter}`}>
+                    {t("tables.accounts.columns.account")}
+                  </th>
+                  <th className={`w-32 p-2 border ${textAlignCenter}`}>
+                    {t("tables.accounts.columns.amount")}
+                  </th>
+                  <th className={`w-80 p-2 border ${textAlignCenter}`}>
+                    {t("tables.accounts.columns.notes")}
+                  </th>
+                  <th className={`w-48 p-2 border ${textAlignCenter}`}>
+                    {t("tables.accounts.columns.costCenter")}
+                  </th>
+                  <th className={`w-12 p-2 border ${textAlignCenter}`}>
+                    {t("tables.accounts.columns.delete")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -1665,7 +1724,9 @@ export default function CashReceiptVoucherClientPage({
                                 classNamePrefix="select"
                                 components={{ IndicatorSeparator: () => null }}
                                 formatCreateLabel={(inputValue) =>
-                                  `إضافة حساب جديد: "${inputValue}"`
+                                  t("tables.accounts.addAccountLabel", {
+                                    value: inputValue,
+                                  })
                                 }
                                 instanceId={`account-select-${index}`}
                                 isDisabled={!isEditing}
@@ -1676,7 +1737,7 @@ export default function CashReceiptVoucherClientPage({
                                     : null
                                 }
                                 menuPosition="fixed"
-                                placeholder="اختر الحساب..."
+                                placeholder={t("tables.accounts.columns.accountPlaceholder")}
                                 styles={{
                                   control: (base, state) => ({
                                     ...base,
@@ -1983,7 +2044,7 @@ export default function CashReceiptVoucherClientPage({
                                 }
                                 menuPosition="fixed"
                                 options={costCenterSelectOptions}
-                                placeholder="مركز التكلفة..."
+                                placeholder={t("tables.cash.columns.costCenterPlaceholder")}
                                 styles={{
                                   control: (base) => ({
                                     ...base,
@@ -2103,43 +2164,51 @@ export default function CashReceiptVoucherClientPage({
       {/* Totals */}
       <div className="mt-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">إجمالي النقدية:</span>
-            <span className="font-semibold text-blue-700 flex items-center gap-1">
+          <div className={`flex items-center gap-2 ${textAlign}`}>
+            <span className={`text-gray-700 font-medium ${textAlign}`}>
+              {t("totals.totalCash")}:
+            </span>
+            <span className={`font-semibold text-blue-700 flex items-center gap-1 ${textAlign}`}>
               {formatAmount(totals.totalBoxes)}
               <RiyalIcon color="currentColor" />
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">إجمالي التفاصيل:</span>
-            <span className="font-semibold text-green-700 flex items-center gap-1">
+          <div className={`flex items-center gap-2 ${textAlign}`}>
+            <span className={`text-gray-700 font-medium ${textAlign}`}>
+              {t("totals.totalDetails")}:
+            </span>
+            <span className={`font-semibold text-green-700 flex items-center gap-1 ${textAlign}`}>
               {formatAmount(totals.totalDetails)}
               <RiyalIcon color="currentColor" />
             </span>
           </div>
 
           {!isBalanced && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-700 font-medium">الفارق:</span>
-              <span className="font-semibold text-red-700 flex items-center gap-1">
+            <div className={`flex items-center gap-2 ${textAlign}`}>
+              <span className={`text-gray-700 font-medium ${textAlign}`}>
+                {t("totals.difference")}:
+              </span>
+              <span className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}>
                 {formatAmount(Math.abs(balance))}
                 <RiyalIcon color="currentColor" />
                 <span className="text-xs text-red-600">
-                  ({balance > 0 ? "مدين" : "دائن"})
+                  ({balance > 0 ? t("totals.debit") : t("totals.credit")})
                 </span>
               </span>
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">الحالة:</span>
+          <div className={`flex items-center gap-2 ${textAlign}`}>
+            <span className={`text-gray-700 font-medium ${textAlign}`}>
+              {t("totals.status")}:
+            </span>
             <span
               className={`font-semibold ${
                 isBalanced ? "text-green-700" : "text-red-700"
               }`}
             >
-              {isBalanced ? "متزن" : "غير متزن"}
+              {isBalanced ? t("status.balanced") : t("status.unbalanced")}
             </span>
           </div>
         </div>
@@ -2153,8 +2222,10 @@ export default function CashReceiptVoucherClientPage({
         onClose={() => setIsNotesModalOpen(false)}
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <p className="text-lg font-semibold">البيان</p>
+          <ModalHeader className={`flex flex-col gap-1 ${textAlign}`}>
+            <p className={`text-lg font-semibold ${textAlign}`}>
+              {t("fields.notesModalTitle")}
+            </p>
           </ModalHeader>
           <ModalBody>
             <Textarea
@@ -2164,7 +2235,7 @@ export default function CashReceiptVoucherClientPage({
               disabled={!isEditing}
               maxRows={12}
               minRows={6}
-              placeholder="أدخل بيان القيد..."
+              placeholder={t("fields.notesModalPlaceholder")}
               value={voucher.vouch_notes || ""}
               onChange={(e) =>
                 setVoucher((prev) => ({
@@ -2180,7 +2251,7 @@ export default function CashReceiptVoucherClientPage({
               variant="solid"
               onPress={() => setIsNotesModalOpen(false)}
             >
-              حفظ
+              {t("actions.saveNotes")}
             </Button>
           </ModalFooter>
         </ModalContent>

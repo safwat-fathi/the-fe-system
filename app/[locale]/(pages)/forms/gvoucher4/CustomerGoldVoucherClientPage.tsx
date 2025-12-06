@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import toast from "react-hot-toast";
 import {
   Modal,
@@ -11,6 +12,7 @@ import {
   ModalFooter,
   Textarea,
   Button,
+  Checkbox,
 } from "@heroui/react";
 import {
   CheckIcon,
@@ -28,6 +30,7 @@ import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { voucherService, itemService, customerService } from "@/services/api";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
+import { getLocaleDir } from "@/i18n/config";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -70,6 +73,12 @@ export default function CustomerGoldVoucherClientPage({
 }: CustomerGoldVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("forms.customerGoldVoucher");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dir = getLocaleDir(locale);
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  const textAlignCenter = dir === "rtl" ? "text-center" : "text-center";
 
   // State Management
   const [voucher, setVoucher] = useState<Voucher>(
@@ -1376,7 +1385,7 @@ export default function CustomerGoldVoucherClientPage({
 
     // التحقق من العميل
     if (!voucher.cust_id || voucher.cust_id === 0) {
-      toast.error("يرجى اختيار العميل");
+      toast.error(t("messages.selectCustomer"));
 
       return;
     }
@@ -1399,7 +1408,7 @@ export default function CustomerGoldVoucherClientPage({
       const custId = voucher.cust_id || selectedCustomer?.id || null;
 
       if (!custId || custId === 0) {
-        toast.error("يرجى اختيار العميل");
+        toast.error(t("messages.selectCustomer"));
 
         return;
       }
@@ -1518,11 +1527,11 @@ export default function CustomerGoldVoucherClientPage({
           router.push(`${basePath}/${realId}?mode=preview`);
         }
       } else {
-        toast.error(result.message || "حدث خطأ أثناء الحفظ");
+        toast.error(result.message || t("messages.saveError"));
       }
     } catch (error) {
       console.error("Error saving voucher:", error);
-      toast.error("حدث خطأ أثناء الحفظ");
+      toast.error(t("messages.saveError"));
     } finally {
       setIsLoading(false);
     }
@@ -1586,7 +1595,7 @@ export default function CustomerGoldVoucherClientPage({
 
         // تحديد نوع السند
         const voucherTypeName =
-          vouchType === 4 ? "سند قبض عميل" : "سند صرف عميل";
+          vouchType === 4 ? t("title.receipt") : t("title.payment");
 
         printWindow.document.write(`
           <html dir="rtl">
@@ -1849,30 +1858,30 @@ export default function CustomerGoldVoucherClientPage({
                 <h1>${voucherTypeName}</h1>
                 <div class="header-info">
                   <div class="header-info-item">
-                    <span class="header-info-label">رقم السند</span>
+                    <span class="header-info-label">${t("fields.refNo")}</span>
                     <span class="header-info-value">${voucher.vouch_id || "-"}</span>
                   </div>
                   <div class="header-info-item">
-                    <span class="header-info-label">التاريخ</span>
+                    <span class="header-info-label">${t("fields.dateTime")}</span>
                     <span class="header-info-value">${formattedDate}</span>
                   </div>
                   <div class="header-info-item">
-                    <span class="header-info-label">العميل</span>
+                    <span class="header-info-label">${t("fields.customer")}</span>
                     <span class="header-info-value">${getCustomerName()}</span>
                   </div>
                   <div class="header-info-item">
-                    <span class="header-info-label">عدد الذهب</span>
+                    <span class="header-info-label">${t("tables.gold.title")}</span>
                     <span class="header-info-value">${validGoldDetails.length}</span>
                   </div>
                   <div class="header-info-item">
-                    <span class="header-info-label">عدد الصناديق</span>
+                    <span class="header-info-label">${t("tables.cash.title")}</span>
                     <span class="header-info-value">${validBoxes.length}</span>
                   </div>
                 </div>
                 ${voucher.vouch_notes
             ? `
                 <div class="voucher-notes">
-                  <strong>البيان:</strong> ${voucher.vouch_notes}
+                  <strong>${t("fields.notes")}:</strong> ${voucher.vouch_notes}
                 </div>
                 `
             : ""
@@ -1881,21 +1890,21 @@ export default function CustomerGoldVoucherClientPage({
               
               <!-- جدول الذهب -->
               <div class="table-section">
-                <div class="table-section-title">الذهب</div>
+                <div class="table-section-title">${t("tables.gold.title")}</div>
                 <table>
                   <thead>
                     <tr>
-                      <th>رقم الصنف</th>
-                      <th>اسم الصنف</th>
-                      <th>معايرة</th>
-                      <th>الوزن القائم</th>
-                      <th>الوزن المعاير</th>
-                      <th>الصندوق</th>
-                      <th>البيان</th>
-                      <th>فرق عيار</th>
-                      <th>مبلغ التسكير</th>
-                      <th>رقم الفاتورة</th>
-                      <th>مركز التكلفة</th>
+                      <th>${t("tables.gold.columns.itemNumber")}</th>
+                      <th>${t("tables.gold.columns.itemName") || "اسم الصنف"}</th>
+                      <th>${t("tables.gold.columns.calibration")}</th>
+                      <th>${t("tables.gold.columns.weight")}</th>
+                      <th>${t("tables.gold.columns.calibratedWeight")}</th>
+                      <th>${t("tables.gold.columns.box")}</th>
+                      <th>${t("tables.gold.columns.notes")}</th>
+                      <th>${t("tables.gold.columns.caliberDifference")}</th>
+                      <th>${t("tables.gold.columns.sealingAmount")}</th>
+                      <th>${t("tables.gold.columns.invoiceNumber")}</th>
+                      <th>${t("tables.gold.columns.costCenter")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1927,7 +1936,7 @@ export default function CustomerGoldVoucherClientPage({
             })
             .join("")}
                     <tr class="totals">
-                      <td colspan="3" style="text-align: right; padding-right: 20px; font-weight: 700;">إجمالي الذهب</td>
+                      <td colspan="3" style="text-align: right; padding-right: 20px; font-weight: 700;">${t("print.totalGold")}</td>
                       <td class="amount amount-gold">${totals.totalGoldWeight.toFixed(5)}</td>
                       <td class="amount amount-gold">${totals.totalGoldGWeight.toFixed(5)}</td>
                       <td colspan="7"></td>
@@ -1938,15 +1947,15 @@ export default function CustomerGoldVoucherClientPage({
               
               <!-- جدول النقدية -->
               <div class="table-section">
-                <div class="table-section-title">النقدية</div>
+                <div class="table-section-title">${t("tables.cash.title")}</div>
                 <table>
                   <thead>
                     <tr>
-                      <th>المبلغ</th>
-                      <th>الصندوق</th>
-                      <th>البيان</th>
-                      <th>رقم الفاتورة</th>
-                      <th>مركز التكلفة</th>
+                      <th>${t("tables.cash.columns.amount")}</th>
+                      <th>${t("tables.cash.columns.box")}</th>
+                      <th>${t("tables.cash.columns.notes")}</th>
+                      <th>${t("tables.cash.columns.invoiceNumber")}</th>
+                      <th>${t("tables.cash.columns.costCenter")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1968,7 +1977,7 @@ export default function CustomerGoldVoucherClientPage({
             .join("")}
                     <tr class="totals">
                       <td class="amount amount-cash">${formatAmount(totals.totalBoxes)}</td>
-                      <td colspan="4" style="text-align: right; padding-right: 20px; font-weight: 700;">إجمالي النقدية</td>
+                      <td colspan="4" style="text-align: right; padding-right: 20px; font-weight: 700;">${t("totals.totalCash")}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1976,7 +1985,7 @@ export default function CustomerGoldVoucherClientPage({
               
               
               <div class="footer">
-                <p>تم طباعة هذا السند بتاريخ ${new Date().toLocaleDateString("ar-SA")} - نظام NafeesWeb</p>
+                <p>تم طباعة هذا السند بتاريخ ${new Date().toLocaleDateString("ar-SA")} - ${tCommon("systemName")}</p>
               </div>
             </body>
           </html>
@@ -1988,7 +1997,7 @@ export default function CustomerGoldVoucherClientPage({
       }
     } catch (error) {
       toast.error(
-        `حدث خطأ أثناء الطباعة: ${error instanceof Error ? error.message : "خطأ غير معروف"}`,
+        `${t("messages.printError")}: ${error instanceof Error ? error.message : t("messages.searchError")}`,
       );
       setIsPrinting(false);
     }
@@ -1997,7 +2006,7 @@ export default function CustomerGoldVoucherClientPage({
   // Handle search
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
-      toast.error("يرجى إدخال رقم السند للبحث");
+      toast.error(t("messages.searchErrorMissing"));
 
       return;
     }
@@ -2069,7 +2078,7 @@ export default function CustomerGoldVoucherClientPage({
         if (foundAny) {
           if (foundAny.vouch_type !== vouchType) {
             const voucherTypeName =
-              vouchType === 4 ? "سند قبض عميل" : "سند صرف عميل";
+              vouchType === 4 ? t("title.receipt") : t("title.payment");
 
             toast.error(
               `السند الموجود (${foundAny.vouch_id}) ليس من نوع ${voucherTypeName}`,
@@ -2092,12 +2101,12 @@ export default function CustomerGoldVoucherClientPage({
         }
       }
 
-      const voucherTypeName = vouchType === 4 ? "سند قبض عميل" : "سند صرف عميل";
+      const voucherTypeName = vouchType === 4 ? t("title.receipt") : t("title.payment");
 
-      toast.error(`لم يتم العثور على ${voucherTypeName} برقم: ${searchValue}`);
+      toast.error(t("messages.notFound", { type: voucherTypeName, number: searchValue }));
     } catch (error) {
       console.error("Error searching voucher:", error);
-      toast.error("حدث خطأ أثناء البحث. يرجى المحاولة مرة أخرى");
+      toast.error(t("messages.searchError"));
     }
   };
 
@@ -2121,7 +2130,7 @@ export default function CustomerGoldVoucherClientPage({
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">جاري التحميل...</p>
+          <p className="text-gray-600">{t("messages.loading")}</p>
         </div>
       </div>
     );
@@ -2129,7 +2138,7 @@ export default function CustomerGoldVoucherClientPage({
 
   const voucherTypeName =
     voucherTypes.find((t) => (t.Id || t.id) === vouchType)?.name ||
-    (vouchType === 4 ? "سند قبض عميل" : "سند صرف عميل");
+    (vouchType === 4 ? t("title.receipt") : t("title.payment"));
 
   return (
     <div className="p-1 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
@@ -2141,7 +2150,7 @@ export default function CustomerGoldVoucherClientPage({
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
                 #
-                {hasVoucherId ? voucher.vouch_id : "جاري الترقيم..."}
+                {hasVoucherId ? voucher.vouch_id : t("messages.numbering")}
               </span>
               <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
@@ -2154,7 +2163,7 @@ export default function CustomerGoldVoucherClientPage({
           <div className="flex items-center gap-2">
             <input
               className="w-32 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
-              placeholder="بحث برقم السند..."
+              placeholder={t("messages.searchPlaceholder")}
               type="number"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -2195,7 +2204,7 @@ export default function CustomerGoldVoucherClientPage({
               variant="solid"
               onPress={handleEditClick}
             >
-              تعديل
+              {t("buttons.edit")}
             </Button>
 
             {/* زر "جديد" */}
@@ -2210,7 +2219,7 @@ export default function CustomerGoldVoucherClientPage({
                 router.push(newPath);
               }}
             >
-              جديد
+              {t("buttons.new")}
             </Button>
 
             <Button
@@ -2223,39 +2232,39 @@ export default function CustomerGoldVoucherClientPage({
               variant="solid"
               onPress={printVoucher}
             >
-              طباعة
+              {t("buttons.print")}
             </Button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.commit}
-                className="w-3 h-3 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500"
-                type="checkbox"
+              <Checkbox
+                color="success"
+                isDisabled
+                isSelected={voucher.commit}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">حُفظ</span>
+              <span className="text-xs text-slate-600">{t("status.saved")}</span>
             </div>
 
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.post}
-                className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                type="checkbox"
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={voucher.post}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">مرحل</span>
+              <span className="text-xs text-slate-600">{t("status.posted")}</span>
             </div>
 
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.print}
-                className="w-3 h-3 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500"
-                type="checkbox"
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={voucher.print}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">طُبع</span>
+              <span className="text-xs text-slate-600">{t("status.printed")}</span>
             </div>
           </div>
         </div>
@@ -2274,7 +2283,7 @@ export default function CustomerGoldVoucherClientPage({
               className="block text-xs font-medium text-slate-700 mb-0.5"
               htmlFor="gold-ref-no"
             >
-              رقم المرجع
+              {t("fields.refNo")}
             </label>
             <input
               ref={refNoInputRef}
@@ -2296,7 +2305,7 @@ export default function CustomerGoldVoucherClientPage({
               className="block text-xs font-medium text-slate-700 mb-0.5"
               htmlFor="gold-datetime"
             >
-              التاريخ والوقت
+              {t("fields.dateTime")}
             </label>
             <input
               className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
@@ -2324,14 +2333,14 @@ export default function CustomerGoldVoucherClientPage({
               className="block text-xs font-medium text-slate-700 mb-0.5"
               htmlFor="gold-notes"
             >
-              البيان
+              {t("fields.notes")}
             </label>
             <div className="relative">
               <input
                 className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
                 disabled={!isEditing}
                 id="gold-notes"
-                placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
+                placeholder={t("placeholders.notesInput")}
                 readOnly={!isEditing}
                 type="text"
                 value={voucher.vouch_notes || ""}
@@ -2348,7 +2357,7 @@ export default function CustomerGoldVoucherClientPage({
                 <button
                   className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
                   data-skip-key-as-tab="true"
-                  title="توسيع البيان"
+                  title={t("modals.notes.expandTitle")}
                   type="button"
                   onClick={() => setIsNotesModalOpen(true)}
                 >
@@ -2431,7 +2440,7 @@ export default function CustomerGoldVoucherClientPage({
                   typeof window !== "undefined" ? document.body : null
                 }
                 menuPosition="fixed"
-                placeholder="اختر العميل..."
+                placeholder={t("placeholders.selectCustomer")}
                 styles={{
                   control: (base) => ({
                     ...base,
@@ -2704,7 +2713,7 @@ export default function CustomerGoldVoucherClientPage({
                 }
                 menuPosition="fixed"
                 options={costCenterSelectOptions}
-                placeholder="اختر مركز التكلفة..."
+                placeholder={t("placeholders.selectCostCenter")}
                 styles={{
                   control: (base) => ({
                     ...base,
@@ -2884,7 +2893,7 @@ export default function CustomerGoldVoucherClientPage({
       {/* Gold Table */}
       <div className="bg-white rounded-lg border border-slate-200 mb-1.5">
         <div className="p-1 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-xs font-semibold text-slate-800">الذهب</h3>
+          <h3 className={`text-xs font-semibold text-slate-800 ${textAlign}`}>{t("tables.gold.title")}</h3>
         </div>
         <div className="p-0.5">
           <div className="flex justify-between mb-0.5">
@@ -2894,25 +2903,25 @@ export default function CustomerGoldVoucherClientPage({
               type="button"
               onClick={addGoldDetailRow}
             >
-              + صف
+              {t("tables.gold.addRow")}
             </button>
           </div>
           <div className="overflow-x-auto overflow-y-auto mb-0.5 max-w-full max-h-[200px]">
             <table className="min-w-[1000px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-72 p-1 border">رقم الصنف</th>
-                  <th className="w-32 p-1 border">الوزن القائم</th>
-                  <th className="w-32 p-1 border">معايرة</th>
-                  <th className="w-32 p-1 border">الوزن المعاير</th>
-                  <th className="w-48 p-1 border">الصندوق</th>
-                  <th className="w-80 p-1 border">البيان</th>
-                  <th className="w-32 p-1 border">فرق عيار</th>
-                  <th className="w-32 p-1 border">مبلغ التسكير</th>
-                  <th className="w-32 p-1 border">وزن التسكير</th>
-                  <th className="w-32 p-1 border">رقم الفاتورة</th>
-                  <th className="w-48 p-1 border">مركز التكلفة</th>
-                  <th className="w-12 p-1 border">حذف</th>
+                  <th className={`w-72 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.itemNumber")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.weight")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.calibration")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.calibratedWeight")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.box")}</th>
+                  <th className={`w-80 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.notes")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.caliberDifference")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.sealingAmount")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.sealingWeight")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.invoiceNumber")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.costCenter")}</th>
+                  <th className={`w-12 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.delete")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -3009,7 +3018,7 @@ export default function CustomerGoldVoucherClientPage({
                                   : null
                               }
                               menuPosition="fixed"
-                              placeholder="اختر الصنف..."
+                              placeholder={t("tables.gold.placeholders.selectItem")}
                               styles={{
                                 control: (base) => ({
                                   ...base,
@@ -3557,7 +3566,7 @@ export default function CustomerGoldVoucherClientPage({
                               }
                               menuPosition="fixed"
                               options={costCenterSelectOptions}
-                              placeholder="مركز التكلفة..."
+                              placeholder={t("tables.gold.placeholders.selectCostCenter")}
                               styles={{
                                 control: (base) => ({
                                   ...base,
@@ -3683,7 +3692,7 @@ export default function CustomerGoldVoucherClientPage({
       {/* Cash Table */}
       <div className="bg-white rounded-lg border border-slate-200 mb-1.5">
         <div className="p-1 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-xs font-semibold text-slate-800">النقدية</h3>
+          <h3 className={`text-xs font-semibold text-slate-800 ${textAlign}`}>{t("tables.cash.title")}</h3>
         </div>
         <div className="p-0.5">
           <div className="flex justify-between mb-0.5">
@@ -3693,19 +3702,19 @@ export default function CustomerGoldVoucherClientPage({
               type="button"
               onClick={addVoucherBoxRow}
             >
-              + صف
+              {t("tables.gold.addRow")}
             </button>
           </div>
           <div className="overflow-x-auto overflow-y-auto mb-0.5 max-w-full max-h-[400px]">
             <table className="min-w-[880px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-32 p-1 border">المبلغ</th>
-                  <th className="w-48 p-1 border">الصندوق</th>
-                  <th className="w-80 p-1 border">البيان</th>
-                  <th className="w-32 p-1 border">رقم الفاتورة</th>
-                  <th className="w-48 p-1 border">مركز التكلفة</th>
-                  <th className="w-12 p-1 border">حذف</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.amount")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.box")}</th>
+                  <th className={`w-80 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.notes")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.invoiceNumber")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.costCenter")}</th>
+                  <th className={`w-12 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.delete")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -3965,7 +3974,7 @@ export default function CustomerGoldVoucherClientPage({
                               }
                               menuPosition="fixed"
                               options={costCenterSelectOptions}
-                              placeholder="مركز التكلفة..."
+                              placeholder={t("tables.gold.placeholders.selectCostCenter")}
                               styles={{
                                 control: (base) => ({
                                   ...base,
@@ -4093,24 +4102,24 @@ export default function CustomerGoldVoucherClientPage({
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <span className="text-amber-800 font-medium">
-              إجمالي الذهب (القائم):
+              {t("totals.totalGoldStanding")}:
             </span>
             <span className="font-semibold text-yellow-600">
-              {totals.totalGoldWeight.toFixed(5)} جم
+              {totals.totalGoldWeight.toFixed(5)} {t("totals.unit")}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-amber-800 font-medium">
-              إجمالي الذهب (المعاير):
+              {t("totals.totalGoldCalibrated")}:
             </span>
             <span className="font-semibold text-yellow-600">
-              {totals.totalGoldGWeight.toFixed(5)} جم
+              {totals.totalGoldGWeight.toFixed(5)} {t("totals.unit")}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">إجمالي النقدية:</span>
+            <span className="text-gray-700 font-medium">{t("totals.totalCash")}:</span>
             <span className="font-semibold text-blue-700 flex items-center gap-1">
               {formatAmount(totals.totalBoxes)}
               <RiyalIcon color="currentColor" />
@@ -4128,7 +4137,7 @@ export default function CustomerGoldVoucherClientPage({
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
-            <p className="text-lg font-semibold">البيان</p>
+            <p className="text-lg font-semibold">{t("modals.notes.title")}</p>
           </ModalHeader>
           <ModalBody>
             <Textarea
@@ -4138,7 +4147,7 @@ export default function CustomerGoldVoucherClientPage({
               disabled={!isEditing}
               maxRows={12}
               minRows={6}
-              placeholder="أدخل بيان القيد..."
+              placeholder={t("modals.notes.placeholder")}
               value={voucher.vouch_notes || ""}
               onChange={(e) =>
                 setVoucher((prev) => ({
@@ -4154,7 +4163,7 @@ export default function CustomerGoldVoucherClientPage({
               variant="solid"
               onPress={() => setIsNotesModalOpen(false)}
             >
-              حفظ
+              {t("modals.notes.save")}
             </Button>
           </ModalFooter>
         </ModalContent>

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import toast from "react-hot-toast";
 import {
   Modal,
@@ -11,6 +12,7 @@ import {
   ModalFooter,
   Textarea,
   Button,
+  Checkbox,
 } from "@heroui/react";
 import {
   CheckIcon,
@@ -22,11 +24,14 @@ import {
 
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
+import AsyncCreatableSelect from "react-select/async-creatable";
+import ReactSelect, { type CSSObjectWithLabel } from "react-select";
 import SearchableSelect from "@/components/SearchableSelect";
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { useReceiptDeliveryVoucherForm } from "@/hooks/useReceiptDeliveryVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import { formatAmount } from "@/utilities/formatAmount";
+import { getLocaleDir } from "@/i18n/config";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
@@ -69,6 +74,12 @@ export default function ReceiptVoucherClientPage({
 }: ReceiptVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("forms.customerGoldVoucher");
+  const tReceipt = useTranslations("forms.receiptVoucher");
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  const textAlignCenter = dir === "rtl" ? "text-center" : "text-center";
 
   // Use the hook for all state management and business logic
   const {
@@ -95,8 +106,6 @@ export default function ReceiptVoucherClientPage({
 
     // Functions
     loadItemOptions,
-    loadMoreItems,
-    hasMoreItems,
     loadCustomerOptions,
     getCustomerSelectValue,
     getItemSelectValue,
@@ -136,6 +145,22 @@ export default function ReceiptVoucherClientPage({
   // Ref للحقول العلوية للتنقل
   const selectorsRef = useRef<HTMLDivElement>(null);
 
+  // تركيز المؤشر على حقل رقم المرجع عند فتح الشاشة
+  useEffect(() => {
+    if (isClient && isEditing) {
+      // استخدام setTimeout لضمان أن العنصر موجود في DOM
+      const timer = setTimeout(() => {
+        const refNoInput = document.getElementById("receipt-ref-no") as HTMLInputElement;
+        if (refNoInput && !refNoInput.disabled) {
+          refNoInput.focus();
+          refNoInput.select();
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isClient, isEditing]);
+
   // Hook for Enter key navigation in top form fields
   const {
     handleKeyDown: handleKeyDownSelectors,
@@ -144,6 +169,7 @@ export default function ReceiptVoucherClientPage({
     keys: ["Enter"],
     containerRef: selectorsRef,
     disabled: !isEditing,
+    focusableSelector: 'input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), [role="combobox"]',
     filterElement: (element) => {
       // Exclude elements with tabIndex={-1}
       if (element.tabIndex === -1) {
@@ -179,6 +205,15 @@ export default function ReceiptVoucherClientPage({
         return true;
       }
 
+      // ✅ السماح بالتنقل من حقل "البيان" (input[type="text"]) إلى الحقول التالية
+      // إذا كان الحقل هو input[type="text"] وليس داخل combobox، نسمح بالتنقل
+      if (tagName === "input" && target.getAttribute("type") === "text") {
+        const isInCombobox = target.closest('[role="combobox"]');
+        if (!isInCombobox) {
+          return false; // Allow navigation
+        }
+      }
+
       // Ignore if inside an open dropdown list
       const listboxElement = target.closest('[role="listbox"]');
 
@@ -195,15 +230,74 @@ export default function ReceiptVoucherClientPage({
         return true;
       }
 
-      // Ignore select button itself when Enter is pressed (don't open it)
+      // Allow navigation through ReactSelect when closed
       const selectButton = target.closest('[role="combobox"]');
 
       if (selectButton) {
         const isExpanded =
           selectButton.getAttribute("aria-expanded") === "true";
 
-        if (!isExpanded) {
-          return true; // Ignore select on Enter if closed
+        // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
+        if (isExpanded) {
+          return true; // Allow normal interaction when open
+        }
+
+        // إذا كانت القائمة مغلقة، نسمح بالتنقل
+        return false; // Allow navigation when closed
+      }
+
+      return false;
+    },
+    onBoundaryFocus: (direction) => {
+      // عندما نصل لنهاية الحقول العلوية (بعد مركز التكلفة)، ننتقل لجدول الذهب
+      if (direction === 1) {
+        const currentElement = document.activeElement as HTMLElement;
+        const isInSelectors = selectorsRef.current?.contains(currentElement);
+
+        if (isInSelectors) {
+          // ✅ التحقق من أننا في حقل مركز التكلفة تحديداً
+          const costCenterSelect = document.getElementById('receipt-cost-center-select');
+          const isInCostCenter = costCenterSelect?.contains(currentElement);
+
+          if (isInCostCenter) {
+            // ✅ إضافة صف جديد إذا لم يكن موجوداً
+            if (goldDetails.length === 0) {
+              addGoldDetailRow();
+            }
+
+            // ✅ الانتقال إلى أول حقل في جدول الذهب (حقل رقم الصنف)
+            // استخدام polling لضمان العثور على العنصر بعد الريندر
+            const focusToItemField = (attempt = 1) => {
+              // محاولة العثور على الwrapper
+              const wrapper = document.getElementById('item-select-wrapper-0');
+              if (wrapper) {
+                const input = wrapper.querySelector('input');
+                if (input) {
+                  input.focus();
+                  // التأكد من أن التركيز نجح
+                  if (document.activeElement === input) {
+                    return true;
+                  }
+                }
+                // محاولة العثور على combobox
+                const combobox = wrapper.querySelector('[role="combobox"]') as HTMLElement;
+                if (combobox) {
+                  combobox.focus();
+                  return true;
+                }
+              }
+
+              // إذا لم نجد العنصر أو لم ينجح التركيز، نعيد المحاولة
+              if (attempt < 20) { // المحاولة لمدة 1 ثانية تقريباً (20 * 50ms)
+                setTimeout(() => focusToItemField(attempt + 1), 50);
+              }
+              return false;
+            };
+
+            focusToItemField();
+
+            return true;
+          }
         }
       }
 
@@ -231,63 +325,77 @@ export default function ReceiptVoucherClientPage({
       options?: any,
     ) => {
       const isLastRow = rowIndex === goldDetails.length - 1;
-      const isLastCol = options?.isLastCol || colIndex >= 12; // آخر عمود هو 12 (مركز التكلفة)
+      const isLastCol = options?.isLastCol || colIndex >= 10; // آخر عمود هو 10 (مركز التكلفة)
 
-      // إذا كان الحقل الحالي هو معدل الأجور (colIndex 4) والضغط على Enter أو ArrowLeft
-      // التخطي مباشرة إلى حقل الصندوق (colIndex 6) لأن حقل الأجور (colIndex 5) معطل
-      if (
-        colIndex === 4 &&
-        (event.key === "Enter" || event.key === "ArrowLeft")
-      ) {
-        // التخطي مباشرة إلى الحقل الذي يليه (الصندوق - colIndex 6)
-        event.preventDefault();
-        event.stopPropagation();
-        setTimeout(() => {
-          const boxSelect = document.querySelector(
-            `#gold-box-select-${rowIndex}`,
-          ) as HTMLElement;
-
-          if (boxSelect) {
-            const selectButton = boxSelect.closest(
-              '[role="combobox"]',
-            ) as HTMLElement;
-
-            if (selectButton) {
-              selectButton.focus();
-
-              return;
-            }
-            boxSelect.focus();
-
-            return;
-          }
-        }, 50);
-
-        return;
-      }
-
-      // عند الوصول لآخر حقل في آخر صف، الانتقال لجدول النقدية
+      // عند الوصول لآخر حقل في آخر صف
       if (
         isLastRow &&
         isLastCol &&
         (event.key === "Enter" || event.key === "Tab")
       ) {
+        // التحقق مما إذا كان الصف الحالي فارغاً
+        const currentDetail = goldDetails[rowIndex];
+        // نعتبر الصف فارغاً إذا لم يتم اختيار صنف ولم يتم إدخال وزن
+        // هذا يسمح للمستخدم بالخروج من الجدول بالضغط على Enter في صف فارغ
+        const isEmpty = !currentDetail.item_id && !currentDetail.weight;
+
+        if (isEmpty) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          // الانتقال لأول حقل في جدول النقدية
+          const focusToCashTable = () => {
+            // إضافة صف للنقدية إذا لم يوجد
+            if (voucherBoxes.length === 0) {
+              addVoucherBoxRow();
+            }
+
+            setTimeout(() => {
+              const firstCashInput = document.querySelector(
+                'input[data-box-row="0"][data-box-col="0"]',
+              ) as HTMLInputElement;
+
+              if (firstCashInput) {
+                firstCashInput.focus();
+                firstCashInput.select();
+              }
+            }, 50);
+          };
+
+          focusToCashTable();
+          return;
+        }
+
+        // إذا كان الصف يحتوي على بيانات، نترك السلوك الافتراضي (إضافة صف جديد)
+        // useEnterKeyNavigation سيقوم بإضافة الصف
+      }
+
+      // ✅ حل مشكلة التوقف عند الوزن المعاير (Col 3) -> الصندوق (Col 4)
+      if (colIndex === 3 && (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey))) {
         event.preventDefault();
         event.stopPropagation();
-        setTimeout(() => {
-          // الانتقال لأول حقل في جدول النقدية
-          const firstCashInput = document.querySelector(
-            'input[data-box-row="0"][data-box-col="0"]',
-          ) as HTMLInputElement;
 
-          if (firstCashInput) {
-            firstCashInput.focus();
-            firstCashInput.select();
-
-            return;
+        const focusBox = () => {
+          const wrapper = document.getElementById(`gold-box-wrapper-${rowIndex}`);
+          if (wrapper) {
+            // محاولة العثور على input أو combobox
+            const input = wrapper.querySelector('input');
+            if (input) {
+              input.focus();
+              return;
+            }
+            const combobox = wrapper.querySelector('[role="combobox"]') as HTMLElement;
+            if (combobox) {
+              combobox.focus();
+              return;
+            }
           }
-        }, 50);
 
+          // Fallback: useEnterKeyNavigation default
+          handleGoldKeyDownBase(event, rowIndex, colIndex, options);
+        };
+
+        focusBox();
         return;
       }
 
@@ -306,7 +414,7 @@ export default function ReceiptVoucherClientPage({
         allowEnterDefaultWhenRowMissing: true,
       });
     },
-    [handleGoldKeyDownBase, goldDetails.length],
+    [handleGoldKeyDownBase, goldDetails, voucherBoxes.length],
   );
 
   // Hook for Enter key navigation in voucher boxes table
@@ -320,159 +428,55 @@ export default function ReceiptVoucherClientPage({
       onAddRow: addVoucherBoxRow,
     });
 
-  const handleBoxKeyDown = handleBoxKeyDownBase;
+  const handleBoxKeyDown = useCallback(
+    (
+      event: React.KeyboardEvent,
+      rowIndex: number,
+      colIndex: number,
+      options?: any,
+    ) => {
+      // ✅ حل مشكلة التوقف عند المبلغ (Col 0) -> الصندوق (Col 1) في جدول النقدية
+      if (colIndex === 0 && (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey))) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const focusBox = () => {
+          const wrapper = document.getElementById(`cash-box-wrapper-${rowIndex}`);
+          if (wrapper) {
+            // محاولة العثور على input أو combobox
+            const input = wrapper.querySelector('input');
+            if (input) {
+              input.focus();
+              return;
+            }
+            const combobox = wrapper.querySelector('[role="combobox"]') as HTMLElement;
+            if (combobox) {
+              combobox.focus();
+              return;
+            }
+          }
+
+          // Fallback
+          handleBoxKeyDownBase(event, rowIndex, colIndex, options);
+        };
+
+        focusBox();
+        return;
+      }
+
+      handleBoxKeyDownBase(event, rowIndex, colIndex, options);
+    },
+    [handleBoxKeyDownBase],
+  );
 
   // دالة البحث في الأصناف (خارج map لتجنب loop)
   // استخدام useRef لتخزين loadItemOptions لتجنب إعادة الإنشاء
   const loadItemOptionsRef = useRef(loadItemOptions);
-  const loadMoreItemsRef = useRef(loadMoreItems);
-  const hasMoreItemsRef = useRef(hasMoreItems);
 
   // تحديث refs عند تغيير الدوال
   useEffect(() => {
     loadItemOptionsRef.current = loadItemOptions;
-    loadMoreItemsRef.current = loadMoreItems;
-    hasMoreItemsRef.current = hasMoreItems;
-  }, [loadItemOptions, loadMoreItems, hasMoreItems]);
-
-  // استخدام useRef لتخزين آخر searchTerm لتجنب البحث المتكرر
-  const lastSearchTermRef = useRef<string>("");
-  const searchInProgressRef = useRef<boolean>(false);
-  const currentPageRef = useRef<number>(1);
-  const hasMoreRef = useRef<boolean>(true);
-
-  // State لتتبع hasMore لكل SearchableSelect
-  const [itemsHasMore, setItemsHasMore] = useState<boolean>(true);
-
-  const handleItemSearch = useCallback(async (searchTerm: string) => {
-    const trimmed = searchTerm.trim();
-
-    // إذا كان البحث نفسه، لا نعيد البحث
-    if (trimmed === lastSearchTermRef.current && trimmed !== "") {
-      return [];
-    }
-
-    // إذا كان البحث قيد التنفيذ، لا نبدأ بحث جديد
-    if (searchInProgressRef.current) {
-      return [];
-    }
-
-    // إذا كان البحث فارغاً، نحمل أول صفحة (عند فتح القائمة)
-    if (!trimmed) {
-      lastSearchTermRef.current = "";
-      currentPageRef.current = 1;
-      hasMoreRef.current = true;
-
-      try {
-        const results = await loadItemOptionsRef.current("", [], { page: 1 });
-        // التحقق من وجود صفحات إضافية
-        const hasMore = await hasMoreItemsRef.current(1, "");
-
-        hasMoreRef.current = hasMore;
-        setItemsHasMore(hasMore);
-
-        // إزالة _hasNext من النتائج قبل الإرجاع
-        const cleanResults = Array.isArray(results)
-          ? results.map((r: any) => {
-              const rest = { ...r };
-
-              delete (rest as any)._hasNext;
-
-              return rest;
-            })
-          : [];
-
-        return cleanResults;
-      } catch (error) {
-        console.error("Error in handleItemSearch:", error);
-
-        return [];
-      }
-    }
-
-    try {
-      searchInProgressRef.current = true;
-      lastSearchTermRef.current = trimmed;
-      currentPageRef.current = 1;
-
-      // تحميل أول صفحة مع البحث
-      const results = await loadItemOptionsRef.current(trimmed, [], {
-        page: 1,
-      });
-
-      // التحقق من وجود صفحات إضافية
-      const hasMore = await hasMoreItemsRef.current(1, trimmed);
-
-      hasMoreRef.current = hasMore;
-      setItemsHasMore(hasMore);
-
-      // التأكد من أن النتائج هي array
-      if (!results) {
-        return [];
-      }
-
-      // إذا كانت النتائج array مباشر
-      if (Array.isArray(results)) {
-        // إزالة _hasNext من النتائج قبل الإرجاع
-        return results.map((r: any) => {
-          const rest = { ...r };
-
-          delete (rest as any)._hasNext;
-
-          return rest;
-        });
-      }
-
-      // إذا كانت النتائج كائن به options
-      if (results && typeof results === "object" && "options" in results) {
-        const resultsObj = results as { options?: any[] };
-
-        return Array.isArray(resultsObj.options) ? resultsObj.options : [];
-      }
-
-      return [];
-    } catch (error) {
-      console.error("Error in handleItemSearch:", error);
-
-      return [];
-    } finally {
-      searchInProgressRef.current = false;
-    }
-  }, []); // لا dependencies لأننا نستخدم ref
-
-  // دالة للتحميل التدريجي (Infinite Scroll)
-  const handleLoadMoreItems = useCallback(
-    async (page: number, searchTerm: string) => {
-      try {
-        const results = await loadMoreItemsRef.current(page, searchTerm);
-
-        // التحقق من وجود صفحات إضافية
-        const hasMore = await hasMoreItemsRef.current(page, searchTerm);
-
-        hasMoreRef.current = hasMore;
-        setItemsHasMore(hasMore);
-        currentPageRef.current = page;
-
-        // إزالة _hasNext من النتائج قبل الإرجاع
-        const cleanResults = Array.isArray(results)
-          ? results.map((r: any) => {
-              const rest = { ...r };
-
-              delete (rest as any)._hasNext;
-
-              return rest;
-            })
-          : [];
-
-        return cleanResults;
-      } catch (error) {
-        console.error("Error in handleLoadMoreItems:", error);
-
-        return [];
-      }
-    },
-    [],
-  );
+  }, [loadItemOptions]);
 
   // دالة مساعدة للانتقال للحقل التالي في جدول الذهب
   const focusNextGoldField = useCallback(
@@ -516,7 +520,7 @@ export default function ReceiptVoucherClientPage({
 
   const handleSearch = async () => {
     if (!searchTerm || searchTerm.trim() === "") {
-      toast.error("يرجى إدخال رقم السند للبحث");
+      toast.error(t("messages.searchErrorMissing"));
 
       return;
     }
@@ -563,10 +567,10 @@ export default function ReceiptVoucherClientPage({
         }
       }
 
-      toast.error(`لم يتم العثور على سند استلام برقم: ${searchValue}`);
+      toast.error(tReceipt("messages.notFound", { number: searchValue }));
     } catch (error) {
       console.error("Error searching voucher:", error);
-      toast.error("حدث خطأ أثناء البحث. يرجى المحاولة مرة أخرى");
+      toast.error(t("messages.searchError"));
     }
   };
 
@@ -648,27 +652,27 @@ export default function ReceiptVoucherClientPage({
       <div className="flex justify-center items-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">جاري التحميل...</p>
+          <p className="text-gray-600">{t("messages.loading")}</p>
         </div>
       </div>
     );
   }
 
   const voucherTypeName =
-    voucherTypes.find((t) => (t.Id || t.id) === vouchType)?.name ||
-    "سند استلام";
+    voucherTypes.find((type) => (type.Id || type.id) === vouchType)?.name ||
+    tReceipt("title");
 
   return (
-    <div className="p-2 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="p-1 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 mb-2 border border-slate-200">
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-1.5 mb-1 border border-slate-200">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
                 #
-                {hasVoucherId ? voucher.vouch_id : "جاري الترقيم..."}
+                {hasVoucherId ? voucher.vouch_id : t("messages.numbering")}
               </span>
               <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
@@ -681,7 +685,7 @@ export default function ReceiptVoucherClientPage({
           <div className="flex items-center gap-2">
             <input
               className="w-32 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
-              placeholder="بحث برقم السند..."
+              placeholder={t("messages.searchPlaceholder")}
               type="number"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -700,7 +704,7 @@ export default function ReceiptVoucherClientPage({
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-1">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
@@ -712,7 +716,7 @@ export default function ReceiptVoucherClientPage({
               variant="solid"
               onPress={saveVoucher}
             >
-              حفظ
+              {t("buttons.save")}
             </Button>
 
             <Button
@@ -722,7 +726,7 @@ export default function ReceiptVoucherClientPage({
               variant="solid"
               onPress={handleEditClick}
             >
-              تعديل
+              {t("buttons.edit")}
             </Button>
 
             <Button
@@ -731,7 +735,7 @@ export default function ReceiptVoucherClientPage({
               variant="solid"
               onPress={() => router.push("/forms/receipt")}
             >
-              جديد
+              {t("buttons.new")}
             </Button>
 
             <Button
@@ -744,39 +748,39 @@ export default function ReceiptVoucherClientPage({
               variant="solid"
               onPress={printVoucher}
             >
-              طباعة
+              {t("buttons.print")}
             </Button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.commit}
-                className="w-3 h-3 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500"
-                type="checkbox"
+              <Checkbox
+                color="success"
+                isDisabled
+                isSelected={voucher.commit}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">حُفظ</span>
+              <span className="text-xs text-slate-600">{t("status.saved")}</span>
             </div>
 
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.post}
-                className="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                type="checkbox"
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={voucher.post}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">مرحل</span>
+              <span className="text-xs text-slate-600">{t("status.posted")}</span>
             </div>
 
             <div className="flex items-center gap-1">
-              <input
-                readOnly
-                checked={voucher.print}
-                className="w-3 h-3 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500"
-                type="checkbox"
+              <Checkbox
+                color="warning"
+                isDisabled
+                isSelected={voucher.print}
+                size="sm"
               />
-              <span className="text-xs text-slate-600">طُبع</span>
+              <span className="text-xs text-slate-600">{t("status.printed")}</span>
             </div>
           </div>
         </div>
@@ -785,7 +789,7 @@ export default function ReceiptVoucherClientPage({
       {/* Form Fields - Row 1 */}
       <div
         ref={selectorsRef}
-        className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2"
+        className="grid grid-cols-1 md:grid-cols-12 gap-1.5 mb-1.5"
         onKeyDownCapture={handleKeyDownSelectors}
       >
         {/* رقم المرجع - أضيق */}
@@ -794,7 +798,7 @@ export default function ReceiptVoucherClientPage({
             className="block text-xs font-medium text-slate-700 mb-0.5"
             htmlFor="receipt-ref-no"
           >
-            رقم المرجع
+            {t("fields.refNo")}
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
@@ -815,7 +819,7 @@ export default function ReceiptVoucherClientPage({
             className="block text-xs font-medium text-slate-700 mb-0.5"
             htmlFor="receipt-datetime"
           >
-            التاريخ والوقت
+            {t("fields.dateTime")}
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
@@ -843,14 +847,14 @@ export default function ReceiptVoucherClientPage({
             className="block text-xs font-medium text-slate-700 mb-0.5"
             htmlFor="receipt-notes"
           >
-            البيان
+            {t("fields.notes")}
           </label>
           <div className="relative">
             <input
               className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
               disabled={!isEditing}
               id="receipt-notes"
-              placeholder="أدخل بيان القيد (انقر نقرتين للكتابة المطولة)"
+              placeholder={t("placeholders.notesInput")}
               readOnly={!isEditing}
               type="text"
               value={voucher.vouch_notes || ""}
@@ -896,7 +900,7 @@ export default function ReceiptVoucherClientPage({
               <button
                 className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
                 data-skip-key-as-tab="true"
-                title="توسيع البيان"
+                title={t("modals.notes.expandTitle")}
                 type="button"
                 onClick={() => setIsNotesModalOpen(true)}
               >
@@ -908,14 +912,14 @@ export default function ReceiptVoucherClientPage({
       </div>
 
       {/* Form Fields - Row 2: العميل، مناولة، مركز التكلفة */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-1.5 mb-1.5">
         {/* العميل */}
         <div className="md:col-span-4">
           <label
             className="block text-xs font-medium text-slate-700 mb-0.5"
             htmlFor="customer-select"
           >
-            العميل
+            {t("fields.customer")}
           </label>
           <div
             onKeyDownCapture={(e) => {
@@ -959,19 +963,60 @@ export default function ReceiptVoucherClientPage({
               }
             }}
           >
-            <SearchableSelect
+            <AsyncCreatableSelect
+              isClearable
+              isSearchable
               className="text-xs"
+              classNamePrefix="react-select"
+              components={{ IndicatorSeparator: () => null }}
               defaultOptions={defaultCustomerOptions}
-              disabled={!isEditing}
-              emptyMessage="لا يوجد عملاء"
               inputId="customer-select"
-              options={[]}
-              placeholder="اختر العميل..."
-              searchPlaceholder="ابحث عن العميل..."
-              value={getCustomerSelectValue()?.value || null}
-              onChange={(selectedValue) => {
+              instanceId="customer-select"
+              isDisabled={!isEditing}
+              loadOptions={async (inputValue: string) => {
+                try {
+                  const results = await loadCustomerOptions(inputValue);
+
+                  return results || [];
+                } catch (error) {
+                  console.error("Error in customer search:", error);
+
+                  return [];
+                }
+              }}
+              menuPortalTarget={
+                typeof window !== "undefined" ? document.body : null
+              }
+              menuPosition="fixed"
+              placeholder={t("placeholders.selectCustomer")}
+              styles={{
+                control: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  minHeight: "32px",
+                  height: "32px",
+                  fontSize: "12px",
+                }),
+                menuPortal: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  zIndex: 9999,
+                }),
+                option: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  fontSize: "12px",
+                }),
+                placeholder: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  fontSize: "12px",
+                }),
+                singleValue: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  fontSize: "12px",
+                }),
+              }}
+              value={getCustomerSelectValue()}
+              onChange={(selectedOption: any) => {
                 if (!isEditing) return;
-                if (!selectedValue) {
+                if (!selectedOption) {
                   setSelectedCustomer(null);
                   setVoucher((prev) => ({
                     ...prev,
@@ -982,9 +1027,9 @@ export default function ReceiptVoucherClientPage({
                   return;
                 }
 
-                const selected = customers.find(
-                  (cust) => cust.id === selectedValue,
-                );
+                const selected =
+                  selectedOption?.customer ||
+                  customers.find((cust) => cust.id === selectedOption?.value);
 
                 setSelectedCustomer(selected || null);
 
@@ -996,15 +1041,44 @@ export default function ReceiptVoucherClientPage({
                   handling: handling,
                 }));
               }}
-              onSearch={async (searchTerm: string) => {
-                try {
-                  const results = await loadCustomerOptions(searchTerm);
+              onKeyDown={(e) => {
+                const target = e.target as HTMLElement | null;
 
-                  return results || [];
-                } catch (error) {
-                  console.error("Error in customer search:", error);
+                if (!target) return;
 
-                  return [];
+                const isInListbox = target.closest('[role="listbox"]');
+                if (isInListbox) {
+                  return;
+                }
+
+                const selectButton = target.closest('[role="combobox"]');
+                if (selectButton) {
+                  const isExpanded =
+                    selectButton.getAttribute("aria-expanded") === "true";
+
+                  // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
+                  if (isExpanded && e.key !== "Escape") {
+                    return;
+                  }
+
+                  if (e.key === "Enter" && !isExpanded) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setTimeout(() => {
+                      const handlingInput = document.querySelector(
+                        'input[placeholder*="مناولة"]',
+                      ) as HTMLInputElement;
+
+                      if (handlingInput) {
+                        handlingInput.focus();
+                        handlingInput.select();
+                      }
+                    }, 50);
+                  }
+
+                  if (e.key === "Escape") {
+                    return;
+                  }
                 }
               }}
             />
@@ -1034,26 +1108,65 @@ export default function ReceiptVoucherClientPage({
               if (e.key === "Enter" && !e.isDefaultPrevented()) {
                 e.preventDefault();
                 e.stopPropagation();
-                setTimeout(() => {
-                  const costCenterSelect = document.querySelector(
-                    "#receipt-cost-center-select",
-                  ) as HTMLElement;
 
-                  if (costCenterSelect) {
-                    const selectButton = costCenterSelect.closest(
+                // البحث عن حقل مركز التكلفة - نفس الطريقة المستخدمة في CustomerGoldVoucherClientPage
+                const focusToCostCenterSelect = (): boolean => {
+                  try {
+                    const costCenterSelectId = `#receipt-cost-center-select`;
+                    let costCenterSelect = document.querySelector(costCenterSelectId);
+
+                    if (!costCenterSelect) {
+                      return false;
+                    }
+
+                    // البحث عن combobox بطرق متعددة
+                    let combobox = costCenterSelect.querySelector(
                       '[role="combobox"]',
                     ) as HTMLElement;
 
-                    if (selectButton) {
-                      selectButton.focus();
-
-                      return;
+                    // إذا لم نجد combobox داخل costCenterSelect، نبحث مباشرة
+                    if (!combobox) {
+                      combobox = document.querySelector(
+                        `#receipt-cost-center-select [role="combobox"]`,
+                      ) as HTMLElement;
                     }
-                    costCenterSelect.focus();
 
+                    if (combobox) {
+                      // التركيز مع محاولات متعددة
+                      combobox.focus();
+
+                      // التأكد من أن combobox قابل للتركيز
+                      if (document.activeElement !== combobox) {
+                        combobox.setAttribute("tabindex", "0");
+                        combobox.focus();
+                      }
+
+                      return true;
+                    }
+
+                    return false;
+                  } catch (error) {
+                    console.error("Error in focusToCostCenterSelect:", error);
+                    return false;
+                  }
+                };
+
+                // محاولة فورية
+                if (focusToCostCenterSelect()) {
+                  return;
+                }
+
+                // محاولة بعد setTimeout
+                setTimeout(() => {
+                  if (focusToCostCenterSelect()) {
                     return;
                   }
-                }, 50);
+
+                  // محاولة بعد setTimeout إضافي
+                  setTimeout(() => {
+                    focusToCostCenterSelect();
+                  }, 50);
+                }, 10);
 
                 return;
               }
@@ -1070,86 +1183,118 @@ export default function ReceiptVoucherClientPage({
             مركز التكلفة
           </label>
           <div
+            id="receipt-cost-center-select"
             onKeyDownCapture={(e) => {
-              const target = e.target as HTMLElement;
-              const selectButton = target.closest('[role="combobox"]');
-              const isInListbox = target.closest('[role="listbox"]');
-
-              if (isInListbox) {
+              // معالجة F4 لفتح/إغلاق القائمة باستخدام الدالة العامة
+              if (handleF4KeyForSelect(e)) {
                 return;
               }
 
-              if (selectButton) {
-                const isExpanded =
-                  selectButton.getAttribute("aria-expanded") === "true";
+              if (e.key === "Enter") {
+                const target = e.target as HTMLElement | null;
+                if (!target) return;
 
-                if (e.key === "Enter" && !isExpanded) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setTimeout(() => {
-                    // الانتقال لأول حقل في جدول الذهب (حقل الصنف - SearchableSelect)
-                    const firstItemSelect = document.querySelector(
-                      "#item-select-0",
-                    ) as HTMLElement;
-
-                    if (firstItemSelect) {
-                      const selectButton = firstItemSelect.closest(
-                        '[role="combobox"]',
-                      ) as HTMLElement;
-
-                      if (selectButton) {
-                        selectButton.focus();
-
-                        return;
-                      }
-                      firstItemSelect.focus();
-
-                      return;
-                    }
-                    // إذا لم يوجد، نبحث عن أول input في الجدول
-                    const firstGoldInput = document.querySelector(
-                      'input[data-gold-row="0"][data-gold-col="0"]',
-                    ) as HTMLInputElement;
-
-                    if (firstGoldInput) {
-                      firstGoldInput.focus();
-                      firstGoldInput.select();
-
-                      return;
-                    }
-                    // إذا لم يوجد، نبحث عن أول input في الجدول
-                    const firstInput = document.querySelector(
-                      'table input[data-gold-row="0"]',
-                    ) as HTMLInputElement;
-
-                    if (firstInput) {
-                      firstInput.focus();
-                      firstInput.select();
-                    }
-                  }, 50);
-
+                const isInListbox = target.closest('[role="listbox"]');
+                if (isInListbox) {
                   return;
                 }
 
-                if (e.key === "Escape") {
-                  return;
+                const selectButton = target.closest('[role="combobox"]');
+                if (selectButton) {
+                  const isExpanded =
+                    selectButton.getAttribute("aria-expanded") === "true";
+
+                  // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
+                  if (isExpanded) {
+                    return;
+                  }
+
+                  // ✅ إذا كانت القائمة مغلقة، ننتقل لجدول الذهب
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  // ✅ إضافة صف جديد إذا لم يكن موجوداً
+                  if (goldDetails.length === 0) {
+                    addGoldDetailRow();
+                  }
+
+                  // ✅ الانتقال إلى أول حقل في جدول الذهب (حقل رقم الصنف)
+                  // استخدام polling لضمان العثور على العنصر بعد الريندر
+                  const focusToItemField = (attempt = 1) => {
+                    // محاولة العثور على الwrapper
+                    const wrapper = document.getElementById('item-select-wrapper-0');
+                    if (wrapper) {
+                      const input = wrapper.querySelector('input');
+                      if (input) {
+                        input.focus();
+                        // التأكد من أن التركيز نجح
+                        if (document.activeElement === input) {
+                          return true;
+                        }
+                      }
+                      // محاولة العثور على combobox
+                      const combobox = wrapper.querySelector('[role="combobox"]') as HTMLElement;
+                      if (combobox) {
+                        combobox.focus();
+                        return true;
+                      }
+                    }
+
+                    // إذا لم نجد العنصر أو لم ينجح التركيز، نعيد المحاولة
+                    if (attempt < 20) { // المحاولة لمدة 1 ثانية تقريباً (20 * 50ms)
+                      setTimeout(() => focusToItemField(attempt + 1), 50);
+                    }
+                    return false;
+                  };
+
+                  focusToItemField();
                 }
               }
             }}
           >
-            <SearchableSelect
+            <ReactSelect
+              isSearchable
               className="text-xs"
-              disabled={!isEditing}
-              emptyMessage="لا يوجد مراكز تكلفة"
+              classNamePrefix="react-select"
+              components={{ IndicatorSeparator: () => null }}
               inputId="receipt-cost-center-select"
+              instanceId="receipt-cost-center-select"
+              isDisabled={!isEditing || costCenters.length === 0}
+              menuPortalTarget={
+                typeof window !== "undefined" ? document.body : null
+              }
+              menuPosition="fixed"
               options={costCenterSelectOptions}
-              placeholder="اختر مركز التكلفة..."
-              searchPlaceholder="ابحث عن مركز التكلفة..."
-              value={getCostCenterSelectValue(voucher.cost_id)?.value || null}
-              onChange={(selectedValue) => {
+              placeholder={t("placeholders.selectCostCenter")}
+              styles={{
+                control: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  minHeight: "32px",
+                  height: "32px",
+                  fontSize: "12px",
+                }),
+                menuPortal: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  zIndex: 9999,
+                }),
+                option: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  fontSize: "12px",
+                }),
+                placeholder: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  fontSize: "12px",
+                }),
+                singleValue: (base: CSSObjectWithLabel) => ({
+                  ...base,
+                  fontSize: "12px",
+                }),
+              }}
+              value={getCostCenterSelectValue(voucher.cost_id)}
+              onChange={(selectedOption: any) => {
                 if (!isEditing) return;
-                const costId = selectedValue
-                  ? parseInt(String(selectedValue))
+                const costId = selectedOption?.value
+                  ? parseInt(String(selectedOption.value))
                   : null;
 
                 setVoucher((prev) => ({
@@ -1167,45 +1312,173 @@ export default function ReceiptVoucherClientPage({
                   updateVoucherBox(index, "cost_id", costId);
                 });
               }}
+              onKeyDown={(e) => {
+                const target = e.target as HTMLElement | null;
+
+                if (!target) return;
+
+                const isInListbox = target.closest('[role="listbox"]');
+                if (isInListbox) {
+                  return;
+                }
+
+                const selectButton = target.closest('[role="combobox"]');
+                if (selectButton) {
+                  const isExpanded =
+                    selectButton.getAttribute("aria-expanded") === "true";
+
+                  // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
+                  if (isExpanded && e.key !== "Escape") {
+                    return;
+                  }
+
+                  // ✅ عند الضغط على Enter والقائمة مغلقة، ننتقل لجدول الذهب
+                  if (e.key === "Enter" && !isExpanded) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // ✅ إضافة صف جديد إذا لم يكن موجوداً
+                    if (goldDetails.length === 0) {
+                      addGoldDetailRow();
+                    }
+
+                    // ✅ الانتقال إلى أول حقل في جدول الذهب (حقل رقم الصنف)
+                    const focusToItemField = (): boolean => {
+                      try {
+                        const itemSelectId = `#item-select-0`;
+                        let itemSelect = document.querySelector(itemSelectId);
+
+                        if (!itemSelect) {
+                          const allSelects = document.querySelectorAll(
+                            '[id^="item-select-"]',
+                          );
+                          itemSelect = allSelects[0] || null;
+                        }
+
+                        if (!itemSelect) {
+                          return false;
+                        }
+
+                        let combobox = itemSelect.querySelector(
+                          '[role="combobox"]',
+                        ) as HTMLElement;
+
+                        if (!combobox) {
+                          combobox = document.querySelector(
+                            `#item-select-0 [role="combobox"]`,
+                          ) as HTMLElement;
+                        }
+
+                        if (!combobox) {
+                          const allComboboxes = document.querySelectorAll(
+                            '[role="combobox"]',
+                          );
+                          for (let i = 0; i < allComboboxes.length; i += 1) {
+                            const cb = allComboboxes[i] as HTMLElement;
+                            const parent = cb.closest('[id^="item-select-"]');
+                            if (parent && parent.id === "item-select-0") {
+                              combobox = cb;
+                              break;
+                            }
+                          }
+                        }
+
+                        if (combobox) {
+                          combobox.focus();
+                          if (document.activeElement !== combobox) {
+                            combobox.setAttribute("tabindex", "0");
+                            combobox.focus();
+                          }
+                          return true;
+                        }
+
+                        return false;
+                      } catch (error) {
+                        console.error("Error in focusToItemField:", error);
+                        return false;
+                      }
+                    };
+
+                    // محاولة فورية
+                    if (focusToItemField()) {
+                      return;
+                    }
+
+                    // محاولة بعد requestAnimationFrame
+                    requestAnimationFrame(() => {
+                      if (focusToItemField()) {
+                        return;
+                      }
+                      setTimeout(() => {
+                        if (focusToItemField()) {
+                          return;
+                        }
+                        setTimeout(() => {
+                          focusToItemField();
+                        }, 50);
+                      }, 10);
+                    });
+
+                    return;
+                  }
+
+                  // ✅ معالجة الأسهم عندما تكون القائمة مغلقة
+                  if (
+                    (e.key === "ArrowUp" ||
+                      e.key === "ArrowDown" ||
+                      e.key === "ArrowLeft" ||
+                      e.key === "ArrowRight") &&
+                    !isExpanded
+                  ) {
+                    // السماح للتنقل الطبيعي
+                    return;
+                  }
+                }
+
+                if (e.key === "Escape") {
+                  return;
+                }
+              }}
             />
           </div>
         </div>
       </div>
 
       {/* Gold Table */}
-      <div className="bg-white rounded-lg border border-slate-200 mb-2">
-        <div className="p-1.5 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-sm font-semibold text-slate-800">الذهب</h3>
+      <div className="bg-white rounded-lg border border-slate-200 mb-1.5">
+        <div className="p-1 border-b border-slate-200 bg-slate-50">
+          <h3 className={`text-xs font-semibold text-slate-800 ${textAlign}`}>{t("tables.gold.title")}</h3>
         </div>
-        <div className="p-1">
-          <div className="flex justify-between mb-1">
+        <div className="p-0.5">
+          <div className="flex justify-between mb-0.5">
             <button
-              className="btn"
+              className="text-xs px-2 py-0.5 btn"
               disabled={!isEditing}
               type="button"
               onClick={addGoldDetailRow}
             >
-              + صف
+              {t("tables.gold.addRow")}
             </button>
           </div>
-          <div className="overflow-x-auto mb-1 max-w-full">
-            <table className="min-w-[1400px] border text-xs text-center table-fixed">
+          <div className="overflow-x-auto mb-0.5 max-w-full">
+            <div className="max-h-[500px] overflow-y-auto">
+              <table className="min-w-[1400px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-72 p-1 border">رقم الصنف</th>
-                  <th className="w-32 p-1 border">الوزن القائم</th>
-                  <th className="w-32 p-1 border">معايرة</th>
-                  <th className="w-32 p-1 border">الوزن المعاير</th>
-                  <th className="w-32 p-1 border">معدل الأجور</th>
-                  <th className="w-32 p-1 border">الأجور</th>
-                  <th className="w-48 p-1 border">الصندوق</th>
-                  <th className="w-80 p-1 border">البيان</th>
-                  <th className="w-32 p-1 border">فرق عيار</th>
-                  <th className="w-32 p-1 border">مبلغ التسكير</th>
-                  <th className="w-32 p-1 border">وزن التسكير</th>
-                  <th className="w-32 p-1 border">رقم الفاتورة</th>
-                  <th className="w-48 p-1 border">مركز التكلفة</th>
-                  <th className="w-12 p-1 border">حذف</th>
+                  <th className={`w-72 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.itemNumber")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.weight")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.calibration")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.calibratedWeight")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{tReceipt("tables.gold.columns.wageRate")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{tReceipt("tables.gold.columns.wages")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.box")}</th>
+                  <th className={`w-80 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.notes")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.caliberDifference")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.sealingAmount")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.sealingWeight")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.invoiceNumber")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.costCenter")}</th>
+                  <th className={`w-12 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.delete")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1248,6 +1521,7 @@ export default function ReceiptVoucherClientPage({
 
                         return (
                           <div
+                            id={`item-select-wrapper-${index}`}
                             ref={(el) => {
                               const refSetter = setGoldInputRef(index, thisCol);
 
@@ -1272,21 +1546,68 @@ export default function ReceiptVoucherClientPage({
                             }}
                             className="h-full"
                           >
-                            <SearchableSelect
-                              className="text-xs h-full"
+                            <AsyncCreatableSelect
+                              isClearable
+                              isSearchable
+                              className="text-xs"
+                              classNamePrefix="select"
+                              components={{ IndicatorSeparator: () => null }}
                               defaultOptions={defaultItemOptions}
-                              disabled={!isEditing}
-                              emptyMessage="لا توجد أصناف"
-                              hasMore={itemsHasMore}
-                              inputId={`item-select-${index}`}
-                              options={[]}
-                              placeholder="اختر الصنف..."
-                              searchDebounceMs={500}
-                              searchPlaceholder="ابحث عن الصنف..."
-                              value={selectedItemValue}
-                              onChange={(selectedValue) => {
+                              instanceId={`item-select-${index}`}
+                              isDisabled={!isEditing}
+                              loadOptions={async (inputValue: string) => {
+                                try {
+                                  const results = await loadItemOptions(
+                                    inputValue,
+                                    [],
+                                    { page: 1 },
+                                  );
+
+                                  return Array.isArray(results) ? results : [];
+                                } catch (error) {
+                                  console.error("Error loading items:", error);
+
+                                  return [];
+                                }
+                              }}
+                              menuPortalTarget={
+                                typeof window !== "undefined"
+                                  ? document.body
+                                  : null
+                              }
+                              menuPosition="fixed"
+                              placeholder={t("tables.gold.placeholders.selectItem")}
+                              styles={{
+                                control: (base) => ({
+                                  ...base,
+                                  minHeight: "100%",
+                                  height: "100%",
+                                  border: "none",
+                                  borderRadius: 0,
+                                  boxShadow: "none",
+                                  cursor: !isEditing ? "not-allowed" : base.cursor,
+                                  backgroundColor: "transparent",
+                                  "&:hover": {
+                                    border: "none",
+                                    boxShadow: "none",
+                                  },
+                                }),
+                                valueContainer: (base) => ({
+                                  ...base,
+                                  padding: "0.125rem 0.25rem",
+                                  height: "100%",
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  margin: 0,
+                                  padding: 0,
+                                }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                              }}
+                              value={itemValue}
+                              onChange={(selectedOption: any) => {
                                 if (!isEditing) return;
-                                if (!selectedValue) {
+                                if (!selectedOption) {
                                   updateGoldDetail(index, "item_id", null);
                                   updateGoldDetail(index, "item_code", "");
                                   updateGoldDetail(index, "item_name", "");
@@ -1294,9 +1615,11 @@ export default function ReceiptVoucherClientPage({
                                   return;
                                 }
 
-                                const selected = items.find(
-                                  (itm) => itm.id === selectedValue,
-                                );
+                                const selected =
+                                  selectedOption?.item ||
+                                  items.find(
+                                    (itm) => itm.id === selectedOption?.value,
+                                  );
 
                                 if (selected) {
                                   updateGoldDetail(
@@ -1322,6 +1645,11 @@ export default function ReceiptVoucherClientPage({
                                   ) {
                                     updateGoldDetail(index, "k", selected.k);
                                   }
+
+                                  // الانتقال للحقل التالي بعد اختيار الصنف
+                                  setTimeout(() => {
+                                    focusNextGoldField(index, thisCol);
+                                  }, 100);
                                 }
                               }}
                               onKeyDown={(e) => {
@@ -1380,13 +1708,6 @@ export default function ReceiptVoucherClientPage({
                                     return;
                                   }
                                 }
-                              }}
-                              onLoadMore={handleLoadMoreItems}
-                              onSearch={handleItemSearch}
-                              onSelectComplete={() => {
-                                setTimeout(() => {
-                                  focusNextGoldField(index, thisCol);
-                                }, 100);
                               }}
                             />
                           </div>
@@ -1539,48 +1860,70 @@ export default function ReceiptVoucherClientPage({
 
                         return (
                           <div
-                            ref={(el) => {
-                              const refSetter = setGoldInputRef(index, thisCol);
-
-                              if (el) {
-                                setTimeout(() => {
-                                  const selectButton = document.querySelector(
-                                    `#gold-box-select-${index}`,
-                                  ) as HTMLButtonElement;
-
-                                  if (selectButton) {
-                                    refSetter(
-                                      (selectButton as unknown as HTMLInputElement) ||
-                                        null,
-                                    );
-                                  } else {
-                                    refSetter(null);
-                                  }
-                                }, 50);
-                              } else {
-                                refSetter(null);
-                              }
-                            }}
+                            id={`gold-box-wrapper-${index}`}
+                            ref={setGoldInputRef(index, thisCol)}
+                            data-gold-col={6}
+                            data-gold-row={index}
+                            data-col={6}
+                            data-row={index}
                             className="h-full"
                           >
-                            <SearchableSelect
-                              className="text-xs h-full"
-                              disabled={!isEditing}
-                              emptyMessage="لا توجد صناديق"
-                              inputId={`gold-box-select-${index}`}
+                            <ReactSelect
+                              isSearchable
+                              className="text-xs"
+                              classNamePrefix="react-select"
+                              components={{ IndicatorSeparator: () => null }}
+                              instanceId={`gold-box-select-${index}`}
+                              isDisabled={!isEditing || goldBoxSelectOptions.length === 0}
+                              menuPortalTarget={
+                                typeof window !== "undefined"
+                                  ? document.body
+                                  : null
+                              }
+                              menuPosition="fixed"
                               options={goldBoxSelectOptions}
-                              placeholder="اختر الصندوق..."
-                              searchPlaceholder="ابحث عن الصندوق..."
-                              value={selectedBoxValue}
-                              onChange={(selectedValue) => {
+                              placeholder={t("tables.cash.placeholders.selectBox")}
+                              styles={{
+                                control: (base) => ({
+                                  ...base,
+                                  minHeight: "32px",
+                                  height: "32px",
+                                  fontSize: "12px",
+                                  border: "none",
+                                  borderRadius: 0,
+                                  boxShadow: "none",
+                                  cursor: isEditing ? "pointer" : "not-allowed",
+                                  backgroundColor: "transparent",
+                                }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                option: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                              }}
+                              value={boxValue}
+                              onChange={(selectedOption: any) => {
                                 if (!isEditing) return;
                                 updateGoldDetail(
                                   index,
                                   "box_id",
-                                  selectedValue
-                                    ? parseInt(String(selectedValue))
+                                  selectedOption?.value
+                                    ? parseInt(String(selectedOption.value))
                                     : undefined,
                                 );
+
+                                // الانتقال للحقل التالي بعد الاختيار
+                                setTimeout(() => {
+                                  focusNextGoldField(index, thisCol);
+                                }, 100);
                               }}
                               onKeyDown={(e) => {
                                 const target = e.target as HTMLElement | null;
@@ -1638,11 +1981,6 @@ export default function ReceiptVoucherClientPage({
                                     return;
                                   }
                                 }
-                              }}
-                              onSelectComplete={() => {
-                                setTimeout(() => {
-                                  focusNextGoldField(index, thisCol);
-                                }, 100);
                               }}
                             />
                           </div>
@@ -1794,48 +2132,69 @@ export default function ReceiptVoucherClientPage({
 
                         return (
                           <div
-                            ref={(el) => {
-                              const refSetter = setGoldInputRef(index, thisCol);
-
-                              if (el) {
-                                setTimeout(() => {
-                                  const selectButton = document.querySelector(
-                                    `#cost-center-gold-select-${index}`,
-                                  ) as HTMLButtonElement;
-
-                                  if (selectButton) {
-                                    refSetter(
-                                      (selectButton as unknown as HTMLInputElement) ||
-                                        null,
-                                    );
-                                  } else {
-                                    refSetter(null);
-                                  }
-                                }, 50);
-                              } else {
-                                refSetter(null);
-                              }
-                            }}
+                            ref={setGoldInputRef(index, thisCol)}
+                            data-gold-col={12}
+                            data-gold-row={index}
+                            data-col={12}
+                            data-row={index}
                             className="h-full"
                           >
-                            <SearchableSelect
-                              className="text-xs h-full"
-                              disabled={!isEditing}
-                              emptyMessage="لا يوجد مراكز تكلفة"
-                              inputId={`cost-center-gold-select-${index}`}
+                            <ReactSelect
+                              isSearchable
+                              className="text-xs"
+                              classNamePrefix="react-select"
+                              components={{ IndicatorSeparator: () => null }}
+                              instanceId={`cost-center-gold-select-${index}`}
+                              isDisabled={!isEditing || costCenters.length === 0}
+                              menuPortalTarget={
+                                typeof window !== "undefined"
+                                  ? document.body
+                                  : null
+                              }
+                              menuPosition="fixed"
                               options={costCenterSelectOptions}
-                              placeholder="مركز التكلفة..."
-                              searchPlaceholder="ابحث عن مركز التكلفة..."
-                              value={selectedCostValue}
-                              onChange={(selectedValue) => {
+                              placeholder={t("tables.gold.placeholders.selectCostCenter")}
+                              styles={{
+                                control: (base) => ({
+                                  ...base,
+                                  minHeight: "32px",
+                                  height: "32px",
+                                  fontSize: "12px",
+                                  border: "none",
+                                  borderRadius: 0,
+                                  boxShadow: "none",
+                                  cursor: isEditing ? "pointer" : "not-allowed",
+                                  backgroundColor: "transparent",
+                                }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                option: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                              }}
+                              value={costValue}
+                              onChange={(selectedOption: any) => {
                                 if (!isEditing) return;
                                 updateGoldDetail(
                                   index,
                                   "cost_id",
-                                  selectedValue
-                                    ? parseInt(String(selectedValue))
+                                  selectedOption?.value
+                                    ? parseInt(String(selectedOption.value))
                                     : undefined,
                                 );
+
+                                // الانتقال للحقل التالي بعد الاختيار
+                                setTimeout(() => {
+                                  focusNextGoldField(index, thisCol);
+                                }, 100);
                               }}
                               onKeyDown={(e) => {
                                 const target = e.target as HTMLElement | null;
@@ -1895,11 +2254,6 @@ export default function ReceiptVoucherClientPage({
                                   }
                                 }
                               }}
-                              onSelectComplete={() => {
-                                setTimeout(() => {
-                                  focusNextGoldField(index, thisCol);
-                                }, 100);
-                              }}
                             />
                           </div>
                         );
@@ -1918,19 +2272,20 @@ export default function ReceiptVoucherClientPage({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Cash Table */}
-      <div className="bg-white rounded-lg border border-slate-200 mb-2">
-        <div className="p-1.5 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-sm font-semibold text-slate-800">النقدية</h3>
+      <div className="bg-white rounded-lg border border-slate-200 mb-1.5">
+        <div className="p-1 border-b border-slate-200 bg-slate-50">
+          <h3 className={`text-xs font-semibold text-slate-800 ${textAlign}`}>{t("tables.cash.title")}</h3>
         </div>
-        <div className="p-1">
-          <div className="flex justify-between mb-1">
+        <div className="p-0.5">
+          <div className="flex justify-between mb-0.5">
             <button
-              className="btn"
+              className="text-xs px-2 py-0.5 btn"
               disabled={!isEditing}
               type="button"
               onClick={addVoucherBoxRow}
@@ -1938,16 +2293,17 @@ export default function ReceiptVoucherClientPage({
               + صف
             </button>
           </div>
-          <div className="overflow-x-auto mb-1 max-w-full">
-            <table className="min-w-[1000px] border text-xs text-center table-fixed">
+          <div className="overflow-x-auto mb-0.5 max-w-full">
+            <div className="max-h-[500px] overflow-y-auto">
+              <table className="min-w-[1000px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-32 p-1 border">المبلغ</th>
-                  <th className="w-48 p-1 border">الصندوق</th>
-                  <th className="w-80 p-1 border">البيان</th>
-                  <th className="w-32 p-1 border">رقم الفاتورة</th>
-                  <th className="w-48 p-1 border">مركز التكلفة</th>
-                  <th className="w-12 p-1 border">حذف</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.amount")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.box")}</th>
+                  <th className={`w-80 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.notes")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.invoiceNumber")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.costCenter")}</th>
+                  <th className={`w-12 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.delete")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1995,6 +2351,7 @@ export default function ReceiptVoucherClientPage({
 
                         return (
                           <div
+                            id={`cash-box-wrapper-${index}`}
                             ref={(el) => {
                               const refSetter = setBoxInputRef(index, thisCol);
 
@@ -2019,19 +2376,52 @@ export default function ReceiptVoucherClientPage({
                             }}
                             className="h-full"
                           >
-                            <SearchableSelect
-                              className="text-xs h-full"
-                              disabled={!isEditing}
-                              emptyMessage="لا توجد صناديق"
-                              inputId={`cash-box-select-${index}`}
+                            <ReactSelect
+                              isSearchable
+                              className="text-xs"
+                              classNamePrefix="react-select"
+                              components={{ IndicatorSeparator: () => null }}
+                              instanceId={`cash-box-select-${index}`}
+                              isDisabled={!isEditing || cashBoxSelectOptions.length === 0}
+                              menuPortalTarget={
+                                typeof window !== "undefined"
+                                  ? document.body
+                                  : null
+                              }
+                              menuPosition="fixed"
                               options={cashBoxSelectOptions}
-                              placeholder="اختر الصندوق..."
-                              searchPlaceholder="ابحث عن الصندوق..."
-                              value={selectedBoxValue}
-                              onChange={(selectedValue) => {
+                              placeholder={t("tables.cash.placeholders.selectBox")}
+                              styles={{
+                                control: (base) => ({
+                                  ...base,
+                                  minHeight: "32px",
+                                  height: "32px",
+                                  fontSize: "12px",
+                                  border: "none",
+                                  borderRadius: 0,
+                                  boxShadow: "none",
+                                  cursor: isEditing ? "pointer" : "not-allowed",
+                                  backgroundColor: "transparent",
+                                }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                option: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                              }}
+                              value={boxValue}
+                              onChange={(selectedOption: any) => {
                                 if (!isEditing) return;
-                                const selectedBoxId = selectedValue
-                                  ? parseInt(String(selectedValue))
+                                const selectedBoxId = selectedOption?.value
+                                  ? parseInt(String(selectedOption.value))
                                   : 0;
 
                                 updateVoucherBox(
@@ -2039,6 +2429,11 @@ export default function ReceiptVoucherClientPage({
                                   "box_id",
                                   selectedBoxId,
                                 );
+
+                                // الانتقال للحقل التالي بعد الاختيار
+                                setTimeout(() => {
+                                  focusNextBoxField(index, thisCol);
+                                }, 100);
                               }}
                               onKeyDown={(e) => {
                                 const target = e.target as HTMLElement | null;
@@ -2096,11 +2491,6 @@ export default function ReceiptVoucherClientPage({
                                     return;
                                   }
                                 }
-                              }}
-                              onSelectComplete={() => {
-                                setTimeout(() => {
-                                  focusNextBoxField(index, thisCol);
-                                }, 100);
                               }}
                             />
                           </div>
@@ -2166,48 +2556,69 @@ export default function ReceiptVoucherClientPage({
 
                         return (
                           <div
-                            ref={(el) => {
-                              const refSetter = setBoxInputRef(index, thisCol);
-
-                              if (el) {
-                                setTimeout(() => {
-                                  const selectButton = document.querySelector(
-                                    `#cost-center-cash-select-${index}`,
-                                  ) as HTMLButtonElement;
-
-                                  if (selectButton) {
-                                    refSetter(
-                                      (selectButton as unknown as HTMLInputElement) ||
-                                        null,
-                                    );
-                                  } else {
-                                    refSetter(null);
-                                  }
-                                }, 50);
-                              } else {
-                                refSetter(null);
-                              }
-                            }}
+                            ref={setBoxInputRef(index, thisCol)}
+                            data-box-col={4}
+                            data-box-row={index}
+                            data-col={4}
+                            data-row={index}
                             className="h-full"
                           >
-                            <SearchableSelect
-                              className="text-xs h-full"
-                              disabled={!isEditing}
-                              emptyMessage="لا يوجد مراكز تكلفة"
-                              inputId={`cost-center-cash-select-${index}`}
+                            <ReactSelect
+                              isSearchable
+                              className="text-xs"
+                              classNamePrefix="react-select"
+                              components={{ IndicatorSeparator: () => null }}
+                              instanceId={`cost-center-cash-select-${index}`}
+                              isDisabled={!isEditing || costCenters.length === 0}
+                              menuPortalTarget={
+                                typeof window !== "undefined"
+                                  ? document.body
+                                  : null
+                              }
+                              menuPosition="fixed"
                               options={costCenterSelectOptions}
-                              placeholder="مركز التكلفة..."
-                              searchPlaceholder="ابحث عن مركز التكلفة..."
-                              value={selectedCostValue}
-                              onChange={(selectedValue) => {
+                              placeholder={t("tables.gold.placeholders.selectCostCenter")}
+                              styles={{
+                                control: (base) => ({
+                                  ...base,
+                                  minHeight: "32px",
+                                  height: "32px",
+                                  fontSize: "12px",
+                                  border: "none",
+                                  borderRadius: 0,
+                                  boxShadow: "none",
+                                  cursor: isEditing ? "pointer" : "not-allowed",
+                                  backgroundColor: "transparent",
+                                }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                option: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                              }}
+                              value={costValue}
+                              onChange={(selectedOption: any) => {
                                 if (!isEditing) return;
                                 updateVoucherBox(
                                   index,
                                   "cost_id",
-                                  selectedValue
-                                    ? parseInt(String(selectedValue))
+                                  selectedOption?.value
+                                    ? parseInt(String(selectedOption.value))
                                     : null,
                                 );
+
+                                // الانتقال للحقل التالي بعد الاختيار
+                                setTimeout(() => {
+                                  focusNextBoxField(index, thisCol);
+                                }, 100);
                               }}
                               onKeyDown={(e) => {
                                 const target = e.target as HTMLElement | null;
@@ -2267,11 +2678,6 @@ export default function ReceiptVoucherClientPage({
                                   }
                                 }
                               }}
-                              onSelectComplete={() => {
-                                setTimeout(() => {
-                                  focusNextBoxField(index, thisCol);
-                                }, 100);
-                              }}
                             />
                           </div>
                         );
@@ -2290,33 +2696,34 @@ export default function ReceiptVoucherClientPage({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Totals */}
-      <div className="bg-gray-50 rounded-lg p-2 border border-gray-200 mt-2">
+      <div className="bg-gray-50 rounded-lg p-1.5 border border-gray-200 mt-1.5">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <span className="text-gray-700 font-medium">
-              إجمالي الذهب (القائم):
+              {t("totals.totalGoldStanding")}:
             </span>
             <span className="font-semibold text-yellow-600">
-              {totals.totalGoldWeight.toFixed(5)} جم
+              {totals.totalGoldWeight.toFixed(5)} {t("totals.unit")}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-amber-800 font-medium">
-              إجمالي الذهب (المعاير):
+              {t("totals.totalGoldCalibrated")}:
             </span>
             <span className="font-semibold text-yellow-600">
-              {totals.totalGoldGWeight.toFixed(5)} جم
+              {totals.totalGoldGWeight.toFixed(5)} {t("totals.unit")}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-amber-800 font-medium">إجمالي الأجور:</span>
+            <span className="text-amber-800 font-medium">{t("totals.totalWages")}:</span>
             <span className="font-semibold text-yellow-600">
               {formatAmount(totals.totalWork)}
               <RiyalIcon color="currentColor" />
@@ -2324,7 +2731,7 @@ export default function ReceiptVoucherClientPage({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">إجمالي النقدية:</span>
+            <span className="text-gray-700 font-medium">{t("totals.totalCash")}:</span>
             <span className="font-semibold text-blue-700 flex items-center gap-1">
               {formatAmount(totals.totalBoxes)}
               <RiyalIcon color="currentColor" />
@@ -2342,7 +2749,7 @@ export default function ReceiptVoucherClientPage({
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
-            <p className="text-lg font-semibold">البيان</p>
+            <p className="text-lg font-semibold">{t("modals.notes.title")}</p>
           </ModalHeader>
           <ModalBody>
             <Textarea
@@ -2352,7 +2759,7 @@ export default function ReceiptVoucherClientPage({
               disabled={!isEditing}
               maxRows={12}
               minRows={6}
-              placeholder="أدخل بيان القيد..."
+              placeholder={t("modals.notes.placeholder")}
               value={voucher.vouch_notes || ""}
               onChange={(e) =>
                 setVoucher((prev) => ({
@@ -2368,7 +2775,7 @@ export default function ReceiptVoucherClientPage({
               variant="solid"
               onPress={() => setIsNotesModalOpen(false)}
             >
-              حفظ
+              {t("modals.notes.save")}
             </Button>
           </ModalFooter>
         </ModalContent>

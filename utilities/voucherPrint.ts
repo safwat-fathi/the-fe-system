@@ -11,6 +11,7 @@ export const generateBalanceVoucherPrintHTML = (
     totalDebitG: number;
     totalCreditG: number;
   },
+  systemName: string = "نظام نفيس ويب",
 ): string => {
   const formattedDate = voucher.vouch_date
     ? new Date(voucher.vouch_date).toLocaleDateString("ar-SA", {
@@ -228,7 +229,7 @@ export const generateBalanceVoucherPrintHTML = (
           </tbody>
         </table>
         <div class="footer">
-          <p>تم طباعة هذا القيد بتاريخ ${new Date().toLocaleDateString("ar-SA")} - نظام NafeesWeb</p>
+          <p>تم طباعة هذا القيد بتاريخ ${new Date().toLocaleDateString("ar-SA")} - ${systemName}</p>
         </div>
       </body>
     </html>

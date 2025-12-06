@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { whatsappConfig } from "@/config/whatsapp";
+import { ensureWhatsappConfig } from "@/config/whatsapp";
 import processWhatsappWebhook from "@/app/actions/whatsapp/webhook-processor";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const url = request.nextUrl;
-  const mode = url.searchParams.get("hub.mode");
-  const token = url.searchParams.get("hub.verify_token");
-  const challenge = url.searchParams.get("hub.challenge");
+  try {
+    const config = ensureWhatsappConfig();
+    const url = request.nextUrl;
+    const mode = url.searchParams.get("hub.mode");
+    const token = url.searchParams.get("hub.verify_token");
+    const challenge = url.searchParams.get("hub.challenge");
 
-  if (mode === "subscribe" && token === whatsappConfig.verifyToken) {
-    return new NextResponse(challenge ?? "", { status: 200 });
+    if (mode === "subscribe" && token === config.verifyToken) {
+      return new NextResponse(challenge ?? "", { status: 200 });
+    }
+
+    return new NextResponse("Forbidden", { status: 403 });
+  } catch (error) {
+    return new NextResponse(
+      error instanceof Error ? error.message : "WhatsApp service not configured",
+      { status: 503 }
+    );
   }
-
-  return new NextResponse("Forbidden", { status: 403 });
 }
 
 export async function POST(request: NextRequest) {

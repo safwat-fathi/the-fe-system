@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cache } from "react";
+import { getTranslations } from "next-intl/server";
 
 import CashReceiptVoucherClientPage from "../CashReceiptVoucherClientPage";
 
@@ -97,6 +98,7 @@ export default async function ReceiptVoucherEditPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getTranslations("forms.cashReceiptVoucher");
   const { id } = await params;
   const searchParamsData = await searchParams;
   const mode = Array.isArray(searchParamsData.mode)
@@ -364,12 +366,14 @@ export default async function ReceiptVoucherEditPage({
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "سند قبض", href: "/forms/voucher1" },
+          { name: t("breadcrumbs.list"), href: "/forms/voucher1" },
           {
             name:
               formMode === "edit"
-                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
-                : "معاينة",
+                ? t("breadcrumbs.edit", {
+                    id: targetVoucher.vouch_id || targetVoucher.id || "",
+                  })
+                : t("breadcrumbs.preview"),
           },
         ]}
       />

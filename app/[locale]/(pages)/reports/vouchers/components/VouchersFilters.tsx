@@ -7,8 +7,10 @@
 
 import { Input, Button, Select, SelectItem, CardBody } from "@heroui/react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { useTranslations, useLocale } from "next-intl";
 
 import Card from "@/components/Card";
+import { getLocaleDir } from "@/i18n/config";
 
 interface VoucherType {
   id: number;
@@ -42,12 +44,17 @@ export default function VouchersFilters({
   voucherTypes,
   onClearFilters,
 }: VouchersFiltersProps) {
+  const t = useTranslations("reports.vouchers");
+  const locale = useLocale();
+  const dir = getLocaleDir(locale);
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+
   return (
     <Card>
       <CardBody className="p-3">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
           <Input
-            placeholder="البحث بالرقم أو البيان..."
+            placeholder={t("filters.searchPlaceholder")}
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
             }
@@ -55,14 +62,14 @@ export default function VouchersFilters({
             onChange={(e) => onSearchChange(e.target.value)}
           />
           <Select
-            placeholder="نوع السند"
+            placeholder={t("filters.voucherTypePlaceholder")}
             selectedKeys={[voucherType || "0"]}
             onSelectionChange={(keys) =>
               onVoucherTypeChange(Array.from(keys)[0] as string)
             }
           >
             {[
-              <SelectItem key="0">جميع الأنواع</SelectItem>,
+              <SelectItem key="0">{t("filters.allTypes")}</SelectItem>,
               ...voucherTypes.map((type, idx) => (
                 <SelectItem key={type.id || `type-${idx}`}>
                   {type.type_name}
@@ -71,13 +78,13 @@ export default function VouchersFilters({
             ]}
           </Select>
           <Input
-            placeholder="من تاريخ"
+            placeholder={t("filters.fromDatePlaceholder")}
             type="date"
             value={fromDate === "0" ? "" : fromDate}
             onChange={(e) => onFromDateChange(e.target.value || "0")}
           />
           <Input
-            placeholder="إلى تاريخ"
+            placeholder={t("filters.toDatePlaceholder")}
             type="date"
             value={toDate === "0" ? "" : toDate}
             onChange={(e) => onToDateChange(e.target.value || "0")}
@@ -87,7 +94,7 @@ export default function VouchersFilters({
             variant="bordered"
             onPress={onClearFilters}
           >
-            مسح الفلاتر
+            {t("filters.clearFilters")}
           </Button>
         </div>
       </CardBody>
