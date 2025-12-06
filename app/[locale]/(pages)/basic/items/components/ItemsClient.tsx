@@ -19,6 +19,7 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import AppDataTable from "@/components/AppDataTable";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
@@ -47,12 +48,6 @@ type FilterParams = {
   search: string;
 };
 
-const ITEM_STATUS_FILTERS: { key: string; label: string }[] = [
-  { key: "all", label: "كل الحالات" },
-  { key: "active", label: "فعال" },
-  { key: "inactive", label: "غير فعال" },
-];
-
 const DEFAULT_FILTERS: FilterParams = {
   category: "",
   itemType: "",
@@ -68,17 +63,27 @@ export default function ItemsClient({
   initialItemTypes,
   companyId,
 }: ItemsClientProps) {
+  const router = useRouter();
+  const t = useTranslations("basic.items");
   const [items, setItems] = useState<ItemModel[]>(initialItems);
   const [, setItemsCount] = useState(totalItems);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [itemTypesState] = useState<ItemType[]>(initialItemTypes);
-  const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
   const [, startTransition] = useTransition();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
 
   const fractions = useFractions() as Fractions;
+
+  const ITEM_STATUS_FILTERS: { key: string; label: string }[] = useMemo(
+    () => [
+      { key: "all", label: t("labels.allStatuses") },
+      { key: "active", label: t("labels.active") },
+      { key: "inactive", label: t("labels.inactive") },
+    ],
+    [t],
+  );
 
   const categoryOptions = useMemo(
     () =>
@@ -171,7 +176,7 @@ export default function ItemsClient({
 
   const handleDeleteClick = useCallback((item: ItemModel) => {
     if (!item.id) {
-      toast.error("❌ لا يمكن حذف صنف بدون معرف");
+      toast.error(t("messages.deleteErrorNoId"));
 
       return;
     }
@@ -196,12 +201,12 @@ export default function ItemsClient({
       const result = await itemService.deleteItem(itemToDelete.id);
 
       if (result) {
-        toast.success("✅ تم حذف الصنف بنجاح");
+        toast.success(t("messages.deleteSuccess"));
 
         // إعادة التحقق من البيانات في الخلفية
         router.refresh();
       } else {
-        toast.error("❌ فشل في حذف الصنف");
+        toast.error(t("messages.deleteFailed"));
         // إعادة تحميل البيانات في حالة الفشل
         router.refresh();
       }
@@ -209,7 +214,7 @@ export default function ItemsClient({
       console.error("Error deleting item:", error);
 
       // عرض رسالة خطأ واضحة
-      const errorMessage = error?.message || "❌ حدث خطأ أثناء حذف الصنف";
+      const errorMessage = error?.message || t("messages.deleteError");
 
       toast.error(errorMessage);
 
@@ -343,7 +348,7 @@ export default function ItemsClient({
           variant="bordered"
           onPress={handleOpenAddModal}
         >
-          إضافة صنف
+          {t("actions.add")}
         </Button>
 
         {/* فاصل خطي */}
@@ -353,7 +358,7 @@ export default function ItemsClient({
         <div className="flex flex-wrap items-center gap-2 flex-1">
           <Select
             className="input-field flex-1 min-w-[120px]"
-            placeholder="اختر الفئة"
+            placeholder={t("labels.selectCategory")}
             selectedKeys={params.category ? [params.category] : []}
             onSelectionChange={(keys) =>
               startTransition(() =>
@@ -371,7 +376,7 @@ export default function ItemsClient({
 
           <Select
             className="input-field flex-1 min-w-[120px]"
-            placeholder="نوع الصنف"
+            placeholder={t("labels.itemType")}
             selectedKeys={params.itemType ? [params.itemType] : []}
             onSelectionChange={(keys) =>
               startTransition(() =>
@@ -389,7 +394,7 @@ export default function ItemsClient({
 
           <Select
             className="input-field flex-1 min-w-[120px]"
-            placeholder="حالة الصنف"
+            placeholder={t("labels.status")}
             selectedKeys={[params.status || "all"]}
             onSelectionChange={(keys) =>
               startTransition(() =>
@@ -408,7 +413,7 @@ export default function ItemsClient({
           <Button
             isIconOnly
             className="h-10"
-            title="مسح الفلاتر"
+            title={t("labels.clearFilters")}
             variant="bordered"
             onPress={clearFilters}
           >
@@ -423,7 +428,7 @@ export default function ItemsClient({
         <div className="w-48">
           <Input
             className="w-full"
-            placeholder="بحث بالاسم..."
+            placeholder={t("labels.searchPlaceholder")}
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
             }
@@ -442,7 +447,7 @@ export default function ItemsClient({
         className=""
         columns={columns}
         data={paginatedItems}
-        emptyContent="لم يتم العثور على أصناف."
+        emptyContent={t("labels.emptyContent")}
         filterable={false}
         searchable={false}
       />
@@ -466,13 +471,13 @@ export default function ItemsClient({
       )}
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="danger"
-        confirmText="حذف"
+        confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={`هل أنت متأكد من حذف الصنف "${itemToDelete?.item_name}"؟`}
+        message={t("modals.deleteMessage", { name: itemToDelete?.item_name })}
         size="md"
-        title="تأكيد الحذف"
+        title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />

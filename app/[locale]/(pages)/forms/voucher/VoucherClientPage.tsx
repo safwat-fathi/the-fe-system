@@ -508,9 +508,15 @@ export default function VoucherClientPage({
                   </span>
                   <span className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}>
                     <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                    {new Date(voucher.vouch_date).toLocaleString(
-                      locale === "ar" ? "ar-EG" : "en-US",
-                    )}
+                    {new Date(voucher.vouch_date).toLocaleString("en-US", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      hour12: true,
+                    })}
                   </span>
                 </h1>
               </div>

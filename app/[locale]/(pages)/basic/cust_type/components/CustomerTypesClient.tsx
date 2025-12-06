@@ -22,6 +22,7 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 import { ConfirmationModal } from "@/components/Modal";
 import customerTypeService from "@/services/api/customer-type.service";
@@ -39,19 +40,11 @@ interface CustomerTypesClientProps {
   initialTypes: CustomerType[];
 }
 
-const columns = [
-  { name: "ID", uid: "id" },
-  { name: "النوع", uid: "type_name" },
-  { name: "النوع بالإنجليزي", uid: "type_name_e" },
-  { name: "الوصف", uid: "type_desc" },
-  { name: "الحالة", uid: "type_status" },
-  { name: "", uid: "actions" },
-];
-
 export default function CustomerTypesClient({
   initialTypes,
 }: CustomerTypesClientProps) {
   const router = useRouter();
+  const t = useTranslations("basic.customerTypes");
   const [types, setTypes] = useState<CustomerType[]>(initialTypes);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -60,20 +53,32 @@ export default function CustomerTypesClient({
 
   const rowsPerPage = 12;
 
+  const columns = useMemo(
+    () => [
+      { name: "ID", uid: "id" },
+      { name: t("columns.typeName"), uid: "type_name" },
+      { name: t("columns.typeNameEn"), uid: "type_name_e" },
+      { name: t("columns.typeDesc"), uid: "type_desc" },
+      { name: t("columns.typeStatus"), uid: "type_status" },
+      { name: "", uid: "actions" },
+    ],
+    [t],
+  );
+
   const loadTypes = async () => {
     try {
       const data = await customerTypeService.getAllCustomerTypes();
 
       setTypes(data);
     } catch (error) {
-      console.error("فشل في جلب أنواع العملاء:", error);
+      console.error(t("messages.loadError"), error);
       setTypes([]);
     }
   };
 
   const handleDeleteClick = (type: CustomerType) => {
     if (!type.id) {
-      toast.error("❌ لا يمكن حذف نوع بدون معرف");
+      toast.error(t("messages.deleteErrorNoId"));
 
       return;
     }
@@ -99,15 +104,15 @@ export default function CustomerTypesClient({
       );
 
       if (result) {
-        toast.success("✅ تم حذف النوع بنجاح");
+        toast.success(t("messages.deleteSuccess"));
         loadTypes();
       } else {
-        toast.error("❌ فشل في حذف نوع العميل");
+        toast.error(t("messages.deleteFailed"));
         loadTypes();
       }
     } catch (error) {
-      console.error("❌ خطأ أثناء الحذف:", error);
-      toast.error("❌ حدث خطأ أثناء الحذف");
+      console.error(t("messages.deleteError"), error);
+      toast.error(t("messages.deleteError"));
       loadTypes();
     } finally {
       setDeleteModalOpen(false);
@@ -167,7 +172,7 @@ export default function CustomerTypesClient({
   return (
     <div className="responsive-container font-cairo">
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className="text-base font-semibold">إدارة أنواع العملاء</h2>
+        <h2 className="text-base font-semibold">{t("labels.manage")}</h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
           className="bg-gray-100"
@@ -175,12 +180,12 @@ export default function CustomerTypesClient({
           onPress={() => router.push("/basic/cust_type/new")}
         >
           <PlusIcon className="h-3 w-3" />
-          إضافة نوع
+          {t("actions.add")}
         </Button>
         <div className="h-8 w-px bg-gray-300" />
         <div className="flex-1 min-w-[200px]">
           <Input
-            placeholder="بحث بالاسم..."
+            placeholder={t("labels.searchPlaceholder")}
             size="sm"
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
@@ -192,7 +197,7 @@ export default function CustomerTypesClient({
       </div>
 
       <div className="responsive-table">
-        <Table aria-label="جدول أنواع العملاء">
+        <Table aria-label={t("labels.tableAriaLabel")}>
           <TableHeader>
             {columns.map((col) => (
               <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -216,7 +221,7 @@ export default function CustomerTypesClient({
       </div>
 
       <div className="responsive-pagination">
-        <span>عدد الأنواع: {filtered.length}</span>
+        <span>{t("labels.totalCount", { count: filtered.length })}</span>
         <Pagination
           color="primary"
           page={page}
@@ -226,13 +231,13 @@ export default function CustomerTypesClient({
       </div>
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="danger"
-        confirmText="حذف"
+        confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={`هل أنت متأكد من حذف نوع العميل "${typeToDelete?.type_name}"؟`}
+        message={t("modals.deleteMessage", { name: typeToDelete?.type_name })}
         size="md"
-        title="تأكيد الحذف"
+        title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />

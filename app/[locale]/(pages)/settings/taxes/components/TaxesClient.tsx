@@ -21,17 +21,14 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { PlusIcon, EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-
-const columns = [
-  { name: "رقم الضريبة", uid: "id" },
-  { name: "الاسم", uid: "tax_name" },
-  { name: "الرمز", uid: "tax_symbol" },
-  { name: "النسبة", uid: "tax_prc" },
-  { name: "الحساب", uid: "tax_account" },
-  { name: "الخيارات", uid: "actions" },
-];
+import { useTranslations } from "next-intl";
 
 type ModalMode = "add" | "edit" | "view";
 
@@ -49,6 +46,7 @@ export default function TaxesClient({
   initialTaxes,
   initialAccounts,
 }: TaxesClientProps) {
+  const t = useTranslations("settings.taxes");
   const [taxes] = useState<Tax[]>(initialTaxes);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -56,6 +54,18 @@ export default function TaxesClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("view");
   const [accounts] = useState(initialAccounts);
+
+  const columns = useMemo(
+    () => [
+      { name: t("columns.id"), uid: "id" },
+      { name: t("columns.taxName"), uid: "tax_name" },
+      { name: t("columns.taxSymbol"), uid: "tax_symbol" },
+      { name: t("columns.taxPrc"), uid: "tax_prc" },
+      { name: t("columns.taxAccount"), uid: "tax_account" },
+      { name: t("columns.actions"), uid: "actions" },
+    ],
+    [t],
+  );
 
   const [currentTax, setCurrentTax] = useState<Tax>({
     id: 0,
@@ -149,7 +159,7 @@ export default function TaxesClient({
     <>
       <div className="responsive-filters">
         <Button className="btn-primary" onPress={openAddModal}>
-          <PlusIcon className="h-4 w-4" /> إنشاء ضريبة
+          <PlusIcon className="h-4 w-4" /> {t("actions.add")}
         </Button>
         <Input
           className="responsive-search"
@@ -205,14 +215,14 @@ export default function TaxesClient({
       >
         <ModalContent className="font-cairo">
           <ModalHeader>
-            {modalMode === "add" && "إنشاء ضريبة جديدة"}
-            {modalMode === "edit" && "تعديل ضريبة"}
-            {modalMode === "view" && "عرض الضريبة"}
+            {modalMode === "add" && t("modals.addTitle")}
+            {modalMode === "edit" && t("modals.editTitle")}
+            {modalMode === "view" && t("modals.viewTitle")}
           </ModalHeader>
           <ModalBody className="grid grid-cols-2 gap-4">
             <Input
               isDisabled={modalMode === "view"}
-              label="الاسم العربي"
+              label={t("fields.taxName")}
               value={currentTax.tax_name || ""}
               onChange={(e) =>
                 setCurrentTax({ ...currentTax, tax_name: e.target.value })
@@ -220,7 +230,7 @@ export default function TaxesClient({
             />
             <Input
               isDisabled={modalMode === "view"}
-              label="الاسم الإنجليزي"
+              label={t("fields.taxNameEn")}
               value={currentTax.tax_name_e || ""}
               onChange={(e) =>
                 setCurrentTax({ ...currentTax, tax_name_e: e.target.value })
@@ -228,7 +238,7 @@ export default function TaxesClient({
             />
             <Select
               isDisabled={modalMode === "view"}
-              label="الحساب"
+              label={t("fields.taxAccount")}
               popoverProps={{ shouldBlockScroll: false }}
               selectedKeys={
                 currentTax.tax_account ? [String(currentTax.tax_account)] : []
@@ -250,7 +260,7 @@ export default function TaxesClient({
             </Select>
             <Input
               isDisabled={modalMode === "view"}
-              label="الرمز"
+              label={t("fields.taxSymbol")}
               value={currentTax.tax_symbol || ""}
               onChange={(e) =>
                 setCurrentTax({ ...currentTax, tax_symbol: e.target.value })
@@ -258,7 +268,7 @@ export default function TaxesClient({
             />
             <Input
               isDisabled={modalMode === "view"}
-              label="النسبة"
+              label={t("fields.taxPrc")}
               step="0.1"
               type="number"
               value={String(currentTax.tax_prc || 0)}
@@ -273,18 +283,16 @@ export default function TaxesClient({
           {modalMode !== "view" && (
             <ModalFooter>
               <Button color="danger" onPress={() => setIsModalOpen(false)}>
-                إلغاء
+                {t("actions.cancel")}
               </Button>
               <Button
                 color="primary"
                 onPress={() => {
-                  toast(
-                    "الميزة قيد التطوير - سيتم إضافة API للإنشاء والتعديل قريباً",
-                  );
+                  toast(t("messages.featureInDevelopment"));
                   setIsModalOpen(false);
                 }}
               >
-                {modalMode === "add" ? "حفظ" : "تحديث"}
+                {modalMode === "add" ? t("actions.save") : t("actions.update")}
               </Button>
             </ModalFooter>
           )}

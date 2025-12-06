@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cache } from "react";
+import { getTranslations } from "next-intl/server";
 
 import CustomerGoldVoucherClientPage from "../CustomerGoldVoucherClientPage";
 
@@ -339,16 +340,48 @@ export default async function CustomerReceiptVoucherEditPage({
     cost_id: costValue && costValue > 0 ? costValue : null,
   };
 
+  const parseNavId = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  };
+
+  const navigationInfo = {
+    previous: parseNavId(
+      (targetVoucher as any).previous_voucher_id ??
+        (targetVoucher as any).previous,
+    ),
+    next: parseNavId(
+      (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
+    ),
+    first: parseNavId(
+      (targetVoucher as any).first_voucher_id ?? (targetVoucher as any).first,
+    ),
+    last: parseNavId(
+      (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
+    ),
+    vouchersCount: (targetVoucher as any).vouchers_count ?? null,
+  };
+
+  const t = await getTranslations("navigation.breadcrumbs.segments");
+  
+  const voucherIdForBreadcrumb = targetVoucher.vouch_id || targetVoucher.id || "";
+  const breadcrumbLabel =
+    formMode === "edit"
+      ? `${t("edit")} ${voucherIdForBreadcrumb}`
+      : t("preview");
+
   return (
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "سند قبض عميل", href: "/forms/gvoucher4" },
+          { name: "", segmentKey: "gvoucher4", href: "/forms/gvoucher4" },
           {
-            name:
-              formMode === "edit"
-                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
-                : "معاينة",
+            name: breadcrumbLabel,
           },
         ]}
       />
@@ -363,6 +396,7 @@ export default async function CustomerReceiptVoucherEditPage({
         goldDetailsData={goldDetails}
         isNewVoucher={false}
         items={formData.items || []}
+        navigationInfo={navigationInfo}
         startInEditMode={startInEditMode}
         vouchType={4}
         voucherBoxes={boxes}
