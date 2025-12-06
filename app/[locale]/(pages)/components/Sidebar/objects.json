@@ -1,0 +1,1482 @@
+[
+  {
+    "id": 1,
+    "obj_name": "الحسابات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 0
+  },
+  {
+    "id": 2,
+    "obj_name": "المبيعات والمشتروات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 0
+  },
+  {
+    "id": 6,
+    "obj_name": "المخازن",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 0
+  },
+  {
+    "id": 9,
+    "obj_name": "ادوات النظام",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 0
+  },
+  {
+    "id": 11,
+    "obj_name": "البيانات الأساسية",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 1
+  },
+  {
+    "id": 12,
+    "obj_name": "النماذج",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 1
+  },
+  {
+    "id": 13,
+    "obj_name": "مراجعات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 1
+  },
+  {
+    "id": 15,
+    "obj_name": "التقارير",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 1
+  },
+  {
+    "id": 16,
+    "obj_name": "الاستعلامات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 1
+  },
+  {
+    "id": 21,
+    "obj_name": "البيانات الأساسية",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 2
+  },
+  {
+    "id": 22,
+    "obj_name": "النماذج",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 2
+  },
+  {
+    "id": 23,
+    "obj_name": "التقارير",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 2
+  },
+  {
+    "id": 24,
+    "obj_name": "الاستعلامات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 2
+  },
+  {
+    "id": 31,
+    "obj_name": "البيانات الأساسية",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 3
+  },
+  {
+    "id": 32,
+    "obj_name": "النماذج",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 3
+  },
+  {
+    "id": 33,
+    "obj_name": "التقارير",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 3
+  },
+  {
+    "id": 34,
+    "obj_name": "الاستعلامات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 3
+  },
+  {
+    "id": 41,
+    "obj_name": "البيانات الأساسية",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 4
+  },
+  {
+    "id": 42,
+    "obj_name": "النماذج",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 4
+  },
+  {
+    "id": 43,
+    "obj_name": "الاستعلامات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 4
+  },
+  {
+    "id": 44,
+    "obj_name": "التقارير",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 4
+  },
+  {
+    "id": 51,
+    "obj_name": "البيانات الأساسية",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 5
+  },
+  {
+    "id": 52,
+    "obj_name": "النماذج",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 5
+  },
+  {
+    "id": 53,
+    "obj_name": "الاستعلامات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 5
+  },
+  {
+    "id": 54,
+    "obj_name": "التقارير",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 5
+  },
+  {
+    "id": 61,
+    "obj_name": "البيانات الأساسية",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 6
+  },
+  {
+    "id": 62,
+    "obj_name": "النماذج",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 6
+  },
+  {
+    "id": 63,
+    "obj_name": "الاستعلامات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 6
+  },
+  {
+    "id": 64,
+    "obj_name": "التقارير",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 6
+  },
+  {
+    "id": 71,
+    "obj_name": "البيانات الأساسية",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 7
+  },
+  {
+    "id": 72,
+    "obj_name": "النماذج",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 7
+  },
+  {
+    "id": 73,
+    "obj_name": "التقارير",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 7
+  },
+  {
+    "id": 74,
+    "obj_name": "الاستعلامات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 7
+  },
+  {
+    "id": 75,
+    "obj_name": "مراجعات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 7
+  },
+  {
+    "id": 913,
+    "obj_name": "المستخدمين والصلاحيات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 9
+  },
+  {
+    "id": 914,
+    "obj_name": "الاعدادات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 9
+  },
+  {
+    "id": 915,
+    "obj_name": "أدوات النظام",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 9
+  },
+  {
+    "id": 916,
+    "obj_name": "ترجمة البيانات",
+    "obj_type": null,
+    "obj_source": null,
+    "obj_status": 1,
+    "obj_parent": 9
+  },
+  {
+    "id": 111,
+    "obj_name": "العملات",
+    "obj_type": "f",
+    "obj_source": "Currencies",
+    "obj_status": 1,
+    "obj_parent": 11
+  },
+  {
+    "id": 113,
+    "obj_name": "دليل الحسابات",
+    "obj_type": "f",
+    "obj_source": "account_master",
+    "obj_status": 1,
+    "obj_parent": 11
+  },
+  {
+    "id": 116,
+    "obj_name": "مراكز التكلفة",
+    "obj_type": "ft",
+    "obj_source": "cost_center",
+    "obj_status": 1,
+    "obj_parent": 11
+  },
+  {
+    "id": 117,
+    "obj_name": "تعريف العملاء",
+    "obj_type": "f",
+    "obj_source": "Customers_master",
+    "obj_status": 1,
+    "obj_parent": 11
+  },
+  {
+    "id": 1110,
+    "obj_name": "تعريف القوائم",
+    "obj_type": "f",
+    "obj_source": "sheet_financial",
+    "obj_status": 1,
+    "obj_parent": 11
+  },
+  {
+    "id": 121,
+    "obj_name": "الأرصدة الإفتتاحية",
+    "obj_type": "f",
+    "obj_source": "balance",
+    "obj_status": 1,
+    "obj_parent": 12
+  },
+  {
+    "id": 122,
+    "obj_name": "قيد يومية",
+    "obj_type": "f",
+    "obj_source": "voucher",
+    "obj_status": 1,
+    "obj_parent": 12
+  },
+  {
+    "id": 123,
+    "obj_name": "سند مقبوضات عامة",
+    "obj_type": "f",
+    "obj_source": "voucher1",
+    "obj_status": 1,
+    "obj_parent": 12
+  },
+  {
+    "id": 124,
+    "obj_name": "سند مصروفات عامة",
+    "obj_type": "f",
+    "obj_source": "voucher2",
+    "obj_status": 1,
+    "obj_parent": 12
+  },
+  {
+    "id": 125,
+    "obj_name": "الترحيل",
+    "obj_type": "f",
+    "obj_source": "post",
+    "obj_status": 1,
+    "obj_parent": 12
+  },
+  {
+    "id": 128,
+    "obj_name": "الاقفال",
+    "obj_type": "f",
+    "obj_source": "closing",
+    "obj_status": 1,
+    "obj_parent": 12
+  },
+  {
+    "id": 131,
+    "obj_name": "مراجعة ضريبة الفواتير",
+    "obj_type": "q",
+    "obj_source": "Reviw_tax1",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 132,
+    "obj_name": "الفواتير الصفرية",
+    "obj_type": "q",
+    "obj_source": "الفواتير الصفرية",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 133,
+    "obj_name": "الاصناف الصفرية",
+    "obj_type": "q",
+    "obj_source": "Reviw_tax2",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 134,
+    "obj_name": "ضريبة المصروفات",
+    "obj_type": "q",
+    "obj_source": "Review_vouch_vat6",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 135,
+    "obj_name": "مراجعة تفاصيل الفاتورة",
+    "obj_type": "q",
+    "obj_source": "Review_invoice_dtl",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 136,
+    "obj_name": "حسابات الاستاذ المفقودة",
+    "obj_type": "q",
+    "obj_source": "حسابات الاستاذ المفقودة",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 137,
+    "obj_name": "حسابات العملاء المفقودة",
+    "obj_type": "q",
+    "obj_source": "حسابات العملاء المفقودة",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 138,
+    "obj_name": "فوارق القيود",
+    "obj_type": "q",
+    "obj_source": "gl_transaction_diff",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 139,
+    "obj_name": "الحركات بدون قيود",
+    "obj_type": "q",
+    "obj_source": "Trans_without_voucher",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 1310,
+    "obj_name": "الفواتير بدون صناديق",
+    "obj_type": "q",
+    "obj_source": "الفواتير بدون صناديق",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 1311,
+    "obj_name": "الفواتير المكرر فيها الاصناف",
+    "obj_type": "q",
+    "obj_source": "الفواتير المكرر فيها الاصناف",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 1312,
+    "obj_name": "الفواتير بدون تفاصيل",
+    "obj_type": "q",
+    "obj_source": "الفواتير بدون تفاصيل",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 1313,
+    "obj_name": "فوارق الحساب في القيود",
+    "obj_type": "q",
+    "obj_source": "فوارق الحساب في القيود",
+    "obj_status": 1,
+    "obj_parent": 13
+  },
+  {
+    "id": 151,
+    "obj_name": "كشف الأرصدة",
+    "obj_type": "f",
+    "obj_source": "a2",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 152,
+    "obj_name": "كشف حساب",
+    "obj_type": "f",
+    "obj_source": "cb",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 159,
+    "obj_name": "ميزان مراجعة",
+    "obj_type": "f",
+    "obj_source": "post2",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 1513,
+    "obj_name": "الحركة اليومية",
+    "obj_type": "f",
+    "obj_source": "dt",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 1516,
+    "obj_name": "كشف بحركات الصناديق",
+    "obj_type": "r",
+    "obj_source": "box_move",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 1518,
+    "obj_name": "كشف دليل الحسابات",
+    "obj_type": "r",
+    "obj_source": "accounts",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 1520,
+    "obj_name": "القوائم المالية",
+    "obj_type": "f",
+    "obj_source": "d",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 1529,
+    "obj_name": "الميزانية العمومية",
+    "obj_type": "f",
+    "obj_source": "الميزانية العمومية",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 1530,
+    "obj_name": "الأرباح والخسائر",
+    "obj_type": "f",
+    "obj_source": "الأرباح والخسائر",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 1532,
+    "obj_name": "تقارير ضريبية",
+    "obj_type": "f",
+    "obj_source": "Tax_form",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 1533,
+    "obj_name": "كشف المصروفات",
+    "obj_type": "r",
+    "obj_source": "تقرير المصروفات",
+    "obj_status": 1,
+    "obj_parent": 15
+  },
+  {
+    "id": 161,
+    "obj_name": "استعلام بالقيود",
+    "obj_type": "q",
+    "obj_source": "voucher_list",
+    "obj_status": 1,
+    "obj_parent": 16
+  },
+  {
+    "id": 163,
+    "obj_name": "القيود الغير محفوظة",
+    "obj_type": "q",
+    "obj_source": "non_commit",
+    "obj_status": 1,
+    "obj_parent": 16
+  },
+  {
+    "id": 164,
+    "obj_name": "قائمة العملاء",
+    "obj_type": "q",
+    "obj_source": "CUSTOMERS_LIST2",
+    "obj_status": 1,
+    "obj_parent": 16
+  },
+  {
+    "id": 211,
+    "obj_name": "الفئات",
+    "obj_type": "f",
+    "obj_source": "categories2",
+    "obj_status": 1,
+    "obj_parent": 21
+  },
+  {
+    "id": 212,
+    "obj_name": "الأصناف",
+    "obj_type": "ft",
+    "obj_source": "items",
+    "obj_status": 1,
+    "obj_parent": 21
+  },
+  {
+    "id": 213,
+    "obj_name": "توزيع الأصناف",
+    "obj_type": "f",
+    "obj_source": "cat_item",
+    "obj_status": 1,
+    "obj_parent": 21
+  },
+  {
+    "id": 214,
+    "obj_name": "حساب الفئات",
+    "obj_type": "f",
+    "obj_source": "cat_acc3",
+    "obj_status": 1,
+    "obj_parent": 21
+  },
+  {
+    "id": 215,
+    "obj_name": "الرصيد الافتتاحي للاصناف",
+    "obj_type": "f",
+    "obj_source": "item_bal2",
+    "obj_status": 1,
+    "obj_parent": 21
+  },
+  {
+    "id": 216,
+    "obj_name": "حسابات الأصناف",
+    "obj_type": "f",
+    "obj_source": "Item_acc",
+    "obj_status": 1,
+    "obj_parent": 21
+  },
+  {
+    "id": 221,
+    "obj_name": "فاتورة شراء ذهب",
+    "obj_type": "f",
+    "obj_source": "invoice12",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 222,
+    "obj_name": "فاتورة بيع ذهب",
+    "obj_type": "f",
+    "obj_source": "invoice22",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 223,
+    "obj_name": "فاتورة مردود شراء ذهب",
+    "obj_type": "f",
+    "obj_source": "invoice42",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 224,
+    "obj_name": "فاتورة مردود بيع ذهب",
+    "obj_type": "f",
+    "obj_source": "invoice32",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 225,
+    "obj_name": "تحويل الأصناف",
+    "obj_type": "f",
+    "obj_source": "trans_items2",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 229,
+    "obj_name": "سند قبض عميل",
+    "obj_type": "f",
+    "obj_source": "voucher11",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2210,
+    "obj_name": "Customer Payment Voucher",
+    "obj_type": "f",
+    "obj_source": "voucher22",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2213,
+    "obj_name": "شراء تسكير",
+    "obj_type": "f",
+    "obj_source": "gold_invoice1",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2214,
+    "obj_name": "بيع تسكير",
+    "obj_type": "f",
+    "obj_source": "gold_invoice2",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2222,
+    "obj_name": "سند استلام",
+    "obj_type": "f",
+    "obj_source": "voucher111",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2223,
+    "obj_name": "سند تسليم",
+    "obj_type": "f",
+    "obj_source": "voucher222",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2227,
+    "obj_name": "عرض سعر",
+    "obj_type": "f",
+    "obj_source": "invoice99",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2228,
+    "obj_name": "فاتورة استيراد",
+    "obj_type": "f",
+    "obj_source": "invoice7",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2229,
+    "obj_name": "فاتورة تصدير",
+    "obj_type": "f",
+    "obj_source": "invoice8",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2230,
+    "obj_name": "تحويل عيار",
+    "obj_type": "f",
+    "obj_source": "voucher33",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2231,
+    "obj_name": "فاتورة شراء عامة",
+    "obj_type": "f",
+    "obj_source": "invoice_1",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2232,
+    "obj_name": "فاتورة بيع عامة",
+    "obj_type": "f",
+    "obj_source": "invoice_2",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2233,
+    "obj_name": "اشعار دائن",
+    "obj_type": "f",
+    "obj_source": "invoice_CR",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2234,
+    "obj_name": "اشعار مدين",
+    "obj_type": "f",
+    "obj_source": "invoice_DB",
+    "obj_status": 1,
+    "obj_parent": 22
+  },
+  {
+    "id": 2346,
+    "obj_name": "تقارير الحركات",
+    "obj_type": "f",
+    "obj_source": "Rep_form",
+    "obj_status": 1,
+    "obj_parent": 23
+  },
+  {
+    "id": 2347,
+    "obj_name": "الذهب المكشوف",
+    "obj_type": "r",
+    "obj_source": "الذهب المكشوف",
+    "obj_status": 1,
+    "obj_parent": 23
+  },
+  {
+    "id": 241,
+    "obj_name": "كشف بالفواتير",
+    "obj_type": "q",
+    "obj_source": "مراجعة الفواتير2",
+    "obj_status": 1,
+    "obj_parent": 24
+  },
+  {
+    "id": 242,
+    "obj_name": "كشف بسندات الذهب",
+    "obj_type": "q",
+    "obj_source": "مراجعة سندات الذهب2",
+    "obj_status": 1,
+    "obj_parent": 24
+  },
+  {
+    "id": 244,
+    "obj_name": "متوسط سعر الذهب اليومي",
+    "obj_type": "q",
+    "obj_source": "Gold_price_daily",
+    "obj_status": 1,
+    "obj_parent": 24
+  },
+  {
+    "id": 247,
+    "obj_name": "استعلام الفواتير",
+    "obj_type": "q",
+    "obj_source": "inv_list",
+    "obj_status": 1,
+    "obj_parent": 24
+  },
+  {
+    "id": 248,
+    "obj_name": "استعلام الفواتير تفصيلي",
+    "obj_type": "q",
+    "obj_source": "inv_dtl_list",
+    "obj_status": 1,
+    "obj_parent": 24
+  },
+  {
+    "id": 321,
+    "obj_name": "سند قبض من عامل",
+    "obj_type": "f",
+    "obj_source": "Production",
+    "obj_status": 1,
+    "obj_parent": 32
+  },
+  {
+    "id": 322,
+    "obj_name": "سند صرف لعامل",
+    "obj_type": "f",
+    "obj_source": "Production2",
+    "obj_status": 1,
+    "obj_parent": 32
+  },
+  {
+    "id": 323,
+    "obj_name": "الجرد المخزني",
+    "obj_type": "f",
+    "obj_source": "Inventory",
+    "obj_status": 1,
+    "obj_parent": 32
+  },
+  {
+    "id": 324,
+    "obj_name": "امر انتاج",
+    "obj_type": "f",
+    "obj_source": "Order",
+    "obj_status": 1,
+    "obj_parent": 32
+  },
+  {
+    "id": 325,
+    "obj_name": "فتح عملية",
+    "obj_type": "f",
+    "obj_source": "open_operation",
+    "obj_status": 1,
+    "obj_parent": 32
+  },
+  {
+    "id": 326,
+    "obj_name": "حركة العمال",
+    "obj_type": "f",
+    "obj_source": "Daily_trans_master",
+    "obj_status": 1,
+    "obj_parent": 32
+  },
+  {
+    "id": 327,
+    "obj_name": "تحويل عيار انتاج",
+    "obj_type": "f",
+    "obj_source": "Prod_trans",
+    "obj_status": 1,
+    "obj_parent": 32
+  },
+  {
+    "id": 3210,
+    "obj_name": "اقفال عملية",
+    "obj_type": "f",
+    "obj_source": "Close_operation",
+    "obj_status": 1,
+    "obj_parent": 32
+  },
+  {
+    "id": 3211,
+    "obj_name": "حركة الاقسام اليومية",
+    "obj_type": "f",
+    "obj_source": "Prod_Daily_trans_master",
+    "obj_status": 1,
+    "obj_parent": 32
+  },
+  {
+    "id": 331,
+    "obj_name": "تقرير حركة منتج",
+    "obj_type": "r",
+    "obj_source": "Set_trans",
+    "obj_status": 1,
+    "obj_parent": 33
+  },
+  {
+    "id": 332,
+    "obj_name": "كشف حساب عامل",
+    "obj_type": "f",
+    "obj_source": "cb_emp",
+    "obj_status": 1,
+    "obj_parent": 33
+  },
+  {
+    "id": 341,
+    "obj_name": "رصيد العامل",
+    "obj_type": "f",
+    "obj_source": "Acc_balance_Emp_All",
+    "obj_status": 1,
+    "obj_parent": 34
+  },
+  {
+    "id": 342,
+    "obj_name": "استعلام المراحل",
+    "obj_type": "q",
+    "obj_source": "استعلام المراحل",
+    "obj_status": 1,
+    "obj_parent": 34
+  },
+  {
+    "id": 343,
+    "obj_name": "استعلام العمليات",
+    "obj_type": "ft",
+    "obj_source": "Operations_list",
+    "obj_status": 1,
+    "obj_parent": 34
+  },
+  {
+    "id": 344,
+    "obj_name": "العمليات",
+    "obj_type": "f",
+    "obj_source": "Operations",
+    "obj_status": 1,
+    "obj_parent": 34
+  },
+  {
+    "id": 345,
+    "obj_name": "استعلام الجرد",
+    "obj_type": "f",
+    "obj_source": "Inventory_date",
+    "obj_status": 1,
+    "obj_parent": 34
+  },
+  {
+    "id": 411,
+    "obj_name": "توزيع اصناف الباركود",
+    "obj_type": "f",
+    "obj_source": "cat_item2",
+    "obj_status": 1,
+    "obj_parent": 41
+  },
+  {
+    "id": 421,
+    "obj_name": "حركة التكويد",
+    "obj_type": "f",
+    "obj_source": "Coding_trans",
+    "obj_status": 1,
+    "obj_parent": 42
+  },
+  {
+    "id": 422,
+    "obj_name": "اعتماد التكويد",
+    "obj_type": "f",
+    "obj_source": "Coding_trans2",
+    "obj_status": 1,
+    "obj_parent": 42
+  },
+  {
+    "id": 511,
+    "obj_name": "الاصناف",
+    "obj_type": "f",
+    "obj_source": "cat_item3",
+    "obj_status": 1,
+    "obj_parent": 51
+  },
+  {
+    "id": 521,
+    "obj_name": "فاتورة شراء",
+    "obj_type": "f",
+    "obj_source": "invoice1",
+    "obj_status": 1,
+    "obj_parent": 52
+  },
+  {
+    "id": 522,
+    "obj_name": "فاتورة بيع",
+    "obj_type": "f",
+    "obj_source": "invoice2",
+    "obj_status": 1,
+    "obj_parent": 52
+  },
+  {
+    "id": 523,
+    "obj_name": "فاتورة مردود شراء",
+    "obj_type": "f",
+    "obj_source": "invoice4",
+    "obj_status": 1,
+    "obj_parent": 52
+  },
+  {
+    "id": 524,
+    "obj_name": "فاتورة مردود بيع",
+    "obj_type": "f",
+    "obj_source": "invoice3",
+    "obj_status": 1,
+    "obj_parent": 52
+  },
+  {
+    "id": 611,
+    "obj_name": "تعريف المخازن",
+    "obj_type": "ft",
+    "obj_source": "Stores",
+    "obj_status": 1,
+    "obj_parent": 61
+  },
+  {
+    "id": 621,
+    "obj_name": "صرف مخزني",
+    "obj_type": "f",
+    "obj_source": "store_trans",
+    "obj_status": 1,
+    "obj_parent": 62
+  },
+  {
+    "id": 622,
+    "obj_name": "استلام مخزني",
+    "obj_type": "f",
+    "obj_source": "store_trans2",
+    "obj_status": 1,
+    "obj_parent": 62
+  },
+  {
+    "id": 641,
+    "obj_name": "المخزون",
+    "obj_type": "f",
+    "obj_source": "inv_form",
+    "obj_status": 1,
+    "obj_parent": 64
+  },
+  {
+    "id": 642,
+    "obj_name": "كشف حساب صنف",
+    "obj_type": "f",
+    "obj_source": "d5",
+    "obj_status": 1,
+    "obj_parent": 64
+  },
+  {
+    "id": 711,
+    "obj_name": "الفئات",
+    "obj_type": "f",
+    "obj_source": "categories2",
+    "obj_status": 1,
+    "obj_parent": 71
+  },
+  {
+    "id": 713,
+    "obj_name": "توزيع الأصناف2",
+    "obj_type": "f",
+    "obj_source": "cat_item",
+    "obj_status": 1,
+    "obj_parent": 71
+  },
+  {
+    "id": 715,
+    "obj_name": "تعريف الصناديق2",
+    "obj_type": "f",
+    "obj_source": "CUR_ACC",
+    "obj_status": 1,
+    "obj_parent": 71
+  },
+  {
+    "id": 721,
+    "obj_name": "فاتورة شراء ذهب2",
+    "obj_type": "f",
+    "obj_source": "invoice12",
+    "obj_status": 1,
+    "obj_parent": 72
+  },
+  {
+    "id": 722,
+    "obj_name": "بيع كاشير",
+    "obj_type": "f",
+    "obj_source": "invoice22c",
+    "obj_status": 1,
+    "obj_parent": 72
+  },
+  {
+    "id": 723,
+    "obj_name": "مردود شراء كاشير",
+    "obj_type": "f",
+    "obj_source": "invoice42",
+    "obj_status": 1,
+    "obj_parent": 72
+  },
+  {
+    "id": 724,
+    "obj_name": "مردود بيع كاشير",
+    "obj_type": "f",
+    "obj_source": "invoice32c",
+    "obj_status": 1,
+    "obj_parent": 72
+  },
+  {
+    "id": 729,
+    "obj_name": "سند قبض",
+    "obj_type": "f",
+    "obj_source": "voucher11",
+    "obj_status": 1,
+    "obj_parent": 72
+  },
+  {
+    "id": 731,
+    "obj_name": "كشف الأرصدة2",
+    "obj_type": "f",
+    "obj_source": "a2",
+    "obj_status": 1,
+    "obj_parent": 73
+  },
+  {
+    "id": 732,
+    "obj_name": "كشف حساب صنف2",
+    "obj_type": "f",
+    "obj_source": "d5",
+    "obj_status": 1,
+    "obj_parent": 73
+  },
+  {
+    "id": 733,
+    "obj_name": "تقارير الحركات2",
+    "obj_type": "f",
+    "obj_source": "Rep_form",
+    "obj_status": 1,
+    "obj_parent": 73
+  },
+  {
+    "id": 734,
+    "obj_name": "كشف بحركات الصناديق2",
+    "obj_type": "r",
+    "obj_source": "box_move",
+    "obj_status": 1,
+    "obj_parent": 73
+  },
+  {
+    "id": 735,
+    "obj_name": "تفصيل حركات الصناديق",
+    "obj_type": "r",
+    "obj_source": "box_move_d",
+    "obj_status": 1,
+    "obj_parent": 73
+  },
+  {
+    "id": 736,
+    "obj_name": "تقارير ضريبية2",
+    "obj_type": "f",
+    "obj_source": "Tax_form",
+    "obj_status": 1,
+    "obj_parent": 73
+  },
+  {
+    "id": 737,
+    "obj_name": "المخزون2",
+    "obj_type": "f",
+    "obj_source": "inv_form",
+    "obj_status": 1,
+    "obj_parent": 73
+  },
+  {
+    "id": 747,
+    "obj_name": "استعلام الفواتير2",
+    "obj_type": "q",
+    "obj_source": "invoice_list",
+    "obj_status": 1,
+    "obj_parent": 74
+  },
+  {
+    "id": 748,
+    "obj_name": "استعلام الفواتير تفصيلي2",
+    "obj_type": "q",
+    "obj_source": "Invoice_dtl_list",
+    "obj_status": 1,
+    "obj_parent": 74
+  },
+  {
+    "id": 751,
+    "obj_name": "مراجعة فواتير الشراء",
+    "obj_type": "f",
+    "obj_source": "invoice12_view",
+    "obj_status": 1,
+    "obj_parent": 75
+  },
+  {
+    "id": 752,
+    "obj_name": "مراجعة فواتير البيع",
+    "obj_type": "f",
+    "obj_source": "invoice2",
+    "obj_status": 1,
+    "obj_parent": 75
+  },
+  {
+    "id": 753,
+    "obj_name": "مراجعة فواتير م.الشراء",
+    "obj_type": "f",
+    "obj_source": "invoice42_view",
+    "obj_status": 1,
+    "obj_parent": 75
+  },
+  {
+    "id": 754,
+    "obj_name": "مراجعة فواتير م.البيع",
+    "obj_type": "f",
+    "obj_source": "invoice32_view",
+    "obj_status": 1,
+    "obj_parent": 75
+  },
+  {
+    "id": 755,
+    "obj_name": "مراجعة سندات القبض",
+    "obj_type": "f",
+    "obj_source": "voucher11_view",
+    "obj_status": 1,
+    "obj_parent": 75
+  },
+  {
+    "id": 756,
+    "obj_name": "مراجعة سندات الصرف",
+    "obj_type": "f",
+    "obj_source": "voucher22_view",
+    "obj_status": 1,
+    "obj_parent": 75
+  },
+  {
+    "id": 758,
+    "obj_name": "مراجعة توزيع الصناديق",
+    "obj_type": "q",
+    "obj_source": "مراجعة توزيع الصناديق",
+    "obj_status": 1,
+    "obj_parent": 75
+  },
+  {
+    "id": 9131,
+    "obj_name": "بيانات المستخدمين",
+    "obj_type": "f",
+    "obj_source": "users",
+    "obj_status": 1,
+    "obj_parent": 913
+  },
+  {
+    "id": 9132,
+    "obj_name": "توزيع الصلاحيات",
+    "obj_type": "f",
+    "obj_source": "User_privilages",
+    "obj_status": 1,
+    "obj_parent": 913
+  },
+  {
+    "id": 9135,
+    "obj_name": "القوائم المختصرة",
+    "obj_type": "ft",
+    "obj_source": "user_objects",
+    "obj_status": 1,
+    "obj_parent": 913
+  },
+  {
+    "id": 9136,
+    "obj_name": "الاعدادات",
+    "obj_type": "t",
+    "obj_source": "short1",
+    "obj_status": 1,
+    "obj_parent": 913
+  },
+  {
+    "id": 9137,
+    "obj_name": "تقارير",
+    "obj_type": "t",
+    "obj_source": "short2",
+    "obj_status": 1,
+    "obj_parent": 913
+  },
+  {
+    "id": 9141,
+    "obj_name": "متغيرات النظام",
+    "obj_type": "f",
+    "obj_source": "home",
+    "obj_status": 1,
+    "obj_parent": 914
+  },
+  {
+    "id": 9142,
+    "obj_name": "مسار النسخ",
+    "obj_type": "f",
+    "obj_source": "branch",
+    "obj_status": 1,
+    "obj_parent": 914
+  },
+  {
+    "id": 9143,
+    "obj_name": "تغيير دقة الشاشة",
+    "obj_type": "f",
+    "obj_source": "change resolution",
+    "obj_status": 1,
+    "obj_parent": 914
+  },
+  {
+    "id": 9144,
+    "obj_name": "ترميز البنود",
+    "obj_type": "f",
+    "obj_source": "COD",
+    "obj_status": 1,
+    "obj_parent": 914
+  },
+  {
+    "id": 9145,
+    "obj_name": "رسائل المصادقة",
+    "obj_type": "f",
+    "obj_source": "Letters",
+    "obj_status": 1,
+    "obj_parent": 914
+  },
+  {
+    "id": 9153,
+    "obj_name": "قيد الأرباح والخسائر",
+    "obj_type": "f",
+    "obj_source": "الأرباح والخسائر",
+    "obj_status": 1,
+    "obj_parent": 915
+  },
+  {
+    "id": 9154,
+    "obj_name": "قيد فوارق العملة",
+    "obj_type": "f",
+    "obj_source": "فوارق العملة",
+    "obj_status": 1,
+    "obj_parent": 915
+  },
+  {
+    "id": 9155,
+    "obj_name": "ملاحظات التقارير",
+    "obj_type": "f",
+    "obj_source": "notes",
+    "obj_status": 1,
+    "obj_parent": 915
+  },
+  {
+    "id": 9156,
+    "obj_name": "توقيعات التقارير",
+    "obj_type": "f",
+    "obj_source": "sign",
+    "obj_status": 1,
+    "obj_parent": 915
+  },
+  {
+    "id": 9159,
+    "obj_name": "اخر الحركات",
+    "obj_type": "q",
+    "obj_source": "Max_trans",
+    "obj_status": 1,
+    "obj_parent": 915
+  },
+  {
+    "id": 91517,
+    "obj_name": "هوامش التقارير",
+    "obj_type": "ft",
+    "obj_source": "Reports_f2",
+    "obj_status": 1,
+    "obj_parent": 915
+  },
+  {
+    "id": 91518,
+    "obj_name": "اعدادات التقارير",
+    "obj_type": "ft",
+    "obj_source": "Reports_List",
+    "obj_status": 1,
+    "obj_parent": 915
+  },
+  {
+    "id": 91519,
+    "obj_name": "اخر الفواتير المرحلة",
+    "obj_type": "q",
+    "obj_source": "Max_Com_trans2",
+    "obj_status": 1,
+    "obj_parent": 915
+  },
+  {
+    "id": 9161,
+    "obj_name": "ترجمة الحسابات",
+    "obj_type": "ft",
+    "obj_source": "trnsl_Accounts",
+    "obj_status": 1,
+    "obj_parent": 916
+  },
+  {
+    "id": 9162,
+    "obj_name": "ترجمة العملاء",
+    "obj_type": "ft",
+    "obj_source": "trnsl_Customers",
+    "obj_status": 1,
+    "obj_parent": 916
+  },
+  {
+    "id": 9163,
+    "obj_name": "ترجمة الفئات",
+    "obj_type": "ft",
+    "obj_source": "trnsl_Categories",
+    "obj_status": 1,
+    "obj_parent": 916
+  },
+  {
+    "id": 9164,
+    "obj_name": "ترجمة الاصناف",
+    "obj_type": "ft",
+    "obj_source": "trnsl_Items",
+    "obj_status": 1,
+    "obj_parent": 916
+  },
+  {
+    "id": 9165,
+    "obj_name": "ترجمة انواع الحسابات",
+    "obj_type": "ft",
+    "obj_source": "trnsl_cust_type",
+    "obj_status": 1,
+    "obj_parent": 916
+  },
+  {
+    "id": 9166,
+    "obj_name": "ترجمة توزيع الاصناف",
+    "obj_type": "ft",
+    "obj_source": "trnsl_cat_Items",
+    "obj_status": 1,
+    "obj_parent": 916
+  }
+]

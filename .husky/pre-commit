@@ -11,5 +11,3 @@ esac
 
 echo "✅ Code style check passed!"
 
-echo "------"
-echo "------"

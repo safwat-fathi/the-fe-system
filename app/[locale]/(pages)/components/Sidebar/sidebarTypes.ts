@@ -34,6 +34,7 @@ export type SidebarLinkBase = {
   href: string;
   icon: ReactNode;
   prefetch?: boolean;
+  requiredObjectIds?: number[];
 };
 
 export type HomeLinkConfig = SidebarLinkBase & {

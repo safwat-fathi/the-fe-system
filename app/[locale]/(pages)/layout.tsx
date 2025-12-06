@@ -1,3 +1,5 @@
+import type { MenuObject } from "@/types/models/menu";
+
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { getLocale } from "next-intl/server";
@@ -17,23 +19,25 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const isAdminCookie = cookieStore.get(STORAGE_KEYS.IS_ADMIN)?.value;
   const isAdmin = isAdminCookie === "true";
-  let allowedObjectIds: number[] = [];
   const locale = await getLocale();
+  let allowedObjectIds: number[] = [];
+  let menuObjects: MenuObject[] = [];
 
-  if (!isAdmin) {
-    try {
-      const menuObjects = await objectsListService.getObjects(locale);
-
-      allowedObjectIds = menuObjects.map((item) => item.id);
-    } catch (error) {
-      console.error("Failed to load allowed menu objects:", error);
-    }
+  try {
+    menuObjects = await objectsListService.getObjects(locale);
+    allowedObjectIds = menuObjects.map((item) => item.id);
+  } catch (error) {
+    console.error("Failed to load allowed menu objects:", error);
   }
 
   return (
     <div className="font-cairo flex h-screen bg-gray-50 overflow-hidden">
       <Suspense fallback={<div className="w-72 bg-slate-900" />}>
-        <Sidebar allowedObjectIds={allowedObjectIds} isAdmin={isAdmin} />
+        <Sidebar
+          allowedObjectIds={allowedObjectIds}
+          isAdmin={isAdmin}
+          menuObjects={menuObjects}
+        />
       </Suspense>
       {/* Main Content */}
       <main className="flex-1 w-full h-screen flex flex-col overflow-hidden">
