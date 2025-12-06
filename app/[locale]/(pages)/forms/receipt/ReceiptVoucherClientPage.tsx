@@ -20,7 +20,13 @@ import {
   PrinterIcon,
   PlusIcon,
   ArrowsPointingOutIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import clsx from "clsx";
 
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
@@ -41,6 +47,13 @@ interface ReceiptVoucherClientPageProps {
   goldDetailsData?: GVoucherDetail[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
+  navigationInfo?: {
+    previous?: number | null;
+    next?: number | null;
+    first?: number | null;
+    last?: number | null;
+    vouchersCount?: number | null;
+  };
   accounts: any[];
   boxes: any[];
   goldBoxes?: any[];
@@ -60,6 +73,7 @@ export default function ReceiptVoucherClientPage({
   goldDetailsData: initialGoldDetails = [],
   isNewVoucher = true,
   voucherRecordId,
+  navigationInfo,
   accounts: initialAccounts,
   boxes: initialBoxes,
   goldBoxes: initialGoldBoxes = [],
@@ -76,6 +90,7 @@ export default function ReceiptVoucherClientPage({
   const pathname = usePathname();
   const t = useTranslations("forms.customerGoldVoucher");
   const tReceipt = useTranslations("forms.receiptVoucher");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
@@ -135,6 +150,41 @@ export default function ReceiptVoucherClientPage({
     formMode,
     categories: initialCategories,
   });
+
+  // رقم السند الحالي
+  const voucherNumber =
+    voucher.vouch_id && Number(voucher.vouch_id) > 0
+      ? String(voucher.vouch_id)
+      : voucher.id
+        ? `DB-${voucher.id}`
+        : "";
+
+  // دالة لبناء روابط التنقل
+  const resolvePaginatedVoucherHref = useCallback(
+    (vouchId: number | null) => {
+      if (!vouchId) return null;
+
+      return `/forms/receipt/${vouchId}?mode=preview`;
+    },
+    [],
+  );
+
+  // metadata للتنقل
+  const navigationMetadata = useMemo(() => {
+    if (!navigationInfo) return null;
+
+    return {
+      nextVoucherHref: resolvePaginatedVoucherHref(navigationInfo.next ?? null),
+      prevVoucherHref: resolvePaginatedVoucherHref(
+        navigationInfo.previous ?? null,
+      ),
+      lastVoucherHref: resolvePaginatedVoucherHref(navigationInfo.last ?? null),
+      firstVoucherHref: resolvePaginatedVoucherHref(
+        navigationInfo.first ?? null,
+      ),
+      totalVouchers: navigationInfo.vouchersCount,
+    };
+  }, [navigationInfo, resolvePaginatedVoucherHref]);
 
   // Handle search
   const [searchTerm, setSearchTerm] = useState("");
@@ -676,7 +726,15 @@ export default function ReceiptVoucherClientPage({
               </span>
               <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                {new Date(voucher.vouch_date).toLocaleString("ar-EG")}
+                {new Date(voucher.vouch_date).toLocaleString("en-US", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  hour12: true,
+                })}
               </span>
             </h1>
           </div>
@@ -750,6 +808,68 @@ export default function ReceiptVoucherClientPage({
             >
               {t("buttons.print")}
             </Button>
+
+            {/* أزرار التنقل - مثل الفواتير - ظاهرة دائماً */}
+            {navigationMetadata && (
+              <div className="hidden md:flex items-center gap-1 mr-2">
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.firstVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.firstVoucherHref || ""}
+                >
+                  <ChevronDoubleRightIcon className="w-4 h-4" />
+                </Link>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.prevVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.prevVoucherHref || ""}
+                >
+                  <ChevronRightIcon className="w-4 h-4" />
+                </Link>
+                <span
+                  className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}
+                >
+                  {tCommon("navigation.position", {
+                    current: voucherNumber,
+                    total: navigationMetadata?.totalVouchers ?? "?",
+                  })}
+                </span>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.nextVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.nextVoucherHref || ""}
+                >
+                  <ChevronLeftIcon className="w-4 h-4" />
+                </Link>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.lastVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.lastVoucherHref || ""}
+                >
+                  <ChevronDoubleLeftIcon className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -944,8 +1064,8 @@ export default function ReceiptVoucherClientPage({
                   e.preventDefault();
                   e.stopPropagation();
                   setTimeout(() => {
-                    const handlingInput = document.querySelector(
-                      'input[placeholder*="مناولة"]',
+                    const handlingInput = document.getElementById(
+                      'receipt-handling',
                     ) as HTMLInputElement;
 
                     if (handlingInput) {
@@ -1065,8 +1185,8 @@ export default function ReceiptVoucherClientPage({
                     e.preventDefault();
                     e.stopPropagation();
                     setTimeout(() => {
-                      const handlingInput = document.querySelector(
-                        'input[placeholder*="مناولة"]',
+                      const handlingInput = document.getElementById(
+                        'receipt-handling',
                       ) as HTMLInputElement;
 
                       if (handlingInput) {
@@ -1091,13 +1211,13 @@ export default function ReceiptVoucherClientPage({
             className="block text-xs font-medium text-slate-700 mb-0.5"
             htmlFor="receipt-handling"
           >
-            مناولة
+            {t("fields.handling")}
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
             id="receipt-handling"
-            placeholder="مناولة"
+            placeholder={t("placeholders.handling")}
             readOnly={!isEditing}
             type="text"
             value={voucher.handling || ""}
@@ -1180,7 +1300,7 @@ export default function ReceiptVoucherClientPage({
             className="block text-xs font-medium text-slate-700 mb-0.5"
             htmlFor="receipt-cost-center-select"
           >
-            مركز التكلفة
+            {t("fields.costCenter")}
           </label>
           <div
             id="receipt-cost-center-select"
@@ -2290,7 +2410,7 @@ export default function ReceiptVoucherClientPage({
               type="button"
               onClick={addVoucherBoxRow}
             >
-              + صف
+              {t("tables.cash.addRow")}
             </button>
           </div>
           <div className="overflow-x-auto mb-0.5 max-w-full">

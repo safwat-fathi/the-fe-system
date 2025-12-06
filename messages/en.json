@@ -10,6 +10,9 @@
       "back": "Back",
       "confirm": "Confirm",
       "cancel": "Cancel"
+    },
+    "navigation": {
+      "position": "{current} of {total}"
     }
   },
   "navigation": {
@@ -227,10 +230,10 @@
       }
     },
     "balanceVoucher": {
-      "title": "Opening Entry",
-      "description": "Opening Entry",
+      "title": "Opening balance",
+      "description": "Opening balance",
       "breadcrumbs": {
-        "list": "Opening Entry",
+        "list": "Opening balance",
         "vouchers": "Vouchers",
         "edit": "Edit {id}",
         "preview": "Preview"
@@ -311,7 +314,7 @@
         "confirm": "Proceed and Save"
       },
       "messages": {
-        "voucherType": "Opening Entry",
+        "voucherType": "Opening balance",
         "numbering": "Numbering in progress...",
         "dateFormat": "Date and Time"
       }
@@ -777,7 +780,7 @@
       },
       "tabs": {
         "all": "All Vouchers",
-        "opening": "Opening Entry",
+        "opening": "Opening balance",
         "receipt": "Receipt Vouchers",
         "payment": "Payment Vouchers",
         "customerReceipt": "Customer Receipt Vouchers",
@@ -990,6 +993,170 @@
             ]
           }
         }
+      }
+    },
+    "systemSettings": {
+      "title": "System Settings",
+      "sections": {
+        "general": {
+          "label": "General Settings",
+          "icon": "🏢",
+          "description": "Company information, logo, and branding"
+        },
+        "accounts": {
+          "label": "Account Settings",
+          "icon": "💰",
+          "description": "Fiscal year, accounts, and taxes"
+        }
+      },
+      "fields": {
+        "general": {
+          "compAName": "Company Name (Arabic)",
+          "compLName": "Company Name (English)",
+          "address": "Address (Arabic)",
+          "addressE": "Address (English)",
+          "footer": "Header",
+          "purity": "Default Calibration",
+          "vatNo": "VAT Number",
+          "compCrNo": "Commercial Register Number",
+          "compGov": "Region",
+          "compCity": "City",
+          "compArea": "District",
+          "compStreet": "Street Name",
+          "compBuildNo": "Building Number",
+          "compPostCode": "Postal Code",
+          "ver": "Version Number"
+        },
+        "accounts": {
+          "finYear": "Fiscal Year",
+          "closeMonth": "Last Closed Month",
+          "closeYear": "Last Closed Year",
+          "initDate": "Fiscal Year Start",
+          "finalyDate": "Fiscal Year End",
+          "frac": "Decimal Places for Amounts",
+          "frac2": "Decimal Places for Weight/Grams",
+          "discAcc": "Allowed Discount Account",
+          "discAcc2": "Earned Discount Account",
+          "buyAcc": "Purchase Account",
+          "sellAcc": "Sales Account",
+          "plAcc": "Profit & Loss Account",
+          "store": "Inventory Account",
+          "vatPerc": "VAT Percentage %"
+        }
+      },
+      "actions": {
+        "reset": "Reset",
+        "save": "Save Settings",
+        "saved": "Saved"
+      },
+      "messages": {
+        "saveSuccess": "Saved successfully",
+        "saveError": "Save failed",
+        "resetSuccess": "Settings reset successfully",
+        "hasChanges": "Settings have been modified"
+      }
+    },
+    "permissions": {
+      "title": "Permissions Management",
+      "viewModes": {
+        "groups": "Groups",
+        "users": "Users"
+      },
+      "columns": {
+        "name": "Group Name",
+        "userName": "Username",
+        "level": "Level",
+        "status": "Status",
+        "type": "Type",
+        "actions": "Actions"
+      },
+      "actions": {
+        "add": "Add New",
+        "export": "Export",
+        "search": "Search...",
+        "sort": "Sort",
+        "permissions": "Permissions",
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save Permissions",
+        "cancel": "Cancel",
+        "close": "Close"
+      },
+      "sortOptions": {
+        "name": "By Name",
+        "level": "By Level",
+        "status": "By Status"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "types": {
+        "admin": "Administrator",
+        "user": "User"
+      },
+      "modals": {
+        "permissionsTitle": "Permissions Management: {name}",
+        "permissionsDesc": "Select allowed permissions",
+        "fullPermissions": "Full Permissions",
+        "fullPermissionsDesc": "This user has Admin permissions - full permissions for all screens"
+      },
+      "messages": {
+        "loadError": "Failed to load data",
+        "saveSuccess": "Permissions saved successfully",
+        "saveError": "Error occurred while saving permissions",
+        "deleteSuccess": "Deleted successfully",
+        "deleteError": "Error occurred while deleting",
+        "deleteConfirm": "Are you sure you want to delete?",
+        "addFeature": "Add feature is under development",
+        "editFeature": "Edit feature is under development",
+        "emptyGroups": "No groups",
+        "emptyUsers": "No users"
+      }
+    },
+    "taxes": {
+      "title": "Taxes",
+      "columns": {
+        "id": "Tax Number",
+        "taxName": "Name",
+        "taxSymbol": "Symbol",
+        "taxPrc": "Rate",
+        "taxAccount": "Account",
+        "actions": "Options"
+      },
+      "actions": {
+        "add": "Create Tax",
+        "view": "View",
+        "edit": "Edit",
+        "save": "Save",
+        "update": "Update",
+        "cancel": "Cancel",
+        "close": "Close"
+      },
+      "labels": {
+        "searchPlaceholder": "Search by name...",
+        "totalCount": "Total Taxes: {count}",
+        "tableAriaLabel": "Taxes Table"
+      },
+      "modals": {
+        "addTitle": "Create New Tax",
+        "editTitle": "Edit Tax",
+        "viewTitle": "View Tax"
+      },
+      "fields": {
+        "taxName": "Name (Arabic)",
+        "taxNameEn": "Name (English)",
+        "taxAccount": "Account",
+        "taxSymbol": "Symbol",
+        "taxPrc": "Rate"
+      },
+      "messages": {
+        "loadError": "Failed to load taxes",
+        "saveSuccess": "Tax saved successfully",
+        "saveError": "Error occurred while saving tax",
+        "updateSuccess": "Tax updated successfully",
+        "updateError": "Error occurred while updating tax",
+        "featureInDevelopment": "Feature under development - API for create and update will be added soon"
       }
     }
   },
@@ -1395,6 +1562,468 @@
         "add": "Add New Currency",
         "view": "View {name}",
         "edit": "Edit {name}"
+      },
+      "customerTypes": {
+        "title": "Customer Types",
+        "columns": {
+          "id": "ID",
+          "typeName": "Type",
+          "typeNameEn": "Type (English)",
+          "typeDesc": "Description",
+          "typeStatus": "Status",
+          "actions": ""
+        },
+        "actions": {
+          "add": "Add Type",
+          "edit": "Edit",
+          "delete": "Delete",
+          "view": "View",
+          "back": "Back",
+          "cancel": "Cancel",
+          "save": "Save",
+          "update": "Update"
+        },
+        "labels": {
+          "manage": "Manage Customer Types",
+          "searchPlaceholder": "Search by name...",
+          "tableAriaLabel": "Customer Types Table",
+          "totalCount": "Total Types: {count}"
+        },
+        "fields": {
+          "typeName": "Customer Type",
+          "typeNameEn": "Customer Type (English)",
+          "typeDesc": "Description",
+          "crDate": "Creation Date",
+          "typeStatus": "Status Enabled"
+        },
+        "messages": {
+          "loadError": "Failed to load customer types",
+          "deleteErrorNoId": "Cannot delete type without ID",
+          "deleteSuccess": "Type deleted successfully",
+          "deleteFailed": "Failed to delete customer type",
+          "deleteError": "Error occurred while deleting",
+          "requiredFields": "All required fields must be filled",
+          "addSuccess": "Type added successfully",
+          "updateSuccess": "Type updated successfully",
+          "operationFailed": "Operation failed",
+          "saveError": "Error occurred while saving"
+        },
+        "titles": {
+          "view": "View {name}",
+          "add": "Add New Customer Type",
+          "edit": "Edit {name}",
+          "defaultName": "Customer Type"
+        },
+        "descriptions": {
+          "view": "View customer type details",
+          "add": "Add a new customer type to the system",
+          "edit": "Edit customer type data"
+        },
+        "modals": {
+          "deleteTitle": "Confirm Delete",
+          "deleteMessage": "Are you sure you want to delete customer type \"{name}\"?",
+          "cancel": "Cancel",
+          "confirm": "Delete"
+        },
+        "breadcrumbs": {
+          "list": "Customer Types",
+          "add": "Add New Customer Type",
+          "view": "View {name}",
+          "edit": "Edit {name}"
+        }
+      },
+      "customers": {
+        "title": "Customers",
+        "columns": {
+          "custCode": "Customer Code",
+          "custName": "Name",
+          "custNameEn": "Name (English)",
+          "mobile": "Mobile",
+          "email": "Email",
+          "status": "Status",
+          "actions": ""
+        },
+        "actions": {
+          "add": "Add Customer",
+          "edit": "Edit",
+          "delete": "Delete",
+          "view": "View",
+          "back": "Back",
+          "cancel": "Cancel",
+          "save": "Save",
+          "update": "Update"
+        },
+        "labels": {
+          "manage": "Manage Customers",
+          "searchPlaceholder": "Search by name...",
+          "tableAriaLabel": "Customers Table",
+          "totalCount": "Total Customers: {count}",
+          "customerType": "Customer Type",
+          "allTypes": "All",
+          "clearFilters": "Clear Filters"
+        },
+        "sections": {
+          "basicInfo": "Basic Information",
+          "addressContact": "Addresses & Contact",
+          "accountsCategories": "Accounts & Classifications",
+          "additionalInfo": "Additional Information"
+        },
+        "fields": {
+          "custCode": "Customer Code",
+          "custName": "Customer Name",
+          "custNameEn": "Customer Name (English)",
+          "mobile": "Mobile",
+          "email": "Email",
+          "vatNo": "VAT Number",
+          "crNo": "Commercial Register Number",
+          "phone": "Home Phone",
+          "fax": "Fax",
+          "address": "Address",
+          "gov": "Governorate",
+          "city": "City",
+          "area": "Area",
+          "street": "Street",
+          "buildNo": "Building",
+          "postCode": "Postal Code",
+          "account": "Accounting Account",
+          "boxType": "Box Type",
+          "customerType": "Customer Type",
+          "handling": "Handling",
+          "handlingEn": "Handling (English)",
+          "perc": "Discount Percentage",
+          "custStatus": "Customer Status",
+          "expt": "Excluded from Balance Report",
+          "hide": "Hidden"
+        },
+        "placeholders": {
+          "selectAccount": "Account Number / Account Name",
+          "selectBoxType": "Box Type",
+          "selectCustomerType": "Customer Type",
+          "selectStatus": "Customer Status"
+        },
+        "messages": {
+          "loadError": "Failed to load customers",
+          "deleteErrorNoId": "Cannot delete customer without ID",
+          "deleteSuccess": "Customer deleted successfully",
+          "deleteFailed": "Failed to delete customer",
+          "deleteError": "Error occurred while deleting",
+          "nameRequired": "Please enter customer name",
+          "typeRequired": "Please enter customer type",
+          "addSuccess": "Customer added successfully",
+          "updateSuccess": "Customer data updated successfully",
+          "operationFailed": "Failed to save customer data",
+          "saveError": "Error occurred while saving customer data"
+        },
+        "titles": {
+          "view": "View {name}",
+          "add": "Add New Customer",
+          "edit": "Edit {name}",
+          "defaultName": "Customer"
+        },
+        "descriptions": {
+          "view": "View customer details",
+          "add": "Add a new customer to the system",
+          "edit": "Edit customer data"
+        },
+        "modals": {
+          "deleteTitle": "Confirm Delete",
+          "deleteMessage": "Are you sure you want to delete customer \"{name}\"?",
+          "cancel": "Cancel",
+          "confirm": "Delete"
+        },
+        "breadcrumbs": {
+          "list": "Customers",
+          "add": "Add New Customer",
+          "view": "View {name}",
+          "edit": "Edit {name}"
+        }
+      },
+      "units": {
+        "title": "Units",
+        "columns": {
+          "id": "Unit Number",
+          "unitName": "Unit Name",
+          "unitNameEn": "Name (English)",
+          "unitType": "Type",
+          "unitStatus": "Status",
+          "unitDefault": "Default?",
+          "actions": ""
+        },
+        "actions": {
+          "add": "Add Unit",
+          "edit": "Edit",
+          "delete": "Delete",
+          "view": "View",
+          "back": "Back",
+          "cancel": "Cancel",
+          "save": "Save",
+          "update": "Update"
+        },
+        "labels": {
+          "manage": "Manage Units",
+          "searchPlaceholder": "Search by name...",
+          "tableAriaLabel": "Units Table",
+          "totalCount": "Total Units: {count}"
+        },
+        "fields": {
+          "unitName": "Unit Name",
+          "unitNameEn": "Unit Name (English)",
+          "unitType": "Unit Type",
+          "unitStatus": "Enabled",
+          "unitDefault": "Default"
+        },
+        "messages": {
+          "loadError": "Failed to load units",
+          "deleteErrorNoId": "Cannot delete unit without ID",
+          "deleteSuccess": "Unit deleted successfully",
+          "deleteFailed": "Failed to delete unit",
+          "deleteError": "Error occurred while deleting",
+          "requiredFields": "All required fields must be filled",
+          "addSuccess": "Unit added successfully",
+          "updateSuccess": "Unit updated successfully",
+          "operationFailed": "Operation failed",
+          "saveError": "Error occurred while saving"
+        },
+        "titles": {
+          "view": "View {name}",
+          "add": "Add New Unit",
+          "edit": "Edit {name}",
+          "defaultName": "Unit"
+        },
+        "descriptions": {
+          "view": "View unit details",
+          "add": "Add a new unit to the system",
+          "edit": "Edit unit data"
+        },
+        "modals": {
+          "deleteTitle": "Confirm Delete",
+          "deleteMessage": "Are you sure you want to delete unit \"{name}\"?",
+          "cancel": "Cancel",
+          "confirm": "Delete"
+        },
+        "breadcrumbs": {
+          "list": "Units",
+          "add": "Add New Unit",
+          "view": "View {name}",
+          "edit": "Edit {name}"
+        }
+      },
+      "categories": {
+        "title": "Categories",
+        "columns": {
+          "id": "Category Number",
+          "catName": "Category Name",
+          "catNameEn": "Name (English)",
+          "k": "Caliber",
+          "purity": "Purity",
+          "box": "Box",
+          "taxType": "Tax",
+          "tax": "Tax Rate",
+          "catType": "Type",
+          "catStatus": "Category Status",
+          "actions": ""
+        },
+        "actions": {
+          "add": "Add Category",
+          "edit": "Edit",
+          "delete": "Delete",
+          "view": "View",
+          "back": "Back",
+          "cancel": "Cancel",
+          "save": "Save",
+          "update": "Update",
+          "reset": "Reset",
+          "saveAccounts": "Save Changes"
+        },
+        "labels": {
+          "manage": "Manage Categories",
+          "searchPlaceholder": "Search by name...",
+          "tableAriaLabel": "Categories Table",
+          "totalCount": "Total Categories: {count}",
+          "categoryAccounts": "Category Accounts",
+          "selectedCategory": "Selected Category: {name}",
+          "selectCategory": "Select a category to view its accounts",
+          "accounts": "Accounts",
+          "value": "Value",
+          "wages": "Wages",
+          "selectCategoryHint": "Please select a category from the table above to view its accounts.",
+          "loadingAccounts": "Loading category accounts...",
+          "accountPlaceholder": "Type account name or number"
+        },
+        "sections": {
+          "categoryAccounts": "Category Accounts",
+          "accountNote": "Note: Category accounts will be saved when you click the save button above."
+        },
+        "accountRows": {
+          "buyAcc": "Purchase Account",
+          "sellAcc": "Sales Account",
+          "backBuy": "Purchase Return Account",
+          "backSell": "Sales Return Account",
+          "distAcc": "Receipt Account",
+          "backDist": "Delivery Account",
+          "invAcc": "Inventory Account",
+          "costAcc": "Cost of Sales Account"
+        },
+        "fields": {
+          "catName": "Category Name",
+          "catNameEn": "Name (English)",
+          "k": "Caliber",
+          "purity": "Purity",
+          "box": "Box",
+          "tax": "Tax Rate",
+          "catType": "Type",
+          "taxType": "Taxable",
+          "catStatus": "Enabled"
+        },
+        "messages": {
+          "loadError": "Failed to load data",
+          "deleteErrorNoId": "Cannot delete category without ID",
+          "deleteSuccess": "Category deleted successfully",
+          "deleteFailed": "Failed to delete",
+          "deleteError": "Error connecting to server",
+          "requiredFields": "All required fields must be filled",
+          "addSuccess": "Category added successfully",
+          "updateSuccess": "Category updated successfully",
+          "operationFailed": "Operation failed",
+          "saveError": "Error occurred while saving",
+          "accountsLoadError": "Failed to load category accounts",
+          "accountsSaveSuccess": "Category accounts saved successfully",
+          "accountsSaveError": "Failed to save category accounts",
+          "accountsSaveErrorGeneric": "Error occurred while saving category accounts",
+          "selectCategoryFirst": "Please select a category first"
+        },
+        "titles": {
+          "view": "View {name}",
+          "add": "Add New Category",
+          "edit": "Edit {name}",
+          "defaultName": "Category"
+        },
+        "descriptions": {
+          "view": "View category details",
+          "add": "Add a new category to the system",
+          "edit": "Edit category data"
+        },
+        "modals": {
+          "deleteTitle": "Confirm Delete",
+          "deleteMessage": "Are you sure you want to delete category \"{name}\"?",
+          "cancel": "Cancel",
+          "confirm": "Delete"
+        },
+        "breadcrumbs": {
+          "list": "Categories",
+          "add": "Add New Category",
+          "view": "View {name}",
+          "edit": "Edit {name}"
+        }
+      },
+      "items": {
+        "title": "Items",
+        "columns": {
+          "itemCode": "Item Code",
+          "itemName": "Item Name",
+          "itemNameEn": "Name (English)",
+          "category": "Category",
+          "itemType": "Item Type",
+          "unit": "Unit",
+          "price": "Price",
+          "weight": "Weight",
+          "actions": ""
+        },
+        "actions": {
+          "add": "Add Item",
+          "edit": "Edit",
+          "delete": "Delete",
+          "view": "View",
+          "back": "Back",
+          "cancel": "Cancel",
+          "save": "Save",
+          "update": "Update",
+          "backToList": "Back to List",
+          "changeImage": "Change Image",
+          "browseFiles": "Browse Files"
+        },
+        "labels": {
+          "manage": "Manage Items",
+          "searchPlaceholder": "Search by name...",
+          "tableAriaLabel": "Items Table",
+          "emptyContent": "No items found.",
+          "selectCategory": "Select Category",
+          "itemType": "Item Type",
+          "status": "Item Status",
+          "allStatuses": "All Statuses",
+          "active": "Active",
+          "inactive": "Inactive",
+          "clearFilters": "Clear Filters"
+        },
+        "sections": {
+          "basicInfo": "Basic Information",
+          "basicInfoDesc": "Enter the main item information to ensure it appears correctly in search.",
+          "technicalInfo": "Technical Information",
+          "technicalInfoDesc": "Help the team understand the item's technical details by entering values accurately.",
+          "classifications": "Classifications",
+          "classificationsDesc": "Select appropriate classifications to ensure the item appears in the correct reports.",
+          "itemImage": "Item Image"
+        },
+        "fields": {
+          "itemName": "Item Name",
+          "itemNameEn": "Item Name (English)",
+          "itemPrice": "Price",
+          "firstCost": "Cost Price",
+          "itemCode": "Item Code",
+          "itemBarcode": "Item Barcode",
+          "itemWeight": "Weight",
+          "itemGWeight": "Weight (grams)",
+          "stones": "Stones",
+          "model": "Model",
+          "k": "Caliber (K)",
+          "purity": "Calibration",
+          "category": "Category",
+          "itemType": "Item Type",
+          "unit": "Unit"
+        },
+        "imageUpload": {
+          "selectOrDrag": "Select a file or drag and drop it here",
+          "supportedFormats": "Supported formats: JPEG, PNG, GIF, WebP",
+          "maxSize": "Max size: 10MB",
+          "preview": "Image Preview",
+          "removeImage": "Remove Image"
+        },
+        "messages": {
+          "loadError": "Failed to load items",
+          "deleteErrorNoId": "Cannot delete item without ID",
+          "deleteSuccess": "Item deleted successfully",
+          "deleteFailed": "Failed to delete item",
+          "deleteError": "Error occurred while deleting item",
+          "addSuccess": "Item added successfully",
+          "updateSuccess": "Item updated successfully",
+          "addError": "Failed to add item",
+          "updateError": "Failed to update item",
+          "saveError": "Error occurred while adding item",
+          "updateErrorGeneric": "Error occurred while updating item"
+        },
+        "titles": {
+          "view": "View Item",
+          "add": "Add New Item",
+          "edit": "Edit Item",
+          "defaultName": "Item"
+        },
+        "descriptions": {
+          "view": "View item details",
+          "add": "Enter new item data",
+          "edit": "Edit item data"
+        },
+        "modals": {
+          "deleteTitle": "Confirm Delete",
+          "deleteMessage": "Are you sure you want to delete item \"{name}\"?",
+          "cancel": "Cancel",
+          "confirm": "Delete"
+        },
+        "breadcrumbs": {
+          "list": "Items",
+          "add": "Add New Item",
+          "view": "View {name}",
+          "edit": "Edit {name}"
+        }
       }
     }
   },

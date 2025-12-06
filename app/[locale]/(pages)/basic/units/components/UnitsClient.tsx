@@ -22,6 +22,7 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 import unitService from "@/services/api/unit.service";
 import { ConfirmationModal } from "@/components/Modal";
@@ -39,19 +40,23 @@ interface UnitsClientProps {
   initialUnits: Unit[];
 }
 
-const columns = [
-  { name: "رقم الوحدة", uid: "id" },
-  { name: "اسم الوحدة", uid: "unit_name" },
-  { name: "الاسم بالإنجليزي", uid: "unit_name_e" },
-  { name: "النوع", uid: "unit_type" },
-  { name: "الوضع", uid: "unit_status" },
-  { name: "افتراضية؟", uid: "unit_default" },
-  { name: "", uid: "actions" },
-];
-
 export default function UnitsClient({ initialUnits }: UnitsClientProps) {
   const router = useRouter();
+  const t = useTranslations("basic.units");
   const [units, setUnits] = useState<Unit[]>(initialUnits);
+
+  const columns = useMemo(
+    () => [
+      { name: t("columns.id"), uid: "id" },
+      { name: t("columns.unitName"), uid: "unit_name" },
+      { name: t("columns.unitNameEn"), uid: "unit_name_e" },
+      { name: t("columns.unitType"), uid: "unit_type" },
+      { name: t("columns.unitStatus"), uid: "unit_status" },
+      { name: t("columns.unitDefault"), uid: "unit_default" },
+      { name: "", uid: "actions" },
+    ],
+    [t],
+  );
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -65,14 +70,14 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
 
       setUnits(data);
     } catch (error) {
-      console.error("فشل في جلب الوحدات:", error);
+      console.error(t("messages.loadError"), error);
       setUnits([]);
     }
   };
 
   const handleDeleteClick = (unit: Unit) => {
     if (!unit.id) {
-      toast.error("❌ لا يمكن حذف وحدة بدون معرف");
+      toast.error(t("messages.deleteErrorNoId"));
 
       return;
     }
@@ -96,15 +101,15 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
       const result = await unitService.deleteUnit(unitToDelete.id);
 
       if (result) {
-        toast.success("✅ تم حذف الوحدة بنجاح");
+        toast.success(t("messages.deleteSuccess"));
         loadUnits();
       } else {
-        toast.error("❌ فشل في حذف الوحدة");
+        toast.error(t("messages.deleteFailed"));
         loadUnits();
       }
     } catch (error) {
-      console.error("❌ خطأ أثناء الحذف:", error);
-      toast.error("❌ حدث خطأ أثناء الحذف");
+      console.error(t("messages.deleteError"), error);
+      toast.error(t("messages.deleteError"));
       loadUnits();
     } finally {
       setDeleteModalOpen(false);
@@ -162,7 +167,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
   return (
     <div className="responsive-container font-cairo">
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className="text-base font-semibold">إدارة الوحدات</h2>
+        <h2 className="text-base font-semibold">{t("labels.manage")}</h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
           className="bg-gray-100"
@@ -170,12 +175,12 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
           onPress={() => router.push("/basic/units/new")}
         >
           <PlusIcon className="h-3 w-3" />
-          إضافة وحدة
+          {t("actions.add")}
         </Button>
         <div className="h-8 w-px bg-gray-300" />
         <div className="flex-1 min-w-[200px]">
           <Input
-            placeholder="بحث بالاسم..."
+            placeholder={t("labels.searchPlaceholder")}
             size="sm"
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
@@ -187,7 +192,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
       </div>
 
       <div className="responsive-table">
-        <Table aria-label="جدول الوحدات">
+        <Table aria-label={t("labels.tableAriaLabel")}>
           <TableHeader>
             {columns.map((col) => (
               <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -214,7 +219,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
       </div>
 
       <div className="responsive-pagination">
-        <span>عدد الوحدات: {filtered.length}</span>
+        <span>{t("labels.totalCount", { count: filtered.length })}</span>
         <Pagination
           color="primary"
           page={page}
@@ -224,13 +229,13 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
       </div>
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="danger"
-        confirmText="حذف"
+        confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={`هل أنت متأكد من حذف الوحدة "${unitToDelete?.unit_name}"؟`}
+        message={t("modals.deleteMessage", { name: unitToDelete?.unit_name })}
         size="md"
-        title="تأكيد الحذف"
+        title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />

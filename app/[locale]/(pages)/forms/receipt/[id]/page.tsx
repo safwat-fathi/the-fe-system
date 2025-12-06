@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import ReceiptVoucherClientPage from "../ReceiptVoucherClientPage";
 
@@ -361,16 +362,51 @@ export default async function ReceiptVoucherEditPage({
       cost_id: costValue && costValue > 0 ? costValue : null,
     };
 
+    const parseNavId = (value: unknown): number | null => {
+      if (value === null || value === undefined || value === "") {
+        return null;
+      }
+
+      const numeric = Number(value);
+
+      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    };
+
+    const navigationInfo = {
+      previous: parseNavId(
+        (targetVoucher as any).previous_voucher_id ??
+          (targetVoucher as any).previous,
+      ),
+      next: parseNavId(
+        (targetVoucher as any).next_voucher_id ??
+          (targetVoucher as any).next,
+      ),
+      first: parseNavId(
+        (targetVoucher as any).first_voucher_id ??
+          (targetVoucher as any).first,
+      ),
+      last: parseNavId(
+        (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
+      ),
+      vouchersCount: (targetVoucher as any).vouchers_count ?? null,
+    };
+
+    const t = await getTranslations("navigation.breadcrumbs.segments");
+    const tReceipt = await getTranslations("forms.receiptVoucher");
+    
+    const voucherIdForBreadcrumb = targetVoucher?.vouch_id || targetVoucher?.id || "";
+    const breadcrumbLabel =
+      formMode === "edit"
+        ? `${t("edit")} ${voucherIdForBreadcrumb}`
+        : t("preview");
+
     return (
       <div className="container mx-auto p-4">
         <Breadcrumb
           items={[
-            { name: "سند استلام", href: "/forms/receipt" },
+            { name: "", segmentKey: "receipt", href: "/forms/receipt" },
             {
-              name:
-                formMode === "edit"
-                  ? `تعديل ${targetVoucher?.vouch_id || targetVoucher?.id || ""}`
-                  : "معاينة",
+              name: breadcrumbLabel,
             },
           ]}
         />
@@ -385,6 +421,7 @@ export default async function ReceiptVoucherEditPage({
           goldDetailsData={goldDetails}
           isNewVoucher={false}
           items={formData.items || []}
+          navigationInfo={navigationInfo}
           startInEditMode={startInEditMode}
           vouchType={111}
           voucherBoxes={boxesData as any}

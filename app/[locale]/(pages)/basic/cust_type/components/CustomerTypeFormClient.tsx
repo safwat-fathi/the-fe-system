@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 import customerTypeService from "@/services/api/customer-type.service";
 
@@ -29,6 +30,7 @@ const CustomerTypeFormClient = ({
   initialType,
 }: CustomerTypeFormClientProps) => {
   const router = useRouter();
+  const t = useTranslations("basic.customerTypes");
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [type, setType] = useState<Partial<CustomerType>>(initialType);
@@ -36,7 +38,7 @@ const CustomerTypeFormClient = ({
 
   const handleSave = async () => {
     if (!type.type_name || !type.type_name_e) {
-      toast.error("❌ يجب ملء جميع الحقول المطلوبة");
+      toast.error(t("messages.requiredFields"));
 
       return;
     }
@@ -56,16 +58,16 @@ const CustomerTypeFormClient = ({
 
       if (result) {
         toast.success(
-          isAddMode ? "✅ تم إضافة النوع بنجاح" : "✅ تم تعديل النوع بنجاح",
+          isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
         router.push("/basic/cust_type");
         router.refresh();
       } else {
-        toast.error("❌ فشل في العملية");
+        toast.error(t("messages.operationFailed"));
       }
     } catch (error) {
-      console.error("❌ خطأ أثناء الحفظ:", error);
-      toast.error("❌ حدث خطأ أثناء الحفظ");
+      console.error(t("messages.saveError"), error);
+      toast.error(t("messages.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -76,17 +78,18 @@ const CustomerTypeFormClient = ({
   };
 
   const getTitle = () => {
-    if (isViewMode) return `عرض ${type.type_name || "نوع العميل"}`;
-    if (isAddMode) return "إضافة نوع عميل جديد";
+    if (isViewMode)
+      return t("titles.view", { name: type.type_name || t("titles.defaultName") });
+    if (isAddMode) return t("titles.add");
 
-    return `تعديل ${type.type_name || "نوع العميل"}`;
+    return t("titles.edit", { name: type.type_name || t("titles.defaultName") });
   };
 
   const getDescription = () => {
-    if (isViewMode) return "عرض تفاصيل نوع العميل";
-    if (isAddMode) return "قم بإضافة نوع عميل جديد إلى النظام";
+    if (isViewMode) return t("descriptions.view");
+    if (isAddMode) return t("descriptions.add");
 
-    return "قم بتعديل بيانات نوع العميل";
+    return t("descriptions.edit");
   };
 
   return (
@@ -103,11 +106,11 @@ const CustomerTypeFormClient = ({
             onPress={() => router.push("/basic/cust_type")}
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            رجوع
+            {t("actions.back")}
           </Button>
           {isViewMode && (
             <Button color="primary" onPress={handleEdit}>
-              تعديل
+              {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
@@ -116,10 +119,10 @@ const CustomerTypeFormClient = ({
                 variant="light"
                 onPress={() => router.push("/basic/cust_type")}
               >
-                إلغاء
+                {t("actions.cancel")}
               </Button>
               <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? "حفظ" : "تحديث"}
+                {isAddMode ? t("actions.save") : t("actions.update")}
               </Button>
             </>
           )}
@@ -131,28 +134,28 @@ const CustomerTypeFormClient = ({
         <Input
           isRequired
           isDisabled={isViewMode}
-          label="نوع العميل"
+          label={t("fields.typeName")}
           value={type.type_name || ""}
           onChange={(e) => setType({ ...type, type_name: e.target.value })}
         />
         <Input
           isRequired
           isDisabled={isViewMode}
-          label="نوع العميل بالإنجليزي"
+          label={t("fields.typeNameEn")}
           value={type.type_name_e || ""}
           onChange={(e) => setType({ ...type, type_name_e: e.target.value })}
         />
         <Input
           className="md:col-span-2"
           isDisabled={isViewMode}
-          label="الوصف"
+          label={t("fields.typeDesc")}
           value={type.type_desc || ""}
           onChange={(e) => setType({ ...type, type_desc: e.target.value })}
         />
         <Input
           className="md:col-span-2"
           isDisabled={true}
-          label="تاريخ الإنشاء"
+          label={t("fields.crDate")}
           value={type.cr_date || ""}
         />
         <div className="md:col-span-2">
@@ -161,7 +164,7 @@ const CustomerTypeFormClient = ({
             isSelected={Boolean(type.type_status)}
             onValueChange={(val) => setType({ ...type, type_status: val })}
           >
-            الحالة مفعلة
+            {t("fields.typeStatus")}
           </Checkbox>
         </div>
       </div>

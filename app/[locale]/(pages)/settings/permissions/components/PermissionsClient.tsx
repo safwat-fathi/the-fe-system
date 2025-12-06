@@ -34,6 +34,7 @@ import {
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 import { Group } from "../types/groups";
 import { User } from "../types/users";
@@ -45,6 +46,7 @@ import PermissionsTree from "./GroupsManager/PermissionsTree";
 type ViewMode = "groups" | "users";
 
 export default function PermissionsClient() {
+  const t = useTranslations("settings.permissions");
   const [viewMode, setViewMode] = useState<ViewMode>("groups");
   const [groups, setGroups] = useState<Group[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -280,20 +282,20 @@ export default function PermissionsClient() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            color={viewMode === "groups" ? "primary" : "default"}
-            variant={viewMode === "groups" ? "solid" : "bordered"}
-            onPress={() => setViewMode("groups")}
-          >
-            المجموعات
-          </Button>
-          <Button
-            color={viewMode === "users" ? "primary" : "default"}
-            variant={viewMode === "users" ? "solid" : "bordered"}
-            onPress={() => setViewMode("users")}
-          >
-            المستخدمين
-          </Button>
+        <Button
+          color={viewMode === "groups" ? "primary" : "default"}
+          variant={viewMode === "groups" ? "solid" : "bordered"}
+          onPress={() => setViewMode("groups")}
+        >
+          {t("labels.groups")}
+        </Button>
+        <Button
+          color={viewMode === "users" ? "primary" : "default"}
+          variant={viewMode === "users" ? "solid" : "bordered"}
+          onPress={() => setViewMode("users")}
+        >
+          {t("labels.users")}
+        </Button>
         </div>
       </div>
 

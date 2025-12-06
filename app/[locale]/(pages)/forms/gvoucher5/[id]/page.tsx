@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cache } from "react";
+import { getTranslations } from "next-intl/server";
 
 import CustomerGoldVoucherClientPage from "../../gvoucher4/CustomerGoldVoucherClientPage";
 
@@ -337,16 +338,21 @@ export default async function CustomerPaymentVoucherEditPage({
     cost_id: costValue && costValue > 0 ? costValue : null,
   };
 
+  const t = await getTranslations("navigation.breadcrumbs.segments");
+  
+  const voucherIdForBreadcrumb = targetVoucher.vouch_id || targetVoucher.id || "";
+  const breadcrumbLabel =
+    formMode === "edit"
+      ? `${t("edit")} ${voucherIdForBreadcrumb}`
+      : t("preview");
+
   return (
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "سند صرف عميل", href: "/forms/gvoucher5" },
+          { name: "", segmentKey: "gvoucher5", href: "/forms/gvoucher5" },
           {
-            name:
-              formMode === "edit"
-                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
-                : "معاينة",
+            name: breadcrumbLabel,
           },
         ]}
       />

@@ -22,8 +22,8 @@ export default async function DeliveryVoucherPage() {
       <div className="container mx-auto p-4">
         <Breadcrumb
           items={[
-            { name: "سند تسليم", href: "/forms/delivery" },
-            { name: "جديدة" },
+            { name: "", segmentKey: "delivery", href: "/forms/delivery" },
+            { name: "", segmentKey: "new" },
           ]}
         />
         <DeliveryVoucherClientPage

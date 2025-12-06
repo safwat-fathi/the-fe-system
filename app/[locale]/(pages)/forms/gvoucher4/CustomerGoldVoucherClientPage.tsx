@@ -20,7 +20,13 @@ import {
   PrinterIcon,
   PlusIcon,
   ArrowsPointingOutIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import clsx from "clsx";
 
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
@@ -40,6 +46,13 @@ interface CustomerGoldVoucherClientPageProps {
   goldDetailsData?: GVoucherDetail[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
+  navigationInfo?: {
+    previous?: number | null;
+    next?: number | null;
+    first?: number | null;
+    last?: number | null;
+    vouchersCount?: number | null;
+  };
   accounts?: any[];
   boxes: any[];
   goldBoxes?: any[];
@@ -59,6 +72,7 @@ export default function CustomerGoldVoucherClientPage({
   goldDetailsData: initialGoldDetails = [],
   isNewVoucher = true,
   voucherRecordId,
+  navigationInfo,
   accounts: initialAccounts = [],
   boxes: initialBoxes,
   goldBoxes: initialGoldBoxes = [],
@@ -76,7 +90,7 @@ export default function CustomerGoldVoucherClientPage({
   const t = useTranslations("forms.customerGoldVoucher");
   const tCommon = useTranslations("common");
   const locale = useLocale();
-  const dir = getLocaleDir(locale);
+  const dir = getLocaleDir(locale as "ar" | "en");
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = dir === "rtl" ? "text-center" : "text-center";
 
@@ -103,6 +117,44 @@ export default function CustomerGoldVoucherClientPage({
         cost_id: null,
       },
   );
+
+  // رقم السند الحالي
+  const voucherNumber =
+    voucher.vouch_id && Number(voucher.vouch_id) > 0
+      ? String(voucher.vouch_id)
+      : voucher.id
+        ? `DB-${voucher.id}`
+        : "";
+
+  // دالة لبناء روابط التنقل
+  const resolvePaginatedVoucherHref = useCallback(
+    (vouchId: number | null) => {
+      if (!vouchId) return null;
+
+      const basePath =
+        vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+
+      return `${basePath}/${vouchId}?mode=preview`;
+    },
+    [vouchType],
+  );
+
+  // metadata للتنقل
+  const navigationMetadata = useMemo(() => {
+    if (!navigationInfo) return null;
+
+    return {
+      nextVoucherHref: resolvePaginatedVoucherHref(navigationInfo.next ?? null),
+      prevVoucherHref: resolvePaginatedVoucherHref(
+        navigationInfo.previous ?? null,
+      ),
+      lastVoucherHref: resolvePaginatedVoucherHref(navigationInfo.last ?? null),
+      firstVoucherHref: resolvePaginatedVoucherHref(
+        navigationInfo.first ?? null,
+      ),
+      totalVouchers: navigationInfo.vouchersCount,
+    };
+  }, [navigationInfo, resolvePaginatedVoucherHref]);
 
   const [isClient, setIsClient] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1546,7 +1598,7 @@ export default function CustomerGoldVoucherClientPage({
       if (printWindow) {
         // تنسيق التاريخ
         const formattedDate = voucher.vouch_date
-          ? new Date(voucher.vouch_date).toLocaleDateString("ar-SA", {
+          ? new Date(voucher.vouch_date).toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
             day: "numeric",
@@ -1985,7 +2037,7 @@ export default function CustomerGoldVoucherClientPage({
               
               
               <div class="footer">
-                <p>تم طباعة هذا السند بتاريخ ${new Date().toLocaleDateString("ar-SA")} - ${tCommon("systemName")}</p>
+                <p>تم طباعة هذا السند بتاريخ ${new Date().toLocaleDateString("en-US")} - ${tCommon("systemName")}</p>
               </div>
             </body>
           </html>
@@ -2154,7 +2206,15 @@ export default function CustomerGoldVoucherClientPage({
               </span>
               <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                {new Date(voucher.vouch_date).toLocaleString("ar-EG")}
+                {new Date(voucher.vouch_date).toLocaleString("en-US", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  hour12: true,
+                })}
               </span>
             </h1>
           </div>
@@ -2234,6 +2294,68 @@ export default function CustomerGoldVoucherClientPage({
             >
               {t("buttons.print")}
             </Button>
+
+            {/* أزرار التنقل - مثل الفواتير - ظاهرة دائماً */}
+            {navigationMetadata && (
+              <div className="hidden md:flex items-center gap-1 mr-2">
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.firstVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.firstVoucherHref || ""}
+                >
+                  <ChevronDoubleRightIcon className="w-4 h-4" />
+                </Link>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.prevVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.prevVoucherHref || ""}
+                >
+                  <ChevronRightIcon className="w-4 h-4" />
+                </Link>
+                <span
+                  className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}
+                >
+                  {tCommon("navigation.position", {
+                    current: voucherNumber,
+                    total: navigationMetadata?.totalVouchers ?? "?",
+                  })}
+                </span>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.nextVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.nextVoucherHref || ""}
+                >
+                  <ChevronLeftIcon className="w-4 h-4" />
+                </Link>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.lastVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.lastVoucherHref || ""}
+                >
+                  <ChevronDoubleLeftIcon className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -2399,8 +2521,8 @@ export default function CustomerGoldVoucherClientPage({
                     e.preventDefault();
                     e.stopPropagation();
                     setTimeout(() => {
-                      const handlingInput = document.querySelector(
-                        'input[placeholder*="مناولة"]',
+                      const handlingInput = document.getElementById(
+                        'gold-handling',
                       ) as HTMLInputElement;
 
                       if (handlingInput) {
@@ -2540,13 +2662,13 @@ export default function CustomerGoldVoucherClientPage({
               className="block text-xs font-medium text-slate-700 mb-0.5"
               htmlFor="gold-handling"
             >
-              مناولة
+              {t("fields.handling")}
             </label>
             <input
               className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
               disabled={!isEditing}
               id="gold-handling"
-              placeholder="مناولة"
+              placeholder={t("placeholders.handling")}
               readOnly={!isEditing}
               type="text"
               value={voucher.handling || ""}
@@ -2629,7 +2751,7 @@ export default function CustomerGoldVoucherClientPage({
               className="block text-xs font-medium text-slate-700 mb-0.5"
               htmlFor="gold-cost-center-select"
             >
-              مركز التكلفة
+              {t("fields.costCenter")}
             </label>
             <div
               id="customer-cost-center-select"
@@ -3285,7 +3407,7 @@ export default function CustomerGoldVoucherClientPage({
                               }
                               menuPosition="fixed"
                               options={goldBoxSelectOptions}
-                              placeholder="اختر الصندوق..."
+                              placeholder={t("tables.cash.placeholders.selectBox")}
                               styles={{
                                 control: (base) => ({
                                   ...base,
@@ -3783,7 +3905,7 @@ export default function CustomerGoldVoucherClientPage({
                               }
                               menuPosition="fixed"
                               options={cashBoxSelectOptions}
-                              placeholder="اختر الصندوق..."
+                              placeholder={t("tables.cash.placeholders.selectBox")}
                               styles={{
                                 control: (base) => ({
                                   ...base,

@@ -22,8 +22,8 @@ export default async function ReceiptVoucherPage() {
       <div className="container mx-auto p-4">
         <Breadcrumb
           items={[
-            { name: "سند استلام", href: "/forms/receipt" },
-            { name: "جديدة" },
+            { name: "", segmentKey: "receipt", href: "/forms/receipt" },
+            { name: "", segmentKey: "new" },
           ]}
         />
         <ReceiptVoucherClientPage
