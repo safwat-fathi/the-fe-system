@@ -205,6 +205,7 @@ export const buildInvoicePrintHtml = ({
   invoiceType,
   selectedCustomer,
   fractions,
+  systemName = "نظام نفيس ويب",
 }: {
   invoice: FormState;
   invoiceItems: InvoiceItemRow[];
@@ -218,6 +219,7 @@ export const buildInvoicePrintHtml = ({
   invoiceType: TransTypes;
   selectedCustomer: any;
   fractions: { frac: number; frac2: number };
+  systemName?: string;
 }): string => {
   const frac = fractions?.frac ?? 2;
   const frac2 = fractions?.frac2 ?? 3;
@@ -372,7 +374,7 @@ export const buildInvoicePrintHtml = ({
 		</div>
 
 		<div class="footer">
-			<p>تم إنشاء هذه الفاتورة عبر نظام نفيس ويب</p>
+			<p>تم إنشاء هذه الفاتورة عبر ${escapeHtml(systemName)}</p>
 			<p style="margin-top: 8px;">تاريخ الطباعة: ${escapeHtml(
         new Date().toLocaleDateString("ar-EG", {
           year: "numeric",

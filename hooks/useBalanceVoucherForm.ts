@@ -2,6 +2,7 @@ import type { Voucher, VoucherDetail } from "@/types/voucher";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 
 import { getNextVoucherNumber } from "@/utilities/numbering";
@@ -41,6 +42,7 @@ export const useBalanceVoucherForm = ({
   startInEditMode: propStartInEditMode,
 }: UseBalanceVoucherFormProps) => {
   const router = useRouter();
+  const t = useTranslations("common");
 
   // State Management
   const [voucher, setVoucher] = useState<Voucher>(() => {
@@ -85,10 +87,20 @@ export const useBalanceVoucherForm = ({
     voucherDetailsData || [],
   );
   const [showUnbalancedModal, setShowUnbalancedModal] = useState(false);
-  const [defaultAccountOptions, setDefaultAccountOptions] = useState<any[]>([]);
 
   const previousVouchNotesRef = useRef<string>(voucherData?.vouch_notes || "");
   const hasGeneratedVoucherNumber = useRef(false);
+
+  // حساب defaultAccountOptions مباشرة باستخدام useMemo بدلاً من useEffect + useState
+  const defaultAccountOptions = useMemo(() => {
+    if (accounts.length === 0) return [];
+
+    return accounts.slice(0, 50).map((acc) => ({
+      value: acc.id,
+      label: `${acc.acc_code ?? acc.code ?? ""} - ${acc.acc_name ?? acc.name ?? ""}`,
+      account: acc,
+    }));
+  }, [accounts]);
 
   // Initialize component
   useEffect(() => {
@@ -121,16 +133,26 @@ export const useBalanceVoucherForm = ({
       setOriginalDetails([...voucherDetailsData]);
     }
 
+    // تأخير توليد رقم القيد حتى لا يعيق التحميل الأولي
     if (
       isNewVoucher &&
       !hasGeneratedVoucherNumber.current &&
       (!voucher.vouch_id || voucher.vouch_id === 0)
     ) {
       hasGeneratedVoucherNumber.current = true;
-      generateNextVoucherNumber().catch((error) => {
-        console.error("خطأ في توليد رقم القيد:", error);
-        hasGeneratedVoucherNumber.current = false;
-      });
+      // استخدام requestIdleCallback إذا كان متاحاً، وإلا setTimeout
+      const scheduleGeneration = () => {
+        generateNextVoucherNumber().catch((error) => {
+          console.error("خطأ في توليد رقم القيد:", error);
+          hasGeneratedVoucherNumber.current = false;
+        });
+      };
+
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        requestIdleCallback(scheduleGeneration, { timeout: 2000 });
+      } else {
+        setTimeout(scheduleGeneration, 500);
+      }
     }
   }, []);
 
@@ -151,21 +173,7 @@ export const useBalanceVoucherForm = ({
     setIsEditing(propStartInEditMode || false);
   }, [isNewVoucher, propStartInEditMode]);
 
-  useEffect(() => {
-    if (accounts.length === 0) {
-      setDefaultAccountOptions([]);
-
-      return;
-    }
-
-    const options = accounts.slice(0, 50).map((acc) => ({
-      value: acc.id,
-      label: `${acc.acc_code ?? acc.code ?? ""} - ${acc.acc_name ?? acc.name ?? ""}`,
-      account: acc,
-    }));
-
-    setDefaultAccountOptions(options);
-  }, [accounts]);
+  // تم نقل defaultAccountOptions إلى useMemo أعلاه لتحسين الأداء
 
   // نقل البيان من القيد الرئيسي إلى التفاصيل تلقائياً
   useEffect(() => {
@@ -949,6 +957,7 @@ export const useBalanceVoucherForm = ({
           details,
           accounts,
           totals,
+          t("systemName"),
         );
 
         printWindow.document.write(html);

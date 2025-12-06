@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import AccountsClient from "./components/AccountsClient";
 
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountsPage() {
+  const t = await getTranslations("basic.accounts");
   try {
     const rootRequestPayload = {
       id: 0,
@@ -37,7 +39,7 @@ export default async function AccountsPage() {
     return (
       <div className="responsive-container font-cairo">
         <Breadcrumb />
-        <h1 className="responsive-text-xl font-bold mb-6">دليل الحسابات</h1>
+        <h1 className="responsive-text-xl font-bold mb-6">{t("title")}</h1>
 
         {/* Client Component للتفاعل */}
         <AccountsClient

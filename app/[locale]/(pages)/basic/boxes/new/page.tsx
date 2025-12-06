@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import BoxFormClient from "../components/BoxFormClient";
 
@@ -57,12 +58,14 @@ export default async function NewBoxPage() {
     hide: false,
   };
 
+  const t = await getTranslations("basic.boxes");
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: "الصناديق", href: "/basic/boxes" },
-          { name: "إضافة صندوق جديد" },
+          { name: t("breadcrumbs.list"), href: "/basic/boxes" },
+          { name: t("breadcrumbs.add") },
         ]}
       />
       <BoxFormClient

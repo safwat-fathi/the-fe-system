@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { cache } from "react";
+import { getTranslations } from "next-intl/server";
 
 import CashReceiptVoucherClientPage from "../CashReceiptVoucherClientPage";
 
@@ -14,31 +15,19 @@ export const metadata: Metadata = {
   description: "عرض وتعديل سند القبض",
 };
 
-// Cache the voucher lookup for better performance
+// Cache the voucher lookup for better performance - استخدام getVoucherById مباشرة (مثل الفواتير)
 const getVoucherById = cache(async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
       return null;
     }
 
-    const vouchersResponse = await voucherService.getAll({
+    // ✅ استخدام getVoucherById مباشرة (أسرع من getAll)
+    const voucher = await voucherService.getVoucherById(voucherId, {
       xvouch_type: "1", // سند القبض فقط
     });
 
-    if (!vouchersResponse.success || !vouchersResponse.data) {
-      return null;
-    }
-
-    const vouchers = Array.isArray(vouchersResponse.data)
-      ? vouchersResponse.data
-      : [];
-
-    // البحث أولاً بـ id (primary key) ثم بـ vouch_id
-    const foundVoucher = vouchers.find(
-      (v: any) => v.id === voucherId || v.vouch_id === voucherId,
-    );
-
-    return foundVoucher || null;
+    return voucher || null;
   } catch (error) {
     console.error("Error fetching voucher:", error);
 
@@ -109,6 +98,7 @@ export default async function ReceiptVoucherEditPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getTranslations("forms.cashReceiptVoucher");
   const { id } = await params;
   const searchParamsData = await searchParams;
   const mode = Array.isArray(searchParamsData.mode)
@@ -345,6 +335,16 @@ export default async function ReceiptVoucherEditPage({
     return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
   };
 
+  const parseVouchersCount = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  };
+
   const navigationInfo = {
     previous: parseNavId(
       (targetVoucher as any).previous_voucher_id ??
@@ -359,18 +359,21 @@ export default async function ReceiptVoucherEditPage({
     last: parseNavId(
       (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
     ),
+    vouchersCount: parseVouchersCount((targetVoucher as any).vouchers_count),
   };
 
   return (
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "سند قبض", href: "/forms/voucher1" },
+          { name: t("breadcrumbs.list"), href: "/forms/voucher1" },
           {
             name:
               formMode === "edit"
-                ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
-                : "معاينة",
+                ? t("breadcrumbs.edit", {
+                    id: targetVoucher.vouch_id || targetVoucher.id || "",
+                  })
+                : t("breadcrumbs.preview"),
           },
         ]}
       />

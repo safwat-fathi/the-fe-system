@@ -14,31 +14,19 @@ export const metadata: Metadata = {
   description: "عرض وتعديل سند الصرف",
 };
 
-// Cache the voucher lookup for better performance
+// Cache the voucher lookup for better performance - استخدام getVoucherById مباشرة (مثل الفواتير)
 const getVoucherById = cache(async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
       return null;
     }
 
-    const vouchersResponse = await voucherService.getAll({
+    // ✅ استخدام getVoucherById مباشرة (أسرع من getAll)
+    const voucher = await voucherService.getVoucherById(voucherId, {
       xvouch_type: "2", // سند الصرف فقط
     });
 
-    if (!vouchersResponse.success || !vouchersResponse.data) {
-      return null;
-    }
-
-    const vouchers = Array.isArray(vouchersResponse.data)
-      ? vouchersResponse.data
-      : [];
-
-    // البحث أولاً بـ id (primary key) ثم بـ vouch_id
-    const foundVoucher = vouchers.find(
-      (v: any) => v.id === voucherId || v.vouch_id === voucherId,
-    );
-
-    return foundVoucher || null;
+    return voucher || null;
   } catch (error) {
     console.error("Error fetching voucher:", error);
 
@@ -329,6 +317,43 @@ export default async function PaymentVoucherEditPage({
     print: targetVoucher.print || false,
   };
 
+  const parseNavId = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  };
+
+  const parseVouchersCount = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  };
+
+  const navigationInfo = {
+    previous: parseNavId(
+      (targetVoucher as any).previous_voucher_id ??
+        (targetVoucher as any).previous,
+    ),
+    next: parseNavId(
+      (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
+    ),
+    first: parseNavId(
+      (targetVoucher as any).first_voucher_id ?? (targetVoucher as any).first,
+    ),
+    last: parseNavId(
+      (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
+    ),
+    vouchersCount: parseVouchersCount((targetVoucher as any).vouchers_count),
+  };
+
   return (
     <div className="container mx-auto p-4">
       <Breadcrumb
@@ -348,6 +373,7 @@ export default async function PaymentVoucherEditPage({
         costCenters={formData.costCenters}
         formMode={formMode}
         isNewVoucher={false}
+        navigationInfo={navigationInfo}
         startInEditMode={startInEditMode}
         vouchType={2}
         voucherBoxes={boxes}

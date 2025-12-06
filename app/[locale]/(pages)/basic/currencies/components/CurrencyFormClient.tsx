@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Select, SelectItem, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations, useLocale } from "next-intl";
+import { getLocaleDir } from "@/i18n/config";
 
 import currencyService from "@/services/api/currency.service";
 import { getCurrencyOptions, findCurrencyByCode } from "@/utilities/currencies";
@@ -35,6 +37,13 @@ const CurrencyFormClient = ({
   initialCurrency,
 }: CurrencyFormClientProps) => {
   const router = useRouter();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const t = useTranslations("basic.currencies");
+  
+  // Dynamic text alignment classes based on locale
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [currency, setCurrency] = useState<Partial<Currency>>(initialCurrency);
@@ -44,13 +53,13 @@ const CurrencyFormClient = ({
 
   const handleSave = async () => {
     if (!currency.cur_name || currency.cur_name.trim() === "") {
-      toast.error("⚠️ اسم العملة مطلوب");
+      toast.error(t("messages.nameRequired"));
 
       return;
     }
 
     if (!currency.cur_price || currency.cur_price.trim() === "") {
-      toast.error("⚠️ السعر مطلوب");
+      toast.error(t("messages.priceRequired"));
 
       return;
     }
@@ -70,15 +79,17 @@ const CurrencyFormClient = ({
 
       if (result) {
         toast.success(
-          isAddMode ? "✅ تم إضافة العملة بنجاح" : "✅ تم تعديل العملة بنجاح",
+          isAddMode
+            ? t("messages.addSuccess")
+            : t("messages.updateSuccess"),
         );
         router.push("/basic/currencies");
         router.refresh();
       } else {
-        toast.error("❌ فشل في العملية");
+        toast.error(t("messages.operationFailed"));
       }
     } catch {
-      toast.error("❌ حدث خطأ أثناء الحفظ، يرجى المحاولة لاحقًا");
+      toast.error(t("messages.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -118,19 +129,25 @@ const CurrencyFormClient = ({
               cur_price: exchangeRate.toFixed(2),
             }));
             toast.success(
-              `تم تحميل معلومات ${currencyInfo.nameAr} مع سعر الصرف تلقائياً`,
+              t("messages.currencyInfoWithPriceLoaded", {
+                name: currencyInfo.nameAr,
+              }),
               { duration: 3000 },
             );
           } else {
-            toast.success(`تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`);
-            toast("⚠️ لم يتم جلب سعر الصرف. يرجى إدخال السعر يدوياً", {
+            toast.success(
+              t("messages.currencyInfoLoaded", { name: currencyInfo.nameAr }),
+            );
+            toast(t("messages.exchangeRateNotFetched"), {
               icon: "ℹ️",
               duration: 4000,
             });
           }
         } catch {
-          toast.success(`تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`);
-          toast("⚠️ لم يتم جلب سعر الصرف. يرجى إدخال السعر يدوياً", {
+          toast.success(
+            t("messages.currencyInfoLoaded", { name: currencyInfo.nameAr }),
+          );
+          toast(t("messages.exchangeRateNotFetched"), {
             icon: "ℹ️",
             duration: 4000,
           });
@@ -142,7 +159,9 @@ const CurrencyFormClient = ({
           ...prev,
           cur_price: "1",
         }));
-        toast.success(`تم تحميل معلومات ${currencyInfo.nameAr} تلقائياً`);
+        toast.success(
+          t("messages.currencyInfoLoaded", { name: currencyInfo.nameAr }),
+        );
       }
     }
   };
@@ -156,7 +175,7 @@ const CurrencyFormClient = ({
       )?.value;
 
     if (!currencyCode) {
-      toast.error("⚠️ لا يمكن تحديث السعر بدون تحديد العملة");
+      toast.error(t("messages.cannotRefreshPrice"));
 
       return;
     }
@@ -171,38 +190,47 @@ const CurrencyFormClient = ({
           ...prev,
           cur_price: exchangeRate.toFixed(2),
         }));
-        toast.success("✅ تم تحديث سعر الصرف بنجاح", { duration: 3000 });
+        toast.success(t("messages.priceRefreshSuccess"), { duration: 3000 });
       } else {
-        toast.error("⚠️ لم يتم جلب سعر الصرف");
+        toast.error(t("messages.priceRefreshError"));
       }
     } catch {
-      toast.error("⚠️ حدث خطأ أثناء جلب سعر الصرف");
+      toast.error(t("messages.priceRefreshFailed"));
     } finally {
       setIsLoadingPrice(false);
     }
   };
 
   const getTitle = () => {
-    if (isViewMode) return `عرض ${currency.cur_name || "العملة"}`;
-    if (isAddMode) return "إضافة عملة جديدة";
+    if (isViewMode)
+      return t("titles.view", {
+        name: currency.cur_name || t("titles.defaultName"),
+      });
+    if (isAddMode) return t("titles.add");
 
-    return `تعديل ${currency.cur_name || "العملة"}`;
+    return t("titles.edit", {
+      name: currency.cur_name || t("titles.defaultName"),
+    });
   };
 
   const getDescription = () => {
-    if (isViewMode) return "عرض تفاصيل العملة";
-    if (isAddMode) return "قم بإضافة عملة جديدة إلى النظام";
+    if (isViewMode) return t("descriptions.view");
+    if (isAddMode) return t("descriptions.add");
 
-    return "قم بتعديل بيانات العملة";
+    return t("descriptions.edit");
   };
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">{getTitle()}</h2>
-          <p className="text-sm text-gray-600 mt-1">{getDescription()}</p>
+        <div className={textAlign}>
+          <h2 className={`text-xl font-bold text-gray-900 ${textAlign}`}>
+            {getTitle()}
+          </h2>
+          <p className={`text-sm text-gray-600 mt-1 ${textAlign}`}>
+            {getDescription()}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -210,11 +238,11 @@ const CurrencyFormClient = ({
             onPress={() => router.push("/basic/currencies")}
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            رجوع
+            {t("actions.back")}
           </Button>
           {isViewMode && (
             <Button color="primary" onPress={handleEdit}>
-              تعديل
+              {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
@@ -223,10 +251,10 @@ const CurrencyFormClient = ({
                 variant="light"
                 onPress={() => router.push("/basic/currencies")}
               >
-                إلغاء
+                {t("actions.cancel")}
               </Button>
               <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? "حفظ" : "تحديث"}
+                {isAddMode ? t("actions.save") : t("actions.update")}
               </Button>
             </>
           )}
@@ -240,8 +268,8 @@ const CurrencyFormClient = ({
           <div>
             <Select
               isDisabled={isViewMode}
-              label="اختر العملة"
-              placeholder="ابحث واختر عملة من القائمة العالمية"
+              label={t("labels.selectCurrency")}
+              placeholder={t("labels.selectCurrencyPlaceholder")}
               selectedKeys={currency.cur_tag ? [currency.cur_tag] : []}
               variant="bordered"
               onSelectionChange={async (keys) => {
@@ -258,22 +286,22 @@ const CurrencyFormClient = ({
                 </SelectItem>
               ))}
             </Select>
-            <p className="text-sm text-gray-500 mt-1">
-              اختر عملة من القائمة لتعبئة الحقول تلقائياً
+            <p className={`text-sm text-gray-500 mt-1 ${textAlign}`}>
+              {t("labels.selectCurrencyHint")}
             </p>
           </div>
         )}
 
         {/* تفاصيل العملة */}
         <div>
-          <h3 className="text-lg font-semibold mb-3 text-gray-700">
-            تفاصيل العملة
+          <h3 className={`text-lg font-semibold mb-3 text-gray-700 ${textAlign}`}>
+            {t("labels.currencyDetails")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               isRequired
               isDisabled={isViewMode}
-              label="اسم العملة"
+              label={t("fields.name")}
               value={currency.cur_name || ""}
               onChange={(e) =>
                 setCurrency({ ...currency, cur_name: e.target.value })
@@ -281,7 +309,7 @@ const CurrencyFormClient = ({
             />
             <Input
               isDisabled={isViewMode}
-              label="اسم العملة بالإنجليزي"
+              label={t("fields.nameEn")}
               value={currency.cur_name_e || ""}
               onChange={(e) =>
                 setCurrency({ ...currency, cur_name_e: e.target.value })
@@ -289,7 +317,7 @@ const CurrencyFormClient = ({
             />
             <Input
               isDisabled={isViewMode}
-              label="جزء العملة"
+              label={t("fields.part")}
               value={currency.cur_part || ""}
               onChange={(e) =>
                 setCurrency({ ...currency, cur_part: e.target.value })
@@ -297,7 +325,7 @@ const CurrencyFormClient = ({
             />
             <Input
               isDisabled={isViewMode}
-              label="جزء العملة بالإنجليزي"
+              label={t("fields.partEn")}
               value={currency.cur_part_e || ""}
               onChange={(e) =>
                 setCurrency({ ...currency, cur_part_e: e.target.value })
@@ -305,7 +333,7 @@ const CurrencyFormClient = ({
             />
             <Input
               isDisabled={isViewMode}
-              label="رمز العملة"
+              label={t("fields.sign")}
               value={currency.cur_sign || ""}
               onChange={(e) =>
                 setCurrency({ ...currency, cur_sign: e.target.value })
@@ -313,11 +341,11 @@ const CurrencyFormClient = ({
             />
             <div>
               <Input
-                description="الوسم يجب أن يكون حرف واحد فقط (سيتم أخذ أول حرف تلقائياً)"
+                description={t("labels.tagDescription")}
                 isDisabled={isViewMode}
-                label="الوسم (حرف واحد فقط)"
+                label={t("fields.tag")}
                 maxLength={1}
-                placeholder="مثال: U, E, S"
+                placeholder={t("labels.tagPlaceholder")}
                 value={currency.cur_tag || ""}
                 onChange={(e) => {
                   const value = e.target.value.slice(0, 1).toUpperCase();
@@ -332,11 +360,11 @@ const CurrencyFormClient = ({
                 className="flex-1"
                 description={
                   isLoadingPrice
-                    ? "جاري جلب سعر الصرف..."
-                    : "سعر الصرف مقابل الريال السعودي"
+                    ? t("labels.priceLoading")
+                    : t("labels.priceDescription")
                 }
                 isDisabled={isViewMode || isLoadingPrice}
-                label="السعر (مقابل الريال السعودي)"
+                label={t("fields.price")}
                 value={currency.cur_price || ""}
                 onChange={(e) =>
                   setCurrency({ ...currency, cur_price: e.target.value })
@@ -350,7 +378,7 @@ const CurrencyFormClient = ({
                     className="h-[56px] min-w-[40px] bg-transparent hover:bg-gray-100 text-gray-600 hover:text-blue-600 rounded-lg transition-colors"
                     isLoading={isLoadingPrice}
                     size="md"
-                    title="تحديث سعر الصرف من الإنترنت"
+                    title={t("actions.refreshPrice")}
                     variant="light"
                     onPress={handleRefreshPrice}
                   >
@@ -366,7 +394,7 @@ const CurrencyFormClient = ({
                   setCurrency({ ...currency, cur_status: val })
                 }
               >
-                الحالة مفعلة
+                {t("labels.statusEnabled")}
               </Checkbox>
             </div>
           </div>

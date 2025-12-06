@@ -22,6 +22,7 @@ const getPaymentVoucherForNavigation = cache(async () => {
   try {
     const vouchersResponse = await voucherService.getAll({
       xvouch_type: "2", // سند الصرف فقط
+      page: "1", // ✅ جلب الصفحة الأولى فقط
     });
 
     if (!vouchersResponse.success || !vouchersResponse.data) {
@@ -82,6 +83,9 @@ export default async function PaymentVoucherPage() {
             (voucherForNav as any).last_voucher_id ??
               (voucherForNav as any).last,
           ),
+          vouchersCount: (voucherForNav as any).vouchers_count
+            ? Number((voucherForNav as any).vouchers_count)
+            : null,
         }
       : undefined;
 

@@ -120,7 +120,7 @@ const getVoucherFormData = cache(
       voucherService.getCaratTypes(),
       boxesPromise,
       goldBoxesPromise,
-      itemService.searchItems({ companyId: 1 }),
+      itemService.searchItems({ companyId: 1, page: 1 }), // ✅ استخدام pagination
       customerService.getAllCustomers({ xcom_id: 1 }),
       categoryService.getAllCategories(1),
     ]);

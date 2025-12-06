@@ -8,6 +8,7 @@ import {
   useCallback,
 } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import toast from "react-hot-toast";
 import { Button, Tabs, Tab, Tooltip, CardBody } from "@heroui/react";
 import {
@@ -27,6 +28,7 @@ import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import { IParams } from "@/types/services/base";
 import { voucherService } from "@/services/api";
 import { getVoucherRoute } from "@/utilities/voucher/routing";
+import { getLocaleDir } from "@/i18n/config";
 
 interface VoucherType {
   id: number;
@@ -56,6 +58,10 @@ const VouchersReportClient = ({
   overallTotals,
 }: VouchersReportClientProps) => {
   const router = useRouter();
+  const t = useTranslations("reports.vouchers");
+  const locale = useLocale();
+  const dir = getLocaleDir(locale);
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   // Query parameters management
   const { params, setParams } = useQueryParams<{
@@ -214,7 +220,7 @@ const VouchersReportClient = ({
   };
 
   const handleDelete = async (voucher: Voucher) => {
-    if (!confirm("هل أنت متأكد من حذف هذا السند؟")) return;
+    if (!confirm(t("messages.deleteConfirm"))) return;
 
     try {
       if (!voucher.vouch_id) return;
@@ -230,11 +236,11 @@ const VouchersReportClient = ({
         toast.success(result.message);
         router.refresh();
       } else {
-        toast.error(result.message || "حدث خطأ أثناء حذف السند");
+        toast.error(result.message || t("messages.deleteError"));
       }
     } catch (error) {
       console.error("Error deleting voucher:", error);
-      toast.error("حدث خطأ أثناء حذف السند");
+      toast.error(t("messages.deleteError"));
     }
   };
 
@@ -372,14 +378,14 @@ const VouchersReportClient = ({
       {/* Header */}
       <div className="mb-2">
         <div className="flex justify-between items-center mb-2">
-          <h1 className="text-2xl font-bold mt-2">تقرير السندات</h1>
+          <h1 className={`text-2xl font-bold mt-2 ${textAlign}`}>{t("header")}</h1>
           <div className="flex items-center gap-2">
             {totalPages > 1 && (
               <div className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">
-                <Tooltip content="السابق" placement="bottom">
+                <Tooltip content={t("navigation.previous")} placement="bottom">
                   <Button
                     isIconOnly
-                    aria-label="السابق"
+                    aria-label={t("navigation.previous")}
                     className="h-7 w-7"
                     isDisabled={currentPage <= 1 || isPaging}
                     size="sm"
@@ -392,10 +398,10 @@ const VouchersReportClient = ({
                 <span className="text-xs font-medium text-slate-500">
                   {currentPage}/{totalPages}
                 </span>
-                <Tooltip content="التالي" placement="bottom">
+                <Tooltip content={t("navigation.next")} placement="bottom">
                   <Button
                     isIconOnly
-                    aria-label="التالي"
+                    aria-label={t("navigation.next")}
                     className="h-7 w-7"
                     isDisabled={currentPage >= totalPages || isPaging}
                     size="sm"
@@ -413,7 +419,7 @@ const VouchersReportClient = ({
               startContent={<PlusIcon className="h-4 w-4" />}
               onPress={handleNewVoucher}
             >
-              سند جديد
+              {t("newVoucher")}
             </Button>
           </div>
         </div>
@@ -447,13 +453,13 @@ const VouchersReportClient = ({
       <Card>
         <CardBody className="p-2">
           <Tabs
-            aria-label="أنواع السندات"
+            aria-label={t("tabs.ariaLabel")}
             color="primary"
             selectedKey={activeTab}
             variant="underlined"
             onSelectionChange={(key) => setActiveTab(key as string)}
           >
-            <Tab key="all" title={`جميع السندات (${vouchers.length})`}>
+            <Tab key="all" title={`${t("tabs.all")} (${vouchers.length})`}>
               <VouchersTable
                 calculateVoucherCashTotal={calculateVoucherCashTotal}
                 calculateVoucherGoldTotal={calculateVoucherGoldTotal}
@@ -466,7 +472,7 @@ const VouchersReportClient = ({
             </Tab>
             <Tab
               key="opening"
-              title={`القيد الافتتاحي (${openingVouchers.length})`}
+              title={`${t("tabs.opening")} (${openingVouchers.length})`}
             >
               <VouchersTable
                 calculateVoucherCashTotal={calculateVoucherCashTotal}
@@ -480,7 +486,7 @@ const VouchersReportClient = ({
             </Tab>
             <Tab
               key="receipt"
-              title={`سندات القبض (${receiptVouchers.length})`}
+              title={`${t("tabs.receipt")} (${receiptVouchers.length})`}
             >
               <VouchersTable
                 calculateVoucherCashTotal={calculateVoucherCashTotal}
@@ -494,7 +500,7 @@ const VouchersReportClient = ({
             </Tab>
             <Tab
               key="payment"
-              title={`سندات الصرف (${paymentVouchers.length})`}
+              title={`${t("tabs.payment")} (${paymentVouchers.length})`}
             >
               <VouchersTable
                 calculateVoucherCashTotal={calculateVoucherCashTotal}
@@ -508,7 +514,7 @@ const VouchersReportClient = ({
             </Tab>
             <Tab
               key="customer-receipt"
-              title={`سندات القبض (عملاء) (${customerReceiptVouchers.length})`}
+              title={`${t("tabs.customerReceipt")} (${customerReceiptVouchers.length})`}
             >
               <VouchersTable
                 calculateVoucherCashTotal={calculateVoucherCashTotal}
@@ -522,7 +528,7 @@ const VouchersReportClient = ({
             </Tab>
             <Tab
               key="customer-payment"
-              title={`سندات الصرف (عملاء) (${customerPaymentVouchers.length})`}
+              title={`${t("tabs.customerPayment")} (${customerPaymentVouchers.length})`}
             >
               <VouchersTable
                 calculateVoucherCashTotal={calculateVoucherCashTotal}
@@ -536,7 +542,7 @@ const VouchersReportClient = ({
             </Tab>
             <Tab
               key="adjustment"
-              title={`قيود التسوية (${adjustmentVouchers.length})`}
+              title={`${t("tabs.adjustment")} (${adjustmentVouchers.length})`}
             >
               <VouchersTable
                 calculateVoucherCashTotal={calculateVoucherCashTotal}

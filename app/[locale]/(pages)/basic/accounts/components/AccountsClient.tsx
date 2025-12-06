@@ -12,6 +12,8 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations, useLocale } from "next-intl";
+import { getLocaleDir } from "@/i18n/config";
 
 import Card from "../../../../../../components/Card";
 import {
@@ -41,18 +43,6 @@ interface AccountsClientProps {
   initialCurrencies: Currency[];
 }
 
-const ACCOUNT_TYPE_FILTERS: { key: string; label: string }[] = [
-  { key: "all", label: "جميع الحسابات" },
-  { key: "main", label: "الحسابات الرئيسية" },
-  { key: "sub", label: "الحسابات الفرعية" },
-];
-
-const ACCOUNT_REPORT_FILTERS: { key: string; label: string }[] = [
-  { key: "all", label: "كل أنواع التقارير" },
-  { key: "pl", label: "الأرباح والخسائر" },
-  { key: "balance", label: "الميزانية العمومية" },
-];
-
 const CONTENT_HEIGHT_CLASS = "min-h-[500px] h-[calc(100vh-280px)]";
 
 export default function AccountsClient({
@@ -60,6 +50,31 @@ export default function AccountsClient({
   initialCurrencies,
 }: AccountsClientProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const t = useTranslations("basic.accounts");
+  
+  // Dynamic text alignment classes based on locale
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  const textAlignCenter = "text-center";
+
+  const ACCOUNT_TYPE_FILTERS = useMemo(
+    () => [
+      { key: "all", label: t("filters.type.all") },
+      { key: "main", label: t("filters.type.main") },
+      { key: "sub", label: t("filters.type.sub") },
+    ],
+    [t],
+  );
+
+  const ACCOUNT_REPORT_FILTERS = useMemo(
+    () => [
+      { key: "all", label: t("filters.report.all") },
+      { key: "pl", label: t("filters.report.pl") },
+      { key: "balance", label: t("filters.report.balance") },
+    ],
+    [t],
+  );
   const [accounts, setAccounts] = useState<Account[]>(
     normalizeAccountsTree(initialAccounts),
   );
@@ -73,6 +88,12 @@ export default function AccountsClient({
     normalizeAccountsTree(initialAccounts),
   );
   const [searchResultsCount, setSearchResultsCount] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure Select components only render on client to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const accountBreadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
     if (!selectedAccount) {
@@ -146,7 +167,7 @@ export default function AccountsClient({
       );
 
       if (!allAccountsData || !Array.isArray(allAccountsData)) {
-        toast.error("فشل في تحميل الحسابات");
+        toast.error(t("messages.loadError"));
 
         return;
       }
@@ -159,7 +180,7 @@ export default function AccountsClient({
       // الحسابات الرئيسية مقفلة افتراضياً
       setExpandedNodes(new Set());
     } catch {
-      toast.error("فشل في تحميل الحسابات");
+      toast.error(t("messages.loadError"));
     }
   };
 
@@ -181,7 +202,7 @@ export default function AccountsClient({
       const parentAccount = findAccountById(accounts, parentId);
 
       if (parentAccount && parentAccount.acc_level >= 5) {
-        toast.error("لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.");
+        toast.error(t("messages.maxLevelError"));
 
         return;
       }
@@ -196,7 +217,7 @@ export default function AccountsClient({
         parentAccount.acc_level < 5 &&
         siblings.length >= 9
       ) {
-        toast.error("لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.");
+        toast.error(t("messages.maxSiblingsError"));
 
         return;
       }
@@ -205,7 +226,7 @@ export default function AccountsClient({
     const suggestedAccountId = generateAccountId(accounts, parentId);
 
     if (parentId && !suggestedAccountId) {
-      toast.error("تعذر توليد رقم الحساب الجديد لهذا الحساب الأب.");
+      toast.error(t("messages.generateIdError"));
 
       return;
     }
@@ -238,7 +259,7 @@ export default function AccountsClient({
   };
 
   const handleDeleteAccount = async (accountId: number) => {
-    if (!confirm("هل أنت متأكد أنك تريد حذف هذا الحساب؟")) return;
+    if (!confirm(t("messages.deleteConfirm"))) return;
 
     // Optimistic delete: remove from UI immediately
     const previousAccounts = [...accounts];
@@ -254,12 +275,12 @@ export default function AccountsClient({
       if (!result) {
         // Rollback on failure
         setAccounts(previousAccounts);
-        toast.error("حدث خطأ أثناء حذف الحساب");
+        toast.error(t("messages.deleteError"));
 
         return;
       }
 
-      toast.success("تم حذف الحساب بنجاح");
+      toast.success(t("messages.deleteSuccess"));
 
       // Revalidate cache
       await revalidateTableData("accounts_list");
@@ -269,7 +290,7 @@ export default function AccountsClient({
     } catch {
       // Rollback on error
       setAccounts(previousAccounts);
-      toast.error("خطأ في الاتصال بالخادم. تحقق من الرابط أو الإعدادات.");
+      toast.error(t("messages.serverError"));
     }
   };
 
@@ -327,7 +348,7 @@ export default function AccountsClient({
               <DocumentEmoji className="w-4 h-4 text-gray-500" />
             )}
 
-            <div className="flex-1 min-w-0 text-right">
+            <div className={`flex-1 min-w-0 ${textAlign}`}>
               <div className="font-medium text-gray-900 truncate">
                 {account.acc_name}
               </div>
@@ -468,48 +489,56 @@ export default function AccountsClient({
             variant="bordered"
             onPress={handleAddAccount}
           >
-            إضافة حساب
+            {t("labels.addAccount")}
           </Button>
 
           <div className="h-8 w-px bg-gray-300" />
 
           <div className="flex flex-wrap items-center gap-2 flex-1">
-            <Select
-              aria-label="تصفية حسب نوع الحساب"
-              className="input-field flex-1 min-w-[140px]"
-              placeholder="نوع الحساب"
-              selectedKeys={[filterType]}
-              size="sm"
-              variant="bordered"
-              onSelectionChange={(keys) =>
-                setFilterType(Array.from(keys)[0] as string)
-              }
-            >
-              {ACCOUNT_TYPE_FILTERS.map((option) => (
-                <SelectItem key={option.key}>{option.label}</SelectItem>
-              ))}
-            </Select>
+            {isMounted ? (
+              <Select
+                aria-label={t("labels.filterByAccountType")}
+                className="input-field flex-1 min-w-[140px]"
+                placeholder={t("placeholders.accountType")}
+                selectedKeys={[filterType]}
+                size="sm"
+                variant="bordered"
+                onSelectionChange={(keys) =>
+                  setFilterType(Array.from(keys)[0] as string)
+                }
+              >
+                {ACCOUNT_TYPE_FILTERS.map((option) => (
+                  <SelectItem key={option.key}>{option.label}</SelectItem>
+                ))}
+              </Select>
+            ) : (
+              <div className="input-field flex-1 min-w-[140px] h-10 bg-gray-100 rounded-lg animate-pulse" />
+            )}
 
-            <Select
-              aria-label="تصفية حسب نوع التقرير"
-              className="input-field flex-1 min-w-[160px]"
-              placeholder="نوع التقرير"
-              selectedKeys={[filterReport]}
-              size="sm"
-              variant="bordered"
-              onSelectionChange={(keys) =>
-                setFilterReport(Array.from(keys)[0] as string)
-              }
-            >
-              {ACCOUNT_REPORT_FILTERS.map((option) => (
-                <SelectItem key={option.key}>{option.label}</SelectItem>
-              ))}
-            </Select>
+            {isMounted ? (
+              <Select
+                aria-label={t("labels.filterByReportType")}
+                className="input-field flex-1 min-w-[160px]"
+                placeholder={t("placeholders.reportType")}
+                selectedKeys={[filterReport]}
+                size="sm"
+                variant="bordered"
+                onSelectionChange={(keys) =>
+                  setFilterReport(Array.from(keys)[0] as string)
+                }
+              >
+                {ACCOUNT_REPORT_FILTERS.map((option) => (
+                  <SelectItem key={option.key}>{option.label}</SelectItem>
+                ))}
+              </Select>
+            ) : (
+              <div className="input-field flex-1 min-w-[160px] h-10 bg-gray-100 rounded-lg animate-pulse" />
+            )}
 
             <Button
               isIconOnly
               className="h-10"
-              title="مسح الفلاتر"
+              title={t("labels.clearFilters")}
               variant="bordered"
               onPress={clearFilters}
             >
@@ -521,9 +550,9 @@ export default function AccountsClient({
 
           <div className="w-48">
             <Input
-              aria-label="بحث في الحسابات"
+              aria-label={t("labels.searchAccounts")}
               className="w-full"
-              placeholder="بحث بالاسم..."
+              placeholder={t("placeholders.searchByName")}
               startContent={
                 <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
               }
@@ -539,12 +568,12 @@ export default function AccountsClient({
             <Card className={CONTENT_HEIGHT_CLASS}>
               <CardBody className="p-2">
                 {/* Tree View */}
-                <div className="overflow-y-auto max-h-[calc(100vh-320px)] text-right">
+                <div className={`overflow-y-auto max-h-[calc(100vh-320px)] ${textAlign}`}>
                   {searchTerm.trim().length > 0 && (
-                    <div className="text-xs text-gray-500 mb-2 text-center">
+                    <div className={`text-xs text-gray-500 mb-2 ${textAlignCenter}`}>
                       {searchResultsCount > 0
-                        ? `تم العثور على ${searchResultsCount} نتيجة`
-                        : "لا توجد حسابات تطابق البحث"}
+                        ? t("states.foundResults", { count: searchResultsCount })
+                        : t("states.noMatchingAccounts")}
                     </div>
                   )}
                   {displayAccounts.length > 0 ? (
@@ -554,8 +583,8 @@ export default function AccountsClient({
                       <FolderEmoji className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                       <p className="text-sm">
                         {searchTerm.trim().length > 0
-                          ? "لا توجد حسابات تطابق البحث"
-                          : "لا توجد حسابات"}
+                          ? t("states.noMatchingAccounts")
+                          : t("states.noAccounts")}
                       </p>
                       {searchTerm.trim().length === 0 && (
                         <Button
@@ -565,7 +594,7 @@ export default function AccountsClient({
                           variant="flat"
                           onClick={handleAddAccount}
                         >
-                          إضافة أول حساب
+                          {t("labels.addFirstAccount")}
                         </Button>
                       )}
                     </div>
@@ -581,10 +610,12 @@ export default function AccountsClient({
               <CardBody className="p-2">
                 <div className="responsive-filters mb-2">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-base font-semibold text-gray-900 text-right">
+                    <h2 className={`text-base font-semibold text-gray-900 ${textAlign}`}>
                       {selectedAccount
-                        ? `حسابات ${selectedAccount.acc_name}`
-                        : "تفاصيل الحسابات"}
+                        ? t("sections.selectedAccountSubAccounts", {
+                            name: selectedAccount.acc_name,
+                          })
+                        : t("sections.accountDetails")}
                     </h2>
                   </div>
                   {selectedAccount && (
@@ -602,34 +633,44 @@ export default function AccountsClient({
                   <div className="space-y-2">
                     {/* معلومات الحساب المختار */}
                     <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
-                      <h3 className="font-semibold text-blue-900 mb-1 text-sm text-right">
-                        معلومات الحساب المختار
+                      <h3 className={`font-semibold text-blue-900 mb-1 text-sm ${textAlign}`}>
+                        {t("sections.selectedAccountInfo")}
                       </h3>
                       <div className="responsive-grid accounts-info-grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                        <div className="text-right">
-                          <span className="text-gray-600">رقم الحساب:</span>
+                        <div className={textAlign}>
+                          <span className="text-gray-600">
+                            {t("fields.accountNumber")}:
+                          </span>
                           <div className="font-medium">
                             {selectedAccount.acc_id}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="text-gray-600">اسم الحساب:</span>
+                        <div className={textAlign}>
+                          <span className="text-gray-600">
+                            {t("fields.accountName")}:
+                          </span>
                           <div className="font-medium">
                             {selectedAccount.acc_name}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="text-gray-600">نوع الحساب:</span>
+                        <div className={textAlign}>
+                          <span className="text-gray-600">
+                            {t("fields.accountType")}:
+                          </span>
                           <div className="font-medium">
-                            {selectedAccount.acc_type === 1 ? "رئيسي" : "فرعي"}
+                            {selectedAccount.acc_type === 1
+                              ? t("types.main")
+                              : t("types.sub")}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="text-gray-600">العملة:</span>
+                        <div className={textAlign}>
+                          <span className="text-gray-600">
+                            {t("fields.currency")}:
+                          </span>
                           <div className="font-medium">
                             {currencies.find(
                               (c) => c.id === selectedAccount.cur,
-                            )?.cur_name || "غير محددة"}
+                            )?.cur_name || t("states.currencyNotSet")}
                           </div>
                         </div>
                       </div>
@@ -637,30 +678,30 @@ export default function AccountsClient({
 
                     {/* جدول الحسابات الفرعية */}
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2 text-sm text-right">
-                        الحسابات الفرعية المباشرة
+                      <h3 className={`font-semibold text-gray-900 mb-2 text-sm ${textAlign}`}>
+                        {t("sections.directSubAccounts")}
                       </h3>
                       <div className="responsive-table accounts-table-container overflow-x-auto">
                         <table className="w-full border-collapse border border-gray-300 accounts-table">
                           <thead className="bg-gray-100">
                             <tr>
-                              <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">
-                                رقم الحساب
+                              <th className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}>
+                                {t("fields.accountNumber")}
                               </th>
-                              <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">
-                                اسم الحساب
+                              <th className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}>
+                                {t("fields.accountName")}
                               </th>
-                              <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">
-                                نوع الحساب
+                              <th className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}>
+                                {t("fields.accountType")}
                               </th>
-                              <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">
-                                نوع التقرير
+                              <th className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}>
+                                {t("fields.reportType")}
                               </th>
-                              <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">
-                                العملة
+                              <th className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}>
+                                {t("fields.currency")}
                               </th>
-                              <th className="border border-gray-300 px-2 py-1 text-right text-xs font-medium text-gray-700">
-                                الإجراءات
+                              <th className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}>
+                                {t("fields.actions")}
                               </th>
                             </tr>
                           </thead>
@@ -673,36 +714,38 @@ export default function AccountsClient({
                                 <tr
                                   key={account.id}
                                   className="hover:bg-gray-50 cursor-pointer"
-                                  title="انقر مزدوج للانتقال إلى المستوى التالي"
+                                  title={t("tooltips.doubleClickToNavigate")}
                                   onDoubleClick={() =>
                                     setSelectedAccount(account)
                                   }
                                 >
-                                  <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                  <td className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}>
                                     {account.acc_id}
                                   </td>
-                                  <td className="border border-gray-300 px-2 py-1 text-xs font-medium text-right">
+                                  <td className={`border border-gray-300 px-2 py-1 text-xs font-medium ${textAlign}`}>
                                     {account.acc_name}
                                   </td>
-                                  <td className="border border-gray-300 px-2 py-1 text-xs text-right">
-                                    {account.acc_type === 1 ? "رئيسي" : "فرعي"}
+                                  <td className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}>
+                                    {account.acc_type === 1
+                                      ? t("types.main")
+                                      : t("types.sub")}
                                   </td>
-                                  <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                  <td className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}>
                                     {account.acc_rep === 1
-                                      ? "الأرباح والخسائر"
-                                      : "الميزانية العمومية"}
+                                      ? t("reportTypes.profitLoss")
+                                      : t("reportTypes.balanceSheet")}
                                   </td>
-                                  <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                                  <td className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}>
                                     {currencies.find(
                                       (c) => c.id === account.cur,
-                                    )?.cur_name || "غير محددة"}
+                                    )?.cur_name || t("states.currencyNotSet")}
                                   </td>
                                   <td className="border border-gray-300 px-2 py-1 text-xs">
                                     <div className="flex items-center justify-center gap-2">
                                       <Button
                                         isIconOnly
                                         size="sm"
-                                        title="عرض"
+                                        title={t("labels.view")}
                                         variant="light"
                                         onPress={() => {
                                           handleViewAccount(account);
@@ -713,7 +756,7 @@ export default function AccountsClient({
                                       <Button
                                         isIconOnly
                                         size="sm"
-                                        title="تعديل"
+                                        title={t("labels.edit")}
                                         variant="light"
                                         onPress={() => {
                                           handleEditAccount(account);
@@ -725,7 +768,7 @@ export default function AccountsClient({
                                         isIconOnly
                                         color="danger"
                                         size="sm"
-                                        title="حذف"
+                                        title={t("labels.delete")}
                                         variant="light"
                                         onPress={() => {
                                           handleDeleteAccount(account.id);
@@ -738,33 +781,33 @@ export default function AccountsClient({
                                 </tr>
                               ))}
                             <tr>
-                              <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                              <td className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}>
                                 {selectedAccount.acc_id}
                               </td>
-                              <td className="border border-gray-300 px-2 py-1 text-xs font-medium text-right">
+                              <td className={`border border-gray-300 px-2 py-1 text-xs font-medium ${textAlign}`}>
                                 {selectedAccount.acc_name}
                               </td>
-                              <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                              <td className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}>
                                 {selectedAccount.acc_type === 1
-                                  ? "رئيسي"
-                                  : "فرعي"}
+                                  ? t("types.main")
+                                  : t("types.sub")}
                               </td>
-                              <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                              <td className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}>
                                 {selectedAccount.acc_rep === 1
-                                  ? "الأرباح والخسائر"
-                                  : "الميزانية العمومية"}
+                                  ? t("reportTypes.profitLoss")
+                                  : t("reportTypes.balanceSheet")}
                               </td>
-                              <td className="border border-gray-300 px-2 py-1 text-xs text-right">
+                              <td className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}>
                                 {currencies.find(
                                   (c) => c.id === selectedAccount.cur,
-                                )?.cur_name || "غير محددة"}
+                                )?.cur_name || t("states.currencyNotSet")}
                               </td>
                               <td className="border border-gray-300 px-2 py-1 text-xs">
                                 <div className="flex items-center justify-center gap-2">
                                   <Button
                                     isIconOnly
                                     size="sm"
-                                    title="عرض"
+                                    title={t("labels.view")}
                                     variant="light"
                                     onPress={() => {
                                       handleViewAccount(selectedAccount);
@@ -775,7 +818,7 @@ export default function AccountsClient({
                                   <Button
                                     isIconOnly
                                     size="sm"
-                                    title="تعديل"
+                                    title={t("labels.edit")}
                                     variant="light"
                                     onPress={() => {
                                       handleEditAccount(selectedAccount);
@@ -787,7 +830,7 @@ export default function AccountsClient({
                                     isIconOnly
                                     color="danger"
                                     size="sm"
-                                    title="حذف"
+                                    title={t("labels.delete")}
                                     variant="light"
                                     onPress={() => {
                                       handleDeleteAccount(selectedAccount.id);
@@ -806,8 +849,8 @@ export default function AccountsClient({
                 ) : (
                   <div className="text-center text-gray-500 py-6">
                     <DocumentEmoji className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                    <p className="text-sm text-right">
-                      اختر حساباً لعرض تفاصيله والحسابات الفرعية
+                    <p className={`text-sm ${textAlign}`}>
+                      {t("states.selectAccountToView")}
                     </p>
                   </div>
                 )}

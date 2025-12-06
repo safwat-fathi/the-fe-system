@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import BoxFormClient from "../components/BoxFormClient";
 
@@ -56,16 +57,22 @@ export default async function BoxDetailPage({
     accountService.getAllAccounts(branchParams.com).catch(() => []),
   ]);
 
+  const t = await getTranslations("basic.boxes");
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: "الصناديق", href: "/basic/boxes" },
+          { name: t("breadcrumbs.list"), href: "/basic/boxes" },
           {
             name:
               formMode === "edit"
-                ? `تعديل ${box.cust_name || box.cust_code || "الصندوق"}`
-                : `عرض ${box.cust_name || box.cust_code || "الصندوق"}`,
+                ? t("breadcrumbs.edit", {
+                    name: box.cust_name || box.cust_code || t("titles.defaultName"),
+                  })
+                : t("breadcrumbs.view", {
+                    name: box.cust_name || box.cust_code || t("titles.defaultName"),
+                  }),
           },
         ]}
       />

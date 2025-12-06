@@ -9,28 +9,46 @@ const maskToken = (value: string): string => {
   return `${"*".repeat(maskedLength)}${value.slice(-visible)}`;
 };
 
-const ensureEnv = (key: string, value?: string): string => {
-  if (!value) {
-    const message = `Missing required WhatsApp environment variable: ${key}`;
+// جعل المتغيرات البيئية اختيارية لتجنب أخطاء البناء
+const baseUrl = process.env.WHATSAPP_BASE_URL || "";
+const token = process.env.WHATSAPP_TOKEN || "";
+const phoneNumberId = process.env.PHONE_NUMBER_ID || "";
+const verifyToken = process.env.VERIFY_TOKEN || "";
 
-    logger.error(message);
-    throw new Error(message);
+// دالة للتحقق من الإعدادات عند الاستخدام الفعلي
+export const ensureWhatsappConfig = (): {
+  baseUrl: string;
+  token: string;
+  phoneNumberId: string;
+  verifyToken: string;
+} => {
+  if (!baseUrl) {
+    throw new Error("Missing required WhatsApp environment variable: WHATSAPP_BASE_URL");
   }
 
-  return value;
+  if (!token) {
+    throw new Error("Missing required WhatsApp environment variable: WHATSAPP_TOKEN");
+  }
+
+  if (!phoneNumberId) {
+    throw new Error("Missing required WhatsApp environment variable: PHONE_NUMBER_ID");
+  }
+
+  if (!verifyToken) {
+    throw new Error("Missing required WhatsApp environment variable: VERIFY_TOKEN");
+  }
+
+  if (!baseUrl.startsWith("https://")) {
+    throw new Error("WHATSAPP_BASE_URL must use HTTPS");
+  }
+
+  return {
+    baseUrl,
+    token,
+    phoneNumberId,
+    verifyToken,
+  };
 };
-
-const baseUrl = ensureEnv("WHATSAPP_BASE_URL", process.env.WHATSAPP_BASE_URL);
-const token = ensureEnv("WHATSAPP_TOKEN", process.env.WHATSAPP_TOKEN);
-const phoneNumberId = ensureEnv("PHONE_NUMBER_ID", process.env.PHONE_NUMBER_ID);
-const verifyToken = ensureEnv("VERIFY_TOKEN", process.env.VERIFY_TOKEN);
-
-if (!baseUrl.startsWith("https://")) {
-  const message = "WHATSAPP_BASE_URL must use HTTPS";
-
-  logger.error(message);
-  throw new Error(message);
-}
 
 export const whatsappConfig = {
   baseUrl,

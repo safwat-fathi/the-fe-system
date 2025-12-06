@@ -22,6 +22,8 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations, useLocale } from "next-intl";
+import { getLocaleDir } from "@/i18n/config";
 
 import costCenterService from "@/services/api/cost-center.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
@@ -54,34 +56,44 @@ interface CostCentersClientProps {
   error: string | null;
 }
 
-const columns = [
-  { name: "رقم المركز", uid: "id" },
-  { name: "اسم مركز التكلفة", uid: "cost_name" },
-  { name: "الاسم بالإنجليزي", uid: "cost_name_e" },
-  { name: "نوع المركز", uid: "cost_type" },
-  { name: "الحساب المرتبط", uid: "acc" },
-  { name: "المركز الأب", uid: "parent" },
-  { name: "الحالة", uid: "cost_status" },
-  { name: "", uid: "actions" },
-];
-
-// Helper function to get cost center type label
-const getCostCenterTypeLabel = (type: number): string => {
-  const types: Record<number, string> = {
-    1: "مركز تكلفة رئيسي",
-    2: "مركز تكلفة فرعي",
-    3: "مركز تكلفة نشاط",
-  };
-
-  return types[type] || `نوع ${type}`;
-};
-
 export default function CostCentersClient({
   initialData,
   initialAccounts,
   error,
 }: CostCentersClientProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const t = useTranslations("basic.costCenters");
+  
+  // Dynamic text alignment classes based on locale
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  const textAlignCenter = "text-center";
+
+  const columns = useMemo(
+    () => [
+      { name: t("columns.id"), uid: "id" },
+      { name: t("columns.costName"), uid: "cost_name" },
+      { name: t("columns.costNameEn"), uid: "cost_name_e" },
+      { name: t("columns.costType"), uid: "cost_type" },
+      { name: t("columns.account"), uid: "acc" },
+      { name: t("columns.parent"), uid: "parent" },
+      { name: t("columns.status"), uid: "cost_status" },
+      { name: t("columns.actions"), uid: "actions" },
+    ],
+    [t],
+  );
+
+  // Helper function to get cost center type label
+  const getCostCenterTypeLabel = (type: number): string => {
+    const types: Record<number, string> = {
+      1: t("types.main"),
+      2: t("types.sub"),
+      3: t("types.activity"),
+    };
+
+    return types[type] || t("types.unknown", { type });
+  };
   const [costCenters, setCostCenters] = useState<CostCenter[]>(initialData);
   const [accounts] = useState<Account[]>(initialAccounts);
   const [search, setSearch] = useState("");
@@ -99,14 +111,14 @@ export default function CostCentersClient({
 
       setCostCenters(data);
     } catch {
-      toast.error("فشل في جلب مراكز التكلفة");
+      toast.error(t("messages.loadError"));
       setCostCenters([]);
     }
   };
 
   const handleDeleteClick = (costCenter: CostCenter) => {
     if (!costCenter.id) {
-      toast.error("❌ لا يمكن حذف مركز تكلفة بدون معرف");
+      toast.error(t("messages.deleteErrorNoId"));
 
       return;
     }
@@ -134,18 +146,18 @@ export default function CostCentersClient({
       );
 
       if (result) {
-        toast.success("✅ تم حذف مركز التكلفة بنجاح");
+        toast.success(t("messages.deleteSuccess"));
 
         // Revalidate cache
         await revalidateTableData("cost_centers_list");
 
         loadCostCenters();
       } else {
-        toast.error("❌ فشل في حذف مركز التكلفة");
+        toast.error(t("messages.deleteFailed"));
         loadCostCenters();
       }
     } catch {
-      toast.error("❌ حدث خطأ أثناء الحذف");
+      toast.error(t("messages.deleteError"));
       loadCostCenters();
     } finally {
       setDeleteModalOpen(false);
@@ -199,6 +211,7 @@ export default function CostCentersClient({
       <Button
         isIconOnly
         size="sm"
+        title={t("actions.view")}
         variant="light"
         onPress={() => router.push(`/basic/cost-centers/${costCenter.id}`)}
       >
@@ -207,6 +220,7 @@ export default function CostCentersClient({
       <Button
         isIconOnly
         size="sm"
+        title={t("actions.edit")}
         variant="light"
         onPress={() =>
           router.push(`/basic/cost-centers/${costCenter.id}?mode=edit`)
@@ -218,6 +232,7 @@ export default function CostCentersClient({
         isIconOnly
         color="danger"
         size="sm"
+        title={t("actions.delete")}
         variant="light"
         onPress={() => handleDeleteClick(costCenter)}
       >
@@ -228,10 +243,12 @@ export default function CostCentersClient({
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <p className="text-red-500 mb-4">لا يمكن تحميل البيانات: {error}</p>
+      <div className={`${textAlignCenter} py-8`}>
+        <p className={`text-red-500 mb-4 ${textAlign}`}>
+          {t("messages.cannotLoadData", { error })}
+        </p>
         <Button color="primary" onClick={loadCostCenters}>
-          إعادة المحاولة
+          {t("actions.retry")}
         </Button>
       </div>
     );
@@ -240,7 +257,9 @@ export default function CostCentersClient({
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className="text-base font-semibold">إدارة مراكز التكلفة</h2>
+        <h2 className={`text-base font-semibold ${textAlign}`}>
+          {t("labels.manage")}
+        </h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
           className="bg-gray-100"
@@ -248,12 +267,12 @@ export default function CostCentersClient({
           onPress={() => router.push("/basic/cost-centers/new")}
         >
           <PlusIcon className="h-3 w-3" />
-          إضافة مركز تكلفة
+          {t("actions.add")}
         </Button>
         <div className="h-8 w-px bg-gray-300" />
         <div className="flex-1 min-w-[200px]">
           <Input
-            placeholder="بحث بالاسم..."
+            placeholder={t("labels.searchPlaceholder")}
             size="sm"
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
@@ -264,7 +283,7 @@ export default function CostCentersClient({
         </div>
       </div>
 
-      <Table aria-label="جدول مراكز التكلفة">
+      <Table aria-label={t("labels.tableAriaLabel")}>
         <TableHeader>
           {columns.map((col) => (
             <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -291,8 +310,8 @@ export default function CostCentersClient({
       </Table>
 
       <div className="py-4 flex justify-between items-center">
-        <span className="text-sm text-gray-500">
-          عدد مراكز التكلفة: {filtered.length}
+        <span className={`text-sm text-gray-500 ${textAlign}`}>
+          {t("labels.totalCount", { count: filtered.length })}
         </span>
         <Pagination
           color="primary"
@@ -303,13 +322,15 @@ export default function CostCentersClient({
       </div>
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="danger"
-        confirmText="حذف"
+        confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={`هل أنت متأكد من حذف مركز التكلفة "${costCenterToDelete?.cost_name}"؟`}
+        message={t("modals.deleteMessage", {
+          name: costCenterToDelete?.cost_name || "",
+        })}
         size="md"
-        title="تأكيد الحذف"
+        title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />
