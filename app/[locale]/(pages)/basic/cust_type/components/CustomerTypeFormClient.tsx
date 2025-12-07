@@ -30,7 +30,7 @@ const CustomerTypeFormClient = ({
   initialType,
 }: CustomerTypeFormClientProps) => {
   const router = useRouter();
-  const t = useTranslations("basic.customerTypes");
+  const t = useTranslations("basic.customerTypes" as any) as any;
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [type, setType] = useState<Partial<CustomerType>>(initialType);
@@ -79,10 +79,14 @@ const CustomerTypeFormClient = ({
 
   const getTitle = () => {
     if (isViewMode)
-      return t("titles.view", { name: type.type_name || t("titles.defaultName") });
+      return t("titles.view", {
+        name: type.type_name || t("titles.defaultName"),
+      });
     if (isAddMode) return t("titles.add");
 
-    return t("titles.edit", { name: type.type_name || t("titles.defaultName") });
+    return t("titles.edit", {
+      name: type.type_name || t("titles.defaultName"),
+    });
   };
 
   const getDescription = () => {

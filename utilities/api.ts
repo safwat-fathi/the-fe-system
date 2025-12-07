@@ -14,9 +14,6 @@
 export const API_BASE_URL: string =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://84.46.240.24:8000/api";
 
-// export const GOLD_API_TOKEN: string =
-//   process.env.NEXT_PUBLIC_GOLD_API_TOKEN || "goldapi-5chasmbzw52m3-io";
-
 // وظائف المصادقة
 /**
  * @deprecated استخدم authService.login() من services/api بدلاً من ذلك
@@ -157,7 +154,6 @@ export async function fetchGoldPrice(): Promise<number | null> {
 
     const { frac } = await fetchFractions();
 
-    // const pricePerGram = pricePerOunce / 3.75;
     return parseFloat(pricePerGram.toFixed(frac));
   } catch (error) {
     console.error("❌ فشل جلب سعر الذهب:", error);
@@ -234,13 +230,8 @@ export async function fetchData<T>(
 
       // إذا كان الخطأ 401 (غير مصرح)، حذف التوكن وتوجيه لصفحة تسجيل الدخول
       if (response.status === 401) {
-        // removeAuthToken();
-        // if (typeof window !== "undefined") {
-        //   window.location.href = "/";
-        // }
+        // Handle unauthorized access
       }
-
-      // throw new Error(`HTTP ${response.status} - ${errorMessage}`);
     }
 
     const data = await response.json();

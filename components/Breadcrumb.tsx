@@ -195,18 +195,16 @@ const Breadcrumb = ({
 
         {breadcrumbs.map((item, index) => {
           // Use segmentKey to generate name if name is empty
-          const displayName = item.name || (item.segmentKey ? getSegmentLabel(item.segmentKey) : "");
+          const displayName =
+            item.name ||
+            (item.segmentKey ? getSegmentLabel(item.segmentKey) : "");
           let renderName: ReactNode = displayName;
           const highlightClass =
             (item.segmentKey && highlightSegmentClassMap[item.segmentKey]) ||
             undefined;
 
           if (highlightClass) {
-            renderName = (
-              <span className={highlightClass}>
-                {item.name}
-              </span>
-            );
+            renderName = <span className={highlightClass}>{displayName}</span>;
           }
 
           let renderedContent: ReactNode;

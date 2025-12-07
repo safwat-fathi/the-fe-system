@@ -18,10 +18,8 @@ export const doQueriesMatch = (
   return true;
 };
 
-export const createIsLinkActive = (
-  pathname: string,
-  searchParams: ReadonlyURLSearchParams | null,
-) =>
+export const createIsLinkActive =
+  (pathname: string, searchParams: ReadonlyURLSearchParams | null) =>
   (href: string): boolean => {
     const [linkPath, linkQuery] = href.split("?");
 

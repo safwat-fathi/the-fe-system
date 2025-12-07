@@ -20,8 +20,10 @@ export async function GET(request: NextRequest) {
     return new NextResponse("Forbidden", { status: 403 });
   } catch (error) {
     return new NextResponse(
-      error instanceof Error ? error.message : "WhatsApp service not configured",
-      { status: 503 }
+      error instanceof Error
+        ? error.message
+        : "WhatsApp service not configured",
+      { status: 503 },
     );
   }
 }

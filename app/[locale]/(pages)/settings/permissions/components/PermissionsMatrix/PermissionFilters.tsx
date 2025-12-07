@@ -47,9 +47,7 @@ export default function PermissionFilters({
               key={permission}
               as="button"
               className="cursor-pointer"
-              color={
-                (isSelected ? color : "default") as ChipProps["color"]
-              }
+              color={(isSelected ? color : "default") as ChipProps["color"]}
               variant={isSelected ? "flat" : "bordered"}
               onClick={() => onTogglePermission(permission)}
             >

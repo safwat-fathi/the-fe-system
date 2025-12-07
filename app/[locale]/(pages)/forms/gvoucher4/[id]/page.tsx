@@ -368,8 +368,9 @@ export default async function CustomerReceiptVoucherEditPage({
   };
 
   const t = await getTranslations("navigation.breadcrumbs.segments");
-  
-  const voucherIdForBreadcrumb = targetVoucher.vouch_id || targetVoucher.id || "";
+
+  const voucherIdForBreadcrumb =
+    targetVoucher.vouch_id || targetVoucher.id || "";
   const breadcrumbLabel =
     formMode === "edit"
       ? `${t("edit")} ${voucherIdForBreadcrumb}`

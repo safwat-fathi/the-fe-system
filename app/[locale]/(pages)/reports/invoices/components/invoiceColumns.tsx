@@ -1,4 +1,4 @@
-import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
+import { createColumnHelper } from "@tanstack/react-table";
 import Link from "next/link";
 import { Button } from "@heroui/react";
 import { EyeIcon, PencilIcon } from "@heroicons/react/24/outline";

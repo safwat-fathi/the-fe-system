@@ -68,10 +68,12 @@ export default async function BoxDetailPage({
             name:
               formMode === "edit"
                 ? t("breadcrumbs.edit", {
-                    name: box.cust_name || box.cust_code || t("titles.defaultName"),
+                    name:
+                      box.cust_name || box.cust_code || t("titles.defaultName"),
                   })
                 : t("breadcrumbs.view", {
-                    name: box.cust_name || box.cust_code || t("titles.defaultName"),
+                    name:
+                      box.cust_name || box.cust_code || t("titles.defaultName"),
                   }),
           },
         ]}

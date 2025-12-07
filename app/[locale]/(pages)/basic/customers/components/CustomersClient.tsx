@@ -78,7 +78,7 @@ export default function CustomersClient({
   initialCustomerStatus,
 }: CustomersClientProps) {
   const router = useRouter();
-  const t = useTranslations("basic.customers");
+  const t = useTranslations("basic.customers" as any) as any;
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [customerTypes] = useState<CustomerType[]>(initialCustomerTypes);
   const [customerStatus] = useState<any[]>(initialCustomerStatus);
@@ -344,7 +344,9 @@ export default function CustomersClient({
       </div>
 
       <div className="responsive-pagination">
-        <span>{t("labels.totalCount", { count: filteredCustomers.length })}</span>
+        <span>
+          {t("labels.totalCount", { count: filteredCustomers.length })}
+        </span>
         <Pagination
           color="primary"
           page={page}
@@ -358,7 +360,9 @@ export default function CustomersClient({
         confirmColor="danger"
         confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={t("modals.deleteMessage", { name: customerToDelete?.cust_name })}
+        message={t("modals.deleteMessage", {
+          name: customerToDelete?.cust_name,
+        })}
         size="md"
         title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}

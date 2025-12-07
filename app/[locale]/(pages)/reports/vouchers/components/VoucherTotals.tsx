@@ -34,7 +34,7 @@ export default function VoucherTotals({
 }: VoucherTotalsProps) {
   const t = useTranslations("reports.vouchers");
   const locale = useLocale();
-  const dir = getLocaleDir(locale);
+  const dir = getLocaleDir(locale as "ar" | "en");
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   const totals = useMemo(() => {

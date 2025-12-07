@@ -27,11 +27,11 @@ import {
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import clsx from "clsx";
+import AsyncCreatableSelect from "react-select/async-creatable";
+import ReactSelect from "react-select";
 
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
-import AsyncCreatableSelect from "react-select/async-creatable";
-import ReactSelect from "react-select";
 import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
 import { voucherService, itemService, customerService } from "@/services/api";
 import { RiyalIcon } from "@/components/RiyalIcon";
@@ -73,7 +73,7 @@ export default function CustomerGoldVoucherClientPage({
   isNewVoucher = true,
   voucherRecordId,
   navigationInfo,
-  accounts: initialAccounts = [],
+  accounts: _initialAccounts = [],
   boxes: initialBoxes,
   goldBoxes: initialGoldBoxes = [],
   costCenters: initialCostCenters,
@@ -98,24 +98,24 @@ export default function CustomerGoldVoucherClientPage({
   const [voucher, setVoucher] = useState<Voucher>(
     voucherData
       ? {
-        ...voucherData,
-        cost_id: voucherData.cost_id ?? null,
-      }
+          ...voucherData,
+          cost_id: voucherData.cost_id ?? null,
+        }
       : {
-        vouch_id: 0,
-        vouch_date: new Date().toISOString(),
-        vouch_type: vouchType,
-        vouch_amt: 0,
-        pay_type: 1,
-        cr_date: new Date().toISOString(),
-        vouch_status: 1,
-        commit: false,
-        post: false,
-        print: false,
-        opps_vouch: 0,
-        handling: "",
-        cost_id: null,
-      },
+          vouch_id: 0,
+          vouch_date: new Date().toISOString(),
+          vouch_type: vouchType,
+          vouch_amt: 0,
+          pay_type: 1,
+          cr_date: new Date().toISOString(),
+          vouch_status: 1,
+          commit: false,
+          post: false,
+          print: false,
+          opps_vouch: 0,
+          handling: "",
+          cost_id: null,
+        },
   );
 
   // رقم السند الحالي
@@ -165,7 +165,6 @@ export default function CustomerGoldVoucherClientPage({
   const [goldDetails, setGoldDetails] = useState<GVoucherDetail[]>(
     initialGoldDetails || [],
   );
-  const [accounts] = useState<any[]>(initialAccounts);
   const [boxes] = useState<any[]>(initialBoxes);
   const [goldBoxOptions, setGoldBoxOptions] = useState<any[]>(
     initialGoldBoxes && initialGoldBoxes.length > 0
@@ -185,7 +184,8 @@ export default function CustomerGoldVoucherClientPage({
   >([]);
 
   const numericVoucherId = Number(voucher.vouch_id ?? 0);
-  const hasVoucherId = Number.isFinite(numericVoucherId) && numericVoucherId > 0;
+  const hasVoucherId =
+    Number.isFinite(numericVoucherId) && numericVoucherId > 0;
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [defaultCustomerOptions, setDefaultCustomerOptions] = useState<any[]>(
     [],
@@ -361,7 +361,10 @@ export default function CustomerGoldVoucherClientPage({
     if (isClient && isEditing) {
       // استخدام setTimeout لضمان أن العنصر موجود في DOM
       const timer = setTimeout(() => {
-        const refNoInput = document.getElementById("gold-ref-no") as HTMLInputElement;
+        const refNoInput = document.getElementById(
+          "gold-ref-no",
+        ) as HTMLInputElement;
+
         if (refNoInput && !refNoInput.disabled) {
           refNoInput.focus();
           refNoInput.select();
@@ -751,11 +754,11 @@ export default function CustomerGoldVoucherClientPage({
       const term = search.trim().toLowerCase();
       const filteredCustomers = term
         ? allCustomers.filter((customer: any) => {
-          const custCode = String(customer.cust_code ?? "").toLowerCase();
-          const custName = String(customer.cust_name ?? "").toLowerCase();
+            const custCode = String(customer.cust_code ?? "").toLowerCase();
+            const custName = String(customer.cust_name ?? "").toLowerCase();
 
-          return custCode.includes(term) || custName.includes(term);
-        })
+            return custCode.includes(term) || custName.includes(term);
+          })
         : allCustomers;
 
       // تحويل العملاء إلى خيارات
@@ -876,155 +879,164 @@ export default function CustomerGoldVoucherClientPage({
   const selectorsRef = useRef<HTMLDivElement>(null);
 
   // Hook for Enter key navigation in top form fields
-  const {
-    handleKeyDown: handleKeyDownSelectors,
-    handleF4KeyForSelect,
-  } = useKeyAsTab({
-    keys: ["Enter"],
-    containerRef: selectorsRef,
-    disabled: !isEditing,
-    focusableSelector: 'input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), [role="combobox"]',
-    filterElement: (element) => {
-      // Exclude elements with tabIndex={-1}
-      if (element.tabIndex === -1) {
-        return false;
-      }
-
-      // Exclude buttons with data-skip-key-as-tab="true"
-      if (element.tagName.toLowerCase() === "button") {
-        if (
-          element.hasAttribute("data-skip-key-as-tab") ||
-          element.closest("[data-skip-key-as-tab='true']")
-        ) {
+  const { handleKeyDown: handleKeyDownSelectors, handleF4KeyForSelect } =
+    useKeyAsTab({
+      keys: ["Enter"],
+      containerRef: selectorsRef,
+      disabled: !isEditing,
+      focusableSelector:
+        'input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), [role="combobox"]',
+      filterElement: (element) => {
+        // Exclude elements with tabIndex={-1}
+        if (element.tabIndex === -1) {
           return false;
         }
-      }
 
-      return true;
-    },
-    shouldIgnoreEvent: (event) => {
-      const target = event.target as HTMLElement | null;
-
-      if (!target) return false;
-
-      // Ignore elements with data-skip-key-as-tab="true"
-      if (target.closest("[data-skip-key-as-tab='true']")) {
-        return true;
-      }
-
-      // Ignore textareas and buttons
-      const tagName = target.tagName.toLowerCase();
-
-      if (tagName === "textarea" || tagName === "button") {
-        return true;
-      }
-
-      // ✅ السماح بالتنقل من حقل "البيان" (input[type="text"]) إلى الحقول التالية
-      // إذا كان الحقل هو input[type="text"] وليس داخل combobox، نسمح بالتنقل
-      if (tagName === "input" && target.getAttribute("type") === "text") {
-        const isInCombobox = target.closest('[role="combobox"]');
-        if (!isInCombobox) {
-          return false; // Allow navigation
-        }
-      }
-
-      // Ignore if inside an open dropdown list
-      const listboxElement = target.closest('[role="listbox"]');
-
-      if (listboxElement) {
-        return true;
-      }
-
-      // Ignore if inside an open popover or dropdown
-      const popoverElement = target.closest(
-        '[role="dialog"], [role="menu"], [data-headlessui-state]',
-      );
-
-      if (popoverElement) {
-        return true;
-      }
-
-      // Allow navigation through ReactSelect when closed
-      const selectButton = target.closest('[role="combobox"]');
-
-      if (selectButton) {
-        const isExpanded =
-          selectButton.getAttribute("aria-expanded") === "true";
-
-        // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
-        if (isExpanded) {
-          return true; // Allow normal interaction when open
+        // Exclude buttons with data-skip-key-as-tab="true"
+        if (element.tagName.toLowerCase() === "button") {
+          if (
+            element.hasAttribute("data-skip-key-as-tab") ||
+            element.closest("[data-skip-key-as-tab='true']")
+          ) {
+            return false;
+          }
         }
 
-        // إذا كانت القائمة مغلقة، نسمح بالتنقل
-        return false; // Allow navigation when closed
-      }
+        return true;
+      },
+      shouldIgnoreEvent: (event) => {
+        const target = event.target as HTMLElement | null;
 
-      return false;
-    },
-    onBoundaryFocus: (direction) => {
-      // عندما نصل لنهاية الحقول العلوية (بعد مركز التكلفة)، ننتقل لجدول الذهب
-      if (direction === 1) {
-        const currentElement = document.activeElement as HTMLElement;
-        const isInSelectors = selectorsRef.current?.contains(currentElement);
+        if (!target) return false;
 
-        if (isInSelectors) {
-          // التحقق من أننا في آخر حقل (مركز التكلفة)
-          // نعتمد على الترتيب في DOM
-          const allFocusable = Array.from(
-            selectorsRef.current?.querySelectorAll(
-              'input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), [role="combobox"]',
-            ) || [],
-          ) as HTMLElement[];
+        // Ignore elements with data-skip-key-as-tab="true"
+        if (target.closest("[data-skip-key-as-tab='true']")) {
+          return true;
+        }
 
-          const currentIndex = allFocusable.indexOf(currentElement);
+        // Ignore textareas and buttons
+        const tagName = target.tagName.toLowerCase();
 
-          // إذا لم نجد العنصر أو كان هو الأخير
-          if (currentIndex === -1 || currentIndex === allFocusable.length - 1) {
-            // ✅ إضافة صف جديد إذا لم يكن موجوداً
-            if (goldDetails.length === 0) {
-              addGoldDetailRow();
-            }
+        if (tagName === "textarea" || tagName === "button") {
+          return true;
+        }
 
-            // ✅ الانتقال إلى أول حقل في جدول الذهب (حقل رقم الصنف)
-            // استخدام polling لضمان العثور على العنصر بعد الريندر
-            const focusToItemField = (attempt = 1) => {
-              // محاولة العثور على الwrapper
-              const wrapper = document.getElementById('item-select-wrapper-0');
-              if (wrapper) {
-                const input = wrapper.querySelector('input');
-                if (input) {
-                  input.focus();
-                  // التأكد من أن التركيز نجح
-                  if (document.activeElement === input) {
+        // ✅ السماح بالتنقل من حقل "البيان" (input[type="text"]) إلى الحقول التالية
+        // إذا كان الحقل هو input[type="text"] وليس داخل combobox، نسمح بالتنقل
+        if (tagName === "input" && target.getAttribute("type") === "text") {
+          const isInCombobox = target.closest('[role="combobox"]');
+
+          if (!isInCombobox) {
+            return false; // Allow navigation
+          }
+        }
+
+        // Ignore if inside an open dropdown list
+        const listboxElement = target.closest('[role="listbox"]');
+
+        if (listboxElement) {
+          return true;
+        }
+
+        // Ignore if inside an open popover or dropdown
+        const popoverElement = target.closest(
+          '[role="dialog"], [role="menu"], [data-headlessui-state]',
+        );
+
+        if (popoverElement) {
+          return true;
+        }
+
+        // Allow navigation through ReactSelect when closed
+        const selectButton = target.closest('[role="combobox"]');
+
+        if (selectButton) {
+          const isExpanded =
+            selectButton.getAttribute("aria-expanded") === "true";
+
+          // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
+          // إذا كانت القائمة مغلقة، نسمح بالتنقل
+          return isExpanded;
+        }
+
+        return false;
+      },
+      onBoundaryFocus: (direction) => {
+        // عندما نصل لنهاية الحقول العلوية (بعد مركز التكلفة)، ننتقل لجدول الذهب
+        if (direction === 1) {
+          const currentElement = document.activeElement as HTMLElement;
+          const isInSelectors = selectorsRef.current?.contains(currentElement);
+
+          if (isInSelectors) {
+            // التحقق من أننا في آخر حقل (مركز التكلفة)
+            // نعتمد على الترتيب في DOM
+            const allFocusable = Array.from(
+              selectorsRef.current?.querySelectorAll(
+                'input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), [role="combobox"]',
+              ) || [],
+            ) as HTMLElement[];
+
+            const currentIndex = allFocusable.indexOf(currentElement);
+
+            // إذا لم نجد العنصر أو كان هو الأخير
+            if (
+              currentIndex === -1 ||
+              currentIndex === allFocusable.length - 1
+            ) {
+              // ✅ إضافة صف جديد إذا لم يكن موجوداً
+              if (goldDetails.length === 0) {
+                addGoldDetailRow();
+              }
+
+              // ✅ الانتقال إلى أول حقل في جدول الذهب (حقل رقم الصنف)
+              // استخدام polling لضمان العثور على العنصر بعد الريندر
+              const focusToItemField = (attempt = 1) => {
+                // محاولة العثور على الwrapper
+                const wrapper = document.getElementById(
+                  "item-select-wrapper-0",
+                );
+
+                if (wrapper) {
+                  const input = wrapper.querySelector("input");
+
+                  if (input) {
+                    input.focus();
+                    // التأكد من أن التركيز نجح
+                    if (document.activeElement === input) {
+                      return true;
+                    }
+                  }
+                  // محاولة العثور على combobox
+                  const combobox = wrapper.querySelector(
+                    '[role="combobox"]',
+                  ) as HTMLElement;
+
+                  if (combobox) {
+                    combobox.focus();
+
                     return true;
                   }
                 }
-                // محاولة العثور على combobox
-                const combobox = wrapper.querySelector('[role="combobox"]') as HTMLElement;
-                if (combobox) {
-                  combobox.focus();
-                  return true;
+
+                // إذا لم نجد العنصر أو لم ينجح التركيز، نعيد المحاولة
+                if (attempt < 20) {
+                  // المحاولة لمدة 1 ثانية تقريباً (20 * 50ms)
+                  setTimeout(() => focusToItemField(attempt + 1), 50);
                 }
-              }
 
-              // إذا لم نجد العنصر أو لم ينجح التركيز، نعيد المحاولة
-              if (attempt < 20) { // المحاولة لمدة 1 ثانية تقريباً (20 * 50ms)
-                setTimeout(() => focusToItemField(attempt + 1), 50);
-              }
-              return false;
-            };
+                return false;
+              };
 
-            focusToItemField();
+              focusToItemField();
 
-            return true;
+              return true;
+            }
           }
         }
-      }
 
-      return false;
-    },
-  });
+        return false;
+      },
+    });
 
   // Hook for Enter key navigation in gold details table
   const { setInputRef: setGoldInputRef, handleKeyDown: handleGoldKeyDownBase } =
@@ -1084,6 +1096,7 @@ export default function CustomerGoldVoucherClientPage({
           };
 
           focusToCashTable();
+
           return;
         }
 
@@ -1092,22 +1105,34 @@ export default function CustomerGoldVoucherClientPage({
       }
 
       // ✅ حل مشكلة التوقف عند الوزن المعاير (Col 3) -> الصندوق (Col 4)
-      if (colIndex === 3 && (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey))) {
+      if (
+        colIndex === 3 &&
+        (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey))
+      ) {
         event.preventDefault();
         event.stopPropagation();
 
         const focusBox = () => {
-          const wrapper = document.getElementById(`gold-box-wrapper-${rowIndex}`);
+          const wrapper = document.getElementById(
+            `gold-box-wrapper-${rowIndex}`,
+          );
+
           if (wrapper) {
             // محاولة العثور على input أو combobox
-            const input = wrapper.querySelector('input');
+            const input = wrapper.querySelector("input");
+
             if (input) {
               input.focus();
+
               return;
             }
-            const combobox = wrapper.querySelector('[role="combobox"]') as HTMLElement;
+            const combobox = wrapper.querySelector(
+              '[role="combobox"]',
+            ) as HTMLElement;
+
             if (combobox) {
               combobox.focus();
+
               return;
             }
           }
@@ -1117,6 +1142,7 @@ export default function CustomerGoldVoucherClientPage({
         };
 
         focusBox();
+
         return;
       }
 
@@ -1157,22 +1183,34 @@ export default function CustomerGoldVoucherClientPage({
       options?: any,
     ) => {
       // ✅ حل مشكلة التوقف عند المبلغ (Col 0) -> الصندوق (Col 1) في جدول النقدية
-      if (colIndex === 0 && (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey))) {
+      if (
+        colIndex === 0 &&
+        (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey))
+      ) {
         event.preventDefault();
         event.stopPropagation();
 
         const focusBox = () => {
-          const wrapper = document.getElementById(`cash-box-wrapper-${rowIndex}`);
+          const wrapper = document.getElementById(
+            `cash-box-wrapper-${rowIndex}`,
+          );
+
           if (wrapper) {
             // محاولة العثور على input أو combobox
-            const input = wrapper.querySelector('input');
+            const input = wrapper.querySelector("input");
+
             if (input) {
               input.focus();
+
               return;
             }
-            const combobox = wrapper.querySelector('[role="combobox"]') as HTMLElement;
+            const combobox = wrapper.querySelector(
+              '[role="combobox"]',
+            ) as HTMLElement;
+
             if (combobox) {
               combobox.focus();
+
               return;
             }
           }
@@ -1182,6 +1220,7 @@ export default function CustomerGoldVoucherClientPage({
         };
 
         focusBox();
+
         return;
       }
 
@@ -1239,156 +1278,6 @@ export default function CustomerGoldVoucherClientPage({
     loadItemOptionsRef.current = loadItemOptions;
   }, [loadItemOptions]);
 
-  // استخدام useRef لتخزين آخر searchTerm لتجنب البحث المتكرر
-  const lastSearchTermRef = useRef<string>("");
-  const searchInProgressRef = useRef<boolean>(false);
-  const currentPageRef = useRef<number>(1);
-  const hasMoreRef = useRef<boolean>(true);
-
-  // State لتتبع hasMore لكل SearchableSelect
-  const [itemsHasMore, setItemsHasMore] = useState<boolean>(true);
-
-  const handleItemSearch = useCallback(async (searchTerm: string) => {
-    const trimmed = searchTerm.trim();
-
-    // إذا كان البحث نفسه، لا نعيد البحث
-    if (trimmed === lastSearchTermRef.current && trimmed !== "") {
-      return [];
-    }
-
-    // إذا كان البحث قيد التنفيذ، لا نبدأ بحث جديد
-    if (searchInProgressRef.current) {
-      return [];
-    }
-
-    // إذا كان البحث فارغاً، نحمل أول صفحة (عند فتح القائمة)
-    if (!trimmed) {
-      lastSearchTermRef.current = "";
-      currentPageRef.current = 1;
-      hasMoreRef.current = true;
-
-      try {
-        const results = await loadItemOptionsRef.current("", [], { page: 1 });
-
-        // التحقق من وجود صفحات إضافية
-        if (Array.isArray(results) && results.length > 0) {
-          hasMoreRef.current = true;
-          setItemsHasMore(true);
-        } else {
-          hasMoreRef.current = false;
-          setItemsHasMore(false);
-        }
-
-        // إزالة _hasNext من النتائج قبل الإرجاع
-        const cleanResults = Array.isArray(results)
-          ? results.map((r: any) => {
-            const rest = { ...r };
-
-            delete (rest as any)._hasNext;
-
-            return rest;
-          })
-          : [];
-
-        return cleanResults;
-      } catch (error) {
-        console.error("Error in handleItemSearch:", error);
-
-        return [];
-      }
-    }
-
-    try {
-      searchInProgressRef.current = true;
-      lastSearchTermRef.current = trimmed;
-      currentPageRef.current = 1;
-
-      // تحميل أول صفحة مع البحث
-      const results = await loadItemOptionsRef.current(trimmed, [], {
-        page: 1,
-      });
-
-      // التحقق من وجود صفحات إضافية
-      if (Array.isArray(results) && results.length > 0) {
-        hasMoreRef.current = true;
-        setItemsHasMore(true);
-      } else {
-        hasMoreRef.current = false;
-        setItemsHasMore(false);
-      }
-
-      // التأكد من أن النتائج هي array
-      if (!results) {
-        return [];
-      }
-
-      // إذا كانت النتائج array مباشر
-      if (Array.isArray(results)) {
-        // إزالة _hasNext من النتائج قبل الإرجاع
-        return results.map((r: any) => {
-          const rest = { ...r };
-
-          delete (rest as any)._hasNext;
-
-          return rest;
-        });
-      }
-
-      // إذا كانت النتائج كائن به options
-      if (results && typeof results === "object" && "options" in results) {
-        const resultsObj = results as { options?: any[] };
-
-        return Array.isArray(resultsObj.options) ? resultsObj.options : [];
-      }
-
-      return [];
-    } catch (error) {
-      console.error("Error in handleItemSearch:", error);
-
-      return [];
-    } finally {
-      searchInProgressRef.current = false;
-    }
-  }, []); // لا dependencies لأننا نستخدم ref
-
-  // دالة للتحميل التدريجي (Infinite Scroll)
-  const handleLoadMoreItems = useCallback(
-    async (page: number, searchTerm: string) => {
-      try {
-        const results = await loadItemOptionsRef.current(searchTerm, [], {
-          page,
-        });
-
-        // التحقق من وجود صفحات إضافية
-        if (Array.isArray(results) && results.length > 0) {
-          hasMoreRef.current = true;
-          setItemsHasMore(true);
-        } else {
-          hasMoreRef.current = false;
-          setItemsHasMore(false);
-        }
-        currentPageRef.current = page;
-
-        // إزالة _hasNext من النتائج قبل الإرجاع
-        const cleanResults = Array.isArray(results)
-          ? results.map((r: any) => {
-            const rest = { ...r };
-
-            delete (rest as any)._hasNext;
-
-            return rest;
-          })
-          : [];
-
-        return cleanResults;
-      } catch (error) {
-        console.error("Error in handleLoadMoreItems:", error);
-
-        return [];
-      }
-    },
-    [],
-  );
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -1419,7 +1308,12 @@ export default function CustomerGoldVoucherClientPage({
     );
 
     return goldDiff < 0.00001 && cashDiff < 0.01;
-  }, [totals.totalGoldWeight, totals.totalGoldGWeight, totals.totalBoxes, voucher.vouch_amt]);
+  }, [
+    totals.totalGoldWeight,
+    totals.totalGoldGWeight,
+    totals.totalBoxes,
+    voucher.vouch_amt,
+  ]);
 
   // Save voucher
   const saveVoucher = async () => {
@@ -1543,21 +1437,21 @@ export default function CustomerGoldVoucherClientPage({
       const result =
         formMode === "edit"
           ? await updateVoucherAction(
-            voucherData,
-            [],
-            [],
-            voucherRecordId as number | undefined,
-            boxesData,
-            deletedBoxIds,
-            goldDetailsData,
-            deletedGoldDetailIds,
-          )
+              voucherData,
+              [],
+              [],
+              voucherRecordId as number | undefined,
+              boxesData,
+              deletedBoxIds,
+              goldDetailsData,
+              deletedGoldDetailIds,
+            )
           : await createVoucherAction(
-            voucherData,
-            [],
-            boxesData,
-            goldDetailsData,
-          );
+              voucherData,
+              [],
+              boxesData,
+              goldDetailsData,
+            );
 
       if (result.success && result.data) {
         const realId = result.data.id;
@@ -1599,10 +1493,10 @@ export default function CustomerGoldVoucherClientPage({
         // تنسيق التاريخ
         const formattedDate = voucher.vouch_date
           ? new Date(voucher.vouch_date).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
           : "";
 
         // فلترة البيانات الصالحة
@@ -1930,14 +1824,15 @@ export default function CustomerGoldVoucherClientPage({
                     <span class="header-info-value">${validBoxes.length}</span>
                   </div>
                 </div>
-                ${voucher.vouch_notes
-            ? `
+                ${
+                  voucher.vouch_notes
+                    ? `
                 <div class="voucher-notes">
                   <strong>${t("fields.notes")}:</strong> ${voucher.vouch_notes}
                 </div>
                 `
-            : ""
-          }
+                    : ""
+                }
               </div>
               
               <!-- جدول الذهب -->
@@ -1961,16 +1856,16 @@ export default function CustomerGoldVoucherClientPage({
                   </thead>
                   <tbody>
                     ${validGoldDetails
-            .map((detail) => {
-              const item = items.find(
-                (itm) => itm.id === detail.item_id,
-              );
-              const boxName = detail.box_id
-                ? getBoxName(detail.box_id)
-                : "-";
-              const costName = getCostCenterName(detail.cost_id);
+                      .map((detail) => {
+                        const item = items.find(
+                          (itm) => itm.id === detail.item_id,
+                        );
+                        const boxName = detail.box_id
+                          ? getBoxName(detail.box_id)
+                          : "-";
+                        const costName = getCostCenterName(detail.cost_id);
 
-              return `
+                        return `
                         <tr>
                           <td class="item-code">${detail.item_code || item?.item_code || "-"}</td>
                           <td class="item-name">${detail.item_name || item?.item_name || "-"}</td>
@@ -1985,8 +1880,8 @@ export default function CustomerGoldVoucherClientPage({
                           <td style="text-align: right; font-size: 11px;">${costName}</td>
                         </tr>
                       `;
-            })
-            .join("")}
+                      })
+                      .join("")}
                     <tr class="totals">
                       <td colspan="3" style="text-align: right; padding-right: 20px; font-weight: 700;">${t("print.totalGold")}</td>
                       <td class="amount amount-gold">${totals.totalGoldWeight.toFixed(5)}</td>
@@ -2012,11 +1907,11 @@ export default function CustomerGoldVoucherClientPage({
                   </thead>
                   <tbody>
                     ${validBoxes
-            .map((box) => {
-              const boxName = getBoxName(box.box_id, box.box);
-              const costName = getCostCenterName(box.cost_id);
+                      .map((box) => {
+                        const boxName = getBoxName(box.box_id, box.box);
+                        const costName = getCostCenterName(box.cost_id);
 
-              return `
+                        return `
                         <tr>
                           <td class="amount amount-cash">${formatAmount(box.amount || 0)}</td>
                           <td style="text-align: right;">${boxName}</td>
@@ -2025,8 +1920,8 @@ export default function CustomerGoldVoucherClientPage({
                           <td style="text-align: right; font-size: 11px;">${costName}</td>
                         </tr>
                       `;
-            })
-            .join("")}
+                      })
+                      .join("")}
                     <tr class="totals">
                       <td class="amount amount-cash">${formatAmount(totals.totalBoxes)}</td>
                       <td colspan="4" style="text-align: right; padding-right: 20px; font-weight: 700;">${t("totals.totalCash")}</td>
@@ -2153,9 +2048,12 @@ export default function CustomerGoldVoucherClientPage({
         }
       }
 
-      const voucherTypeName = vouchType === 4 ? t("title.receipt") : t("title.payment");
+      const voucherTypeName =
+        vouchType === 4 ? t("title.receipt") : t("title.payment");
 
-      toast.error(t("messages.notFound", { type: voucherTypeName, number: searchValue }));
+      toast.error(
+        t("messages.notFound", { type: voucherTypeName, number: searchValue }),
+      );
     } catch (error) {
       console.error("Error searching voucher:", error);
       toast.error(t("messages.searchError"));
@@ -2201,8 +2099,7 @@ export default function CustomerGoldVoucherClientPage({
             <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
-                #
-                {hasVoucherId ? voucher.vouch_id : t("messages.numbering")}
+                #{hasVoucherId ? voucher.vouch_id : t("messages.numbering")}
               </span>
               <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
@@ -2366,7 +2263,9 @@ export default function CustomerGoldVoucherClientPage({
                 isSelected={voucher.commit}
                 size="sm"
               />
-              <span className="text-xs text-slate-600">{t("status.saved")}</span>
+              <span className="text-xs text-slate-600">
+                {t("status.saved")}
+              </span>
             </div>
 
             <div className="flex items-center gap-1">
@@ -2376,7 +2275,9 @@ export default function CustomerGoldVoucherClientPage({
                 isSelected={voucher.post}
                 size="sm"
               />
-              <span className="text-xs text-slate-600">{t("status.posted")}</span>
+              <span className="text-xs text-slate-600">
+                {t("status.posted")}
+              </span>
             </div>
 
             <div className="flex items-center gap-1">
@@ -2386,17 +2287,16 @@ export default function CustomerGoldVoucherClientPage({
                 isSelected={voucher.print}
                 size="sm"
               />
-              <span className="text-xs text-slate-600">{t("status.printed")}</span>
+              <span className="text-xs text-slate-600">
+                {t("status.printed")}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Form Fields - Row 1 & Row 2 */}
-      <div
-        ref={selectorsRef}
-        onKeyDownCapture={handleKeyDownSelectors}
-      >
+      <div ref={selectorsRef} onKeyDownCapture={handleKeyDownSelectors}>
         {/* Row 1 */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-1.5 mb-1.5">
           {/* رقم المرجع - أضيق */}
@@ -2467,7 +2367,10 @@ export default function CustomerGoldVoucherClientPage({
                 type="text"
                 value={voucher.vouch_notes || ""}
                 onChange={(e) =>
-                  setVoucher((prev) => ({ ...prev, vouch_notes: e.target.value }))
+                  setVoucher((prev) => ({
+                    ...prev,
+                    vouch_notes: e.target.value,
+                  }))
                 }
                 onDoubleClick={() => {
                   if (isEditing) {
@@ -2498,7 +2401,7 @@ export default function CustomerGoldVoucherClientPage({
               className="block text-xs font-medium text-slate-700 mb-0.5"
               htmlFor="gold-customer-select"
             >
-              العميل
+              {t("fields.customer")}
             </label>
             <div
               id="gold-customer-select"
@@ -2522,7 +2425,7 @@ export default function CustomerGoldVoucherClientPage({
                     e.stopPropagation();
                     setTimeout(() => {
                       const handlingInput = document.getElementById(
-                        'gold-handling',
+                        "gold-handling",
                       ) as HTMLInputElement;
 
                       if (handlingInput) {
@@ -2618,11 +2521,13 @@ export default function CustomerGoldVoucherClientPage({
                   if (!target) return;
 
                   const isInListbox = target.closest('[role="listbox"]');
+
                   if (isInListbox) {
                     return;
                   }
 
                   const selectButton = target.closest('[role="combobox"]');
+
                   if (selectButton) {
                     const isExpanded =
                       selectButton.getAttribute("aria-expanded") === "true";
@@ -2684,7 +2589,8 @@ export default function CustomerGoldVoucherClientPage({
                   const focusToCostCenterSelect = (): boolean => {
                     try {
                       const costCenterSelectId = `#customer-cost-center-select`;
-                      let costCenterSelect = document.querySelector(costCenterSelectId);
+                      const costCenterSelect =
+                        document.querySelector(costCenterSelectId);
 
                       if (!costCenterSelect) {
                         return false;
@@ -2718,6 +2624,7 @@ export default function CustomerGoldVoucherClientPage({
                       return false;
                     } catch (error) {
                       console.error("Error in focusToCostCenterSelect:", error);
+
                       return false;
                     }
                   };
@@ -2738,8 +2645,6 @@ export default function CustomerGoldVoucherClientPage({
                       focusToCostCenterSelect();
                     }, 50);
                   }, 10);
-
-                  return;
                 }
               }}
             />
@@ -2763,14 +2668,17 @@ export default function CustomerGoldVoucherClientPage({
 
                 if (e.key === "Enter") {
                   const target = e.target as HTMLElement | null;
+
                   if (!target) return;
 
                   const isInListbox = target.closest('[role="listbox"]');
+
                   if (isInListbox) {
                     return;
                   }
 
                   const selectButton = target.closest('[role="combobox"]');
+
                   if (selectButton) {
                     const isExpanded =
                       selectButton.getAttribute("aria-expanded") === "true";
@@ -2793,9 +2701,13 @@ export default function CustomerGoldVoucherClientPage({
                     // استخدام polling لضمان العثور على العنصر بعد الريندر
                     const focusToItemField = (attempt = 1) => {
                       // محاولة العثور على الwrapper
-                      const wrapper = document.getElementById('item-select-wrapper-0');
+                      const wrapper = document.getElementById(
+                        "item-select-wrapper-0",
+                      );
+
                       if (wrapper) {
-                        const input = wrapper.querySelector('input');
+                        const input = wrapper.querySelector("input");
+
                         if (input) {
                           input.focus();
                           // التأكد من أن التركيز نجح
@@ -2804,15 +2716,20 @@ export default function CustomerGoldVoucherClientPage({
                           }
                         }
                         // محاولة العثور على combobox
-                        const combobox = wrapper.querySelector('[role="combobox"]') as HTMLElement;
+                        const combobox = wrapper.querySelector(
+                          '[role="combobox"]',
+                        ) as HTMLElement;
+
                         if (combobox) {
                           combobox.focus();
+
                           return;
                         }
                       }
 
                       // إذا لم نجد العنصر أو لم ينجح التركيز، نعيد المحاولة
-                      if (attempt < 20) { // المحاولة لمدة 1 ثانية تقريباً (20 * 50ms)
+                      if (attempt < 20) {
+                        // المحاولة لمدة 1 ثانية تقريباً (20 * 50ms)
                         setTimeout(() => focusToItemField(attempt + 1), 50);
                       }
                     };
@@ -2885,11 +2802,13 @@ export default function CustomerGoldVoucherClientPage({
                   if (!target) return;
 
                   const isInListbox = target.closest('[role="listbox"]');
+
                   if (isInListbox) {
                     return;
                   }
 
                   const selectButton = target.closest('[role="combobox"]');
+
                   if (selectButton) {
                     const isExpanded =
                       selectButton.getAttribute("aria-expanded") === "true";
@@ -2919,6 +2838,7 @@ export default function CustomerGoldVoucherClientPage({
                             const allSelects = document.querySelectorAll(
                               '[id^="item-select-"]',
                             );
+
                             itemSelect = allSelects[0] || null;
                           }
 
@@ -2937,12 +2857,13 @@ export default function CustomerGoldVoucherClientPage({
                           }
 
                           if (!combobox) {
-                            const allComboboxes = document.querySelectorAll(
-                              '[role="combobox"]',
-                            );
+                            const allComboboxes =
+                              document.querySelectorAll('[role="combobox"]');
+
                             for (let i = 0; i < allComboboxes.length; i += 1) {
                               const cb = allComboboxes[i] as HTMLElement;
                               const parent = cb.closest('[id^="item-select-"]');
+
                               if (parent && parent.id === "item-select-0") {
                                 combobox = cb;
                                 break;
@@ -2956,12 +2877,14 @@ export default function CustomerGoldVoucherClientPage({
                               combobox.setAttribute("tabindex", "0");
                               combobox.focus();
                             }
+
                             return true;
                           }
 
                           return false;
                         } catch (error) {
                           console.error("Error in focusToItemField:", error);
+
                           return false;
                         }
                       };
@@ -3015,7 +2938,9 @@ export default function CustomerGoldVoucherClientPage({
       {/* Gold Table */}
       <div className="bg-white rounded-lg border border-slate-200 mb-1.5">
         <div className="p-1 border-b border-slate-200 bg-slate-50">
-          <h3 className={`text-xs font-semibold text-slate-800 ${textAlign}`}>{t("tables.gold.title")}</h3>
+          <h3 className={`text-xs font-semibold text-slate-800 ${textAlign}`}>
+            {t("tables.gold.title")}
+          </h3>
         </div>
         <div className="p-0.5">
           <div className="flex justify-between mb-0.5">
@@ -3032,18 +2957,42 @@ export default function CustomerGoldVoucherClientPage({
             <table className="min-w-[1000px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className={`w-72 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.itemNumber")}</th>
-                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.weight")}</th>
-                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.calibration")}</th>
-                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.calibratedWeight")}</th>
-                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.box")}</th>
-                  <th className={`w-80 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.notes")}</th>
-                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.caliberDifference")}</th>
-                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.sealingAmount")}</th>
-                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.sealingWeight")}</th>
-                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.invoiceNumber")}</th>
-                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.costCenter")}</th>
-                  <th className={`w-12 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.delete")}</th>
+                  <th className={`w-72 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.itemNumber")}
+                  </th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.weight")}
+                  </th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.calibration")}
+                  </th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.calibratedWeight")}
+                  </th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.box")}
+                  </th>
+                  <th className={`w-80 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.notes")}
+                  </th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.caliberDifference")}
+                  </th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.sealingAmount")}
+                  </th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.sealingWeight")}
+                  </th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.invoiceNumber")}
+                  </th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.costCenter")}
+                  </th>
+                  <th className={`w-12 p-1 border ${textAlignCenter}`}>
+                    {t("tables.gold.columns.delete")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -3098,7 +3047,7 @@ export default function CustomerGoldVoucherClientPage({
                                   if (selectButton) {
                                     refSetter(
                                       (selectButton as unknown as HTMLInputElement) ||
-                                      null,
+                                        null,
                                     );
                                   } else {
                                     refSetter(null);
@@ -3140,7 +3089,9 @@ export default function CustomerGoldVoucherClientPage({
                                   : null
                               }
                               menuPosition="fixed"
-                              placeholder={t("tables.gold.placeholders.selectItem")}
+                              placeholder={t(
+                                "tables.gold.placeholders.selectItem",
+                              )}
                               styles={{
                                 control: (base) => ({
                                   ...base,
@@ -3149,7 +3100,9 @@ export default function CustomerGoldVoucherClientPage({
                                   border: "none",
                                   borderRadius: 0,
                                   boxShadow: "none",
-                                  cursor: !isEditing ? "not-allowed" : base.cursor,
+                                  cursor: !isEditing
+                                    ? "not-allowed"
+                                    : base.cursor,
                                   backgroundColor: "transparent",
                                   "&:hover": {
                                     border: "none",
@@ -3166,7 +3119,10 @@ export default function CustomerGoldVoucherClientPage({
                                   margin: 0,
                                   padding: 0,
                                 }),
-                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                }),
                               }}
                               value={itemValue}
                               onChange={(selectedOption: any) => {
@@ -3374,14 +3330,9 @@ export default function CustomerGoldVoucherClientPage({
                         const boxValue =
                           detail.box_id && detail.box_id > 0
                             ? goldBoxSelectOptions.find(
-                              (opt) => opt.value === String(detail.box_id),
-                            )
+                                (opt) => opt.value === String(detail.box_id),
+                              )
                             : null;
-                        const selectedBoxValue = boxValue
-                          ? typeof boxValue === "object"
-                            ? boxValue.value
-                            : boxValue
-                          : null;
 
                         return (
                           <div
@@ -3399,7 +3350,9 @@ export default function CustomerGoldVoucherClientPage({
                               classNamePrefix="react-select"
                               components={{ IndicatorSeparator: () => null }}
                               instanceId={`gold-box-select-${index}`}
-                              isDisabled={!isEditing || goldBoxSelectOptions.length === 0}
+                              isDisabled={
+                                !isEditing || goldBoxSelectOptions.length === 0
+                              }
                               menuPortalTarget={
                                 typeof window !== "undefined"
                                   ? document.body
@@ -3407,7 +3360,9 @@ export default function CustomerGoldVoucherClientPage({
                               }
                               menuPosition="fixed"
                               options={goldBoxSelectOptions}
-                              placeholder={t("tables.cash.placeholders.selectBox")}
+                              placeholder={t(
+                                "tables.cash.placeholders.selectBox",
+                              )}
                               styles={{
                                 control: (base) => ({
                                   ...base,
@@ -3420,7 +3375,10 @@ export default function CustomerGoldVoucherClientPage({
                                   cursor: isEditing ? "pointer" : "not-allowed",
                                   backgroundColor: "transparent",
                                 }),
-                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                }),
                                 option: (base) => ({
                                   ...base,
                                   fontSize: "12px",
@@ -3659,11 +3617,6 @@ export default function CustomerGoldVoucherClientPage({
                         const costValue = getCostCenterSelectValue(
                           detail.cost_id,
                         );
-                        const selectedCostValue = costValue
-                          ? typeof costValue === "object"
-                            ? costValue.value
-                            : costValue
-                          : null;
 
                         return (
                           <div
@@ -3680,7 +3633,9 @@ export default function CustomerGoldVoucherClientPage({
                               classNamePrefix="react-select"
                               components={{ IndicatorSeparator: () => null }}
                               instanceId={`cost-center-gold-select-${index}`}
-                              isDisabled={!isEditing || costCenters.length === 0}
+                              isDisabled={
+                                !isEditing || costCenters.length === 0
+                              }
                               menuPortalTarget={
                                 typeof window !== "undefined"
                                   ? document.body
@@ -3688,7 +3643,9 @@ export default function CustomerGoldVoucherClientPage({
                               }
                               menuPosition="fixed"
                               options={costCenterSelectOptions}
-                              placeholder={t("tables.gold.placeholders.selectCostCenter")}
+                              placeholder={t(
+                                "tables.gold.placeholders.selectCostCenter",
+                              )}
                               styles={{
                                 control: (base) => ({
                                   ...base,
@@ -3701,7 +3658,10 @@ export default function CustomerGoldVoucherClientPage({
                                   cursor: isEditing ? "pointer" : "not-allowed",
                                   backgroundColor: "transparent",
                                 }),
-                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                }),
                                 option: (base) => ({
                                   ...base,
                                   fontSize: "12px",
@@ -3814,7 +3774,9 @@ export default function CustomerGoldVoucherClientPage({
       {/* Cash Table */}
       <div className="bg-white rounded-lg border border-slate-200 mb-1.5">
         <div className="p-1 border-b border-slate-200 bg-slate-50">
-          <h3 className={`text-xs font-semibold text-slate-800 ${textAlign}`}>{t("tables.cash.title")}</h3>
+          <h3 className={`text-xs font-semibold text-slate-800 ${textAlign}`}>
+            {t("tables.cash.title")}
+          </h3>
         </div>
         <div className="p-0.5">
           <div className="flex justify-between mb-0.5">
@@ -3831,12 +3793,24 @@ export default function CustomerGoldVoucherClientPage({
             <table className="min-w-[880px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.amount")}</th>
-                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.box")}</th>
-                  <th className={`w-80 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.notes")}</th>
-                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.invoiceNumber")}</th>
-                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.costCenter")}</th>
-                  <th className={`w-12 p-1 border ${textAlignCenter}`}>{t("tables.cash.columns.delete")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.amount")}
+                  </th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.box")}
+                  </th>
+                  <th className={`w-80 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.notes")}
+                  </th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.invoiceNumber")}
+                  </th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.costCenter")}
+                  </th>
+                  <th className={`w-12 p-1 border ${textAlignCenter}`}>
+                    {t("tables.cash.columns.delete")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -3875,11 +3849,6 @@ export default function CustomerGoldVoucherClientPage({
                       {(() => {
                         const thisCol = 1;
                         const boxValue = getBoxSelectValue(box.box_id);
-                        const selectedBoxValue = boxValue
-                          ? typeof boxValue === "object"
-                            ? boxValue.value
-                            : boxValue
-                          : null;
 
                         return (
                           <div
@@ -3897,7 +3866,9 @@ export default function CustomerGoldVoucherClientPage({
                               classNamePrefix="react-select"
                               components={{ IndicatorSeparator: () => null }}
                               instanceId={`cash-box-select-${index}`}
-                              isDisabled={!isEditing || cashBoxSelectOptions.length === 0}
+                              isDisabled={
+                                !isEditing || cashBoxSelectOptions.length === 0
+                              }
                               menuPortalTarget={
                                 typeof window !== "undefined"
                                   ? document.body
@@ -3905,7 +3876,9 @@ export default function CustomerGoldVoucherClientPage({
                               }
                               menuPosition="fixed"
                               options={cashBoxSelectOptions}
-                              placeholder={t("tables.cash.placeholders.selectBox")}
+                              placeholder={t(
+                                "tables.cash.placeholders.selectBox",
+                              )}
                               styles={{
                                 control: (base) => ({
                                   ...base,
@@ -3918,7 +3891,10 @@ export default function CustomerGoldVoucherClientPage({
                                   cursor: isEditing ? "pointer" : "not-allowed",
                                   backgroundColor: "transparent",
                                 }),
-                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                }),
                                 option: (base) => ({
                                   ...base,
                                   fontSize: "12px",
@@ -4067,11 +4043,6 @@ export default function CustomerGoldVoucherClientPage({
                       {(() => {
                         const thisCol = 4;
                         const costValue = getCostCenterSelectValue(box.cost_id);
-                        const selectedCostValue = costValue
-                          ? typeof costValue === "object"
-                            ? costValue.value
-                            : costValue
-                          : null;
 
                         return (
                           <div
@@ -4088,7 +4059,9 @@ export default function CustomerGoldVoucherClientPage({
                               classNamePrefix="react-select"
                               components={{ IndicatorSeparator: () => null }}
                               instanceId={`cost-center-cash-select-${index}`}
-                              isDisabled={!isEditing || costCenters.length === 0}
+                              isDisabled={
+                                !isEditing || costCenters.length === 0
+                              }
                               menuPortalTarget={
                                 typeof window !== "undefined"
                                   ? document.body
@@ -4096,7 +4069,9 @@ export default function CustomerGoldVoucherClientPage({
                               }
                               menuPosition="fixed"
                               options={costCenterSelectOptions}
-                              placeholder={t("tables.gold.placeholders.selectCostCenter")}
+                              placeholder={t(
+                                "tables.gold.placeholders.selectCostCenter",
+                              )}
                               styles={{
                                 control: (base) => ({
                                   ...base,
@@ -4109,7 +4084,10 @@ export default function CustomerGoldVoucherClientPage({
                                   cursor: isEditing ? "pointer" : "not-allowed",
                                   backgroundColor: "transparent",
                                 }),
-                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                }),
                                 option: (base) => ({
                                   ...base,
                                   fontSize: "12px",
@@ -4241,7 +4219,9 @@ export default function CustomerGoldVoucherClientPage({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">{t("totals.totalCash")}:</span>
+            <span className="text-gray-700 font-medium">
+              {t("totals.totalCash")}:
+            </span>
             <span className="font-semibold text-blue-700 flex items-center gap-1">
               {formatAmount(totals.totalBoxes)}
               <RiyalIcon color="currentColor" />

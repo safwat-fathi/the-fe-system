@@ -21,12 +21,7 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import {
-  PlusIcon,
-  EyeIcon,
-  PencilIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon, EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 
@@ -163,14 +158,14 @@ export default function TaxesClient({
         </Button>
         <Input
           className="responsive-search"
-          placeholder="بحث بالاسم..."
+          placeholder={t("labels.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
 
       <div className="responsive-table">
-        <Table aria-label="جدول الضرائب">
+        <Table aria-label={t("labels.tableAriaLabel")}>
           <TableHeader>
             {columns.map((col) => (
               <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -196,7 +191,7 @@ export default function TaxesClient({
       </div>
 
       <div className="responsive-pagination">
-        <span>عدد الضرائب: {filteredTaxes.length}</span>
+        <span>{t("labels.totalCount", { count: filteredTaxes.length })}</span>
         <Pagination
           color="primary"
           page={page}
@@ -299,7 +294,7 @@ export default function TaxesClient({
           {modalMode === "view" && (
             <ModalFooter>
               <Button color="primary" onPress={() => setIsModalOpen(false)}>
-                إغلاق
+                {t("actions.close")}
               </Button>
             </ModalFooter>
           )}

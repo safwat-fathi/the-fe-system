@@ -115,15 +115,7 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
     "nov",
     "dec",
   ] as const;
-  const dayKeys = [
-    "sun",
-    "mon",
-    "tue",
-    "wed",
-    "thu",
-    "fri",
-    "sat",
-  ] as const;
+  const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
   const monthNames = monthKeys.map((key) => t(`months.${key}`));
   const dayNames = dayKeys.map((key) => t(`weekdays.${key}`));
@@ -264,7 +256,9 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
           <CardBody className="p-4">
             <div className="text-center">
               <div className="text-2xl font-bold">{analytics.total}</div>
-              <div className="text-sm opacity-90">{t("stats.totalInvoices")}</div>
+              <div className="text-sm opacity-90">
+                {t("stats.totalInvoices")}
+              </div>
             </div>
           </CardBody>
         </Card>
@@ -297,7 +291,9 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
               <div className="text-2xl font-bold">
                 {formatAmount(analytics.avgAmount, fractions.frac)}
               </div>
-              <div className="text-sm opacity-90">{t("stats.averageInvoice")}</div>
+              <div className="text-sm opacity-90">
+                {t("stats.averageInvoice")}
+              </div>
             </div>
           </CardBody>
         </Card>
@@ -308,7 +304,9 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         {/* المبيعات الشهرية */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">{t("charts.monthlySales")}</h3>
+            <h3 className="text-lg font-semibold">
+              {t("charts.monthlySales")}
+            </h3>
           </CardHeader>
           <CardBody>
             <div className="h-80">
@@ -320,7 +318,9 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         {/* أنواع الفواتير */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">{t("charts.typesDistribution")}</h3>
+            <h3 className="text-lg font-semibold">
+              {t("charts.typesDistribution")}
+            </h3>
           </CardHeader>
           <CardBody>
             <div className="h-80">
@@ -332,7 +332,9 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
         {/* الفواتير حسب اليوم */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold">{t("charts.dailyInvoices")}</h3>
+            <h3 className="text-lg font-semibold">
+              {t("charts.dailyInvoices")}
+            </h3>
           </CardHeader>
           <CardBody>
             <div className="h-80">
@@ -349,7 +351,9 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
           <CardBody>
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span className="font-medium">{t("labels.purchaseInvoices")}</span>
+                <span className="font-medium">
+                  {t("labels.purchaseInvoices")}
+                </span>
                 <span className="text-blue-600 font-bold">
                   {analytics.byType.purchase}
                 </span>
@@ -361,7 +365,9 @@ export default function InvoiceAnalytics({ invoices }: InvoiceAnalyticsProps) {
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <span className="font-medium">{t("labels.purchaseReturns")}</span>
+                <span className="font-medium">
+                  {t("labels.purchaseReturns")}
+                </span>
                 <span className="text-yellow-600 font-bold">
                   {analytics.byType.purchase_return}
                 </span>

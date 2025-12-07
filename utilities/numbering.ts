@@ -29,12 +29,21 @@ export const getNextNumber = async (
         params.trans_type = config.transType;
       }
       const response = await invoiceService.getAllInvoices(params);
+
       if (response?.results && Array.isArray(response.results)) {
         data = response.results;
       }
     } else {
       // استخدام voucher service
-      const response = await voucherService.getAll();
+      // تحسين: تمرير voucherType مباشرة إلى API بدلاً من جلب كل شيء ثم الفلترة
+      const params: any = {};
+
+      if (config.voucherType !== undefined) {
+        params.xvouch_type = String(config.voucherType);
+      }
+
+      const response = await voucherService.getAll(params);
+
       if (response.success && response.data) {
         data = Array.isArray(response.data) ? response.data : [];
       }
@@ -44,8 +53,8 @@ export const getNextNumber = async (
       return 1;
     }
 
-    // تصفية البيانات حسب النوع
-    let filteredData = data;
+    // تصفية البيانات حسب النوع (إذا لم يتم تمرير voucherType إلى API)
+    let filteredData: any[];
 
     if (config.transType !== undefined) {
       filteredData = data.filter((item: any) => {
@@ -58,6 +67,8 @@ export const getNextNumber = async (
         return isValidType && hasValidId;
       });
     } else if (config.voucherType !== undefined) {
+      // إذا تم تمرير voucherType إلى API، البيانات مفلترة بالفعل
+      // لكن نتحقق مرة أخرى للتأكد
       filteredData = data.filter((item: any) => {
         const isValidType = item.vouch_type === config.voucherType;
         const hasValidId =

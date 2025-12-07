@@ -27,12 +27,11 @@ import {
   PrinterIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslations, useLocale } from "next-intl";
-import { getLocaleDir } from "@/i18n/config";
 
 import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
 
+import { getLocaleDir } from "@/i18n/config";
 import { ConfirmationModal } from "@/components/Modal";
-import SearchableSelect from "@/components/SearchableSelect";
 import { RiyalIcon } from "@/components/RiyalIcon";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { useBalanceVoucherForm } from "@/hooks/useBalanceVoucherForm";
@@ -40,7 +39,7 @@ import { formatAmount } from "@/utilities/formatAmount";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-interface BalanceVoucherClientPageProps {
+export interface BalanceVoucherClientPageProps {
   voucherData?: any;
   voucherDetailsData?: any[];
   formData: any;
@@ -67,11 +66,11 @@ export default function BalanceVoucherClientPage({
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("forms.balanceVoucher");
-  
+
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = "text-center";
-  
+
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") || initialFormMode;
   const formMode = (
@@ -93,7 +92,6 @@ export default function BalanceVoucherClientPage({
     isLoading,
     isEditing,
     isPrinting,
-    isClient,
     showUnbalancedModal,
     defaultAccountOptions,
 
@@ -157,9 +155,7 @@ export default function BalanceVoucherClientPage({
   const selectorsRef = useRef<HTMLDivElement>(null);
 
   // Hook for Enter key navigation in top form fields
-  const {
-    handleKeyDown: handleKeyDownSelectors,
-  } = useKeyAsTab({
+  const { handleKeyDown: handleKeyDownSelectors } = useKeyAsTab({
     keys: ["Enter"],
     containerRef: selectorsRef,
     disabled: !isEditing,
@@ -282,14 +278,6 @@ export default function BalanceVoucherClientPage({
     return false;
   }, []);
 
-  if (!isClient) {
-    return (
-      <div className={`flex justify-center items-center h-screen ${textAlignCenter}`}>
-        {t("status.loading")}
-      </div>
-    );
-  }
-
   return (
     <div className="p-1 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header - رأس القيد مع الأزرار */}
@@ -298,7 +286,9 @@ export default function BalanceVoucherClientPage({
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <div>
-              <h1 className={`text-lg font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}>
+              <h1
+                className={`text-lg font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}
+              >
                 <span>
                   {voucherTypes.find((type) => type.id === voucher.vouch_type)
                     ?.name || t("messages.voucherType")}
@@ -313,7 +303,9 @@ export default function BalanceVoucherClientPage({
                       ? `DB-${voucher.id}`
                       : t("messages.numbering")}
                 </span>
-                <span className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}>
+                <span
+                  className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}
+                >
                   <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
                   {new Date(voucher.vouch_date).toLocaleString("en-US", {
                     year: "numeric",
@@ -534,11 +526,13 @@ export default function BalanceVoucherClientPage({
                       if (!target) return;
 
                       const isInListbox = target.closest('[role="listbox"]');
+
                       if (isInListbox) {
                         return;
                       }
 
                       const selectButton = target.closest('[role="combobox"]');
+
                       if (selectButton) {
                         const isExpanded =
                           selectButton.getAttribute("aria-expanded") === "true";
@@ -551,9 +545,10 @@ export default function BalanceVoucherClientPage({
                         if (e.key === "Enter" && !isExpanded) {
                           e.preventDefault();
                           e.stopPropagation();
-                          const notesInput = selectorsRef.current?.querySelector(
-                            'input[placeholder*="بيان"]',
-                          ) as HTMLInputElement;
+                          const notesInput =
+                            selectorsRef.current?.querySelector(
+                              'input[placeholder*="بيان"]',
+                            ) as HTMLInputElement;
 
                           if (notesInput) {
                             notesInput.focus();
@@ -572,8 +567,9 @@ export default function BalanceVoucherClientPage({
 
             {/* البيان - أوسع مع زر توسيع */}
             <div
-              className={`flex flex-col gap-0.5 ${costCenters.length > 0 ? "md:col-span-5" : "md:col-span-7"
-                }`}
+              className={`flex flex-col gap-0.5 ${
+                costCenters.length > 0 ? "md:col-span-5" : "md:col-span-7"
+              }`}
             >
               <label
                 className={`text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
@@ -622,8 +618,6 @@ export default function BalanceVoucherClientPage({
                           firstDebitInput.focus();
                         }
                       }, 50);
-
-                      return;
                     }
                   }}
                 />
@@ -660,10 +654,11 @@ export default function BalanceVoucherClientPage({
               {t("actions.addRow")}
             </button>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${isBalanced
-                ? "bg-emerald-200 text-emerald-900"
-                : "bg-red-200 text-red-900"
-                }`}
+              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                isBalanced
+                  ? "bg-emerald-200 text-emerald-900"
+                  : "bg-red-200 text-red-900"
+              }`}
             >
               <i
                 className={`bi ${isBalanced ? "bi-check-circle" : "bi-exclamation-triangle"} me-0.5`}
@@ -728,22 +723,34 @@ export default function BalanceVoucherClientPage({
                     </th>
                   </tr>
                   <tr>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                    <th
+                      className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                    >
                       {t("table.columns.cashDebit")}
                     </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                    <th
+                      className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                    >
                       {t("table.columns.cashCredit")}
                     </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                    <th
+                      className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                    >
                       {t("table.columns.goldStandingDebit")}
                     </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                    <th
+                      className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                    >
                       {t("table.columns.goldStandingCredit")}
                     </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                    <th
+                      className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                    >
                       {t("table.columns.goldCalibratedDebit")}
                     </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
+                    <th
+                      className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                    >
                       {t("table.columns.goldCalibratedCredit")}
                     </th>
                   </tr>
@@ -781,7 +788,7 @@ export default function BalanceVoucherClientPage({
                                 // إضافة القيمة المحددة كخيار
                                 const selectedLabel =
                                   accountValue &&
-                                    typeof accountValue === "object"
+                                  typeof accountValue === "object"
                                     ? accountValue.label
                                     : `حساب رقم: ${selectedAccountValue}`;
 
@@ -817,6 +824,7 @@ export default function BalanceVoucherClientPage({
                                         refSetter(
                                           combobox as unknown as HTMLInputElement,
                                         );
+
                                         return true;
                                       }
 
@@ -851,10 +859,14 @@ export default function BalanceVoucherClientPage({
                                   isSearchable
                                   className="text-xs"
                                   classNamePrefix="select"
-                                  components={{ IndicatorSeparator: () => null }}
+                                  components={{
+                                    IndicatorSeparator: () => null,
+                                  }}
                                   defaultOptions={optionsWithSelected}
                                   formatCreateLabel={(inputValue: string) =>
-                                    t("table.addAccountLabel", { value: inputValue })
+                                    t("table.addAccountLabel", {
+                                      value: inputValue,
+                                    })
                                   }
                                   instanceId={`account-select-${index}`}
                                   isDisabled={!isEditing}
@@ -866,12 +878,15 @@ export default function BalanceVoucherClientPage({
                                       : null
                                   }
                                   menuPosition="fixed"
-                                  placeholder={t("table.columns.accountPlaceholder")}
+                                  placeholder={t(
+                                    "table.columns.accountPlaceholder",
+                                  )}
                                   onMenuOpen={() => {
                                     setTimeout(() => {
                                       const combobox = document.querySelector(
                                         `#account-select-${index} [role="combobox"]`,
                                       ) as HTMLElement;
+
                                       if (
                                         combobox &&
                                         document.activeElement !== combobox
@@ -897,7 +912,9 @@ export default function BalanceVoucherClientPage({
                                         boxShadow: "none",
                                       },
                                     }),
-                                    valueContainer: (base: CSSObjectWithLabel) => ({
+                                    valueContainer: (
+                                      base: CSSObjectWithLabel,
+                                    ) => ({
                                       ...base,
                                       padding: "0.125rem 0.25rem",
                                       height: "100%",
@@ -918,7 +935,9 @@ export default function BalanceVoucherClientPage({
                                     const opt: any = selectedOption;
                                     const selected =
                                       opt?.account ||
-                                      accounts.find((acc) => acc.id === opt?.value);
+                                      accounts.find(
+                                        (acc) => acc.id === opt?.value,
+                                      );
 
                                     if (!selected) {
                                       // إذا تم مسح الحساب
@@ -947,11 +966,19 @@ export default function BalanceVoucherClientPage({
                                       return;
                                     }
 
-                                    if (!accounts.find((a) => a.id === selected.id)) {
+                                    if (
+                                      !accounts.find(
+                                        (a) => a.id === selected.id,
+                                      )
+                                    ) {
                                       updateAccountsList(selected);
                                     }
 
-                                    updateDetail(index, "acc_id", selected.id ?? null);
+                                    updateDetail(
+                                      index,
+                                      "acc_id",
+                                      selected.id ?? null,
+                                    );
                                     updateDetail(
                                       index,
                                       "acc_code",
@@ -965,12 +992,16 @@ export default function BalanceVoucherClientPage({
 
                                     // الانتقال للحقل التالي بعد اختيار الحساب
                                     setTimeout(() => {
-                                      const moved = focusNextField(index, thisCol);
+                                      const moved = focusNextField(
+                                        index,
+                                        thisCol,
+                                      );
 
                                       if (!moved) {
-                                        const selectButton = document.querySelector(
-                                          `#account-select-${index}`,
-                                        ) as HTMLButtonElement;
+                                        const selectButton =
+                                          document.querySelector(
+                                            `#account-select-${index}`,
+                                          ) as HTMLButtonElement;
 
                                         if (selectButton) {
                                           const syntheticEvent = {
@@ -994,15 +1025,19 @@ export default function BalanceVoucherClientPage({
                                             index,
                                             thisCol,
                                             {
-                                              allowEnterDefaultWhenRowMissing: true,
+                                              allowEnterDefaultWhenRowMissing:
+                                                true,
                                             },
                                           );
                                         }
                                       }
                                     }, 100);
                                   }}
-                                  onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
-                                    const target = e.target as HTMLElement | null;
+                                  onKeyDown={(
+                                    e: ReactKeyboardEvent<HTMLElement>,
+                                  ) => {
+                                    const target =
+                                      e.target as HTMLElement | null;
 
                                     if (!target) {
                                       return;
@@ -1064,6 +1099,7 @@ export default function BalanceVoucherClientPage({
                                         e.preventDefault();
                                         e.stopPropagation();
                                         handleKeyDownTable(e, index, thisCol);
+
                                         return;
                                       }
                                     }
@@ -1107,7 +1143,9 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
+                                onKeyDown={(
+                                  e: ReactKeyboardEvent<HTMLElement>,
+                                ) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1151,7 +1189,9 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
+                                onKeyDown={(
+                                  e: ReactKeyboardEvent<HTMLElement>,
+                                ) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1196,7 +1236,9 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
+                                onKeyDown={(
+                                  e: ReactKeyboardEvent<HTMLElement>,
+                                ) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1240,7 +1282,9 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
+                                onKeyDown={(
+                                  e: ReactKeyboardEvent<HTMLElement>,
+                                ) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1262,7 +1306,9 @@ export default function BalanceVoucherClientPage({
                                 data-row={index}
                                 disabled={!isEditing}
                                 min="0"
-                                placeholder={t("table.columns.gaugePlaceholder")}
+                                placeholder={t(
+                                  "table.columns.gaugePlaceholder",
+                                )}
                                 readOnly={!isEditing}
                                 step="0.01"
                                 style={{
@@ -1286,7 +1332,9 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
+                                onKeyDown={(
+                                  e: ReactKeyboardEvent<HTMLElement>,
+                                ) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1320,7 +1368,7 @@ export default function BalanceVoucherClientPage({
                                 type="number"
                                 value={
                                   detail.g_debit_base !== undefined &&
-                                    detail.g_debit_base !== null
+                                  detail.g_debit_base !== null
                                     ? String(detail.g_debit_base)
                                     : ""
                                 }
@@ -1336,7 +1384,9 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
+                                onKeyDown={(
+                                  e: ReactKeyboardEvent<HTMLElement>,
+                                ) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1385,7 +1435,9 @@ export default function BalanceVoucherClientPage({
                                     );
                                   }
                                 }}
-                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
+                                onKeyDown={(
+                                  e: ReactKeyboardEvent<HTMLElement>,
+                                ) => {
                                   handleKeyDownTable(e, index, thisCol);
                                 }}
                                 onWheel={(e) => e.currentTarget.blur()}
@@ -1419,6 +1471,7 @@ export default function BalanceVoucherClientPage({
                                           refSetter(
                                             combobox as unknown as HTMLInputElement,
                                           );
+
                                           return true;
                                         }
 
@@ -1440,7 +1493,9 @@ export default function BalanceVoucherClientPage({
                                     isSearchable
                                     className="text-xs"
                                     classNamePrefix="react-select"
-                                    components={{ IndicatorSeparator: () => null }}
+                                    components={{
+                                      IndicatorSeparator: () => null,
+                                    }}
                                     instanceId={`cost-center-detail-select-${index}`}
                                     isDisabled={!isEditing}
                                     menuPortalTarget={
@@ -1450,7 +1505,9 @@ export default function BalanceVoucherClientPage({
                                     }
                                     menuPosition="fixed"
                                     options={costCenterSelectOptions}
-                                    placeholder={t("table.columns.costCenterPlaceholder")}
+                                    placeholder={t(
+                                      "table.columns.costCenterPlaceholder",
+                                    )}
                                     styles={{
                                       control: (base: CSSObjectWithLabel) => ({
                                         ...base,
@@ -1465,7 +1522,9 @@ export default function BalanceVoucherClientPage({
                                           : "not-allowed",
                                         backgroundColor: "transparent",
                                       }),
-                                      menuPortal: (base: CSSObjectWithLabel) => ({
+                                      menuPortal: (
+                                        base: CSSObjectWithLabel,
+                                      ) => ({
                                         ...base,
                                         zIndex: 9999,
                                       }),
@@ -1473,16 +1532,22 @@ export default function BalanceVoucherClientPage({
                                         ...base,
                                         fontSize: "12px",
                                       }),
-                                      placeholder: (base: CSSObjectWithLabel) => ({
+                                      placeholder: (
+                                        base: CSSObjectWithLabel,
+                                      ) => ({
                                         ...base,
                                         fontSize: "12px",
                                       }),
-                                      singleValue: (base: CSSObjectWithLabel) => ({
+                                      singleValue: (
+                                        base: CSSObjectWithLabel,
+                                      ) => ({
                                         ...base,
                                         fontSize: "12px",
                                       }),
                                     }}
-                                    value={getCostCenterSelectValue(detail.cost_id)}
+                                    value={getCostCenterSelectValue(
+                                      detail.cost_id,
+                                    )}
                                     onChange={(selectedOption: any) => {
                                       if (!isEditing) return;
                                       updateDetail(
@@ -1495,12 +1560,16 @@ export default function BalanceVoucherClientPage({
 
                                       // الانتقال للحقل التالي (البيان) بعد الاختيار
                                       setTimeout(() => {
-                                        const moved = focusNextField(index, thisCol);
+                                        const moved = focusNextField(
+                                          index,
+                                          thisCol,
+                                        );
 
                                         if (!moved) {
-                                          const selectButton = document.querySelector(
-                                            `#cost-center-detail-select-${index} [role="combobox"]`,
-                                          ) as HTMLElement;
+                                          const selectButton =
+                                            document.querySelector(
+                                              `#cost-center-detail-select-${index} [role="combobox"]`,
+                                            ) as HTMLElement;
 
                                           if (selectButton) {
                                             const syntheticEvent = {
@@ -1528,7 +1597,9 @@ export default function BalanceVoucherClientPage({
                                         }
                                       }, 100);
                                     }}
-                                    onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
+                                    onKeyDown={(
+                                      e: ReactKeyboardEvent<HTMLElement>,
+                                    ) => {
                                       const target = e.target as HTMLElement;
                                       const selectButton =
                                         target.closest('[role="combobox"]');
@@ -1564,6 +1635,7 @@ export default function BalanceVoucherClientPage({
                                           e.preventDefault();
                                           e.stopPropagation();
                                           handleKeyDownTable(e, index, thisCol);
+
                                           return;
                                         }
                                       }
@@ -1601,7 +1673,9 @@ export default function BalanceVoucherClientPage({
                                     e.target.value,
                                   )
                                 }
-                                onKeyDown={(e: ReactKeyboardEvent<HTMLElement>) => {
+                                onKeyDown={(
+                                  e: ReactKeyboardEvent<HTMLElement>,
+                                ) => {
                                   handleKeyDownTable(e, index, thisCol, {
                                     isLastCol: true,
                                   });
@@ -1639,7 +1713,9 @@ export default function BalanceVoucherClientPage({
             <span className={`text-gray-700 font-medium ${textAlign}`}>
               {t("totals.totalDebit")}:
             </span>
-            <span className={`font-semibold text-emerald-700 flex items-center gap-1 ${textAlign}`}>
+            <span
+              className={`font-semibold text-emerald-700 flex items-center gap-1 ${textAlign}`}
+            >
               {formatAmount(totals.totalDebit)}
               <RiyalIcon color="currentColor" />
             </span>
@@ -1649,7 +1725,9 @@ export default function BalanceVoucherClientPage({
             <span className={`text-gray-700 font-medium ${textAlign}`}>
               {t("totals.totalCredit")}:
             </span>
-            <span className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}>
+            <span
+              className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}
+            >
               {formatAmount(totals.totalCredit)}
               <RiyalIcon color="currentColor" />
             </span>
@@ -1660,7 +1738,9 @@ export default function BalanceVoucherClientPage({
               <span className={`text-gray-700 font-medium ${textAlign}`}>
                 {t("totals.cashDifference")}:
               </span>
-              <span className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}>
+              <span
+                className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}
+              >
                 {formatAmount(Math.abs(cashBalance))}
                 <span className="text-xs">
                   ({cashBalance > 0 ? t("totals.debit") : t("totals.credit")})
@@ -1674,9 +1754,13 @@ export default function BalanceVoucherClientPage({
             <span className={`text-amber-800 font-medium ${textAlign}`}>
               {t("totals.totalDebitCalibrated")}:
             </span>
-            <span className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}>
+            <span
+              className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}
+            >
               {formatAmount(totals.totalDebitG)}
-              <span className="text-xs text-yellow-500">{t("totals.gram")}</span>
+              <span className="text-xs text-yellow-500">
+                {t("totals.gram")}
+              </span>
             </span>
           </div>
 
@@ -1684,9 +1768,13 @@ export default function BalanceVoucherClientPage({
             <span className={`text-amber-800 font-medium ${textAlign}`}>
               {t("totals.totalCreditCalibrated")}:
             </span>
-            <span className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}>
+            <span
+              className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}
+            >
               {formatAmount(totals.totalCreditG)}
-              <span className="text-xs text-yellow-500">{t("totals.gram")}</span>
+              <span className="text-xs text-yellow-500">
+                {t("totals.gram")}
+              </span>
             </span>
           </div>
 
@@ -1695,12 +1783,16 @@ export default function BalanceVoucherClientPage({
               <span className={`text-amber-800 font-medium ${textAlign}`}>
                 {t("totals.goldDifference")}:
               </span>
-              <span className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}>
+              <span
+                className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}
+              >
                 {formatAmount(Math.abs(goldBalance))}
                 <span className="text-xs">
                   ({goldBalance > 0 ? t("totals.debit") : t("totals.credit")})
                 </span>
-                <span className="text-xs text-yellow-500">{t("totals.gram")}</span>
+                <span className="text-xs text-yellow-500">
+                  {t("totals.gram")}
+                </span>
               </span>
             </div>
           )}

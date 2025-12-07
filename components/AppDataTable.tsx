@@ -98,23 +98,17 @@ export default function AppDataTable<TData>({
     );
   };
 
-  // const onPrint = (table: TanTable<TData>) => {
-  //   printTableInNewWindow(table, {
-  //     title: printTitle || title || "قائمة",
-  //     direction: "rtl",
-  //     columnIds: printColumnIds,
-  //   });
-  // };
-
   return (
-    <div className={clsx("p-2 space-y-0.5 flex gap-2 flex-col", className)}>
+    <div
+      className={clsx("p-0.5 space-y-0 flex gap-0 flex-col h-full", className)}
+    >
       {title && (
-        <div className="flex items-center justify-between">
+        <div className="flex-shrink-0 flex items-center justify-between mb-0.5">
           <h2 className="text-xl m-0 font-semibold text-gray-800">{title}</h2>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex-shrink-0 flex flex-col sm:flex-row gap-1 items-start sm:items-center justify-between mb-0.5">
         {searchable && (
           <div className="relative flex-1 max-w-md">
             <Input
@@ -139,96 +133,82 @@ export default function AppDataTable<TData>({
               تصفية
             </Button>
           )}
-          {/* {enablePrint && (
-            <Button
-              className="btn-secondary"
-              variant="bordered"
-              onPress={() =>
-                printTableInNewWindow(table, {
-                  title: printTitle || title || "قائمة",
-                  direction: "rtl",
-                  columnIds: printColumnIds,
-                })
-              }
-            >
-              طباعة
-            </Button>
-          )} */}
         </div>
       </div>
 
-      <div className="card overflow-hidden p-0">
-        <Table
-          aria-label={title || "جدول البيانات"}
-          classNames={{
-            wrapper: "shadow-none",
-            th: "bg-gray-50 text-gray-700 font-semibold text-xs border-b border-gray-200 p-1",
-            td: "border-b border-gray-100 text-xs p-1",
-            tr: "hover:bg-gray-50 transition-colors",
-          }}
-        >
-          <TableHeader>
-            {table
-              .getFlatHeaders()
-              .filter((header) => !header.isPlaceholder)
-              .map((header) => {
-                const isSortable = header.column.getCanSort();
+      <div className="flex-1 min-h-0 card overflow-hidden p-0 flex flex-col">
+        <div className="flex-1 min-h-0 overflow-auto">
+          <Table
+            aria-label={title || "جدول البيانات"}
+            classNames={{
+              wrapper: "shadow-none h-full",
+              th: "bg-gray-50 text-gray-700 font-semibold text-xs border-b border-gray-200 px-1 py-0.5",
+              td: "border-b border-gray-100 text-xs px-1 py-0.5",
+              tr: "hover:bg-gray-50 transition-colors",
+            }}
+          >
+            <TableHeader>
+              {table
+                .getFlatHeaders()
+                .filter((header) => !header.isPlaceholder)
+                .map((header) => {
+                  const isSortable = header.column.getCanSort();
 
-                return (
-                  <TableColumn
-                    key={header.id}
-                    className={isClickableHeader(isSortable)}
-                    onClick={
-                      isSortable
-                        ? header.column.getToggleSortingHandler()
-                        : undefined
-                    }
+                  return (
+                    <TableColumn
+                      key={header.id}
+                      className={isClickableHeader(isSortable)}
+                      onClick={
+                        isSortable
+                          ? header.column.getToggleSortingHandler()
+                          : undefined
+                      }
+                    >
+                      <div className="flex items-center gap-2">
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                        {isSortable && renderSortIcon(header.column.id)}
+                      </div>
+                    </TableColumn>
+                  );
+                })}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    className="text-center py-4 text-gray-500"
+                    colSpan={table.getAllLeafColumns().length || 1}
                   >
-                    <div className="flex items-center gap-2">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                      {isSortable && renderSortIcon(header.column.id)}
-                    </div>
-                  </TableColumn>
-                );
-              })}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  className="text-center py-4 text-gray-500"
-                  colSpan={table.getAllLeafColumns().length || 1}
-                >
-                  {emptyContent}
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
+                    {emptyContent}
+                  </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
-        <span>إجمالي النتائج: {table.getFilteredRowModel().rows.length}</span>
-        {globalFilter && (
+      {globalFilter && (
+        <div className="flex-shrink-0 flex items-center justify-between text-xs text-gray-500 pt-0.5">
           <span>نتائج البحث عن: &quot;{globalFilter}&quot;</span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

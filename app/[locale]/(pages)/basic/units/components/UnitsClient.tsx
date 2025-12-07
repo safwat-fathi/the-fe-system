@@ -42,7 +42,7 @@ interface UnitsClientProps {
 
 export default function UnitsClient({ initialUnits }: UnitsClientProps) {
   const router = useRouter();
-  const t = useTranslations("basic.units");
+  const t = useTranslations("basic.units" as any) as any;
   const [units, setUnits] = useState<Unit[]>(initialUnits);
 
   const columns = useMemo(

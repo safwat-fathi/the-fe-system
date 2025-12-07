@@ -221,100 +221,6 @@ export default async function ReceiptVoucherEditPage({
       };
     });
 
-    // const boxes: VoucherBox[] = boxesData.map((boxData: any) => {
-    //   let boxId = 0;
-    //   let boxObject: VoucherBox["box"] = undefined;
-
-    //   if (boxData.hasOwnProperty("box")) {
-    //     if (boxData.box !== null && boxData.box !== undefined) {
-    //       if (typeof boxData.box === "object" && !Array.isArray(boxData.box)) {
-    //         boxObject = {
-    //           id: boxData.box.id || boxData.box.Id || 0,
-    //           cust_name:
-    //             boxData.box.cust_name ||
-    //             boxData.box.name ||
-    //             boxData.box.cust_name_e ||
-    //             "",
-    //           cust_code: boxData.box.cust_code || boxData.box.code || "",
-    //           box_type:
-    //             boxData.box.box_type || boxData.box.type_id || undefined,
-    //         };
-    //         boxId = boxObject.id;
-    //       } else if (
-    //         typeof boxData.box === "number" ||
-    //         (typeof boxData.box === "string" && boxData.box !== "")
-    //       ) {
-    //         boxId = Number(boxData.box);
-    //       }
-    //     }
-    //   }
-
-    //   if (boxId === 0 && boxData.hasOwnProperty("box_id")) {
-    //     if (
-    //       boxData.box_id !== null &&
-    //       boxData.box_id !== undefined &&
-    //       boxData.box_id !== ""
-    //     ) {
-    //       boxId = Number(boxData.box_id);
-    //     }
-    //   }
-
-    //   let costId: number | null = null;
-
-    //   if (boxData.hasOwnProperty("cost")) {
-    //     if (
-    //       boxData.cost !== null &&
-    //       boxData.cost !== undefined &&
-    //       boxData.cost !== ""
-    //     ) {
-    //       costId = Number(boxData.cost);
-    //     }
-    //   } else if (boxData.hasOwnProperty("cost_id")) {
-    //     if (
-    //       boxData.cost_id !== null &&
-    //       boxData.cost_id !== undefined &&
-    //       boxData.cost_id !== ""
-    //     ) {
-    //       costId = Number(boxData.cost_id);
-    //     }
-    //   }
-
-    //   let invId: number | null = null;
-
-    //   if (boxData.hasOwnProperty("inv")) {
-    //     if (
-    //       boxData.inv !== null &&
-    //       boxData.inv !== undefined &&
-    //       boxData.inv !== ""
-    //     ) {
-    //       invId = Number(boxData.inv);
-    //     }
-    //   } else if (boxData.hasOwnProperty("inv_id")) {
-    //     if (
-    //       boxData.inv_id !== null &&
-    //       boxData.inv_id !== undefined &&
-    //       boxData.inv_id !== ""
-    //     ) {
-    //       invId = Number(boxData.inv_id);
-    //     }
-    //   }
-
-    //   return {
-    //     id: boxData.id || 0,
-    //     vouch_id: boxData.vouch || boxData.vouch_id || targetVoucher?.id || 0,
-    //     box_id: boxId,
-    //     box: boxObject,
-    //     amount: parseFloat(String(boxData.vouch_amt || boxData.amount || 0)),
-    //     vouch_notes:
-    //       boxData.box_note || boxData.vouch_notes || boxData.notes || "",
-    //     cost_id: costId,
-    //     inv_id: invId,
-    //     close_weight:
-    //       parseFloat(String(boxData.close_weight || 0)) || undefined,
-    //     cr_date: boxData.cr_date || new Date().toISOString(),
-    //   };
-    // });
-
     // معالجة cust - قد يكون cust أو cust_id في API
     const custValue =
       targetVoucher?.cust_id || (targetVoucher as any)?.cust || undefined;
@@ -378,12 +284,10 @@ export default async function ReceiptVoucherEditPage({
           (targetVoucher as any).previous,
       ),
       next: parseNavId(
-        (targetVoucher as any).next_voucher_id ??
-          (targetVoucher as any).next,
+        (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
       ),
       first: parseNavId(
-        (targetVoucher as any).first_voucher_id ??
-          (targetVoucher as any).first,
+        (targetVoucher as any).first_voucher_id ?? (targetVoucher as any).first,
       ),
       last: parseNavId(
         (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
@@ -392,9 +296,9 @@ export default async function ReceiptVoucherEditPage({
     };
 
     const t = await getTranslations("navigation.breadcrumbs.segments");
-    const tReceipt = await getTranslations("forms.receiptVoucher");
-    
-    const voucherIdForBreadcrumb = targetVoucher?.vouch_id || targetVoucher?.id || "";
+
+    const voucherIdForBreadcrumb =
+      targetVoucher?.vouch_id || targetVoucher?.id || "";
     const breadcrumbLabel =
       formMode === "edit"
         ? `${t("edit")} ${voucherIdForBreadcrumb}`

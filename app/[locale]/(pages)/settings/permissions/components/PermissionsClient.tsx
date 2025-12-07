@@ -183,20 +183,20 @@ export default function PermissionsClient() {
         );
       }
 
-      toast.success("تم حفظ الصلاحيات بنجاح");
+      toast.success(t("messages.saveSuccess"));
       setPermissionsModalOpen(false);
       setSelectedItem(null);
       loadData();
     } catch (error) {
       console.error("Error saving permissions:", error);
-      toast.error("حدث خطأ أثناء حفظ الصلاحيات");
+      toast.error(t("messages.saveError"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (item: Group | User) => {
-    if (!confirm(`هل أنت متأكد من الحذف؟`)) return;
+    if (!confirm(t("messages.deleteConfirm"))) return;
 
     try {
       if (viewMode === "groups") {
@@ -204,11 +204,11 @@ export default function PermissionsClient() {
       } else {
         await userService.remove((item as User).id);
       }
-      toast.success("تم الحذف بنجاح");
+      toast.success(t("messages.deleteSuccess"));
       loadData();
     } catch (error) {
       console.error("Error deleting:", error);
-      toast.error("حدث خطأ أثناء الحذف");
+      toast.error(t("messages.deleteError"));
     }
   };
 
@@ -274,28 +274,28 @@ export default function PermissionsClient() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              إدارة الصلاحيات
+              {t("labels.pageTitle")}
             </h1>
             <p className="text-sm text-gray-500">
-              {viewMode === "groups" ? "المجموعات" : "المستخدمين"}
+              {viewMode === "groups" ? t("labels.groups") : t("labels.users")}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-        <Button
-          color={viewMode === "groups" ? "primary" : "default"}
-          variant={viewMode === "groups" ? "solid" : "bordered"}
-          onPress={() => setViewMode("groups")}
-        >
-          {t("labels.groups")}
-        </Button>
-        <Button
-          color={viewMode === "users" ? "primary" : "default"}
-          variant={viewMode === "users" ? "solid" : "bordered"}
-          onPress={() => setViewMode("users")}
-        >
-          {t("labels.users")}
-        </Button>
+          <Button
+            color={viewMode === "groups" ? "primary" : "default"}
+            variant={viewMode === "groups" ? "solid" : "bordered"}
+            onPress={() => setViewMode("groups")}
+          >
+            {t("labels.groups")}
+          </Button>
+          <Button
+            color={viewMode === "users" ? "primary" : "default"}
+            variant={viewMode === "users" ? "solid" : "bordered"}
+            onPress={() => setViewMode("users")}
+          >
+            {t("labels.users")}
+          </Button>
         </div>
       </div>
 
@@ -306,20 +306,20 @@ export default function PermissionsClient() {
           startContent={<PlusIcon className="h-5 w-5" />}
           onPress={() => {
             // TODO: Open add modal
-            toast("ميزة الإضافة قيد التطوير");
+            toast(t("messages.addFeature"));
           }}
         >
-          إضافة جديد
+          {t("actions.add")}
         </Button>
         <Button
           startContent={<ArrowDownTrayIcon className="h-5 w-5" />}
           variant="bordered"
         >
-          تصدير
+          {t("actions.export")}
         </Button>
         <Input
           className="flex-1 max-w-xs"
-          placeholder="ابحث..."
+          placeholder={t("actions.search")}
           startContent={
             <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
           }
@@ -333,13 +333,13 @@ export default function PermissionsClient() {
               startContent={<FunnelIcon className="h-5 w-5" />}
               variant="bordered"
             >
-              ترتيب
+              {t("actions.sort")}
             </Button>
           </DropdownTrigger>
           <DropdownMenu aria-label="Sort options">
-            <DropdownItem key="name">حسب الاسم</DropdownItem>
-            <DropdownItem key="level">حسب المستوى</DropdownItem>
-            <DropdownItem key="status">حسب الحالة</DropdownItem>
+            <DropdownItem key="name">{t("sortOptions.name")}</DropdownItem>
+            <DropdownItem key="level">{t("sortOptions.level")}</DropdownItem>
+            <DropdownItem key="status">{t("sortOptions.status")}</DropdownItem>
           </DropdownMenu>
         </Dropdown>
       </div>
@@ -354,17 +354,23 @@ export default function PermissionsClient() {
         >
           <TableHeader>
             <TableColumn>
-              {viewMode === "groups" ? "اسم المجموعة" : "اسم المستخدم"}
+              {viewMode === "groups"
+                ? t("columns.name")
+                : t("columns.userName")}
             </TableColumn>
-            <TableColumn>المستوى</TableColumn>
-            <TableColumn>الحالة</TableColumn>
+            <TableColumn>{t("columns.level")}</TableColumn>
+            <TableColumn>{t("columns.status")}</TableColumn>
             <TableColumn className={viewMode === "groups" ? "hidden" : ""}>
-              النوع
+              {t("columns.type")}
             </TableColumn>
-            <TableColumn>الإجراءات</TableColumn>
+            <TableColumn>{t("columns.actions")}</TableColumn>
           </TableHeader>
           <TableBody
-            emptyContent={`لا يوجد ${viewMode === "groups" ? "مجموعات" : "مستخدمين"}`}
+            emptyContent={
+              viewMode === "groups"
+                ? t("messages.emptyGroups")
+                : t("messages.emptyUsers")
+            }
           >
             {filteredItems.length === 0 ? (
               <TableRow>
@@ -372,7 +378,9 @@ export default function PermissionsClient() {
                   className="text-center py-8"
                   colSpan={viewMode === "users" ? 5 : 4}
                 >
-                  لا يوجد {viewMode === "groups" ? "مجموعات" : "مستخدمين"}
+                  {viewMode === "groups"
+                    ? t("messages.emptyGroups")
+                    : t("messages.emptyUsers")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -415,7 +423,7 @@ export default function PermissionsClient() {
                       size="sm"
                       variant="flat"
                     >
-                      المستوى {item.id || 1}
+                      {t("labels.level", { level: item.id || 1 })}
                     </Chip>
                   </TableCell>
                   <TableCell>
@@ -434,11 +442,11 @@ export default function PermissionsClient() {
                     >
                       {viewMode === "groups"
                         ? (item as Group).is_active !== false
-                          ? "نشط"
-                          : "غير نشط"
+                          ? t("status.active")
+                          : t("status.inactive")
                         : (item as User).is_active
-                          ? "نشط"
-                          : "غير نشط"}
+                          ? t("status.active")
+                          : t("status.inactive")}
                     </Chip>
                   </TableCell>
                   <TableCell className={viewMode === "groups" ? "hidden" : ""}>
@@ -446,11 +454,11 @@ export default function PermissionsClient() {
                       <>
                         {(item as User).is_staff ? (
                           <Chip color="secondary" size="sm" variant="flat">
-                            مدير
+                            {t("types.admin")}
                           </Chip>
                         ) : (
                           <Chip size="sm" variant="flat">
-                            مستخدم
+                            {t("types.user")}
                           </Chip>
                         )}
                       </>
@@ -465,7 +473,7 @@ export default function PermissionsClient() {
                         variant="flat"
                         onPress={() => handleOpenPermissions(item)}
                       >
-                        الصلاحيات
+                        {t("actions.permissions")}
                       </Button>
                       <Button
                         isIconOnly
@@ -473,7 +481,7 @@ export default function PermissionsClient() {
                         size="sm"
                         variant="light"
                         onPress={() => {
-                          toast("ميزة التعديل قيد التطوير");
+                          toast(t("messages.editFeature"));
                         }}
                       >
                         <PencilIcon className="h-4 w-4" />
@@ -513,14 +521,16 @@ export default function PermissionsClient() {
               <ShieldCheckIcon className="h-6 w-6 text-primary" />
               <div>
                 <h3 className="text-lg font-bold">
-                  إدارة الصلاحيات:{" "}
-                  {selectedItem &&
-                    (viewMode === "groups"
-                      ? (selectedItem as Group).name
-                      : (selectedItem as User).username)}
+                  {t("modals.permissionsTitle", {
+                    name: selectedItem
+                      ? viewMode === "groups"
+                        ? (selectedItem as Group).name
+                        : (selectedItem as User).username
+                      : "",
+                  })}
                 </h3>
                 <p className="text-sm text-gray-500 font-normal">
-                  حدد الصلاحيات المسموحة
+                  {t("modals.permissionsDesc")}
                 </p>
               </div>
             </div>
@@ -532,10 +542,10 @@ export default function PermissionsClient() {
               <div className="text-center py-8">
                 <LockClosedIcon className="h-16 w-16 text-purple-600 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  صلاحيات كاملة
+                  {t("modals.fullPermissions")}
                 </h3>
                 <p className="text-gray-600">
-                  هذا المستخدم لديه صلاحيات Admin - صلاحيات كاملة لجميع الشاشات
+                  {t("modals.fullPermissionsDesc")}
                 </p>
               </div>
             ) : (
@@ -555,7 +565,7 @@ export default function PermissionsClient() {
                 setPermissions({});
               }}
             >
-              إلغاء
+              {t("actions.cancel")}
             </Button>
             {!(
               selectedItem &&
@@ -567,7 +577,7 @@ export default function PermissionsClient() {
                 isLoading={saving}
                 onPress={handleSavePermissions}
               >
-                حفظ الصلاحيات
+                {t("actions.save")}
               </Button>
             )}
           </ModalFooter>

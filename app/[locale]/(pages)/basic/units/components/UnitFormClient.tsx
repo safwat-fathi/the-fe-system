@@ -27,7 +27,7 @@ interface UnitFormClientProps {
 
 const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
   const router = useRouter();
-  const t = useTranslations("basic.units");
+  const t = useTranslations("basic.units" as any) as any;
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [unit, setUnit] = useState<Partial<Unit>>(initialUnit);
@@ -74,10 +74,14 @@ const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
 
   const getTitle = () => {
     if (isViewMode)
-      return t("titles.view", { name: unit.unit_name || t("titles.defaultName") });
+      return t("titles.view", {
+        name: unit.unit_name || t("titles.defaultName"),
+      });
     if (isAddMode) return t("titles.add");
 
-    return t("titles.edit", { name: unit.unit_name || t("titles.defaultName") });
+    return t("titles.edit", {
+      name: unit.unit_name || t("titles.defaultName"),
+    });
   };
 
   const getDescription = () => {

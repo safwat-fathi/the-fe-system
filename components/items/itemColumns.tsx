@@ -1,4 +1,4 @@
-import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
+import { createColumnHelper } from "@tanstack/react-table";
 import { Button, Chip } from "@heroui/react";
 import { EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ type CreateItemColumnsOptions = {
   getCategoryLabel: GetLabelFn;
   getItemTypeLabel: GetLabelFn;
   onDelete: (item: Item) => void;
+  t: (key: string) => string;
 };
 
 const columnHelper = createColumnHelper<Item>();
@@ -33,6 +34,7 @@ export const createItemColumns = ({
   getCategoryLabel,
   getItemTypeLabel,
   onDelete,
+  t,
 }: CreateItemColumnsOptions) => {
   // Create a component that uses router
   const ActionsCell = ({ item }: { item: Item }) => {
@@ -69,35 +71,35 @@ export const createItemColumns = ({
 
   return [
     columnHelper.accessor("item_code", {
-      header: () => "كود الصنف",
+      header: () => t("columns.itemCode"),
       cell: (info) => info.getValue() || "-",
       enableSorting: true,
     }),
     columnHelper.accessor("item_name", {
-      header: () => "اسم الصنف",
+      header: () => t("columns.itemName"),
       cell: (info) => info.getValue() || "-",
       enableSorting: true,
     }),
     columnHelper.accessor("item_price", {
-      header: () => "السعر",
+      header: () => t("columns.price"),
       cell: (info) => renderAmount(info.getValue(), fractions.frac),
       enableSorting: true,
     }),
     columnHelper.accessor("item_weight", {
-      header: () => "الوزن",
+      header: () => t("columns.weight"),
       cell: (info) => info.getValue() ?? "-",
       enableSorting: true,
     }),
     columnHelper.accessor("cat", {
-      header: () => "الفئة",
+      header: () => t("columns.category"),
       cell: (info) => getCategoryLabel(info.getValue() ?? null),
     }),
     columnHelper.accessor("item_type", {
-      header: () => "نوع الصنف",
+      header: () => t("columns.itemType"),
       cell: (info) => getItemTypeLabel(info.getValue() ?? null),
     }),
     columnHelper.accessor("item_status", {
-      header: () => "الحالة",
+      header: () => t("columns.status"),
       cell: (info) => {
         const isActive = Number(info.getValue() ?? 0) === 1;
 
@@ -107,14 +109,14 @@ export const createItemColumns = ({
             size="sm"
             variant="flat"
           >
-            {isActive ? "فعال" : "غير فعال"}
+            {isActive ? t("labels.active") : t("labels.inactive")}
           </Chip>
         );
       },
     }),
     columnHelper.display({
       id: "actions",
-      header: () => "الإجراءات",
+      header: () => t("columns.actions"),
       cell: ({ row }) => <ActionsCell item={row.original} />,
     }),
   ];

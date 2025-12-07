@@ -38,10 +38,10 @@ const ItemFormClient = ({
   categories,
   itemTypes,
   units,
-  companyId,
+  companyId: _companyId,
 }: ItemFormClientProps) => {
   const router = useRouter();
-  const t = useTranslations("basic.items");
+  const t = useTranslations("basic.items" as any) as any;
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [item, setItem] = useState<ItemForm & { item_img_url?: string | null }>(
@@ -175,9 +175,7 @@ const ItemFormClient = ({
       }
     } catch {
       toast.error(
-        isAddMode
-          ? t("messages.saveError")
-          : t("messages.updateErrorGeneric"),
+        isAddMode ? t("messages.saveError") : t("messages.updateErrorGeneric"),
       );
     } finally {
       setIsSaving(false);
