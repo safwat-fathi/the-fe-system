@@ -23,8 +23,8 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
-import { getLocaleDir } from "@/i18n/config";
 
+import { getLocaleDir } from "@/i18n/config";
 import { ConfirmationModal } from "@/components/Modal";
 import boxService from "@/services/api/box.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
@@ -70,7 +70,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.boxes");
-  
+
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = "text-center";

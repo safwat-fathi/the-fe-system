@@ -60,7 +60,7 @@ const VouchersReportClient = ({
   const router = useRouter();
   const t = useTranslations("reports.vouchers");
   const locale = useLocale();
-  const dir = getLocaleDir(locale);
+  const dir = getLocaleDir(locale as "ar" | "en");
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   // Query parameters management
@@ -378,7 +378,9 @@ const VouchersReportClient = ({
       {/* Header */}
       <div className="mb-2">
         <div className="flex justify-between items-center mb-2">
-          <h1 className={`text-2xl font-bold mt-2 ${textAlign}`}>{t("header")}</h1>
+          <h1 className={`text-2xl font-bold mt-2 ${textAlign}`}>
+            {t("header")}
+          </h1>
           <div className="flex items-center gap-2">
             {totalPages > 1 && (
               <div className="flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">

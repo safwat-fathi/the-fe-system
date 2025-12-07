@@ -2,7 +2,10 @@ const rows = Array.from({ length: 6 }, (_, idx) => idx);
 
 const InvoiceClientSkeleton = () => {
   return (
-    <div className="space-y-4 animate-pulse" data-testid="invoice-client-skeleton">
+    <div
+      className="space-y-4 animate-pulse"
+      data-testid="invoice-client-skeleton"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="h-12 bg-gray-100 rounded" />
         <div className="h-12 bg-gray-100 rounded" />

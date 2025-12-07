@@ -7,10 +7,9 @@
 
 import { Input, Button, Select, SelectItem, CardBody } from "@heroui/react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 
 import Card from "@/components/Card";
-import { getLocaleDir } from "@/i18n/config";
 
 interface VoucherType {
   id: number;
@@ -45,9 +44,6 @@ export default function VouchersFilters({
   onClearFilters,
 }: VouchersFiltersProps) {
   const t = useTranslations("reports.vouchers");
-  const locale = useLocale();
-  const dir = getLocaleDir(locale);
-  const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   return (
     <Card>

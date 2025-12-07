@@ -1,5 +1,3 @@
-import { logger } from "@/utilities/logger";
-
 const maskToken = (value: string): string => {
   if (!value) return "";
 
@@ -23,19 +21,27 @@ export const ensureWhatsappConfig = (): {
   verifyToken: string;
 } => {
   if (!baseUrl) {
-    throw new Error("Missing required WhatsApp environment variable: WHATSAPP_BASE_URL");
+    throw new Error(
+      "Missing required WhatsApp environment variable: WHATSAPP_BASE_URL",
+    );
   }
 
   if (!token) {
-    throw new Error("Missing required WhatsApp environment variable: WHATSAPP_TOKEN");
+    throw new Error(
+      "Missing required WhatsApp environment variable: WHATSAPP_TOKEN",
+    );
   }
 
   if (!phoneNumberId) {
-    throw new Error("Missing required WhatsApp environment variable: PHONE_NUMBER_ID");
+    throw new Error(
+      "Missing required WhatsApp environment variable: PHONE_NUMBER_ID",
+    );
   }
 
   if (!verifyToken) {
-    throw new Error("Missing required WhatsApp environment variable: VERIFY_TOKEN");
+    throw new Error(
+      "Missing required WhatsApp environment variable: VERIFY_TOKEN",
+    );
   }
 
   if (!baseUrl.startsWith("https://")) {

@@ -1,6 +1,5 @@
 "use client";
 
-
 import type { SidebarLinkConfig } from "./sidebarTypes";
 import type { TranslateLinkLabel } from "./sidebarUtils";
 
@@ -39,7 +38,9 @@ const SidebarLinkList = ({
         }
       >
         <div className="text-sm transition-all">{link.icon}</div>
-        <span className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}>
+        <span
+          className={`${isSidebarOpen ? "block" : "hidden"} text-sm font-medium`}
+        >
           {translateLinkLabel(link)}
         </span>
       </Link>

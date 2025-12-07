@@ -63,13 +63,13 @@ const generateIdempotencyKey = () => crypto.randomUUID();
 class WhatsappService {
   private getPhoneNumberId() {
     const { phoneNumberId } = whatsappConfig;
-    
+
     if (!phoneNumberId) {
       throw new Error(
-        "WhatsApp service is not configured. Please set PHONE_NUMBER_ID environment variable."
+        "WhatsApp service is not configured. Please set PHONE_NUMBER_ID environment variable.",
       );
     }
-    
+
     return phoneNumberId;
   }
 
@@ -190,13 +190,6 @@ class WhatsappService {
       const { code, message } = this.parseWhatsappError(error);
 
       logger.error("[WhatsappService] sendText failed", { code, message });
-
-      // const storedMessage = await this.recordOutboundMessage({
-      //   contactId: contact.id,
-      //   conversationId: conversation.id,
-      //   type: "text",
-      //   payload: { ...requestBody, error: message },
-      //   clientMsgId,
       // });
 
       await whatsappRepository.createMessage({

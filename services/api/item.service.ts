@@ -133,6 +133,7 @@ class ItemService extends HttpService<Item> {
     categoryId = 0,
     itemTypeId = 0,
     itemStatus = 0,
+    query = "",
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
     const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
@@ -142,6 +143,50 @@ class ItemService extends HttpService<Item> {
     };
 
     try {
+      // إذا كان هناك بحث، نستخدم SearchItemsList endpoint
+      if (query && query.trim()) {
+        const response = await this.get<IPaginatedResponse<Item>>(
+          "SearchItemsList",
+          {
+            xcom_id: companyId,
+            page,
+            query: query.trim(),
+          },
+          {
+            cache: "no-store",
+            next: {
+              tags: [
+                "items-search",
+                `items-search-company-${companyId}`,
+                `items-search-page-${page}`,
+                `items-search-query-${query.trim()}`,
+              ],
+              revalidate: 0,
+            },
+          },
+        );
+
+        if (!response.success || !response.data) {
+          return emptyResponse;
+        }
+
+        const { results, count, next, previous } = response.data;
+
+        return {
+          results: Array.isArray(results) ? results : [],
+          count:
+            typeof count === "number"
+              ? count
+              : Array.isArray(results)
+                ? results.length
+                : 0,
+          next: typeof next === "string" || next === null ? next : null,
+          previous:
+            typeof previous === "string" || previous === null ? previous : null,
+        };
+      }
+
+      // البحث العادي بدون query
       const response = await this.get<IPaginatedResponse<Item>>(
         "items_list",
         {

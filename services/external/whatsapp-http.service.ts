@@ -34,13 +34,13 @@ const sleep = (ms: number) =>
 export class WhatsappHttpService {
   private getConfig() {
     const { baseUrl, token } = whatsappConfig;
-    
+
     if (!baseUrl || !token) {
       throw new Error(
-        "WhatsApp service is not configured. Please set WHATSAPP_BASE_URL and WHATSAPP_TOKEN environment variables."
+        "WhatsApp service is not configured. Please set WHATSAPP_BASE_URL and WHATSAPP_TOKEN environment variables.",
       );
     }
-    
+
     return { baseUrl, token };
   }
 

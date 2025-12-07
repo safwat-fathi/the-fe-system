@@ -1,6 +1,7 @@
 import type { Category, ItemType, Unit } from "@/types/items";
 
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import ItemsClient from "./components/ItemsClient";
 
@@ -11,10 +12,14 @@ import itemService from "@/services/api/item.service";
 import { Item } from "@/types/models/item";
 import { IPaginatedResponse } from "@/types/services/base";
 
-export const metadata: Metadata = {
-  title: "الأصناف",
-  description: "إدارة الأصناف",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = (await getTranslations("basic.items" as any)) as any;
+
+  return {
+    title: `${t("labels.pageTitle")} - NafeesWeb`,
+    description: t("labels.pageTitle"),
+  };
+}
 
 export default async function ItemsPage({
   searchParams,
@@ -46,9 +51,9 @@ export default async function ItemsPage({
       : 1;
 
   // حساب صفحة API بناءً على صفحة الجدول
-  // كل صفحتين من الجدول (10 أصناف لكل صفحة) = صفحة واحدة من API (20 صنف)
+  // كل صفحة من الجدول (20 صنف لكل صفحة) = صفحة واحدة من API (20 صنف)
 
-  const apiPage = Math.ceil(currentPage / 2);
+  const apiPage = currentPage;
 
   // جلب البيانات من API مع الفلاتر
   const itemsData = await itemService
@@ -74,10 +79,14 @@ export default async function ItemsPage({
     helperService.getUnits().catch(() => []),
   ]);
 
+  const t = (await getTranslations("basic.items" as any)) as any;
+
   return (
-    <div className="responsive-container font-cairo">
-      <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-2">الأصناف</h1>
+    <div className="flex flex-col h-[calc(100vh-4rem)] font-cairo p-2">
+      <div className="flex-shrink-0 mb-1">
+        <Breadcrumb />
+        <h1 className="text-lg font-bold">{t("labels.pageTitle")}</h1>
+      </div>
 
       <ItemsClient
         companyId={companyId}

@@ -37,8 +37,9 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
+import { getLocaleDir } from "@/i18n/config";
 import {
   getCategoryAccountsAction,
   ensureCategoryAccountAction,
@@ -166,8 +167,10 @@ export default function CategoriesClient({
   initialCategoryAccounts,
 }: CategoriesClientProps) {
   const router = useRouter();
-  const t = useTranslations("basic.categories");
-  
+  const t = useTranslations("basic.categories" as any) as any;
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+
   const columns = useMemo(
     () => [
       { name: t("columns.id"), uid: "id" },
@@ -183,12 +186,20 @@ export default function CategoriesClient({
       { name: "", uid: "actions" },
     ],
     [t],
-  ) as const;
+  );
 
   const ACCOUNT_ROWS: AccountRow[] = useMemo(
     () => [
-      { label: t("accountRows.buyAcc"), valueKey: "buy_acc", wageKey: "buy_acc2" },
-      { label: t("accountRows.sellAcc"), valueKey: "sell_acc", wageKey: "sell_acc2" },
+      {
+        label: t("accountRows.buyAcc"),
+        valueKey: "buy_acc",
+        wageKey: "buy_acc2",
+      },
+      {
+        label: t("accountRows.sellAcc"),
+        valueKey: "sell_acc",
+        wageKey: "sell_acc2",
+      },
       {
         label: t("accountRows.backBuy"),
         valueKey: "back_buy",
@@ -199,9 +210,21 @@ export default function CategoriesClient({
         valueKey: "back_sell",
         wageKey: "back_sell2",
       },
-      { label: t("accountRows.distAcc"), valueKey: "dist_acc", wageKey: "dist_acc2" },
-      { label: t("accountRows.backDist"), valueKey: "back_dist", wageKey: "back_dist2" },
-      { label: t("accountRows.invAcc"), valueKey: "inv_acc", wageKey: "inv_acc2" },
+      {
+        label: t("accountRows.distAcc"),
+        valueKey: "dist_acc",
+        wageKey: "dist_acc2",
+      },
+      {
+        label: t("accountRows.backDist"),
+        valueKey: "back_dist",
+        wageKey: "back_dist2",
+      },
+      {
+        label: t("accountRows.invAcc"),
+        valueKey: "inv_acc",
+        wageKey: "inv_acc2",
+      },
       {
         label: t("accountRows.costAcc"),
         valueKey: "cost_acc",
@@ -254,9 +277,7 @@ export default function CategoriesClient({
       const catTypeId = cat.cat_type ?? cat.catType ?? null;
       const rawStatusId = cat.cat_status ?? cat.catStatus ?? null;
       const catStatusId =
-        typeof rawStatusId === "boolean"
-          ? Number(rawStatusId)
-          : rawStatusId;
+        typeof rawStatusId === "boolean" ? Number(rawStatusId) : rawStatusId;
       const taxTypeRaw = cat.tax_type;
       const isTaxable =
         typeof taxTypeRaw === "boolean"
@@ -777,7 +798,12 @@ export default function CategoriesClient({
             </h3>
             <p className="text-sm text-gray-500">
               {selectedCategory
-                ? t("labels.selectedCategory", { name: selectedCategory.cat_name })
+                ? t("labels.selectedCategory", {
+                    name:
+                      locale === "en" && selectedCategory.cat_name_e
+                        ? selectedCategory.cat_name_e
+                        : selectedCategory.cat_name,
+                  })
                 : t("labels.selectCategory")}
             </p>
           </div>
@@ -816,14 +842,18 @@ export default function CategoriesClient({
           <div className="overflow-hidden rounded-lg border border-gray-200">
             <div
               className="grid grid-cols-3 bg-gray-50 text-sm font-semibold text-gray-700"
-              dir="rtl"
+              dir={dir}
             >
-              <div className="border-l border-gray-200 px-4 py-2">{t("labels.accounts")}</div>
-              <div className="border-l border-gray-200 px-4 py-2">{t("labels.value")}</div>
+              <div className="border-l border-gray-200 px-4 py-2">
+                {t("labels.accounts")}
+              </div>
+              <div className="border-l border-gray-200 px-4 py-2">
+                {t("labels.value")}
+              </div>
               <div className="px-4 py-2">{t("labels.wages")}</div>
             </div>
 
-            <div className="divide-y divide-gray-100" dir="rtl">
+            <div className="divide-y divide-gray-100" dir={dir}>
               {ACCOUNT_ROWS.map(({ label, valueKey, wageKey }) => {
                 const valueSelected = accountForm[valueKey] ?? "";
                 const wageSelected = wageKey
@@ -865,9 +895,9 @@ export default function CategoriesClient({
                       }}
                       inputValue={getAccountDisplayValue(text)}
                       items={filteredOptions}
-                    menuTrigger="input"
-                    placeholder={t("labels.accountPlaceholder")}
-                    selectedKey={null}
+                      menuTrigger="input"
+                      placeholder={t("labels.accountPlaceholder")}
+                      selectedKey={null}
                       variant="bordered"
                       onInputChange={(value) => {
                         const option = getAccountOption(value);
@@ -966,7 +996,9 @@ export default function CategoriesClient({
         confirmColor="danger"
         confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={t("modals.deleteMessage", { name: categoryToDelete?.cat_name })}
+        message={t("modals.deleteMessage", {
+          name: categoryToDelete?.cat_name,
+        })}
         size="md"
         title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}

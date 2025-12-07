@@ -7,7 +7,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("settings.integrations");
-  
+
   return {
     title: `${t("title")} - NafeesWeb`,
     description: t("description"),
@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function IntegrationsPage() {
   const t = await getTranslations("settings.integrations");
-  
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />

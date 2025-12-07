@@ -23,8 +23,8 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
-import { getLocaleDir } from "@/i18n/config";
 
+import { getLocaleDir } from "@/i18n/config";
 import costCenterService from "@/services/api/cost-center.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
 import { ConfirmationModal } from "@/components/Modal";
@@ -65,7 +65,7 @@ export default function CostCentersClient({
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.costCenters");
-  
+
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = "text-center";

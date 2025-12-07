@@ -17,6 +17,7 @@ export const metadata: Metadata = {
 
 export default async function AccountsPage() {
   const t = await getTranslations("basic.accounts");
+
   try {
     const rootRequestPayload = {
       id: 0,

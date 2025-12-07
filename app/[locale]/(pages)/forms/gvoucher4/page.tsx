@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
 
 import CustomerGoldVoucherClientPage from "./CustomerGoldVoucherClientPage";
 
@@ -15,7 +14,6 @@ const getVoucherFormData = voucherFormDataService.getVoucherFormData;
 
 export default async function CustomerReceiptVoucherPage() {
   const formData = await getVoucherFormData({ goldBoxes: true });
-  const t = await getTranslations("navigation.breadcrumbs.segments");
 
   return (
     <div className="container mx-auto p-4">

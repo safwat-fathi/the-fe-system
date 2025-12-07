@@ -36,47 +36,66 @@ export default function useEnterKeyNavigation<Row>(
   const inputRefs = useRef<NullableInput[][]>([]);
 
   // ✅ دالة مساعدة للبحث المباشر عن combobox في حقل معين
-  const findComboboxByCol = (rowIndex: number, colIndex: number): HTMLElement | null => {
+  const findComboboxByCol = (
+    rowIndex: number,
+    colIndex: number,
+  ): HTMLElement | null => {
     // حقل الحساب (col 0)
     if (colIndex === 0) {
       // محاولة 1: البحث المباشر
-      const accountSelect = document.querySelector(`#account-select-${rowIndex}`);
+      const accountSelect = document.querySelector(
+        `#account-select-${rowIndex}`,
+      );
+
       if (accountSelect) {
-        const combobox = accountSelect.querySelector('[role="combobox"]') as HTMLElement;
+        const combobox = accountSelect.querySelector(
+          '[role="combobox"]',
+        ) as HTMLElement;
+
         if (combobox) return combobox;
       }
-      
+
       // محاولة 2: البحث في جميع comboboxes
       const allComboboxes = document.querySelectorAll('[role="combobox"]');
+
       for (let i = 0; i < allComboboxes.length; i += 1) {
         const cb = allComboboxes[i] as HTMLElement;
         const parent = cb.closest('[id^="account-select-"]');
+
         if (parent && parent.id === `account-select-${rowIndex}`) {
           return cb;
         }
       }
     }
-    
+
     // مركز التكلفة (col 8)
     if (colIndex === 8) {
       // محاولة 1: البحث المباشر
-      const costCenterSelect = document.querySelector(`#cost-center-detail-select-${rowIndex}`);
+      const costCenterSelect = document.querySelector(
+        `#cost-center-detail-select-${rowIndex}`,
+      );
+
       if (costCenterSelect) {
-        const combobox = costCenterSelect.querySelector('[role="combobox"]') as HTMLElement;
+        const combobox = costCenterSelect.querySelector(
+          '[role="combobox"]',
+        ) as HTMLElement;
+
         if (combobox) return combobox;
       }
-      
+
       // محاولة 2: البحث في جميع comboboxes
       const allComboboxes = document.querySelectorAll('[role="combobox"]');
+
       for (let i = 0; i < allComboboxes.length; i += 1) {
         const cb = allComboboxes[i] as HTMLElement;
         const parent = cb.closest('[id^="cost-center-detail-select-"]');
+
         if (parent && parent.id === `cost-center-detail-select-${rowIndex}`) {
           return cb;
         }
       }
     }
-    
+
     return null;
   };
 
@@ -89,10 +108,14 @@ export default function useEnterKeyNavigation<Row>(
       // ✅ التحقق من node نفسه أولاً - إذا كان combobox
       if (nodeElement.getAttribute?.("role") === "combobox") {
         // ✅ إضافة tabIndex إذا لم يكن موجوداً أو كان -1
-        if (!nodeElement.hasAttribute('tabindex') || nodeElement.getAttribute('tabindex') === '-1') {
-          nodeElement.setAttribute('tabindex', '0');
+        if (
+          !nodeElement.hasAttribute("tabindex") ||
+          nodeElement.getAttribute("tabindex") === "-1"
+        ) {
+          nodeElement.setAttribute("tabindex", "0");
         }
         nodeElement.focus();
+
         return;
       }
 
@@ -136,10 +159,14 @@ export default function useEnterKeyNavigation<Row>(
 
         if (comboboxInside) {
           // ✅ إضافة tabIndex
-          if (!comboboxInside.hasAttribute('tabindex') || comboboxInside.getAttribute('tabindex') === '-1') {
-            comboboxInside.setAttribute('tabindex', '0');
+          if (
+            !comboboxInside.hasAttribute("tabindex") ||
+            comboboxInside.getAttribute("tabindex") === "-1"
+          ) {
+            comboboxInside.setAttribute("tabindex", "0");
           }
           comboboxInside.focus();
+
           return;
         }
 
@@ -161,8 +188,11 @@ export default function useEnterKeyNavigation<Row>(
 
         if (combobox) {
           // ✅ إضافة tabIndex
-          if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
-            combobox.setAttribute('tabindex', '0');
+          if (
+            !combobox.hasAttribute("tabindex") ||
+            combobox.getAttribute("tabindex") === "-1"
+          ) {
+            combobox.setAttribute("tabindex", "0");
           }
           combobox.focus();
 
@@ -188,12 +218,17 @@ export default function useEnterKeyNavigation<Row>(
   const focusFirstInRow = useCallback((rowIndex: number) => {
     // ✅ محاولة 1: البحث عن combobox في حقل الحساب أولاً
     const accountCombobox = findComboboxByCol(rowIndex, 0);
+
     if (accountCombobox) {
       // ✅ إضافة tabIndex
-      if (!accountCombobox.hasAttribute('tabindex') || accountCombobox.getAttribute('tabindex') === '-1') {
-        accountCombobox.setAttribute('tabindex', '0');
+      if (
+        !accountCombobox.hasAttribute("tabindex") ||
+        accountCombobox.getAttribute("tabindex") === "-1"
+      ) {
+        accountCombobox.setAttribute("tabindex", "0");
       }
       accountCombobox.focus();
+
       return true;
     }
 
@@ -217,6 +252,7 @@ export default function useEnterKeyNavigation<Row>(
 
     if (firstInput) {
       firstInput.focus();
+
       return true;
     }
 
@@ -257,7 +293,7 @@ export default function useEnterKeyNavigation<Row>(
       event: KeyboardEvent,
       rowIndex: number,
       colIndex: number,
-      { isLastCol, allowEnterDefaultWhenRowMissing }: HandleKeyDownOptions = {},
+      { isLastCol, allowEnterDefaultWhenRowMissing: _allowEnterDefaultWhenRowMissing }: HandleKeyDownOptions = {},
     ) => {
       const key = event.key;
       const target = event.target as HTMLElement | null;
@@ -308,12 +344,17 @@ export default function useEnterKeyNavigation<Row>(
           } else {
             // ✅ إذا لم يكن هناك ref، نبحث مباشرة عن combobox أولاً
             const combobox = findComboboxByCol(rowIndex, prevCol);
+
             if (combobox) {
               // ✅ إضافة tabIndex
-              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
-                combobox.setAttribute('tabindex', '0');
+              if (
+                !combobox.hasAttribute("tabindex") ||
+                combobox.getAttribute("tabindex") === "-1"
+              ) {
+                combobox.setAttribute("tabindex", "0");
               }
               combobox.focus();
+
               return;
             }
 
@@ -325,7 +366,10 @@ export default function useEnterKeyNavigation<Row>(
             if (prevInput) {
               prevInput.focus();
               setTimeout(() => {
-                if (prevInput.select && typeof prevInput.select === "function") {
+                if (
+                  prevInput.select &&
+                  typeof prevInput.select === "function"
+                ) {
                   prevInput.select();
                 }
               }, 0);
@@ -357,12 +401,17 @@ export default function useEnterKeyNavigation<Row>(
           } else {
             // ✅ إذا لم يكن هناك ref، نبحث مباشرة عن combobox أولاً
             const combobox = findComboboxByCol(rowIndex, nextCol);
+
             if (combobox) {
               // ✅ إضافة tabIndex
-              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
-                combobox.setAttribute('tabindex', '0');
+              if (
+                !combobox.hasAttribute("tabindex") ||
+                combobox.getAttribute("tabindex") === "-1"
+              ) {
+                combobox.setAttribute("tabindex", "0");
               }
               combobox.focus();
+
               return;
             }
 
@@ -374,7 +423,10 @@ export default function useEnterKeyNavigation<Row>(
             if (nextInput) {
               nextInput.focus();
               setTimeout(() => {
-                if (nextInput.select && typeof nextInput.select === "function") {
+                if (
+                  nextInput.select &&
+                  typeof nextInput.select === "function"
+                ) {
                   nextInput.select();
                 }
               }, 0);
@@ -406,12 +458,17 @@ export default function useEnterKeyNavigation<Row>(
           } else {
             // ✅ إذا لم يوجد ref، نبحث مباشرة عن combobox أولاً
             const combobox = findComboboxByCol(rowIndex + 1, colIndex);
+
             if (combobox) {
               // ✅ إضافة tabIndex
-              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
-                combobox.setAttribute('tabindex', '0');
+              if (
+                !combobox.hasAttribute("tabindex") ||
+                combobox.getAttribute("tabindex") === "-1"
+              ) {
+                combobox.setAttribute("tabindex", "0");
               }
               combobox.focus();
+
               return;
             }
 
@@ -423,7 +480,10 @@ export default function useEnterKeyNavigation<Row>(
             if (sameColInput) {
               sameColInput.focus();
               setTimeout(() => {
-                if (sameColInput.select && typeof sameColInput.select === "function") {
+                if (
+                  sameColInput.select &&
+                  typeof sameColInput.select === "function"
+                ) {
                   sameColInput.select();
                 }
               }, 0);
@@ -462,12 +522,17 @@ export default function useEnterKeyNavigation<Row>(
           } else {
             // ✅ إذا لم يوجد ref، نبحث مباشرة عن combobox أولاً
             const combobox = findComboboxByCol(rowIndex - 1, colIndex);
+
             if (combobox) {
               // ✅ إضافة tabIndex
-              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
-                combobox.setAttribute('tabindex', '0');
+              if (
+                !combobox.hasAttribute("tabindex") ||
+                combobox.getAttribute("tabindex") === "-1"
+              ) {
+                combobox.setAttribute("tabindex", "0");
               }
               combobox.focus();
+
               return;
             }
 
@@ -479,7 +544,10 @@ export default function useEnterKeyNavigation<Row>(
             if (sameColInput) {
               sameColInput.focus();
               setTimeout(() => {
-                if (sameColInput.select && typeof sameColInput.select === "function") {
+                if (
+                  sameColInput.select &&
+                  typeof sameColInput.select === "function"
+                ) {
                   sameColInput.select();
                 }
               }, 0);
@@ -521,12 +589,17 @@ export default function useEnterKeyNavigation<Row>(
           } else {
             // ✅ إذا لم يكن هناك ref، نبحث مباشرة عن combobox أولاً
             const combobox = findComboboxByCol(rowIndex, nextCol);
+
             if (combobox) {
               // ✅ إضافة tabIndex
-              if (!combobox.hasAttribute('tabindex') || combobox.getAttribute('tabindex') === '-1') {
-                combobox.setAttribute('tabindex', '0');
+              if (
+                !combobox.hasAttribute("tabindex") ||
+                combobox.getAttribute("tabindex") === "-1"
+              ) {
+                combobox.setAttribute("tabindex", "0");
               }
               combobox.focus();
+
               return;
             }
 
@@ -537,6 +610,7 @@ export default function useEnterKeyNavigation<Row>(
 
             if (nextInput) {
               nextInput.focus();
+
               return;
             }
 
@@ -550,10 +624,14 @@ export default function useEnterKeyNavigation<Row>(
               } else {
                 // ✅ محاولة أخيرة: البحث المباشر
                 const comboboxAfterDelay = findComboboxByCol(rowIndex, nextCol);
+
                 if (comboboxAfterDelay) {
                   // ✅ إضافة tabIndex
-                  if (!comboboxAfterDelay.hasAttribute('tabindex') || comboboxAfterDelay.getAttribute('tabindex') === '-1') {
-                    comboboxAfterDelay.setAttribute('tabindex', '0');
+                  if (
+                    !comboboxAfterDelay.hasAttribute("tabindex") ||
+                    comboboxAfterDelay.getAttribute("tabindex") === "-1"
+                  ) {
+                    comboboxAfterDelay.setAttribute("tabindex", "0");
                   }
                   comboboxAfterDelay.focus();
                 }
@@ -578,6 +656,7 @@ export default function useEnterKeyNavigation<Row>(
         // إذا كان آخر صف وآخر عمود، نتحقق من onLastCell callback
         if (onLastCell) {
           onLastCell();
+
           return;
         }
 
@@ -599,6 +678,7 @@ export default function useEnterKeyNavigation<Row>(
       if (!hasValue && !isLastRow) {
         event.preventDefault();
         focusFirstInRow(rowIndex + 1);
+
         return;
       }
 
@@ -617,6 +697,7 @@ export default function useEnterKeyNavigation<Row>(
       // إذا كان آخر صف وآخر عمود، نتحقق من onLastCell callback
       if (onLastCell) {
         onLastCell();
+
         return;
       }
 
@@ -624,7 +705,14 @@ export default function useEnterKeyNavigation<Row>(
       onAddRow();
       focusNextRowFirstCell(rowIndex + 1);
     },
-    [focusFirstInRow, focusNextRowFirstCell, onAddRow, rowHasValue, rows, onLastCell],
+    [
+      focusFirstInRow,
+      focusNextRowFirstCell,
+      onAddRow,
+      rowHasValue,
+      rows,
+      onLastCell,
+    ],
   );
 
   const setInputRef = useCallback(

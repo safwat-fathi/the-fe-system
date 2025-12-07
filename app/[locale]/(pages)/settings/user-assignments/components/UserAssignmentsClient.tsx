@@ -17,7 +17,10 @@ import {
   TableRow,
 } from "@heroui/react";
 import toast from "react-hot-toast";
+import { useTranslations, useLocale } from "next-intl";
+import clsx from "clsx";
 
+import { getLocaleDir } from "@/i18n/config";
 import {
   deleteUserCompanyAction,
   deleteUserCostCenterAction,
@@ -56,6 +59,10 @@ export default function UserAssignmentsClient({
   initialUserId,
   initialAssignments,
 }: Props) {
+  const t = useTranslations("settings.userAssignments");
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const [selectedUserId, setSelectedUserId] = useState<number | null>(
     initialUserId ?? null,
   );
@@ -156,7 +163,7 @@ export default function UserAssignmentsClient({
       setCostAssignments(result.data?.costCenters ?? []);
     } catch (error) {
       console.error("Failed to refresh assignments:", error);
-      toast.error("تعذر تحديث بيانات المستخدم المختار");
+      toast.error(t("messages.failedToRefresh"));
     } finally {
       if (showSpinner) {
         setIsLoadingAssignments(false);
@@ -178,7 +185,7 @@ export default function UserAssignmentsClient({
     const userId = Number(firstKey);
 
     if (Number.isNaN(userId)) {
-      toast.error("المعرف المحدد للمستخدم غير صالح");
+      toast.error(t("messages.invalidUserId"));
 
       return;
     }
@@ -191,13 +198,13 @@ export default function UserAssignmentsClient({
 
   const handleAddCompany = async () => {
     if (!selectedUserId) {
-      toast.error("يرجى اختيار مستخدم أولاً");
+      toast.error(t("messages.pleaseSelectUser"));
 
       return;
     }
 
     if (!selectedBranchKey) {
-      toast.error("يرجى اختيار فرع للإضافة");
+      toast.error(t("messages.pleaseSelectBranch"));
 
       return;
     }
@@ -205,13 +212,13 @@ export default function UserAssignmentsClient({
     const branchId = Number(selectedBranchKey);
 
     if (Number.isNaN(branchId)) {
-      toast.error("المعرف المحدد للفرع غير صالح");
+      toast.error(t("messages.invalidBranchId"));
 
       return;
     }
 
     if (assignedBranchIds.has(branchId)) {
-      toast.error("هذا الفرع مرتبط بالفعل بالمستخدم");
+      toast.error(t("messages.branchAlreadyAssigned"));
 
       return;
     }
@@ -232,10 +239,10 @@ export default function UserAssignmentsClient({
 
       await refreshAssignments(selectedUserId);
       setSelectedBranchKey(null);
-      toast.success("تم حفظ الفرع للمستخدم بنجاح");
+      toast.success(t("messages.branchSavedSuccess"));
     } catch (error) {
       console.error("Failed to save user company:", error);
-      toast.error("حدث خطأ أثناء حفظ الفرع للمستخدم");
+      toast.error(t("messages.failedToSaveBranch"));
     } finally {
       setIsSavingCompany(false);
     }
@@ -246,7 +253,7 @@ export default function UserAssignmentsClient({
       return;
     }
 
-    if (!confirm("هل أنت متأكد من حذف هذا الفرع من المستخدم؟")) {
+    if (!confirm(t("confirmations.deleteBranch"))) {
       return;
     }
 
@@ -262,10 +269,10 @@ export default function UserAssignmentsClient({
       }
 
       await refreshAssignments(selectedUserId);
-      toast.success("تم حذف الفرع من المستخدم");
+      toast.success(t("messages.branchDeletedSuccess"));
     } catch (error) {
       console.error("Failed to delete user company:", error);
-      toast.error("حدث خطأ أثناء حذف الفرع");
+      toast.error(t("messages.failedToDeleteBranch"));
     } finally {
       setDeletingRecordId(null);
     }
@@ -273,13 +280,13 @@ export default function UserAssignmentsClient({
 
   const handleAddCostCenter = async () => {
     if (!selectedUserId) {
-      toast.error("يرجى اختيار مستخدم أولاً");
+      toast.error(t("messages.pleaseSelectUser"));
 
       return;
     }
 
     if (!selectedCostKey) {
-      toast.error("يرجى اختيار مركز تكلفة للإضافة");
+      toast.error(t("messages.pleaseSelectCostCenter"));
 
       return;
     }
@@ -287,13 +294,13 @@ export default function UserAssignmentsClient({
     const costId = Number(selectedCostKey);
 
     if (Number.isNaN(costId)) {
-      toast.error("المعرف المحدد لمركز التكلفة غير صالح");
+      toast.error(t("messages.invalidCostCenterId"));
 
       return;
     }
 
     if (assignedCostCenterIds.has(costId)) {
-      toast.error("هذا المركز مرتبط بالفعل بالمستخدم");
+      toast.error(t("messages.costCenterAlreadyAssigned"));
 
       return;
     }
@@ -314,10 +321,10 @@ export default function UserAssignmentsClient({
 
       await refreshAssignments(selectedUserId);
       setSelectedCostKey(null);
-      toast.success("تم حفظ مركز التكلفة للمستخدم");
+      toast.success(t("messages.costCenterSavedSuccess"));
     } catch (error) {
       console.error("Failed to save user cost center:", error);
-      toast.error("حدث خطأ أثناء حفظ مركز التكلفة للمستخدم");
+      toast.error(t("messages.failedToSaveCostCenter"));
     } finally {
       setIsSavingCost(false);
     }
@@ -328,7 +335,7 @@ export default function UserAssignmentsClient({
       return;
     }
 
-    if (!confirm("هل أنت متأكد من حذف مركز التكلفة من المستخدم؟")) {
+    if (!confirm(t("confirmations.deleteCostCenter"))) {
       return;
     }
 
@@ -344,10 +351,10 @@ export default function UserAssignmentsClient({
       }
 
       await refreshAssignments(selectedUserId);
-      toast.success("تم حذف مركز التكلفة");
+      toast.success(t("messages.costCenterDeletedSuccess"));
     } catch (error) {
       console.error("Failed to delete user cost center:", error);
-      toast.error("حدث خطأ أثناء حذف مركز التكلفة");
+      toast.error(t("messages.failedToDeleteCostCenter"));
     } finally {
       setDeletingRecordId(null);
     }
@@ -358,27 +365,26 @@ export default function UserAssignmentsClient({
       <Card shadow="sm">
         <CardBody className="space-y-5">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-semibold text-gray-800 text-right">
-              إدارة صلاحيات المستخدم للفروع ومراكز التكلفة
+            <h2
+              className={clsx("text-xl font-semibold text-gray-800", textAlign)}
+            >
+              {t("labels.managementTitle")}
             </h2>
-            <p className="text-sm text-gray-600 leading-6 text-right">
-              اختر المستخدم المطلوب، ثم قم بتخصيص الفروع ومراكز التكلفة التي
-              يُسمح له بالعمل عليها. يتم حفظ التغييرات فوراً بعد الإضافة أو
-              الحذف.
+            <p className={clsx("text-sm text-gray-600 leading-6", textAlign)}>
+              {t("labels.managementDescription")}
             </p>
           </div>
 
           {noUsersAvailable ? (
             <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-gray-500">
-              لا توجد حسابات مستخدمين متاحة حالياً. يرجى إنشاء مستخدمين من إدارة
-              الصلاحيات أولاً.
+              {t("messages.noUsersAvailable")}
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-[minmax(0,280px)_1fr] items-start">
               <div className="space-y-2">
                 <Select
-                  label="المستخدم"
-                  placeholder="اختر المستخدم"
+                  label={t("labels.user")}
+                  placeholder={t("labels.selectUser")}
                   selectedKeys={
                     selectedUserId !== null
                       ? new Set<string>([String(selectedUserId)])
@@ -408,7 +414,7 @@ export default function UserAssignmentsClient({
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                   <p className="text-xs text-slate-500">
-                    عدد الفروع المصرح بها
+                    {t("labels.authorizedBranchesCount")}
                   </p>
                   <p className="text-xl font-semibold text-slate-800">
                     {branchCount}
@@ -416,14 +422,16 @@ export default function UserAssignmentsClient({
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
                   <p className="text-xs text-slate-500">
-                    عدد مراكز التكلفة المفعلة
+                    {t("labels.enabledCostCentersCount")}
                   </p>
                   <p className="text-xl font-semibold text-slate-800">
                     {costCenterCount}
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500">المستخدم الحالي</p>
+                  <p className="text-xs text-slate-500">
+                    {t("labels.currentUser")}
+                  </p>
                   <p className="text-sm font-medium text-slate-700">
                     {selectedUser?.label ?? " — "}
                   </p>
@@ -438,23 +446,27 @@ export default function UserAssignmentsClient({
         <Card className="h-full" shadow="sm">
           <CardBody className="space-y-5">
             <header className="flex items-start justify-between gap-4">
-              <div className="space-y-1 text-right flex-1">
-                <h3 className="text-lg font-semibold text-gray-800 text-right">
-                  الفروع المصرح بها
+              <div className={clsx("space-y-1 flex-1", textAlign)}>
+                <h3
+                  className={clsx(
+                    "text-lg font-semibold text-gray-800",
+                    textAlign,
+                  )}
+                >
+                  {t("labels.authorizedBranches")}
                 </h3>
-                <p className="text-sm text-gray-600 text-right">
-                  قم بإضافة الفروع التي يمكن للمستخدم العمل ضمنها، أو قم
-                  بإزالتها عند الحاجة.
+                <p className={clsx("text-sm text-gray-600", textAlign)}>
+                  {t("labels.authorizedBranchesDescription")}
                 </p>
               </div>
               <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600">
-                {branchCount} فرع
+                {branchCount} {t("labels.branchLabel")}
               </span>
             </header>
 
             {!selectedUserId ? (
               <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-gray-500">
-                يرجى اختيار مستخدم أولاً لعرض الفروع الخاصة به.
+                {t("messages.selectUserFirst")}
               </div>
             ) : (
               <>
@@ -463,11 +475,11 @@ export default function UserAssignmentsClient({
                     isDisabled={
                       availableBranches.length === 0 || isLoadingAssignments
                     }
-                    label="اختر فرعاً للإضافة"
+                    label={t("labels.selectBranch")}
                     placeholder={
                       availableBranches.length === 0
-                        ? "جميع الفروع مضافة"
-                        : "اختر الفرع"
+                        ? t("labels.allBranchesAdded")
+                        : t("labels.selectBranchPlaceholder")
                     }
                     selectedKeys={
                       selectedBranchKey
@@ -505,7 +517,7 @@ export default function UserAssignmentsClient({
                     isLoading={isSavingCompany}
                     onPress={handleAddCompany}
                   >
-                    إضافة الفرع
+                    {t("actions.addBranch")}
                   </Button>
                 </div>
 
@@ -514,34 +526,36 @@ export default function UserAssignmentsClient({
                 <div className="rounded-lg border border-gray-200">
                   {isLoadingAssignments ? (
                     <div className="flex items-center justify-center py-10">
-                      <Spinner label="جاري تحميل الفروع..." />
+                      <Spinner label={t("messages.loadingBranches")} />
                     </div>
                   ) : (
                     <Table
                       removeWrapper
-                      aria-label="الفروع المرتبطة بالمستخدم"
+                      aria-label={t("table.branchesAriaLabel")}
                       classNames={{
                         table: "min-h-[200px]",
                       }}
                     >
                       <TableHeader>
-                        <TableColumn className="text-right">الفرع</TableColumn>
-                        <TableColumn className="w-28 text-right">
-                          إجراءات
+                        <TableColumn className={textAlign}>
+                          {t("labels.branch")}
+                        </TableColumn>
+                        <TableColumn className={clsx("w-28", textAlign)}>
+                          {t("labels.actions")}
                         </TableColumn>
                       </TableHeader>
                       <TableBody
-                        emptyContent="لا توجد فروع مرتبطة بهذا المستخدم."
+                        emptyContent={t("messages.noBranchesAssigned")}
                         items={companyAssignments}
                       >
                         {(item) => (
                           <TableRow key={item.id}>
-                            <TableCell className="text-right">
+                            <TableCell className={textAlign}>
                               {branchNameById.get(Number(item.com)) ||
                                 item.branch_name ||
                                 `فرع رقم ${item.com}`}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className={textAlign}>
                               <Button
                                 color="danger"
                                 isLoading={
@@ -551,7 +565,7 @@ export default function UserAssignmentsClient({
                                 variant="light"
                                 onPress={() => handleRemoveCompany(item)}
                               >
-                                حذف
+                                {t("actions.delete")}
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -568,23 +582,27 @@ export default function UserAssignmentsClient({
         <Card className="h-full" shadow="sm">
           <CardBody className="space-y-5">
             <header className="flex items-start justify-between gap-4">
-              <div className="space-y-1 text-right flex-1">
-                <h3 className="text-lg font-semibold text-gray-800 text-right">
-                  مراكز التكلفة المرتبطة
+              <div className={clsx("space-y-1 flex-1", textAlign)}>
+                <h3
+                  className={clsx(
+                    "text-lg font-semibold text-gray-800",
+                    textAlign,
+                  )}
+                >
+                  {t("labels.linkedCostCenters")}
                 </h3>
-                <p className="text-sm text-gray-600 text-right">
-                  حدّد مراكز التكلفة المتاحة للمستخدم ليتم عرضها تلقائياً داخل
-                  سندات العمل.
+                <p className={clsx("text-sm text-gray-600", textAlign)}>
+                  {t("labels.linkedCostCentersDescription")}
                 </p>
               </div>
               <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600">
-                {costCenterCount} مركز
+                {costCenterCount} {t("labels.costCenterLabel")}
               </span>
             </header>
 
             {!selectedUserId ? (
               <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-gray-500">
-                يرجى اختيار مستخدم أولاً لعرض مراكز التكلفة الخاصة به.
+                {t("messages.selectUserFirstCostCenters")}
               </div>
             ) : (
               <>
@@ -593,11 +611,11 @@ export default function UserAssignmentsClient({
                     isDisabled={
                       availableCostCenters.length === 0 || isLoadingAssignments
                     }
-                    label="اختر مركز تكلفة"
+                    label={t("labels.selectCostCenter")}
                     placeholder={
                       availableCostCenters.length === 0
-                        ? "جميع المراكز مضافة"
-                        : "اختر المركز"
+                        ? t("labels.allCostCentersAdded")
+                        : t("labels.selectCostCenterPlaceholder")
                     }
                     selectedKeys={
                       selectedCostKey
@@ -635,7 +653,7 @@ export default function UserAssignmentsClient({
                     isLoading={isSavingCost}
                     onPress={handleAddCostCenter}
                   >
-                    إضافة المركز
+                    {t("actions.addCostCenter")}
                   </Button>
                 </div>
 
@@ -644,36 +662,36 @@ export default function UserAssignmentsClient({
                 <div className="rounded-lg border border-gray-200">
                   {isLoadingAssignments ? (
                     <div className="flex items-center justify-center py-10">
-                      <Spinner label="جاري تحميل مراكز التكلفة..." />
+                      <Spinner label={t("messages.loadingCostCenters")} />
                     </div>
                   ) : (
                     <Table
                       removeWrapper
-                      aria-label="مراكز التكلفة المرتبطة بالمستخدم"
+                      aria-label={t("table.costCentersAriaLabel")}
                       classNames={{
                         table: "min-h-[200px]",
                       }}
                     >
                       <TableHeader>
-                        <TableColumn className="text-right">
-                          مركز التكلفة
+                        <TableColumn className={textAlign}>
+                          {t("labels.costCenter")}
                         </TableColumn>
-                        <TableColumn className="w-28 text-right">
-                          إجراءات
+                        <TableColumn className={clsx("w-28", textAlign)}>
+                          {t("labels.actions")}
                         </TableColumn>
                       </TableHeader>
                       <TableBody
-                        emptyContent="لا توجد مراكز تكلفة مرتبطة بهذا المستخدم."
+                        emptyContent={t("messages.noCostCentersAssigned")}
                         items={costAssignments}
                       >
                         {(item) => (
                           <TableRow key={item.id}>
-                            <TableCell className="text-right">
+                            <TableCell className={textAlign}>
                               {costCenterNameById.get(Number(item.cost)) ||
                                 item.cost_name ||
                                 `مركز رقم ${item.cost}`}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className={textAlign}>
                               <Button
                                 color="danger"
                                 isLoading={
@@ -684,7 +702,7 @@ export default function UserAssignmentsClient({
                                 variant="light"
                                 onPress={() => handleRemoveCostCenter(item)}
                               >
-                                حذف
+                                {t("actions.delete")}
                               </Button>
                             </TableCell>
                           </TableRow>

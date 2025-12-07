@@ -1,4 +1,6 @@
 "use client";
+import type { Customer as CustomerModel } from "@/types/models/customer";
+
 import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Checkbox } from "@heroui/react";
@@ -8,7 +10,6 @@ import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 
 import customerService from "@/services/api/customer.service";
-import type { Customer as CustomerModel } from "@/types/models/customer";
 
 type CustomerFormMode = "view" | "edit" | "add";
 
@@ -62,7 +63,7 @@ const CustomerFormClient = ({
   companyId,
 }: CustomerFormClientProps) => {
   const router = useRouter();
-  const t = useTranslations("basic.customers");
+  const t = useTranslations("basic.customers" as any) as any;
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [customer, setCustomer] =
@@ -89,8 +90,7 @@ const CustomerFormClient = ({
       });
     };
 
-  const handleCheckboxChange =
-    (key: "expt" | "hide") => (value: boolean) => {
+  const handleCheckboxChange = (key: "expt" | "hide") => (value: boolean) => {
     setCustomer({
       ...customer,
       [key]: value,
@@ -100,9 +100,14 @@ const CustomerFormClient = ({
   const getTitle = () => {
     if (isAddMode) return t("titles.add");
     if (isViewMode)
-      return t("titles.view", { name: customer.cust_name || customer.cust_code || t("titles.defaultName") });
+      return t("titles.view", {
+        name:
+          customer.cust_name || customer.cust_code || t("titles.defaultName"),
+      });
 
-    return t("titles.edit", { name: customer.cust_name || customer.cust_code || t("titles.defaultName") });
+    return t("titles.edit", {
+      name: customer.cust_name || customer.cust_code || t("titles.defaultName"),
+    });
   };
 
   const handleSave = async () => {
@@ -158,9 +163,7 @@ const CustomerFormClient = ({
 
       if (result) {
         toast.success(
-          isAddMode
-            ? t("messages.addSuccess")
-            : t("messages.updateSuccess"),
+          isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
 
         router.push("/basic/customers");

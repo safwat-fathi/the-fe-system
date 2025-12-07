@@ -101,11 +101,7 @@ const Sidebar = ({
 
   const reportsIsActive = pathname.startsWith("/reports");
 
-  const SectionToggleLabel = ({
-    label,
-  }: {
-    label: string;
-  }) => (
+  const SectionToggleLabel = ({ label }: { label: string }) => (
     <span className={clsx({ block: isSidebarOpen, hidden: !isSidebarOpen })}>
       {label}
     </span>
@@ -126,10 +122,10 @@ const Sidebar = ({
         <SidebarLinkList
           indent="0"
           isLinkActive={isLinkActive}
-        isSidebarOpen={isSidebarOpen}
-        links={mainLinks}
-        translateLinkLabel={translateLinkLabel}
-      />
+          isSidebarOpen={isSidebarOpen}
+          links={mainLinks}
+          translateLinkLabel={translateLinkLabel}
+        />
 
         {canShowSection("accountingSystem") && (
           <SidebarSection
@@ -172,9 +168,7 @@ const Sidebar = ({
                   hideLabel={!isSidebarOpen}
                   isOpen={showAccountingForms}
                   label={tSidebar("sections.accountingForms")}
-                  onToggle={() =>
-                    setShowAccountingForms(!showAccountingForms)
-                  }
+                  onToggle={() => setShowAccountingForms(!showAccountingForms)}
                   showToggleIcon={isSidebarOpen}
                   transition={transition}
                 >

@@ -430,7 +430,6 @@ const SearchableSelect = ({
       e.stopPropagation();
       setIsOpen(false);
       buttonRef.current?.focus();
-
       return;
     }
 
@@ -517,8 +516,6 @@ const SearchableSelect = ({
         setIsOpen(false);
         buttonRef.current?.focus();
       }
-
-      return;
     }
   };
 
@@ -603,8 +600,6 @@ const SearchableSelect = ({
       e.stopPropagation();
       setIsOpen(false);
       buttonRef.current?.focus();
-
-      return;
     }
   };
 

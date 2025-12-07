@@ -50,8 +50,7 @@ export default function VouchersTable({
 }: VouchersTableProps) {
   const t = useTranslations("reports.vouchers");
   const locale = useLocale();
-  const dir = getLocaleDir(locale);
-  const textAlign = dir === "rtl" ? "text-right" : "text-left";
+  const dir = getLocaleDir(locale as "ar" | "en");
   const textAlignCenter = dir === "rtl" ? "text-center" : "text-center";
 
   const formatAmountValue = (value: number | null | undefined) =>
@@ -83,14 +82,30 @@ export default function VouchersTable({
   return (
     <Table>
       <TableHeader>
-        <TableColumn className={textAlignCenter}>{t("table.columns.voucherNumber")}</TableColumn>
-        <TableColumn className={textAlignCenter}>{t("table.columns.date")}</TableColumn>
-        <TableColumn className={textAlignCenter}>{t("table.columns.voucherType")}</TableColumn>
-        <TableColumn className={textAlignCenter}>{t("table.columns.cashAmount")}</TableColumn>
-        <TableColumn className={textAlignCenter}>{t("table.columns.goldAmount")}</TableColumn>
-        <TableColumn className={textAlignCenter}>{t("table.columns.notes")}</TableColumn>
-        <TableColumn className={textAlignCenter}>{t("table.columns.status")}</TableColumn>
-        <TableColumn className={textAlignCenter}>{t("table.columns.actions")}</TableColumn>
+        <TableColumn className={textAlignCenter}>
+          {t("table.columns.voucherNumber")}
+        </TableColumn>
+        <TableColumn className={textAlignCenter}>
+          {t("table.columns.date")}
+        </TableColumn>
+        <TableColumn className={textAlignCenter}>
+          {t("table.columns.voucherType")}
+        </TableColumn>
+        <TableColumn className={textAlignCenter}>
+          {t("table.columns.cashAmount")}
+        </TableColumn>
+        <TableColumn className={textAlignCenter}>
+          {t("table.columns.goldAmount")}
+        </TableColumn>
+        <TableColumn className={textAlignCenter}>
+          {t("table.columns.notes")}
+        </TableColumn>
+        <TableColumn className={textAlignCenter}>
+          {t("table.columns.status")}
+        </TableColumn>
+        <TableColumn className={textAlignCenter}>
+          {t("table.columns.actions")}
+        </TableColumn>
       </TableHeader>
       <TableBody>
         {vouchers.map((voucher, index) => (
@@ -117,7 +132,9 @@ export default function VouchersTable({
             <TableCell>
               <span className="font-semibold text-yellow-600 flex items-center gap-1">
                 {formatAmountValue(calculateVoucherGoldTotal(voucher))}
-                <span className="text-xs text-yellow-500">{t("table.goldUnit")}</span>
+                <span className="text-xs text-yellow-500">
+                  {t("table.goldUnit")}
+                </span>
               </span>
             </TableCell>
             <TableCell>

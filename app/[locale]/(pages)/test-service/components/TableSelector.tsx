@@ -73,9 +73,7 @@ const TableSelector = ({ currentTable }: TableSelectorProps) => {
             }}
           >
             {COMMON_TABLES.map((table) => (
-              <SelectItem key={table.value}>
-                {table.label}
-              </SelectItem>
+              <SelectItem key={table.value}>{table.label}</SelectItem>
             ))}
           </Select>
         </div>
