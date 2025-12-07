@@ -1,12 +1,29 @@
 echo "Checking types and building the project before pushing..."
 
 echo "⏳ Checking types..."
-npm run type-check
-echo "✅ Checking types passed"
 
+case `uname` in
+  *CYGWIN*|*MINGW*|*MSYS*)
+    npm.cmd run type-check
+  ;;
+  *)
+    npm run type-check
+  ;;
+esac
+
+echo "✅ Type checking passed"
 echo "------"
 echo "------"
 
 echo "⏳ Building the project..."
-npm run build
+
+case `uname` in
+  *CYGWIN*|*MINGW*|*MSYS*)
+    npm.cmd run build
+  ;;
+  *)
+    npm run build
+  ;;
+esac
+
 echo "✅ Build successful"
