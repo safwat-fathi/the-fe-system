@@ -354,9 +354,9 @@ export default async function DeliveryVoucherEditPage({
     };
 
     const t = await getTranslations("navigation.breadcrumbs.segments");
-    const tDelivery = await getTranslations("forms.deliveryVoucher");
-    
-    const voucherIdForBreadcrumb = targetVoucher.vouch_id || targetVoucher.id || "";
+
+    const voucherIdForBreadcrumb =
+      targetVoucher.vouch_id || targetVoucher.id || "";
     const breadcrumbLabel =
       formMode === "edit"
         ? `${t("edit")} ${voucherIdForBreadcrumb}`

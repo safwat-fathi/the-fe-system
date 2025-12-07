@@ -26,18 +26,18 @@ import {
 
 const InvoiceItemTable = dynamic(
   () =>
-    import("@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable").then(
-      (mod) => {
-        const ForwardedInvoiceItemTable = forwardRef<
-          InvoiceItemTableHandle,
-          InvoiceItemTableProps
-        >((props, ref) => <mod.default {...props} ref={ref} />);
+    import(
+      "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable"
+    ).then((mod) => {
+      const ForwardedInvoiceItemTable = forwardRef<
+        InvoiceItemTableHandle,
+        InvoiceItemTableProps
+      >((props, ref) => <mod.default {...props} ref={ref} />);
 
-        ForwardedInvoiceItemTable.displayName = "InvoiceItemTable";
+      ForwardedInvoiceItemTable.displayName = "InvoiceItemTable";
 
-        return ForwardedInvoiceItemTable;
-      },
-    ),
+      return ForwardedInvoiceItemTable;
+    }),
   {
     loading: () => <InvoiceItemTableSkeleton />,
     ssr: false,

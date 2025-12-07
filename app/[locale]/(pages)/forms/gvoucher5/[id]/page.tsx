@@ -1,6 +1,6 @@
+import { Suspense, cache } from "react";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { cache } from "react";
 import { getTranslations } from "next-intl/server";
 
 import CustomerGoldVoucherClientPage from "../../gvoucher4/CustomerGoldVoucherClientPage";
@@ -130,10 +130,15 @@ export default async function CustomerPaymentVoucherEditPage({
     notFound();
   }
 
+  // Cache form data for better performance
+  const getVoucherFormData = cache((options?: { goldBoxes?: boolean }) =>
+    voucherFormDataService.getVoucherFormData(options || { goldBoxes: true }),
+  );
+
   // جلب البيانات بشكل متوازي
   const [targetVoucher, formData] = await Promise.all([
     getVoucherById(voucherId),
-    voucherFormDataService.getVoucherFormData({ goldBoxes: true }),
+    getVoucherFormData({ goldBoxes: true }),
   ]);
 
   if (!targetVoucher) {
@@ -147,18 +152,27 @@ export default async function CustomerPaymentVoucherEditPage({
     getVoucherBoxes(targetVoucher.id, branchId),
   ]);
 
+  // Create Maps for faster lookups (O(1) instead of O(n))
+  const itemsMap = new Map(
+    (formData.items || []).map((item: any) => [item.id, item]),
+  );
+  const boxesMap = new Map(
+    (formData.boxes || []).map((box: any) => [box.id, box]),
+  );
+  const costCentersMap = new Map(
+    formData.costCenters.map((cc: any) => [cc.id, cc]),
+  );
+
   // معالجة تفاصيل الذهب
   // ملاحظة: API يستخدم vouch (id من vouchers), item, box, cost, inv
   const goldDetails: GVoucherDetail[] = goldDetailsData.map((detail: any) => {
-    const item = formData.items?.find(
-      (itm: any) => itm.id === (detail.item_id || detail.item),
-    );
-    const box = formData.boxes?.find(
-      (bx: any) => bx.id === (detail.box_id || detail.box),
-    );
-    const costCenter = formData.costCenters.find(
-      (cc: any) => cc.id === (detail.cost_id || detail.cost),
-    );
+    const itemId = detail.item_id || detail.item;
+    const boxId = detail.box_id || detail.box;
+    const costId = detail.cost_id || detail.cost;
+
+    const item = itemId ? itemsMap.get(itemId) : undefined;
+    const box = boxId ? boxesMap.get(boxId) : undefined;
+    const costCenter = costId ? costCentersMap.get(costId) : undefined;
 
     return {
       id: detail.id || 0,
@@ -339,8 +353,9 @@ export default async function CustomerPaymentVoucherEditPage({
   };
 
   const t = await getTranslations("navigation.breadcrumbs.segments");
-  
-  const voucherIdForBreadcrumb = targetVoucher.vouch_id || targetVoucher.id || "";
+
+  const voucherIdForBreadcrumb =
+    targetVoucher.vouch_id || targetVoucher.id || "";
   const breadcrumbLabel =
     formMode === "edit"
       ? `${t("edit")} ${voucherIdForBreadcrumb}`
@@ -356,24 +371,40 @@ export default async function CustomerPaymentVoucherEditPage({
           },
         ]}
       />
-      <CustomerGoldVoucherClientPage
-        accounts={formData.accounts}
-        boxes={formData.boxes || []}
-        categories={formData.categories || []}
-        costCenters={formData.costCenters}
-        customers={formData.customers || []}
-        formMode={formMode}
-        goldBoxes={formData.goldBoxes || formData.boxes || []}
-        goldDetailsData={goldDetails}
-        isNewVoucher={false}
-        items={formData.items || []}
-        startInEditMode={startInEditMode}
-        vouchType={5}
-        voucherBoxes={boxes}
-        voucherData={formattedVoucher}
-        voucherRecordId={targetVoucher.id}
-        voucherTypes={formData.voucherTypes}
-      />
+      <Suspense
+        key={`customer-payment-${formMode}-${targetVoucher.id}`}
+        fallback={<CustomerPaymentVoucherFormFallback />}
+      >
+        <CustomerGoldVoucherClientPage
+          accounts={formData.accounts}
+          boxes={formData.boxes || []}
+          categories={formData.categories || []}
+          costCenters={formData.costCenters}
+          customers={formData.customers || []}
+          formMode={formMode}
+          goldBoxes={formData.goldBoxes || formData.boxes || []}
+          goldDetailsData={goldDetails}
+          isNewVoucher={false}
+          items={formData.items || []}
+          startInEditMode={startInEditMode}
+          vouchType={5}
+          voucherBoxes={boxes}
+          voucherData={formattedVoucher}
+          voucherRecordId={targetVoucher.id}
+          voucherTypes={formData.voucherTypes}
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+// Fallback component for loading state
+function CustomerPaymentVoucherFormFallback() {
+  return (
+    <div className="p-4 my-4 bg-white rounded-lg shadow-sm border border-gray-200 min-h-[600px] flex items-center justify-center">
+      <div className="flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
     </div>
   );
 }

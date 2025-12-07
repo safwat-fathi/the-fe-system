@@ -1086,12 +1086,7 @@ export default function useInvoiceForm({
     }
 
     return { ok: true, validItems, customer: selectedCustomer };
-  }, [
-    contactLabel,
-    form.pay_type,
-    invoiceItems,
-    selectedCustomer,
-  ]);
+  }, [contactLabel, form.pay_type, invoiceItems, selectedCustomer]);
 
   type InvoiceSaveContext = {
     totals: {
@@ -1108,10 +1103,7 @@ export default function useInvoiceForm({
   };
 
   const buildInvoiceSaveContext = useCallback(
-    (
-      validItems: InvoiceItemRow[],
-      customer: any,
-    ): InvoiceSaveContext => {
+    (validItems: InvoiceItemRow[], customer: any): InvoiceSaveContext => {
       const totals = computeTotals(form.pay_type, validItems);
       const invoiceNumber =
         !isNewInvoice && form.inv_id ? form.inv_id : parseNumber(form.inv_id);
@@ -1250,7 +1242,10 @@ export default function useInvoiceForm({
         throw new Error("invoice primary key is missing");
       }
 
-      const savedInvoice = await updateInvoiceAction(invoicePk, mutationPayload);
+      const savedInvoice = await updateInvoiceAction(
+        invoicePk,
+        mutationPayload,
+      );
 
       if (!savedInvoice) {
         throw new Error("update-invoice-failed");
@@ -1394,7 +1389,6 @@ export default function useInvoiceForm({
       setOriginalInvoiceItems,
     ],
   );
-
 
   const saveInvoice = useCallback(async (): Promise<
     { ok: true; recordId: number; invoiceNumber: number } | { ok: false }

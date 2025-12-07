@@ -82,7 +82,7 @@ export const useVoucherActions = ({
     }
 
     // إزالة السطر الأخير إذا كان فارغاً
-    let currentDetails = [...details];
+    const currentDetails = [...details];
 
     if (currentDetails.length > 0) {
       const lastDetail = currentDetails[currentDetails.length - 1];
@@ -189,11 +189,11 @@ export const useVoucherActions = ({
       const result =
         formMode === "edit"
           ? await updateVoucherAction(
-            voucherData,
-            detailsData,
-            deletedDetailIds,
-            Number(voucherRecordId) || undefined,
-          )
+              voucherData,
+              detailsData,
+              deletedDetailIds,
+              Number(voucherRecordId) || undefined,
+            )
           : await createVoucherAction(voucherData, detailsData);
 
       if (result.success && result.data) {
@@ -254,10 +254,10 @@ export const useVoucherActions = ({
       if (printWindow) {
         const formattedDate = voucher.vouch_date
           ? new Date(voucher.vouch_date).toLocaleDateString("ar-SA", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
           : "";
 
         const validDetails = details.filter((d) => d.acc_id && d.acc_id > 0);
@@ -394,10 +394,11 @@ export const useVoucherActions = ({
                     <span class="header-info-value">${validDetails.length}</span>
                   </div>
                 </div>
-                ${voucher.vouch_notes
-            ? `<div class="voucher-notes"><strong>البيان:</strong> ${voucher.vouch_notes}</div>`
-            : ""
-          }
+                ${
+                  voucher.vouch_notes
+                    ? `<div class="voucher-notes"><strong>البيان:</strong> ${voucher.vouch_notes}</div>`
+                    : ""
+                }
               </div>
               <table>
                 <thead>
@@ -414,23 +415,23 @@ export const useVoucherActions = ({
                 </thead>
                 <tbody>
                   ${validDetails
-            .map((detail) => {
-              const account = accounts.find(
-                (acc) => acc.id === detail.acc_id,
-              );
-              const debit = detail.debit || 0;
-              const credit = detail.credit || 0;
-              const debitG =
-                detail.g_debit !== undefined
-                  ? detail.g_debit
-                  : detail.debit_g || 0;
-              const creditG =
-                detail.g_credit !== undefined
-                  ? detail.g_credit
-                  : detail.credit_g || 0;
-              const gauge = detail.gauge || 875;
+                    .map((detail) => {
+                      const account = accounts.find(
+                        (acc) => acc.id === detail.acc_id,
+                      );
+                      const debit = detail.debit || 0;
+                      const credit = detail.credit || 0;
+                      const debitG =
+                        detail.g_debit !== undefined
+                          ? detail.g_debit
+                          : detail.debit_g || 0;
+                      const creditG =
+                        detail.g_credit !== undefined
+                          ? detail.g_credit
+                          : detail.credit_g || 0;
+                      const gauge = detail.gauge || 875;
 
-              return `
+                      return `
                       <tr>
                         <td>${account?.acc_code || "-"}</td>
                         <td>${account?.acc_name || "-"}</td>
@@ -442,8 +443,8 @@ export const useVoucherActions = ({
                         <td>${detail.vouch_notes || "-"}</td>
                       </tr>
                     `;
-            })
-            .join("")}
+                    })
+                    .join("")}
                   <tr class="totals">
                     <td colspan="2" style="text-align: right; padding-right: 20px; font-weight: 700;">الإجمالي</td>
                     <td>${formatAmount(totals.totalDebit)}</td>

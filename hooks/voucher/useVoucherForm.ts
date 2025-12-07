@@ -296,7 +296,7 @@ export const useVoucherForm = ({
         if (targetVoucher) {
           const resolvedCostValue =
             targetVoucher.cost_id !== undefined &&
-              targetVoucher.cost_id !== null
+            targetVoucher.cost_id !== null
               ? targetVoucher.cost_id
               : targetVoucher.cost !== undefined && targetVoucher.cost !== null
                 ? targetVoucher.cost
@@ -346,12 +346,12 @@ export const useVoucherForm = ({
                 acc_name: (account as any)?.acc_name || detail.acc_name || "",
                 cost_id:
                   detail.cost_id !== undefined &&
-                    detail.cost_id !== null &&
-                    Number(detail.cost_id) > 0
+                  detail.cost_id !== null &&
+                  Number(detail.cost_id) > 0
                     ? Number(detail.cost_id)
                     : detail.cost !== undefined &&
-                      detail.cost !== null &&
-                      Number(detail.cost) > 0
+                        detail.cost !== null &&
+                        Number(detail.cost) > 0
                       ? Number(detail.cost)
                       : 0,
                 debit:
@@ -382,19 +382,19 @@ export const useVoucherForm = ({
                       : undefined,
                 credit_base:
                   detail.credit_base !== undefined &&
-                    detail.credit_base !== null
+                  detail.credit_base !== null
                     ? Number(detail.credit_base)
                     : detail.credit !== undefined && detail.credit !== null
                       ? Number(detail.credit)
                       : undefined,
                 g_debit_base:
                   detail.g_debit_base !== undefined &&
-                    detail.g_debit_base !== null
+                  detail.g_debit_base !== null
                     ? Number(detail.g_debit_base)
                     : undefined,
                 g_credit_base:
                   detail.g_credit_base !== undefined &&
-                    detail.g_credit_base !== null
+                  detail.g_credit_base !== null
                     ? Number(detail.g_credit_base)
                     : undefined,
                 gauge: Number(detail.gauge) || 875,
@@ -542,12 +542,12 @@ export const useVoucherForm = ({
           acc_name: detail.acc_name || "",
           cost_id:
             detail.cost_id !== undefined &&
-              detail.cost_id !== null &&
-              Number(detail.cost_id) > 0
+            detail.cost_id !== null &&
+            Number(detail.cost_id) > 0
               ? Number(detail.cost_id)
               : detail.cost !== undefined &&
-                detail.cost !== null &&
-                Number(detail.cost) > 0
+                  detail.cost !== null &&
+                  Number(detail.cost) > 0
                 ? Number(detail.cost)
                 : 0,
           debit: Number(detail.debit) || 0,

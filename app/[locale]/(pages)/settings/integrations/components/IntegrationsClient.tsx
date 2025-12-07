@@ -15,10 +15,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
-
-import { getLocaleDir } from "@/i18n/config";
 
 // نوع لبيانات خدمة الربط
 type IntegrationStatus = "connected" | "disconnected" | "testing";
@@ -57,10 +55,7 @@ interface FatooraConfig {
 
 export default function IntegrationsClient() {
   const t = useTranslations("settings.integrations");
-  const locale = useLocale();
-  const dir = getLocaleDir(locale);
-  const textAlign = dir === "rtl" ? "text-right" : "text-left";
-  
+
   const ENJAZATEK_DOC_URL = "https://enjazatik.com/";
 
   // حالة جيديا
@@ -465,9 +460,13 @@ export default function IntegrationsClient() {
                   }
                 />
                 <Input
-                  description={t("services.enjazatek.fields.instanceIdDescription")}
+                  description={t(
+                    "services.enjazatek.fields.instanceIdDescription",
+                  )}
                   label={t("services.enjazatek.fields.instanceId")}
-                  placeholder={t("services.enjazatek.fields.instanceIdPlaceholder")}
+                  placeholder={t(
+                    "services.enjazatek.fields.instanceIdPlaceholder",
+                  )}
                   value={enjazatekConfig.instanceId || ""}
                   variant="bordered"
                   onChange={(e) =>
@@ -479,7 +478,9 @@ export default function IntegrationsClient() {
                 />
                 <Input
                   label={t("services.enjazatek.fields.senderName")}
-                  placeholder={t("services.enjazatek.fields.senderNamePlaceholder")}
+                  placeholder={t(
+                    "services.enjazatek.fields.senderNamePlaceholder",
+                  )}
                   value={enjazatekConfig.senderName || ""}
                   variant="bordered"
                   onChange={(e) =>
@@ -491,7 +492,9 @@ export default function IntegrationsClient() {
                 />
                 <Input
                   label={t("services.enjazatek.fields.baseUrl")}
-                  placeholder={t("services.enjazatek.fields.baseUrlPlaceholder")}
+                  placeholder={t(
+                    "services.enjazatek.fields.baseUrlPlaceholder",
+                  )}
                   value={enjazatekConfig.baseUrl || ""}
                   variant="bordered"
                   onChange={(e) =>
@@ -503,7 +506,9 @@ export default function IntegrationsClient() {
                 />
                 <Input
                   label={t("services.enjazatek.fields.webhookUrl")}
-                  placeholder={t("services.enjazatek.fields.webhookUrlPlaceholder")}
+                  placeholder={t(
+                    "services.enjazatek.fields.webhookUrlPlaceholder",
+                  )}
                   value={enjazatekConfig.webhookUrl || ""}
                   variant="bordered"
                   onChange={(e) =>
@@ -670,10 +675,14 @@ export default function IntegrationsClient() {
 
                 {/* معرف التاجر */}
                 <Input
-                  description={t("services.geidea.fields.merchantIdDescription")}
+                  description={t(
+                    "services.geidea.fields.merchantIdDescription",
+                  )}
                   isDisabled={!showGeideaSetup && !geideaConfig.enabled}
                   label={t("services.geidea.fields.merchantId")}
-                  placeholder={t("services.geidea.fields.merchantIdPlaceholder")}
+                  placeholder={t(
+                    "services.geidea.fields.merchantIdPlaceholder",
+                  )}
                   value={geideaConfig.merchantId || ""}
                   variant="bordered"
                   onChange={(e) =>
@@ -723,11 +732,11 @@ export default function IntegrationsClient() {
                   {t("services.geidea.info.title")}
                 </h3>
                 <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-                  {t.raw("services.geidea.info.items").map(
-                    (item: string, index: number) => (
+                  {t
+                    .raw("services.geidea.info.items")
+                    .map((item: string, index: number) => (
                       <li key={index}>{item}</li>
-                    ),
-                  )}
+                    ))}
                 </ul>
               </div>
 
@@ -740,9 +749,7 @@ export default function IntegrationsClient() {
                   isLoading={isSaving}
                   onPress={handleSaveGeidea}
                 >
-                  {isSaving
-                    ? t("actions.saving")
-                    : t("actions.saveSettings")}
+                  {isSaving ? t("actions.saving") : t("actions.saveSettings")}
                 </Button>
                 <Button
                   className="btn-secondary"
@@ -876,10 +883,14 @@ export default function IntegrationsClient() {
 
                 {/* نوع الربط */}
                 <Input
-                  description={t("services.fatoora.fields.connectionTypeDescription")}
+                  description={t(
+                    "services.fatoora.fields.connectionTypeDescription",
+                  )}
                   isDisabled={!fatooraConfig.enabled}
                   label={t("services.fatoora.fields.connectionType")}
-                  placeholder={t("services.fatoora.fields.connectionTypePlaceholder")}
+                  placeholder={t(
+                    "services.fatoora.fields.connectionTypePlaceholder",
+                  )}
                   value={fatooraConfig.connectionType || ""}
                   variant="bordered"
                   onChange={(e) =>
@@ -894,7 +905,9 @@ export default function IntegrationsClient() {
                 <Input
                   isDisabled={!fatooraConfig.enabled}
                   label={t("services.fatoora.fields.activationDate")}
-                  placeholder={t("services.fatoora.fields.activationDatePlaceholder")}
+                  placeholder={t(
+                    "services.fatoora.fields.activationDatePlaceholder",
+                  )}
                   type="date"
                   value={fatooraConfig.activationDate || ""}
                   variant="bordered"
@@ -955,10 +968,14 @@ export default function IntegrationsClient() {
 
                 {/* الشهادة */}
                 <Input
-                  description={t("services.fatoora.fields.certificateDescription")}
+                  description={t(
+                    "services.fatoora.fields.certificateDescription",
+                  )}
                   isDisabled={!fatooraConfig.enabled}
                   label={t("services.fatoora.fields.certificate")}
-                  placeholder={t("services.fatoora.fields.certificatePlaceholder")}
+                  placeholder={t(
+                    "services.fatoora.fields.certificatePlaceholder",
+                  )}
                   value={fatooraConfig.certificate || ""}
                   variant="bordered"
                   onChange={(e) =>
@@ -971,10 +988,14 @@ export default function IntegrationsClient() {
 
                 {/* المفتاح الخاص */}
                 <Input
-                  description={t("services.fatoora.fields.privateKeyDescription")}
+                  description={t(
+                    "services.fatoora.fields.privateKeyDescription",
+                  )}
                   isDisabled={!fatooraConfig.enabled}
                   label={t("services.fatoora.fields.privateKey")}
-                  placeholder={t("services.fatoora.fields.privateKeyPlaceholder")}
+                  placeholder={t(
+                    "services.fatoora.fields.privateKeyPlaceholder",
+                  )}
                   type="password"
                   value={fatooraConfig.privateKey || ""}
                   variant="bordered"
@@ -1023,11 +1044,11 @@ export default function IntegrationsClient() {
                   {t("services.fatoora.info.title")}
                 </h3>
                 <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-                  {t.raw("services.fatoora.info.items").map(
-                    (item: string, index: number) => (
+                  {t
+                    .raw("services.fatoora.info.items")
+                    .map((item: string, index: number) => (
                       <li key={index}>{item}</li>
-                    ),
-                  )}
+                    ))}
                 </ul>
               </div>
 

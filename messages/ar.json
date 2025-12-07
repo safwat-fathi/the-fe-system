@@ -1062,6 +1062,13 @@
         "groups": "المجموعات",
         "users": "المستخدمين"
       },
+      "labels": {
+        "groups": "المجموعات",
+        "users": "المستخدمين",
+        "pageTitle": "إدارة الصلاحيات",
+        "pageSubtitle": "المجموعات",
+        "level": "المستوى {level}"
+      },
       "columns": {
         "name": "اسم المجموعة",
         "userName": "اسم المستخدم",
@@ -1114,6 +1121,75 @@
         "emptyUsers": "لا يوجد مستخدمين"
       }
     },
+    "userAssignments": {
+      "title": "ربط الفروع ومراكز التكلفة بالمستخدمين",
+      "description": "إدارة فروع ومراكز التكلفة المصرح بها لكل مستخدم في النظام.",
+      "labels": {
+        "pageTitle": "ربط الفروع ومراكز التكلفة بالمستخدمين",
+        "pageDescription": "حدد المستخدم أولاً، ثم اختر الفروع ومراكز التكلفة المصرح له بالعمل عليها. يتم حفظ التعديلات مباشرةً عبر الخادم.",
+        "managementTitle": "إدارة صلاحيات المستخدم للفروع ومراكز التكلفة",
+        "managementDescription": "اختر المستخدم المطلوب، ثم قم بتخصيص الفروع ومراكز التكلفة التي يُسمح له بالعمل عليها. يتم حفظ التغييرات فوراً بعد الإضافة أو الحذف.",
+        "user": "المستخدم",
+        "selectUser": "اختر المستخدم",
+        "authorizedBranches": "الفروع المصرح بها",
+        "authorizedBranchesDescription": "قم بإضافة الفروع التي يمكن للمستخدم العمل ضمنها، أو قم بإزالتها عند الحاجة.",
+        "linkedCostCenters": "مراكز التكلفة المرتبطة",
+        "linkedCostCentersDescription": "حدّد مراكز التكلفة المتاحة للمستخدم ليتم عرضها تلقائياً داخل سندات العمل.",
+        "selectBranch": "اختر فرعاً للإضافة",
+        "selectBranchPlaceholder": "اختر الفرع",
+        "allBranchesAdded": "جميع الفروع مضافة",
+        "selectCostCenter": "اختر مركز تكلفة",
+        "selectCostCenterPlaceholder": "اختر المركز",
+        "allCostCentersAdded": "جميع المراكز مضافة",
+        "branch": "الفرع",
+        "costCenter": "مركز التكلفة",
+        "actions": "إجراءات",
+        "authorizedBranchesCount": "عدد الفروع المصرح بها",
+        "enabledCostCentersCount": "عدد مراكز التكلفة المفعلة",
+        "currentUser": "المستخدم الحالي",
+        "branchLabel": "فرع",
+        "costCenterLabel": "مركز"
+      },
+      "actions": {
+        "addBranch": "إضافة الفرع",
+        "addCostCenter": "إضافة المركز",
+        "delete": "حذف"
+      },
+      "messages": {
+        "noUsersAvailable": "لا توجد حسابات مستخدمين متاحة حالياً. يرجى إنشاء مستخدمين من إدارة الصلاحيات أولاً.",
+        "selectUserFirst": "يرجى اختيار مستخدم أولاً لعرض الفروع الخاصة به.",
+        "selectUserFirstCostCenters": "يرجى اختيار مستخدم أولاً لعرض مراكز التكلفة الخاصة به.",
+        "pleaseSelectUser": "يرجى اختيار مستخدم أولاً",
+        "pleaseSelectBranch": "يرجى اختيار فرع للإضافة",
+        "pleaseSelectCostCenter": "يرجى اختيار مركز تكلفة للإضافة",
+        "invalidUserId": "المعرف المحدد للمستخدم غير صالح",
+        "invalidBranchId": "المعرف المحدد للفرع غير صالح",
+        "invalidCostCenterId": "المعرف المحدد لمركز التكلفة غير صالح",
+        "branchAlreadyAssigned": "هذا الفرع مرتبط بالفعل بالمستخدم",
+        "costCenterAlreadyAssigned": "هذا المركز مرتبط بالفعل بالمستخدم",
+        "branchSavedSuccess": "تم حفظ الفرع للمستخدم بنجاح",
+        "costCenterSavedSuccess": "تم حفظ مركز التكلفة للمستخدم",
+        "branchDeletedSuccess": "تم حذف الفرع من المستخدم",
+        "costCenterDeletedSuccess": "تم حذف مركز التكلفة",
+        "failedToRefresh": "تعذر تحديث بيانات المستخدم المختار",
+        "failedToSaveBranch": "حدث خطأ أثناء حفظ الفرع للمستخدم",
+        "failedToSaveCostCenter": "حدث خطأ أثناء حفظ مركز التكلفة للمستخدم",
+        "failedToDeleteBranch": "حدث خطأ أثناء حذف الفرع",
+        "failedToDeleteCostCenter": "حدث خطأ أثناء حذف مركز التكلفة",
+        "loadingBranches": "جاري تحميل الفروع...",
+        "loadingCostCenters": "جاري تحميل مراكز التكلفة...",
+        "noBranchesAssigned": "لا توجد فروع مرتبطة بهذا المستخدم.",
+        "noCostCentersAssigned": "لا توجد مراكز تكلفة مرتبطة بهذا المستخدم."
+      },
+      "confirmations": {
+        "deleteBranch": "هل أنت متأكد من حذف هذا الفرع من المستخدم؟",
+        "deleteCostCenter": "هل أنت متأكد من حذف مركز التكلفة من المستخدم؟"
+      },
+      "table": {
+        "branchesAriaLabel": "الفروع المرتبطة بالمستخدم",
+        "costCentersAriaLabel": "مراكز التكلفة المرتبطة بالمستخدم"
+      }
+    },
     "taxes": {
       "title": "الضرائب",
       "columns": {
@@ -1136,7 +1212,8 @@
       "labels": {
         "searchPlaceholder": "بحث بالاسم...",
         "totalCount": "عدد الضرائب: {count}",
-        "tableAriaLabel": "جدول الضرائب"
+        "tableAriaLabel": "جدول الضرائب",
+        "pageTitle": "الضرائب"
       },
       "modals": {
         "addTitle": "إنشاء ضريبة جديدة",
@@ -1836,10 +1913,12 @@
           "saveAccounts": "حفظ التعديلات"
         },
         "labels": {
+          "pageTitle": "الفئات",
           "manage": "إدارة الفئات",
           "searchPlaceholder": "بحث بالاسم...",
           "tableAriaLabel": "جدول الفئات",
           "totalCount": "عدد الفئات: {count}",
+          "emptyContent": "لم يتم العثور على فئات.",
           "categoryAccounts": "حسابات الفئة",
           "selectedCategory": "الفئة المحددة: {name}",
           "selectCategory": "اختر فئة لاستعراض حساباتها",
@@ -1927,7 +2006,8 @@
           "unit": "الوحدة",
           "price": "السعر",
           "weight": "الوزن",
-          "actions": ""
+          "status": "الحالة",
+          "actions": "الإجراءات"
         },
         "actions": {
           "add": "إضافة صنف",
@@ -1943,6 +2023,7 @@
           "browseFiles": "تصفح الملفات"
         },
         "labels": {
+          "pageTitle": "الأصناف",
           "manage": "إدارة الأصناف",
           "searchPlaceholder": "بحث بالاسم...",
           "tableAriaLabel": "جدول الأصناف",

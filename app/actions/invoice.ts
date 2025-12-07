@@ -104,18 +104,16 @@ export async function deleteInvoiceDetailAction(
   id: number,
   invoiceId?: number | string,
 ) {
-  
-    const result = await invoiceService.deleteInvoiceDetail(id);
+  const result = await invoiceService.deleteInvoiceDetail(id);
 
-    if (result) {
-      await revalidateTag("invoices");
-      await revalidatePath("/reports/invoices");
+  if (result) {
+    await revalidateTag("invoices");
+    await revalidatePath("/reports/invoices");
 
-      if (invoiceId !== undefined && invoiceId !== null) {
-        await revalidateTag(`invoice-details-${invoiceId}`);
-      }
+    if (invoiceId !== undefined && invoiceId !== null) {
+      await revalidateTag(`invoice-details-${invoiceId}`);
     }
+  }
 
-    return result;
-  
+  return result;
 }

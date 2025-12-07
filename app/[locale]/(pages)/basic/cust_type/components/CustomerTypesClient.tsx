@@ -44,7 +44,7 @@ export default function CustomerTypesClient({
   initialTypes,
 }: CustomerTypesClientProps) {
   const router = useRouter();
-  const t = useTranslations("basic.customerTypes");
+  const t = useTranslations("basic.customerTypes" as any) as any;
   const [types, setTypes] = useState<CustomerType[]>(initialTypes);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);

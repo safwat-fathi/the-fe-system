@@ -69,7 +69,6 @@ export const useBalanceVoucherForm = ({
   });
 
   const [currentTime, setCurrentTime] = useState("");
-  const [isClient, setIsClient] = useState(false);
   const [details, setDetails] = useState<VoucherDetail[]>(
     voucherDetailsData || [],
   );
@@ -89,7 +88,6 @@ export const useBalanceVoucherForm = ({
   const [showUnbalancedModal, setShowUnbalancedModal] = useState(false);
 
   const previousVouchNotesRef = useRef<string>(voucherData?.vouch_notes || "");
-  const hasGeneratedVoucherNumber = useRef(false);
 
   // حساب defaultAccountOptions مباشرة باستخدام useMemo بدلاً من useEffect + useState
   const defaultAccountOptions = useMemo(() => {
@@ -104,7 +102,6 @@ export const useBalanceVoucherForm = ({
 
   // Initialize component
   useEffect(() => {
-    setIsClient(true);
     updateCurrentTime();
 
     if (isNewVoucher && details.length === 0) {
@@ -132,36 +129,13 @@ export const useBalanceVoucherForm = ({
     if (!isNewVoucher && voucherDetailsData && voucherDetailsData.length > 0) {
       setOriginalDetails([...voucherDetailsData]);
     }
-
-    // تأخير توليد رقم القيد حتى لا يعيق التحميل الأولي
-    if (
-      isNewVoucher &&
-      !hasGeneratedVoucherNumber.current &&
-      (!voucher.vouch_id || voucher.vouch_id === 0)
-    ) {
-      hasGeneratedVoucherNumber.current = true;
-      // استخدام requestIdleCallback إذا كان متاحاً، وإلا setTimeout
-      const scheduleGeneration = () => {
-        generateNextVoucherNumber().catch((error) => {
-          console.error("خطأ في توليد رقم القيد:", error);
-          hasGeneratedVoucherNumber.current = false;
-        });
-      };
-
-      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        requestIdleCallback(scheduleGeneration, { timeout: 2000 });
-      } else {
-        setTimeout(scheduleGeneration, 500);
-      }
-    }
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
     const interval = setInterval(updateCurrentTime, 60000);
 
     return () => clearInterval(interval);
-  }, [isClient]);
+  }, []);
 
   useEffect(() => {
     if (isNewVoucher) {
@@ -1014,7 +988,6 @@ export const useBalanceVoucherForm = ({
     setIsEditing,
     isPrinting,
     currentTime,
-    isClient,
     showUnbalancedModal,
     defaultAccountOptions,
 

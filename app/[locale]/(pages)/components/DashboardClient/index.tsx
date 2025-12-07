@@ -11,16 +11,18 @@ interface DashboardClientProps {
   invoices: InvoiceModel[];
 }
 
-const DashboardCharts = dynamic(
-  () => import("./DashboardCharts"),
-  {
-    loading: () => <DashboardChartsSkeleton />,
-    ssr: false,
-  },
-);
+const DashboardCharts = dynamic(() => import("./DashboardCharts"), {
+  loading: () => <DashboardChartsSkeleton />,
+  ssr: false,
+});
 
-const DashboardClient = ({ salesChartData, invoices }: DashboardClientProps) => {
-  return <DashboardCharts invoices={invoices} salesChartData={salesChartData} />;
+const DashboardClient = ({
+  salesChartData,
+  invoices,
+}: DashboardClientProps) => {
+  return (
+    <DashboardCharts invoices={invoices} salesChartData={salesChartData} />
+  );
 };
 
 export default DashboardClient;

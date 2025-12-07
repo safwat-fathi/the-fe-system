@@ -694,7 +694,9 @@ export default function VATReportPage() {
                       <TableCell>
                         <Chip
                           color={
-                            getInvoiceTypeColor(inv.trans_type) as ChipProps["color"]
+                            getInvoiceTypeColor(
+                              inv.trans_type,
+                            ) as ChipProps["color"]
                           }
                           size="sm"
                         >

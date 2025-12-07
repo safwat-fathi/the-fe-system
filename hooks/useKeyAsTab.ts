@@ -160,7 +160,10 @@ export default function useKeyAsTab(
 
   const mergedFilter = useCallback(
     (element: HTMLElement) => {
-      return baseFilter(element) && (typeof filterElement !== "function" || filterElement(element));
+      return (
+        baseFilter(element) &&
+        (typeof filterElement !== "function" || filterElement(element))
+      );
     },
     [filterElement],
   );
@@ -170,19 +173,26 @@ export default function useKeyAsTab(
       if (typeof document === "undefined") return false;
 
       const root = containerRef?.current ?? document.body;
+
       if (!root) return false;
 
-      const candidates = Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter(mergedFilter);
+      const candidates = Array.from(
+        root.querySelectorAll<HTMLElement>(focusableSelector),
+      ).filter(mergedFilter);
 
       if (candidates.length === 0) return false;
 
       const activeElement =
-        (fallbackActiveElement && candidates.includes(fallbackActiveElement) ? fallbackActiveElement : null) ||
-        (document.activeElement instanceof HTMLElement && root.contains(document.activeElement)
+        (fallbackActiveElement && candidates.includes(fallbackActiveElement)
+          ? fallbackActiveElement
+          : null) ||
+        (document.activeElement instanceof HTMLElement &&
+        root.contains(document.activeElement)
           ? document.activeElement
           : null);
 
       let currentIndex = activeElement ? candidates.indexOf(activeElement) : -1;
+
       if (currentIndex === -1 && fallbackActiveElement) {
         currentIndex = candidates.indexOf(fallbackActiveElement);
       }
@@ -196,7 +206,10 @@ export default function useKeyAsTab(
 
       if (nextIndex < 0 || nextIndex >= candidates.length) {
         if (!wrap) {
-          if (typeof onBoundaryFocus === "function" && onBoundaryFocus(direction)) {
+          if (
+            typeof onBoundaryFocus === "function" &&
+            onBoundaryFocus(direction)
+          ) {
             return true;
           }
 
@@ -207,10 +220,12 @@ export default function useKeyAsTab(
       }
 
       const nextElement = candidates[nextIndex];
+
       if (!nextElement) return false;
 
       try {
         nextElement.focus();
+
         return true;
       } catch {
         return false;
@@ -230,6 +245,7 @@ export default function useKeyAsTab(
 
       // ✅ معالجة الأسهم للتنقل
       let direction: 1 | -1 | null = null;
+
       if (event.key === "ArrowDown" || event.key === "ArrowLeft") {
         direction = 1; // الحقل التالي
       } else if (event.key === "ArrowUp" || event.key === "ArrowRight") {
@@ -237,13 +253,16 @@ export default function useKeyAsTab(
       }
 
       if (direction !== null) {
-        const target = (event.target as HTMLElement | null) || (event.currentTarget as HTMLElement | null);
-        
+        const target =
+          (event.target as HTMLElement | null) ||
+          (event.currentTarget as HTMLElement | null);
+
         if (!target) return;
 
         const listboxElement = target.closest('[role="listbox"]');
         const selectButton = target.closest('[role="combobox"]');
-        const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
+        const isExpanded =
+          selectButton?.getAttribute("aria-expanded") === "true";
 
         // إذا كنا داخل قائمة مفتوحة، نسمح بالتفاعل الطبيعي
         if (listboxElement || isExpanded) {
@@ -309,25 +328,24 @@ export default function useKeyAsTab(
   /**
    * Helper: البحث عن listbox وتركيز على أول عنصر
    */
-  const focusFirstListboxItem = useCallback(
-    (selectButton: HTMLElement) => {
-      const listbox =
-        selectButton
-          .closest(".react-select__control")
-          ?.nextElementSibling?.querySelector('[role="listbox"]') ||
-        document.querySelector('[id*="-listbox"], [role="listbox"]');
+  const focusFirstListboxItem = useCallback((selectButton: HTMLElement) => {
+    const listbox =
+      selectButton
+        .closest(".react-select__control")
+        ?.nextElementSibling?.querySelector('[role="listbox"]') ||
+      document.querySelector('[id*="-listbox"], [role="listbox"]');
 
-      if (!listbox) return;
+    if (!listbox) return;
 
-      const firstOption = listbox.querySelector('[role="option"]') as HTMLElement;
-      const focusTarget = firstOption || (listbox.querySelector('input[type="text"]') as HTMLInputElement);
+    const firstOption = listbox.querySelector('[role="option"]') as HTMLElement;
+    const focusTarget =
+      firstOption ||
+      (listbox.querySelector('input[type="text"]') as HTMLInputElement);
 
-      if (focusTarget) {
-        focusTarget.focus();
-      }
-    },
-    [],
-  );
+    if (focusTarget) {
+      focusTarget.focus();
+    }
+  }, []);
 
   /**
    * Helper: إغلاق القائمة المفتوحة
@@ -361,8 +379,8 @@ export default function useKeyAsTab(
     (element: HTMLElement | Element): boolean => {
       const htmlElement = element as HTMLElement;
 
-      return !!(
-        htmlElement.closest('[data-component="searchable-select"], .searchable-select-wrapper')
+      return !!htmlElement.closest(
+        '[data-component="searchable-select"], .searchable-select-wrapper',
       );
     },
     [],
@@ -376,12 +394,16 @@ export default function useKeyAsTab(
     (event: KeyboardEvent<HTMLElement> | KeyboardEvent<Element>) => {
       if (event.key !== "F4") return false;
 
-      const target = (event.target as HTMLElement | null) || (event.currentTarget as HTMLElement | null);
+      const target =
+        (event.target as HTMLElement | null) ||
+        (event.currentTarget as HTMLElement | null);
 
       if (!target) return false;
 
       // إذا كنا داخل listbox، نغلق القائمة
-      const listboxElement = target.closest('[role="listbox"]') as HTMLElement | null;
+      const listboxElement = target.closest(
+        '[role="listbox"]',
+      ) as HTMLElement | null;
 
       if (listboxElement) {
         event.preventDefault();
@@ -419,7 +441,12 @@ export default function useKeyAsTab(
 
       return true;
     },
-    [findSelectButtonFromListbox, focusFirstListboxItem, closeSelect, isSearchableSelect],
+    [
+      findSelectButtonFromListbox,
+      focusFirstListboxItem,
+      closeSelect,
+      isSearchableSelect,
+    ],
   );
 
   return {

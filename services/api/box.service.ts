@@ -44,7 +44,7 @@ class BoxService extends HttpService<Box> {
   async createBox(box: CreateBoxDTO): Promise<Box | null> {
     try {
       // جلب معاملات الفرع لإضافة com
-      let companyId = "1";
+      let companyId: string;
 
       try {
         const branchParams = await import("@/app/actions/branch-params").then(
@@ -167,7 +167,7 @@ class BoxService extends HttpService<Box> {
   async updateBox(id: number, box: UpdateBoxDTO): Promise<Box | null> {
     try {
       // جلب معاملات الفرع لإضافة com
-      let companyId = "1";
+      let companyId: string;
 
       try {
         const branchParams = await import("@/app/actions/branch-params").then(

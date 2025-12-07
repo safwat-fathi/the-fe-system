@@ -119,15 +119,9 @@ export default function IncomeStatementClient() {
               setLevel(val);
             }}
           >
-            <SelectItem key="7">
-              المستوى 7
-            </SelectItem>
-            <SelectItem key="6">
-              المستوى 6
-            </SelectItem>
-            <SelectItem key="5">
-              المستوى 5
-            </SelectItem>
+            <SelectItem key="7">المستوى 7</SelectItem>
+            <SelectItem key="6">المستوى 6</SelectItem>
+            <SelectItem key="5">المستوى 5</SelectItem>
           </Select>
           <Select
             className="min-w-[120px]"
@@ -140,15 +134,9 @@ export default function IncomeStatementClient() {
               setPeriod(val);
             }}
           >
-            <SelectItem key="monthly">
-              شهري
-            </SelectItem>
-            <SelectItem key="quarterly">
-              ربع سنوي
-            </SelectItem>
-            <SelectItem key="yearly">
-              سنوي
-            </SelectItem>
+            <SelectItem key="monthly">شهري</SelectItem>
+            <SelectItem key="quarterly">ربع سنوي</SelectItem>
+            <SelectItem key="yearly">سنوي</SelectItem>
           </Select>
           <Button
             className="btn-secondary"

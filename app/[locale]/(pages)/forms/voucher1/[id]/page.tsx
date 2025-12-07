@@ -122,7 +122,7 @@ export default async function ReceiptVoucherEditPage({
     voucherFormDataService.getVoucherFormData(),
   ]);
 
-  if (!targetVoucher) {
+  if (!targetVoucher || !targetVoucher.id) {
     notFound();
   }
 
@@ -130,9 +130,10 @@ export default async function ReceiptVoucherEditPage({
   const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
   // استخدام id (primary key) لجلب التفاصيل والصناديق
   // ملاحظة: getBoxes في voucherService يتوقع id من جدول vouchers وليس vouch_id
+  const voucherIdValue = targetVoucher.id;
   const [detailsData, boxesData] = await Promise.all([
-    getVoucherDetails(targetVoucher.id, branchId),
-    getVoucherBoxes(targetVoucher.id, branchId),
+    getVoucherDetails(voucherIdValue, branchId),
+    getVoucherBoxes(voucherIdValue, branchId),
   ]);
 
   // معالجة تفاصيل القيد

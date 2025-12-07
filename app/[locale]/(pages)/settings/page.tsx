@@ -20,23 +20,6 @@ interface HomeSettings {
   [key: string]: any;
 }
 
-// const ZATCA_FIELDS = [
-//   {
-//     key: "Enable_EInvoice",
-//     label: "تفعيل الفاتورة الإلكترونية",
-//     type: "checkbox",
-//   },
-//   { key: "LT", label: "نوع الربط  " },
-//   { key: "LTD", label: "تاريخ تفعيل الربط", type: "date" },
-//   { key: "Xml_Path", label: "مسار ملفات XML" },
-//   { key: "USERNAME", label: "اسم المستخدم" },
-//   { key: "PASSWORD", label: "كلمة المرور" },
-//   { key: "comp_csr", label: "الشهادة" },
-//   { key: "comp_private_key", label: "المفتاح الخاص" },
-//   { key: "Last_PIH", label: "آخر PIH" },
-//   { key: "Last_ICV", label: "آخر ICV" },
-// ];
-
 export default function SettingsPage() {
   const t = useTranslations("settings.systemSettings");
   const [activeSection, setActiveSection] = useState("general");
@@ -63,41 +46,45 @@ export default function SettingsPage() {
 
   const GENERAL_FIELDS = useMemo(
     () => [
-      { key: "comp_a_name", label: t("fields.compAName") },
-      { key: "comp_l_name", label: t("fields.compLName") },
-      { key: "ADDRESS", label: t("fields.address") },
-      { key: "ADDRESS_E", label: t("fields.addressE") },
-      { key: "footer", label: t("fields.footer") },
-      { key: "purity", label: t("fields.purity") },
-      { key: "VAT_NO", label: t("fields.vatNo") },
-      { key: "comp_cr_no", label: t("fields.compCrNo") },
-      { key: "comp_gov", label: t("fields.compGov") },
-      { key: "comp_city", label: t("fields.compCity") },
-      { key: "comp_area", label: t("fields.compArea") },
-      { key: "comp_street", label: t("fields.compStreet") },
-      { key: "comp_build_no", label: t("fields.compBuildNo") },
-      { key: "comp_Post_code", label: t("fields.compPostCode") },
-      { key: "ver", label: t("fields.ver") },
+      { key: "comp_a_name", label: t("fields.general.compAName") },
+      { key: "comp_l_name", label: t("fields.general.compLName") },
+      { key: "ADDRESS", label: t("fields.general.address") },
+      { key: "ADDRESS_E", label: t("fields.general.addressE") },
+      { key: "footer", label: t("fields.general.footer") },
+      { key: "purity", label: t("fields.general.purity") },
+      { key: "VAT_NO", label: t("fields.general.vatNo") },
+      { key: "comp_cr_no", label: t("fields.general.compCrNo") },
+      { key: "comp_gov", label: t("fields.general.compGov") },
+      { key: "comp_city", label: t("fields.general.compCity") },
+      { key: "comp_area", label: t("fields.general.compArea") },
+      { key: "comp_street", label: t("fields.general.compStreet") },
+      { key: "comp_build_no", label: t("fields.general.compBuildNo") },
+      { key: "comp_Post_code", label: t("fields.general.compPostCode") },
+      { key: "ver", label: t("fields.general.ver") },
     ],
     [t],
   );
 
   const ACCOUNT_FIELDS = useMemo(
     () => [
-      { key: "fin_year", label: t("fields.finYear") },
-      { key: "close_month", label: t("fields.closeMonth") },
-      { key: "close_year", label: t("fields.closeYear") },
-      { key: "init_date", label: t("fields.initDate"), type: "date" },
-      { key: "finaly_date", label: t("fields.finalyDate"), type: "date" },
-      { key: "frac", label: t("fields.frac") },
-      { key: "frac2", label: t("fields.frac2") },
-      { key: "disc_acc", label: t("fields.discAcc") },
-      { key: "disc_acc2", label: t("fields.discAcc2") },
-      { key: "buy_acc", label: t("fields.buyAcc") },
-      { key: "sell_acc", label: t("fields.sellAcc") },
-      { key: "p_l_acc", label: t("fields.plAcc") },
-      { key: "store", label: t("fields.store") },
-      { key: "Vat_perc", label: t("fields.vatPerc") },
+      { key: "fin_year", label: t("fields.accounts.finYear") },
+      { key: "close_month", label: t("fields.accounts.closeMonth") },
+      { key: "close_year", label: t("fields.accounts.closeYear") },
+      { key: "init_date", label: t("fields.accounts.initDate"), type: "date" },
+      {
+        key: "finaly_date",
+        label: t("fields.accounts.finalyDate"),
+        type: "date",
+      },
+      { key: "frac", label: t("fields.accounts.frac") },
+      { key: "frac2", label: t("fields.accounts.frac2") },
+      { key: "disc_acc", label: t("fields.accounts.discAcc") },
+      { key: "disc_acc2", label: t("fields.accounts.discAcc2") },
+      { key: "buy_acc", label: t("fields.accounts.buyAcc") },
+      { key: "sell_acc", label: t("fields.accounts.sellAcc") },
+      { key: "p_l_acc", label: t("fields.accounts.plAcc") },
+      { key: "store", label: t("fields.accounts.store") },
+      { key: "Vat_perc", label: t("fields.accounts.vatPerc") },
     ],
     [t],
   );
@@ -112,7 +99,7 @@ export default function SettingsPage() {
           setOriginalSettings(homeSettings);
         }
       } catch (e) {
-        console.error(t("messages.loadError"), e);
+        console.error(t("messages.saveError"), e);
       }
     };
 

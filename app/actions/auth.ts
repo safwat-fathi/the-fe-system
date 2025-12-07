@@ -34,8 +34,7 @@ const buildRedirectPath = (redirectPath: string, locale: string) => {
     ? redirectPath
     : `/${redirectPath}`;
   const hasLocalePrefix = locales.some(
-    (loc) =>
-      normalized === `/${loc}` || normalized.startsWith(`/${loc}/`),
+    (loc) => normalized === `/${loc}` || normalized.startsWith(`/${loc}/`),
   );
 
   if (hasLocalePrefix) {

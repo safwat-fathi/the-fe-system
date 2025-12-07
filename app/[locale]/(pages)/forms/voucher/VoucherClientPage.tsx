@@ -7,7 +7,6 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect from "react-select";
 import { useTranslations, useLocale } from "next-intl";
-import { getLocaleDir } from "@/i18n/config";
 import {
   Modal,
   ModalContent,
@@ -30,12 +29,11 @@ import {
   ChevronLeftIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
-  BackwardIcon,
-  ForwardIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import clsx from "clsx";
 
+import { getLocaleDir } from "@/i18n/config";
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { useVoucherForm } from "@/hooks/useVoucherForm";
@@ -90,11 +88,11 @@ export default function VoucherClientPage({
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("forms.adjustmentVoucher");
-  
+
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = "text-center";
-  
+
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
 
   // Use the hook for all state management and business logic
@@ -120,8 +118,6 @@ export default function VoucherClientPage({
 
     // Totals and balances
     totals,
-    isCashBalanced,
-    isGoldBalanced,
     isBalanced,
 
     // Functions
@@ -185,18 +181,16 @@ export default function VoucherClientPage({
   const selectorsRef = useRef<HTMLDivElement>(null);
 
   // Hook for Enter key navigation in top form fields
-  const {
-    handleKeyDown: handleKeyDownSelectors,
-  } = useKeyAsTab({
+  const { handleKeyDown: handleKeyDownSelectors } = useKeyAsTab({
     keys: ["Enter"],
     containerRef: selectorsRef,
     disabled: !isEditing,
     focusableSelector: [
-      'a[href]',
-      'area[href]',
+      "a[href]",
+      "area[href]",
       'button:not([tabindex="-1"])',
       'input:not([type="hidden"]):not([tabindex="-1"])',
-      'select', // ✅ السماح بالمعطل
+      "select", // ✅ السماح بالمعطل
       'textarea:not([tabindex="-1"])',
       'iframe:not([tabindex="-1"])',
       'summary:not([tabindex="-1"])',
@@ -232,21 +226,20 @@ export default function VoucherClientPage({
 
       // ✅ معالجة خاصة لـ ReactSelect (combobox)
       const selectButton = target.closest('[role="combobox"]');
+
       if (selectButton) {
         const isExpanded =
           selectButton.getAttribute("aria-expanded") === "true";
 
         // إذا كانت القائمة مفتوحة، نتجاهل Enter للسماح بالتفاعل الطبيعي
-        if (isExpanded) {
-          return true; // نسمح بالتفاعل الطبيعي (اختيار عنصر)
-        }
-
-        // ✅ إذا كانت القائمة مغلقة، نسمح بالتنقل
-        return false; // نسمح بالتنقل
+        // ✅ إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي (اختيار عنصر)
+        // إذا كانت القائمة مغلقة، نسمح بالتنقل
+        return isExpanded;
       }
 
       // ✅ تجاهل إذا كنا داخل قائمة منسدلة مفتوحة (listbox)
       const listboxElement = target.closest('[role="listbox"]');
+
       if (listboxElement) {
         return true; // نسمح بالتفاعل الطبيعي داخل القائمة
       }
@@ -255,6 +248,7 @@ export default function VoucherClientPage({
       const popoverElement = target.closest(
         '[role="dialog"], [role="menu"], [data-headlessui-state]',
       );
+
       if (popoverElement) {
         return true;
       }
@@ -270,6 +264,7 @@ export default function VoucherClientPage({
 
       // استبعاد العناصر غير المرئية فقط
       const style = window.getComputedStyle(element);
+
       if (
         style.visibility === "hidden" ||
         style.display === "none" ||
@@ -290,7 +285,10 @@ export default function VoucherClientPage({
       }
 
       // ✅ معالجة خاصة لـ ReactSelect (combobox)
-      const combobox = element.closest('[role="combobox"]') as HTMLElement | null;
+      const combobox = element.closest(
+        '[role="combobox"]',
+      ) as HTMLElement | null;
+
       if (combobox) {
         // ✅ نسمح بالتركيز على combobox حتى لو كان معطل
         // التأكد من أن tabIndex مناسب
@@ -298,14 +296,21 @@ export default function VoucherClientPage({
           // إذا كان tabIndex سالب، نجعله 0 للسماح بالتركيز
           combobox.tabIndex = 0;
         }
+
         return true;
       }
 
       // ✅ معالجة خاصة لـ ReactSelect container
       // البحث عن container الذي يحتوي على combobox
-      const reactSelectContainer = element.closest('.react-select__control, [class*="react-select"]');
+      const reactSelectContainer = element.closest(
+        '.react-select__control, [class*="react-select"]',
+      );
+
       if (reactSelectContainer) {
-        const comboboxInContainer = reactSelectContainer.querySelector('[role="combobox"]') as HTMLElement | null;
+        const comboboxInContainer = reactSelectContainer.querySelector(
+          '[role="combobox"]',
+        ) as HTMLElement | null;
+
         if (comboboxInContainer) {
           // ✅ نسمح بالتركيز على container إذا كان يحتوي على combobox
           return true;
@@ -362,12 +367,6 @@ export default function VoucherClientPage({
     return false;
   }, []);
 
-  const toAmount = (value: unknown) => {
-    const numeric = Number(value);
-
-    return Number.isFinite(numeric) ? numeric : 0;
-  };
-
   // دالة لبناء روابط التنقل (مثل الفواتير)
   const resolvePaginatedVoucherHref = useCallback(
     (vouchId: number | null) => {
@@ -392,22 +391,16 @@ export default function VoucherClientPage({
 
     return {
       nextVoucherHref: resolvePaginatedVoucherHref(navigationInfo.next ?? null),
-      prevVoucherHref: resolvePaginatedVoucherHref(navigationInfo.previous ?? null),
+      prevVoucherHref: resolvePaginatedVoucherHref(
+        navigationInfo.previous ?? null,
+      ),
       lastVoucherHref: resolvePaginatedVoucherHref(navigationInfo.last ?? null),
-      firstVoucherHref: resolvePaginatedVoucherHref(navigationInfo.first ?? null),
+      firstVoucherHref: resolvePaginatedVoucherHref(
+        navigationInfo.first ?? null,
+      ),
       totalVouchers: navigationInfo.vouchersCount,
     };
   }, [navigationInfo, resolvePaginatedVoucherHref]);
-
-  const navigationTargets = useMemo(
-    () => ({
-      previous: navigationInfo?.previous ?? -1,
-      next: navigationInfo?.next ?? -1,
-      first: navigationInfo?.first ?? -1,
-      last: navigationInfo?.last ?? -1,
-    }),
-    [navigationInfo],
-  );
 
   // رقم السند الحالي
   const voucherNumber =
@@ -451,24 +444,11 @@ export default function VoucherClientPage({
     });
   }, [costCenters]);
 
-  const handleNavigate = (targetId?: number | null) => {
-    if (!targetId || targetId <= 0) {
-      return;
-    }
-
-    const currentRecordId = voucher.id ?? voucher.vouch_id ?? null;
-
-    if (currentRecordId && Number(currentRecordId) === targetId) {
-      return;
-    }
-
-    router.push(`/forms/voucher/${targetId}?mode=preview`);
-    router.refresh();
-  };
-
   if (!isClient) {
     return (
-      <div className={`flex justify-center items-center h-screen ${textAlignCenter}`}>
+      <div
+        className={`flex justify-center items-center h-screen ${textAlignCenter}`}
+      >
         <div className={textAlignCenter}>
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
           <p className={`text-gray-600 ${textAlign}`}>{t("status.loading")}</p>
@@ -486,7 +466,9 @@ export default function VoucherClientPage({
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className={`text-lg font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}>
+                <h1
+                  className={`text-lg font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}
+                >
                   <span>
                     {voucherTypes.find(
                       (type) => (type.Id || type.id) === voucher.vouch_type,
@@ -499,14 +481,16 @@ export default function VoucherClientPage({
                   <span className="text-slate-600 font-medium">
                     #
                     {voucher.vouch_id &&
-                      Number(voucher.vouch_id) > 0 &&
-                      isFinite(Number(voucher.vouch_id))
+                    Number(voucher.vouch_id) > 0 &&
+                    isFinite(Number(voucher.vouch_id))
                       ? voucher.vouch_id
                       : voucher.id
                         ? `DB-${voucher.id}`
                         : t("status.numbering")}
                   </span>
-                  <span className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}>
+                  <span
+                    className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}
+                  >
                     <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
                     {new Date(voucher.vouch_date).toLocaleString("en-US", {
                       year: "numeric",
@@ -618,11 +602,15 @@ export default function VoucherClientPage({
 
               <Button
                 className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                startContent={<DocumentTextIcon className="w-4 h-4 text-slate-500" />}
+                startContent={
+                  <DocumentTextIcon className="w-4 h-4 text-slate-500" />
+                }
                 variant="solid"
                 onPress={() => setIsModalOpen(true)}
               >
-                <span className="hidden sm:inline">{t("actions.createFromPrevious")}</span>
+                <span className="hidden sm:inline">
+                  {t("actions.createFromPrevious")}
+                </span>
               </Button>
 
               {isCreatedFromPrevious && (
@@ -662,7 +650,9 @@ export default function VoucherClientPage({
                 >
                   <ChevronRightIcon className="w-4 h-4" />
                 </Link>
-                <span className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}>
+                <span
+                  className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}
+                >
                   {t("navigation.position", {
                     current: voucherNumber,
                     total: navigationMetadata?.totalVouchers ?? "?",
@@ -823,8 +813,8 @@ export default function VoucherClientPage({
                   }}
                 >
                   {voucherStatuses &&
-                    Array.isArray(voucherStatuses) &&
-                    voucherStatuses.length > 0 ? (
+                  Array.isArray(voucherStatuses) &&
+                  voucherStatuses.length > 0 ? (
                     voucherStatuses.map((status) => {
                       const statusValue =
                         status.code_id !== undefined && status.code_id !== null
@@ -896,8 +886,12 @@ export default function VoucherClientPage({
                       <option value="1">{t("voucherTypes.daily")}</option>
                       <option value="2">{t("voucherTypes.reverse")}</option>
                       <option value="3">{t("voucherTypes.adjustment")}</option>
-                      <option value="4">{t("voucherTypes.currencyDiff")}</option>
-                      <option value="5">{t("voucherTypes.inventoryDiff")}</option>
+                      <option value="4">
+                        {t("voucherTypes.currencyDiff")}
+                      </option>
+                      <option value="5">
+                        {t("voucherTypes.inventoryDiff")}
+                      </option>
                       <option value="6">{t("voucherTypes.salary")}</option>
                     </>
                   )}
@@ -966,13 +960,16 @@ export default function VoucherClientPage({
                     if (!target) return;
 
                     const isInListbox = target.closest('[role="listbox"]');
+
                     if (isInListbox) {
                       return;
                     }
 
                     const selectButton = target.closest('[role="combobox"]');
+
                     if (selectButton) {
-                      const isExpanded = selectButton.getAttribute("aria-expanded") === "true";
+                      const isExpanded =
+                        selectButton.getAttribute("aria-expanded") === "true";
 
                       // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
                       if (isExpanded && e.key !== "Escape") {
@@ -992,7 +989,8 @@ export default function VoucherClientPage({
                         const focusToAccountField = (): boolean => {
                           try {
                             const accountSelectId = `#account-select-0`;
-                            let accountSelect = document.querySelector(accountSelectId);
+                            let accountSelect =
+                              document.querySelector(accountSelectId);
 
                             // ✅ إذا لم نجد accountSelect، نبحث بطريقة أخرى
                             if (!accountSelect) {
@@ -1000,6 +998,7 @@ export default function VoucherClientPage({
                               const allSelects = document.querySelectorAll(
                                 '[id^="account-select-"]',
                               );
+
                               accountSelect = allSelects[0] || null;
                             }
 
@@ -1021,14 +1020,24 @@ export default function VoucherClientPage({
 
                             // ✅ إذا لم نجد، نبحث في كل الصفحة
                             if (!combobox) {
-                              const allComboboxes = document.querySelectorAll(
-                                '[role="combobox"]',
-                              );
+                              const allComboboxes =
+                                document.querySelectorAll('[role="combobox"]');
+
                               // نبحث عن combobox في أول صف (index 0)
-                              for (let i = 0; i < allComboboxes.length; i += 1) {
+                              for (
+                                let i = 0;
+                                i < allComboboxes.length;
+                                i += 1
+                              ) {
                                 const cb = allComboboxes[i] as HTMLElement;
-                                const parent = cb.closest('[id^="account-select-"]');
-                                if (parent && parent.id === "account-select-0") {
+                                const parent = cb.closest(
+                                  '[id^="account-select-"]',
+                                );
+
+                                if (
+                                  parent &&
+                                  parent.id === "account-select-0"
+                                ) {
                                   combobox = cb;
                                   break;
                                 }
@@ -1050,7 +1059,11 @@ export default function VoucherClientPage({
 
                             return false;
                           } catch (error) {
-                            console.error("Error in focusToAccountField:", error);
+                            console.error(
+                              "Error in focusToAccountField:",
+                              error,
+                            );
+
                             return false;
                           }
                         };
@@ -1169,7 +1182,8 @@ export default function VoucherClientPage({
                   const focusToAccountField = (): boolean => {
                     try {
                       const accountSelectId = `#account-select-0`;
-                      let accountSelect = document.querySelector(accountSelectId);
+                      let accountSelect =
+                        document.querySelector(accountSelectId);
 
                       // ✅ إذا لم نجد accountSelect، نبحث بطريقة أخرى
                       if (!accountSelect) {
@@ -1177,6 +1191,7 @@ export default function VoucherClientPage({
                         const allSelects = document.querySelectorAll(
                           '[id^="account-select-"]',
                         );
+
                         accountSelect = allSelects[0] || null;
                       }
 
@@ -1198,13 +1213,14 @@ export default function VoucherClientPage({
 
                       // ✅ إذا لم نجد، نبحث في كل الصفحة
                       if (!combobox) {
-                        const allComboboxes = document.querySelectorAll(
-                          '[role="combobox"]',
-                        );
+                        const allComboboxes =
+                          document.querySelectorAll('[role="combobox"]');
+
                         // نبحث عن combobox في أول صف (index 0)
                         for (let i = 0; i < allComboboxes.length; i += 1) {
                           const cb = allComboboxes[i] as HTMLElement;
                           const parent = cb.closest('[id^="account-select-"]');
+
                           if (parent && parent.id === "account-select-0") {
                             combobox = cb;
                             break;
@@ -1231,6 +1247,7 @@ export default function VoucherClientPage({
                       return false;
                     } catch (error) {
                       console.error("Error in focusToAccountField:", error);
+
                       return false;
                     }
                   };
@@ -1325,10 +1342,11 @@ export default function VoucherClientPage({
                 {t("actions.addRow")}
               </button>
               <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${isBalanced
-                  ? "bg-emerald-200 text-emerald-900"
-                  : "bg-red-200 text-red-900"
-                  }`}
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                  isBalanced
+                    ? "bg-emerald-200 text-emerald-900"
+                    : "bg-red-200 text-red-900"
+                }`}
               >
                 <i
                   className={`bi ${isBalanced ? "bi-check-circle" : "bi-exclamation-triangle"} me-0.5`}
@@ -1341,7 +1359,9 @@ export default function VoucherClientPage({
               details.some(
                 (detail) => !detail.acc_id || detail.acc_id === 0,
               ) && (
-                <div className={`mb-0.5 p-1 bg-red-50 border border-red-200 rounded text-red-700 text-xs ${textAlign}`}>
+                <div
+                  className={`mb-0.5 p-1 bg-red-50 border border-red-200 rounded text-red-700 text-xs ${textAlign}`}
+                >
                   {t("table.validationError")}
                 </div>
               )}
@@ -1349,287 +1369,734 @@ export default function VoucherClientPage({
             <div className="overflow-x-auto mb-0.5 max-w-full">
               <div className="max-h-[500px] overflow-y-auto">
                 <table className="min-w-[1350px] border text-xs text-center table-fixed">
-                <thead className="bg-gray-100 text-xs font-bold">
-                  <tr>
-                    <th
-                      className={`w-64 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
-                      rowSpan={2}
-                    >
-                      {t("table.columns.account")}
-                    </th>
-                    <th
-                      className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
-                      colSpan={2}
-                    >
-                      {t("table.columns.cash")}
-                    </th>
-                    <th
-                      className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
-                      colSpan={2}
-                    >
-                      {t("table.columns.goldStanding")}
-                    </th>
-                    <th
-                      className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
-                      rowSpan={2}
-                    >
-                      {t("table.columns.gauge")}
-                    </th>
-                    <th
-                      className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
-                      colSpan={2}
-                    >
-                      {t("table.columns.goldCalibrated")}
-                    </th>
-                    <th
-                      className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
-                      rowSpan={2}
-                    >
-                      {t("table.columns.costCenter")}
-                    </th>
-                    <th
-                      className={`w-48 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
-                      rowSpan={2}
-                    >
-                      {t("table.columns.notes")}
-                    </th>
-                    <th
-                      className={`w-12 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
-                      rowSpan={2}
-                    >
-                      {t("table.columns.delete")}
-                    </th>
-                  </tr>
-                  <tr>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
-                      {t("table.columns.cashDebit")}
-                    </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
-                      {t("table.columns.cashCredit")}
-                    </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
-                      {t("table.columns.goldStandingDebit")}
-                    </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
-                      {t("table.columns.goldStandingCredit")}
-                    </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
-                      {t("table.columns.goldCalibratedDebit")}
-                    </th>
-                    <th className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}>
-                      {t("table.columns.goldCalibratedCredit")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {details.map((detail, index) => (
-                    <tr
-                      key={index}
-                      className={`border-b border-slate-100 hover:bg-slate-50 ${showValidationErrors &&
-                        (!detail.acc_id || detail.acc_id === 0)
-                        ? "bg-red-50 border-red-200"
-                        : ""
+                  <thead className="bg-gray-100 text-xs font-bold">
+                    <tr>
+                      <th
+                        className={`w-64 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        rowSpan={2}
+                      >
+                        {t("table.columns.account")}
+                      </th>
+                      <th
+                        className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        colSpan={2}
+                      >
+                        {t("table.columns.cash")}
+                      </th>
+                      <th
+                        className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        colSpan={2}
+                      >
+                        {t("table.columns.goldStanding")}
+                      </th>
+                      <th
+                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        rowSpan={2}
+                      >
+                        {t("table.columns.gauge")}
+                      </th>
+                      <th
+                        className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        colSpan={2}
+                      >
+                        {t("table.columns.goldCalibrated")}
+                      </th>
+                      <th
+                        className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        rowSpan={2}
+                      >
+                        {t("table.columns.costCenter")}
+                      </th>
+                      <th
+                        className={`w-48 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        rowSpan={2}
+                      >
+                        {t("table.columns.notes")}
+                      </th>
+                      <th
+                        className={`w-12 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        rowSpan={2}
+                      >
+                        {t("table.columns.delete")}
+                      </th>
+                    </tr>
+                    <tr>
+                      <th
+                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                      >
+                        {t("table.columns.cashDebit")}
+                      </th>
+                      <th
+                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                      >
+                        {t("table.columns.cashCredit")}
+                      </th>
+                      <th
+                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                      >
+                        {t("table.columns.goldStandingDebit")}
+                      </th>
+                      <th
+                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                      >
+                        {t("table.columns.goldStandingCredit")}
+                      </th>
+                      <th
+                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                      >
+                        {t("table.columns.goldCalibratedDebit")}
+                      </th>
+                      <th
+                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                      >
+                        {t("table.columns.goldCalibratedCredit")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {details.map((detail, index) => (
+                      <tr
+                        key={index}
+                        className={`border-b border-slate-100 hover:bg-slate-50 ${
+                          showValidationErrors &&
+                          (!detail.acc_id || detail.acc_id === 0)
+                            ? "bg-red-50 border-red-200"
+                            : ""
                         }`}
-                    >
-                      <td className="p-0 border bg-white">
-                        <div
-                          id={`account-select-${index}`}
-                          ref={(el) => {
-                            const refSetter = setInputRef(index, 0);
+                      >
+                        <td className="p-0 border bg-white">
+                          <div
+                            id={`account-select-${index}`}
+                            ref={(el) => {
+                              const refSetter = setInputRef(index, 0);
 
-                            if (el) {
-                              // ✅ البحث عن combobox مباشرة
-                              const findAndSetRef = () => {
-                                const combobox = el.querySelector(
-                                  '[role="combobox"]',
-                                ) as HTMLElement;
+                              if (el) {
+                                // ✅ البحث عن combobox مباشرة
+                                const findAndSetRef = () => {
+                                  const combobox = el.querySelector(
+                                    '[role="combobox"]',
+                                  ) as HTMLElement;
 
-                                if (combobox) {
-                                  refSetter(
-                                    combobox as unknown as HTMLInputElement,
-                                  );
-                                  return true;
-                                }
+                                  if (combobox) {
+                                    refSetter(
+                                      combobox as unknown as HTMLInputElement,
+                                    );
 
-                                return false;
-                              };
-
-                              // ✅ محاولة فورية
-                              if (!findAndSetRef()) {
-                                // ✅ محاولة بعد requestAnimationFrame
-                                requestAnimationFrame(() => {
-                                  if (!findAndSetRef()) {
-                                    // ✅ محاولة بعد setTimeout
-                                    setTimeout(() => {
-                                      findAndSetRef();
-                                    }, 10);
+                                    return true;
                                   }
-                                });
-                              }
 
-                              // ✅ محاولات إضافية
-                              setTimeout(() => {
-                                findAndSetRef();
-                              }, 50);
+                                  return false;
+                                };
 
-                              setTimeout(() => {
-                                findAndSetRef();
-                              }, 100);
-                            } else {
-                              refSetter(null);
-                            }
-                          }}
-                        >
-                          <AsyncCreatableSelect
-                            isClearable
-                            isSearchable
-                            className="text-xs"
-                            classNamePrefix="select"
-                            components={{ IndicatorSeparator: () => null }}
-                            formatCreateLabel={(inputValue) =>
-                              t("table.addAccountLabel", { value: inputValue })
-                            }
-                            instanceId={`account-select-${index}`}
-                            isDisabled={!isEditing}
-                            loadOptions={loadAccountOptions}
-                            menuPortalTarget={
-                              typeof window !== "undefined" ? document.body : null
-                            }
-                            menuPosition="fixed"
-                            placeholder={t("table.columns.accountPlaceholder")}
-                            // ✅ ضمان أن combobox قابل للتركيز دائماً
-                            onMenuOpen={() => {
-                              // عند فتح القائمة، نتأكد من أن combobox مركّز
-                              setTimeout(() => {
-                                const combobox = document.querySelector(
-                                  `#account-select-${index} [role="combobox"]`,
-                                ) as HTMLElement;
-                                if (combobox && document.activeElement !== combobox) {
-                                  combobox.focus();
+                                // ✅ محاولة فورية
+                                if (!findAndSetRef()) {
+                                  // ✅ محاولة بعد requestAnimationFrame
+                                  requestAnimationFrame(() => {
+                                    if (!findAndSetRef()) {
+                                      // ✅ محاولة بعد setTimeout
+                                      setTimeout(() => {
+                                        findAndSetRef();
+                                      }, 10);
+                                    }
+                                  });
                                 }
-                              }, 0);
-                            }}
-                            styles={{
-                              control: (base, state) => ({
-                                ...base,
-                                minHeight: "100%",
-                                height: "100%",
-                                border: "none",
-                                borderRadius: 0,
-                                boxShadow: "none",
-                                cursor: !isEditing ? "not-allowed" : base.cursor,
-                                backgroundColor: "transparent",
-                                "&:hover": {
-                                  border: "none",
-                                  boxShadow: "none",
-                                },
-                              }),
-                              valueContainer: (base) => ({
-                                ...base,
-                                padding: "0.125rem 0.25rem",
-                                height: "100%",
-                              }),
-                              input: (base) => ({
-                                ...base,
-                                margin: 0,
-                                padding: 0,
-                              }),
-                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                            }}
-                            value={getAccountSelectValue(detail)}
-                            onChange={(selectedOption: any) => {
-                              if (!isEditing) return;
-                              const opt: any = selectedOption;
-                              const selected =
-                                opt?.account ||
-                                accounts.find((acc) => acc.id === opt?.value);
 
-                              if (!selected) {
-                                // إذا تم مسح الحساب، ننتقل للحقل التالي
+                                // ✅ محاولات إضافية
                                 setTimeout(() => {
+                                  findAndSetRef();
+                                }, 50);
+
+                                setTimeout(() => {
+                                  findAndSetRef();
+                                }, 100);
+                              } else {
+                                refSetter(null);
+                              }
+                            }}
+                          >
+                            <AsyncCreatableSelect
+                              isClearable
+                              isSearchable
+                              className="text-xs"
+                              classNamePrefix="select"
+                              components={{ IndicatorSeparator: () => null }}
+                              formatCreateLabel={(inputValue) =>
+                                t("table.addAccountLabel", {
+                                  value: inputValue,
+                                })
+                              }
+                              instanceId={`account-select-${index}`}
+                              isDisabled={!isEditing}
+                              loadOptions={loadAccountOptions}
+                              menuPortalTarget={
+                                typeof window !== "undefined"
+                                  ? document.body
+                                  : null
+                              }
+                              menuPosition="fixed"
+                              placeholder={t(
+                                "table.columns.accountPlaceholder",
+                              )}
+                              // ✅ ضمان أن combobox قابل للتركيز دائماً
+                              onMenuOpen={() => {
+                                // عند فتح القائمة، نتأكد من أن combobox مركّز
+                                setTimeout(() => {
+                                  const combobox = document.querySelector(
+                                    `#account-select-${index} [role="combobox"]`,
+                                  ) as HTMLElement;
+
+                                  if (
+                                    combobox &&
+                                    document.activeElement !== combobox
+                                  ) {
+                                    combobox.focus();
+                                  }
+                                }, 0);
+                              }}
+                              styles={{
+                                control: (base, _state) => ({
+                                  ...base,
+                                  minHeight: "100%",
+                                  height: "100%",
+                                  border: "none",
+                                  borderRadius: 0,
+                                  boxShadow: "none",
+                                  cursor: !isEditing
+                                    ? "not-allowed"
+                                    : base.cursor,
+                                  backgroundColor: "transparent",
+                                  "&:hover": {
+                                    border: "none",
+                                    boxShadow: "none",
+                                  },
+                                }),
+                                valueContainer: (base) => ({
+                                  ...base,
+                                  padding: "0.125rem 0.25rem",
+                                  height: "100%",
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  margin: 0,
+                                  padding: 0,
+                                }),
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                }),
+                              }}
+                              value={getAccountSelectValue(detail)}
+                              onChange={(selectedOption: any) => {
+                                if (!isEditing) return;
+                                const opt: any = selectedOption;
+                                const selected =
+                                  opt?.account ||
+                                  accounts.find((acc) => acc.id === opt?.value);
+
+                                if (!selected) {
+                                  // إذا تم مسح الحساب، ننتقل للحقل التالي
+                                  setTimeout(() => {
+                                    const moved = focusNextField(index, 0);
+
+                                    if (!moved) {
+                                      const firstDebitInput =
+                                        document.querySelector(
+                                          `input[data-row="${index}"][data-col="1"]`,
+                                        ) as HTMLInputElement;
+
+                                      if (firstDebitInput) {
+                                        firstDebitInput.focus();
+                                      }
+                                    }
+                                  }, 100);
+
+                                  return;
+                                }
+
+                                if (
+                                  !accounts.find((a) => a.id === selected.id)
+                                ) {
+                                  updateAccountsList(selected);
+                                }
+
+                                updateDetail(
+                                  index,
+                                  "acc_id",
+                                  selected.id ?? null,
+                                );
+                                updateDetail(
+                                  index,
+                                  "acc_code",
+                                  selected.acc_code ?? selected.code ?? "",
+                                );
+                                updateDetail(
+                                  index,
+                                  "acc_name",
+                                  selected.acc_name ?? selected.name ?? "",
+                                );
+
+                                // الانتقال للحقل التالي بعد اختيار الحساب
+                                setTimeout(() => {
+                                  // محاولة الانتقال للحقل التالي مباشرة
                                   const moved = focusNextField(index, 0);
 
                                   if (!moved) {
-                                    const firstDebitInput = document.querySelector(
-                                      `input[data-row="${index}"][data-col="1"]`,
-                                    ) as HTMLInputElement;
-
-                                    if (firstDebitInput) {
-                                      firstDebitInput.focus();
-                                    }
-                                  }
-                                }, 100);
-
-                                return;
-                              }
-
-                              if (!accounts.find((a) => a.id === selected.id)) {
-                                updateAccountsList(selected);
-                              }
-
-                              updateDetail(index, "acc_id", selected.id ?? null);
-                              updateDetail(
-                                index,
-                                "acc_code",
-                                selected.acc_code ?? selected.code ?? "",
-                              );
-                              updateDetail(
-                                index,
-                                "acc_name",
-                                selected.acc_name ?? selected.name ?? "",
-                              );
-
-                              // الانتقال للحقل التالي بعد اختيار الحساب
-                              setTimeout(() => {
-                                // محاولة الانتقال للحقل التالي مباشرة
-                                const moved = focusNextField(index, 0);
-
-                                if (!moved) {
-                                  // إذا لم نتمكن من الانتقال مباشرة، نستخدم handleKeyDownTable
-                                  const selectButton =
-                                    document.querySelector(
+                                    // إذا لم نتمكن من الانتقال مباشرة، نستخدم handleKeyDownTable
+                                    const selectButton = document.querySelector(
                                       `#account-select-${index}`,
                                     ) as HTMLButtonElement;
 
-                                  if (selectButton) {
-                                    // إنشاء event حقيقي مع target صحيح
-                                    const syntheticEvent = {
-                                      key: "Enter",
-                                      preventDefault: () => { },
-                                      stopPropagation: () => { },
-                                      target: selectButton,
-                                      currentTarget: selectButton,
-                                      nativeEvent: {} as any,
-                                      bubbles: true,
-                                      cancelable: true,
-                                      defaultPrevented: false,
-                                      eventPhase: 0,
-                                      isTrusted: false,
-                                      timeStamp: Date.now(),
-                                      type: "keydown",
-                                    } as unknown as React.KeyboardEvent;
+                                    if (selectButton) {
+                                      // إنشاء event حقيقي مع target صحيح
+                                      const syntheticEvent = {
+                                        key: "Enter",
+                                        preventDefault: () => {},
+                                        stopPropagation: () => {},
+                                        target: selectButton,
+                                        currentTarget: selectButton,
+                                        nativeEvent: {} as any,
+                                        bubbles: true,
+                                        cancelable: true,
+                                        defaultPrevented: false,
+                                        eventPhase: 0,
+                                        isTrusted: false,
+                                        timeStamp: Date.now(),
+                                        type: "keydown",
+                                      } as unknown as React.KeyboardEvent;
 
-                                    // استخدام handleKeyDownTable مع event صحيح
-                                    handleKeyDownTable(
-                                      syntheticEvent,
-                                      index,
-                                      0,
-                                      {
-                                        allowEnterDefaultWhenRowMissing: true,
-                                      },
-                                    );
+                                      // استخدام handleKeyDownTable مع event صحيح
+                                      handleKeyDownTable(
+                                        syntheticEvent,
+                                        index,
+                                        0,
+                                        {
+                                          allowEnterDefaultWhenRowMissing: true,
+                                        },
+                                      );
+                                    }
+                                  }
+                                }, 100);
+                              }}
+                              onKeyDown={(e) => {
+                                const target = e.target as HTMLElement | null;
+
+                                // التحقق من وجود target
+                                if (!target) {
+                                  return;
+                                }
+
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
+
+                                if (isInListbox) {
+                                  return;
+                                }
+
+                                if (e.key === "Escape") {
+                                  return;
+                                }
+
+                                if (e.key === "Enter") {
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
+                                  // إذا كان combobox مفتوحاً، نسمح بالتفاعل الطبيعي مع القائمة
+                                  if (isExpanded) {
+                                    return; // لا نمنع - نسمح بالتفاعل الطبيعي
+                                  }
+
+                                  // إذا كان مغلقاً، ننتقل للحقل التالي
+                                  if (!isExpanded) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleKeyDownTable(e, index, 0, {
+                                      allowEnterDefaultWhenRowMissing:
+                                        !detail?.acc_id,
+                                    });
+
+                                    return;
                                   }
                                 }
-                              }, 100);
+
+                                // ✅ معالجة الأسهم عندما تكون القائمة مغلقة
+                                if (
+                                  e.key === "ArrowUp" ||
+                                  e.key === "ArrowDown" ||
+                                  e.key === "ArrowLeft" ||
+                                  e.key === "ArrowRight"
+                                ) {
+                                  const selectButton =
+                                    target.closest('[role="combobox"]');
+                                  const isExpanded =
+                                    selectButton?.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
+                                  // إذا كانت القائمة مغلقة، ننتقل للصف التالي/السابق أو الحقل التالي/السابق
+                                  if (!isExpanded) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleKeyDownTable(e, index, 0);
+
+                                    return;
+                                  }
+                                }
+                              }}
+                            />
+                          </div>
+                        </td>
+
+                        <td className="p-0 border">
+                          <input
+                            data-row={index}
+                            data-col={1}
+                            className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                            disabled={!isEditing}
+                            min="0"
+                            placeholder="0.00"
+                            readOnly={!isEditing}
+                            ref={setInputRef(index, 1)}
+                            step="0.01"
+                            style={{
+                              MozAppearance: "textfield",
+                              WebkitAppearance: "none",
+                              appearance: "none",
+                            }}
+                            type="number"
+                            value={detail.debit ? String(detail.debit) : ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+
+                              if (!val || parseFloat(val) >= 0) {
+                                updateDetail(
+                                  index,
+                                  "debit",
+                                  val ? parseFloat(val) : undefined,
+                                );
+                              }
                             }}
                             onKeyDown={(e) => {
-                              const target = e.target as HTMLElement | null;
-
-                              // التحقق من وجود target
-                              if (!target) {
-                                return;
+                              if (
+                                e.key === "ArrowUp" ||
+                                e.key === "ArrowDown"
+                              ) {
+                                e.preventDefault();
                               }
+                              handleKeyDownTable(e, index, 1);
+                            }}
+                            onWheel={(e) => e.currentTarget.blur()}
+                          />
+                        </td>
 
+                        <td className="p-0 border">
+                          <input
+                            data-row={index}
+                            data-col={2}
+                            className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                            disabled={!isEditing}
+                            min="0"
+                            placeholder="0.00"
+                            readOnly={!isEditing}
+                            ref={setInputRef(index, 2)}
+                            step="0.01"
+                            style={{
+                              MozAppearance: "textfield",
+                              WebkitAppearance: "none",
+                              appearance: "none",
+                            }}
+                            type="number"
+                            value={detail.credit ? String(detail.credit) : ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+
+                              if (!val || parseFloat(val) >= 0) {
+                                updateDetail(
+                                  index,
+                                  "credit",
+                                  val ? parseFloat(val) : undefined,
+                                );
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "ArrowUp" ||
+                                e.key === "ArrowDown"
+                              ) {
+                                e.preventDefault();
+                              }
+                              handleKeyDownTable(e, index, 2);
+                            }}
+                            onWheel={(e) => e.currentTarget.blur()}
+                          />
+                        </td>
+
+                        <td className="p-0 border bg-amber-50">
+                          <input
+                            data-row={index}
+                            data-col={3}
+                            className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                            disabled={!isEditing}
+                            min="0"
+                            placeholder="0.00"
+                            readOnly={!isEditing}
+                            ref={setInputRef(index, 3)}
+                            step="0.01"
+                            style={{
+                              MozAppearance: "textfield",
+                              WebkitAppearance: "none",
+                              appearance: "none",
+                            }}
+                            type="number"
+                            value={detail.g_debit ? String(detail.g_debit) : ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+
+                              if (!val || parseFloat(val) >= 0) {
+                                updateDetail(
+                                  index,
+                                  "g_debit",
+                                  val ? parseFloat(val) : undefined,
+                                );
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "ArrowUp" ||
+                                e.key === "ArrowDown"
+                              ) {
+                                e.preventDefault();
+                              }
+                              handleKeyDownTable(e, index, 3);
+                            }}
+                            onWheel={(e) => e.currentTarget.blur()}
+                          />
+                        </td>
+
+                        <td className="p-0 border bg-amber-50">
+                          <input
+                            data-row={index}
+                            data-col={4}
+                            className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                            disabled={!isEditing}
+                            min="0"
+                            placeholder="0.00"
+                            readOnly={!isEditing}
+                            ref={setInputRef(index, 4)}
+                            step="0.01"
+                            style={{
+                              MozAppearance: "textfield",
+                              WebkitAppearance: "none",
+                              appearance: "none",
+                            }}
+                            type="number"
+                            value={
+                              detail.g_credit ? String(detail.g_credit) : ""
+                            }
+                            onChange={(e) => {
+                              const val = e.target.value;
+
+                              if (!val || parseFloat(val) >= 0) {
+                                updateDetail(
+                                  index,
+                                  "g_credit",
+                                  val ? parseFloat(val) : undefined,
+                                );
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "ArrowUp" ||
+                                e.key === "ArrowDown"
+                              ) {
+                                e.preventDefault();
+                              }
+                              handleKeyDownTable(e, index, 4);
+                            }}
+                            onWheel={(e) => e.currentTarget.blur()}
+                          />
+                        </td>
+
+                        <td className="p-0 border">
+                          <input
+                            data-row={index}
+                            data-col={5}
+                            className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                            disabled={!isEditing}
+                            min="0"
+                            placeholder={t("table.columns.gaugePlaceholder")}
+                            readOnly={!isEditing}
+                            ref={setInputRef(index, 5)}
+                            step="0.01"
+                            style={{
+                              MozAppearance: "textfield",
+                              WebkitAppearance: "none",
+                              appearance: "none",
+                            }}
+                            title={t("table.columns.gaugeTooltip")}
+                            type="number"
+                            value={detail.gauge ? String(detail.gauge) : "875"}
+                            onChange={(e) => {
+                              const val = e.target.value;
+
+                              if (!val || parseFloat(val) >= 0) {
+                                updateDetail(
+                                  index,
+                                  "gauge",
+                                  val ? parseFloat(val) : 875,
+                                );
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "ArrowUp" ||
+                                e.key === "ArrowDown"
+                              ) {
+                                e.preventDefault();
+                              }
+                              handleKeyDownTable(e, index, 5);
+                            }}
+                            onWheel={(e) => e.currentTarget.blur()}
+                          />
+                        </td>
+
+                        <td className="p-0 border bg-amber-50">
+                          <input
+                            data-row={index}
+                            data-col={6}
+                            className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                            disabled={!isEditing}
+                            min="0"
+                            placeholder="0.00"
+                            readOnly={!isEditing}
+                            ref={setInputRef(index, 6)}
+                            step="0.000001"
+                            style={{
+                              MozAppearance: "textfield",
+                              WebkitAppearance: "none",
+                              appearance: "none",
+                            }}
+                            title={t("table.columns.gaugeTooltip")}
+                            type="number"
+                            value={
+                              detail.g_debit_base !== undefined &&
+                              detail.g_debit_base !== null
+                                ? String(detail.g_debit_base)
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const val = e.target.value;
+
+                              if (!val || parseFloat(val) >= 0) {
+                                updateDetail(
+                                  index,
+                                  "g_debit_base",
+                                  val ? parseFloat(val) : undefined,
+                                );
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "ArrowUp" ||
+                                e.key === "ArrowDown"
+                              ) {
+                                e.preventDefault();
+                              }
+                              handleKeyDownTable(e, index, 6);
+                            }}
+                            onWheel={(e) => e.currentTarget.blur()}
+                          />
+                        </td>
+
+                        <td className="p-0 border bg-amber-50">
+                          <input
+                            data-row={index}
+                            data-col={7}
+                            className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                            disabled={!isEditing}
+                            min="0"
+                            placeholder="0.00"
+                            readOnly={!isEditing}
+                            ref={setInputRef(index, 7)}
+                            step="0.000001"
+                            style={{
+                              MozAppearance: "textfield",
+                              WebkitAppearance: "none",
+                              appearance: "none",
+                            }}
+                            title={t("table.columns.gaugeTooltip")}
+                            type="number"
+                            value={
+                              detail.g_credit_base !== undefined &&
+                              detail.g_credit_base !== null
+                                ? String(detail.g_credit_base)
+                                : ""
+                            }
+                            onChange={(e) => {
+                              const val = e.target.value;
+
+                              if (!val || parseFloat(val) >= 0) {
+                                updateDetail(
+                                  index,
+                                  "g_credit_base",
+                                  val ? parseFloat(val) : undefined,
+                                );
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "ArrowUp" ||
+                                e.key === "ArrowDown"
+                              ) {
+                                e.preventDefault();
+                              }
+                              handleKeyDownTable(e, index, 7);
+                            }}
+                            onWheel={(e) => e.currentTarget.blur()}
+                          />
+                        </td>
+
+                        <td className="p-0 border">
+                          <div
+                            id={`cost-center-detail-select-${index}`}
+                            ref={(el) => {
+                              const refSetter = setInputRef(index, 8);
+
+                              if (el) {
+                                // ✅ البحث عن combobox مباشرة
+                                const findAndSetRef = () => {
+                                  const combobox = el.querySelector(
+                                    '[role="combobox"]',
+                                  ) as HTMLElement;
+
+                                  if (combobox) {
+                                    refSetter(
+                                      combobox as unknown as HTMLInputElement,
+                                    );
+
+                                    return true;
+                                  }
+
+                                  return false;
+                                };
+
+                                // ✅ محاولة فورية
+                                if (!findAndSetRef()) {
+                                  setTimeout(() => {
+                                    findAndSetRef();
+                                  }, 100);
+                                }
+                              } else {
+                                refSetter(null);
+                              }
+                            }}
+                            onKeyDownCapture={(e) => {
+                              const target = e.target as HTMLElement;
+                              const selectButton =
+                                target.closest('[role="combobox"]');
                               const isInListbox =
                                 target.closest('[role="listbox"]');
 
@@ -1637,531 +2104,16 @@ export default function VoucherClientPage({
                                 return;
                               }
 
-                              if (e.key === "Escape") {
-                                return;
-                              }
-
-                              if (e.key === "Enter") {
-                                const selectButton =
-                                  target.closest('[role="combobox"]');
-                                const isExpanded =
-                                  selectButton?.getAttribute("aria-expanded") ===
-                                  "true";
-
-                                // إذا كان combobox مفتوحاً، نسمح بالتفاعل الطبيعي مع القائمة
-                                if (isExpanded) {
-                                  return; // لا نمنع - نسمح بالتفاعل الطبيعي
-                                }
-
-                                // إذا كان مغلقاً، ننتقل للحقل التالي
-                                if (!isExpanded) {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleKeyDownTable(e, index, 0, {
-                                    allowEnterDefaultWhenRowMissing:
-                                      !detail?.acc_id,
-                                  });
-
-                                  return;
-                                }
-                              }
-
-                              // ✅ معالجة الأسهم عندما تكون القائمة مغلقة
-                              if (
-                                e.key === "ArrowUp" ||
-                                e.key === "ArrowDown" ||
-                                e.key === "ArrowLeft" ||
-                                e.key === "ArrowRight"
-                              ) {
-                                const selectButton =
-                                  target.closest('[role="combobox"]');
-                                const isExpanded =
-                                  selectButton?.getAttribute("aria-expanded") ===
-                                  "true";
-
-                                // إذا كانت القائمة مغلقة، ننتقل للصف التالي/السابق أو الحقل التالي/السابق
-                                if (!isExpanded) {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleKeyDownTable(e, index, 0);
-                                  return;
-                                }
-                              }
-                            }}
-                          />
-                        </div>
-                      </td>
-
-                      <td className="p-0 border">
-                        <input
-                          data-row={index}
-                          data-col={1}
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          min="0"
-                          placeholder="0.00"
-                          readOnly={!isEditing}
-                          ref={setInputRef(index, 1)}
-                          step="0.01"
-                          style={{
-                            MozAppearance: "textfield",
-                            WebkitAppearance: "none",
-                            appearance: "none",
-                          }}
-                          type="number"
-                          value={detail.debit ? String(detail.debit) : ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-
-                            if (!val || parseFloat(val) >= 0) {
-                              updateDetail(
-                                index,
-                                "debit",
-                                val ? parseFloat(val) : undefined,
-                              );
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                              e.preventDefault();
-                            }
-                            handleKeyDownTable(e, index, 1);
-                          }}
-                          onWheel={(e) => e.currentTarget.blur()}
-                        />
-                      </td>
-
-                      <td className="p-0 border">
-                        <input
-                          data-row={index}
-                          data-col={2}
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          min="0"
-                          placeholder="0.00"
-                          readOnly={!isEditing}
-                          ref={setInputRef(index, 2)}
-                          step="0.01"
-                          style={{
-                            MozAppearance: "textfield",
-                            WebkitAppearance: "none",
-                            appearance: "none",
-                          }}
-                          type="number"
-                          value={detail.credit ? String(detail.credit) : ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-
-                            if (!val || parseFloat(val) >= 0) {
-                              updateDetail(
-                                index,
-                                "credit",
-                                val ? parseFloat(val) : undefined,
-                              );
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                              e.preventDefault();
-                            }
-                            handleKeyDownTable(e, index, 2);
-                          }}
-                          onWheel={(e) => e.currentTarget.blur()}
-                        />
-                      </td>
-
-                      <td className="p-0 border bg-amber-50">
-                        <input
-                          data-row={index}
-                          data-col={3}
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          min="0"
-                          placeholder="0.00"
-                          readOnly={!isEditing}
-                          ref={setInputRef(index, 3)}
-                          step="0.01"
-                          style={{
-                            MozAppearance: "textfield",
-                            WebkitAppearance: "none",
-                            appearance: "none",
-                          }}
-                          type="number"
-                          value={detail.g_debit ? String(detail.g_debit) : ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-
-                            if (!val || parseFloat(val) >= 0) {
-                              updateDetail(
-                                index,
-                                "g_debit",
-                                val ? parseFloat(val) : undefined,
-                              );
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                              e.preventDefault();
-                            }
-                            handleKeyDownTable(e, index, 3);
-                          }}
-                          onWheel={(e) => e.currentTarget.blur()}
-                        />
-                      </td>
-
-                      <td className="p-0 border bg-amber-50">
-                        <input
-                          data-row={index}
-                          data-col={4}
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          min="0"
-                          placeholder="0.00"
-                          readOnly={!isEditing}
-                          ref={setInputRef(index, 4)}
-                          step="0.01"
-                          style={{
-                            MozAppearance: "textfield",
-                            WebkitAppearance: "none",
-                            appearance: "none",
-                          }}
-                          type="number"
-                          value={detail.g_credit ? String(detail.g_credit) : ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-
-                            if (!val || parseFloat(val) >= 0) {
-                              updateDetail(
-                                index,
-                                "g_credit",
-                                val ? parseFloat(val) : undefined,
-                              );
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                              e.preventDefault();
-                            }
-                            handleKeyDownTable(e, index, 4);
-                          }}
-                          onWheel={(e) => e.currentTarget.blur()}
-                        />
-                      </td>
-
-                      <td className="p-0 border">
-                        <input
-                          data-row={index}
-                          data-col={5}
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          min="0"
-                          placeholder={t("table.columns.gaugePlaceholder")}
-                          readOnly={!isEditing}
-                          ref={setInputRef(index, 5)}
-                          step="0.01"
-                          style={{
-                            MozAppearance: "textfield",
-                            WebkitAppearance: "none",
-                            appearance: "none",
-                          }}
-                          title={t("table.columns.gaugeTooltip")}
-                          type="number"
-                          value={detail.gauge ? String(detail.gauge) : "875"}
-                          onChange={(e) => {
-                            const val = e.target.value;
-
-                            if (!val || parseFloat(val) >= 0) {
-                              updateDetail(
-                                index,
-                                "gauge",
-                                val ? parseFloat(val) : 875,
-                              );
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                              e.preventDefault();
-                            }
-                            handleKeyDownTable(e, index, 5);
-                          }}
-                          onWheel={(e) => e.currentTarget.blur()}
-                        />
-                      </td>
-
-                      <td className="p-0 border bg-amber-50">
-                        <input
-                          data-row={index}
-                          data-col={6}
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          min="0"
-                          placeholder="0.00"
-                          readOnly={!isEditing}
-                          ref={setInputRef(index, 6)}
-                          step="0.000001"
-                          style={{
-                            MozAppearance: "textfield",
-                            WebkitAppearance: "none",
-                            appearance: "none",
-                          }}
-                          title={t("table.columns.gaugeTooltip")}
-                          type="number"
-                          value={
-                            detail.g_debit_base !== undefined &&
-                              detail.g_debit_base !== null
-                              ? String(detail.g_debit_base)
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const val = e.target.value;
-
-                            if (!val || parseFloat(val) >= 0) {
-                              updateDetail(
-                                index,
-                                "g_debit_base",
-                                val ? parseFloat(val) : undefined,
-                              );
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                              e.preventDefault();
-                            }
-                            handleKeyDownTable(e, index, 6);
-                          }}
-                          onWheel={(e) => e.currentTarget.blur()}
-                        />
-                      </td>
-
-                      <td className="p-0 border bg-amber-50">
-                        <input
-                          data-row={index}
-                          data-col={7}
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 bg-amber-50 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          min="0"
-                          placeholder="0.00"
-                          readOnly={!isEditing}
-                          ref={setInputRef(index, 7)}
-                          step="0.000001"
-                          style={{
-                            MozAppearance: "textfield",
-                            WebkitAppearance: "none",
-                            appearance: "none",
-                          }}
-                          title={t("table.columns.gaugeTooltip")}
-                          type="number"
-                          value={
-                            detail.g_credit_base !== undefined &&
-                              detail.g_credit_base !== null
-                              ? String(detail.g_credit_base)
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const val = e.target.value;
-
-                            if (!val || parseFloat(val) >= 0) {
-                              updateDetail(
-                                index,
-                                "g_credit_base",
-                                val ? parseFloat(val) : undefined,
-                              );
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                              e.preventDefault();
-                            }
-                            handleKeyDownTable(e, index, 7);
-                          }}
-                          onWheel={(e) => e.currentTarget.blur()}
-                        />
-                      </td>
-
-                      <td className="p-0 border">
-                        <div
-                          id={`cost-center-detail-select-${index}`}
-                          ref={(el) => {
-                            const refSetter = setInputRef(index, 8);
-
-                            if (el) {
-                              // ✅ البحث عن combobox مباشرة
-                              const findAndSetRef = () => {
-                                const combobox = el.querySelector(
-                                  '[role="combobox"]',
-                                ) as HTMLElement;
-
-                                if (combobox) {
-                                  refSetter(
-                                    combobox as unknown as HTMLInputElement,
-                                  );
-                                  return true;
-                                }
-
-                                return false;
-                              };
-
-                              // ✅ محاولة فورية
-                              if (!findAndSetRef()) {
-                                setTimeout(() => {
-                                  findAndSetRef();
-                                }, 100);
-                              }
-                            } else {
-                              refSetter(null);
-                            }
-                          }}
-                          onKeyDownCapture={(e) => {
-                            const target = e.target as HTMLElement;
-                            const selectButton =
-                              target.closest('[role="combobox"]');
-                            const isInListbox = target.closest('[role="listbox"]');
-
-                            if (isInListbox) {
-                              return;
-                            }
-
-                            if (selectButton) {
-                              const isExpanded =
-                                selectButton.getAttribute("aria-expanded") ===
-                                "true";
-
-                              if (e.key === "Enter" && !isExpanded) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleKeyDownTable(e, index, 8);
-
-                                return;
-                              }
-
-                              // ✅ معالجة الأسهم عندما تكون القائمة مغلقة
-                              if (
-                                (e.key === "ArrowUp" ||
-                                  e.key === "ArrowDown" ||
-                                  e.key === "ArrowLeft" ||
-                                  e.key === "ArrowRight") &&
-                                !isExpanded
-                              ) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleKeyDownTable(e, index, 8);
-                                return;
-                              }
-
-                              if (e.key === "Escape") {
-                                return;
-                              }
-                            }
-                          }}
-                        >
-                          <ReactSelect
-                            isSearchable
-                            className="text-xs"
-                            classNamePrefix="react-select"
-                            components={{ IndicatorSeparator: () => null }}
-                            instanceId={`cost-center-detail-select-${index}`}
-                            isDisabled={!isEditing}
-                            menuPortalTarget={
-                              typeof window !== "undefined" ? document.body : null
-                            }
-                            menuPosition="fixed"
-                            options={costCenterSelectOptions}
-                            placeholder={t("table.columns.costCenterPlaceholder")}
-                            styles={{
-                              control: (base) => ({
-                                ...base,
-                                minHeight: "32px",
-                                height: "32px",
-                                fontSize: "12px",
-                                border: "none",
-                                borderRadius: "0",
-                                boxShadow: "none",
-                                cursor: isEditing ? "pointer" : "not-allowed",
-                                backgroundColor: "transparent",
-                              }),
-                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                              option: (base) => ({
-                                ...base,
-                                fontSize: "12px",
-                              }),
-                              placeholder: (base) => ({
-                                ...base,
-                                fontSize: "12px",
-                              }),
-                              singleValue: (base) => ({
-                                ...base,
-                                fontSize: "12px",
-                              }),
-                            }}
-                            value={getCostCenterSelectValue(detail.cost_id)}
-                            onChange={(selectedOption: any) => {
-                              if (!isEditing) return;
-                              updateDetail(
-                                index,
-                                "cost_id",
-                                selectedOption?.value
-                                  ? parseInt(selectedOption.value)
-                                  : null,
-                              );
-
-                              // الانتقال للحقل التالي (البيان) بعد الاختيار
-                              setTimeout(() => {
-                                // محاولة الانتقال للحقل التالي مباشرة
-                                const moved = focusNextField(index, 8);
-
-                                if (!moved) {
-                                  // إذا لم نتمكن من الانتقال مباشرة، نستخدم handleKeyDownTable
-                                  const selectButton = document.querySelector(
-                                    `#cost-center-detail-select-${index} [role="combobox"]`,
-                                  ) as HTMLElement;
-
-                                  if (selectButton) {
-                                    // إنشاء event حقيقي
-                                    const syntheticEvent = {
-                                      key: "Enter",
-                                      preventDefault: () => { },
-                                      stopPropagation: () => { },
-                                      target: selectButton,
-                                      currentTarget: selectButton,
-                                      nativeEvent: {} as any,
-                                      bubbles: true,
-                                      cancelable: true,
-                                      defaultPrevented: false,
-                                      eventPhase: 0,
-                                      isTrusted: false,
-                                      timeStamp: Date.now(),
-                                      type: "keydown",
-                                    } as unknown as React.KeyboardEvent;
-
-                                    handleKeyDownTable(syntheticEvent, index, 8);
-                                  }
-                                }
-                              }, 100);
-                            }}
-                            onKeyDown={(e) => {
-                              const target = e.target as HTMLElement | null;
-
-                              if (!target) return;
-
-                              const isInListbox = target.closest('[role="listbox"]');
-                              if (isInListbox) {
-                                return;
-                              }
-
-                              const selectButton = target.closest('[role="combobox"]');
                               if (selectButton) {
                                 const isExpanded =
-                                  selectButton.getAttribute("aria-expanded") === "true";
-
-                                // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
-                                if (isExpanded && e.key !== "Escape") {
-                                  return;
-                                }
+                                  selectButton.getAttribute("aria-expanded") ===
+                                  "true";
 
                                 if (e.key === "Enter" && !isExpanded) {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   handleKeyDownTable(e, index, 8);
+
                                   return;
                                 }
 
@@ -2176,62 +2128,214 @@ export default function VoucherClientPage({
                                   e.preventDefault();
                                   e.stopPropagation();
                                   handleKeyDownTable(e, index, 8);
+
+                                  return;
+                                }
+
+                                if (e.key === "Escape") {
                                   return;
                                 }
                               }
-
-                              if (e.key === "Escape") {
-                                return;
+                            }}
+                          >
+                            <ReactSelect
+                              isSearchable
+                              className="text-xs"
+                              classNamePrefix="react-select"
+                              components={{ IndicatorSeparator: () => null }}
+                              instanceId={`cost-center-detail-select-${index}`}
+                              isDisabled={!isEditing}
+                              menuPortalTarget={
+                                typeof window !== "undefined"
+                                  ? document.body
+                                  : null
                               }
+                              menuPosition="fixed"
+                              options={costCenterSelectOptions}
+                              placeholder={t(
+                                "table.columns.costCenterPlaceholder",
+                              )}
+                              styles={{
+                                control: (base) => ({
+                                  ...base,
+                                  minHeight: "32px",
+                                  height: "32px",
+                                  fontSize: "12px",
+                                  border: "none",
+                                  borderRadius: "0",
+                                  boxShadow: "none",
+                                  cursor: isEditing ? "pointer" : "not-allowed",
+                                  backgroundColor: "transparent",
+                                }),
+                                menuPortal: (base) => ({
+                                  ...base,
+                                  zIndex: 9999,
+                                }),
+                                option: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  fontSize: "12px",
+                                }),
+                              }}
+                              value={getCostCenterSelectValue(detail.cost_id)}
+                              onChange={(selectedOption: any) => {
+                                if (!isEditing) return;
+                                updateDetail(
+                                  index,
+                                  "cost_id",
+                                  selectedOption?.value
+                                    ? parseInt(selectedOption.value)
+                                    : null,
+                                );
+
+                                // الانتقال للحقل التالي (البيان) بعد الاختيار
+                                setTimeout(() => {
+                                  // محاولة الانتقال للحقل التالي مباشرة
+                                  const moved = focusNextField(index, 8);
+
+                                  if (!moved) {
+                                    // إذا لم نتمكن من الانتقال مباشرة، نستخدم handleKeyDownTable
+                                    const selectButton = document.querySelector(
+                                      `#cost-center-detail-select-${index} [role="combobox"]`,
+                                    ) as HTMLElement;
+
+                                    if (selectButton) {
+                                      // إنشاء event حقيقي
+                                      const syntheticEvent = {
+                                        key: "Enter",
+                                        preventDefault: () => {},
+                                        stopPropagation: () => {},
+                                        target: selectButton,
+                                        currentTarget: selectButton,
+                                        nativeEvent: {} as any,
+                                        bubbles: true,
+                                        cancelable: true,
+                                        defaultPrevented: false,
+                                        eventPhase: 0,
+                                        isTrusted: false,
+                                        timeStamp: Date.now(),
+                                        type: "keydown",
+                                      } as unknown as React.KeyboardEvent;
+
+                                      handleKeyDownTable(
+                                        syntheticEvent,
+                                        index,
+                                        8,
+                                      );
+                                    }
+                                  }
+                                }, 100);
+                              }}
+                              onKeyDown={(e) => {
+                                const target = e.target as HTMLElement | null;
+
+                                if (!target) return;
+
+                                const isInListbox =
+                                  target.closest('[role="listbox"]');
+
+                                if (isInListbox) {
+                                  return;
+                                }
+
+                                const selectButton =
+                                  target.closest('[role="combobox"]');
+
+                                if (selectButton) {
+                                  const isExpanded =
+                                    selectButton.getAttribute(
+                                      "aria-expanded",
+                                    ) === "true";
+
+                                  // إذا كانت القائمة مفتوحة، نسمح بالتفاعل الطبيعي
+                                  if (isExpanded && e.key !== "Escape") {
+                                    return;
+                                  }
+
+                                  if (e.key === "Enter" && !isExpanded) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleKeyDownTable(e, index, 8);
+
+                                    return;
+                                  }
+
+                                  // ✅ معالجة الأسهم عندما تكون القائمة مغلقة
+                                  if (
+                                    (e.key === "ArrowUp" ||
+                                      e.key === "ArrowDown" ||
+                                      e.key === "ArrowLeft" ||
+                                      e.key === "ArrowRight") &&
+                                    !isExpanded
+                                  ) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleKeyDownTable(e, index, 8);
+
+                                    return;
+                                  }
+                                }
+
+                                if (e.key === "Escape") {
+                                  return;
+                                }
+                              }}
+                            />
+                          </div>
+                        </td>
+
+                        <td className="p-0 border">
+                          <input
+                            data-row={index}
+                            data-col={9}
+                            className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
+                            disabled={!isEditing}
+                            placeholder={t("table.columns.notes")}
+                            readOnly={!isEditing}
+                            ref={setInputRef(index, 9)}
+                            type="text"
+                            value={detail.vouch_notes || ""}
+                            onChange={(e) =>
+                              updateDetail(index, "vouch_notes", e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              handleKeyDownTable(e, index, 9, {
+                                isLastCol: true,
+                              });
                             }}
                           />
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="p-0 border">
-                        <input
-                          data-row={index}
-                          data-col={9}
-                          className={`w-full h-full text-xs border-0 rounded-none text-center focus:outline-none focus:ring-0 ${!isEditing ? "cursor-not-allowed" : ""}`}
-                          disabled={!isEditing}
-                          placeholder={t("table.columns.notes")}
-                          readOnly={!isEditing}
-                          ref={setInputRef(index, 9)}
-                          type="text"
-                          value={detail.vouch_notes || ""}
-                          onChange={(e) =>
-                            updateDetail(index, "vouch_notes", e.target.value)
-                          }
-                          onKeyDown={(e) => {
-                            handleKeyDownTable(e, index, 9, {
-                              isLastCol: true,
-                            });
-                          }}
-                        />
-                      </td>
-
-                      <td className="p-1 border">
-                        <button
-                          className={`font-bold ${details.length <= 2
-                            ? "text-gray-400 cursor-not-allowed"
-                            : "text-red-600"
+                        <td className="p-1 border">
+                          <button
+                            className={`font-bold ${
+                              details.length <= 2
+                                ? "text-gray-400 cursor-not-allowed"
+                                : "text-red-600"
                             }`}
-                          disabled={!isEditing || details.length <= 2}
-                          tabIndex={-1}
-                          title={
-                            details.length <= 2
-                              ? t("table.minRowsError")
-                              : t("actions.deleteRow")
-                          }
-                          onClick={() => removeDetailRow(index)}
-                        >
-                          ×
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                            disabled={!isEditing || details.length <= 2}
+                            tabIndex={-1}
+                            title={
+                              details.length <= 2
+                                ? t("table.minRowsError")
+                                : t("actions.deleteRow")
+                            }
+                            onClick={() => removeDetailRow(index)}
+                          >
+                            ×
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -2244,7 +2348,9 @@ export default function VoucherClientPage({
               <span className={`text-gray-700 font-medium ${textAlign}`}>
                 {t("totals.totalDebit")}:
               </span>
-              <span className={`font-semibold text-emerald-700 flex items-center gap-1 ${textAlign}`}>
+              <span
+                className={`font-semibold text-emerald-700 flex items-center gap-1 ${textAlign}`}
+              >
                 {formatAmount(totals.totalDebit)}
                 <RiyalIcon color="currentColor" />
               </span>
@@ -2254,7 +2360,9 @@ export default function VoucherClientPage({
               <span className={`text-gray-700 font-medium ${textAlign}`}>
                 {t("totals.totalCredit")}:
               </span>
-              <span className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}>
+              <span
+                className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}
+              >
                 {formatAmount(totals.totalCredit)}
                 <RiyalIcon color="currentColor" />
               </span>
@@ -2264,9 +2372,13 @@ export default function VoucherClientPage({
               <span className={`text-amber-800 font-medium ${textAlign}`}>
                 {t("totals.totalDebitCalibrated")}:
               </span>
-              <span className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}>
+              <span
+                className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}
+              >
                 {formatAmount(totals.totalDebitG)}
-                <span className="text-xs text-yellow-500">{t("totals.gram")}</span>
+                <span className="text-xs text-yellow-500">
+                  {t("totals.gram")}
+                </span>
               </span>
             </div>
 
@@ -2274,12 +2386,15 @@ export default function VoucherClientPage({
               <span className={`text-amber-800 font-medium ${textAlign}`}>
                 {t("totals.totalCreditCalibrated")}:
               </span>
-              <span className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}>
+              <span
+                className={`font-semibold text-yellow-600 flex items-center gap-1 ${textAlign}`}
+              >
                 {formatAmount(totals.totalCreditG)}
-                <span className="text-xs text-yellow-500">{t("totals.gram")}</span>
+                <span className="text-xs text-yellow-500">
+                  {t("totals.gram")}
+                </span>
               </span>
             </div>
-
           </div>
         </div>
 
@@ -2288,7 +2403,9 @@ export default function VoucherClientPage({
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
               <div className="bg-slate-50 border-b border-slate-200 p-4">
-                <h3 className={`text-lg font-semibold text-slate-800 ${textAlign}`}>
+                <h3
+                  className={`text-lg font-semibold text-slate-800 ${textAlign}`}
+                >
                   {t("modals.previousVoucher.title")}
                 </h3>
               </div>
@@ -2305,19 +2422,29 @@ export default function VoucherClientPage({
                   <table className="w-full text-sm border-collapse">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className={`p-2 font-medium text-slate-700 ${textAlign}`}>
+                        <th
+                          className={`p-2 font-medium text-slate-700 ${textAlign}`}
+                        >
                           {t("modals.previousVoucher.columns.voucherNumber")}
                         </th>
-                        <th className={`p-2 font-medium text-slate-700 ${textAlign}`}>
+                        <th
+                          className={`p-2 font-medium text-slate-700 ${textAlign}`}
+                        >
                           {t("modals.previousVoucher.columns.date")}
                         </th>
-                        <th className={`p-2 font-medium text-slate-700 ${textAlign}`}>
+                        <th
+                          className={`p-2 font-medium text-slate-700 ${textAlign}`}
+                        >
                           {t("modals.previousVoucher.columns.notes")}
                         </th>
-                        <th className={`p-2 font-medium text-slate-700 ${textAlign}`}>
+                        <th
+                          className={`p-2 font-medium text-slate-700 ${textAlign}`}
+                        >
                           {t("modals.previousVoucher.columns.status")}
                         </th>
-                        <th className={`p-2 font-medium text-slate-700 ${textAlign}`}>
+                        <th
+                          className={`p-2 font-medium text-slate-700 ${textAlign}`}
+                        >
                           {t("modals.previousVoucher.columns.action")}
                         </th>
                       </tr>
@@ -2348,14 +2475,15 @@ export default function VoucherClientPage({
                             </td>
                             <td className="p-2">
                               <span
-                                className={`text-xs px-2 py-1 rounded-full ${Number(v.vouch_status) === 1
-                                  ? "bg-emerald-100 text-emerald-800" // فعال
-                                  : Number(v.vouch_status) === 0
-                                    ? "bg-red-100 text-red-800" // ملغي
-                                    : Number(v.vouch_status) === 2
-                                      ? "bg-yellow-100 text-yellow-800" // معلق
-                                      : "bg-gray-100 text-gray-800" // غير مكتمل أو أخرى
-                                  }`}
+                                className={`text-xs px-2 py-1 rounded-full ${
+                                  Number(v.vouch_status) === 1
+                                    ? "bg-emerald-100 text-emerald-800" // فعال
+                                    : Number(v.vouch_status) === 0
+                                      ? "bg-red-100 text-red-800" // ملغي
+                                      : Number(v.vouch_status) === 2
+                                        ? "bg-yellow-100 text-yellow-800" // معلق
+                                        : "bg-gray-100 text-gray-800" // غير مكتمل أو أخرى
+                                }`}
                               >
                                 {(() => {
                                   const vouchStatusNum = Number(v.vouch_status);
@@ -2392,12 +2520,12 @@ export default function VoucherClientPage({
                                       // محاولة قراءة code_id من عدة مصادر محتملة
                                       const statusCodeId =
                                         s.code_id !== undefined &&
-                                          s.code_id !== null
+                                        s.code_id !== null
                                           ? Number(s.code_id)
                                           : s.Id !== undefined && s.Id !== null
                                             ? Number(s.Id)
                                             : s.id !== undefined &&
-                                              s.id !== null
+                                                s.id !== null
                                               ? Number(s.id)
                                               : null;
 

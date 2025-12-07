@@ -76,9 +76,18 @@ class VoucherService extends HttpService<Voucher> {
       page: params?.page || "1",
     };
 
+    const vouchType = queryParams.xvouch_type || "0";
+
     const response = await this.get<IPaginatedResponse<Voucher>>(
       "vouchers_list",
       queryParams,
+      {
+        cache: "force-cache",
+        next: {
+          revalidate: 300, // Cache for 5 minutes
+          tags: ["vouchers", `vouchers-type-${vouchType}`],
+        },
+      },
     );
 
     // معالجة الاستجابة المُقسّمة (pagination)
@@ -390,6 +399,16 @@ class VoucherService extends HttpService<Voucher> {
     const response = await this.get<IPaginatedResponse<VoucherDetail>>(
       "vouchers_dtl_list",
       queryParams,
+      {
+        cache: "force-cache",
+        next: {
+          revalidate: 60, // Cache for 1 minute (details may change more frequently)
+          tags: [
+            "voucher-details",
+            `voucher-details-${voucherId}-${branchParam}`,
+          ],
+        },
+      },
     );
 
     // معالجة الاستجابة المُقسّمة (pagination)
@@ -512,7 +531,7 @@ class VoucherService extends HttpService<Voucher> {
       useBranchParams?: boolean;
       logLabel?: string;
       cache?: RequestCache;
-      next?: { tags?: string[] };
+      next?: { tags?: string[]; revalidate?: number };
     },
   ) {
     try {
@@ -565,9 +584,17 @@ class VoucherService extends HttpService<Voucher> {
    * الحصول على أنواع السندات
    */
   async getVoucherTypes(params?: IParams) {
+    const com = params?.com || params?.xcom_id || "1";
+    const year = params?.year || params?.xyear_id || "1";
+
     return this._getListData("getVoucherTypeList", params, {
       useBranchParams: true,
       logLabel: "Voucher types",
+      cache: "force-cache",
+      next: {
+        revalidate: 600, // Cache for 10 minutes (voucher types don't change often)
+        tags: ["voucher-types", `voucher-types-${com}-${year}`],
+      },
     });
   }
 
@@ -575,9 +602,17 @@ class VoucherService extends HttpService<Voucher> {
    * الحصول على حالات السندات
    */
   async getVoucherStages(params?: IParams) {
+    const com = params?.com || params?.xcom_id || "1";
+    const year = params?.year || params?.xyear_id || "1";
+
     return this._getListData("getVoucherStageList", params, {
       useBranchParams: true,
       logLabel: "Voucher stages",
+      cache: "force-cache",
+      next: {
+        revalidate: 600, // Cache for 10 minutes (voucher stages don't change often)
+        tags: ["voucher-stages", `voucher-stages-${com}-${year}`],
+      },
     });
   }
 
@@ -661,8 +696,11 @@ class VoucherService extends HttpService<Voucher> {
     return this._getListData("getCaratTypeList", params, {
       useBranchParams: false,
       logLabel: "Carat types",
-      cache: "no-store",
-      next: { tags: ["carat-types"] },
+      cache: "force-cache",
+      next: {
+        revalidate: 600, // Cache for 10 minutes (carat types don't change often)
+        tags: ["carat-types"],
+      },
     });
   }
 

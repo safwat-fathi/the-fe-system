@@ -121,7 +121,7 @@ const CategoryFormClient = ({
   initialCategoryAccount,
 }: CategoryFormClientProps) => {
   const router = useRouter();
-  const t = useTranslations("basic.categories");
+  const t = useTranslations("basic.categories" as any) as any;
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [category, setCategory] = useState<Partial<Category>>(initialCategory);
@@ -132,8 +132,16 @@ const CategoryFormClient = ({
 
   const ACCOUNT_ROWS: AccountRow[] = useMemo(
     () => [
-      { label: t("accountRows.buyAcc"), valueKey: "buy_acc", wageKey: "buy_acc2" },
-      { label: t("accountRows.sellAcc"), valueKey: "sell_acc", wageKey: "sell_acc2" },
+      {
+        label: t("accountRows.buyAcc"),
+        valueKey: "buy_acc",
+        wageKey: "buy_acc2",
+      },
+      {
+        label: t("accountRows.sellAcc"),
+        valueKey: "sell_acc",
+        wageKey: "sell_acc2",
+      },
       {
         label: t("accountRows.backBuy"),
         valueKey: "back_buy",
@@ -144,9 +152,21 @@ const CategoryFormClient = ({
         valueKey: "back_sell",
         wageKey: "back_sell2",
       },
-      { label: t("accountRows.distAcc"), valueKey: "dist_acc", wageKey: "dist_acc2" },
-      { label: t("accountRows.backDist"), valueKey: "back_dist", wageKey: "back_dist2" },
-      { label: t("accountRows.invAcc"), valueKey: "inv_acc", wageKey: "inv_acc2" },
+      {
+        label: t("accountRows.distAcc"),
+        valueKey: "dist_acc",
+        wageKey: "dist_acc2",
+      },
+      {
+        label: t("accountRows.backDist"),
+        valueKey: "back_dist",
+        wageKey: "back_dist2",
+      },
+      {
+        label: t("accountRows.invAcc"),
+        valueKey: "inv_acc",
+        wageKey: "inv_acc2",
+      },
       {
         label: t("accountRows.costAcc"),
         valueKey: "cost_acc",
@@ -325,10 +345,14 @@ const CategoryFormClient = ({
 
   const getTitle = () => {
     if (isViewMode)
-      return t("titles.view", { name: category.cat_name || t("titles.defaultName") });
+      return t("titles.view", {
+        name: category.cat_name || t("titles.defaultName"),
+      });
     if (isAddMode) return t("titles.add");
 
-    return t("titles.edit", { name: category.cat_name || t("titles.defaultName") });
+    return t("titles.edit", {
+      name: category.cat_name || t("titles.defaultName"),
+    });
   };
 
   const getDescription = () => {
@@ -469,16 +493,18 @@ const CategoryFormClient = ({
             <h3 className="text-lg font-semibold text-gray-900">
               {t("labels.categoryAccounts")}
             </h3>
-            <p className="text-sm text-gray-500">
-              {t("sections.accountNote")}
-            </p>
+            <p className="text-sm text-gray-500">{t("sections.accountNote")}</p>
           </div>
         </div>
 
         <div className="overflow-hidden rounded-lg border border-gray-200">
           <div className="grid grid-cols-3 bg-gray-50 text-sm font-semibold text-gray-700">
-            <div className="border-l border-gray-200 px-4 py-2">{t("labels.accounts")}</div>
-            <div className="border-l border-gray-200 px-4 py-2">{t("labels.value")}</div>
+            <div className="border-l border-gray-200 px-4 py-2">
+              {t("labels.accounts")}
+            </div>
+            <div className="border-l border-gray-200 px-4 py-2">
+              {t("labels.value")}
+            </div>
             <div className="px-4 py-2">{t("labels.wages")}</div>
           </div>
 

@@ -51,7 +51,7 @@ class CurrencyService extends HttpService<Currency> {
   ): Promise<Currency | null> {
     try {
       // جلب معاملات الفرع لإضافة com
-      let companyId = "1";
+      let companyId: string;
 
       try {
         const branchParams = await import("@/app/actions/branch-params").then(
@@ -115,7 +115,7 @@ class CurrencyService extends HttpService<Currency> {
   ): Promise<Currency | null> {
     try {
       // جلب معاملات الفرع لإضافة com
-      let companyId = "1";
+      let companyId: string;
 
       try {
         const branchParams = await import("@/app/actions/branch-params").then(
