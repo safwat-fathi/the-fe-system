@@ -11,6 +11,7 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 import {
   Table,
   TableHeader,
@@ -71,21 +72,13 @@ interface CustomersClientProps {
   initialBoxTypes: any[];
 }
 
-const columns = [
-  { name: "كود العميل", uid: "cust_code" },
-  { name: "الاسم", uid: "cust_name" },
-  { name: "الاسم بالإنجليزي", uid: "cust_name_e" },
-  { name: "الجوال", uid: "mobile" },
-  { name: "البريد الإلكتروني", uid: "email" },
-  { name: "الحالة", uid: "cust_status" },
-  { name: "", uid: "actions" },
-];
-
 export default function CustomersClient({
   initialCustomers,
   initialCustomerTypes,
   initialCustomerStatus,
 }: CustomersClientProps) {
+  const router = useRouter();
+  const t = useTranslations("basic.customers");
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [customerTypes] = useState<CustomerType[]>(initialCustomerTypes);
   const [customerStatus] = useState<any[]>(initialCustomerStatus);
@@ -96,11 +89,24 @@ export default function CustomersClient({
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
     null,
   );
-  const router = useRouter();
   const rowsPerPage = 12;
+
+  const columns = useMemo(
+    () => [
+      { name: t("columns.custCode"), uid: "cust_code" },
+      { name: t("columns.custName"), uid: "cust_name" },
+      { name: t("columns.custNameEn"), uid: "cust_name_e" },
+      { name: t("columns.mobile"), uid: "mobile" },
+      { name: t("columns.email"), uid: "email" },
+      { name: t("columns.status"), uid: "cust_status" },
+      { name: "", uid: "actions" },
+    ],
+    [t],
+  );
+
   const customerTypeOptions = useMemo(
     () => [
-      { key: "all", label: "الكل" },
+      { key: "all", label: t("labels.allTypes") },
       ...customerTypes.map((type) => ({
         key: String(type.id),
         label: type.type_name,
@@ -115,14 +121,14 @@ export default function CustomersClient({
 
       setCustomers(data as any);
     } catch (error) {
-      console.error("فشل في جلب العملاء:", error);
-      toast.error("فشل في تحميل العملاء");
+      console.error(t("messages.loadError"), error);
+      toast.error(t("messages.loadError"));
     }
   };
 
   const handleDeleteClick = (customer: Customer) => {
     if (!customer.id) {
-      toast.error("❌ لا يمكن حذف عميل بدون معرف");
+      toast.error(t("messages.deleteErrorNoId"));
 
       return;
     }
@@ -148,14 +154,14 @@ export default function CustomersClient({
       const result = await customerService.deleteCustomer(customerToDelete.id);
 
       if (result) {
-        toast.success("✅ تم حذف العميل بنجاح");
+        toast.success(t("messages.deleteSuccess"));
         loadCustomers();
       } else {
-        toast.error("❌ فشل في حذف العميل");
+        toast.error(t("messages.deleteFailed"));
         loadCustomers();
       }
     } catch {
-      toast.error("❌ حدث خطأ أثناء الحذف");
+      toast.error(t("messages.deleteError"));
       loadCustomers();
     } finally {
       setDeleteModalOpen(false);
@@ -255,7 +261,7 @@ export default function CustomersClient({
           variant="bordered"
           onPress={() => router.push("/basic/customers/new")}
         >
-          إضافة عميل
+          {t("actions.add")}
         </Button>
 
         {/* فاصل خطي */}
@@ -266,7 +272,7 @@ export default function CustomersClient({
           <Select
             items={customerTypeOptions}
             className="input-field flex-1 min-w-[120px]"
-            placeholder="نوع العميل"
+            placeholder={t("labels.customerType")}
             selectedKeys={
               custTypeFilter !== null ? [String(custTypeFilter)] : ["all"]
             }
@@ -286,7 +292,7 @@ export default function CustomersClient({
           <Button
             isIconOnly
             className="h-10"
-            title="مسح الفلاتر"
+            title={t("labels.clearFilters")}
             variant="bordered"
             onPress={clearFilters}
           >
@@ -301,7 +307,7 @@ export default function CustomersClient({
         <div className="w-48">
           <Input
             className="w-full"
-            placeholder="بحث بالاسم..."
+            placeholder={t("labels.searchPlaceholder")}
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
             }
@@ -312,7 +318,7 @@ export default function CustomersClient({
       </div>
 
       <div className="responsive-table">
-        <Table aria-label="جدول العملاء">
+        <Table aria-label={t("labels.tableAriaLabel")}>
           <TableHeader columns={columns}>
             {(column) => (
               <TableColumn key={column.uid}>{column.name}</TableColumn>
@@ -338,7 +344,7 @@ export default function CustomersClient({
       </div>
 
       <div className="responsive-pagination">
-        <span>عدد العملاء: {filteredCustomers.length}</span>
+        <span>{t("labels.totalCount", { count: filteredCustomers.length })}</span>
         <Pagination
           color="primary"
           page={page}
@@ -348,13 +354,13 @@ export default function CustomersClient({
       </div>
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="danger"
-        confirmText="حذف"
+        confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={`هل أنت متأكد من حذف العميل "${customerToDelete?.cust_name}"؟`}
+        message={t("modals.deleteMessage", { name: customerToDelete?.cust_name })}
         size="md"
-        title="تأكيد الحذف"
+        title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />

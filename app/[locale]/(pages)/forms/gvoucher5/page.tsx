@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CustomerGoldVoucherClientPage from "../gvoucher4/CustomerGoldVoucherClientPage";
 
@@ -14,13 +15,14 @@ const getVoucherFormData = voucherFormDataService.getVoucherFormData;
 
 export default async function CustomerPaymentVoucherPage() {
   const formData = await getVoucherFormData({ goldBoxes: true });
+  const t = await getTranslations("navigation.breadcrumbs.segments");
 
   return (
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "سند صرف عميل", href: "/forms/gvoucher5" },
-          { name: "جديدة" },
+          { name: "", segmentKey: "gvoucher5", href: "/forms/gvoucher5" },
+          { name: "", segmentKey: "new" },
         ]}
       />
       <CustomerGoldVoucherClientPage

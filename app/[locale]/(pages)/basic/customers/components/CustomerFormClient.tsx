@@ -5,6 +5,7 @@ import { Button, Input, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 import customerService from "@/services/api/customer.service";
 import type { Customer as CustomerModel } from "@/types/models/customer";
@@ -61,6 +62,7 @@ const CustomerFormClient = ({
   companyId,
 }: CustomerFormClientProps) => {
   const router = useRouter();
+  const t = useTranslations("basic.customers");
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [customer, setCustomer] =
@@ -96,22 +98,22 @@ const CustomerFormClient = ({
   };
 
   const getTitle = () => {
-    if (isAddMode) return "إضافة عميل جديد";
+    if (isAddMode) return t("titles.add");
     if (isViewMode)
-      return `عرض ${customer.cust_name || customer.cust_code || "العميل"}`;
+      return t("titles.view", { name: customer.cust_name || customer.cust_code || t("titles.defaultName") });
 
-    return `تعديل ${customer.cust_name || customer.cust_code || "العميل"}`;
+    return t("titles.edit", { name: customer.cust_name || customer.cust_code || t("titles.defaultName") });
   };
 
   const handleSave = async () => {
     if (!customer.cust_name) {
-      toast.error("⚠️ يرجى إدخال اسم العميل");
+      toast.error(t("messages.nameRequired"));
 
       return;
     }
 
     if (!customer.cust_type) {
-      toast.error("⚠️ يرجى إدخال نوع العميل");
+      toast.error(t("messages.typeRequired"));
 
       return;
     }
@@ -157,18 +159,18 @@ const CustomerFormClient = ({
       if (result) {
         toast.success(
           isAddMode
-            ? "✅ تم إضافة العميل بنجاح"
-            : "✅ تم تحديث بيانات العميل بنجاح",
+            ? t("messages.addSuccess")
+            : t("messages.updateSuccess"),
         );
 
         router.push("/basic/customers");
         router.refresh();
       } else {
-        toast.error("❌ فشل في حفظ بيانات العميل");
+        toast.error(t("messages.operationFailed"));
       }
     } catch (error) {
       console.error("Error saving customer:", error);
-      toast.error("❌ حدث خطأ أثناء حفظ بيانات العميل");
+      toast.error(t("messages.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -189,7 +191,7 @@ const CustomerFormClient = ({
             variant="flat"
             onPress={handleCancel}
           >
-            رجوع
+            {t("actions.back")}
           </Button>
           {isViewMode && (
             <Button
@@ -199,12 +201,12 @@ const CustomerFormClient = ({
                 router.push(`/basic/customers/${customer.id}?mode=edit`)
               }
             >
-              تعديل
+              {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
             <Button color="primary" isLoading={isSaving} onPress={handleSave}>
-              {isAddMode ? "حفظ" : "تحديث"}
+              {isAddMode ? t("actions.save") : t("actions.update")}
             </Button>
           )}
         </div>
@@ -214,116 +216,116 @@ const CustomerFormClient = ({
       <div className="grid grid-cols-3 gap-4">
         {/* البيانات الأساسية */}
         <div className="col-span-3 text-lg font-bold border-b pb-2">
-          البيانات الأساسية
+          {t("sections.basicInfo")}
         </div>
 
         <Input
           isDisabled={isViewMode}
-          label="كود العميل"
+          label={t("fields.custCode")}
           value={customer.cust_code || ""}
           onChange={handleInputChange("cust_code")}
         />
         <Input
           isRequired
           isDisabled={isViewMode}
-          label="اسم العميل"
+          label={t("fields.custName")}
           value={customer.cust_name || ""}
           onChange={handleInputChange("cust_name")}
         />
         <Input
           isDisabled={isViewMode}
-          label="اسم العميل بالإنجليزي"
+          label={t("fields.custNameEn")}
           value={customer.cust_name_e || ""}
           onChange={handleInputChange("cust_name_e")}
         />
         <Input
           isDisabled={isViewMode}
-          label="الجوال"
+          label={t("fields.mobile")}
           value={customer.mobile?.toString() || ""}
           onChange={handleInputChange("mobile")}
         />
         <Input
           isDisabled={isViewMode}
-          label="البريد الإلكتروني"
+          label={t("fields.email")}
           value={customer.email || ""}
           onChange={handleInputChange("email")}
         />
         <Input
           isDisabled={isViewMode}
-          label="الرقم الضريبي"
+          label={t("fields.vatNo")}
           value={customer.vat_no?.toString() || ""}
           onChange={handleNumberInputChange("vat_no")}
         />
         <Input
           isDisabled={isViewMode}
-          label="رقم السجل التجاري"
+          label={t("fields.crNo")}
           value={customer.cr_no?.toString() || ""}
           onChange={handleNumberInputChange("cr_no")}
         />
 
         {/* العناوين والتواصل */}
         <div className="col-span-3 text-lg font-bold border-b pb-2 mt-4">
-          العناوين والتواصل
+          {t("sections.addressContact")}
         </div>
 
         <Input
           isDisabled={isViewMode}
-          label="هاتف المنزل"
+          label={t("fields.phone")}
           value={customer.phone || ""}
           onChange={handleInputChange("phone")}
         />
         <Input
           isDisabled={isViewMode}
-          label="الفاكس"
+          label={t("fields.fax")}
           value={customer.fax || ""}
           onChange={handleInputChange("fax")}
         />
         <Input
           isDisabled={isViewMode}
-          label="العنوان"
+          label={t("fields.address")}
           value={customer.address || ""}
           onChange={handleInputChange("address")}
         />
         <Input
           isDisabled={isViewMode}
-          label="المحافظة"
+          label={t("fields.gov")}
           value={customer.gov || ""}
           onChange={handleInputChange("gov")}
         />
         <Input
           isDisabled={isViewMode}
-          label="المدينة"
+          label={t("fields.city")}
           value={customer.city || ""}
           onChange={handleInputChange("city")}
         />
         <Input
           isDisabled={isViewMode}
-          label="المنطقة"
+          label={t("fields.area")}
           value={customer.area || ""}
           onChange={handleInputChange("area")}
         />
         <Input
           isDisabled={isViewMode}
-          label="الشارع"
+          label={t("fields.street")}
           value={customer.street || ""}
           onChange={handleInputChange("street")}
         />
         <Input
           isDisabled={isViewMode}
-          label="المبنى"
+          label={t("fields.buildNo")}
           value={customer.build_no || ""}
           onChange={handleInputChange("build_no")}
         />
         <Input
           isDisabled={isViewMode}
-          label="الرمز البريدي"
+          label={t("fields.postCode")}
           value={customer.post_code || ""}
           onChange={handleInputChange("post_code")}
         />
 
         {/* الحسابات والتصنيفات */}
         <div className="col-span-3 text-lg font-bold border-b pb-2 mt-4">
-          الحسابات والتصنيفات
+          {t("sections.accountsCategories")}
         </div>
 
         <div className="col-span-2">
@@ -331,7 +333,7 @@ const CustomerFormClient = ({
             className="block text-sm font-medium mb-2"
             htmlFor="customer-account"
           >
-            الحساب المحاسبي
+            {t("fields.account")}
           </label>
           <ReactSelect
             isSearchable
@@ -351,7 +353,7 @@ const CustomerFormClient = ({
               value: acc.id,
               label: `${acc.id} - ${acc.acc_name}`,
             }))}
-            placeholder="رقم الحساب / اسم الحساب"
+            placeholder={t("placeholders.selectAccount")}
             styles={{
               menuPortal: (base) => ({ ...base, zIndex: 9999 }),
             }}
@@ -395,7 +397,7 @@ const CustomerFormClient = ({
             className="block text-sm font-medium mb-2"
             htmlFor="customer-box-type"
           >
-            نوع الصندوق
+            {t("fields.boxType")}
           </label>
           <ReactSelect
             isSearchable
@@ -415,7 +417,7 @@ const CustomerFormClient = ({
               value: box.code_id,
               label: box.code_desc,
             }))}
-            placeholder="نوع الصندوق"
+            placeholder={t("placeholders.selectBoxType")}
             styles={{
               menuPortal: (base) => ({ ...base, zIndex: 9999 }),
             }}
@@ -443,7 +445,7 @@ const CustomerFormClient = ({
             className="block text-sm font-medium mb-2"
             htmlFor="customer-type"
           >
-            نوع العميل
+            {t("fields.customerType")}
           </label>
           <ReactSelect
             isSearchable
@@ -463,7 +465,7 @@ const CustomerFormClient = ({
               value: type.id,
               label: type.type_name,
             }))}
-            placeholder="نوع العميل"
+            placeholder={t("placeholders.selectCustomerType")}
             styles={{
               menuPortal: (base) => ({ ...base, zIndex: 9999 }),
             }}
@@ -488,25 +490,25 @@ const CustomerFormClient = ({
 
         <Input
           isDisabled={isViewMode}
-          label="المحصل"
+          label={t("fields.handling")}
           value={customer.handling || ""}
           onChange={handleInputChange("handling")}
         />
 
         {/* معلومات إضافية */}
         <div className="col-span-3 text-lg font-bold border-b pb-2 mt-4">
-          معلومات إضافية
+          {t("sections.additionalInfo")}
         </div>
 
         <Input
           isDisabled={isViewMode}
-          label="مناولة (بالإنجليزي)"
+          label={t("fields.handlingEn")}
           value={customer.handling_e || ""}
           onChange={handleInputChange("handling_e")}
         />
         <Input
           isDisabled={isViewMode}
-          label="نسبة الخصم"
+          label={t("fields.perc")}
           type="number"
           value={customer.perc?.toString() || ""}
           onChange={handleNumberInputChange("perc")}
@@ -517,7 +519,7 @@ const CustomerFormClient = ({
             className="block text-sm font-medium mb-2"
             htmlFor="customer-status"
           >
-            حالة العميل
+            {t("fields.custStatus")}
           </label>
           <ReactSelect
             isSearchable
@@ -537,7 +539,7 @@ const CustomerFormClient = ({
               value: cust1.code_id,
               label: cust1.code_desc,
             }))}
-            placeholder="حالة العميل"
+            placeholder={t("placeholders.selectStatus")}
             styles={{
               menuPortal: (base) => ({ ...base, zIndex: 9999 }),
             }}
@@ -567,14 +569,14 @@ const CustomerFormClient = ({
             isSelected={Boolean(customer.expt)}
             onValueChange={handleCheckboxChange("expt")}
           >
-            مستثنى من كشف الأرصدة
+            {t("fields.expt")}
           </Checkbox>
           <Checkbox
             isDisabled={isViewMode}
             isSelected={Boolean(customer.hide)}
             onValueChange={handleCheckboxChange("hide")}
           >
-            مخفي
+            {t("fields.hide")}
           </Checkbox>
         </div>
       </div>

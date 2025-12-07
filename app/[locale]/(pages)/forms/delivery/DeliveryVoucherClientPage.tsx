@@ -20,7 +20,13 @@ import {
   PrinterIcon,
   PlusIcon,
   ArrowsPointingOutIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import clsx from "clsx";
 
 import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
 
@@ -42,6 +48,13 @@ interface DeliveryVoucherClientPageProps {
   goldDetailsData?: GVoucherDetail[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
+  navigationInfo?: {
+    previous?: number | null;
+    next?: number | null;
+    first?: number | null;
+    last?: number | null;
+    vouchersCount?: number | null;
+  };
   accounts: any[];
   boxes: any[];
   goldBoxes?: any[];
@@ -61,6 +74,7 @@ export default function DeliveryVoucherClientPage({
   goldDetailsData: initialGoldDetails = [],
   isNewVoucher = true,
   voucherRecordId,
+  navigationInfo,
   accounts: initialAccounts,
   boxes: initialBoxes,
   goldBoxes: initialGoldBoxes = [],
@@ -77,8 +91,9 @@ export default function DeliveryVoucherClientPage({
   const pathname = usePathname();
   const t = useTranslations("forms.customerGoldVoucher");
   const tDelivery = useTranslations("forms.deliveryVoucher");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
-  const dir = getLocaleDir(locale);
+  const dir = getLocaleDir(locale as "ar" | "en");
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = dir === "rtl" ? "text-center" : "text-center";
 
@@ -136,6 +151,41 @@ export default function DeliveryVoucherClientPage({
     formMode,
     categories: initialCategories,
   });
+
+  // رقم السند الحالي
+  const voucherNumber =
+    voucher.vouch_id && Number(voucher.vouch_id) > 0
+      ? String(voucher.vouch_id)
+      : voucher.id
+        ? `DB-${voucher.id}`
+        : "";
+
+  // دالة لبناء روابط التنقل
+  const resolvePaginatedVoucherHref = useCallback(
+    (vouchId: number | null) => {
+      if (!vouchId) return null;
+
+      return `/forms/delivery/${vouchId}?mode=preview`;
+    },
+    [],
+  );
+
+  // metadata للتنقل
+  const navigationMetadata = useMemo(() => {
+    if (!navigationInfo) return null;
+
+    return {
+      nextVoucherHref: resolvePaginatedVoucherHref(navigationInfo.next ?? null),
+      prevVoucherHref: resolvePaginatedVoucherHref(
+        navigationInfo.previous ?? null,
+      ),
+      lastVoucherHref: resolvePaginatedVoucherHref(navigationInfo.last ?? null),
+      firstVoucherHref: resolvePaginatedVoucherHref(
+        navigationInfo.first ?? null,
+      ),
+      totalVouchers: navigationInfo.vouchersCount,
+    };
+  }, [navigationInfo, resolvePaginatedVoucherHref]);
 
   // Handle search
   const [searchTerm, setSearchTerm] = useState("");
@@ -677,7 +727,15 @@ export default function DeliveryVoucherClientPage({
               </span>
               <span className="text-sm text-slate-600 font-medium flex items-center gap-1">
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                {new Date(voucher.vouch_date).toLocaleString("ar-EG")}
+                {new Date(voucher.vouch_date).toLocaleString("en-US", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  hour12: true,
+                })}
               </span>
             </h1>
           </div>
@@ -751,6 +809,68 @@ export default function DeliveryVoucherClientPage({
             >
               {t("buttons.print")}
             </Button>
+
+            {/* أزرار التنقل - مثل الفواتير - ظاهرة دائماً */}
+            {navigationMetadata && (
+              <div className="hidden md:flex items-center gap-1 mr-2">
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.firstVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.firstVoucherHref || ""}
+                >
+                  <ChevronDoubleRightIcon className="w-4 h-4" />
+                </Link>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.prevVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.prevVoucherHref || ""}
+                >
+                  <ChevronRightIcon className="w-4 h-4" />
+                </Link>
+                <span
+                  className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}
+                >
+                  {tCommon("navigation.position", {
+                    current: voucherNumber,
+                    total: navigationMetadata?.totalVouchers ?? "?",
+                  })}
+                </span>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.nextVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.nextVoucherHref || ""}
+                >
+                  <ChevronLeftIcon className="w-4 h-4" />
+                </Link>
+                <Link
+                  className={clsx(
+                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    {
+                      "pointer-events-none opacity-40":
+                        !navigationMetadata?.lastVoucherHref,
+                    },
+                  )}
+                  href={navigationMetadata?.lastVoucherHref || ""}
+                >
+                  <ChevronDoubleLeftIcon className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -945,8 +1065,8 @@ export default function DeliveryVoucherClientPage({
                   e.preventDefault();
                   e.stopPropagation();
                   setTimeout(() => {
-                    const handlingInput = document.querySelector(
-                      'input[placeholder*="مناولة"]',
+                    const handlingInput = document.getElementById(
+                      'delivery-handling',
                     ) as HTMLInputElement;
 
                     if (handlingInput) {
@@ -1066,8 +1186,8 @@ export default function DeliveryVoucherClientPage({
                     e.preventDefault();
                     e.stopPropagation();
                     setTimeout(() => {
-                      const handlingInput = document.querySelector(
-                        'input[placeholder*="مناولة"]',
+                      const handlingInput = document.getElementById(
+                        'delivery-handling',
                       ) as HTMLInputElement;
 
                       if (handlingInput) {
@@ -1092,13 +1212,13 @@ export default function DeliveryVoucherClientPage({
             className="block text-xs font-medium text-slate-700 mb-0.5"
             htmlFor="delivery-handling"
           >
-            مناولة
+            {t("fields.handling")}
           </label>
           <input
             className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
             disabled={!isEditing}
             id="delivery-handling"
-            placeholder="مناولة"
+            placeholder={t("placeholders.handling")}
             readOnly={!isEditing}
             type="text"
             value={voucher.handling || ""}
@@ -1181,7 +1301,7 @@ export default function DeliveryVoucherClientPage({
             className="block text-xs font-medium text-slate-700 mb-0.5"
             htmlFor="delivery-cost-center-select"
           >
-            مركز التكلفة
+            {t("fields.costCenter")}
           </label>
           <div
             id="delivery-cost-center-select"
@@ -1458,7 +1578,7 @@ export default function DeliveryVoucherClientPage({
               type="button"
               onClick={addGoldDetailRow}
             >
-              + صف
+              {t("tables.gold.addRow")}
             </button>
           </div>
           <div className="overflow-x-auto mb-0.5 max-w-full">
@@ -1466,20 +1586,20 @@ export default function DeliveryVoucherClientPage({
               <table className="min-w-[1400px] border text-xs text-center table-fixed">
               <thead className="bg-gray-100 text-xs font-bold">
                 <tr>
-                  <th className="w-72 p-1 border">رقم الصنف</th>
-                  <th className="w-32 p-1 border">الوزن القائم</th>
-                  <th className="w-32 p-1 border">معايرة</th>
-                  <th className="w-32 p-1 border">الوزن المعاير</th>
-                  <th className="w-32 p-1 border">معدل الأجور</th>
-                  <th className="w-32 p-1 border">الأجور</th>
-                  <th className="w-48 p-1 border">الصندوق</th>
-                  <th className="w-80 p-1 border">البيان</th>
-                  <th className="w-32 p-1 border">فرق عيار</th>
-                  <th className="w-32 p-1 border">مبلغ التسكير</th>
-                  <th className="w-32 p-1 border">وزن التسكير</th>
-                  <th className="w-32 p-1 border">رقم الفاتورة</th>
-                  <th className="w-48 p-1 border">مركز التكلفة</th>
-                  <th className="w-12 p-1 border">حذف</th>
+                  <th className={`w-72 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.itemNumber")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.weight")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.calibration")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.calibratedWeight")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{tDelivery("tables.gold.columns.wageRate")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{tDelivery("tables.gold.columns.wages")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.box")}</th>
+                  <th className={`w-80 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.notes")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.caliberDifference")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.sealingAmount")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.sealingWeight")}</th>
+                  <th className={`w-32 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.invoiceNumber")}</th>
+                  <th className={`w-48 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.costCenter")}</th>
+                  <th className={`w-12 p-1 border ${textAlignCenter}`}>{t("tables.gold.columns.delete")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2291,7 +2411,7 @@ export default function DeliveryVoucherClientPage({
               type="button"
               onClick={addVoucherBoxRow}
             >
-              + صف
+              {t("tables.cash.addRow")}
             </button>
           </div>
           <div className="overflow-x-auto mb-0.5 max-w-full">
@@ -2707,19 +2827,19 @@ export default function DeliveryVoucherClientPage({
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <span className="text-gray-700 font-medium">
-              إجمالي الذهب (القائم):
+              {t("totals.totalGoldStanding")}:
             </span>
             <span className="font-semibold text-yellow-600">
-              {totals.totalGoldWeight.toFixed(5)} جم
+              {totals.totalGoldWeight.toFixed(5)} {t("totals.unit")}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-amber-800 font-medium">
-              إجمالي الذهب (المعاير):
+              {t("totals.totalGoldCalibrated")}:
             </span>
             <span className="font-semibold text-yellow-600">
-              {totals.totalGoldGWeight.toFixed(5)} جم
+              {totals.totalGoldGWeight.toFixed(5)} {t("totals.unit")}
             </span>
           </div>
 
@@ -2732,7 +2852,7 @@ export default function DeliveryVoucherClientPage({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-gray-700 font-medium">إجمالي النقدية:</span>
+            <span className="text-gray-700 font-medium">{t("totals.totalCash")}:</span>
             <span className="font-semibold text-blue-700 flex items-center gap-1">
               {formatAmount(totals.totalBoxes)}
               <RiyalIcon color="currentColor" />
