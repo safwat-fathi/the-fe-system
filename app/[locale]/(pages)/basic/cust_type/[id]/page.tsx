@@ -1,15 +1,20 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CustomerTypeFormClient from "../components/CustomerTypeFormClient";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import customerTypeService from "@/services/api/customer-type.service";
 
-export const metadata: Metadata = {
-  title: "عرض نوع العميل - NafeesWeb",
-  description: "عرض وتعديل بيانات نوع العميل",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = (await getTranslations("basic.customerTypes" as any)) as any;
+
+  return {
+    title: `${t("titles.view", { name: t("titles.defaultName") })} - NafeesWeb`,
+    description: t("titles.view", { name: t("titles.defaultName") }),
+  };
+}
 
 export default async function CustomerTypeDetailPage({
   params,
@@ -41,16 +46,22 @@ export default async function CustomerTypeDetailPage({
     notFound();
   }
 
+  const t = (await getTranslations("basic.customerTypes" as any)) as any;
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: "أنواع العملاء", href: "/basic/cust_type" },
+          { name: t("labels.pageTitle"), href: "/basic/cust_type" },
           {
             name:
               formMode === "edit"
-                ? `تعديل ${type.type_name || "نوع العميل"}`
-                : `عرض ${type.type_name || "نوع العميل"}`,
+                ? t("titles.edit", {
+                    name: type.type_name || t("titles.defaultName"),
+                  })
+                : t("titles.view", {
+                    name: type.type_name || t("titles.defaultName"),
+                  }),
           },
         ]}
       />

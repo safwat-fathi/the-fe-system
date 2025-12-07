@@ -1,13 +1,18 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CustomerTypeFormClient from "../components/CustomerTypeFormClient";
 
 import Breadcrumb from "@/components/Breadcrumb";
 
-export const metadata: Metadata = {
-  title: "إضافة نوع عميل جديد - NafeesWeb",
-  description: "إضافة نوع عميل جديد إلى النظام",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = (await getTranslations("basic.customerTypes" as any)) as any;
+
+  return {
+    title: `${t("titles.add")} - NafeesWeb`,
+    description: t("titles.add"),
+  };
+}
 
 export default async function NewCustomerTypePage() {
   // إنشاء نوع عميل فارغ
@@ -20,12 +25,14 @@ export default async function NewCustomerTypePage() {
     type_status: true,
   };
 
+  const t = (await getTranslations("basic.customerTypes" as any)) as any;
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: "أنواع العملاء", href: "/basic/cust_type" },
-          { name: "إضافة نوع عميل جديد" },
+          { name: t("labels.pageTitle"), href: "/basic/cust_type" },
+          { name: t("titles.add") },
         ]}
       />
       <CustomerTypeFormClient initialType={emptyType} mode="add" />

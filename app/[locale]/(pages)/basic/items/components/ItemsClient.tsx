@@ -406,6 +406,7 @@ export default function ItemsClient({
         {/* حقول الفرز */}
         <div className="flex flex-wrap items-center gap-1 flex-1">
           <Select
+            aria-label={t("labels.selectCategory")}
             className="input-field flex-1 min-w-[90px]"
             placeholder={t("labels.selectCategory")}
             size="sm"
@@ -425,6 +426,7 @@ export default function ItemsClient({
           </Select>
 
           <Select
+            aria-label={t("labels.itemType")}
             className="input-field flex-1 min-w-[90px]"
             placeholder={t("labels.itemType")}
             size="sm"
@@ -444,6 +446,7 @@ export default function ItemsClient({
           </Select>
 
           <Select
+            aria-label={t("labels.status")}
             className="input-field flex-1 min-w-[90px]"
             placeholder={t("labels.status")}
             size="sm"

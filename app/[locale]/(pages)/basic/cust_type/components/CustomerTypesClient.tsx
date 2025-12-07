@@ -170,10 +170,8 @@ export default function CustomerTypesClient({
   }, [filtered, page]);
 
   return (
-    <div className="responsive-container font-cairo">
-      <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className="text-base font-semibold">{t("labels.manage")}</h2>
-        <div className="h-8 w-px bg-gray-300" />
+    <div className="flex flex-col gap-6 font-cairo">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
           className="bg-gray-100"
           variant="bordered"
@@ -182,7 +180,6 @@ export default function CustomerTypesClient({
           <PlusIcon className="h-3 w-3" />
           {t("actions.add")}
         </Button>
-        <div className="h-8 w-px bg-gray-300" />
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}
@@ -196,14 +193,14 @@ export default function CustomerTypesClient({
         </div>
       </div>
 
-      <div className="responsive-table">
-        <Table aria-label={t("labels.tableAriaLabel")}>
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <Table removeWrapper aria-label={t("labels.tableAriaLabel")}>
           <TableHeader>
             {columns.map((col) => (
               <TableColumn key={col.uid}>{col.name}</TableColumn>
             ))}
           </TableHeader>
-          <TableBody>
+          <TableBody emptyContent={t("labels.emptyContent")}>
             {paginated.map((type) => (
               <TableRow key={type.id}>
                 <TableCell>{type.id}</TableCell>
@@ -218,16 +215,18 @@ export default function CustomerTypesClient({
             ))}
           </TableBody>
         </Table>
-      </div>
 
-      <div className="responsive-pagination">
-        <span>{t("labels.totalCount", { count: filtered.length })}</span>
-        <Pagination
-          color="primary"
-          page={page}
-          total={Math.ceil(filtered.length / rowsPerPage)}
-          onChange={setPage}
-        />
+        <div className="flex flex-col items-start gap-2 border-t border-gray-100 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm text-gray-600">
+            {t("labels.totalCount", { count: filtered.length })}
+          </span>
+          <Pagination
+            color="primary"
+            page={page}
+            total={Math.ceil(filtered.length / rowsPerPage)}
+            onChange={setPage}
+          />
+        </div>
       </div>
 
       <ConfirmationModal
