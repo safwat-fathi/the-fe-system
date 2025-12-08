@@ -1,14 +1,19 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CustomerTypesClient from "./components/CustomerTypesClient";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import customerTypeService from "@/services/api/customer-type.service";
 
-export const metadata: Metadata = {
-  title: "أنواع العملاء - NafeesWeb",
-  description: "إدارة أنواع العملاء",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = (await getTranslations("basic.customerTypes" as any)) as any;
+
+  return {
+    title: `${t("labels.pageTitle")} - NafeesWeb`,
+    description: t("labels.pageTitle"),
+  };
+}
 
 export default async function CustomerTypesPage() {
   // جلب البيانات على السيرفر
@@ -16,10 +21,12 @@ export default async function CustomerTypesPage() {
     .getAllCustomerTypes()
     .catch(() => []);
 
+  const t = (await getTranslations("basic.customerTypes" as any)) as any;
+
   return (
-    <div className="responsive-container font-cairo">
+    <div className="font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-2">أنواع العملاء</h1>
+      <h1 className="text-xl font-bold mb-2">{t("labels.pageTitle")}</h1>
 
       <CustomerTypesClient initialTypes={typesData} />
     </div>

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CustomerFormClient, {
   type CustomerFormValues,
@@ -110,16 +111,28 @@ export default async function CustomerDetailPage({
     hide: customer.hide || false,
   };
 
+  const t = (await getTranslations("basic.customers" as any)) as any;
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: "العملاء", href: "/basic/customers" },
+          { name: t("labels.pageTitle"), href: "/basic/customers" },
           {
             name:
               formMode === "edit"
-                ? `تعديل ${customer.cust_name || customer.cust_code || "العميل"}`
-                : `عرض ${customer.cust_name || customer.cust_code || "العميل"}`,
+                ? t("titles.edit", {
+                    name:
+                      customer.cust_name ||
+                      customer.cust_code ||
+                      t("titles.defaultName"),
+                  })
+                : t("titles.view", {
+                    name:
+                      customer.cust_name ||
+                      customer.cust_code ||
+                      t("titles.defaultName"),
+                  }),
           },
         ]}
       />

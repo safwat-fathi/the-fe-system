@@ -176,13 +176,7 @@ export default function CategoriesClient({
       { name: t("columns.id"), uid: "id" },
       { name: t("columns.catName"), uid: "cat_name" },
       { name: t("columns.catNameEn"), uid: "cat_name_e" },
-      { name: t("columns.k"), uid: "k" },
       { name: t("columns.purity"), uid: "purity" },
-      { name: t("columns.box"), uid: "box" },
-      { name: t("columns.taxType"), uid: "tax_type" },
-      { name: t("columns.tax"), uid: "tax" },
-      { name: t("columns.catType"), uid: "cat_type" },
-      { name: t("columns.catStatus"), uid: "cat_status" },
       { name: "", uid: "actions" },
     ],
     [t],
@@ -420,22 +414,6 @@ export default function CategoriesClient({
     }
   };
 
-  useEffect(() => {
-    if (categories.length === 0) {
-      setSelectedCategoryId(null);
-
-      return;
-    }
-
-    if (
-      selectedCategoryId !== null &&
-      categories.some((cat) => cat.id === selectedCategoryId)
-    ) {
-      return;
-    }
-
-    setSelectedCategoryId(categories[0]?.id ?? null);
-  }, [categories, selectedCategoryId]);
 
   const filteredCategories = useMemo(() => {
     if (!searchQuery) return categories;
@@ -530,6 +508,23 @@ export default function CategoriesClient({
     setCategoryToDelete(null);
   };
 
+  useEffect(() => {
+    if (categories.length === 0) {
+      setSelectedCategoryId(null);
+
+      return;
+    }
+
+    if (
+      selectedCategoryId !== null &&
+      categories.some((cat) => cat.id === selectedCategoryId)
+    ) {
+      return;
+    }
+
+    setSelectedCategoryId(categories[0]?.id ?? null);
+  }, [categories, selectedCategoryId]);
+
   const handleCategorySelectionChange = (keys: any) => {
     const key = Array.from(keys)?.[0];
 
@@ -539,6 +534,7 @@ export default function CategoriesClient({
     if (Number.isNaN(categoryId)) return;
     setSelectedCategoryId(categoryId);
   };
+
 
   const loadCategoryAccounts = useCallback(
     async (categoryId: number) => {
@@ -715,8 +711,6 @@ export default function CategoriesClient({
   return (
     <div className="flex flex-col gap-6 font-cairo">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-base font-semibold">{t("labels.manage")}</h2>
-        <div className="h-8 w-px bg-gray-300" />
         <Button
           className="bg-gray-100"
           variant="bordered"
@@ -739,256 +733,254 @@ export default function CategoriesClient({
         </div>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-        <Table
-          removeWrapper
-          aria-label={t("labels.tableAriaLabel")}
-          selectedKeys={
-            selectedCategoryId
-              ? new Set([String(selectedCategoryId)])
-              : new Set()
-          }
-          selectionMode="single"
-          onSelectionChange={handleCategorySelectionChange}
-        >
-          <TableHeader>
-            {columns.map((col) => (
-              <TableColumn key={col.uid}>{col.name}</TableColumn>
-            ))}
-          </TableHeader>
-          <TableBody emptyContent={t("labels.emptyContent")}>
-            {paginated.map((cat) => (
-              <TableRow key={cat.id} className="cursor-pointer">
-                <TableCell>{cat.id}</TableCell>
-                <TableCell>{cat.cat_name}</TableCell>
-                <TableCell>{cat.cat_name_e}</TableCell>
-                <TableCell>{cat.k}</TableCell>
-                <TableCell>{cat.purity}</TableCell>
-                <TableCell>{cat.box_name}</TableCell>
-                <TableCell>
-                  <Checkbox isReadOnly isSelected={cat.tax_type} />
-                </TableCell>
-                <TableCell>{cat.tax}</TableCell>
-                <TableCell>{cat.cat_type_name}</TableCell>
-                <TableCell>{cat.cat_status_name}</TableCell>
-                <TableCell>{renderActions(cat)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
-        <div className="flex flex-col items-start gap-2 border-t border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-gray-600">
-            {t("labels.totalCount", { count: filteredCategories.length })}
-          </span>
-          <Pagination
-            color="primary"
-            page={page}
-            total={pages}
-            onChange={setPage}
-          />
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {t("labels.categoryAccounts")}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {selectedCategory
-                ? t("labels.selectedCategory", {
-                    name:
-                      locale === "en" && selectedCategory.cat_name_e
-                        ? selectedCategory.cat_name_e
-                        : selectedCategory.cat_name,
-                  })
-                : t("labels.selectCategory")}
-            </p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* حاوية اليسار: الجدول مع معلومات أساسية */}
+        <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div className="px-4 py-2">
+            <Table
+              removeWrapper
+              aria-label={t("labels.tableAriaLabel")}
+              selectedKeys={
+                selectedCategoryId
+                  ? new Set([String(selectedCategoryId)])
+                  : new Set()
+              }
+              selectionMode="single"
+              onSelectionChange={handleCategorySelectionChange}
+            >
+              <TableHeader>
+                {columns.map((col) => (
+                  <TableColumn key={col.uid}>{col.name}</TableColumn>
+                ))}
+              </TableHeader>
+              <TableBody emptyContent={t("labels.emptyContent")}>
+                {paginated.map((cat) => (
+                  <TableRow key={cat.id} className="cursor-pointer">
+                    <TableCell>{cat.id}</TableCell>
+                    <TableCell>{cat.cat_name}</TableCell>
+                    <TableCell>{cat.cat_name_e}</TableCell>
+                    <TableCell>{cat.purity}</TableCell>
+                    <TableCell>{renderActions(cat)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              isDisabled={
-                !isAccountFormDirty || isAccountsLoading || isSavingAccounts
-              }
-              variant="light"
-              onPress={handleResetAccountForm}
-            >
-              {t("actions.reset")}
-            </Button>
-            <Button
-              color="success"
-              isDisabled={
-                !selectedCategoryId || isAccountsLoading || !isAccountFormDirty
-              }
-              isLoading={isSavingAccounts}
-              onPress={handleSaveAccounts}
-            >
-              {t("actions.saveAccounts")}
-            </Button>
+
+          <div className="flex flex-col items-start gap-2 border-t border-gray-100 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm text-gray-600">
+              {t("labels.totalCount", { count: filteredCategories.length })}
+            </span>
+            <Pagination
+              color="primary"
+              page={page}
+              total={pages}
+              onChange={setPage}
+            />
           </div>
         </div>
 
-        {!selectedCategoryId ? (
-          <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-            {t("labels.selectCategoryHint")}
-          </div>
-        ) : isAccountsLoading ? (
-          <div className="flex items-center justify-center py-10">
-            <Spinner color="primary" label={t("labels.loadingAccounts")} />
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-gray-200">
-            <div
-              className="grid grid-cols-3 bg-gray-50 text-sm font-semibold text-gray-700"
-              dir={dir}
-            >
-              <div className="border-l border-gray-200 px-4 py-2">
-                {t("labels.accounts")}
-              </div>
-              <div className="border-l border-gray-200 px-4 py-2">
-                {t("labels.value")}
-              </div>
-              <div className="px-4 py-2">{t("labels.wages")}</div>
+        {/* حاوية اليمين: معلومات حساب الفئة */}
+        <div className="rounded-lg border border-gray-200 bg-white px-6 py-4 shadow-sm">
+          <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {t("labels.categoryAccounts")}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {selectedCategory
+                  ? t("labels.selectedCategory", {
+                      name:
+                        locale === "en" && selectedCategory.cat_name_e
+                          ? selectedCategory.cat_name_e
+                          : selectedCategory.cat_name,
+                    })
+                  : t("labels.selectCategory")}
+              </p>
             </div>
+            <div className="flex items-center gap-2">
+              <Button
+                isDisabled={
+                  !isAccountFormDirty || isAccountsLoading || isSavingAccounts
+                }
+                variant="light"
+                onPress={handleResetAccountForm}
+              >
+                {t("actions.reset")}
+              </Button>
+              <Button
+                color="success"
+                isDisabled={
+                  !selectedCategoryId || isAccountsLoading || !isAccountFormDirty
+                }
+                isLoading={isSavingAccounts}
+                onPress={handleSaveAccounts}
+              >
+                {t("actions.saveAccounts")}
+              </Button>
+            </div>
+          </div>
 
-            <div className="divide-y divide-gray-100" dir={dir}>
-              {ACCOUNT_ROWS.map(({ label, valueKey, wageKey }) => {
-                const valueSelected = accountForm[valueKey] ?? "";
-                const wageSelected = wageKey
-                  ? (accountForm[wageKey] ?? "")
-                  : "";
+          {!selectedCategoryId ? (
+            <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+              {t("labels.selectCategoryHint")}
+            </div>
+          ) : isAccountsLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Spinner color="primary" label={t("labels.loadingAccounts")} />
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-gray-200">
+              <div
+                className="grid grid-cols-3 bg-gray-50 text-sm font-semibold text-gray-700"
+                dir={dir}
+              >
+                <div className="border-l border-gray-200 px-4 py-2">
+                  {t("labels.accounts")}
+                </div>
+                <div className="border-l border-gray-200 px-4 py-2">
+                  {t("labels.value")}
+                </div>
+                <div className="px-4 py-2">{t("labels.wages")}</div>
+              </div>
 
-                const renderAutocomplete = (
-                  key: AccountFieldKey,
-                  ariaLabel: string,
-                  column: "value" | "wage",
-                  text: string,
-                ) => {
-                  const normalizedText = getAccountDisplayValue(text)
-                    .trim()
-                    .toLowerCase();
-                  const filteredOptions = normalizedText
-                    ? accountOptions.filter((option) => {
-                        const target = option.label?.toLowerCase() ?? "";
-                        const code = option.code?.toLowerCase() ?? "";
+              <div className="divide-y divide-gray-100" dir={dir}>
+                {ACCOUNT_ROWS.map(({ label, valueKey, wageKey }) => {
+                  const valueSelected = accountForm[valueKey] ?? "";
+                  const wageSelected = wageKey
+                    ? (accountForm[wageKey] ?? "")
+                    : "";
 
-                        return (
-                          target.includes(normalizedText) ||
-                          code.includes(normalizedText)
-                        );
-                      })
-                    : accountOptions;
+                  const renderAutocomplete = (
+                    key: AccountFieldKey,
+                    ariaLabel: string,
+                    column: "value" | "wage",
+                    text: string,
+                  ) => {
+                    const normalizedText = getAccountDisplayValue(text)
+                      .trim()
+                      .toLowerCase();
+                    const filteredOptions = normalizedText
+                      ? accountOptions.filter((option) => {
+                          const target = option.label?.toLowerCase() ?? "";
+                          const code = option.code?.toLowerCase() ?? "";
+
+                          return (
+                            target.includes(normalizedText) ||
+                            code.includes(normalizedText)
+                          );
+                        })
+                      : accountOptions;
+
+                    return (
+                      <Autocomplete
+                        allowsCustomValue
+                        aria-label={ariaLabel}
+                        className="max-w-full text-right leading-tight"
+                        classNames={{
+                          selectorButton:
+                            column === "wage"
+                              ? "bg-amber-100 border-amber-300"
+                              : "bg-white border-gray-200",
+                          listbox: "text-right",
+                        }}
+                        inputValue={getAccountDisplayValue(text)}
+                        items={filteredOptions}
+                        menuTrigger="input"
+                        placeholder={t("labels.accountPlaceholder")}
+                        selectedKey={null}
+                        variant="bordered"
+                        onInputChange={(value) => {
+                          const option = getAccountOption(value);
+
+                          if (option) {
+                            handleAccountFieldChange(
+                              key,
+                              option.code || option.name || option.key,
+                            );
+
+                            return;
+                          }
+
+                          handleAccountFieldChange(key, value);
+                        }}
+                        onSelectionChange={(selection) => {
+                          if (!selection) {
+                            handleAccountFieldChange(key, "");
+
+                            return;
+                          }
+
+                          const option = accountOptions.find(
+                            (item) => item.key === selection,
+                          );
+
+                          if (option) {
+                            handleAccountFieldChange(
+                              key,
+                              option.code || option.name || option.key,
+                            );
+                          }
+                        }}
+                      >
+                        {(option) => (
+                          <AutocompleteItem
+                            key={option.key}
+                            textValue={option.label}
+                          >
+                            <div className="flex flex-col items-start">
+                              <span className="text-sm font-medium text-gray-800">
+                                {option.name}
+                              </span>
+                              {option.code && (
+                                <span className="text-xs text-gray-500">
+                                  {option.code}
+                                </span>
+                              )}
+                            </div>
+                          </AutocompleteItem>
+                        )}
+                      </Autocomplete>
+                    );
+                  };
 
                   return (
-                    <Autocomplete
-                      allowsCustomValue
-                      aria-label={ariaLabel}
-                      className="max-w-full text-right leading-tight"
-                      classNames={{
-                        selectorButton:
-                          column === "wage"
-                            ? "bg-amber-100 border-amber-300"
-                            : "bg-white border-gray-200",
-                        listbox: "text-right",
-                      }}
-                      inputValue={getAccountDisplayValue(text)}
-                      items={filteredOptions}
-                      menuTrigger="input"
-                      placeholder={t("labels.accountPlaceholder")}
-                      selectedKey={null}
-                      variant="bordered"
-                      onInputChange={(value) => {
-                        const option = getAccountOption(value);
-
-                        if (option) {
-                          handleAccountFieldChange(
-                            key,
-                            option.code || option.name || option.key,
-                          );
-
-                          return;
-                        }
-
-                        handleAccountFieldChange(key, value);
-                      }}
-                      onSelectionChange={(selection) => {
-                        if (!selection) {
-                          handleAccountFieldChange(key, "");
-
-                          return;
-                        }
-
-                        const option = accountOptions.find(
-                          (item) => item.key === selection,
-                        );
-
-                        if (option) {
-                          handleAccountFieldChange(
-                            key,
-                            option.code || option.name || option.key,
-                          );
-                        }
-                      }}
+                    <div
+                      key={label}
+                      className="grid grid-cols-3 bg-white text-sm text-gray-700"
                     >
-                      {(option) => (
-                        <AutocompleteItem
-                          key={option.key}
-                          textValue={option.label}
-                        >
-                          <div className="flex flex-col items-start">
-                            <span className="text-sm font-medium text-gray-800">
-                              {option.name}
-                            </span>
-                            {option.code && (
-                              <span className="text-xs text-gray-500">
-                                {option.code}
-                              </span>
-                            )}
+                      <div className="border-l border-gray-100 px-3 py-1.5 font-medium text-gray-800">
+                        {label}
+                      </div>
+                      <div className="border-l border-gray-100 px-3 py-1.5">
+                        {renderAutocomplete(
+                          valueKey,
+                          `اختيار الحساب (قيمة) لـ ${label}`,
+                          "value",
+                          valueSelected,
+                        )}
+                      </div>
+                      <div className="px-3 py-1.5">
+                        {wageKey ? (
+                          renderAutocomplete(
+                            wageKey,
+                            `اختيار الحساب (أجور) لـ ${label}`,
+                            "wage",
+                            wageSelected,
+                          )
+                        ) : (
+                          <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
+                            -
                           </div>
-                        </AutocompleteItem>
-                      )}
-                    </Autocomplete>
+                        )}
+                      </div>
+                    </div>
                   );
-                };
-
-                return (
-                  <div
-                    key={label}
-                    className="grid grid-cols-3 bg-white text-sm text-gray-700"
-                  >
-                    <div className="border-l border-gray-100 px-3 py-1.5 font-medium text-gray-800">
-                      {label}
-                    </div>
-                    <div className="border-l border-gray-100 px-3 py-1.5">
-                      {renderAutocomplete(
-                        valueKey,
-                        `اختيار الحساب (قيمة) لـ ${label}`,
-                        "value",
-                        valueSelected,
-                      )}
-                    </div>
-                    <div className="px-3 py-1.5">
-                      {wageKey ? (
-                        renderAutocomplete(
-                          wageKey,
-                          `اختيار الحساب (أجور) لـ ${label}`,
-                          "wage",
-                          wageSelected,
-                        )
-                      ) : (
-                        <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
-                          -
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <ConfirmationModal
