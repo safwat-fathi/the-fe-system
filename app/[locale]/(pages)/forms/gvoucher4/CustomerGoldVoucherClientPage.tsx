@@ -2151,7 +2151,7 @@ export default function CustomerGoldVoucherClientPage({
               variant="solid"
               onPress={saveVoucher}
             >
-              حفظ
+              {t("buttons.save")}
             </Button>
 
             <Button

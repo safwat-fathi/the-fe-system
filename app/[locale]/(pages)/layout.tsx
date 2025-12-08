@@ -1,11 +1,9 @@
-import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { getLocale } from "next-intl/server";
 
 import Sidebar from "./components/Sidebar";
 
 import UserHeader from "@/components/UserHeader";
-import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { STORAGE_KEYS } from "@/constants";
 import { objectsListService } from "@/services/api";
 
@@ -32,16 +30,14 @@ export default async function DashboardLayout({
 
   return (
     <div className="font-cairo flex h-screen bg-gray-50 overflow-hidden">
-      <Suspense fallback={<div className="w-72 bg-slate-900" />}>
-        <Sidebar allowedObjectIds={allowedObjectIds} isAdmin={isAdmin} />
-      </Suspense>
+      <Sidebar allowedObjectIds={allowedObjectIds} isAdmin={isAdmin} />
       {/* Main Content */}
       <main className="flex-1 w-full h-screen flex flex-col overflow-hidden">
         <div className="flex-shrink-0">
           <UserHeader isAdmin={isAdmin} />
         </div>
-        <div className="flex-1 overflow-y-auto px-1.5 py-0.5">
-          <Suspense fallback={<LoadingSkeleton />}>{children}</Suspense>
+        <div className="flex-1 overflow-y-auto px-4 py-2" suppressHydrationWarning>
+          {children}
         </div>
       </main>
     </div>

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CustomersClient from "./components/CustomersClient";
 
@@ -8,10 +9,14 @@ import helperService from "@/services/api/helper.service";
 import accountService from "@/services/api/account.service";
 import { getBranchParams } from "@/app/actions/branch-params";
 
-export const metadata: Metadata = {
-  title: "العملاء - NafeesWeb",
-  description: "إدارة العملاء",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = (await getTranslations("basic.customers" as any)) as any;
+
+  return {
+    title: `${t("labels.pageTitle")} - NafeesWeb`,
+    description: t("labels.pageTitle"),
+  };
+}
 
 export default async function CustomersPage() {
   // جلب معاملات الفرع
@@ -37,10 +42,14 @@ export default async function CustomersPage() {
     helperService.getBoxTypes().catch(() => []),
   ]);
 
+  const t = (await getTranslations("basic.customers" as any)) as any;
+
   return (
-    <div className="responsive-container font-cairo">
-      <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-6">العملاء</h1>
+    <div className="flex flex-col h-[calc(100vh-4rem)] font-cairo p-2">
+      <div className="flex-shrink-0 mb-1">
+        <Breadcrumb />
+        <h1 className="text-lg font-bold">{t("labels.pageTitle")}</h1>
+      </div>
 
       <CustomersClient
         initialAccounts={accountsData as any}

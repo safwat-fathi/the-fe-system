@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CustomerFormClient, {
   type CustomerFormValues,
@@ -62,12 +63,14 @@ export default async function NewCustomerPage() {
     hide: false,
   };
 
+  const t = (await getTranslations("basic.customers" as any)) as any;
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: "العملاء", href: "/basic/customers" },
-          { name: "إضافة عميل جديد" },
+          { name: t("labels.pageTitle"), href: "/basic/customers" },
+          { name: t("titles.add") },
         ]}
       />
       <CustomerFormClient
