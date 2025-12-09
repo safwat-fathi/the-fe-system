@@ -16,6 +16,7 @@ import {
   ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 import itemService from "@/services/api/item.service";
 import { revalidateItemsDataAction } from "@/app/actions/item";
@@ -37,9 +38,10 @@ const ItemFormClient = ({
   categories,
   itemTypes,
   units,
-  companyId,
+  companyId: _companyId,
 }: ItemFormClientProps) => {
   const router = useRouter();
+  const t = useTranslations("basic.items" as any) as any;
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [item, setItem] = useState<ItemForm & { item_img_url?: string | null }>(
@@ -153,29 +155,27 @@ const ItemFormClient = ({
         result = await itemService.createItem(item);
 
         if (result) {
-          toast.success("✅ تمت إضافة الصنف بنجاح");
+          toast.success(t("messages.addSuccess"));
           await revalidateItemsDataAction();
           router.push(`/basic/items/${result.id}`);
         } else {
-          toast.error("❌ فشل في إضافة الصنف");
+          toast.error(t("messages.addError"));
         }
       } else {
         // تحديث صنف موجود
         result = await itemService.updateItem(item.id, item);
 
         if (result) {
-          toast.success("✅ تم تحديث الصنف بنجاح");
+          toast.success(t("messages.updateSuccess"));
           await revalidateItemsDataAction();
           router.push(`/basic/items/${item.id}`);
         } else {
-          toast.error("❌ فشل في تحديث الصنف");
+          toast.error(t("messages.updateError"));
         }
       }
     } catch {
       toast.error(
-        isAddMode
-          ? "❌ حدث خطأ أثناء إضافة الصنف"
-          : "❌ حدث خطأ أثناء تحديث الصنف",
+        isAddMode ? t("messages.saveError") : t("messages.updateErrorGeneric"),
       );
     } finally {
       setIsSaving(false);
@@ -199,17 +199,17 @@ const ItemFormClient = ({
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
             {isViewMode
-              ? "عرض الصنف"
+              ? t("titles.view")
               : isAddMode
-                ? "إضافة صنف جديد"
-                : "تعديل الصنف"}
+                ? t("titles.add")
+                : t("titles.edit")}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             {isViewMode
-              ? "عرض تفاصيل الصنف"
+              ? t("descriptions.view")
               : isAddMode
-                ? "أدخل بيانات الصنف الجديد"
-                : "قم بتعديل بيانات الصنف"}
+                ? t("descriptions.add")
+                : t("descriptions.edit")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -218,11 +218,11 @@ const ItemFormClient = ({
             variant="bordered"
             onPress={handleCancel}
           >
-            العودة للقائمة
+            {t("actions.backToList")}
           </Button>
           {isViewMode && (
             <Button color="primary" onPress={handleEdit}>
-              تعديل
+              {t("actions.edit")}
             </Button>
           )}
         </div>
@@ -232,30 +232,30 @@ const ItemFormClient = ({
       <div className="space-y-6">
         <fieldset className="rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
           <legend className="px-2 text-base font-semibold text-gray-800">
-            البيانات الأساسية
+            {t("sections.basicInfo")}
           </legend>
           <p className="mb-4 text-sm text-gray-500">
-            أدخل المعلومات الرئيسية للصنف لضمان ظهورها بشكل صحيح في البحث.
+            {t("sections.basicInfoDesc")}
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="اسم الصنف"
+              label={t("fields.itemName")}
               value={item.item_name}
               onChange={handleInputChange("item_name")}
             />
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="اسم الصنف بالإنجليزية"
+              label={t("fields.itemNameEn")}
               value={item.item_name_e}
               onChange={handleInputChange("item_name_e")}
             />
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="السعر"
+              label={t("fields.itemPrice")}
               startContent={<span className="text-gray-400">﷼</span>}
               value={item.item_price ?? ""}
               onChange={handleInputChange("item_price")}
@@ -263,7 +263,7 @@ const ItemFormClient = ({
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="سعر التكلفة"
+              label={t("fields.firstCost")}
               startContent={<span className="text-gray-400">﷼</span>}
               value={item.first_cost ?? ""}
               onChange={handleInputChange("first_cost")}
@@ -271,14 +271,14 @@ const ItemFormClient = ({
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="كود الصنف"
+              label={t("fields.itemCode")}
               value={item.item_code}
               onChange={handleInputChange("item_code")}
             />
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="باركود الصنف"
+              label={t("fields.itemBarcode")}
               value={item.item_barcode ?? ""}
               onChange={handleInputChange("item_barcode")}
             />
@@ -287,51 +287,51 @@ const ItemFormClient = ({
 
         <fieldset className="rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
           <legend className="px-2 text-base font-semibold text-gray-800">
-            البيانات الفنية
+            {t("sections.technicalInfo")}
           </legend>
           <p className="mb-4 text-sm text-gray-500">
-            ساعد الفريق في فهم تفاصيل الصنف الفنية بإدخال القيم بدقة.
+            {t("sections.technicalInfoDesc")}
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="الوزن"
+              label={t("fields.itemWeight")}
               value={item.item_weight ?? ""}
               onChange={handleInputChange("item_weight")}
             />
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="الوزن بالجرام"
+              label={t("fields.itemGWeight")}
               value={item.item_g_weight ?? ""}
               onChange={handleInputChange("item_g_weight")}
             />
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="الحجر"
+              label={t("fields.stones")}
               value={item.stones ?? ""}
               onChange={handleInputChange("stones")}
             />
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="الموديل"
+              label={t("fields.model")}
               value={item.model ?? ""}
               onChange={handleInputChange("model")}
             />
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="العيار (K)"
+              label={t("fields.k")}
               value={item.k ?? ""}
               onChange={handleInputChange("k")}
             />
             <Input
               className="input-field"
               isDisabled={isViewMode}
-              label="المعايرة"
+              label={t("fields.purity")}
               value={item.purity ?? ""}
               onChange={handleInputChange("purity")}
             />
@@ -340,16 +340,16 @@ const ItemFormClient = ({
 
         <fieldset className="rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
           <legend className="px-2 text-base font-semibold text-gray-800">
-            التصنيفات
+            {t("sections.classifications")}
           </legend>
           <p className="mb-4 text-sm text-gray-500">
-            اختر التصنيفات المناسبة لضمان ظهور الصنف ضمن التقارير الصحيحة.
+            {t("sections.classificationsDesc")}
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Select
               className="input-field"
               isDisabled={isViewMode}
-              label="الفئة"
+              label={t("fields.category")}
               selectedKeys={item.cat ? [item.cat.toString()] : []}
               onSelectionChange={handleSelectChange("cat")}
             >
@@ -360,7 +360,7 @@ const ItemFormClient = ({
             <Select
               className="input-field"
               isDisabled={isViewMode}
-              label="نوع الصنف"
+              label={t("fields.itemType")}
               selectedKeys={item.item_type ? [item.item_type.toString()] : []}
               onSelectionChange={handleSelectChange("item_type")}
             >
@@ -371,7 +371,7 @@ const ItemFormClient = ({
             <Select
               className="input-field"
               isDisabled={isViewMode}
-              label="الوحدة"
+              label={t("fields.unit")}
               selectedKeys={item.unit ? [item.unit.toString()] : []}
               onSelectionChange={handleSelectChange("unit")}
             >
@@ -384,7 +384,7 @@ const ItemFormClient = ({
 
         <fieldset className="rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
           <legend className="px-2 text-base font-semibold text-gray-800">
-            صورة الصنف
+            {t("sections.itemImage")}
           </legend>
 
           {imageSrc ? (
@@ -397,7 +397,7 @@ const ItemFormClient = ({
                 />
                 {!isViewMode && (
                   <button
-                    aria-label="حذف الصورة"
+                    aria-label={t("imageUpload.removeImage")}
                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"
                     type="button"
                     onClick={handleRemoveImage}
@@ -414,7 +414,7 @@ const ItemFormClient = ({
                     variant="bordered"
                     onPress={handleBrowseClick}
                   >
-                    تغيير الصورة
+                    {t("actions.changeImage")}
                   </Button>
                 </div>
               )}
@@ -454,12 +454,12 @@ const ItemFormClient = ({
 
                 <div className="text-center">
                   <p className="text-base font-medium text-gray-700 mb-1">
-                    اختر ملف أو اسحبه وأفلته هنا
+                    {t("imageUpload.selectOrDrag")}
                   </p>
                   <p className="text-sm text-gray-500">
-                    صيغ مدعومة: JPEG, PNG, GIF, WebP
+                    {t("imageUpload.supportedFormats")}
                     <br />
-                    حجم أقصى: 10MB
+                    {t("imageUpload.maxSize")}
                   </p>
                 </div>
 
@@ -470,7 +470,7 @@ const ItemFormClient = ({
                     variant="bordered"
                     onPress={handleBrowseClick}
                   >
-                    تصفح الملفات
+                    {t("actions.browseFiles")}
                   </Button>
                 )}
               </div>
@@ -488,7 +488,7 @@ const ItemFormClient = ({
             variant="bordered"
             onPress={handleCancel}
           >
-            إلغاء
+            {t("actions.cancel")}
           </Button>
           <Button
             className="btn-primary"
@@ -496,7 +496,7 @@ const ItemFormClient = ({
             isLoading={isSaving}
             onPress={handleSave}
           >
-            {isAddMode ? "حفظ الصنف" : "حفظ التغييرات"}
+            {isAddMode ? t("actions.save") : t("actions.update")}
           </Button>
         </div>
       )}

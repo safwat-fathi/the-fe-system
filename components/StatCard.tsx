@@ -29,7 +29,6 @@ const StatCardContent = ({
   </div>
 );
 
-
 export default function StatCard({
   title,
   icon,

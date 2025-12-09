@@ -10,6 +10,7 @@ import {
   useState,
   useTransition,
   useCallback,
+  useDeferredValue,
 } from "react";
 import { Button, Input, Select, SelectItem, Pagination } from "@heroui/react";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import AppDataTable from "@/components/AppDataTable";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
@@ -47,12 +49,6 @@ type FilterParams = {
   search: string;
 };
 
-const ITEM_STATUS_FILTERS: { key: string; label: string }[] = [
-  { key: "all", label: "كل الحالات" },
-  { key: "active", label: "فعال" },
-  { key: "inactive", label: "غير فعال" },
-];
-
 const DEFAULT_FILTERS: FilterParams = {
   category: "",
   itemType: "",
@@ -68,17 +64,31 @@ export default function ItemsClient({
   initialItemTypes,
   companyId,
 }: ItemsClientProps) {
+  const router = useRouter();
+  const t = useTranslations("basic.items" as any) as any;
   const [items, setItems] = useState<ItemModel[]>(initialItems);
-  const [, setItemsCount] = useState(totalItems);
+  const [itemsCount, setItemsCount] = useState(totalItems);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [itemTypesState] = useState<ItemType[]>(initialItemTypes);
-  const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const [, startTransition] = useTransition();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ItemModel | null>(null);
 
+  // Debounce search value
+  const deferredSearch = useDeferredValue(searchValue);
+
   const fractions = useFractions() as Fractions;
+
+  const ITEM_STATUS_FILTERS: { key: string; label: string }[] = useMemo(
+    () => [
+      { key: "all", label: t("labels.allStatuses") },
+      { key: "active", label: t("labels.active") },
+      { key: "inactive", label: t("labels.inactive") },
+    ],
+    [t],
+  );
 
   const categoryOptions = useMemo(
     () =>
@@ -169,16 +179,19 @@ export default function ItemsClient({
     router.push("/basic/items/new");
   };
 
-  const handleDeleteClick = useCallback((item: ItemModel) => {
-    if (!item.id) {
-      toast.error("❌ لا يمكن حذف صنف بدون معرف");
+  const handleDeleteClick = useCallback(
+    (item: ItemModel) => {
+      if (!item.id) {
+        toast.error(t("messages.deleteErrorNoId"));
 
-      return;
-    }
+        return;
+      }
 
-    setItemToDelete(item);
-    setDeleteModalOpen(true);
-  }, []);
+      setItemToDelete(item);
+      setDeleteModalOpen(true);
+    },
+    [t],
+  );
 
   const handleDeleteConfirm = async () => {
     if (!itemToDelete?.id) {
@@ -196,12 +209,12 @@ export default function ItemsClient({
       const result = await itemService.deleteItem(itemToDelete.id);
 
       if (result) {
-        toast.success("✅ تم حذف الصنف بنجاح");
+        toast.success(t("messages.deleteSuccess"));
 
         // إعادة التحقق من البيانات في الخلفية
         router.refresh();
       } else {
-        toast.error("❌ فشل في حذف الصنف");
+        toast.error(t("messages.deleteFailed"));
         // إعادة تحميل البيانات في حالة الفشل
         router.refresh();
       }
@@ -209,7 +222,7 @@ export default function ItemsClient({
       console.error("Error deleting item:", error);
 
       // عرض رسالة خطأ واضحة
-      const errorMessage = error?.message || "❌ حدث خطأ أثناء حذف الصنف";
+      const errorMessage = error?.message || t("messages.deleteError");
 
       toast.error(errorMessage);
 
@@ -221,21 +234,52 @@ export default function ItemsClient({
     }
   };
 
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setDeleteModalOpen(false);
     setItemToDelete(null);
-  };
+  }, []);
 
   // Server-side pagination: API يعيد 20 صنف لكل صفحة
-  // Client-side pagination: نعرض 10 أصناف من الـ 20 المحملة
-  // حساب صفحة API بناءً على صفحة الجدول
-  const itemsPerTablePage = 10; // عدد الأصناف المعروضة في الجدول
+  // نعرض 20 أصناف من الـ 20 المحملة (لا حاجة لتقسيم إضافي)
+  const itemsPerTablePage = 20; // عدد الأصناف المعروضة في الجدول
   const currentPageNum = Number(params.page ?? "1") || 1;
 
-  // حساب صفحة API: كل صفحتين من الجدول = صفحة واحدة من API
-  const apiPage = Math.ceil(currentPageNum / 2);
-  // حساب الفهرس داخل صفحة API
-  const indexInApiPage = ((currentPageNum - 1) % 2) * itemsPerTablePage;
+  // حساب صفحة API: كل صفحة من الجدول = صفحة واحدة من API
+  const apiPage = currentPageNum;
+
+  // دالة لجلب البيانات من API
+  const fetchItems = useCallback(
+    async (searchQuery: string = "", pageOverride?: number) => {
+      try {
+        setIsSearching(true);
+        const pageToUse = pageOverride ?? apiPage;
+        const itemsData = await itemService.searchItems({
+          page: pageToUse,
+          companyId,
+          categoryId: params.category || "0",
+          itemTypeId: params.itemType || "0",
+          itemStatus:
+            params.status === "active"
+              ? "1"
+              : params.status === "inactive"
+                ? "2"
+                : "0",
+          query: searchQuery,
+        });
+
+        if (itemsData.results) {
+          setItems(itemsData.results);
+          setItemsCount(itemsData.count);
+        }
+      } catch (error) {
+        console.error("Error fetching items:", error);
+        toast.error(t("messages.loadError"));
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [apiPage, companyId, params.category, params.itemType, params.status, t],
+  );
 
   // جلب البيانات عند تغيير صفحة API أو الفلاتر
   // لا نجلب في التحميل الأولي لأن البيانات محملة من server component
@@ -243,40 +287,24 @@ export default function ItemsClient({
   const prevCategoryRef = useRef(params.category);
   const prevItemTypeRef = useRef(params.itemType);
   const prevStatusRef = useRef(params.status);
+  const prevSearchRef = useRef(deferredSearch);
 
+  // جلب البيانات عند تغيير الفلاتر أو الصفحة
   useEffect(() => {
     const apiPageChanged = prevApiPageRef.current !== apiPage;
     const categoryChanged = prevCategoryRef.current !== params.category;
     const itemTypeChanged = prevItemTypeRef.current !== params.itemType;
     const statusChanged = prevStatusRef.current !== params.status;
+    const hasSearch = deferredSearch.trim().length > 0;
 
     // فقط إذا تغيرت صفحة API أو الفلاتر (وليس في التحميل الأولي)
+    // إذا كان هناك بحث، نستخدم البحث، وإلا نستخدم البحث العادي
     if (apiPageChanged || categoryChanged || itemTypeChanged || statusChanged) {
-      const fetchItems = async () => {
-        try {
-          const itemsData = await itemService.searchItems({
-            page: apiPage,
-            companyId,
-            categoryId: params.category || "0",
-            itemTypeId: params.itemType || "0",
-            itemStatus:
-              params.status === "active"
-                ? "1"
-                : params.status === "inactive"
-                  ? "2"
-                  : "0",
-          });
-
-          if (itemsData.results) {
-            setItems(itemsData.results);
-            setItemsCount(itemsData.count);
-          }
-        } catch (error) {
-          console.error("Error fetching items:", error);
-        }
-      };
-
-      fetchItems();
+      if (hasSearch) {
+        fetchItems(deferredSearch.trim());
+      } else {
+        fetchItems("");
+      }
     }
 
     // تحديث المراجع
@@ -284,29 +312,53 @@ export default function ItemsClient({
     prevCategoryRef.current = params.category;
     prevItemTypeRef.current = params.itemType;
     prevStatusRef.current = params.status;
-  }, [apiPage, companyId, params.category, params.itemType, params.status]);
+  }, [
+    apiPage,
+    companyId,
+    params.category,
+    params.itemType,
+    params.status,
+    deferredSearch,
+    fetchItems,
+  ]);
 
-  // Filter items based on search value (client-side filtering)
-  const filteredItemsBySearch = useMemo(() => {
-    if (!searchValue.trim()) {
-      return items;
+  // جلب البيانات عند البحث (server-side search)
+  useEffect(() => {
+    const searchChanged = prevSearchRef.current !== deferredSearch;
+
+    if (searchChanged) {
+      // إعادة تعيين الصفحة إلى 1 عند تغيير البحث
+      const shouldResetPage = currentPageNum !== 1;
+
+      if (shouldResetPage) {
+        startTransition(() =>
+          setParams({
+            page: "1",
+            search: deferredSearch,
+          }),
+        );
+        // جلب البيانات مع الصفحة 1
+        if (!deferredSearch.trim()) {
+          fetchItems("", 1);
+        } else {
+          fetchItems(deferredSearch.trim(), 1);
+        }
+      } else {
+        // إذا لم نغير الصفحة، نجلب البيانات بشكل طبيعي
+        if (!deferredSearch.trim()) {
+          fetchItems("");
+        } else {
+          fetchItems(deferredSearch.trim());
+        }
+      }
     }
-    const searchTerm = searchValue.trim().toLowerCase();
 
-    return items.filter(
-      (item) =>
-        (item.item_name || "").toLowerCase().includes(searchTerm) ||
-        (item.item_name_e || "").toLowerCase().includes(searchTerm) ||
-        (item.item_code || "").toLowerCase().includes(searchTerm),
-    );
-  }, [items, searchValue]);
+    prevSearchRef.current = deferredSearch;
+  }, [deferredSearch, fetchItems, currentPageNum, setParams, startTransition]);
 
-  const paginatedItems = useMemo(() => {
-    const start = indexInApiPage;
-    const end = start + itemsPerTablePage;
-
-    return filteredItemsBySearch.slice(start, end);
-  }, [filteredItemsBySearch, indexInApiPage]);
+  // نعرض كل البيانات المحملة (20 صنف) بدون تقسيم إضافي
+  // البحث يتم من server-side الآن
+  const paginatedItems = items;
 
   const columns = useMemo(
     () =>
@@ -317,11 +369,12 @@ export default function ItemsClient({
         getItemTypeLabel: (value) =>
           value != null ? (itemTypeLookup.get(Number(value)) ?? "-") : "-",
         onDelete: handleDeleteClick,
+        t,
       }),
-    [fractions, categoryLookup, itemTypeLookup, handleDeleteClick],
+    [fractions, categoryLookup, itemTypeLookup, handleDeleteClick, t],
   );
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     startTransition(() =>
       setParams({
         category: "",
@@ -331,29 +384,31 @@ export default function ItemsClient({
         search: "",
       }),
     );
-  };
+  }, [setParams, startTransition]);
 
   return (
-    <>
-      <div className="flex flex-wrap items-center gap-3 mb-2">
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-shrink-0 flex flex-wrap items-center gap-1.5 mb-1">
         {/* زر إضافة صنف */}
         <Button
           className="bg-gray-100 hover:bg-gray-200 border-gray-300"
-          startContent={<PlusIcon className="h-4 w-4" />}
+          size="sm"
+          startContent={<PlusIcon className="h-3 w-3" />}
           variant="bordered"
           onPress={handleOpenAddModal}
         >
-          إضافة صنف
+          {t("actions.add")}
         </Button>
 
         {/* فاصل خطي */}
-        <div className="h-8 w-px bg-gray-300" />
+        <div className="h-5 w-px bg-gray-300" />
 
         {/* حقول الفرز */}
-        <div className="flex flex-wrap items-center gap-2 flex-1">
+        <div className="flex flex-wrap items-center gap-1 flex-1">
           <Select
-            className="input-field flex-1 min-w-[120px]"
-            placeholder="اختر الفئة"
+            className="input-field flex-1 min-w-[90px]"
+            placeholder={t("labels.selectCategory")}
+            size="sm"
             selectedKeys={params.category ? [params.category] : []}
             onSelectionChange={(keys) =>
               startTransition(() =>
@@ -370,8 +425,9 @@ export default function ItemsClient({
           </Select>
 
           <Select
-            className="input-field flex-1 min-w-[120px]"
-            placeholder="نوع الصنف"
+            className="input-field flex-1 min-w-[90px]"
+            placeholder={t("labels.itemType")}
+            size="sm"
             selectedKeys={params.itemType ? [params.itemType] : []}
             onSelectionChange={(keys) =>
               startTransition(() =>
@@ -388,8 +444,9 @@ export default function ItemsClient({
           </Select>
 
           <Select
-            className="input-field flex-1 min-w-[120px]"
-            placeholder="حالة الصنف"
+            className="input-field flex-1 min-w-[90px]"
+            placeholder={t("labels.status")}
+            size="sm"
             selectedKeys={[params.status || "all"]}
             onSelectionChange={(keys) =>
               startTransition(() =>
@@ -407,25 +464,31 @@ export default function ItemsClient({
 
           <Button
             isIconOnly
-            className="h-10"
-            title="مسح الفلاتر"
+            className="h-7"
+            size="sm"
+            title={t("labels.clearFilters")}
             variant="bordered"
             onPress={clearFilters}
           >
-            <FunnelIcon className="h-4 w-4" />
+            <FunnelIcon className="h-3 w-3" />
           </Button>
         </div>
 
         {/* فاصل خطي */}
-        <div className="h-8 w-px bg-gray-300" />
+        <div className="h-5 w-px bg-gray-300" />
 
         {/* حقل البحث */}
-        <div className="w-48">
+        <div className="w-36">
           <Input
             className="w-full"
-            placeholder="بحث بالاسم..."
+            placeholder={t("labels.searchPlaceholder")}
+            size="sm"
             startContent={
-              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              isSearching ? (
+                <div className="h-3 w-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <MagnifyingGlassIcon className="h-3 w-3 text-gray-400" />
+              )
             }
             value={searchValue}
             onChange={(e) => {
@@ -438,44 +501,49 @@ export default function ItemsClient({
         </div>
       </div>
 
-      <AppDataTable
-        className=""
-        columns={columns}
-        data={paginatedItems}
-        emptyContent="لم يتم العثور على أصناف."
-        filterable={false}
-        searchable={false}
-      />
-
-      {filteredItemsBySearch.length > 0 && (
-        <div className="flex justify-center mt-1">
-          <Pagination
-            showShadow
-            color="primary"
-            page={currentPageNum}
-            total={Math.ceil(filteredItemsBySearch.length / itemsPerTablePage)}
-            onChange={(newPage) => {
-              startTransition(() =>
-                setParams({
-                  page: String(newPage),
-                }),
-              );
-            }}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <AppDataTable
+            className="h-full"
+            columns={columns}
+            data={paginatedItems}
+            emptyContent={t("labels.emptyContent")}
+            filterable={false}
+            searchable={false}
           />
         </div>
-      )}
+
+        {itemsCount > 0 && (
+          <div className="flex-shrink-0 flex justify-center py-1">
+            <Pagination
+              showShadow
+              color="primary"
+              size="sm"
+              page={currentPageNum}
+              total={Math.ceil(itemsCount / itemsPerTablePage)}
+              onChange={(newPage) => {
+                startTransition(() =>
+                  setParams({
+                    page: String(newPage),
+                  }),
+                );
+              }}
+            />
+          </div>
+        )}
+      </div>
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="danger"
-        confirmText="حذف"
+        confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={`هل أنت متأكد من حذف الصنف "${itemToDelete?.item_name}"؟`}
+        message={t("modals.deleteMessage", { name: itemToDelete?.item_name })}
         size="md"
-        title="تأكيد الحذف"
+        title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />
-    </>
+    </div>
   );
 }

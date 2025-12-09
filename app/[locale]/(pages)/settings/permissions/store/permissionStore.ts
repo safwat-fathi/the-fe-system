@@ -3,10 +3,10 @@
  * Zustand store for managing permissions state
  */
 
-import { create } from "zustand";
-
 import type { UserPermissions } from "../types/users";
 import type { MergedPermissions } from "../types/permissions";
+
+import { create } from "zustand";
 
 interface PermissionState {
   permissions: UserPermissions | null;

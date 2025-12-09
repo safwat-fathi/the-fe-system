@@ -28,7 +28,7 @@ class CostCenterService extends HttpService<CostCenter> {
 
   async getAllCostCenters(): Promise<CostCenter[]> {
     try {
-      let companyId = "1";
+      let companyId: string;
 
       try {
         const branchParams = await import("@/app/actions/branch-params").then(
@@ -46,8 +46,11 @@ class CostCenterService extends HttpService<CostCenter> {
           xcom_id: companyId || "1",
         },
         {
-          cache: "no-store",
-          next: { tags: ["cost-centers"] },
+          cache: "force-cache",
+          next: {
+            revalidate: 300, // Cache for 5 minutes
+            tags: ["cost-centers", `cost-centers-${companyId}`],
+          },
         },
       );
 
@@ -118,7 +121,7 @@ class CostCenterService extends HttpService<CostCenter> {
   ): Promise<CostCenter | null> {
     try {
       // جلب معاملات الفرع لإضافة com
-      let companyId = "1";
+      let companyId: string;
 
       try {
         const branchParams = await import("@/app/actions/branch-params").then(

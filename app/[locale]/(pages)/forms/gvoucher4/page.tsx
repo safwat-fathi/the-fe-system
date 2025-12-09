@@ -19,8 +19,8 @@ export default async function CustomerReceiptVoucherPage() {
     <div className="container mx-auto p-4">
       <Breadcrumb
         items={[
-          { name: "سند قبض عميل", href: "/forms/gvoucher4" },
-          { name: "جديدة" },
+          { name: "", segmentKey: "gvoucher4", href: "/forms/gvoucher4" },
+          { name: "", segmentKey: "new" },
         ]}
       />
       <CustomerGoldVoucherClientPage

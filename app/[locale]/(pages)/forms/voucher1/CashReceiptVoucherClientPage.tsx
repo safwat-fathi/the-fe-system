@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useRef, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
@@ -15,13 +15,10 @@ import {
   ChevronRightIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
-  BackwardIcon,
-  ForwardIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import clsx from "clsx";
 import { useTranslations, useLocale } from "next-intl";
-import { getLocaleDir } from "@/i18n/config";
 import {
   Button,
   Checkbox,
@@ -33,6 +30,7 @@ import {
   Textarea,
 } from "@heroui/react";
 
+import { getLocaleDir } from "@/i18n/config";
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
@@ -87,7 +85,7 @@ export default function CashReceiptVoucherClientPage({
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("forms.cashReceiptVoucher");
-  
+
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = "text-center";
@@ -176,30 +174,6 @@ export default function CashReceiptVoucherClientPage({
     };
   }, [navigationInfo, resolvePaginatedVoucherHref]);
 
-  const navigationTargets = useMemo(() => {
-    return {
-      previous: navigationInfo?.previous ?? -1,
-      next: navigationInfo?.next ?? -1,
-      first: navigationInfo?.first ?? -1,
-      last: navigationInfo?.last ?? -1,
-    };
-  }, [navigationInfo]);
-
-  const handleNavigate = (targetId?: number | null) => {
-    if (!targetId || targetId <= 0) {
-      return;
-    }
-
-    const currentRecordId = voucher.id ?? voucher.vouch_id ?? null;
-
-    if (currentRecordId && Number(currentRecordId) === targetId) {
-      return;
-    }
-
-    router.push(`/forms/voucher1/${targetId}?mode=preview`);
-    router.refresh();
-  };
-
   // رقم السند الحالي
   const voucherNumber = voucher.vouch_id ? String(voucher.vouch_id) : "";
 
@@ -236,9 +210,7 @@ export default function CashReceiptVoucherClientPage({
   const firstAccountTableInputRef = useRef<HTMLInputElement | null>(null);
 
   // Hook for Enter key navigation in top form fields
-  const {
-    handleKeyDown: handleKeyDownSelectors,
-  } = useKeyAsTab({
+  const { handleKeyDown: handleKeyDownSelectors } = useKeyAsTab({
     keys: ["Enter"],
     containerRef: selectorsRef,
     disabled: !isEditing,
@@ -297,6 +269,7 @@ export default function CashReceiptVoucherClientPage({
           if (currentIndex === allFocusable.length - 1) {
             // Move to notes input
             notesInputRef.current?.focus();
+
             return true;
           }
         }
@@ -307,101 +280,35 @@ export default function CashReceiptVoucherClientPage({
   });
 
   // Hook for Enter key navigation in cash table rows
-  const {
-    setInputRef: setCashInputRef,
-    handleKeyDown: handleCashKeyDown,
-    focusFirstInRow: focusFirstInCashRow,
-  } = useEnterKeyNavigation({
-    rows: voucherBoxes,
-    rowHasValue: (row) => {
-      return !!(
-        (row?.box_id && row.box_id > 0) ||
-        (row?.amount && row.amount > 0)
-      );
-    },
-    onAddRow: addVoucherBoxRow,
-    onLastCell: () => {
-      // عندما نصل لأخر حقل في جدول النقدية، ننتقل لجدول الحسابات
-      firstAccountTableInputRef.current?.focus();
-    },
-  });
+  const { setInputRef: setCashInputRef, handleKeyDown: handleCashKeyDown } =
+    useEnterKeyNavigation({
+      rows: voucherBoxes,
+      rowHasValue: (row) => {
+        return !!(
+          (row?.box_id && row.box_id > 0) ||
+          (row?.amount && row.amount > 0)
+        );
+      },
+      onAddRow: addVoucherBoxRow,
+      onLastCell: () => {
+        // عندما نصل لأخر حقل في جدول النقدية، ننتقل لجدول الحسابات
+        firstAccountTableInputRef.current?.focus();
+      },
+    });
 
   // Hook for Enter key navigation in accounts table rows
-  const {
-    setInputRef,
-    handleKeyDown: handleKeyDownTable,
-    focusFirstInRow,
-  } = useEnterKeyNavigation({
-    rows: details,
-    rowHasValue: (row) => {
-      return !!(
-        row?.acc_id ||
-        (row?.debit && row.debit > 0) ||
-        (row?.credit && row.credit > 0)
-      );
-    },
-    onAddRow: addDetailRow,
-  });
-
-  const toAmount = (value: unknown) => {
-    const numeric = Number(value);
-
-    return Number.isFinite(numeric) ? numeric : 0;
-  };
-
-  const PREVIEW_TOLERANCE = 0.01;
-
-  const getPreviewAccountName = (
-    accId: number | string | null | undefined,
-    fallback?: string | null,
-  ): string => {
-    if (fallback && fallback.trim().length > 0) {
-      return fallback;
-    }
-
-    if (accId === null || accId === undefined || accId === "") {
-      return "";
-    }
-
-    const numericId = Number(accId);
-
-    if (!Number.isFinite(numericId)) {
-      return "";
-    }
-
-    const account = accounts?.find((acc: any) => {
-      const candidate = acc?.acc_id ?? acc?.acc ?? acc?.account_no ?? acc?.id;
-
-      return Number(candidate) === numericId;
+  const { setInputRef, handleKeyDown: handleKeyDownTable } =
+    useEnterKeyNavigation({
+      rows: details,
+      rowHasValue: (row) => {
+        return !!(
+          row?.acc_id ||
+          (row?.debit && row.debit > 0) ||
+          (row?.credit && row.credit > 0)
+        );
+      },
+      onAddRow: addDetailRow,
     });
-
-    return account?.acc_name || account?.name || account?.label || "";
-  };
-
-  const getBoxAccountName = (
-    boxId: number | string | null | undefined,
-  ): { name: string; code: string | number | null } => {
-    if (boxId === null || boxId === undefined || boxId === "") {
-      return { name: "", code: null };
-    }
-
-    const numericId = Number(boxId);
-
-    if (!Number.isFinite(numericId)) {
-      return { name: "", code: boxId };
-    }
-
-    const boxItem = boxes?.find((box: any) => {
-      const candidate = box?.id ?? box?.box_id ?? box?.box;
-
-      return Number(candidate) === numericId;
-    });
-
-    return {
-      name: boxItem?.box_name || boxItem?.name || boxItem?.label || "",
-      code: boxItem?.acc ?? boxItem?.acc_id ?? boxId,
-    };
-  };
 
   // Helper functions for box select
   const getBoxSelectValue = (boxId: number | null | undefined) => {
@@ -455,7 +362,9 @@ export default function CashReceiptVoucherClientPage({
 
   if (!isClient) {
     return (
-      <div className={`flex justify-center items-center h-screen ${textAlignCenter}`}>
+      <div
+        className={`flex justify-center items-center h-screen ${textAlignCenter}`}
+      >
         {t("status.loading")}
       </div>
     );
@@ -576,7 +485,9 @@ export default function CashReceiptVoucherClientPage({
       <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 mb-2 border border-slate-200">
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-3">
-            <h1 className={`text-xl font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}>
+            <h1
+              className={`text-xl font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}
+            >
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
                 #
@@ -584,11 +495,19 @@ export default function CashReceiptVoucherClientPage({
                   ? voucher.vouch_id
                   : t("status.numbering")}
               </span>
-              <span className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}>
+              <span
+                className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}
+              >
                 <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                {new Date(voucher.vouch_date).toLocaleString(
-                  locale === "ar" ? "ar-EG" : "en-US",
-                )}
+                {new Date(voucher.vouch_date).toLocaleString("en-US", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  hour12: true,
+                })}
               </span>
             </h1>
           </div>
@@ -696,7 +615,9 @@ export default function CashReceiptVoucherClientPage({
               >
                 <ChevronRightIcon className="w-4 h-4" />
               </Link>
-              <span className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}>
+              <span
+                className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}
+              >
                 {t("navigation.position", {
                   current: voucherNumber,
                   total: navigationMetadata?.totalVouchers ?? "?",
@@ -886,11 +807,13 @@ export default function CashReceiptVoucherClientPage({
                   if (!target) return;
 
                   const isInListbox = target.closest('[role="listbox"]');
+
                   if (isInListbox) {
                     return;
                   }
 
                   const selectButton = target.closest('[role="combobox"]');
+
                   if (selectButton) {
                     const isExpanded =
                       selectButton.getAttribute("aria-expanded") === "true";
@@ -939,10 +862,7 @@ export default function CashReceiptVoucherClientPage({
                     ? String(status.code_id)
                     : String(status.id || status.Id || "");
                 const statusLabel =
-                  status.code_desc ||
-                  status["Code Desc"] ||
-                  status.name ||
-                  "";
+                  status.code_desc || status["Code Desc"] || status.name || "";
 
                 return (
                   <option key={status.id || status.Id} value={statusValue}>
@@ -1132,8 +1052,10 @@ export default function CashReceiptVoucherClientPage({
                                       refSetter(
                                         combobox as unknown as HTMLInputElement,
                                       );
+
                                       return true;
                                     }
+
                                     return false;
                                   };
 
@@ -1173,6 +1095,7 @@ export default function CashReceiptVoucherClientPage({
                                         isLastCol: thisCol === 4,
                                       },
                                     );
+
                                     return;
                                   }
 
@@ -1194,6 +1117,7 @@ export default function CashReceiptVoucherClientPage({
                                         isLastCol: thisCol === 4,
                                       },
                                     );
+
                                     return;
                                   }
                                 }
@@ -1213,7 +1137,9 @@ export default function CashReceiptVoucherClientPage({
                                 }
                                 menuPosition="fixed"
                                 options={boxSelectOptions}
-                                placeholder={t("tables.cash.columns.boxPlaceholder")}
+                                placeholder={t(
+                                  "tables.cash.columns.boxPlaceholder",
+                                )}
                                 styles={{
                                   control: (base) => ({
                                     ...base,
@@ -1281,12 +1207,14 @@ export default function CashReceiptVoucherClientPage({
 
                                   const isInListbox =
                                     target.closest('[role="listbox"]');
+
                                   if (isInListbox) {
                                     return;
                                   }
 
                                   const selectButton =
                                     target.closest('[role="combobox"]');
+
                                   if (selectButton) {
                                     const isExpanded =
                                       selectButton.getAttribute(
@@ -1359,8 +1287,10 @@ export default function CashReceiptVoucherClientPage({
                                       refSetter(
                                         combobox as unknown as HTMLInputElement,
                                       );
+
                                       return true;
                                     }
+
                                     return false;
                                   };
 
@@ -1400,6 +1330,7 @@ export default function CashReceiptVoucherClientPage({
                                         isLastCol: thisCol === 4,
                                       },
                                     );
+
                                     return;
                                   }
 
@@ -1421,6 +1352,7 @@ export default function CashReceiptVoucherClientPage({
                                         isLastCol: thisCol === 4,
                                       },
                                     );
+
                                     return;
                                   }
                                 }
@@ -1440,7 +1372,9 @@ export default function CashReceiptVoucherClientPage({
                                 }
                                 menuPosition="fixed"
                                 options={costCenterSelectOptions}
-                                placeholder={t("tables.cash.columns.costCenterPlaceholder")}
+                                placeholder={t(
+                                  "tables.cash.columns.costCenterPlaceholder",
+                                )}
                                 styles={{
                                   control: (base) => ({
                                     ...base,
@@ -1491,12 +1425,14 @@ export default function CashReceiptVoucherClientPage({
 
                                   const isInListbox =
                                     target.closest('[role="listbox"]');
+
                                   if (isInListbox) {
                                     return;
                                   }
 
                                   const selectButton =
                                     target.closest('[role="combobox"]');
+
                                   if (selectButton) {
                                     const isExpanded =
                                       selectButton.getAttribute(
@@ -1646,8 +1582,10 @@ export default function CashReceiptVoucherClientPage({
                                         ).current =
                                           combobox as unknown as HTMLInputElement;
                                       }
+
                                       return true;
                                     }
+
                                     return false;
                                   };
 
@@ -1689,6 +1627,7 @@ export default function CashReceiptVoucherClientPage({
                                       index,
                                       thisCol,
                                     );
+
                                     return;
                                   }
 
@@ -1707,6 +1646,7 @@ export default function CashReceiptVoucherClientPage({
                                         index,
                                         thisCol,
                                       );
+
                                       return;
                                     }
                                   }
@@ -1737,9 +1677,11 @@ export default function CashReceiptVoucherClientPage({
                                     : null
                                 }
                                 menuPosition="fixed"
-                                placeholder={t("tables.accounts.columns.accountPlaceholder")}
+                                placeholder={t(
+                                  "tables.accounts.columns.accountPlaceholder",
+                                )}
                                 styles={{
-                                  control: (base, state) => ({
+                                  control: (base, _state) => ({
                                     ...base,
                                     minHeight: "100%",
                                     height: "100%",
@@ -1860,6 +1802,7 @@ export default function CashReceiptVoucherClientPage({
                                       e.preventDefault();
                                       e.stopPropagation();
                                       handleKeyDownTable(e, index, 0);
+
                                       return;
                                     }
                                   }
@@ -1969,8 +1912,10 @@ export default function CashReceiptVoucherClientPage({
                                       refSetter(
                                         combobox as unknown as HTMLInputElement,
                                       );
+
                                       return true;
                                     }
+
                                     return false;
                                   };
 
@@ -2007,6 +1952,7 @@ export default function CashReceiptVoucherClientPage({
                                       index,
                                       thisCol,
                                     );
+
                                     return;
                                   }
 
@@ -2025,6 +1971,7 @@ export default function CashReceiptVoucherClientPage({
                                       index,
                                       thisCol,
                                     );
+
                                     return;
                                   }
                                 }
@@ -2044,7 +1991,9 @@ export default function CashReceiptVoucherClientPage({
                                 }
                                 menuPosition="fixed"
                                 options={costCenterSelectOptions}
-                                placeholder={t("tables.cash.columns.costCenterPlaceholder")}
+                                placeholder={t(
+                                  "tables.cash.columns.costCenterPlaceholder",
+                                )}
                                 styles={{
                                   control: (base) => ({
                                     ...base,
@@ -2095,12 +2044,14 @@ export default function CashReceiptVoucherClientPage({
 
                                   const isInListbox =
                                     target.closest('[role="listbox"]');
+
                                   if (isInListbox) {
                                     return;
                                   }
 
                                   const selectButton =
                                     target.closest('[role="combobox"]');
+
                                   if (selectButton) {
                                     const isExpanded =
                                       selectButton.getAttribute(
@@ -2116,6 +2067,7 @@ export default function CashReceiptVoucherClientPage({
                                       e.preventDefault();
                                       e.stopPropagation();
                                       handleKeyDownTable(e, index, thisCol);
+
                                       return;
                                     }
 
@@ -2130,6 +2082,7 @@ export default function CashReceiptVoucherClientPage({
                                       e.preventDefault();
                                       e.stopPropagation();
                                       handleKeyDownTable(e, index, thisCol);
+
                                       return;
                                     }
 
@@ -2168,7 +2121,9 @@ export default function CashReceiptVoucherClientPage({
             <span className={`text-gray-700 font-medium ${textAlign}`}>
               {t("totals.totalCash")}:
             </span>
-            <span className={`font-semibold text-blue-700 flex items-center gap-1 ${textAlign}`}>
+            <span
+              className={`font-semibold text-blue-700 flex items-center gap-1 ${textAlign}`}
+            >
               {formatAmount(totals.totalBoxes)}
               <RiyalIcon color="currentColor" />
             </span>
@@ -2178,7 +2133,9 @@ export default function CashReceiptVoucherClientPage({
             <span className={`text-gray-700 font-medium ${textAlign}`}>
               {t("totals.totalDetails")}:
             </span>
-            <span className={`font-semibold text-green-700 flex items-center gap-1 ${textAlign}`}>
+            <span
+              className={`font-semibold text-green-700 flex items-center gap-1 ${textAlign}`}
+            >
               {formatAmount(totals.totalDetails)}
               <RiyalIcon color="currentColor" />
             </span>
@@ -2189,7 +2146,9 @@ export default function CashReceiptVoucherClientPage({
               <span className={`text-gray-700 font-medium ${textAlign}`}>
                 {t("totals.difference")}:
               </span>
-              <span className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}>
+              <span
+                className={`font-semibold text-red-700 flex items-center gap-1 ${textAlign}`}
+              >
                 {formatAmount(Math.abs(balance))}
                 <RiyalIcon color="currentColor" />
                 <span className="text-xs text-red-600">

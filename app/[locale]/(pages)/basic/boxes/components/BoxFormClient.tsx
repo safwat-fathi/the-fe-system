@@ -8,8 +8,8 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
-import { getLocaleDir } from "@/i18n/config";
 
+import { getLocaleDir } from "@/i18n/config";
 import boxService from "@/services/api/box.service";
 
 type BoxFormMode = "view" | "edit" | "add";
@@ -44,10 +44,10 @@ const BoxFormClient = ({
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.boxes");
-  
+
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
-  
+
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [box, setBox] = useState<Partial<Box>>(initialBox);
@@ -95,7 +95,9 @@ const BoxFormClient = ({
       };
 
       // Extract acc_name if it exists (it's not part of Box type but might be in initialBox)
-      const { acc_name, ...boxWithoutAccName } = updatedBox as typeof updatedBox & { acc_name?: string };
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { acc_name, ...boxWithoutAccName } =
+        updatedBox as typeof updatedBox & { acc_name?: string };
 
       const cleanedBox = {
         ...boxWithoutAccName,
@@ -120,9 +122,7 @@ const BoxFormClient = ({
 
       if (result) {
         toast.success(
-          isAddMode
-            ? t("messages.addSuccess")
-            : t("messages.updateSuccess"),
+          isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
         router.push("/basic/boxes");
         router.refresh();

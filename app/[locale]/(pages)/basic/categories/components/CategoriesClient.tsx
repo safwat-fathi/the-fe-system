@@ -37,7 +37,9 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations, useLocale } from "next-intl";
 
+import { getLocaleDir } from "@/i18n/config";
 import {
   getCategoryAccountsAction,
   ensureCategoryAccountAction,
@@ -45,20 +47,6 @@ import {
 } from "@/app/actions/category-accounts.action";
 import { ConfirmationModal } from "@/components/Modal";
 import categoryService from "@/services/api/category.service";
-
-const columns = [
-  { name: "رقم الفئة", uid: "id" },
-  { name: "اسم الفئة", uid: "cat_name" },
-  { name: "الاسم بالإنجليزي", uid: "cat_name_e" },
-  { name: "العيار", uid: "k" },
-  { name: "المعيارية", uid: "purity" },
-  { name: "الصندوق", uid: "box" },
-  { name: "الضريبة", uid: "tax_type" },
-  { name: "نسبة الضريبة", uid: "tax" },
-  { name: "النوع", uid: "cat_type" },
-  { name: "حالة الفئة", uid: "cat_status" },
-  { name: "", uid: "actions" },
-] as const;
 
 const ACCOUNT_KEYS = [
   "buy_acc",
@@ -87,28 +75,7 @@ type AccountRow = {
   wageKey?: AccountFieldKey;
 };
 
-const ACCOUNT_ROWS: AccountRow[] = [
-  { label: "حساب المشتروات", valueKey: "buy_acc", wageKey: "buy_acc2" },
-  { label: "حساب المبيعات", valueKey: "sell_acc", wageKey: "sell_acc2" },
-  {
-    label: "حساب مردود المشتروات",
-    valueKey: "back_buy",
-    wageKey: "back_buy2",
-  },
-  {
-    label: "حساب مردود المبيعات",
-    valueKey: "back_sell",
-    wageKey: "back_sell2",
-  },
-  { label: "حساب الاستلام", valueKey: "dist_acc", wageKey: "dist_acc2" },
-  { label: "حساب التسليم", valueKey: "back_dist", wageKey: "back_dist2" },
-  { label: "حساب المخزون", valueKey: "inv_acc", wageKey: "inv_acc2" },
-  {
-    label: "حساب تكلفة المبيعات",
-    valueKey: "cost_acc",
-    wageKey: "cost_acc2",
-  },
-];
+// ACCOUNT_ROWS will be created inside component to use translations
 
 type CategoryAccountFormState = {
   [Key in AccountFieldKey]: string;
@@ -200,6 +167,73 @@ export default function CategoriesClient({
   initialCategoryAccounts,
 }: CategoriesClientProps) {
   const router = useRouter();
+  const t = useTranslations("basic.categories" as any) as any;
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+
+  const columns = useMemo(
+    () => [
+      { name: t("columns.id"), uid: "id" },
+      { name: t("columns.catName"), uid: "cat_name" },
+      { name: t("columns.catNameEn"), uid: "cat_name_e" },
+      { name: t("columns.k"), uid: "k" },
+      { name: t("columns.purity"), uid: "purity" },
+      { name: t("columns.box"), uid: "box" },
+      { name: t("columns.taxType"), uid: "tax_type" },
+      { name: t("columns.tax"), uid: "tax" },
+      { name: t("columns.catType"), uid: "cat_type" },
+      { name: t("columns.catStatus"), uid: "cat_status" },
+      { name: "", uid: "actions" },
+    ],
+    [t],
+  );
+
+  const ACCOUNT_ROWS: AccountRow[] = useMemo(
+    () => [
+      {
+        label: t("accountRows.buyAcc"),
+        valueKey: "buy_acc",
+        wageKey: "buy_acc2",
+      },
+      {
+        label: t("accountRows.sellAcc"),
+        valueKey: "sell_acc",
+        wageKey: "sell_acc2",
+      },
+      {
+        label: t("accountRows.backBuy"),
+        valueKey: "back_buy",
+        wageKey: "back_buy2",
+      },
+      {
+        label: t("accountRows.backSell"),
+        valueKey: "back_sell",
+        wageKey: "back_sell2",
+      },
+      {
+        label: t("accountRows.distAcc"),
+        valueKey: "dist_acc",
+        wageKey: "dist_acc2",
+      },
+      {
+        label: t("accountRows.backDist"),
+        valueKey: "back_dist",
+        wageKey: "back_dist2",
+      },
+      {
+        label: t("accountRows.invAcc"),
+        valueKey: "inv_acc",
+        wageKey: "inv_acc2",
+      },
+      {
+        label: t("accountRows.costAcc"),
+        valueKey: "cost_acc",
+        wageKey: "cost_acc2",
+      },
+    ],
+    [t],
+  );
+
   const boxMap = useMemo(() => {
     const map = new Map<number, string>();
 
@@ -243,9 +277,7 @@ export default function CategoriesClient({
       const catTypeId = cat.cat_type ?? cat.catType ?? null;
       const rawStatusId = cat.cat_status ?? cat.catStatus ?? null;
       const catStatusId =
-        typeof rawStatusId === "boolean"
-          ? Number(rawStatusId)
-          : rawStatusId;
+        typeof rawStatusId === "boolean" ? Number(rawStatusId) : rawStatusId;
       const taxTypeRaw = cat.tax_type;
       const isTaxable =
         typeof taxTypeRaw === "boolean"
@@ -383,7 +415,7 @@ export default function CategoriesClient({
 
       setCategories(sanitized);
     } catch (error) {
-      console.error("فشل في جلب البيانات:", error);
+      console.error(t("messages.loadError"), error);
       setCategories([]);
     }
   };
@@ -453,7 +485,7 @@ export default function CategoriesClient({
 
   const handleDeleteClick = (category: CategoryRow) => {
     if (!category.id) {
-      toast.error("❌ لا يمكن حذف فئة بدون معرف");
+      toast.error(t("messages.deleteErrorNoId"));
 
       return;
     }
@@ -478,14 +510,14 @@ export default function CategoriesClient({
       const result = await categoryService.deleteCategory(categoryToDelete.id);
 
       if (result) {
-        toast.success("تم حذف الفئة بنجاح ✅");
+        toast.success(t("messages.deleteSuccess"));
         await loadData();
       } else {
-        toast.error("فشل في الحذف ❌");
+        toast.error(t("messages.deleteFailed"));
         await loadData();
       }
     } catch {
-      toast.error("خطأ أثناء الاتصال بالسيرفر");
+      toast.error(t("messages.deleteError"));
       await loadData();
     } finally {
       setDeleteModalOpen(false);
@@ -535,8 +567,8 @@ export default function CategoriesClient({
         setAccountFormSnapshot(formState);
         setAccountRecordId(record?.id ?? null);
       } catch (error) {
-        console.error("فشل في تحميل حسابات الفئة:", error);
-        toast.error("فشل في تحميل حسابات الفئة ❌");
+        console.error(t("messages.accountsLoadError"), error);
+        toast.error(t("messages.accountsLoadError"));
         setAccountForm({ ...EMPTY_ACCOUNT_FORM });
         setAccountFormSnapshot({ ...EMPTY_ACCOUNT_FORM });
         setAccountRecordId(null);
@@ -600,7 +632,7 @@ export default function CategoriesClient({
 
   const handleSaveAccounts = async () => {
     if (!selectedCategoryId) {
-      toast.error("❌ يرجى اختيار فئة أولاً");
+      toast.error(t("messages.selectCategoryFirst"));
 
       return;
     }
@@ -638,13 +670,13 @@ export default function CategoriesClient({
         setAccountForm(nextState);
         setAccountFormSnapshot(nextState);
         setAccountRecordId(result.id);
-        toast.success("تم حفظ حسابات الفئة بنجاح ✅");
+        toast.success(t("messages.accountsSaveSuccess"));
       } else {
-        toast.error("فشل في حفظ حسابات الفئة ❌");
+        toast.error(t("messages.accountsSaveError"));
       }
     } catch (error) {
-      console.error("خطأ أثناء حفظ حسابات الفئة:", error);
-      toast.error("حدث خطأ أثناء حفظ حسابات الفئة ❌");
+      console.error(t("messages.accountsSaveErrorGeneric"), error);
+      toast.error(t("messages.accountsSaveErrorGeneric"));
     } finally {
       setIsSavingAccounts(false);
     }
@@ -683,7 +715,7 @@ export default function CategoriesClient({
   return (
     <div className="flex flex-col gap-6 font-cairo">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-base font-semibold">إدارة الفئات</h2>
+        <h2 className="text-base font-semibold">{t("labels.manage")}</h2>
         <div className="h-8 w-px bg-gray-300" />
         <Button
           className="bg-gray-100"
@@ -691,12 +723,12 @@ export default function CategoriesClient({
           onPress={() => router.push("/basic/categories/new")}
         >
           <PlusIcon className="h-3 w-3" />
-          إضافة فئة
+          {t("actions.add")}
         </Button>
         <div className="h-8 w-px bg-gray-300" />
         <div className="flex-1 min-w-[200px]">
           <Input
-            placeholder="بحث بالاسم..."
+            placeholder={t("labels.searchPlaceholder")}
             size="sm"
             startContent={
               <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
@@ -710,7 +742,7 @@ export default function CategoriesClient({
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
         <Table
           removeWrapper
-          aria-label="جدول الفئات"
+          aria-label={t("labels.tableAriaLabel")}
           selectedKeys={
             selectedCategoryId
               ? new Set([String(selectedCategoryId)])
@@ -724,7 +756,7 @@ export default function CategoriesClient({
               <TableColumn key={col.uid}>{col.name}</TableColumn>
             ))}
           </TableHeader>
-          <TableBody emptyContent="لا توجد فئات مطابقة">
+          <TableBody emptyContent={t("labels.emptyContent")}>
             {paginated.map((cat) => (
               <TableRow key={cat.id} className="cursor-pointer">
                 <TableCell>{cat.id}</TableCell>
@@ -747,7 +779,7 @@ export default function CategoriesClient({
 
         <div className="flex flex-col items-start gap-2 border-t border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-gray-600">
-            عدد الفئات: {filteredCategories.length}
+            {t("labels.totalCount", { count: filteredCategories.length })}
           </span>
           <Pagination
             color="primary"
@@ -762,12 +794,17 @@ export default function CategoriesClient({
         <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              حسابات الفئة
+              {t("labels.categoryAccounts")}
             </h3>
             <p className="text-sm text-gray-500">
               {selectedCategory
-                ? `الفئة المحددة: ${selectedCategory.cat_name}`
-                : "اختر فئة لاستعراض حساباتها"}
+                ? t("labels.selectedCategory", {
+                    name:
+                      locale === "en" && selectedCategory.cat_name_e
+                        ? selectedCategory.cat_name_e
+                        : selectedCategory.cat_name,
+                  })
+                : t("labels.selectCategory")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -778,7 +815,7 @@ export default function CategoriesClient({
               variant="light"
               onPress={handleResetAccountForm}
             >
-              إعادة تعيين
+              {t("actions.reset")}
             </Button>
             <Button
               color="success"
@@ -788,31 +825,35 @@ export default function CategoriesClient({
               isLoading={isSavingAccounts}
               onPress={handleSaveAccounts}
             >
-              حفظ التعديلات
+              {t("actions.saveAccounts")}
             </Button>
           </div>
         </div>
 
         {!selectedCategoryId ? (
           <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-            يرجى اختيار فئة من الجدول بالأعلى لاستعراض حساباتها.
+            {t("labels.selectCategoryHint")}
           </div>
         ) : isAccountsLoading ? (
           <div className="flex items-center justify-center py-10">
-            <Spinner color="primary" label="جار تحميل حسابات الفئة..." />
+            <Spinner color="primary" label={t("labels.loadingAccounts")} />
           </div>
         ) : (
           <div className="overflow-hidden rounded-lg border border-gray-200">
             <div
               className="grid grid-cols-3 bg-gray-50 text-sm font-semibold text-gray-700"
-              dir="rtl"
+              dir={dir}
             >
-              <div className="border-l border-gray-200 px-4 py-2">الحسابات</div>
-              <div className="border-l border-gray-200 px-4 py-2">قيمة</div>
-              <div className="px-4 py-2">أجور</div>
+              <div className="border-l border-gray-200 px-4 py-2">
+                {t("labels.accounts")}
+              </div>
+              <div className="border-l border-gray-200 px-4 py-2">
+                {t("labels.value")}
+              </div>
+              <div className="px-4 py-2">{t("labels.wages")}</div>
             </div>
 
-            <div className="divide-y divide-gray-100" dir="rtl">
+            <div className="divide-y divide-gray-100" dir={dir}>
               {ACCOUNT_ROWS.map(({ label, valueKey, wageKey }) => {
                 const valueSelected = accountForm[valueKey] ?? "";
                 const wageSelected = wageKey
@@ -855,7 +896,7 @@ export default function CategoriesClient({
                       inputValue={getAccountDisplayValue(text)}
                       items={filteredOptions}
                       menuTrigger="input"
-                      placeholder="اكتب اسم الحساب أو رقمه"
+                      placeholder={t("labels.accountPlaceholder")}
                       selectedKey={null}
                       variant="bordered"
                       onInputChange={(value) => {
@@ -951,13 +992,15 @@ export default function CategoriesClient({
       </div>
 
       <ConfirmationModal
-        cancelText="إلغاء"
+        cancelText={t("modals.cancel")}
         confirmColor="danger"
-        confirmText="حذف"
+        confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={`هل أنت متأكد من حذف الفئة "${categoryToDelete?.cat_name}"؟`}
+        message={t("modals.deleteMessage", {
+          name: categoryToDelete?.cat_name,
+        })}
         size="md"
-        title="تأكيد الحذف"
+        title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />

@@ -328,175 +328,45 @@ export const useReceiptDeliveryVoucherForm = ({
     }
   };
 
-  // Load item options - حل نهائي: Infinite Scroll مع بحث شامل
-  // عند فتح القائمة: تحميل أول صفحة (20 صنف)
-  // عند البحث: البحث في جميع الصفحات حتى نجد النتائج المطابقة
-  // عند التمرير: تحميل الصفحات التالية تلقائياً
+  // Load item options - استخدام SearchItemsVoucherList مثل CustomerGoldVoucherClientPage
   const loadItemOptions = async (
     search: string,
     _loadedOptions: readonly any[] = [],
     additional: { page?: number } = { page: 1 },
   ) => {
     const trimmed = search.trim();
-    const term = trimmed.toLowerCase();
     const page = additional?.page || 1;
 
     try {
-      // إذا كان هناك بحث، نبحث في جميع الصفحات من البداية
-      if (term) {
-        // أولاً: البحث في cache (items state) - فوري
-        const cachedMatches = items.filter((item: any) => {
-          const code = String(item.item_code ?? "").toLowerCase();
-          const name = String(item.item_name ?? "").toLowerCase();
-
-          return code.includes(term) || name.includes(term);
-        });
-
-        // البحث في جميع الصفحات من البداية (الصفحة 1)
-        // لا نعتمد على cache فقط لأن cache قد لا يحتوي على جميع الفئات
-        const allMatchingItems: any[] = [...cachedMatches];
-        let currentPage = 1; // نبدأ من الصفحة 1 دائماً للبحث الشامل
-        const maxPages = 200; // حد أقصى 200 صفحة (4000 صنف) للبحث الشامل
-        const maxResults = 200; // حد أقصى 200 نتيجة
-        let hasMore = true;
-        const searchedPages = new Set<number>(); // لتجنب البحث في نفس الصفحة مرتين
-
-        // إضافة الصفحات المحملة في cache إلى searchedPages
-        const cachedPages = Math.ceil(items.length / 20);
-
-        for (let i = 1; i <= cachedPages; i++) {
-          searchedPages.add(i);
-        }
-
-        while (
-          hasMore &&
-          currentPage <= maxPages &&
-          allMatchingItems.length < maxResults
-        ) {
-          // تخطي الصفحات التي تم البحث فيها من cache
-          if (searchedPages.has(currentPage)) {
-            currentPage++;
-            continue;
-          }
-
-          const result = await itemService.searchItems({
-            page: currentPage,
-            companyId: 1,
-            categoryId: 0, // 0 = جميع الفئات
-            itemTypeId: 0, // 0 = جميع الأنواع
-            itemStatus: 0, // 0 = جميع الحالات
-          });
-
-          if (!result?.results || result.results.length === 0) {
-            hasMore = false;
-            break;
-          }
-
-          // تحويل البيانات
-          const normalizedResults = result.results.map((item: any) => {
-            const itemCode =
-              item.item_code ?? item.code ?? String(item.id ?? "");
-            const itemName = item.item_name ?? item.name ?? "";
-
-            return {
-              id: Number(item.id ?? 0),
-              item_code: itemCode,
-              item_name: itemName,
-              item_price: item.item_price ?? item.price ?? 0,
-              item_weight: item.item_weight ?? item.weight ?? 0,
-              item_g_weight:
-                item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
-              work_price: item.work_price ?? item.price_w ?? 0,
-              purity: item.purity ?? item.k ?? "",
-              stones: item.stones ?? item.stone ?? null,
-              cat: item.cat ?? undefined,
-              k: item.k ?? undefined,
-            };
-          });
-
-          // تحديث items في state
-          setItems((prev) => {
-            const existingIds = new Set(prev.map((item) => item.id));
-            const additions = normalizedResults.filter(
-              (item) => !existingIds.has(item.id),
-            );
-
-            return additions.length > 0 ? [...prev, ...additions] : prev;
-          });
-
-          // فلترة النتائج
-          const matchingItems = normalizedResults.filter((item: any) => {
-            const code = String(item.item_code ?? "").toLowerCase();
-            const name = String(item.item_name ?? "").toLowerCase();
-
-            return code.includes(term) || name.includes(term);
-          });
-
-          // إضافة النتائج الجديدة (غير موجودة في cache)
-          matchingItems.forEach((item) => {
-            if (!allMatchingItems.find((existing) => existing.id === item.id)) {
-              allMatchingItems.push(item);
-            }
-          });
-
-          searchedPages.add(currentPage);
-
-          // إذا وجدنا نتائج كافية، نتوقف
-          if (allMatchingItems.length >= maxResults) {
-            break;
-          }
-
-          // إذا لم تكن هناك صفحة تالية، توقف
-          if (!result.next) {
-            hasMore = false;
-            break;
-          }
-
-          currentPage++;
-        }
-
-        // إرجاع النتائج (حد أقصى maxResults)
-        return allMatchingItems.slice(0, maxResults).map((item: any) => ({
-          value: item.id,
-          label: `${item.item_code || ""} - ${item.item_name || ""}`,
-          item: item,
-          _hasNext: hasMore && currentPage <= maxPages,
-        }));
-      }
-
-      // بدون بحث: تحميل صفحة واحدة فقط (20 صنف)
-      const result = await itemService.searchItems({
+      // استخدام SearchItemsVoucherList للبحث في الأصناف المرتبطة بفئات نوعها كسر وصافي
+      const result = await itemService.searchItemsVoucherList({
+        query: trimmed || "0", // "0" للحصول على جميع الأصناف، أو نص البحث
         page,
         companyId: 1,
-        categoryId: 0, // 0 = جميع الفئات
-        itemTypeId: 0, // 0 = جميع الأنواع
-        itemStatus: 0, // 0 = جميع الحالات
       });
 
-      if (!result?.results || result.results.length === 0) {
-        return [];
+      if (!result || !result.results) {
+        return {
+          options: [],
+          hasMore: false,
+          additional: { page: 1 },
+        };
       }
 
-      // البيانات من API تأتي بنفس الشكل كما في شاشة الأصناف
-      const normalizedResults = result.results.map((item: any) => {
-        const itemCode = item.item_code ?? item.code ?? String(item.id ?? "");
-        const itemName = item.item_name ?? item.name ?? "";
-
-        return {
-          id: Number(item.id ?? 0),
-          item_code: itemCode,
-          item_name: itemName,
-          item_price: item.item_price ?? item.price ?? 0,
-          item_weight: item.item_weight ?? item.weight ?? 0,
-          item_g_weight:
-            item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
-          work_price: item.work_price ?? item.price_w ?? 0,
-          purity: item.purity ?? item.k ?? "",
-          stones: item.stones ?? item.stone ?? null,
-          cat: item.cat ?? undefined,
-          k: item.k ?? undefined,
-        };
-      });
+      const normalizedResults = result.results.map((item: any) => ({
+        id: Number(item.id ?? 0),
+        item_code: item.item_code ?? item.code ?? String(item.id ?? ""),
+        item_name: item.item_name ?? item.name ?? "",
+        item_price: item.item_price ?? item.price ?? 0,
+        item_weight: item.item_weight ?? item.weight ?? 0,
+        item_g_weight:
+          item.item_g_weight ?? item.g_weight ?? item.item_weight ?? 0,
+        work_price: item.work_price ?? item.price_w ?? 0,
+        purity: item.purity ?? item.k ?? "",
+        stones: item.stones ?? item.stone ?? null,
+        cat: item.cat ?? undefined,
+        k: item.k ?? undefined,
+      }));
 
       // تحديث items في state
       setItems((prev) => {
@@ -508,15 +378,12 @@ export const useReceiptDeliveryVoucherForm = ({
         return additions.length > 0 ? [...prev, ...additions] : prev;
       });
 
-      // حفظ معلومات next في state للتحقق من وجود صفحات إضافية
-      const hasNext = result?.next !== null && result?.next !== undefined;
-
-      // بدون بحث: نرجع جميع النتائج من الصفحة
+      // إرجاع النتائج بنفس الشكل المستخدم في CustomerGoldVoucherClientPage
       return normalizedResults.map((item: any) => ({
         value: item.id,
         label: `${item.item_code || ""} - ${item.item_name || ""}`,
         item: item,
-        _hasNext: hasNext,
+        _hasNext: result.hasMore,
       }));
     } catch (e) {
       console.error("Error loading item options:", e);

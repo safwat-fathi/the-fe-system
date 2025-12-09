@@ -11,7 +11,7 @@ type SidebarHeaderProps = {
 
 const SidebarHeader = ({ isSidebarOpen, onToggle }: SidebarHeaderProps) => {
   const t = useTranslations("common");
-  
+
   return (
     <div className="relative border-b border-amber-900/30 bg-gradient-to-r from-amber-950/20 via-transparent to-transparent rounded-b-xl">
       <div
@@ -32,26 +32,26 @@ const SidebarHeader = ({ isSidebarOpen, onToggle }: SidebarHeaderProps) => {
             </h2>
           </div>
         )}
-      <Button
-        className={`text-white hover:bg-white/10 rounded-lg transition-all duration-200 ${!isSidebarOpen ? "min-w-0 flex items-center justify-center" : ""}`}
-        size="sm"
-        style={
-          !isSidebarOpen
-            ? {
-                padding: "0.5rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }
-            : undefined
-        }
-        variant="light"
-        onPress={onToggle}
-      >
-        <Bars3Icon className="h-5 w-5" />
-      </Button>
+        <Button
+          className={`text-white hover:bg-white/10 rounded-lg transition-all duration-200 ${!isSidebarOpen ? "min-w-0 flex items-center justify-center" : ""}`}
+          size="sm"
+          style={
+            !isSidebarOpen
+              ? {
+                  padding: "0.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }
+              : undefined
+          }
+          variant="light"
+          onPress={onToggle}
+        >
+          <Bars3Icon className="h-5 w-5" />
+        </Button>
+      </div>
     </div>
-  </div>
   );
 };
 

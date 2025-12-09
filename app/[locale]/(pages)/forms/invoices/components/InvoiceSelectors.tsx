@@ -386,7 +386,12 @@ export default function InvoiceSelectors({
       value: String(selectedCustomer),
       label: fallbackLabel,
     };
-  }, [currentCustomer, mapCustomerToOption, selectedCustomer, selectedCustomerName]);
+  }, [
+    currentCustomer,
+    mapCustomerToOption,
+    selectedCustomer,
+    selectedCustomerName,
+  ]);
 
   const isReturnInvoice =
     invoiceType === TransTypes.PURCHASE_RETURN ||

@@ -11,7 +11,7 @@ import { IParams } from "@/types/services/base";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("reports.vouchers");
-  
+
   return {
     title: `${t("title")} - NafeesWeb`,
     description: t("description"),

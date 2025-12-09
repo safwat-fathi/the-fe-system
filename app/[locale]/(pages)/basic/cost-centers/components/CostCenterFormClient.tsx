@@ -6,8 +6,8 @@ import { Button, Input, Select, SelectItem, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
-import { getLocaleDir } from "@/i18n/config";
 
+import { getLocaleDir } from "@/i18n/config";
 import costCenterService from "@/services/api/cost-center.service";
 
 type CostCenterFormMode = "view" | "edit" | "add";
@@ -49,10 +49,10 @@ const CostCenterFormClient = ({
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.costCenters");
-  
+
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
-  
+
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [costCenter, setCostCenter] =
@@ -84,9 +84,7 @@ const CostCenterFormClient = ({
 
       if (result) {
         toast.success(
-          isAddMode
-            ? t("messages.addSuccess")
-            : t("messages.updateSuccess"),
+          isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
         router.push("/basic/cost-centers");
         router.refresh();

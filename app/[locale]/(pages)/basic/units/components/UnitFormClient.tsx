@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 import unitService from "@/services/api/unit.service";
 
@@ -26,6 +27,7 @@ interface UnitFormClientProps {
 
 const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
   const router = useRouter();
+  const t = useTranslations("basic.units" as any) as any;
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [unit, setUnit] = useState<Partial<Unit>>(initialUnit);
@@ -33,7 +35,7 @@ const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
 
   const handleSave = async () => {
     if (!unit.unit_name || !unit.unit_name_e) {
-      toast.error("❌ يجب ملء جميع الحقول المطلوبة");
+      toast.error(t("messages.requiredFields"));
 
       return;
     }
@@ -51,16 +53,16 @@ const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
 
       if (result) {
         toast.success(
-          isAddMode ? "✅ تم إضافة الوحدة بنجاح" : "✅ تم تعديل الوحدة بنجاح",
+          isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
         router.push("/basic/units");
         router.refresh();
       } else {
-        toast.error("❌ فشل في العملية");
+        toast.error(t("messages.operationFailed"));
       }
     } catch (error) {
-      console.error("❌ خطأ أثناء الحفظ:", error);
-      toast.error("❌ حدث خطأ أثناء الحفظ");
+      console.error(t("messages.saveError"), error);
+      toast.error(t("messages.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -71,17 +73,22 @@ const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
   };
 
   const getTitle = () => {
-    if (isViewMode) return `عرض ${unit.unit_name || "الوحدة"}`;
-    if (isAddMode) return "إضافة وحدة جديدة";
+    if (isViewMode)
+      return t("titles.view", {
+        name: unit.unit_name || t("titles.defaultName"),
+      });
+    if (isAddMode) return t("titles.add");
 
-    return `تعديل ${unit.unit_name || "الوحدة"}`;
+    return t("titles.edit", {
+      name: unit.unit_name || t("titles.defaultName"),
+    });
   };
 
   const getDescription = () => {
-    if (isViewMode) return "عرض تفاصيل الوحدة";
-    if (isAddMode) return "قم بإضافة وحدة جديدة إلى النظام";
+    if (isViewMode) return t("descriptions.view");
+    if (isAddMode) return t("descriptions.add");
 
-    return "قم بتعديل بيانات الوحدة";
+    return t("descriptions.edit");
   };
 
   return (
@@ -95,11 +102,11 @@ const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
         <div className="flex gap-2">
           <Button variant="light" onPress={() => router.push("/basic/units")}>
             <ArrowLeftIcon className="h-4 w-4" />
-            رجوع
+            {t("actions.back")}
           </Button>
           {isViewMode && (
             <Button color="primary" onPress={handleEdit}>
-              تعديل
+              {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
@@ -108,10 +115,10 @@ const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
                 variant="light"
                 onPress={() => router.push("/basic/units")}
               >
-                إلغاء
+                {t("actions.cancel")}
               </Button>
               <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? "حفظ" : "تحديث"}
+                {isAddMode ? t("actions.save") : t("actions.update")}
               </Button>
             </>
           )}
@@ -123,20 +130,20 @@ const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
         <Input
           isRequired
           isDisabled={isViewMode}
-          label="اسم الوحدة"
+          label={t("fields.unitName")}
           value={unit.unit_name || ""}
           onChange={(e) => setUnit({ ...unit, unit_name: e.target.value })}
         />
         <Input
           isRequired
           isDisabled={isViewMode}
-          label="اسم الوحدة بالإنجليزي"
+          label={t("fields.unitNameEn")}
           value={unit.unit_name_e || ""}
           onChange={(e) => setUnit({ ...unit, unit_name_e: e.target.value })}
         />
         <Input
           isDisabled={isViewMode}
-          label="نوع الوحدة"
+          label={t("fields.unitType")}
           type="number"
           value={unit.unit_type?.toString() || ""}
           onChange={(e) =>
@@ -152,14 +159,14 @@ const UnitFormClient = ({ mode, initialUnit }: UnitFormClientProps) => {
             isSelected={Boolean(unit.unit_status)}
             onValueChange={(val) => setUnit({ ...unit, unit_status: val })}
           >
-            مفعلة
+            {t("fields.unitStatus")}
           </Checkbox>
           <Checkbox
             isDisabled={isViewMode}
             isSelected={Boolean(unit.unit_default)}
             onValueChange={(val) => setUnit({ ...unit, unit_default: val })}
           >
-            افتراضية
+            {t("fields.unitDefault")}
           </Checkbox>
         </div>
       </div>

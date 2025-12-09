@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import UserAssignmentsClient from "./components/UserAssignmentsClient";
 
@@ -33,10 +34,14 @@ type Option = {
   helper?: string | null;
 };
 
-export const metadata: Metadata = {
-  title: "ربط الفروع ومراكز التكلفة بالمستخدمين",
-  description: "إدارة فروع ومراكز التكلفة المصرح بها لكل مستخدم في النظام.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("settings.userAssignments");
+
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 function extractResults<T>(payload: ServiceResponse<T> | any): T[] {
   if (!payload) {
@@ -176,16 +181,15 @@ export default async function UserAssignmentsPage() {
         costCenters: [],
       };
 
+  const t = await getTranslations("settings.userAssignments");
+
   return (
     <div className="p-4 font-cairo space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">
-          ربط الفروع ومراكز التكلفة بالمستخدمين
+          {t("labels.pageTitle")}
         </h1>
-        <p className="text-gray-600 mt-1">
-          حدد المستخدم أولاً، ثم اختر الفروع ومراكز التكلفة المصرح له بالعمل
-          عليها. يتم حفظ التعديلات مباشرةً عبر الخادم.
-        </p>
+        <p className="text-gray-600 mt-1">{t("labels.pageDescription")}</p>
       </div>
 
       <UserAssignmentsClient

@@ -51,18 +51,9 @@ export async function updateVoucherAction(
       return null;
     };
 
-    // const normalizeCustomerCostValue = (value: unknown): number | null => {
-    //   if (value === undefined || value === null) {
-    //     return null;
-    //   }
-
-    //   const numeric = Number(value);
-
-    //   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-    // };
-
     // التحقق من صحة البيانات
     const voucherIdNumeric = Number(voucherData.vouch_id ?? 0);
+
     if (!Number.isFinite(voucherIdNumeric) || voucherIdNumeric <= 0) {
       return {
         success: false,

@@ -36,6 +36,7 @@ class BoxesService extends HttpService<Box> {
       }
 
       const paginated = (data as { results?: Box[] } | undefined)?.results;
+
       if (Array.isArray(paginated)) {
         return paginated;
       }
@@ -77,6 +78,7 @@ class BoxesService extends HttpService<Box> {
       }
 
       const paginated = (data as { results?: Box[] } | undefined)?.results;
+
       if (Array.isArray(paginated)) {
         return paginated;
       }

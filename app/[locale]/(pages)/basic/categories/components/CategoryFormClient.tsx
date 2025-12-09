@@ -19,6 +19,7 @@ import {
 } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 import {
   ensureCategoryAccountAction,
@@ -81,28 +82,7 @@ type AccountRow = {
   wageKey?: AccountFieldKey;
 };
 
-const ACCOUNT_ROWS: AccountRow[] = [
-  { label: "حساب المشتروات", valueKey: "buy_acc", wageKey: "buy_acc2" },
-  { label: "حساب المبيعات", valueKey: "sell_acc", wageKey: "sell_acc2" },
-  {
-    label: "حساب مردود المشتروات",
-    valueKey: "back_buy",
-    wageKey: "back_buy2",
-  },
-  {
-    label: "حساب مردود المبيعات",
-    valueKey: "back_sell",
-    wageKey: "back_sell2",
-  },
-  { label: "حساب الاستلام", valueKey: "dist_acc", wageKey: "dist_acc2" },
-  { label: "حساب التسليم", valueKey: "back_dist", wageKey: "back_dist2" },
-  { label: "حساب المخزون", valueKey: "inv_acc", wageKey: "inv_acc2" },
-  {
-    label: "حساب تكلفة المبيعات",
-    valueKey: "cost_acc",
-    wageKey: "cost_acc2",
-  },
-];
+// ACCOUNT_ROWS will be created inside component to use translations
 
 const EMPTY_ACCOUNT_FORM = ACCOUNT_KEYS.reduce(
   (acc, field) => ({
@@ -141,12 +121,59 @@ const CategoryFormClient = ({
   initialCategoryAccount,
 }: CategoryFormClientProps) => {
   const router = useRouter();
+  const t = useTranslations("basic.categories" as any) as any;
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [category, setCategory] = useState<Partial<Category>>(initialCategory);
   const [isSaving, setIsSaving] = useState(false);
   const [accountRecordId, setAccountRecordId] = useState<number | null>(
     initialCategoryAccount?.id ?? null,
+  );
+
+  const ACCOUNT_ROWS: AccountRow[] = useMemo(
+    () => [
+      {
+        label: t("accountRows.buyAcc"),
+        valueKey: "buy_acc",
+        wageKey: "buy_acc2",
+      },
+      {
+        label: t("accountRows.sellAcc"),
+        valueKey: "sell_acc",
+        wageKey: "sell_acc2",
+      },
+      {
+        label: t("accountRows.backBuy"),
+        valueKey: "back_buy",
+        wageKey: "back_buy2",
+      },
+      {
+        label: t("accountRows.backSell"),
+        valueKey: "back_sell",
+        wageKey: "back_sell2",
+      },
+      {
+        label: t("accountRows.distAcc"),
+        valueKey: "dist_acc",
+        wageKey: "dist_acc2",
+      },
+      {
+        label: t("accountRows.backDist"),
+        valueKey: "back_dist",
+        wageKey: "back_dist2",
+      },
+      {
+        label: t("accountRows.invAcc"),
+        valueKey: "inv_acc",
+        wageKey: "inv_acc2",
+      },
+      {
+        label: t("accountRows.costAcc"),
+        valueKey: "cost_acc",
+        wageKey: "cost_acc2",
+      },
+    ],
+    [t],
   );
 
   const initialAccountForm = useMemo(
@@ -210,7 +237,7 @@ const CategoryFormClient = ({
 
   const handleSave = async () => {
     if (!category.cat_name || !category.cat_name_e) {
-      toast.error("❌ يجب ملء جميع الحقول المطلوبة");
+      toast.error(t("messages.requiredFields"));
 
       return;
     }
@@ -242,7 +269,7 @@ const CategoryFormClient = ({
             });
             setAccountRecordId(ensuredRecord?.id ?? accountRecordId);
           } catch (error) {
-            console.error("❌ خطأ أثناء ضمان وجود سجل حسابات الفئة:", error);
+            console.error(t("messages.accountsSaveErrorGeneric"), error);
           }
 
           const sanitizedPayload = ACCOUNT_KEYS.reduce((acc, key) => {
@@ -279,24 +306,24 @@ const CategoryFormClient = ({
               setAccountRecordId(accountResult.id);
             }
           } catch (error) {
-            console.error("❌ خطأ أثناء حفظ حسابات الفئة:", error);
-            toast.error("❌ حدث خطأ أثناء حفظ حسابات الفئة");
+            console.error(t("messages.accountsSaveErrorGeneric"), error);
+            toast.error(t("messages.accountsSaveErrorGeneric"));
 
             return;
           }
         }
 
         toast.success(
-          isAddMode ? "✅ تم إضافة الفئة بنجاح" : "✅ تم تعديل الفئة بنجاح",
+          isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
         router.push("/basic/categories");
         router.refresh();
       } else {
-        toast.error("❌ فشل في العملية");
+        toast.error(t("messages.operationFailed"));
       }
     } catch (error) {
-      console.error("❌ خطأ أثناء الحفظ:", error);
-      toast.error("❌ حدث خطأ أثناء الحفظ");
+      console.error(t("messages.saveError"), error);
+      toast.error(t("messages.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -317,17 +344,22 @@ const CategoryFormClient = ({
   };
 
   const getTitle = () => {
-    if (isViewMode) return `عرض ${category.cat_name || "الفئة"}`;
-    if (isAddMode) return "إضافة فئة جديدة";
+    if (isViewMode)
+      return t("titles.view", {
+        name: category.cat_name || t("titles.defaultName"),
+      });
+    if (isAddMode) return t("titles.add");
 
-    return `تعديل ${category.cat_name || "الفئة"}`;
+    return t("titles.edit", {
+      name: category.cat_name || t("titles.defaultName"),
+    });
   };
 
   const getDescription = () => {
-    if (isViewMode) return "عرض تفاصيل الفئة";
-    if (isAddMode) return "قم بإضافة فئة جديدة إلى النظام";
+    if (isViewMode) return t("descriptions.view");
+    if (isAddMode) return t("descriptions.add");
 
-    return "قم بتعديل بيانات الفئة";
+    return t("descriptions.edit");
   };
 
   return (
@@ -344,11 +376,11 @@ const CategoryFormClient = ({
             onPress={() => router.push("/basic/categories")}
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            رجوع
+            {t("actions.back")}
           </Button>
           {isViewMode && (
             <Button color="primary" onPress={handleEdit}>
-              تعديل
+              {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
@@ -357,10 +389,10 @@ const CategoryFormClient = ({
                 variant="light"
                 onPress={() => router.push("/basic/categories")}
               >
-                إلغاء
+                {t("actions.cancel")}
               </Button>
               <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? "حفظ" : "تحديث"}
+                {isAddMode ? t("actions.save") : t("actions.update")}
               </Button>
             </>
           )}
@@ -372,7 +404,7 @@ const CategoryFormClient = ({
         <Input
           isRequired
           isDisabled={isViewMode}
-          label="اسم الفئة"
+          label={t("fields.catName")}
           value={category.cat_name || ""}
           onChange={(e) =>
             setCategory({ ...category, cat_name: e.target.value })
@@ -381,7 +413,7 @@ const CategoryFormClient = ({
         <Input
           isRequired
           isDisabled={isViewMode}
-          label="الاسم بالإنجليزي"
+          label={t("fields.catNameEn")}
           value={category.cat_name_e || ""}
           onChange={(e) =>
             setCategory({ ...category, cat_name_e: e.target.value })
@@ -389,19 +421,19 @@ const CategoryFormClient = ({
         />
         <Input
           isDisabled={isViewMode}
-          label="العيار"
+          label={t("fields.k")}
           value={category.k || ""}
           onChange={(e) => setCategory({ ...category, k: e.target.value })}
         />
         <Input
           isDisabled={isViewMode}
-          label="المعيارية"
+          label={t("fields.purity")}
           value={category.purity || ""}
           onChange={(e) => setCategory({ ...category, purity: e.target.value })}
         />
         <Select
           isDisabled={isViewMode}
-          label="الصندوق"
+          label={t("fields.box")}
           selectedKeys={category.box !== null ? [String(category.box)] : []}
           onSelectionChange={(keys) => {
             const id = Number(Array.from(keys)[0]);
@@ -417,7 +449,7 @@ const CategoryFormClient = ({
         </Select>
         <Input
           isDisabled={isViewMode}
-          label="نسبة الضريبة"
+          label={t("fields.tax")}
           type="number"
           value={String(category.tax || 0)}
           onChange={(e) =>
@@ -429,7 +461,7 @@ const CategoryFormClient = ({
         />
         <Input
           isDisabled={isViewMode}
-          label="النوع"
+          label={t("fields.catType")}
           value={category.cat_type || ""}
           onChange={(e) =>
             setCategory({ ...category, cat_type: e.target.value })
@@ -441,7 +473,7 @@ const CategoryFormClient = ({
             isSelected={Boolean(category.tax_type)}
             onValueChange={(val) => setCategory({ ...category, tax_type: val })}
           >
-            خاضعة للضريبة
+            {t("fields.taxType")}
           </Checkbox>
           <Checkbox
             isDisabled={isViewMode}
@@ -450,7 +482,7 @@ const CategoryFormClient = ({
               setCategory({ ...category, cat_status: val })
             }
           >
-            مفعّلة
+            {t("fields.catStatus")}
           </Checkbox>
         </div>
       </div>
@@ -459,19 +491,21 @@ const CategoryFormClient = ({
         <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              حسابات الفئة
+              {t("labels.categoryAccounts")}
             </h3>
-            <p className="text-sm text-gray-500">
-              يتم حفظ التعديلات مع حفظ بيانات الفئة.
-            </p>
+            <p className="text-sm text-gray-500">{t("sections.accountNote")}</p>
           </div>
         </div>
 
         <div className="overflow-hidden rounded-lg border border-gray-200">
           <div className="grid grid-cols-3 bg-gray-50 text-sm font-semibold text-gray-700">
-            <div className="border-l border-gray-200 px-4 py-2">الحسابات</div>
-            <div className="border-l border-gray-200 px-4 py-2">قيمة</div>
-            <div className="px-4 py-2">أجور</div>
+            <div className="border-l border-gray-200 px-4 py-2">
+              {t("labels.accounts")}
+            </div>
+            <div className="border-l border-gray-200 px-4 py-2">
+              {t("labels.value")}
+            </div>
+            <div className="px-4 py-2">{t("labels.wages")}</div>
           </div>
 
           <div className="divide-y divide-gray-100">
@@ -534,7 +568,7 @@ const CategoryFormClient = ({
                     inputValue={getAccountDisplayValue(text)}
                     items={filteredOptions}
                     menuTrigger="input"
-                    placeholder="اكتب اسم الحساب أو رقمه"
+                    placeholder={t("labels.accountPlaceholder")}
                     selectedKey={null}
                     variant="bordered"
                     onInputChange={(value) => {
@@ -629,7 +663,7 @@ const CategoryFormClient = ({
 
         {!isViewMode && (
           <div className="mt-3 text-xs text-gray-500">
-            ملاحظة: سيتم حفظ حسابات الفئة مع الضغط على زر الحفظ أعلاه.
+            {t("sections.accountNote")}
           </div>
         )}
       </div>

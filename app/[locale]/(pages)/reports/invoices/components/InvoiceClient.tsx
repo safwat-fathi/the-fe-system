@@ -136,12 +136,6 @@ export default function InvoiceClient({
     );
   };
 
-  // useEffect(() => {
-  //   // if (searchQ) {
-  //   setParams({ xinv_id: searchQ });
-  //   // }
-  // }, [searchQ]);
-
   return (
     <>
       {/* Filters */}

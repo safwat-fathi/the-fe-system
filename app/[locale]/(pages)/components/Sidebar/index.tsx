@@ -384,9 +384,7 @@ const Sidebar = ({
                   hideLabel={!isSidebarOpen}
                   isOpen={showAccountingForms}
                   label={tSidebar("sections.accountingForms")}
-                  onToggle={() =>
-                    setShowAccountingForms(!showAccountingForms)
-                  }
+                  onToggle={() => setShowAccountingForms(!showAccountingForms)}
                   showToggleIcon={isSidebarOpen}
                   transition={transition}
                 >

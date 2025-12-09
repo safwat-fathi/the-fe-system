@@ -137,7 +137,7 @@ export default async function VoucherPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const t = await getTranslations("forms.adjustmentVoucher");
-  
+
   try {
     const params = await searchParams;
 
@@ -272,16 +272,13 @@ export default async function VoucherPage({
               (voucherData as any).previous,
           ),
           next: parseNavId(
-            (voucherData as any).next_voucher_id ??
-              (voucherData as any).next,
+            (voucherData as any).next_voucher_id ?? (voucherData as any).next,
           ),
           first: parseNavId(
-            (voucherData as any).first_voucher_id ??
-              (voucherData as any).first,
+            (voucherData as any).first_voucher_id ?? (voucherData as any).first,
           ),
           last: parseNavId(
-            (voucherData as any).last_voucher_id ??
-              (voucherData as any).last,
+            (voucherData as any).last_voucher_id ?? (voucherData as any).last,
           ),
           vouchersCount: parseVouchersCount(
             (voucherData as any).vouchers_count,

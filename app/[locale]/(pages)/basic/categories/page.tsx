@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 import CategoriesClient from "./components/CategoriesClient";
 
@@ -10,10 +11,14 @@ import boxesService from "@/services/api/boxes.service";
 import accountService from "@/services/api/account.service";
 import helperService from "@/services/api/helper.service";
 
-export const metadata: Metadata = {
-  title: "الفئات - NafeesWeb",
-  description: "إدارة الفئات",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = (await getTranslations("basic.categories" as any)) as any;
+
+  return {
+    title: `${t("labels.pageTitle")} - NafeesWeb`,
+    description: t("title"),
+  };
+}
 
 export default async function CategoriesPage() {
   const branchParams = await getBranchParams();
@@ -67,10 +72,14 @@ export default async function CategoriesPage() {
       }))
     : [];
 
+  const t = (await getTranslations("basic.categories" as any)) as any;
+
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-2">الفئات</h1>
+      <h1 className="responsive-text-xl font-bold mb-2">
+        {t("labels.pageTitle")}
+      </h1>
 
       <CategoriesClient
         catStatuses={normalizedCatStatuses}

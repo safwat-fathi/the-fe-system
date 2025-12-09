@@ -9,14 +9,12 @@ import { Providers } from "./providers";
 
 import { Locale, defaultLocale, getLocaleDir, locales } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
-// import { fontSans } from "@/config/fonts";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getLocale();
   const t = await getTranslations("common");
-  
+
   const siteName = t("siteName");
-  
+
   return {
     title: {
       default: siteName,
@@ -52,12 +50,9 @@ export default async function RootLayout({
     <html suppressHydrationWarning dir={dir} lang={locale}>
       <head />
       <body
-        className={clsx(
-          "min-h-screen bg-background font-sans antialiased",
-          // fontSans.variable,
-        )}
+        className={clsx("min-h-screen bg-background font-sans antialiased")}
       >
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages as any}>
           <Providers
             themeProps={{
               attribute: "class",
@@ -67,9 +62,7 @@ export default async function RootLayout({
           >
             <div className="relative flex flex-col min-h-screen">
               <Toaster position="top-center" />
-              <div className="flex-grow" suppressHydrationWarning>
-                {children}
-              </div>
+              <div className="flex-grow">{children}</div>
             </div>
           </Providers>
         </NextIntlClientProvider>

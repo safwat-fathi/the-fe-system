@@ -47,16 +47,6 @@ export async function createVoucherAction(
       return null;
     };
 
-    // const normalizeCustomerCostValue = (value: unknown): number | null => {
-    //   if (value === undefined || value === null) {
-    //     return null;
-    //   }
-
-    //   const numeric = Number(value);
-
-    //   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-    // };
-
     // التحقق من البيانات - تمرير goldDetails للتحقق في سندات الذهب
     const validation = validateVoucherData(
       voucherData,
@@ -76,7 +66,7 @@ export async function createVoucherAction(
     const currentDate = new Date().toISOString();
 
     // تجهيز بيانات القيد
-    let voucherPayload: any = {
+    const voucherPayload: any = {
       ...voucherData,
       com: 1,
       year: 1,
@@ -140,8 +130,8 @@ export async function createVoucherAction(
       }
 
       voucherResponse = duplicateResolution.voucherResponse;
-      voucherPayload = duplicateResolution.voucherPayload;
       voucherData = duplicateResolution.voucherData;
+      // Note: voucherPayload is updated in retry logic (line 306) if needed
     }
 
     const savedVoucher = voucherResponse.data;
@@ -313,16 +303,17 @@ async function handleDuplicateVoucherNumber(
     nextNumber = currentNumber + 1;
   }
 
-  voucherPayload = {
+  const updatedVoucherPayload = {
     ...voucherPayload,
     vouch_id: nextNumber,
   };
+
   voucherData = {
     ...voucherData,
     vouch_id: nextNumber,
   };
 
-  const retryResponse = await voucherService.create(voucherPayload);
+  const retryResponse = await voucherService.create(updatedVoucherPayload);
 
   if (!retryResponse.success || !retryResponse.data) {
     return {

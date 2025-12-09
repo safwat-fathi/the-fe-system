@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Input,
   Button,
@@ -10,6 +10,7 @@ import {
   Divider,
 } from "@heroui/react";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import { API_ENDPOINTS, apiFetch } from "@/utilities/api";
@@ -19,77 +20,74 @@ interface HomeSettings {
   [key: string]: any;
 }
 
-const SECTIONS = [
-  {
-    id: "general",
-    label: "الإعدادات العامة",
-    icon: "🏢",
-    description: "معلومات الشركة والشعار والعلامة التجارية",
-  },
-  {
-    id: "accounts",
-    label: "إعدادات الحسابات",
-    icon: "💰",
-    description: "السنة المالية والحسابات والضرائب",
-  },
-];
-
-const GENERAL_FIELDS = [
-  { key: "comp_a_name", label: "اسم المؤسسة بالعربي" },
-  { key: "comp_l_name", label: "اسم المؤسسة بالإنجليزي" },
-  { key: "ADDRESS", label: "العنوان عربي" },
-  { key: "ADDRESS_E", label: "العنوان إنجليزي" },
-  { key: "footer", label: "الترويسة" },
-  { key: "purity", label: "المعايرة الافتراضية" },
-  { key: "VAT_NO", label: "الرقم الضريبي" },
-  { key: "comp_cr_no", label: "رقم السجل التجاري" },
-  { key: "comp_gov", label: "المنطقة" },
-  { key: "comp_city", label: "المدينة" },
-  { key: "comp_area", label: "الحي" },
-  { key: "comp_street", label: "اسم الشارع" },
-  { key: "comp_build_no", label: "رقم المبنى" },
-  { key: "comp_Post_code", label: "الرمز البريدي" },
-  { key: "ver", label: "رقم النسخة" },
-];
-
-const ACCOUNT_FIELDS = [
-  { key: "fin_year", label: "السنة المالية" },
-  { key: "close_month", label: "آخر شهر مقفل" },
-  { key: "close_year", label: "آخر سنة مقفلة" },
-  { key: "init_date", label: "بداية السنة المالية", type: "date" },
-  { key: "finaly_date", label: "نهاية السنة المالية", type: "date" },
-  { key: "frac", label: "عدد خانات الكسور للمبالغ" },
-  { key: "frac2", label: "عدد خانات الكسور للوزن/الجرام" },
-  { key: "disc_acc", label: "حساب الخصم المسموح به" },
-  { key: "disc_acc2", label: "حساب الخصم المكتسب" },
-  { key: "buy_acc", label: "حساب المشتريات" },
-  { key: "sell_acc", label: "حساب المبيعات" },
-  { key: "p_l_acc", label: "حساب الأرباح والخسائر" },
-  { key: "store", label: "حساب المخزون" },
-  { key: "Vat_perc", label: " % نسبة ضريبة القيمة المضافة" },
-];
-
-// const ZATCA_FIELDS = [
-//   {
-//     key: "Enable_EInvoice",
-//     label: "تفعيل الفاتورة الإلكترونية",
-//     type: "checkbox",
-//   },
-//   { key: "LT", label: "نوع الربط  " },
-//   { key: "LTD", label: "تاريخ تفعيل الربط", type: "date" },
-//   { key: "Xml_Path", label: "مسار ملفات XML" },
-//   { key: "USERNAME", label: "اسم المستخدم" },
-//   { key: "PASSWORD", label: "كلمة المرور" },
-//   { key: "comp_csr", label: "الشهادة" },
-//   { key: "comp_private_key", label: "المفتاح الخاص" },
-//   { key: "Last_PIH", label: "آخر PIH" },
-//   { key: "Last_ICV", label: "آخر ICV" },
-// ];
-
 export default function SettingsPage() {
+  const t = useTranslations("settings.systemSettings");
   const [activeSection, setActiveSection] = useState("general");
   const [settings, setSettings] = useState<HomeSettings>({});
   const [originalSettings, setOriginalSettings] = useState<HomeSettings>({});
+
+  const SECTIONS = useMemo(
+    () => [
+      {
+        id: "general",
+        label: t("sections.general.label"),
+        icon: "🏢",
+        description: t("sections.general.description"),
+      },
+      {
+        id: "accounts",
+        label: t("sections.accounts.label"),
+        icon: "💰",
+        description: t("sections.accounts.description"),
+      },
+    ],
+    [t],
+  );
+
+  const GENERAL_FIELDS = useMemo(
+    () => [
+      { key: "comp_a_name", label: t("fields.general.compAName") },
+      { key: "comp_l_name", label: t("fields.general.compLName") },
+      { key: "ADDRESS", label: t("fields.general.address") },
+      { key: "ADDRESS_E", label: t("fields.general.addressE") },
+      { key: "footer", label: t("fields.general.footer") },
+      { key: "purity", label: t("fields.general.purity") },
+      { key: "VAT_NO", label: t("fields.general.vatNo") },
+      { key: "comp_cr_no", label: t("fields.general.compCrNo") },
+      { key: "comp_gov", label: t("fields.general.compGov") },
+      { key: "comp_city", label: t("fields.general.compCity") },
+      { key: "comp_area", label: t("fields.general.compArea") },
+      { key: "comp_street", label: t("fields.general.compStreet") },
+      { key: "comp_build_no", label: t("fields.general.compBuildNo") },
+      { key: "comp_Post_code", label: t("fields.general.compPostCode") },
+      { key: "ver", label: t("fields.general.ver") },
+    ],
+    [t],
+  );
+
+  const ACCOUNT_FIELDS = useMemo(
+    () => [
+      { key: "fin_year", label: t("fields.accounts.finYear") },
+      { key: "close_month", label: t("fields.accounts.closeMonth") },
+      { key: "close_year", label: t("fields.accounts.closeYear") },
+      { key: "init_date", label: t("fields.accounts.initDate"), type: "date" },
+      {
+        key: "finaly_date",
+        label: t("fields.accounts.finalyDate"),
+        type: "date",
+      },
+      { key: "frac", label: t("fields.accounts.frac") },
+      { key: "frac2", label: t("fields.accounts.frac2") },
+      { key: "disc_acc", label: t("fields.accounts.discAcc") },
+      { key: "disc_acc2", label: t("fields.accounts.discAcc2") },
+      { key: "buy_acc", label: t("fields.accounts.buyAcc") },
+      { key: "sell_acc", label: t("fields.accounts.sellAcc") },
+      { key: "p_l_acc", label: t("fields.accounts.plAcc") },
+      { key: "store", label: t("fields.accounts.store") },
+      { key: "Vat_perc", label: t("fields.accounts.vatPerc") },
+    ],
+    [t],
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -101,12 +99,12 @@ export default function SettingsPage() {
           setOriginalSettings(homeSettings);
         }
       } catch (e) {
-        console.error("فشل تحميل الإعدادات", e);
+        console.error(t("messages.saveError"), e);
       }
     };
 
     load();
-  }, []);
+  }, [t]);
 
   const handleChange = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -130,16 +128,16 @@ export default function SettingsPage() {
         }
       }
       setOriginalSettings(settings);
-      toast.success("تم الحفظ بنجاح");
+      toast.success(t("messages.saveSuccess"));
     } catch (e) {
-      toast.error("فشل الحفظ");
+      toast.error(t("messages.saveError"));
       console.error(e);
     }
   };
 
   const handleReset = () => {
     setSettings(originalSettings);
-    toast.success("تم إعادة تعيين الإعدادات");
+    toast.success(t("messages.resetSuccess"));
   };
 
   const hasChanges =
@@ -190,7 +188,7 @@ export default function SettingsPage() {
     <div className="p-4 font-cairo">
       <Breadcrumb />
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">إعدادات النظام</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         {hasChanges && (
           <div className="text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
             ⚠️ تم تعديل الإعدادات

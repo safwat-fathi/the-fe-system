@@ -6,8 +6,8 @@ import { Button, Input, Select, SelectItem, Checkbox } from "@heroui/react";
 import { ArrowLeftIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
-import { getLocaleDir } from "@/i18n/config";
 
+import { getLocaleDir } from "@/i18n/config";
 import currencyService from "@/services/api/currency.service";
 import { getCurrencyOptions, findCurrencyByCode } from "@/utilities/currencies";
 import currencyExchangeService from "@/services/external/currency-exchange.service";
@@ -40,10 +40,10 @@ const CurrencyFormClient = ({
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.currencies");
-  
+
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
-  
+
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const [currency, setCurrency] = useState<Partial<Currency>>(initialCurrency);
@@ -79,9 +79,7 @@ const CurrencyFormClient = ({
 
       if (result) {
         toast.success(
-          isAddMode
-            ? t("messages.addSuccess")
-            : t("messages.updateSuccess"),
+          isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
         router.push("/basic/currencies");
         router.refresh();
@@ -294,7 +292,9 @@ const CurrencyFormClient = ({
 
         {/* تفاصيل العملة */}
         <div>
-          <h3 className={`text-lg font-semibold mb-3 text-gray-700 ${textAlign}`}>
+          <h3
+            className={`text-lg font-semibold mb-3 text-gray-700 ${textAlign}`}
+          >
             {t("labels.currencyDetails")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
