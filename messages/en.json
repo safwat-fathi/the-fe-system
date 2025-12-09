@@ -1662,10 +1662,12 @@
         "update": "Update"
       },
       "labels": {
+        "pageTitle": "Customer Types",
         "manage": "Manage Customer Types",
         "searchPlaceholder": "Search by name...",
         "tableAriaLabel": "Customer Types Table",
-        "totalCount": "Total Types: {count}"
+        "totalCount": "Total Types: {count}",
+        "emptyContent": "No customer types found."
       },
       "fields": {
         "typeName": "Customer Type",
@@ -1732,9 +1734,11 @@
         "update": "Update"
       },
       "labels": {
+        "pageTitle": "Customers",
         "manage": "Manage Customers",
         "searchPlaceholder": "Search by name...",
         "tableAriaLabel": "Customers Table",
+        "emptyContent": "No customers found.",
         "totalCount": "Total Customers: {count}",
         "customerType": "Customer Type",
         "allTypes": "All",
@@ -1838,6 +1842,7 @@
         "update": "Update"
       },
       "labels": {
+        "pageTitle": "Units",
         "manage": "Manage Units",
         "searchPlaceholder": "Search by name...",
         "tableAriaLabel": "Units Table",

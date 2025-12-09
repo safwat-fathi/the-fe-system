@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: `${t("labels.pageTitle")} - NafeesWeb`,
-    description: t("title"),
+    description: t("labels.pageTitle"),
   };
 }
 
@@ -75,7 +75,7 @@ export default async function CategoriesPage() {
   const t = (await getTranslations("basic.categories" as any)) as any;
 
   return (
-    <div className="responsive-container font-cairo">
+    <div className="font-cairo">
       <Breadcrumb />
       <h1 className="responsive-text-xl font-bold mb-2">
         {t("labels.pageTitle")}

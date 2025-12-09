@@ -7,7 +7,6 @@ import { getLocale } from "next-intl/server";
 import Sidebar from "./components/Sidebar";
 
 import UserHeader from "@/components/UserHeader";
-import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { STORAGE_KEYS } from "@/constants";
 import { objectsListService } from "@/services/api";
 
@@ -44,8 +43,8 @@ export default async function DashboardLayout({
         <div className="flex-shrink-0">
           <UserHeader isAdmin={isAdmin} />
         </div>
-        <div className="flex-1 overflow-y-auto px-1.5 py-0.5">
-          <Suspense fallback={<LoadingSkeleton />}>{children}</Suspense>
+        <div className="flex-1 overflow-y-auto px-4 py-2" suppressHydrationWarning>
+          {children}
         </div>
       </main>
     </div>

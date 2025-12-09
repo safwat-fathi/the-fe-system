@@ -2106,6 +2106,477 @@
           "edit": "تعديل {name}"
         }
       }
+    },
+    "customerTypes": {
+      "title": "أنواع العملاء",
+      "columns": {
+        "id": "ID",
+        "typeName": "النوع",
+        "typeNameEn": "النوع بالإنجليزي",
+        "typeDesc": "الوصف",
+        "typeStatus": "الحالة",
+        "actions": ""
+      },
+      "actions": {
+        "add": "إضافة نوع",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "view": "عرض",
+        "back": "رجوع",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "update": "تحديث"
+      },
+      "labels": {
+        "pageTitle": "أنواع العملاء",
+        "manage": "إدارة أنواع العملاء",
+        "searchPlaceholder": "بحث بالاسم...",
+        "tableAriaLabel": "جدول أنواع العملاء",
+        "totalCount": "عدد الأنواع: {count}",
+        "emptyContent": "لم يتم العثور على أنواع عملاء."
+      },
+      "fields": {
+        "typeName": "نوع العميل",
+        "typeNameEn": "نوع العميل بالإنجليزي",
+        "typeDesc": "الوصف",
+        "crDate": "تاريخ الإنشاء",
+        "typeStatus": "الحالة مفعلة"
+      },
+      "messages": {
+        "loadError": "فشل في جلب أنواع العملاء",
+        "deleteErrorNoId": "لا يمكن حذف نوع بدون معرف",
+        "deleteSuccess": "تم حذف النوع بنجاح",
+        "deleteFailed": "فشل في حذف نوع العميل",
+        "deleteError": "حدث خطأ أثناء الحذف",
+        "requiredFields": "يجب ملء جميع الحقول المطلوبة",
+        "addSuccess": "تم إضافة النوع بنجاح",
+        "updateSuccess": "تم تعديل النوع بنجاح",
+        "operationFailed": "فشل في العملية",
+        "saveError": "حدث خطأ أثناء الحفظ"
+      },
+      "titles": {
+        "view": "عرض {name}",
+        "add": "إضافة نوع عميل جديد",
+        "edit": "تعديل {name}",
+        "defaultName": "نوع العميل"
+      },
+      "descriptions": {
+        "view": "عرض تفاصيل نوع العميل",
+        "add": "قم بإضافة نوع عميل جديد إلى النظام",
+        "edit": "قم بتعديل بيانات نوع العميل"
+      },
+      "modals": {
+        "deleteTitle": "تأكيد الحذف",
+        "deleteMessage": "هل أنت متأكد من حذف نوع العميل \"{name}\"؟",
+        "cancel": "إلغاء",
+        "confirm": "حذف"
+      },
+      "breadcrumbs": {
+        "list": "أنواع العملاء",
+        "add": "إضافة نوع عميل جديد",
+        "view": "عرض {name}",
+        "edit": "تعديل {name}"
+      }
+    },
+    "units": {
+      "title": "الوحدات",
+      "columns": {
+        "id": "رقم الوحدة",
+        "unitName": "اسم الوحدة",
+        "unitNameEn": "الاسم بالإنجليزي",
+        "unitType": "النوع",
+        "unitStatus": "الوضع",
+        "unitDefault": "افتراضية؟",
+        "actions": ""
+      },
+      "actions": {
+        "add": "إضافة وحدة",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "view": "عرض",
+        "back": "رجوع",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "update": "تحديث"
+      },
+      "labels": {
+        "pageTitle": "الوحدات",
+        "manage": "إدارة الوحدات",
+        "searchPlaceholder": "بحث بالاسم...",
+        "tableAriaLabel": "جدول الوحدات",
+        "totalCount": "عدد الوحدات: {count}"
+      },
+      "fields": {
+        "unitName": "اسم الوحدة",
+        "unitNameEn": "اسم الوحدة بالإنجليزي",
+        "unitType": "نوع الوحدة",
+        "unitStatus": "مفعلة",
+        "unitDefault": "افتراضية"
+      },
+      "messages": {
+        "loadError": "فشل في جلب الوحدات",
+        "deleteErrorNoId": "لا يمكن حذف وحدة بدون معرف",
+        "deleteSuccess": "تم حذف الوحدة بنجاح",
+        "deleteFailed": "فشل في حذف الوحدة",
+        "deleteError": "حدث خطأ أثناء الحذف",
+        "requiredFields": "يجب ملء جميع الحقول المطلوبة",
+        "addSuccess": "تم إضافة الوحدة بنجاح",
+        "updateSuccess": "تم تعديل الوحدة بنجاح",
+        "operationFailed": "فشل في العملية",
+        "saveError": "حدث خطأ أثناء الحفظ"
+      },
+      "titles": {
+        "view": "عرض {name}",
+        "add": "إضافة وحدة جديدة",
+        "edit": "تعديل {name}",
+        "defaultName": "الوحدة"
+      },
+      "descriptions": {
+        "view": "عرض تفاصيل الوحدة",
+        "add": "قم بإضافة وحدة جديدة إلى النظام",
+        "edit": "قم بتعديل بيانات الوحدة"
+      },
+      "modals": {
+        "deleteTitle": "تأكيد الحذف",
+        "deleteMessage": "هل أنت متأكد من حذف الوحدة \"{name}\"؟",
+        "cancel": "إلغاء",
+        "confirm": "حذف"
+      },
+      "breadcrumbs": {
+        "list": "الوحدات",
+        "add": "إضافة وحدة جديدة",
+        "view": "عرض {name}",
+        "edit": "تعديل {name}"
+      }
+    },
+    "categories": {
+      "title": "الفئات",
+      "columns": {
+        "id": "رقم الفئة",
+        "catName": "اسم الفئة",
+        "catNameEn": "الاسم بالإنجليزي",
+        "k": "العيار",
+        "purity": "المعيارية",
+        "box": "الصندوق",
+        "taxType": "الضريبة",
+        "tax": "نسبة الضريبة",
+        "catType": "النوع",
+        "catStatus": "حالة الفئة",
+        "actions": ""
+      },
+      "actions": {
+        "add": "إضافة فئة",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "view": "عرض",
+        "back": "رجوع",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "update": "تحديث",
+        "reset": "إعادة تعيين",
+        "saveAccounts": "حفظ التعديلات"
+      },
+      "labels": {
+        "pageTitle": "الفئات",
+        "manage": "إدارة الفئات",
+        "searchPlaceholder": "بحث بالاسم...",
+        "tableAriaLabel": "جدول الفئات",
+        "totalCount": "عدد الفئات: {count}",
+        "emptyContent": "لم يتم العثور على فئات.",
+        "categoryAccounts": "حسابات الفئة",
+        "selectedCategory": "الفئة المحددة: {name}",
+        "selectCategory": "اختر فئة لاستعراض حساباتها",
+        "accounts": "الحسابات",
+        "value": "قيمة",
+        "wages": "أجور",
+        "selectCategoryHint": "يرجى اختيار فئة من الجدول بالأعلى لاستعراض حساباتها.",
+        "loadingAccounts": "جار تحميل حسابات الفئة...",
+        "accountPlaceholder": "اكتب اسم الحساب أو رقمه"
+      },
+      "sections": {
+        "categoryAccounts": "حسابات الفئة",
+        "accountNote": "ملاحظة: سيتم حفظ حسابات الفئة مع الضغط على زر الحفظ أعلاه."
+      },
+      "accountRows": {
+        "buyAcc": "حساب المشتروات",
+        "sellAcc": "حساب المبيعات",
+        "backBuy": "حساب مردود المشتروات",
+        "backSell": "حساب مردود المبيعات",
+        "distAcc": "حساب الاستلام",
+        "backDist": "حساب التسليم",
+        "invAcc": "حساب المخزون",
+        "costAcc": "حساب تكلفة المبيعات"
+      },
+      "fields": {
+        "catName": "اسم الفئة",
+        "catNameEn": "الاسم بالإنجليزي",
+        "k": "العيار",
+        "purity": "المعيارية",
+        "box": "الصندوق",
+        "tax": "نسبة الضريبة",
+        "catType": "النوع",
+        "taxType": "خاضعة للضريبة",
+        "catStatus": "مفعّلة"
+      },
+      "messages": {
+        "loadError": "فشل في جلب البيانات",
+        "deleteErrorNoId": "لا يمكن حذف فئة بدون معرف",
+        "deleteSuccess": "تم حذف الفئة بنجاح",
+        "deleteFailed": "فشل في الحذف",
+        "deleteError": "خطأ أثناء الاتصال بالسيرفر",
+        "requiredFields": "يجب ملء جميع الحقول المطلوبة",
+        "addSuccess": "تم إضافة الفئة بنجاح",
+        "updateSuccess": "تم تعديل الفئة بنجاح",
+        "operationFailed": "فشل في العملية",
+        "saveError": "حدث خطأ أثناء الحفظ",
+        "accountsLoadError": "فشل في تحميل حسابات الفئة",
+        "accountsSaveSuccess": "تم حفظ حسابات الفئة بنجاح",
+        "accountsSaveError": "فشل في حفظ حسابات الفئة",
+        "accountsSaveErrorGeneric": "حدث خطأ أثناء حفظ حسابات الفئة",
+        "selectCategoryFirst": "يرجى اختيار فئة أولاً"
+      },
+      "titles": {
+        "view": "عرض {name}",
+        "add": "إضافة فئة جديدة",
+        "edit": "تعديل {name}",
+        "defaultName": "الفئة"
+      },
+      "descriptions": {
+        "view": "عرض تفاصيل الفئة",
+        "add": "قم بإضافة فئة جديدة إلى النظام",
+        "edit": "قم بتعديل بيانات الفئة"
+      },
+      "modals": {
+        "deleteTitle": "تأكيد الحذف",
+        "deleteMessage": "هل أنت متأكد من حذف الفئة \"{name}\"؟",
+        "cancel": "إلغاء",
+        "confirm": "حذف"
+      },
+      "breadcrumbs": {
+        "list": "الفئات",
+        "add": "إضافة فئة جديدة",
+        "view": "عرض {name}",
+        "edit": "تعديل {name}"
+      }
+    },
+    "items": {
+      "title": "الأصناف",
+      "columns": {
+        "itemCode": "كود الصنف",
+        "itemName": "اسم الصنف",
+        "itemNameEn": "الاسم بالإنجليزي",
+        "category": "الفئة",
+        "itemType": "نوع الصنف",
+        "unit": "الوحدة",
+        "price": "السعر",
+        "weight": "الوزن",
+        "status": "الحالة",
+        "actions": "الإجراءات"
+      },
+      "actions": {
+        "add": "إضافة صنف",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "view": "عرض",
+        "back": "رجوع",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "update": "تحديث",
+        "backToList": "العودة للقائمة",
+        "changeImage": "تغيير الصورة",
+        "browseFiles": "تصفح الملفات"
+      },
+      "labels": {
+        "pageTitle": "الأصناف",
+        "manage": "إدارة الأصناف",
+        "searchPlaceholder": "بحث بالاسم...",
+        "tableAriaLabel": "جدول الأصناف",
+        "emptyContent": "لم يتم العثور على أصناف.",
+        "selectCategory": "اختر الفئة",
+        "itemType": "نوع الصنف",
+        "status": "حالة الصنف",
+        "allStatuses": "كل الحالات",
+        "active": "فعال",
+        "inactive": "غير فعال",
+        "clearFilters": "مسح الفلاتر"
+      },
+      "sections": {
+        "basicInfo": "البيانات الأساسية",
+        "basicInfoDesc": "أدخل المعلومات الرئيسية للصنف لضمان ظهورها بشكل صحيح في البحث.",
+        "technicalInfo": "البيانات الفنية",
+        "technicalInfoDesc": "ساعد الفريق في فهم تفاصيل الصنف الفنية بإدخال القيم بدقة.",
+        "classifications": "التصنيفات",
+        "classificationsDesc": "اختر التصنيفات المناسبة لضمان ظهور الصنف ضمن التقارير الصحيحة.",
+        "itemImage": "صورة الصنف"
+      },
+      "fields": {
+        "itemName": "اسم الصنف",
+        "itemNameEn": "اسم الصنف بالإنجليزية",
+        "itemPrice": "السعر",
+        "firstCost": "سعر التكلفة",
+        "itemCode": "كود الصنف",
+        "itemBarcode": "باركود الصنف",
+        "itemWeight": "الوزن",
+        "itemGWeight": "الوزن بالجرام",
+        "stones": "الحجر",
+        "model": "الموديل",
+        "k": "العيار (K)",
+        "purity": "المعايرة",
+        "category": "الفئة",
+        "itemType": "نوع الصنف",
+        "unit": "الوحدة"
+      },
+      "imageUpload": {
+        "selectOrDrag": "اختر ملف أو اسحبه وأفلته هنا",
+        "supportedFormats": "صيغ مدعومة: JPEG, PNG, GIF, WebP",
+        "maxSize": "حجم أقصى: 10MB",
+        "preview": "معاينة الصورة",
+        "removeImage": "حذف الصورة"
+      },
+      "messages": {
+        "loadError": "فشل في تحميل الأصناف",
+        "deleteErrorNoId": "لا يمكن حذف صنف بدون معرف",
+        "deleteSuccess": "تم حذف الصنف بنجاح",
+        "deleteFailed": "فشل في حذف الصنف",
+        "deleteError": "حدث خطأ أثناء حذف الصنف",
+        "addSuccess": "تمت إضافة الصنف بنجاح",
+        "updateSuccess": "تم تحديث الصنف بنجاح",
+        "addError": "فشل في إضافة الصنف",
+        "updateError": "فشل في تحديث الصنف",
+        "saveError": "حدث خطأ أثناء إضافة الصنف",
+        "updateErrorGeneric": "حدث خطأ أثناء تحديث الصنف"
+      },
+      "titles": {
+        "view": "عرض الصنف",
+        "add": "إضافة صنف جديد",
+        "edit": "تعديل الصنف",
+        "defaultName": "الصنف"
+      },
+      "descriptions": {
+        "view": "عرض تفاصيل الصنف",
+        "add": "أدخل بيانات الصنف الجديد",
+        "edit": "قم بتعديل بيانات الصنف"
+      },
+      "modals": {
+        "deleteTitle": "تأكيد الحذف",
+        "deleteMessage": "هل أنت متأكد من حذف الصنف \"{name}\"؟",
+        "cancel": "إلغاء",
+        "confirm": "حذف"
+      },
+      "breadcrumbs": {
+        "list": "الأصناف",
+        "add": "إضافة صنف جديد",
+        "view": "عرض {name}",
+        "edit": "تعديل {name}"
+      }
+    },
+    "customers": {
+      "title": "العملاء",
+      "columns": {
+        "custCode": "كود العميل",
+        "custName": "الاسم",
+        "custNameEn": "الاسم بالإنجليزي",
+        "mobile": "الجوال",
+        "email": "البريد الإلكتروني",
+        "status": "الحالة",
+        "actions": ""
+      },
+      "actions": {
+        "add": "إضافة عميل",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "view": "عرض",
+        "back": "رجوع",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "update": "تحديث"
+      },
+      "labels": {
+        "pageTitle": "العملاء",
+        "manage": "إدارة العملاء",
+        "searchPlaceholder": "بحث بالاسم...",
+        "tableAriaLabel": "جدول العملاء",
+        "emptyContent": "لم يتم العثور على عملاء.",
+        "totalCount": "عدد العملاء: {count}",
+        "customerType": "نوع العميل",
+        "allTypes": "الكل",
+        "clearFilters": "مسح الفلاتر"
+      },
+      "sections": {
+        "basicInfo": "البيانات الأساسية",
+        "addressContact": "العناوين والتواصل",
+        "accountsCategories": "الحسابات والتصنيفات",
+        "additionalInfo": "معلومات إضافية"
+      },
+      "fields": {
+        "custCode": "كود العميل",
+        "custName": "اسم العميل",
+        "custNameEn": "اسم العميل بالإنجليزي",
+        "mobile": "الجوال",
+        "email": "البريد الإلكتروني",
+        "vatNo": "الرقم الضريبي",
+        "crNo": "رقم السجل التجاري",
+        "phone": "هاتف المنزل",
+        "fax": "الفاكس",
+        "address": "العنوان",
+        "gov": "المحافظة",
+        "city": "المدينة",
+        "area": "المنطقة",
+        "street": "الشارع",
+        "buildNo": "المبنى",
+        "postCode": "الرمز البريدي",
+        "account": "الحساب المحاسبي",
+        "boxType": "نوع الصندوق",
+        "customerType": "نوع العميل",
+        "handling": "المحصل",
+        "handlingEn": "مناولة (بالإنجليزي)",
+        "perc": "نسبة الخصم",
+        "custStatus": "حالة العميل",
+        "expt": "مستثنى من كشف الأرصدة",
+        "hide": "مخفي"
+      },
+      "placeholders": {
+        "selectAccount": "رقم الحساب / اسم الحساب",
+        "selectBoxType": "نوع الصندوق",
+        "selectCustomerType": "نوع العميل",
+        "selectStatus": "حالة العميل"
+      },
+      "messages": {
+        "loadError": "فشل في تحميل العملاء",
+        "deleteErrorNoId": "لا يمكن حذف عميل بدون معرف",
+        "deleteSuccess": "تم حذف العميل بنجاح",
+        "deleteFailed": "فشل في حذف العميل",
+        "deleteError": "حدث خطأ أثناء الحذف",
+        "nameRequired": "يرجى إدخال اسم العميل",
+        "typeRequired": "يرجى إدخال نوع العميل",
+        "addSuccess": "تم إضافة العميل بنجاح",
+        "updateSuccess": "تم تحديث بيانات العميل بنجاح",
+        "operationFailed": "فشل في حفظ بيانات العميل",
+        "saveError": "حدث خطأ أثناء حفظ بيانات العميل"
+      },
+      "titles": {
+        "view": "عرض {name}",
+        "add": "إضافة عميل جديد",
+        "edit": "تعديل {name}",
+        "defaultName": "العميل"
+      },
+      "descriptions": {
+        "view": "عرض تفاصيل العميل",
+        "add": "قم بإضافة عميل جديد إلى النظام",
+        "edit": "قم بتعديل بيانات العميل"
+      },
+      "modals": {
+        "deleteTitle": "تأكيد الحذف",
+        "deleteMessage": "هل أنت متأكد من حذف العميل \"{name}\"؟",
+        "cancel": "إلغاء",
+        "confirm": "حذف"
+      },
+      "breadcrumbs": {
+        "list": "العملاء",
+        "add": "إضافة عميل جديد",
+        "view": "عرض {name}",
+        "edit": "تعديل {name}"
+      }
     }
   },
   "globalError": {

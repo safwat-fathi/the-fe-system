@@ -1045,7 +1045,6 @@ export default function DeliveryVoucherClientPage({
 
                       if (selectButton) {
                         selectButton.focus();
-
                         return;
                       }
                       customerSelect.focus();

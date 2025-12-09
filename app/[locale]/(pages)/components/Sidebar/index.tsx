@@ -298,12 +298,10 @@ const Sidebar = ({
   const reportsIsActive = pathname.startsWith("/reports");
 
   const showAccountingBasicSection =
-    canShowSection("accountingBasic") &&
-    visibleAccountingBasicLinks.length > 0;
+    canShowSection("accountingBasic") && visibleAccountingBasicLinks.length > 0;
 
   const showAccountingFormsSection =
-    canShowSection("accountingForms") &&
-    visibleAccountingFormLinks.length > 0;
+    canShowSection("accountingForms") && visibleAccountingFormLinks.length > 0;
 
   const showGoldBasicSection =
     canShowSection("goldBasic") && visibleGoldBasicLinks.length > 0;
@@ -314,11 +312,7 @@ const Sidebar = ({
   const showSettingsSection =
     canShowSection("settings") && visibleSettingsLinks.length > 0;
 
-  const SectionToggleLabel = ({
-    label,
-  }: {
-    label: string;
-  }) => (
+  const SectionToggleLabel = ({ label }: { label: string }) => (
     <span className={clsx({ block: isSidebarOpen, hidden: !isSidebarOpen })}>
       {label}
     </span>
@@ -377,26 +371,26 @@ const Sidebar = ({
             )}
 
             {showAccountingFormsSection && (
-                <SidebarSection
-                  animationVariants={animationVariants}
-                  className="mt-2"
-                  headerClassName="text-xs text-slate-400 font-normal"
-                  hideLabel={!isSidebarOpen}
-                  isOpen={showAccountingForms}
-                  label={tSidebar("sections.accountingForms")}
-                  onToggle={() => setShowAccountingForms(!showAccountingForms)}
-                  showToggleIcon={isSidebarOpen}
-                  transition={transition}
-                >
-                  <SidebarLinkList
-                    indent="2.5rem"
-                    isLinkActive={isLinkActive}
-                    isSidebarOpen={isSidebarOpen}
-                    links={visibleAccountingFormLinks}
-                    translateLinkLabel={translateLinkLabel}
-                  />
-                </SidebarSection>
-              )}
+              <SidebarSection
+                animationVariants={animationVariants}
+                className="mt-2"
+                headerClassName="text-xs text-slate-400 font-normal"
+                hideLabel={!isSidebarOpen}
+                isOpen={showAccountingForms}
+                label={tSidebar("sections.accountingForms")}
+                onToggle={() => setShowAccountingForms(!showAccountingForms)}
+                showToggleIcon={isSidebarOpen}
+                transition={transition}
+              >
+                <SidebarLinkList
+                  indent="2.5rem"
+                  isLinkActive={isLinkActive}
+                  isSidebarOpen={isSidebarOpen}
+                  links={visibleAccountingFormLinks}
+                  translateLinkLabel={translateLinkLabel}
+                />
+              </SidebarSection>
+            )}
           </SidebarSection>
         )}
 
