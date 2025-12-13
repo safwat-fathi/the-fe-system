@@ -139,8 +139,8 @@
         "status": {
           "committed": "حُفظ",
           "printed": "طُبع",
-          "ok": "موافق",
-          "done": "منجز"
+          "ok": "تم القبول",
+          "done": "تم الارسال"
         }
       },
       "selectors": {
@@ -1249,7 +1249,8 @@
         "title": "نفيس",
         "subtitle": "Web"
       },
-      "tagline": "حيث يلتقي بريق الذهب بالتقنية"
+      "tagline": "حيث يلتقي بريق الذهب بالتقنية",
+      "changeLanguage": "تغيير اللغة"
     }
   },
   "dashboard": {

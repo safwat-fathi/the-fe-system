@@ -567,6 +567,7 @@ export default function useInvoiceForm({
   invoiceRecordId = null,
   context = "sale",
 }: UseInvoiceFormParams) {
+	console.log("invoiceData", invoiceData);
   const t = useTranslations("common");
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
   const defaultTransType = invoiceConfig.transType;

@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import { Button, Checkbox } from "@heroui/react";
 import clsx from "clsx";
 import Link from "next/link";
@@ -30,6 +32,8 @@ export default function InvoiceTotalsActions() {
     formattedDateTime,
     saveInvoice,
     previewInvoice,
+    invoiceDate,
+    setInvoiceDate,
     commit,
     setCommit,
     print,
@@ -44,16 +48,70 @@ export default function InvoiceTotalsActions() {
     newInvoiceHref,
     isNewInvoice,
   } = useInvoiceTotalsStore();
+  const [isDateEditing, setIsDateEditing] = useState(false);
+  useEffect(() => {
+    if (!isEditing) {
+      setIsDateEditing(false);
+    }
+  }, [isEditing]);
+
+  const toLocalDateTimeInputValue = useCallback((value?: string) => {
+    if (!value) return "";
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) return "";
+    const local = new Date(
+      parsed.getTime() - parsed.getTimezoneOffset() * 60 * 1000,
+    );
+
+    return local.toISOString().slice(0, 16);
+  }, []);
+
+  const displayDate = useMemo(() => {
+    if (formattedDateTime && formattedDateTime.trim().length > 0) {
+      return formattedDateTime;
+    }
+    const fallback = toLocalDateTimeInputValue(invoiceDate);
+
+    return fallback ? fallback.replace("T", " ") : "—";
+  }, [formattedDateTime, invoiceDate, toLocalDateTimeInputValue]);
+
+  const handleInvoiceDateChange = (value: string) => {
+    const iso = value ? new Date(value).toISOString() : "";
+
+    setInvoiceDate(iso);
+    setIsDateEditing(false);
+  };
 
   return (
     <div className="relative bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 border border-slate-200">
-      <div className="absolute ltr:right-0 rtl:left-0 -top-[50px]">
+      <div className="absolute ltr:right-0 rtl:left-0 -top-[50px] flex items-center gap-3">
         <span className="text-slate-600 font-medium text-sm sm:text-base">
           #{invoiceNumber}
         </span>
         <div className="flex items-center gap-1 text-sm text-slate-600 font-medium">
           <CalendarIcon className="w-4 h-4 text-slate-500" />
-          {formattedDateTime}
+          {isEditing ? (
+            isDateEditing ? (
+              <input
+                className="h-7 border px-2 rounded text-xs sm:text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                type="datetime-local"
+                value={toLocalDateTimeInputValue(invoiceDate)}
+                onBlur={() => setIsDateEditing(false)}
+                onChange={(e) => handleInvoiceDateChange(e.target.value)}
+              />
+            ) : (
+              <button
+                className="h-7 px-2 rounded text-xs sm:text-sm hover:bg-gray-50 border border-transparent text-right"
+                type="button"
+                onClick={() => setIsDateEditing(true)}
+              >
+                {displayDate}
+              </button>
+            )
+          ) : (
+            displayDate
+          )}
         </div>
       </div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
@@ -188,8 +246,7 @@ export default function InvoiceTotalsActions() {
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-1">
             <Checkbox
-              color="success"
-              isDisabled={!isEditing}
+              isReadOnly={!isEditing}
               isSelected={commit}
               size="sm"
               onValueChange={setCommit}
@@ -201,8 +258,8 @@ export default function InvoiceTotalsActions() {
 
           <div className="flex items-center gap-1">
             <Checkbox
-              color="warning"
-              isDisabled={!isEditing}
+              color="danger"
+              isReadOnly={!isEditing}
               isSelected={print}
               size="sm"
               onValueChange={setPrint}
@@ -213,15 +270,26 @@ export default function InvoiceTotalsActions() {
           </div>
 
           <div className="flex items-center gap-1">
-            <Checkbox isDisabled color="warning" isSelected={isOk} size="sm" />
+            <Checkbox
+              isReadOnly
+              classNames={{
+                wrapper: isOk ? "bg-success-500 border-success-500" : undefined,
+              }}
+              isSelected={isOk ?? false}
+              size="sm"
+            />
             <span className="text-xs text-slate-600">{t("status.ok")}</span>
           </div>
 
           <div className="flex items-center gap-1">
             <Checkbox
-              isDisabled
-              color="warning"
-              isSelected={isDone}
+              isReadOnly
+              classNames={{
+                wrapper: isDone
+                  ? "bg-success-500 border-success-500"
+                  : undefined,
+              }}
+              isSelected={isDone ?? false}
               size="sm"
             />
             <span className="text-xs text-slate-600">{t("status.done")}</span>
@@ -252,11 +320,6 @@ export default function InvoiceTotalsActions() {
             <SearchIcon className="w-4 h-4" />
           </Button>
         </div>
-      </div>
-
-      {/* الصف الثاني: الأزرار والحالة */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        {/* حالة الفاتورة */}
       </div>
     </div>
   );

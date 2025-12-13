@@ -3,6 +3,7 @@
 import type { SelectInstance } from "react-select";
 
 import React, {
+  useCallback,
   forwardRef,
   useEffect,
   useImperativeHandle,
@@ -25,6 +26,7 @@ import itemService from "@/services/api/item.service";
 import taxRateService from "@/services/api/tax-rate.service";
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import { InvoiceItemRow } from "@/utilities/invoiceForm";
+import toast from "react-hot-toast";
 
 type ItemOption = {
   value: number;
@@ -87,6 +89,8 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       setInvoiceItems,
       goldPrice,
       payType,
+      categories,
+      homePurity,
       isEditing,
       onItemRemoved,
     },
@@ -158,7 +162,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       loadTaxRates();
     }, []);
 
-    const buildOption = (item: Item) => {
+    const buildOption = useCallback((item: Item) => {
       const code = item.item_code ?? String(item.id);
       const name = item.item_name ?? "";
       const label = name ? `${code} - ${name}` : code;
@@ -168,7 +172,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         label,
         item,
       };
-    };
+    }, []);
 
     type InvoiceItemRowWithLegacy = InvoiceItemRow & {
       item_id?: number | string | null;
@@ -211,91 +215,106 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
 
     const staticItemOptions = useMemo(
       () => items.map((it) => buildOption(it)),
-      [items],
+      [items, buildOption],
     );
 
-    const loadItemOptions = async (
-      search: string,
-      _loaded: ItemOption[],
-      { page }: ItemSelectAdditional,
-    ) => {
-      const trimmed = search.trim();
+    const initialItemAdditional = useMemo(() => ({ page: 1 }), []);
 
-      if (!trimmed) {
-        return {
-          options: staticItemOptions,
-          hasMore: false,
-          additional: { page: 1 },
-        };
-      }
+    const selectStyles = useMemo(
+      () => ({
+        control: (base: any) => ({
+          ...base,
+          minHeight: 30,
+          height: 30,
+        }),
+        menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+      }),
+      [],
+    );
 
-      try {
-        const response = await itemService.searchItems({
-          query: trimmed,
-          page,
-        });
-        const normalizeItem = (input: any): Item => ({
-          id: Number(input.id ?? 0),
-          item_code: input.item_code ?? input.code ?? String(input.id ?? ""),
-          item_name: input.item_name ?? input.name ?? "",
-          item_price: input.item_price ?? input.price ?? 0,
-          item_weight: input.item_weight ?? input.weight ?? 0,
-          item_g_weight:
-            input.item_g_weight ?? input.g_weight ?? input.item_weight ?? 0,
-          work_price: input.work_price ?? input.price_w ?? 0,
-          purity: input.purity ?? input.k ?? "",
-          stones: input.stones ?? input.stone ?? null,
-          cat: input.cat ?? undefined,
-          k: input.k ?? undefined,
-        });
-        const normalizedResults = (response?.results ?? []).map(normalizeItem);
-        const term = trimmed.toLowerCase();
+    const loadItemOptions = useCallback(
+      async (
+        search: string,
+        _loaded: ItemOption[],
+        { page }: ItemSelectAdditional,
+      ) => {
+        console.log("🚀 ~ :239 ~ InvoiceItemTable ~ page:", page);
+        console.log("🚀 ~ :239 ~ InvoiceItemTable ~ search:", search);
 
-        setItems((prev) => {
-          const existingIds = new Set(prev.map((item) => item.id));
-          const additions = normalizedResults.filter(
-            (remoteItem) => !existingIds.has(remoteItem.id),
-          );
+        if (!search) {
+          return {
+            options: staticItemOptions,
+            hasMore: false,
+            additional: initialItemAdditional,
+          };
+        }
 
-          return additions.length > 0 ? [...prev, ...additions] : prev;
-        });
-
-        const decorated = normalizedResults
-          .map((it) => {
-            const itemCode = (it.item_code ?? "").toLowerCase();
-            const itemName = (it.item_name ?? "").toLowerCase();
-
-            return {
-              option: buildOption(it),
-              codeMatch: itemCode.indexOf(term),
-              nameMatch: itemName.indexOf(term),
-            };
-          })
-          .filter((entry) => entry.codeMatch !== -1 || entry.nameMatch !== -1)
-          .sort((a, b) => {
-            const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
-            const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
-
-            if (aCode !== bCode) return aCode - bCode;
-            const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
-            const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
-
-            return aName - bName;
+        try {
+          const response = await itemService.searchItems({
+            query: search,
+            page,
           });
+          console.log("🚀 ~ :255 ~ InvoiceItemTable ~ response:", response);
 
-        const options = decorated.map(({ option }) => option);
+          const normalizeItem = (input: any): Item => ({
+            id: Number(input.id ?? 0),
+            item_code: input.item_code ?? input.code ?? String(input.id ?? ""),
+            item_name: input.item_name ?? input.name ?? "",
+            item_price: input.item_price ?? input.price ?? 0,
+            item_weight: input.item_weight ?? input.weight ?? 0,
+            item_g_weight:
+              input.item_g_weight ?? input.g_weight ?? input.item_weight ?? 0,
+            work_price: input.work_price ?? input.price_w ?? 0,
+            purity: input.purity ?? input.k ?? "",
+            stones: input.stones ?? input.stone ?? null,
+            cat: input.cat ?? undefined,
+            k: input.k ?? undefined,
+          });
+          const normalizedResults = (response?.results ?? []).map(
+            normalizeItem,
+          );
+          const term = search.trim().toLowerCase();
 
-        return {
-          options,
-          hasMore: Boolean(response?.next),
-          additional: { page: page + 1 },
-        };
-      } catch (error) {
-        console.error("فشل تحميل الأصناف:", error);
+          const decorated = normalizedResults
+            .map((it) => {
+              const itemCode = (it.item_code ?? "").toLowerCase();
+              const itemName = (it.item_name ?? "").toLowerCase();
 
-        return { options: [], hasMore: false, additional: { page } };
-      }
-    };
+              return {
+                option: buildOption(it),
+                codeMatch: itemCode.indexOf(term),
+                nameMatch: itemName.indexOf(term),
+              };
+            })
+            .filter((entry) => entry.codeMatch !== -1 || entry.nameMatch !== -1)
+            .sort((a, b) => {
+              const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
+              const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
+
+              if (aCode !== bCode) return aCode - bCode;
+              const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
+              const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
+
+              return aName - bName;
+            });
+          const options = decorated.map(({ option }) => option);
+          return {
+            options,
+            hasMore: Boolean(response?.next),
+            additional: { page: page + 1 },
+          };
+        } catch (error) {
+          toast.error(error as string);
+
+          return {
+            options: [],
+            hasMore: false,
+            additional: { page },
+          };
+        }
+      },
+      [buildOption, initialItemAdditional, staticItemOptions],
+    );
 
     // utility to parse string numeric fields to number safely
     const toNum = (v: any) => {
@@ -416,8 +435,21 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       }
 
       // recalc totals & tax using numeric conversion
-      const weight = toNum(updated[index].weight);
-      const g_weight = toNum(updated[index].g_weight);
+      let weight = toNum(updated[index].weight);
+      let g_weight = toNum(updated[index].g_weight);
+
+      // When weight (grossWeight) changes, recalculate g_weight (netWeight)
+      // Formula: g_weight = weight * (itemPurity / homePurity)
+      if (field === "weight" && homePurity > 0) {
+        const itemPurity = toNum(updated[index].k) || homePurity;
+        const newGWeight = weight * (itemPurity / homePurity);
+        updated[index].g_weight = String(
+          Number.isFinite(newGWeight) ? newGWeight : 0,
+        );
+        g_weight = newGWeight;
+      }
+
+      const qty = toNum(updated[index].qty) || 1;
       const price = toNum(updated[index].price);
       const price_w = toNum(updated[index].price_w);
       const item_disc_amt = toNum(updated[index].item_disc_amt);
@@ -426,7 +458,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       const getTotalsForPayType = () => {
         if (payType === INVOICE_PAY_TYPES.VALUE) {
           return {
-            total_a: weight * price,
+            total_a: qty * weight * price,
             total_w: 0,
           };
         }
@@ -434,13 +466,13 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         if (payType === INVOICE_PAY_TYPES.WAGES) {
           return {
             total_a: 0,
-            total_w: g_weight * price_w,
+            total_w: qty * g_weight * price_w,
           };
         }
 
         return {
-          total_a: weight * price,
-          total_w: g_weight * price_w,
+          total_a: qty * weight * price,
+          total_w: qty * g_weight * price_w,
         };
       };
 
@@ -751,7 +783,15 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
     );
 
     return (
-      <div>
+      <div className="flex flex-col gap-2 items-start">
+        <button
+          className="btn focus:ring-0 focus:ring-offset-0"
+          disabled={!isEditing}
+          type="button"
+          onClick={addRow}
+        >
+          + {actionLabels.addItem}
+        </button>
         <div className="w-full overflow-y-scroll mb-1 max-w-full max-h-[250px]">
           <table className="min-w-[1000px] border text-sm text-center table-fixed">
             <thead className="bg-gray-100 text-xs font-semibold">
@@ -857,12 +897,13 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                   });
                 };
 
+                const qty = toNum(item.qty) || 1;
                 const weight = toNum(item.weight);
                 const gWeight = toNum(item.g_weight);
                 const price = toNum(item.price);
                 const priceW = toNum(item.price_w);
-                const totalA = weight * price;
-                const totalW = gWeight * priceW;
+                const totalA = qty * weight * price;
+                const totalW = qty * gWeight * priceW;
                 const rowBase = calculateRowBase(payType, totalA, totalW);
                 const base = rowBase - toNum(item.item_disc_amt);
                 const tax = (base * toNum(item.tax_prc ?? "15")) / 100;
@@ -1025,7 +1066,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                       <AsyncCreatableSelect
                         isClearable
                         isSearchable
-                        additional={{ page: 1 }}
+                        additional={initialItemAdditional}
                         className="text-xs"
                         classNamePrefix="select"
                         components={{ IndicatorSeparator: () => null }}
@@ -1040,14 +1081,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                         menuPosition="fixed"
                         placeholder={placeholders.selectItem}
                         selectRef={itemSelectRef}
-                        styles={{
-                          control: (base) => ({
-                            ...base,
-                            minHeight: 30,
-                            height: 30,
-                          }),
-                          menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                        }}
+                        styles={selectStyles}
                         value={selectedOption}
                         onChange={handleSelectChange}
                         onKeyDown={(e) =>
@@ -1182,14 +1216,6 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
             </tbody>
           </table>
         </div>
-        <button
-          className="btn focus:ring-0 focus:ring-offset-0"
-          disabled={!isEditing}
-          type="button"
-          onClick={addRow}
-        >
-          + {actionLabels.addItem}
-        </button>
       </div>
     );
   },
