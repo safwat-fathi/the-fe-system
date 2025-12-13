@@ -1,9 +1,10 @@
 "use client";
 
 import type { SidebarLinkConfig } from "./sidebarTypes";
+import type { MenuObject } from "@/types/models/menu";
 
 import clsx from "clsx";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState, useCallback } from "react";
@@ -26,16 +27,101 @@ import {
   type SidebarPermissionKey,
 } from "./sidebarPermissions";
 
+type MenuPathMaps = {
+  withQuery: Map<string, MenuObject>;
+  withoutQuery: Map<string, MenuObject>;
+};
+
+const normalizePath = (
+  input: string,
+  locale: string,
+  options?: { keepQuery?: boolean },
+): string => {
+  const { keepQuery = false } = options ?? {};
+
+  if (!input) {
+    return "/";
+  }
+
+  const trimmed = input.trim();
+  const queryIndex = trimmed.indexOf("?");
+  const hasQuery = queryIndex >= 0;
+  const pathPart = hasQuery ? trimmed.slice(0, queryIndex) : trimmed;
+  const queryPart = hasQuery ? trimmed.slice(queryIndex + 1) : "";
+
+  let normalized = pathPart;
+
+  while (normalized.length > 1 && normalized.endsWith("/")) {
+    normalized = normalized.slice(0, -1);
+  }
+
+  if (normalized.length === 0) {
+    normalized = "/";
+  }
+
+  if (!normalized.startsWith("/")) {
+    normalized = `/${normalized}`;
+  }
+
+  const localePrefix = locale ? `/${locale}` : "";
+
+  if (
+    localePrefix &&
+    (normalized === localePrefix || normalized.startsWith(`${localePrefix}/`))
+  ) {
+    const withoutLocale = normalized.slice(localePrefix.length) || "/";
+
+    normalized = withoutLocale.startsWith("/")
+      ? withoutLocale
+      : `/${withoutLocale}`;
+  }
+
+  if (keepQuery && queryPart) {
+    return `${normalized}?${queryPart}`;
+  }
+
+  return normalized;
+};
+
+const buildMenuPathMaps = (objects: MenuObject[], locale: string): MenuPathMaps => {
+  const withQuery = new Map<string, MenuObject>();
+  const withoutQuery = new Map<string, MenuObject>();
+
+  objects.forEach((obj) => {
+    if (!obj.path) {
+      return;
+    }
+
+    const normalizedWithQuery = normalizePath(obj.path, locale, {
+      keepQuery: true,
+    });
+    const normalizedWithoutQuery = normalizePath(obj.path, locale);
+
+    if (!withQuery.has(normalizedWithQuery)) {
+      withQuery.set(normalizedWithQuery, obj);
+    }
+
+    if (!withoutQuery.has(normalizedWithoutQuery)) {
+      withoutQuery.set(normalizedWithoutQuery, obj);
+    }
+  });
+
+  return { withQuery, withoutQuery };
+};
+
 interface SidebarProps {
   isAdmin?: boolean;
   allowedObjectIds?: number[];
+  menuObjects?: MenuObject[];
 }
 
 const Sidebar = ({
   isAdmin = false,
   allowedObjectIds = [],
+  menuObjects = [],
 }: SidebarProps): JSX.Element => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const locale = useLocale();
 
   // نظام الحسابات
   const [showAccountingSystem, setShowAccountingSystem] = useState(true);
@@ -53,9 +139,119 @@ const Sidebar = ({
   const tSidebar = useTranslations("sidebar");
   const tBreadcrumbs = useTranslations("navigation.breadcrumbs");
 
+  const { withQuery: menuPathsWithQuery, withoutQuery: menuPathsWithoutQuery } =
+    useMemo(() => buildMenuPathMaps(menuObjects, locale), [locale, menuObjects]);
+
   const allowedIdsSet = useMemo(
     () => new Set(allowedObjectIds ?? []),
     [allowedObjectIds],
+  );
+
+  const findMenuObjectByHref = useCallback(
+    (href: string) => {
+      if (!href) {
+        return null;
+      }
+
+      const normalizedWithQuery = normalizePath(href, locale, {
+        keepQuery: true,
+      });
+      const matchWithQuery = menuPathsWithQuery.get(normalizedWithQuery);
+
+      if (matchWithQuery) {
+        return matchWithQuery;
+      }
+
+      const normalizedWithoutQuery = normalizePath(href, locale);
+
+      return menuPathsWithoutQuery.get(normalizedWithoutQuery) ?? null;
+    },
+    [locale, menuPathsWithQuery, menuPathsWithoutQuery],
+  );
+
+  const getObjectIdsFromMenu = useCallback(
+    (href: string) => {
+      const menuObject = findMenuObjectByHref(href);
+
+      return menuObject ? [menuObject.id] : undefined;
+    },
+    [findMenuObjectByHref],
+  );
+
+  const canShowLink = useCallback(
+    (
+      link: SidebarLinkConfig,
+      fallbackObjectIds?: readonly number[],
+    ): boolean => {
+      if (isAdmin) {
+        return true;
+      }
+
+      if (allowedIdsSet.size === 0) {
+        return false;
+      }
+
+      let objectIds =
+        link.requiredObjectIds && link.requiredObjectIds.length > 0
+          ? link.requiredObjectIds
+          : undefined;
+
+      if (!objectIds || objectIds.length === 0) {
+        objectIds = getObjectIdsFromMenu(link.href);
+      }
+
+      if ((!objectIds || objectIds.length === 0) && fallbackObjectIds) {
+        objectIds = [...fallbackObjectIds];
+      }
+
+      if (!objectIds || objectIds.length === 0) {
+        return false;
+      }
+
+      return objectIds.some((id) => allowedIdsSet.has(id));
+    },
+    [allowedIdsSet, getObjectIdsFromMenu, isAdmin],
+  );
+
+  const filterLinks = useCallback(
+    (
+      links: SidebarLinkConfig[],
+      fallbackObjectIds?: readonly number[],
+    ): SidebarLinkConfig[] =>
+      links.filter((link) => canShowLink(link, fallbackObjectIds)),
+    [canShowLink],
+  );
+
+  const visibleMainLinks = useMemo(
+    () => filterLinks(mainLinks),
+    [filterLinks],
+  );
+
+  const visibleAccountingBasicLinks = useMemo(
+    () =>
+      filterLinks(accountingBasicLinks, SIDEBAR_OBJECT_IDS.accountingBasic),
+    [filterLinks],
+  );
+
+  const visibleAccountingFormLinks = useMemo(
+    () =>
+      filterLinks(accountingFormLinks, SIDEBAR_OBJECT_IDS.accountingForms),
+    [filterLinks],
+  );
+
+  const visibleGoldBasicLinks = useMemo(
+    () => filterLinks(goldBasicLinks, SIDEBAR_OBJECT_IDS.goldBasic),
+    [filterLinks],
+  );
+
+  const visibleGoldFormLinks = useMemo(
+    () => filterLinks(goldFormLinks, SIDEBAR_OBJECT_IDS.goldForms),
+    [filterLinks],
+  );
+
+  const visibleSettingsLinks = useMemo(
+    () => filterLinks(settingsLinks, SIDEBAR_OBJECT_IDS.settings),
+    [filterLinks],
   );
 
   const canShowSection = useCallback(
@@ -101,6 +297,21 @@ const Sidebar = ({
 
   const reportsIsActive = pathname.startsWith("/reports");
 
+  const showAccountingBasicSection =
+    canShowSection("accountingBasic") && visibleAccountingBasicLinks.length > 0;
+
+  const showAccountingFormsSection =
+    canShowSection("accountingForms") && visibleAccountingFormLinks.length > 0;
+
+  const showGoldBasicSection =
+    canShowSection("goldBasic") && visibleGoldBasicLinks.length > 0;
+
+  const showGoldFormsSection =
+    canShowSection("goldForms") && visibleGoldFormLinks.length > 0;
+
+  const showSettingsSection =
+    canShowSection("settings") && visibleSettingsLinks.length > 0;
+
   const SectionToggleLabel = ({ label }: { label: string }) => (
     <span className={clsx({ block: isSidebarOpen, hidden: !isSidebarOpen })}>
       {label}
@@ -123,7 +334,7 @@ const Sidebar = ({
           indent="0"
           isLinkActive={isLinkActive}
           isSidebarOpen={isSidebarOpen}
-          links={mainLinks}
+          links={visibleMainLinks}
           translateLinkLabel={translateLinkLabel}
         />
 
@@ -137,7 +348,7 @@ const Sidebar = ({
             showToggleIcon={isSidebarOpen}
             transition={transition}
           >
-            {canShowSection("accountingBasic") && (
+            {showAccountingBasicSection && (
               <SidebarSection
                 animationVariants={animationVariants}
                 className="mt-0"
@@ -153,34 +364,33 @@ const Sidebar = ({
                   indent="2.5rem"
                   isLinkActive={isLinkActive}
                   isSidebarOpen={isSidebarOpen}
-                  links={accountingBasicLinks}
+                  links={visibleAccountingBasicLinks}
                   translateLinkLabel={translateLinkLabel}
                 />
               </SidebarSection>
             )}
 
-            {accountingFormLinks.length > 0 &&
-              canShowSection("accountingForms") && (
-                <SidebarSection
-                  animationVariants={animationVariants}
-                  className="mt-2"
-                  headerClassName="text-xs text-slate-400 font-normal"
-                  hideLabel={!isSidebarOpen}
-                  isOpen={showAccountingForms}
-                  label={tSidebar("sections.accountingForms")}
-                  onToggle={() => setShowAccountingForms(!showAccountingForms)}
-                  showToggleIcon={isSidebarOpen}
-                  transition={transition}
-                >
-                  <SidebarLinkList
-                    indent="2.5rem"
-                    isLinkActive={isLinkActive}
-                    isSidebarOpen={isSidebarOpen}
-                    links={accountingFormLinks}
-                    translateLinkLabel={translateLinkLabel}
-                  />
-                </SidebarSection>
-              )}
+            {showAccountingFormsSection && (
+              <SidebarSection
+                animationVariants={animationVariants}
+                className="mt-2"
+                headerClassName="text-xs text-slate-400 font-normal"
+                hideLabel={!isSidebarOpen}
+                isOpen={showAccountingForms}
+                label={tSidebar("sections.accountingForms")}
+                onToggle={() => setShowAccountingForms(!showAccountingForms)}
+                showToggleIcon={isSidebarOpen}
+                transition={transition}
+              >
+                <SidebarLinkList
+                  indent="2.5rem"
+                  isLinkActive={isLinkActive}
+                  isSidebarOpen={isSidebarOpen}
+                  links={visibleAccountingFormLinks}
+                  translateLinkLabel={translateLinkLabel}
+                />
+              </SidebarSection>
+            )}
           </SidebarSection>
         )}
 
@@ -221,7 +431,7 @@ const Sidebar = ({
             showToggleIcon={isSidebarOpen}
             transition={transition}
           >
-            {canShowSection("goldBasic") && (
+            {showGoldBasicSection && (
               <SidebarSection
                 animationVariants={animationVariants}
                 className="mt-0"
@@ -237,13 +447,13 @@ const Sidebar = ({
                   indent="2.5rem"
                   isLinkActive={isLinkActive}
                   isSidebarOpen={isSidebarOpen}
-                  links={goldBasicLinks}
+                  links={visibleGoldBasicLinks}
                   translateLinkLabel={translateLinkLabel}
                 />
               </SidebarSection>
             )}
 
-            {canShowSection("goldForms") && (
+            {showGoldFormsSection && (
               <SidebarSection
                 animationVariants={animationVariants}
                 className="mt-2"
@@ -259,31 +469,32 @@ const Sidebar = ({
                   indent="2.5rem"
                   isLinkActive={isLinkActive}
                   isSidebarOpen={isSidebarOpen}
-                  links={goldFormLinks}
+                  links={visibleGoldFormLinks}
                   translateLinkLabel={translateLinkLabel}
                 />
               </SidebarSection>
             )}
           </SidebarSection>
         )}
-
-        <SidebarSection
-          animationVariants={animationVariants}
-          hideLabel={!isSidebarOpen}
-          isOpen={showSettingsLinks}
-          label={tSidebar("sections.settings")}
-          onToggle={() => setShowSettingsLinks(!showSettingsLinks)}
-          showToggleIcon={isSidebarOpen}
-          transition={transition}
-        >
-          <SidebarLinkList
-            indent="2.5rem"
-            isLinkActive={isLinkActive}
-            isSidebarOpen={isSidebarOpen}
-            links={settingsLinks}
-            translateLinkLabel={translateLinkLabel}
-          />
-        </SidebarSection>
+        {showSettingsSection && (
+          <SidebarSection
+            animationVariants={animationVariants}
+            hideLabel={!isSidebarOpen}
+            isOpen={showSettingsLinks}
+            label={tSidebar("sections.settings")}
+            onToggle={() => setShowSettingsLinks(!showSettingsLinks)}
+            showToggleIcon={isSidebarOpen}
+            transition={transition}
+          >
+            <SidebarLinkList
+              indent="2.5rem"
+              isLinkActive={isLinkActive}
+              isSidebarOpen={isSidebarOpen}
+              links={visibleSettingsLinks}
+              translateLinkLabel={translateLinkLabel}
+            />
+          </SidebarSection>
+        )}
       </nav>
     </aside>
   );

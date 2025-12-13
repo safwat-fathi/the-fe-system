@@ -9,7 +9,5 @@ case `uname` in
   ;;
 esac
 
-echo "✅ Code style check passed!"
+echo "✅ Code style check passed"
 
-echo "------"
-echo "------"

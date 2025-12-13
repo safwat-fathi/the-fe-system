@@ -22,6 +22,8 @@ export type InvoiceTotalsData = {
   metadata: InvoiceTotalsMetadata;
   invoiceNumber: string;
   formattedDateTime: string;
+  invoiceDate: string;
+  setInvoiceDate: (val: string) => void;
   saveInvoice: () => void | Promise<unknown>;
   previewInvoice: () => void;
   totalAmount: number;
@@ -54,6 +56,8 @@ const createBaseData = (): InvoiceTotalsData => ({
   metadata: null,
   invoiceNumber: "",
   formattedDateTime: "",
+  invoiceDate: "",
+  setInvoiceDate: () => undefined,
   saveInvoice: async () => undefined,
   previewInvoice: () => undefined,
   totalAmount: 0,

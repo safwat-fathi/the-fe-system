@@ -77,7 +77,7 @@ export default async function CategoriesPage() {
   return (
     <div className="font-cairo">
       <Breadcrumb />
-      <h1 className="text-xl font-bold mb-2">
+      <h1 className="responsive-text-xl font-bold mb-2">
         {t("labels.pageTitle")}
       </h1>
 

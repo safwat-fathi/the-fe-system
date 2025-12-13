@@ -295,6 +295,16 @@ export default function InvoiceClientPage({
     return new Date(form.inv_date).toLocaleString("ar-EG");
   }, [form.inv_date]);
 
+  const setInvoiceDateField = useCallback(
+    (value: string) =>
+      dispatchForm({
+        type: "SET_FIELD",
+        field: "inv_date",
+        value: value ? new Date(value).toISOString() : "",
+      }),
+    [dispatchForm],
+  );
+
   const invoiceNumber = form.inv_id ? String(form.inv_id) : "";
 
   const commitFieldSetter = useCallback(
@@ -320,6 +330,8 @@ export default function InvoiceClientPage({
       taxAmount: taxAmount ?? 0,
       netAmount,
       totalDiscount,
+      invoiceDate: form.inv_date,
+      setInvoiceDate: setInvoiceDateField,
       commit: form.commit,
       setCommit: commitFieldSetter,
       print: form.print,
@@ -353,6 +365,8 @@ export default function InvoiceClientPage({
     printFieldSetter,
     form.is_done,
     form.is_ok,
+    form.inv_date,
+    setInvoiceDateField,
     isEditing,
     handleStartEdit,
     totalsInvoiceType,
