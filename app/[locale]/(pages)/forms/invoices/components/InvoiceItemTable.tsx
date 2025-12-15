@@ -14,6 +14,7 @@ import React, {
 import CreatableSelect from "react-select/creatable";
 import { withAsyncPaginate } from "react-select-async-paginate";
 import { useTranslations } from "next-intl";
+import toast from "react-hot-toast";
 
 import { formatAmount } from "@/utilities/formatAmount";
 import useFractions from "@/utilities/useFractions";
@@ -26,7 +27,6 @@ import itemService from "@/services/api/item.service";
 import taxRateService from "@/services/api/tax-rate.service";
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import { InvoiceItemRow } from "@/utilities/invoiceForm";
-import toast from "react-hot-toast";
 
 type ItemOption = {
   value: number;
@@ -89,7 +89,6 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       setInvoiceItems,
       goldPrice,
       payType,
-      categories,
       homePurity,
       isEditing,
       onItemRemoved,
@@ -238,9 +237,6 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         _loaded: ItemOption[],
         { page }: ItemSelectAdditional,
       ) => {
-        console.log("🚀 ~ :239 ~ InvoiceItemTable ~ page:", page);
-        console.log("🚀 ~ :239 ~ InvoiceItemTable ~ search:", search);
-
         if (!search) {
           return {
             options: staticItemOptions,
@@ -254,7 +250,6 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
             query: search,
             page,
           });
-          console.log("🚀 ~ :255 ~ InvoiceItemTable ~ response:", response);
 
           const normalizeItem = (input: any): Item => ({
             id: Number(input.id ?? 0),
@@ -298,6 +293,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
               return aName - bName;
             });
           const options = decorated.map(({ option }) => option);
+
           return {
             options,
             hasMore: Boolean(response?.next),
@@ -435,7 +431,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       }
 
       // recalc totals & tax using numeric conversion
-      let weight = toNum(updated[index].weight);
+      const weight = toNum(updated[index].weight);
       let g_weight = toNum(updated[index].g_weight);
 
       // When weight (grossWeight) changes, recalculate g_weight (netWeight)
@@ -443,6 +439,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       if (field === "weight" && homePurity > 0) {
         const itemPurity = toNum(updated[index].k) || homePurity;
         const newGWeight = weight * (itemPurity / homePurity);
+
         updated[index].g_weight = String(
           Number.isFinite(newGWeight) ? newGWeight : 0,
         );

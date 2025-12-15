@@ -5,7 +5,13 @@ import type {
   InvoiceItemTableProps,
 } from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
 
-import { forwardRef, useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
@@ -168,6 +174,42 @@ export default function InvoiceClientPage({
   });
   const allowEditing = formMode === "edit" || isNewInvoice;
   const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
+
+  // Sync note field with first item's item_desc when items change
+  useEffect(() => {
+    if (invoiceItems.length > 0 && invoiceItems[0]) {
+      const firstItemDesc = invoiceItems[0].item_desc ?? "";
+
+      if (form.inv_notes !== firstItemDesc) {
+        dispatchForm({
+          type: "SET_FIELD",
+          field: "inv_notes",
+          value: firstItemDesc,
+        });
+      }
+    }
+  }, [invoiceItems, form.inv_notes, dispatchForm]);
+
+  // Update first item's item_desc when note field changes
+  const handleNoteChange = useCallback(
+    (newNote: string) => {
+      dispatchForm({
+        type: "SET_FIELD",
+        field: "inv_notes",
+        value: newNote,
+      });
+      if (invoiceItems.length > 0) {
+        const updatedItems = [...invoiceItems];
+
+        updatedItems[0] = {
+          ...updatedItems[0],
+          item_desc: newNote,
+        };
+        setInvoiceItems(updatedItems);
+      }
+    },
+    [invoiceItems, setInvoiceItems, dispatchForm],
+  );
 
   useEffect(() => {
     if (allowEditing && (startInEditMode || formMode === "edit")) {
@@ -439,13 +481,7 @@ export default function InvoiceClientPage({
         }
         setHandlingMethod={setHandlingMethod}
         setMobileMethod={setMobileMethod}
-        setNote={(v) =>
-          dispatchForm({
-            type: "SET_FIELD",
-            field: "inv_notes",
-            value: v,
-          })
-        }
+        setNote={handleNoteChange}
         setPayType={(v) =>
           dispatchForm({ type: "SET_FIELD", field: "pay_type", value: v })
         }
