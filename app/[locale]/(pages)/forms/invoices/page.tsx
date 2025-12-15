@@ -140,50 +140,60 @@ const loadInvoiceData = async ({
   }
 
   const lookupId = editId ?? "";
-  const invoiceData = await invoiceService.getInvoiceById(
-    lookupId,
-    config.transType,
-  );
+	try {
+    const invoiceData = await invoiceService.getInvoiceById(
+      lookupId,
+      config.transType,
+    );
 
-  if (!invoiceData) {
-    notFound();
-  }
-
-  if (
-    invoiceData.trans_type &&
-    Number(invoiceData.trans_type) !== Number(config.transType)
-  ) {
-    notFound();
-  }
-
-  const detailKeys = Array.from(
-    new Set(
-      [
-        invoiceData?.id ? String(invoiceData.id) : null,
-        invoiceData?.inv_id,
-        editId,
-      ]
-        .filter((key): key is string => Boolean(key && `${key}`.trim().length))
-        .map((key) => String(key).trim()),
-    ),
-  );
-
-  for (const key of detailKeys) {
-    const fetchedDetails =
-      (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
-
-    if (fetchedDetails.length > 0) {
-      return {
-        invoiceData,
-        invoiceDetails: fetchedDetails,
-      };
+    if (!invoiceData) {
+      notFound();
     }
-  }
 
-  return {
-    invoiceData,
-    invoiceDetails: [],
-  };
+    if (
+      invoiceData.trans_type &&
+      Number(invoiceData.trans_type) !== Number(config.transType)
+    ) {
+      notFound();
+    }
+
+    const detailKeys = Array.from(
+      new Set(
+        [
+          invoiceData?.id ? String(invoiceData.id) : null,
+          invoiceData?.inv_id,
+          editId,
+        ]
+          .filter((key): key is string =>
+            Boolean(key && `${key}`.trim().length),
+          )
+          .map((key) => String(key).trim()),
+      ),
+    );
+
+    for (const key of detailKeys) {
+      const fetchedDetails =
+        (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
+
+      if (fetchedDetails.length > 0) {
+        return {
+          invoiceData,
+          invoiceDetails: fetchedDetails,
+        };
+      }
+    }
+
+    return {
+      invoiceData,
+      invoiceDetails: [],
+    };
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      redirectToLogin();
+    }
+    throw error;
+  }
+  
 };
 
 export default async function InvoicePage({

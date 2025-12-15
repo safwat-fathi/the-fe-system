@@ -5,7 +5,13 @@ import type {
   InvoiceItemTableProps,
 } from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
 
-import { forwardRef, useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
@@ -169,6 +175,42 @@ export default function InvoiceClientPage({
   const allowEditing = formMode === "edit" || isNewInvoice;
   const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
 
+  // Sync note field with first item's item_desc when items change
+  useEffect(() => {
+    if (invoiceItems.length > 0 && invoiceItems[0]) {
+      const firstItemDesc = invoiceItems[0].item_desc ?? "";
+
+      if (form.inv_notes !== firstItemDesc) {
+        dispatchForm({
+          type: "SET_FIELD",
+          field: "inv_notes",
+          value: firstItemDesc,
+        });
+      }
+    }
+  }, [invoiceItems, form.inv_notes, dispatchForm]);
+
+  // Update first item's item_desc when note field changes
+  const handleNoteChange = useCallback(
+    (newNote: string) => {
+      dispatchForm({
+        type: "SET_FIELD",
+        field: "inv_notes",
+        value: newNote,
+      });
+      if (invoiceItems.length > 0) {
+        const updatedItems = [...invoiceItems];
+
+        updatedItems[0] = {
+          ...updatedItems[0],
+          item_desc: newNote,
+        };
+        setInvoiceItems(updatedItems);
+      }
+    },
+    [invoiceItems, setInvoiceItems, dispatchForm],
+  );
+
   useEffect(() => {
     if (allowEditing && (startInEditMode || formMode === "edit")) {
       setIsEditing(true);
@@ -295,6 +337,16 @@ export default function InvoiceClientPage({
     return new Date(form.inv_date).toLocaleString("ar-EG");
   }, [form.inv_date]);
 
+  const setInvoiceDateField = useCallback(
+    (value: string) =>
+      dispatchForm({
+        type: "SET_FIELD",
+        field: "inv_date",
+        value: value ? new Date(value).toISOString() : "",
+      }),
+    [dispatchForm],
+  );
+
   const invoiceNumber = form.inv_id ? String(form.inv_id) : "";
 
   const commitFieldSetter = useCallback(
@@ -320,6 +372,8 @@ export default function InvoiceClientPage({
       taxAmount: taxAmount ?? 0,
       netAmount,
       totalDiscount,
+      invoiceDate: form.inv_date,
+      setInvoiceDate: setInvoiceDateField,
       commit: form.commit,
       setCommit: commitFieldSetter,
       print: form.print,
@@ -353,6 +407,8 @@ export default function InvoiceClientPage({
     printFieldSetter,
     form.is_done,
     form.is_ok,
+    form.inv_date,
+    setInvoiceDateField,
     isEditing,
     handleStartEdit,
     totalsInvoiceType,
@@ -425,13 +481,7 @@ export default function InvoiceClientPage({
         }
         setHandlingMethod={setHandlingMethod}
         setMobileMethod={setMobileMethod}
-        setNote={(v) =>
-          dispatchForm({
-            type: "SET_FIELD",
-            field: "inv_notes",
-            value: v,
-          })
-        }
+        setNote={handleNoteChange}
         setPayType={(v) =>
           dispatchForm({ type: "SET_FIELD", field: "pay_type", value: v })
         }

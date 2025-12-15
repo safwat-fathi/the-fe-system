@@ -135,7 +135,7 @@ class ItemService extends HttpService<Item> {
     itemStatus = 0,
     query = "",
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
-    const emptyResponse: IPaginatedResponse<Item> = {
+		const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
       count: 0,
       next: null,
@@ -145,21 +145,22 @@ class ItemService extends HttpService<Item> {
     try {
       // إذا كان هناك بحث، نستخدم SearchItemsList endpoint
       if (query && query.trim()) {
+        const searchTerm = query.trim();
         const response = await this.get<IPaginatedResponse<Item>>(
           "SearchItemsList",
           {
             xcom_id: companyId,
             page,
-            query: query.trim(),
+            q: searchTerm,
           },
           {
             cache: "no-store",
             next: {
               tags: [
-                "items-search",
-                `items-search-company-${companyId}`,
-                `items-search-page-${page}`,
-                `items-search-query-${query.trim()}`,
+                "items-search-list",
+                `items-search-list-company-${companyId}`,
+                `items-search-list-page-${page}`,
+                `items-search-list-query-${searchTerm}`,
               ],
               revalidate: 0,
             },
@@ -200,12 +201,12 @@ class ItemService extends HttpService<Item> {
           cache: "force-cache",
           next: {
             tags: [
-              "items",
-              `items-company-${companyId}`,
-              `items-page-${page}`,
-              `items-cat-${categoryId}`,
-              `items-type-${itemTypeId}`,
-              `items-status-${itemStatus}`,
+              "items-list",
+              `items-list-company-${companyId}`,
+              `items-list-page-${page}`,
+              `items-list-cat-${categoryId}`,
+              `items-list-type-${itemTypeId}`,
+              `items-list-status-${itemStatus}`,
             ],
             revalidate: 300,
           },
@@ -265,7 +266,7 @@ class ItemService extends HttpService<Item> {
         {
           xcom_id: companyId,
           page,
-          ...(query ? { query } : {}),
+          ...(query ? { q: query } : {}),
         },
         {
           cache: "no-store",

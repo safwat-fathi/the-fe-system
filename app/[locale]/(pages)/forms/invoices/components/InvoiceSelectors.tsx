@@ -224,6 +224,7 @@ export default function InvoiceSelectors({
   const selectorsRef = useRef<HTMLDivElement | null>(null);
   const customerSelectRef = useRef<SelectInstance<CustomerOption> | null>(null);
   const t = useTranslations("forms.invoices.selectors");
+  const [isDateEditMode, setIsDateEditMode] = useState(false);
 
   const [isOpen, setIsOpen] = useState(false);
   const partyKey: "customer" | "supplier" =
@@ -422,6 +423,36 @@ export default function InvoiceSelectors({
     }
   }, [isEditing]);
 
+  useEffect(() => {
+    if (!isEditing) {
+      setIsDateEditMode(false);
+    }
+  }, [isEditing]);
+
+  const toLocalDateTimeInputValue = useCallback((value?: string) => {
+    if (!value) return "";
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) return "";
+    const local = new Date(
+      parsed.getTime() - parsed.getTimezoneOffset() * 60 * 1000,
+    );
+
+    return local.toISOString().slice(0, 16);
+  }, []);
+
+  const formattedInvoiceDate = useMemo(() => {
+    const base = toLocalDateTimeInputValue(invoiceDate);
+
+    return base ? base.replace("T", " ") : "";
+  }, [invoiceDate, toLocalDateTimeInputValue]);
+
+  const handleInvoiceDateChange = (value: string) => {
+    const isoValue = value ? new Date(value).toISOString() : "";
+    setInvoiceDate?.(isoValue);
+    setIsDateEditMode(false);
+  };
+
   const selectedReferenceOption = useMemo(() => {
     if (!referenceNumber || referenceNumber.trim().length === 0) {
       return null;
@@ -466,29 +497,34 @@ export default function InvoiceSelectors({
         {/* معلومات الفاتورة الأساسية */}
         <div className="bg-white border border-gray-200 rounded-lg p-2 md:p-3">
           <div className="grid grid-cols-1 gap-2 text-xs">
-            {/* تاريخ ووقت الفاتورة */}
-            {invoiceDate && (
-              <div>
-                <label
-                  className="block mb-1 font-medium text-gray-700 text-xs"
-                  htmlFor="invoice-date"
-                >
-                  {`${t("invoiceDateLabel")}:`}
-                </label>
+            {/* <div>
+              <label
+                className="block mb-1 font-medium text-gray-700 text-xs"
+                htmlFor="invoice-date"
+              >
+                {`${t("invoiceDateLabel")}:`}
+              </label>
+              {isEditing && isDateEditMode ? (
                 <input
                   className="w-full h-[32px] border px-2 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  disabled={!isEditing}
                   id="invoice-date"
                   type="datetime-local"
-                  value={
-                    invoiceDate
-                      ? new Date(invoiceDate).toISOString().slice(0, 16)
-                      : ""
-                  }
-                  onChange={(e) => setInvoiceDate?.(e.target.value)}
+                  value={toLocalDateTimeInputValue(invoiceDate)}
+                  onBlur={() => setIsDateEditMode(false)}
+                  onChange={(e) => handleInvoiceDateChange(e.target.value)}
                 />
-              </div>
-            )}
+              ) : (
+                <button
+                  className="w-full h-[32px] border px-2 rounded text-xs text-right bg-white hover:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  disabled={!isEditing}
+                  id="invoice-date"
+                  type="button"
+                  onClick={() => setIsDateEditMode(true)}
+                >
+                  {formattedInvoiceDate || "—"}
+                </button>
+              )}
+            </div> */}
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               <div className="md:col-span-2">
@@ -804,6 +840,21 @@ export default function InvoiceSelectors({
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mt-3">
                   <div>
                     <label
+                      className="block mb-1 font-medium text-gray-700 text-xs"
+                      htmlFor="vat-number"
+                    >
+                      {`${t("fields.vatNumber")}:`}
+                    </label>
+                    <input
+                      readOnly
+                      className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
+                      disabled={!isEditing}
+                      type="text"
+                      onChange={(e) => setVatNumber(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label
                       className="block mb-1 text-xs font-medium text-gray-600"
                       htmlFor="cr-no"
                     >
@@ -821,16 +872,16 @@ export default function InvoiceSelectors({
                   <div>
                     <label
                       className="block mb-1 font-medium text-gray-700 text-xs"
-                      htmlFor="vat-number"
+                      htmlFor="mobile-method"
                     >
-                      {`${t("fields.vatNumber")}:`}
+                      {`${t("fields.mobile")}:`}
                     </label>
                     <input
-                      readOnly
-                      className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
+                      className="w-full h-[32px] border px-2 rounded text-xs"
                       disabled={!isEditing}
                       type="text"
-                      onChange={(e) => setVatNumber(e.target.value)}
+                      value={mobileMethod}
+                      onChange={(e) => setMobileMethod(e.target.value)}
                     />
                   </div>
                   <div>
@@ -911,21 +962,6 @@ export default function InvoiceSelectors({
                       type="text"
                       value={buildNo}
                       onChange={(e) => setBuildNo(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-1 font-medium text-gray-700 text-xs"
-                      htmlFor="mobile-method"
-                    >
-                      {`${t("fields.mobile")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-xs"
-                      disabled={!isEditing}
-                      type="text"
-                      value={mobileMethod}
-                      onChange={(e) => setMobileMethod(e.target.value)}
                     />
                   </div>
                   <div>
