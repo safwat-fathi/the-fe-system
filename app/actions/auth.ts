@@ -27,6 +27,9 @@ type LoginResponseData = {
   refresh?: string;
   user_id?: number;
   is_admin?: boolean;
+  username?: string;
+  com?: number;
+  cost?: number;
 };
 
 const buildRedirectPath = (redirectPath: string, locale: string) => {
@@ -51,6 +54,8 @@ async function persistCredentials(responseData: LoginResponseData) {
   const refreshToken = responseData.refresh;
   const userId = responseData.user_id;
   const isAdmin = responseData.is_admin;
+  const companyId = responseData.com;
+  const costId = responseData.cost;
 
   if (!accessToken || !refreshToken) {
     return false;
@@ -87,6 +92,26 @@ async function persistCredentials(responseData: LoginResponseData) {
 
   if (typeof isAdmin !== "undefined") {
     await setCookieAction(STORAGE_KEYS.IS_ADMIN, String(isAdmin), {
+      maxAge: refreshTokenExpires.getTime() / 1000,
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+  }
+
+  if (typeof companyId !== "undefined") {
+    await setCookieAction(STORAGE_KEYS.COMPANY_ID, String(companyId), {
+      maxAge: refreshTokenExpires.getTime() / 1000,
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+  }
+
+  if (typeof costId !== "undefined") {
+    await setCookieAction(STORAGE_KEYS.COST_ID, String(costId), {
       maxAge: refreshTokenExpires.getTime() / 1000,
       path: "/",
       httpOnly: true,
@@ -198,6 +223,8 @@ export async function deleteCredentials() {
   cookieStore.set(STORAGE_KEYS.CSRF_TOKEN, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.USER_ID, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.IS_ADMIN, "", { maxAge: 0 });
+  cookieStore.set(STORAGE_KEYS.COMPANY_ID, "", { maxAge: 0 });
+  cookieStore.set(STORAGE_KEYS.COST_ID, "", { maxAge: 0 });
 }
 export async function onLogoutAction() {
   await deleteCredentials();

@@ -505,6 +505,38 @@ class InvoiceService extends HttpService<Invoice> {
     }
   }
 
+  async getMaxInvoiceId(
+    transType: TransTypes,
+    com_id: number,
+  ): Promise<{ max_inv_id: number } | null> {
+    try {
+      const queryParams = {
+        xcom_id: String(com_id), // Will be read from server-side cookie
+        xtrans_type: String(transType),
+      };
+
+      const response = await this.get<{ max_inv_id: number }>(
+        "api_max_inv_id",
+        queryParams,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(5000),
+        },
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      return null;
+    } catch (error) {
+      rethrowAuthenticationError(error);
+      console.error("Error fetching max invoice ID:", error);
+
+      return null;
+    }
+  }
+
   async calculateMonthlySales(invoices: Invoice[]): Promise<number[]> {
     const monthlySales: number[] = new Array(12).fill(0);
 
