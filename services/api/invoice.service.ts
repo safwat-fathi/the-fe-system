@@ -175,7 +175,8 @@ class InvoiceService extends HttpService<Invoice> {
       }
 
       return null;
-    } catch {
+    } catch (error) {
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
     }
   }
@@ -260,7 +261,8 @@ class InvoiceService extends HttpService<Invoice> {
       }
 
       return [];
-    } catch {
+    } catch (error) {
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب تفاصيل الفاتورة");
     }
   }

@@ -284,13 +284,14 @@ const rowHasContent = (row: InvoiceItemRow): boolean =>
 
 const prepareRowsForInsertion = (
   rows: InvoiceItemRow[],
-  createEmptyRow: () => InvoiceItemRow,
+  createEmptyRow: (description?: string) => InvoiceItemRow,
+  description?: string,
 ): { rows: InvoiceItemRow[]; targetIndex: number } => {
   const firstEmptyIndex = findFirstEditableRowIndex(rows);
   const cloned = [...rows];
 
   if (firstEmptyIndex === -1) {
-    cloned.unshift(createEmptyRow());
+    cloned.unshift(createEmptyRow(description));
 
     return { rows: cloned, targetIndex: 0 };
   }
@@ -348,7 +349,7 @@ const buildRowFromItem = ({
     item: selectedItem.id ?? null,
     item_code: selectedItem.item_code ?? "",
     item_name: selectedItem.item_name ?? "",
-    item_desc: selectedItem.item_name ?? baseRow.item_desc ?? "",
+    item_desc: baseRow.item_desc ?? "",
     k: selectedItem.k ?? "",
     price: goldPrice ?? priceFromSelected,
     price_w: workPriceFromSelected,
@@ -749,7 +750,7 @@ export default function useInvoiceForm({
 
   // invoice items state
   const makeEmptyRow = useCallback(
-    (): InvoiceItemRow => ({
+    (description?: string): InvoiceItemRow => ({
       id: Date.now(),
       item_id: null,
       item: null,
@@ -772,7 +773,7 @@ export default function useInvoiceForm({
       item_disc_amt: 0 as number,
       item_disc_prc: 0 as number,
       sn: "",
-      item_desc: "",
+      item_desc: description ?? "",
       inv_notes: "",
       cr_date: new Date().toISOString(),
       upd_date: new Date().toISOString(),
@@ -998,6 +999,7 @@ export default function useInvoiceForm({
         const { rows: updatedRows, targetIndex } = prepareRowsForInsertion(
           invoiceItems,
           makeEmptyRow,
+          form.inv_notes,
         );
 
         ensureItemTracked(items, selected, setItems);
@@ -1019,7 +1021,7 @@ export default function useInvoiceForm({
         );
 
         if (shouldAppendBlankRow(updatedRows, targetIndex)) {
-          setInvoiceItems((prev) => [...prev, makeEmptyRow()]);
+          setInvoiceItems((prev) => [...prev, makeEmptyRow(form.inv_notes)]);
         }
       } catch (error) {
         console.error("خطأ في البحث بالباركود:", error);

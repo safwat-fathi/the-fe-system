@@ -178,22 +178,7 @@ export default function InvoiceClientPage({
   const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
   const [maxInvoiceId, setMaxInvoiceId] = useState<number | null>(null);
 
-  // Sync note field with first item's item_desc when items change
-  useEffect(() => {
-    if (invoiceItems.length > 0 && invoiceItems[0]) {
-      const firstItemDesc = invoiceItems[0].item_desc ?? "";
-
-      if (form.inv_notes !== firstItemDesc) {
-        dispatchForm({
-          type: "SET_FIELD",
-          field: "inv_notes",
-          value: firstItemDesc,
-        });
-      }
-    }
-  }, [invoiceItems, form.inv_notes, dispatchForm]);
-
-  // Update first item's item_desc when note field changes
+  // Update note field and all item descriptions
   const handleNoteChange = useCallback(
     (newNote: string) => {
       dispatchForm({
@@ -201,13 +186,14 @@ export default function InvoiceClientPage({
         field: "inv_notes",
         value: newNote,
       });
-      if (invoiceItems.length > 0) {
-        const updatedItems = [...invoiceItems];
 
-        updatedItems[0] = {
-          ...updatedItems[0],
+      // Update all existing items' descriptions
+      if (invoiceItems.length > 0) {
+        const updatedItems = invoiceItems.map((item) => ({
+          ...item,
           item_desc: newNote,
-        };
+        }));
+
         setInvoiceItems(updatedItems);
       }
     },
@@ -551,6 +537,7 @@ export default function InvoiceClientPage({
       <InvoiceItemTable
         ref={itemTableRef}
         categories={categories}
+        defaultDescription={form.inv_notes}
         goldPrice={goldPrice ?? maybeGoldPrice ?? null}
         homePurity={homePurity}
         invoiceItems={invoiceItems}
