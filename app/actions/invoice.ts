@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { cookies } from "next/headers";
 
 import invoiceService, {
   type GetAllInvoicesParams,
 } from "@/services/api/invoice.service";
 import { type Invoice, type InvoiceDetail } from "@/types/models/invoice";
+import { STORAGE_KEYS } from "@/constants";
 
 export async function getAllInvoicesAction(params?: GetAllInvoicesParams) {
   return invoiceService.getAllInvoices(params);
@@ -18,6 +20,15 @@ export async function getInvoiceByIdAction(id: string) {
 export async function getInvoiceDetailsAction(invoiceId: string) {
   return invoiceService.getInvoiceDetails(invoiceId);
 }
+
+export async function getMaxInvoiceIdAction(transType: number) {
+  const com_id = (await cookies()).get(STORAGE_KEYS.COMPANY_ID)?.value;
+
+  if (!com_id) throw new Error("company id not found");
+
+  return invoiceService.getMaxInvoiceId(transType, Number(com_id));
+}
+
 
 export async function createInvoiceAction(payload: Partial<Invoice>) {
   const result = await invoiceService.createInvoice(payload);

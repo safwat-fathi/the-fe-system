@@ -21,6 +21,7 @@ export type InvoiceTotalsInvoiceType =
 export type InvoiceTotalsData = {
   metadata: InvoiceTotalsMetadata;
   invoiceNumber: string;
+  maxInvoiceId: number | null;
   formattedDateTime: string;
   invoiceDate: string;
   setInvoiceDate: (val: string) => void;
@@ -55,6 +56,7 @@ type InvoiceTotalsStore = InvoiceTotalsData & {
 const createBaseData = (): InvoiceTotalsData => ({
   metadata: null,
   invoiceNumber: "",
+  maxInvoiceId: null,
   formattedDateTime: "",
   invoiceDate: "",
   setInvoiceDate: () => undefined,

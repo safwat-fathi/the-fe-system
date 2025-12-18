@@ -71,6 +71,7 @@ interface Props {
   categories: Category[];
   homePurity: number;
   isEditing: boolean;
+  defaultDescription?: string;
   onItemRemoved?: (removedItem: InvoiceItemRow) => void;
 }
 
@@ -91,6 +92,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       payType,
       homePurity,
       isEditing,
+      defaultDescription = "",
       onItemRemoved,
     },
     ref,
@@ -521,7 +523,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
           tax: "0",
           tax_prc: "15",
           stones: null,
-          item_desc: "",
+          item_desc: defaultDescription,
           sn: "",
         };
         setInvoiceItems(updated);
@@ -556,7 +558,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         item_disc_prc: "0",
         item_disc_amt: "0",
         sn: "",
-        item_desc: "",
+        item_desc: defaultDescription,
         price2: null,
         price2_w: null,
         total_a2: null,
@@ -657,8 +659,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         ...updated[rowIndex],
         item: selected.id ?? 0,
         ...(selected.id ? { item_id: selected.id } : {}),
-        item_desc:
-          selected.item_name ?? selected.item_code ?? String(selected.id),
+        item_desc: defaultDescription || updated[rowIndex].item_desc || "",
         price: String(goldPrice ?? selected.item_price ?? 0),
         price_w: String(selected.work_price ?? 0),
         weight: String(selected.item_weight ?? 0),

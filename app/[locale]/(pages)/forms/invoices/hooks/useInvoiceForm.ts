@@ -284,13 +284,14 @@ const rowHasContent = (row: InvoiceItemRow): boolean =>
 
 const prepareRowsForInsertion = (
   rows: InvoiceItemRow[],
-  createEmptyRow: () => InvoiceItemRow,
+  createEmptyRow: (description?: string) => InvoiceItemRow,
+  description?: string,
 ): { rows: InvoiceItemRow[]; targetIndex: number } => {
   const firstEmptyIndex = findFirstEditableRowIndex(rows);
   const cloned = [...rows];
 
   if (firstEmptyIndex === -1) {
-    cloned.unshift(createEmptyRow());
+    cloned.unshift(createEmptyRow(description));
 
     return { rows: cloned, targetIndex: 0 };
   }
@@ -348,7 +349,7 @@ const buildRowFromItem = ({
     item: selectedItem.id ?? null,
     item_code: selectedItem.item_code ?? "",
     item_name: selectedItem.item_name ?? "",
-    item_desc: selectedItem.item_name ?? baseRow.item_desc ?? "",
+    item_desc: baseRow.item_desc ?? "",
     k: selectedItem.k ?? "",
     price: goldPrice ?? priceFromSelected,
     price_w: workPriceFromSelected,
@@ -749,7 +750,7 @@ export default function useInvoiceForm({
 
   // invoice items state
   const makeEmptyRow = useCallback(
-    (): InvoiceItemRow => ({
+    (description?: string): InvoiceItemRow => ({
       id: Date.now(),
       item_id: null,
       item: null,
@@ -772,7 +773,7 @@ export default function useInvoiceForm({
       item_disc_amt: 0 as number,
       item_disc_prc: 0 as number,
       sn: "",
-      item_desc: "",
+      item_desc: description ?? "",
       inv_notes: "",
       cr_date: new Date().toISOString(),
       upd_date: new Date().toISOString(),
@@ -998,6 +999,7 @@ export default function useInvoiceForm({
         const { rows: updatedRows, targetIndex } = prepareRowsForInsertion(
           invoiceItems,
           makeEmptyRow,
+          form.inv_notes,
         );
 
         ensureItemTracked(items, selected, setItems);
@@ -1019,7 +1021,7 @@ export default function useInvoiceForm({
         );
 
         if (shouldAppendBlankRow(updatedRows, targetIndex)) {
-          setInvoiceItems((prev) => [...prev, makeEmptyRow()]);
+          setInvoiceItems((prev) => [...prev, makeEmptyRow(form.inv_notes)]);
         }
       } catch (error) {
         console.error("خطأ في البحث بالباركود:", error);
@@ -1105,8 +1107,13 @@ export default function useInvoiceForm({
   const buildInvoiceSaveContext = useCallback(
     (validItems: InvoiceItemRow[], customer: any): InvoiceSaveContext => {
       const totals = computeTotals(form.pay_type, validItems);
+      // For new invoices, we generally want to let the backend generate the ID (send null/0).
+      // If the user manually entered an ID (e.g. for legacy data entry), we respect it.
+      // But if it's empty/0 and it's new, verify we send a value that allows auto-generation.
+      // Typically 0 or null triggers auto-generation if `inv_id` is unique.
+      const rawInvId = form.inv_id ? parseNumber(form.inv_id) : 0;
       const invoiceNumber =
-        !isNewInvoice && form.inv_id ? form.inv_id : parseNumber(form.inv_id);
+        isNewInvoice && (rawInvId === 0 || rawInvId === null) ? null : rawInvId;
 
       const invoiceQr = generateZatcaQR({
         sellerName: "شركة ثمار الصفاء المتميزة التجارية",
@@ -1295,11 +1302,15 @@ export default function useInvoiceForm({
         invoiceNumber,
       );
 
+      // If we didn't have a number before (auto-gen), use the one from the saved invoice
+      const finalInvoiceNumber =
+        invoiceNumber ?? savedInvoice?.inv_id ?? savedInvoice?.id;
+
       setInvoicePk(resolvedInvoicePk);
       dispatchForm({
         type: "SET_FIELD",
         field: "inv_id",
-        value: invoiceNumber,
+        value: finalInvoiceNumber,
       });
 
       return resolvedInvoicePk;
@@ -1407,19 +1418,37 @@ export default function useInvoiceForm({
         validation.customer,
       );
 
-      const resolvedInvoicePk = await persistInvoiceRecord(
+      // Persist the invoice record to get/ensure primary key
+      const savedRecordId = await persistInvoiceRecord(
         context.invoicePayload,
         context.invoiceNumber,
       );
 
       await syncInvoiceDetails(
         validation.validItems,
-        resolvedInvoicePk,
+        savedRecordId,
         context.resolvedCompanyId,
         context.resolvedYearId,
       );
 
-      await refreshInvoiceDetailsState(resolvedInvoicePk);
+      await refreshInvoiceDetailsState(savedRecordId);
+
+      // Reload the full invoice header to ensure we have the generated inv_id and other fields
+      // This solves the issue of the UI not showing the new number.
+      const freshInvoice = await getInvoiceByIdAction(String(savedRecordId));
+
+      if (freshInvoice) {
+        dispatchForm({
+          type: "SET_ALL",
+          payload: {
+            inv_id: freshInvoice.inv_id,
+            inv_date: freshInvoice.inv_date,
+            is_done: freshInvoice.is_done ?? false,
+            is_ok: freshInvoice.is_ok ?? false,
+            commit: freshInvoice.commit ?? true,
+          },
+        });
+      }
 
       toast.success(
         isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
@@ -1427,8 +1456,8 @@ export default function useInvoiceForm({
 
       return {
         ok: true,
-        recordId: resolvedInvoicePk,
-        invoiceNumber: Number(context.invoiceNumber),
+        recordId: savedRecordId,
+        invoiceNumber: Number(freshInvoice?.inv_id ?? context.invoiceNumber),
       };
     } catch (error) {
       const errorMessage =

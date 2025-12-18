@@ -11,6 +11,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -29,6 +30,7 @@ import {
   hydrateInvoiceTotalsStore,
   resetInvoiceTotalsStore,
 } from "@/stores/invoiceTotalsStore";
+import { getMaxInvoiceIdAction } from "@/app/actions/invoice";
 
 const InvoiceItemTable = dynamic(
   () =>
@@ -174,23 +176,9 @@ export default function InvoiceClientPage({
   });
   const allowEditing = formMode === "edit" || isNewInvoice;
   const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
+  const [maxInvoiceId, setMaxInvoiceId] = useState<number | null>(null);
 
-  // Sync note field with first item's item_desc when items change
-  useEffect(() => {
-    if (invoiceItems.length > 0 && invoiceItems[0]) {
-      const firstItemDesc = invoiceItems[0].item_desc ?? "";
-
-      if (form.inv_notes !== firstItemDesc) {
-        dispatchForm({
-          type: "SET_FIELD",
-          field: "inv_notes",
-          value: firstItemDesc,
-        });
-      }
-    }
-  }, [invoiceItems, form.inv_notes, dispatchForm]);
-
-  // Update first item's item_desc when note field changes
+  // Update note field and all item descriptions
   const handleNoteChange = useCallback(
     (newNote: string) => {
       dispatchForm({
@@ -198,13 +186,14 @@ export default function InvoiceClientPage({
         field: "inv_notes",
         value: newNote,
       });
-      if (invoiceItems.length > 0) {
-        const updatedItems = [...invoiceItems];
 
-        updatedItems[0] = {
-          ...updatedItems[0],
+      // Update all existing items' descriptions
+      if (invoiceItems.length > 0) {
+        const updatedItems = invoiceItems.map((item) => ({
+          ...item,
           item_desc: newNote,
-        };
+        }));
+
         setInvoiceItems(updatedItems);
       }
     },
@@ -222,6 +211,21 @@ export default function InvoiceClientPage({
   const resolvedNewInvoiceHref =
     newInvoiceHref ??
     `/forms/invoices?type=${encodeURIComponent(invoiceType)}&mode=new`;
+
+  // Fetch max invoice ID for new invoices
+  useEffect(() => {
+    if (isNewInvoice && !maxInvoiceId) {
+      getMaxInvoiceIdAction(selectorsInvoiceType)
+        .then((response) => {
+          if (response?.max_inv_id) {
+            setMaxInvoiceId(response.max_inv_id);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch max invoice ID:", error);
+        });
+    }
+  }, [isNewInvoice, selectorsInvoiceType, maxInvoiceId]);
 
   const buildUrl = useCallback(
     (updates: Record<string, string | null | undefined>) => {
@@ -365,6 +369,7 @@ export default function InvoiceClientPage({
     hydrateInvoiceTotalsStore({
       metadata,
       invoiceNumber,
+      maxInvoiceId,
       formattedDateTime,
       saveInvoice: handleSaveAndNavigate,
       previewInvoice,
@@ -394,6 +399,7 @@ export default function InvoiceClientPage({
   }, [
     metadata,
     invoiceNumber,
+    maxInvoiceId,
     formattedDateTime,
     handleSaveAndNavigate,
     previewInvoice,
@@ -531,6 +537,7 @@ export default function InvoiceClientPage({
       <InvoiceItemTable
         ref={itemTableRef}
         categories={categories}
+        defaultDescription={form.inv_notes}
         goldPrice={goldPrice ?? maybeGoldPrice ?? null}
         homePurity={homePurity}
         invoiceItems={invoiceItems}

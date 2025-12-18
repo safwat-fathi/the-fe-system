@@ -175,7 +175,8 @@ class InvoiceService extends HttpService<Invoice> {
       }
 
       return null;
-    } catch {
+    } catch (error) {
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات الفواتير");
     }
   }
@@ -260,7 +261,8 @@ class InvoiceService extends HttpService<Invoice> {
       }
 
       return [];
-    } catch {
+    } catch (error) {
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب تفاصيل الفاتورة");
     }
   }
@@ -502,6 +504,38 @@ class InvoiceService extends HttpService<Invoice> {
     } catch (error) {
       console.error("Error deleting invoice detail:", error);
       throw new Error("حدث خطأ أثناء حذف تفاصيل الفاتورة");
+    }
+  }
+
+  async getMaxInvoiceId(
+    transType: TransTypes,
+    com_id: number,
+  ): Promise<{ max_inv_id: number } | null> {
+    try {
+      const queryParams = {
+        xcom_id: String(com_id), // Will be read from server-side cookie
+        xtrans_type: String(transType),
+      };
+
+      const response = await this.get<{ max_inv_id: number }>(
+        "api_max_inv_id",
+        queryParams,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(5000),
+        },
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      return null;
+    } catch (error) {
+      rethrowAuthenticationError(error);
+      console.error("Error fetching max invoice ID:", error);
+
+      return null;
     }
   }
 
