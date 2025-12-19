@@ -20,6 +20,7 @@ import { useLocale } from "next-intl";
 
 import InvoiceSelectors from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceSelectors";
 import InvoiceItemTableSkeleton from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTableSkeleton";
+import InvoiceTotalsDisplay from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceTotalsDisplay";
 import {
   Invoice,
   InvoiceDetail,
@@ -31,6 +32,8 @@ import {
   hydrateInvoiceTotalsStore,
   resetInvoiceTotalsStore,
 } from "@/stores/invoiceTotalsStore";
+import useFractions from "@/utilities/useFractions";
+import { calculateValueAndWagesTax } from "@/utilities/invoiceForm";
 import { getMaxInvoiceIdAction } from "@/app/actions/invoice";
 
 const InvoiceItemTable = dynamic(
@@ -178,6 +181,7 @@ export default function InvoiceClientPage({
     context: FORM_CONTEXT_MAP[invoiceType],
     maxInvoiceId,
   });
+  const fractions = useFractions();
   const allowEditing = formMode === "edit" || isNewInvoice;
   const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
 
@@ -337,6 +341,11 @@ export default function InvoiceClientPage({
 
   const { totalAmount, netAmount, totalDiscount, taxAmount, totalGWeight } =
     totals;
+
+  // Calculate separate tax values for value and wages
+  const { totalValueTax, totalWagesTax } = useMemo(() => {
+    return calculateValueAndWagesTax(invoiceItems, form.pay_type);
+  }, [invoiceItems, form.pay_type]);
 
   const locale = useLocale();
   const formattedDateTime = useMemo(() => {
@@ -553,6 +562,25 @@ export default function InvoiceClientPage({
         setInvoiceItems={setInvoiceItems}
         setItems={setItems}
         onItemRemoved={handleItemRemoved}
+      />
+
+      <InvoiceTotalsDisplay
+        customerName={form.cust_name || ""}
+        fractions={{
+          frac: typeof fractions === "object" ? fractions.frac : 2,
+          frac2: typeof fractions === "object" ? fractions.frac2 : 3,
+        }}
+        invoiceId={form.inv_id ? String(form.inv_id) : ""}
+        invoiceNumber={form.inv_id ? String(form.inv_id) : ""}
+        isNewInvoice={isNewInvoice}
+        netAmount={netAmount}
+        paymentMethod={paymentMethod}
+        taxAmount={taxAmount ?? 0}
+        totalAmount={totalAmount}
+        totalDiscount={totalDiscount}
+        totalGWeight={totalGWeight ?? 0}
+        totalValueTax={totalValueTax}
+        totalWagesTax={totalWagesTax}
       />
     </div>
   );

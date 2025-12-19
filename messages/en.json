@@ -227,6 +227,17 @@
         "actions": {
           "addItem": "Add item"
         }
+      },
+      "totals": {
+        "total": "Total",
+        "totalDiscount": "Total Discount",
+        "totalGWeight": "Total Calibrated Weight",
+        "valueTax": "Value Tax",
+        "wagesTax": "Wages Tax",
+        "tax": "Tax",
+        "netAmount": "Total Including Tax",
+        "payment": "Payment",
+        "gramUnit": "g"
       }
     },
     "balanceVoucher": {

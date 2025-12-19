@@ -929,29 +929,40 @@ export default function useInvoiceForm({
   const computeTotals = useCallback(
     (payType: InvoicePayType, rows: InvoiceItemRow[]) => {
       const totalAmount = rows.reduce((sum, item) => {
+        const qty = parseNumber(item.qty) || 1;
         const weight = parseNumber(item.weight);
         const price = parseNumber(item.price);
         const priceW = parseNumber(item.price_w);
         const discount = parseNumber(item.item_disc_amt);
 
-        const totalA = weight * price;
-        const totalW = weight * priceW;
+        const totalA = qty * weight * price;
+        const totalW = qty * weight * priceW;
 
-        const rowTotal = getRowBaseAmount(payType, totalA, totalW);
+        // If weight is 0, fallback to qty * price (for non-weight items)
+        // This matches logic where if weight is present, it is treated as Unit Weight
+        const finalTotalA = weight > 0 ? totalA : qty * price;
+        const finalTotalW = weight > 0 ? totalW : qty * priceW;
+
+        const rowTotal = getRowBaseAmount(payType, finalTotalA, finalTotalW);
 
         return sum + rowTotal - discount;
       }, 0);
 
       const taxAmount = rows.reduce((sum, item) => {
+        const qty = parseNumber(item.qty) || 1;
         const weight = parseNumber(item.weight);
         const price = parseNumber(item.price);
         const priceW = parseNumber(item.price_w);
         const discount = parseNumber(item.item_disc_amt);
         const taxRate = parseNumber(item.tax_prc ?? defaultTaxPrc ?? 15) / 100;
 
-        const totalA = weight * price;
-        const totalW = weight * priceW;
-        const rowTotal = getRowBaseAmount(payType, totalA, totalW);
+        const totalA = qty * weight * price;
+        const totalW = qty * weight * priceW;
+
+        const finalTotalA = weight > 0 ? totalA : qty * price;
+        const finalTotalW = weight > 0 ? totalW : qty * priceW;
+
+        const rowTotal = getRowBaseAmount(payType, finalTotalA, finalTotalW);
         const base = rowTotal - discount;
 
         return sum + base * taxRate;
@@ -964,9 +975,11 @@ export default function useInvoiceForm({
       }, 0);
 
       const totalGWeight = rows.reduce((sum, item) => {
+        const qty = parseNumber(item.qty) || 1;
         const gWeight = parseNumber(item.g_weight);
 
-        return sum + gWeight;
+        // multiply by qty to get total weight
+        return sum + gWeight * qty;
       }, 0);
 
       return {
