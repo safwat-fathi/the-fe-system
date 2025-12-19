@@ -5,7 +5,7 @@ import { Button, Checkbox } from "@heroui/react";
 import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   CalendarIcon,
   CheckCircleIcon,
@@ -24,6 +24,8 @@ import { useInvoiceTotalsStore } from "@/stores/invoiceTotalsStore";
 
 export default function InvoiceTotalsActions() {
   const router = useRouter();
+  const locale = useLocale();
+  const isRTL = locale === "ar";
   const t = useTranslations("forms.invoices.actions");
   const {
     metadata,
@@ -77,12 +79,15 @@ export default function InvoiceTotalsActions() {
     return fallback ? fallback.replace("T", " ") : "—";
   }, [formattedDateTime, invoiceDate, toLocalDateTimeInputValue]);
 
-  const handleInvoiceDateChange = (value: string) => {
-    const iso = value ? new Date(value).toISOString() : "";
+  const handleInvoiceDateChange = useCallback(
+    (value: string) => {
+      const iso = value ? new Date(value).toISOString() : "";
 
-    setInvoiceDate(iso);
-    setIsDateEditing(false);
-  };
+      setInvoiceDate(iso);
+      setIsDateEditing(false);
+    },
+    [setInvoiceDate],
+  );
 
   const dateDisplayElement = useMemo(() => {
     if (!isEditing) {
@@ -116,6 +121,7 @@ export default function InvoiceTotalsActions() {
     displayDate,
     invoiceDate,
     toLocalDateTimeInputValue,
+    handleInvoiceDateChange,
   ]);
 
   const currentInvoiceNumber = useMemo(() => {
@@ -210,7 +216,11 @@ export default function InvoiceTotalsActions() {
 
                 // onClick={() => navigateToInvoice("first")}
               >
-                <ChevronDoubleRightIcon className="w-4 h-4 " />
+                {isRTL ? (
+                  <ChevronDoubleRightIcon className="w-4 h-4 " />
+                ) : (
+                  <ChevronDoubleLeftIcon className="w-4 h-4 " />
+                )}
               </Link>
               <Link
                 className={clsx(
@@ -225,7 +235,11 @@ export default function InvoiceTotalsActions() {
 
                 // onClick={() => navigateToInvoice("prev")}
               >
-                <ChevronRightIcon className="w-4 h-4 " />
+                {isRTL ? (
+                  <ChevronRightIcon className="w-4 h-4 " />
+                ) : (
+                  <ChevronLeftIcon className="w-4 h-4 " />
+                )}
               </Link>
               <span className="text-xs text-slate-600 px-2 font-medium">
                 {t("invoicePosition", {
@@ -246,7 +260,11 @@ export default function InvoiceTotalsActions() {
 
                 // onClick={() => navigateToInvoice("next")}
               >
-                <ChevronLeftIcon className="w-4 h-4 " />
+                {isRTL ? (
+                  <ChevronLeftIcon className="w-4 h-4 " />
+                ) : (
+                  <ChevronRightIcon className="w-4 h-4 " />
+                )}
               </Link>
               <Link
                 className={clsx(
@@ -261,7 +279,11 @@ export default function InvoiceTotalsActions() {
 
                 // onClick={() => navigateToInvoice("last")}
               >
-                <ChevronDoubleLeftIcon className="w-4 h-4 " />
+                {isRTL ? (
+                  <ChevronDoubleLeftIcon className="w-4 h-4 " />
+                ) : (
+                  <ChevronDoubleRightIcon className="w-4 h-4 " />
+                )}
               </Link>
             </div>
           )}

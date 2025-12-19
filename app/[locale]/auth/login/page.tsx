@@ -1,7 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
 import LoginForm from "./components/LoginForm";
-import ChangeLocale from "./components/ChangeLocale";
 
 export default async function Login() {
   const t = await getTranslations("auth.login");

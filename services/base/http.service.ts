@@ -1,3 +1,5 @@
+import { getLocale } from "next-intl/server";
+
 import {
   HttpServiceAbstract,
   IPaginatedResponse,
@@ -39,13 +41,20 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     };
   }
 
-  private async _getAuthHeaders(): Promise<HeadersInit> {
-    // Always get fresh token from cookies
+  private async _getBaseHeaders(): Promise<HeadersInit> {
+    // Always get fresh token and locale from cookies/server context
     this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
+    const locale = await getLocale();
 
-    return this._token
-      ? { Authorization: `Bearer ${this._token.replace(/['"]+/g, "")}` }
-      : {};
+    const headers: HeadersInit = {
+      "Accept-Language": locale,
+    };
+
+    if (this._token) {
+      headers.Authorization = `Bearer ${this._token.replace(/['"]+/g, "")}`;
+    }
+
+    return headers;
   }
 
   private async _logErrorResponse(
@@ -108,7 +117,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
         };
       }
 
-      const authHeaders = await this._getAuthHeaders();
+      const authHeaders = await this._getBaseHeaders();
       const urlParams = createParams(params || {});
       const searchParams = urlParams.toString();
       const fullURL = searchParams

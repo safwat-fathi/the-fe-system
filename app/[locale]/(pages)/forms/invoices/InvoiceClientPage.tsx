@@ -16,6 +16,7 @@ import {
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
+import { useLocale } from "next-intl";
 
 import InvoiceSelectors from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceSelectors";
 import InvoiceItemTableSkeleton from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTableSkeleton";
@@ -114,6 +115,8 @@ export default function InvoiceClientPage({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [maxInvoiceId, setMaxInvoiceId] = useState<number | null>(null);
+
   const {
     // lists
     items,
@@ -173,10 +176,10 @@ export default function InvoiceClientPage({
     initialHomePurity,
     invoiceRecordId,
     context: FORM_CONTEXT_MAP[invoiceType],
+    maxInvoiceId,
   });
   const allowEditing = formMode === "edit" || isNewInvoice;
   const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
-  const [maxInvoiceId, setMaxInvoiceId] = useState<number | null>(null);
 
   // Update note field and all item descriptions
   const handleNoteChange = useCallback(
@@ -335,11 +338,14 @@ export default function InvoiceClientPage({
   const { totalAmount, netAmount, totalDiscount, taxAmount, totalGWeight } =
     totals;
 
+  const locale = useLocale();
   const formattedDateTime = useMemo(() => {
     if (!form.inv_date) return "";
 
-    return new Date(form.inv_date).toLocaleString("ar-EG");
-  }, [form.inv_date]);
+    const localeCode = locale === "ar" ? "ar-EG" : "en-US";
+
+    return new Date(form.inv_date).toLocaleString(localeCode);
+  }, [form.inv_date, locale]);
 
   const setInvoiceDateField = useCallback(
     (value: string) =>
