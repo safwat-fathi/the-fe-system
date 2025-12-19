@@ -173,6 +173,7 @@ type UseInvoiceFormParams = {
   initialHomePurity: number;
   invoiceRecordId?: number | string | null;
   context?: InvoiceFormContext;
+  maxInvoiceId?: number | null;
 };
 
 const INVOICE_FORM_CONFIG: Record<
@@ -567,6 +568,7 @@ export default function useInvoiceForm({
   initialHomePurity,
   invoiceRecordId = null,
   context = "sale",
+  maxInvoiceId = null,
 }: UseInvoiceFormParams) {
   const t = useTranslations("common");
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
@@ -927,29 +929,40 @@ export default function useInvoiceForm({
   const computeTotals = useCallback(
     (payType: InvoicePayType, rows: InvoiceItemRow[]) => {
       const totalAmount = rows.reduce((sum, item) => {
+        const qty = parseNumber(item.qty) || 1;
         const weight = parseNumber(item.weight);
         const price = parseNumber(item.price);
         const priceW = parseNumber(item.price_w);
         const discount = parseNumber(item.item_disc_amt);
 
-        const totalA = weight * price;
-        const totalW = weight * priceW;
+        const totalA = qty * weight * price;
+        const totalW = qty * weight * priceW;
 
-        const rowTotal = getRowBaseAmount(payType, totalA, totalW);
+        // If weight is 0, fallback to qty * price (for non-weight items)
+        // This matches logic where if weight is present, it is treated as Unit Weight
+        const finalTotalA = weight > 0 ? totalA : qty * price;
+        const finalTotalW = weight > 0 ? totalW : qty * priceW;
+
+        const rowTotal = getRowBaseAmount(payType, finalTotalA, finalTotalW);
 
         return sum + rowTotal - discount;
       }, 0);
 
       const taxAmount = rows.reduce((sum, item) => {
+        const qty = parseNumber(item.qty) || 1;
         const weight = parseNumber(item.weight);
         const price = parseNumber(item.price);
         const priceW = parseNumber(item.price_w);
         const discount = parseNumber(item.item_disc_amt);
         const taxRate = parseNumber(item.tax_prc ?? defaultTaxPrc ?? 15) / 100;
 
-        const totalA = weight * price;
-        const totalW = weight * priceW;
-        const rowTotal = getRowBaseAmount(payType, totalA, totalW);
+        const totalA = qty * weight * price;
+        const totalW = qty * weight * priceW;
+
+        const finalTotalA = weight > 0 ? totalA : qty * price;
+        const finalTotalW = weight > 0 ? totalW : qty * priceW;
+
+        const rowTotal = getRowBaseAmount(payType, finalTotalA, finalTotalW);
         const base = rowTotal - discount;
 
         return sum + base * taxRate;
@@ -962,9 +975,11 @@ export default function useInvoiceForm({
       }, 0);
 
       const totalGWeight = rows.reduce((sum, item) => {
+        const qty = parseNumber(item.qty) || 1;
         const gWeight = parseNumber(item.g_weight);
 
-        return sum + gWeight;
+        // multiply by qty to get total weight
+        return sum + gWeight * qty;
       }, 0);
 
       return {
@@ -1098,7 +1113,7 @@ export default function useInvoiceForm({
       totalGWeight: number;
       netAmount: number;
     };
-    invoiceNumber: number | string | null;
+    invoiceNumber: Nullable<number | string>;
     invoicePayload: Record<string, unknown>;
     resolvedCompanyId: number;
     resolvedYearId: number;
@@ -1107,13 +1122,21 @@ export default function useInvoiceForm({
   const buildInvoiceSaveContext = useCallback(
     (validItems: InvoiceItemRow[], customer: any): InvoiceSaveContext => {
       const totals = computeTotals(form.pay_type, validItems);
-      // For new invoices, we generally want to let the backend generate the ID (send null/0).
-      // If the user manually entered an ID (e.g. for legacy data entry), we respect it.
-      // But if it's empty/0 and it's new, verify we send a value that allows auto-generation.
-      // Typically 0 or null triggers auto-generation if `inv_id` is unique.
+      // For new invoices, use maxInvoiceId + 1 if available, otherwise let backend generate
+      // If the user manually entered an ID, respect it
       const rawInvId = form.inv_id ? parseNumber(form.inv_id) : 0;
-      const invoiceNumber =
-        isNewInvoice && (rawInvId === 0 || rawInvId === null) ? null : rawInvId;
+      let invoiceNumber: Nullable<number | string>;
+
+      if (isNewInvoice && (rawInvId === 0 || rawInvId === null)) {
+        // For new invoices without manual ID, use maxInvoiceId + 1 or null
+        invoiceNumber =
+          maxInvoiceId !== null && maxInvoiceId !== undefined
+            ? maxInvoiceId + 1
+            : null;
+      } else {
+        // For existing invoices or manually entered IDs, use the raw value
+        invoiceNumber = rawInvId;
+      }
 
       const invoiceQr = generateZatcaQR({
         sellerName: "شركة ثمار الصفاء المتميزة التجارية",
@@ -1224,6 +1247,7 @@ export default function useInvoiceForm({
       handlingMethod,
       invoiceData,
       isNewInvoice,
+      maxInvoiceId,
       mobileMethod,
       paymentMethod,
       selectedBranchId,

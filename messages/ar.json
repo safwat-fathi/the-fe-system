@@ -227,6 +227,17 @@
         "actions": {
           "addItem": "إضافة صنف"
         }
+      },
+      "totals": {
+        "total": "الإجمالي",
+        "totalDiscount": "إجمالي الخصم",
+        "totalGWeight": "إجمالي الوزن المعاير",
+        "valueTax": "ضريبة القيمة",
+        "wagesTax": "ضريبة الأجور",
+        "tax": "الضريبة",
+        "netAmount": "الإجمالي شامل الضريبة",
+        "payment": "دفع",
+        "gramUnit": "جم"
       }
     },
     "balanceVoucher": {
