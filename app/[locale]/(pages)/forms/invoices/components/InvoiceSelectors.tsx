@@ -13,6 +13,7 @@ import {
 import ReactSelect, { type SelectInstance } from "react-select";
 import { useTranslations } from "next-intl";
 
+import { BaseModal } from "@/components/Modal";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import {
   INVOICE_PAY_TYPES,
@@ -223,6 +224,7 @@ export default function InvoiceSelectors({
   const t = useTranslations("forms.invoices.selectors");
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const partyKey: "customer" | "supplier" =
     invoiceType === TransTypes.PURCHASE ||
     invoiceType === TransTypes.PURCHASE_RETURN
@@ -459,6 +461,23 @@ export default function InvoiceSelectors({
 
   return (
     <div ref={selectorsRef} onKeyDownCapture={handleKeyDown}>
+      <BaseModal
+        className="font-cairo"
+        isOpen={isNoteModalOpen}
+        title={t("noteLabel")}
+        onClose={() => setIsNoteModalOpen(false)}
+      >
+        <div className="w-full">
+          <textarea
+            className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none min-h-[120px]"
+            dir="auto"
+            placeholder={t("noteLabel")}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+      </BaseModal>
+
       <div className="grid grid-cols-1 gap-2">
         {/* معلومات الفاتورة الأساسية */}
         <div className="bg-white border border-gray-200 rounded-lg p-2 md:p-3">
@@ -719,12 +738,27 @@ export default function InvoiceSelectors({
                   {`${t("noteLabel")}:`}
                 </label>
                 <input
-                  className="w-full h-[32px] border px-2 rounded text-xs"
+                  readOnly
+                  className={`w-full h-[32px] border px-2 rounded text-xs ${
+                    isEditing ? "cursor-pointer bg-white hover:bg-gray-50" : ""
+                  }`}
                   disabled={!isEditing}
                   id="note"
                   type="text"
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onClick={() => {
+                    if (isEditing) {
+                      setIsNoteModalOpen(true);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      if (isEditing) {
+                        e.preventDefault();
+                        setIsNoteModalOpen(true);
+                      }
+                    }
+                  }}
                 />
               </div>
 
