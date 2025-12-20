@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import VoucherClientPage from "@/app/[locale]/(pages)/forms/voucher/VoucherClientPage";
+import VoucherStatusCheckboxes from "./components/VoucherStatusCheckboxes";
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";
@@ -314,21 +315,31 @@ export default async function VoucherPage({
 
     return (
       <div className="container mx-auto p-4">
-        <Breadcrumb
-          items={[
-            { name: config.title, href: newVoucherHref },
-            {
-              name:
-                mode === "new"
-                  ? t("breadcrumbs.new")
-                  : mode === "edit"
-                    ? t("breadcrumbs.edit", {
-                        id: voucherData?.vouch_id ?? editId ?? "",
-                      })
-                    : t("breadcrumbs.preview"),
-            },
-          ]}
-        />
+        <div className="flex items-center justify-between mb-2">
+          <Breadcrumb
+            items={[
+              { name: t("breadcrumbs.list"), href: newVoucherHref },
+              {
+                name:
+                  mode === "new"
+                    ? t("breadcrumbs.new")
+                    : mode === "edit"
+                      ? t("breadcrumbs.edit", {
+                          id: voucherData?.vouch_id ?? editId ?? "",
+                        })
+                      : t("breadcrumbs.preview"),
+              },
+            ]}
+          />
+          {/* حالة القيد */}
+          {voucherData && (
+            <VoucherStatusCheckboxes
+              commit={voucherData.commit ?? false}
+              post={voucherData.post ?? false}
+              print={voucherData.print ?? false}
+            />
+          )}
+        </div>
         <VoucherClientPage
           accounts={formData.accounts}
           caratTypes={formData.caratTypes}

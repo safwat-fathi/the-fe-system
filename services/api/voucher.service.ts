@@ -263,6 +263,56 @@ class VoucherService extends HttpService<Voucher> {
   }
 
   /**
+   * التحقق من وجود قيد افتتاحي (بدون cache للدقة)
+   */
+  async checkExistingOpeningEntry(comId: string | number = "1") {
+    const queryParams: any = {
+      xcom_id: String(comId),
+      xyear_id: "0",
+      xvouch_type: "0", // قيد افتتاحي فقط
+      xvouch_id: "0",
+      xfrom_date: "0",
+      xto_date: "0",
+      page: "1",
+    };
+
+    // ✅ استخدام no-store للتحقق الدقيق من قاعدة البيانات
+    const response = await this.get<IPaginatedResponse<Voucher>>(
+      "vouchers_list",
+      queryParams,
+      {
+        cache: "no-store", // ✅ بدون cache للتحقق الدقيق
+      },
+    );
+
+    if (response.success && response.data) {
+      const data = response.data as any;
+      let vouchers: any[] = [];
+
+      if (data.results && Array.isArray(data.results)) {
+        vouchers = data.results;
+      } else if (Array.isArray(data)) {
+        vouchers = data;
+      }
+
+      // البحث عن قيد افتتاحي ينتمي للفرع المحدد
+      const openingEntry = vouchers.find(
+        (v: any) => {
+          const isCorrectType = v?.vouch_type === 0 || v?.vouch_type === "0";
+          const voucherCom = Number(v?.com_id ?? v?.com ?? 1);
+          const isCorrectBranch = voucherCom === Number(comId);
+
+          return isCorrectType && isCorrectBranch;
+        },
+      );
+
+      return openingEntry || null;
+    }
+
+    return null;
+  }
+
+  /**
    * الحصول على سند واحد بالـ ID (مباشر وسريع - مثل getInvoiceById)
    */
   async getVoucherById(
@@ -287,9 +337,13 @@ class VoucherService extends HttpService<Voucher> {
         page: "1", // صفحة واحدة فقط
       };
 
+      // ✅ استخدام no-store للحصول على أحدث البيانات من قاعدة البيانات
       const response = await this.get<IPaginatedResponse<Voucher> | Voucher[]>(
         "vouchers_list",
         queryParams,
+        {
+          cache: "no-store", // ✅ بدون cache للحصول على أحدث البيانات
+        },
       );
 
       if (response.success && response.data) {

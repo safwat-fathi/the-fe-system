@@ -242,6 +242,7 @@
         "save": "Save",
         "edit": "Edit",
         "print": "Print",
+        "viewGLTransactions": "View GL Transactions",
         "addRow": "+ Row",
         "delete": "Delete Row",
         "expandNotes": "Expand Notes",
@@ -333,6 +334,7 @@
         "edit": "Edit",
         "new": "New",
         "print": "Print",
+        "viewGLTransactions": "View GL Transactions",
         "addRow": "+ Row",
         "delete": "Delete",
         "expandNotes": "Expand Notes",
@@ -429,13 +431,14 @@
         "edit": "Edit",
         "new": "New",
         "print": "Print",
+        "viewGLTransactions": "GL",
         "addRow": "+ Row",
         "delete": "Delete",
         "deleteRow": "Delete Row",
         "expandNotes": "Expand Notes",
         "saveNotes": "Save",
         "search": "Search by voucher number...",
-        "createFromPrevious": "Create from Previous Voucher",
+        "createFromPrevious": "From Prev",
         "revert": "Revert",
         "select": "Select",
         "cancel": "Cancel"
@@ -528,6 +531,50 @@
       "messages": {
         "voucherType": "Adjustment Voucher",
         "defaultVoucherType": "Adjustment Voucher"
+      }
+    },
+    "glTransactionModal": {
+      "title": "GL Transactions",
+      "loading": "Loading transactions...",
+      "actions": {
+        "close": "Close"
+      },
+      "balanceSummary": {
+        "cashBalance": "Cash Balance",
+        "goldBalance": "Gold Balance",
+        "totalDebit": "Total Debit",
+        "totalCredit": "Total Credit"
+      },
+      "table": {
+        "columns": {
+          "seq": "#",
+          "account": "Account",
+          "debitBase": "Debit Base",
+          "creditBase": "Credit Base",
+          "gDebitBase": "Gold Debit (g)",
+          "gCreditBase": "Gold Credit (g)",
+          "costCenter": "Cost Center"
+        },
+        "totals": {
+          "total": "Totals",
+          "difference": "Difference",
+          "debit": "Debit",
+          "credit": "Credit"
+        }
+      },
+      "messages": {
+        "noTransactions": "No GL transactions found",
+        "fetchError": "Failed to fetch GL transactions"
+      },
+      "status": {
+        "balanced": "Entry is balanced ✓",
+        "unbalanced": "Entry is unbalanced ✗",
+        "cashBalanced": "Balanced",
+        "cashUnbalanced": "Unbalanced",
+        "goldBalanced": "Balanced",
+        "goldUnbalanced": "Unbalanced",
+        "cash": "Cash",
+        "gold": "Gold"
       }
     },
     "customerGoldVoucher": {

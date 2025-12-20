@@ -38,6 +38,7 @@ import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/u
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { useVoucherForm } from "@/hooks/useVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
+import GLTransactionModal from "@/components/gl-transaction/GLTransactionModal";
 import { formatAmount } from "@/utilities/formatAmount";
 import { formatDateTime } from "@/utilities/dateUtils";
 
@@ -48,6 +49,7 @@ interface VoucherClientPageProps {
   voucherDetailsData?: VoucherDetail[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
+  voucherVouchId?: number;
   navigationInfo?: {
     previous?: number | null;
     next?: number | null;
@@ -71,6 +73,7 @@ export default function VoucherClientPage({
   voucherDetailsData,
   isNewVoucher = true,
   voucherRecordId,
+  voucherVouchId,
   accounts: initialAccounts,
   costCenters: initialCostCenters,
   voucherTypes: initialVoucherTypes,
@@ -94,6 +97,8 @@ export default function VoucherClientPage({
   const textAlignCenter = "text-center";
 
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  // حالة Modal القيود المحاسبية
+  const [isGLModalOpen, setIsGLModalOpen] = useState(false);
 
   // Use the hook for all state management and business logic
   const {
@@ -462,173 +467,154 @@ export default function VoucherClientPage({
       <div className="p-1 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
         {/* رأس القيد المرتب مثل الفواتير */}
         <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-1.5 mb-1 border border-slate-200">
-          {/* الصف الأول: معلومات القيد */}
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-3">
-              <div>
-                <h1
-                  className={`text-lg font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}
-                >
-                  <span>
-                    {voucherTypes.find(
+          {/* صف واحد: عنوان الصفحة والأزرار والبحث */}
+          <div className="flex items-center justify-between gap-1.5 flex-wrap">
+            {/* الجانب الأيسر: العنوان والأزرار */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* عنوان الصفحة ورقم القيد */}
+              <h1
+                className={`text-lg font-bold text-slate-800 flex items-center gap-1.5 ${textAlign}`}
+              >
+                <span>
+                  {voucherTypes.find(
+                    (type) => (type.Id || type.id) === voucher.vouch_type,
+                  )?.name ||
+                    voucherTypes.find(
                       (type) => (type.Id || type.id) === voucher.vouch_type,
-                    )?.name ||
-                      voucherTypes.find(
-                        (type) => (type.Id || type.id) === voucher.vouch_type,
-                      )?.["Code Desc"] ||
-                      t("messages.voucherType")}
-                  </span>
-                  <span className="text-slate-600 font-medium">
-                    #
-                    {voucher.vouch_id &&
-                    Number(voucher.vouch_id) > 0 &&
-                    isFinite(Number(voucher.vouch_id))
-                      ? voucher.vouch_id
-                      : voucher.id
-                        ? `DB-${voucher.id}`
-                        : t("status.numbering")}
-                  </span>
-                  <span
-                    className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}
-                  >
-                    <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                    {new Date(voucher.vouch_date).toLocaleString("en-US", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                      hour12: true,
-                    })}
-                  </span>
-                </h1>
-              </div>
-            </div>
-
-            {/* البحث */}
-            <div className="flex items-center gap-2">
-              <input
-                className="w-32 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
-                placeholder={t("actions.search")}
-                type="number"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <button
-                className="h-7 px-2 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
-                onClick={handleSearch}
-              >
-                <i className="bi bi-search w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* الصف الثاني: الأزرار والحالة */}
-          <div className="flex items-center justify-between">
-            {/* الأزرار من اليسار لليمين */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
-                isDisabled={!isEditing}
-                isLoading={isLoading}
-                startContent={
-                  !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
-                }
-                variant="solid"
-                onPress={saveVoucher}
-              >
-                {t("actions.save")}
-              </Button>
-
-              <Button
-                className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                isDisabled={formMode === "new" || isEditing || isLoading}
-                startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
-                variant="solid"
-                onPress={() => {
-                  // عند فتح وضع التعديل، نلغي commit (تصبح false) حتى يتم الحفظ
-                  setVoucher((prev) => ({
-                    ...prev,
-                    commit: false,
-                  }));
-
-                  // تغيير الـ URL إلى وضع edit
-                  if (pathname) {
-                    // إذا كنا في صفحة [id]، نضيف mode=edit
-                    if (
-                      pathname.startsWith("/forms/voucher/") &&
-                      pathname !== "/forms/voucher"
-                    ) {
-                      router.push(`${pathname}?mode=edit`);
-                    } else {
-                      // إذا كنا في صفحة أخرى، نستخدم searchParams
-                      const currentUrl = new URL(window.location.href);
-
-                      currentUrl.searchParams.set("mode", "edit");
-                      router.push(currentUrl.pathname + currentUrl.search);
-                    }
-                  }
-                }}
-              >
-                {t("actions.edit")}
-              </Button>
-
-              {/* زر "جديد" */}
-              <Button
-                className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-                startContent={<PlusIcon className="w-4 h-4" />}
-                variant="solid"
-                onPress={() => {
-                  // الانتقال إلى صفحة جديدة
-                  router.push(newVoucherHref || "/forms/voucher");
-                }}
-              >
-                {t("actions.new")}
-              </Button>
-
-              <Button
-                className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
-                isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
-                isLoading={isPrinting}
-                startContent={
-                  !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
-                }
-                variant="solid"
-                onPress={printVoucher}
-              >
-                {t("actions.print")}
-              </Button>
-
-              <Button
-                className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-                startContent={
-                  <DocumentTextIcon className="w-4 h-4 text-slate-500" />
-                }
-                variant="solid"
-                onPress={() => setIsModalOpen(true)}
-              >
-                <span className="hidden sm:inline">
-                  {t("actions.createFromPrevious")}
+                    )?.["Code Desc"] ||
+                    t("messages.voucherType")}
                 </span>
-              </Button>
+                <span className="text-slate-600 font-medium">
+                  #
+                  {voucher.vouch_id &&
+                  Number(voucher.vouch_id) > 0 &&
+                  isFinite(Number(voucher.vouch_id))
+                    ? voucher.vouch_id
+                    : voucher.id
+                      ? `DB-${voucher.id}`
+                      : t("status.numbering")}
+                </span>
+              </h1>
 
-              {isCreatedFromPrevious && (
-                <Button
-                  className="h-7 px-3 text-xs bg-orange-600 text-white hover:bg-orange-700 border border-orange-600 rounded-md shadow-sm"
-                  startContent={<ArrowUturnLeftIcon className="w-4 h-4" />}
-                  variant="solid"
-                  onPress={resetToNew}
-                >
-                  {t("actions.revert")}
-                </Button>
-              )}
+              {/* خط فاصل ناعم */}
+              <div className="h-6 w-px bg-slate-300" />
+
+              {/* الأزرار */}
+              <Button
+              className="h-7 px-1.5 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
+              isDisabled={!isEditing}
+              isLoading={isLoading}
+              startContent={
+                !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
+              }
+              variant="solid"
+              onPress={saveVoucher}
+            >
+              {t("actions.save")}
+            </Button>
+
+            <Button
+              className="h-7 px-1.5 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+              isDisabled={formMode === "new" || isEditing || isLoading}
+              startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
+              variant="solid"
+              onPress={() => {
+                // عند فتح وضع التعديل، نلغي commit (تصبح false) حتى يتم الحفظ
+                setVoucher((prev) => ({
+                  ...prev,
+                  commit: false,
+                }));
+
+                // تغيير الـ URL إلى وضع edit
+                if (pathname) {
+                  // إذا كنا في صفحة [id]، نضيف mode=edit
+                  if (
+                    pathname.startsWith("/forms/voucher/") &&
+                    pathname !== "/forms/voucher"
+                  ) {
+                    router.push(`${pathname}?mode=edit`);
+                  } else {
+                    // إذا كنا في صفحة أخرى، نستخدم searchParams
+                    const currentUrl = new URL(window.location.href);
+
+                    currentUrl.searchParams.set("mode", "edit");
+                    router.push(currentUrl.pathname + currentUrl.search);
+                  }
+                }
+              }}
+            >
+              {t("actions.edit")}
+            </Button>
+
+            {/* زر "جديد" */}
+            <Button
+              className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+              startContent={<PlusIcon className="w-4 h-4" />}
+              variant="solid"
+              onPress={() => {
+                // الانتقال إلى صفحة جديدة
+                router.push(newVoucherHref || "/forms/voucher");
+              }}
+            >
+              {t("actions.new")}
+            </Button>
+
+            <Button
+              className="h-7 px-1.5 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
+              isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
+              isLoading={isPrinting}
+              startContent={
+                !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
+              }
+              variant="solid"
+              onPress={printVoucher}
+            >
+              {t("actions.print")}
+            </Button>
+
+            <Button
+              className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+              isDisabled={
+                !voucher.id ||
+                Number(voucher.id) <= 0 ||
+                !voucher.commit
+              }
+              startContent={<DocumentTextIcon className="w-4 h-4" />}
+              variant="solid"
+              onPress={() => setIsGLModalOpen(true)}
+            >
+              {t("actions.viewGLTransactions")}
+            </Button>
+
+            <Button
+              className="h-7 px-1.5 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+              startContent={
+                <DocumentTextIcon className="w-4 h-4 text-slate-500" />
+              }
+              variant="solid"
+              onPress={() => setIsModalOpen(true)}
+            >
+              <span className="hidden sm:inline">
+                {t("actions.createFromPrevious")}
+              </span>
+            </Button>
+
+            {isCreatedFromPrevious && (
+              <Button
+                className="h-7 px-1.5 text-xs bg-orange-600 text-white hover:bg-orange-700 border border-orange-600 rounded-md shadow-sm"
+                startContent={<ArrowUturnLeftIcon className="w-4 h-4" />}
+                variant="solid"
+                onPress={resetToNew}
+              >
+                {t("actions.revert")}
+              </Button>
+            )}
 
               {/* أزرار التنقل - مثل الفواتير - ظاهرة دائماً */}
-              <div className="hidden md:flex items-center gap-1 mr-2">
+              <div className="hidden md:flex items-center gap-0.5">
                 <Link
                   className={clsx(
-                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    "flex items-center justify-center h-7 w-8 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
                     {
                       "pointer-events-none opacity-40":
                         !navigationMetadata?.firstVoucherHref,
@@ -636,11 +622,11 @@ export default function VoucherClientPage({
                   )}
                   href={navigationMetadata?.firstVoucherHref || ""}
                 >
-                  <ChevronDoubleRightIcon className="w-4 h-4" />
+                  <ChevronDoubleRightIcon className="w-3 h-3" />
                 </Link>
                 <Link
                   className={clsx(
-                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    "flex items-center justify-center h-7 w-8 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
                     {
                       "pointer-events-none opacity-40":
                         !navigationMetadata?.prevVoucherHref,
@@ -648,10 +634,10 @@ export default function VoucherClientPage({
                   )}
                   href={navigationMetadata?.prevVoucherHref || ""}
                 >
-                  <ChevronRightIcon className="w-4 h-4" />
+                  <ChevronRightIcon className="w-3 h-3" />
                 </Link>
                 <span
-                  className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}
+                  className={`text-xs text-slate-600 px-0.5 font-medium ${textAlign}`}
                 >
                   {t("navigation.position", {
                     current: voucherNumber,
@@ -660,7 +646,7 @@ export default function VoucherClientPage({
                 </span>
                 <Link
                   className={clsx(
-                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    "flex items-center justify-center h-7 w-8 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
                     {
                       "pointer-events-none opacity-40":
                         !navigationMetadata?.nextVoucherHref,
@@ -668,11 +654,11 @@ export default function VoucherClientPage({
                   )}
                   href={navigationMetadata?.nextVoucherHref || ""}
                 >
-                  <ChevronLeftIcon className="w-4 h-4" />
+                  <ChevronLeftIcon className="w-3 h-3" />
                 </Link>
                 <Link
                   className={clsx(
-                    "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                    "flex items-center justify-center h-7 w-8 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
                     {
                       "pointer-events-none opacity-40":
                         !navigationMetadata?.lastVoucherHref,
@@ -680,47 +666,31 @@ export default function VoucherClientPage({
                   )}
                   href={navigationMetadata?.lastVoucherHref || ""}
                 >
-                  <ChevronDoubleLeftIcon className="w-4 h-4" />
+                  <ChevronDoubleLeftIcon className="w-3 h-3" />
                 </Link>
               </div>
             </div>
 
-            {/* حالة القيد */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1">
-                <Checkbox
-                  color="success"
-                  isDisabled
-                  isSelected={voucher.commit}
-                  size="sm"
-                />
-                <span className={`text-xs text-slate-600 ${textAlign}`}>
-                  {t("status.committed")}
-                </span>
-              </div>
+            {/* الجانب الأيمن: خط فاصل والبحث */}
+            <div className="flex items-center gap-2">
+              {/* خط فاصل قبل البحث */}
+              <div className="h-6 w-px bg-slate-300" />
 
+              {/* البحث - ثابت في الطرف */}
               <div className="flex items-center gap-1">
-                <Checkbox
-                  color="warning"
-                  isDisabled
-                  isSelected={voucher.post}
-                  size="sm"
+                <input
+                  className="w-32 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
+                  placeholder={t("actions.search")}
+                  type="number"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <span className={`text-xs text-slate-600 ${textAlign}`}>
-                  {t("status.posted")}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <Checkbox
-                  color="warning"
-                  isDisabled
-                  isSelected={voucher.print}
-                  size="sm"
-                />
-                <span className={`text-xs text-slate-600 ${textAlign}`}>
-                  {t("status.printed")}
-                </span>
+                <button
+                  className="h-7 px-2 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
+                  onClick={handleSearch}
+                >
+                  <i className="bi bi-search w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -1369,52 +1339,52 @@ export default function VoucherClientPage({
             <div className="overflow-x-auto mb-0.5 max-w-full">
               <div className="max-h-[500px] overflow-y-auto">
                 <table className="min-w-[1350px] border text-xs text-center table-fixed">
-                  <thead className="bg-gray-100 text-xs font-bold">
+                  <thead className="bg-gray-100 text-[10px] font-bold">
                     <tr>
                       <th
-                        className={`w-64 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-64 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                         rowSpan={2}
                       >
                         {t("table.columns.account")}
                       </th>
                       <th
-                        className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-40 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                         colSpan={2}
                       >
                         {t("table.columns.cash")}
                       </th>
                       <th
-                        className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-40 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                         colSpan={2}
                       >
                         {t("table.columns.goldStanding")}
                       </th>
                       <th
-                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-20 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                         rowSpan={2}
                       >
                         {t("table.columns.gauge")}
                       </th>
                       <th
-                        className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-40 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                         colSpan={2}
                       >
                         {t("table.columns.goldCalibrated")}
                       </th>
                       <th
-                        className={`w-40 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-40 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                         rowSpan={2}
                       >
                         {t("table.columns.costCenter")}
                       </th>
                       <th
-                        className={`w-48 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-48 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                         rowSpan={2}
                       >
                         {t("table.columns.notes")}
                       </th>
                       <th
-                        className={`w-12 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-12 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                         rowSpan={2}
                       >
                         {t("table.columns.delete")}
@@ -1422,32 +1392,32 @@ export default function VoucherClientPage({
                     </tr>
                     <tr>
                       <th
-                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-20 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                       >
                         {t("table.columns.cashDebit")}
                       </th>
                       <th
-                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-20 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                       >
                         {t("table.columns.cashCredit")}
                       </th>
                       <th
-                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-20 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                       >
                         {t("table.columns.goldStandingDebit")}
                       </th>
                       <th
-                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-20 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                       >
                         {t("table.columns.goldStandingCredit")}
                       </th>
                       <th
-                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-20 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                       >
                         {t("table.columns.goldCalibratedDebit")}
                       </th>
                       <th
-                        className={`w-20 p-0.5 font-bold text-slate-700 border ${textAlignCenter}`}
+                        className={`w-20 px-0.5 py-0.5 font-bold text-slate-700 border leading-tight ${textAlignCenter}`}
                       >
                         {t("table.columns.goldCalibratedCredit")}
                       </th>
@@ -2634,6 +2604,25 @@ export default function VoucherClientPage({
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Modal القيود المحاسبية */}
+      <GLTransactionModal
+        isOpen={isGLModalOpen}
+        onClose={() => setIsGLModalOpen(false)}
+        transId={
+          voucher.id && Number(voucher.id) > 0
+            ? Number(voucher.id)
+            : 0
+        }
+        transType={vouchType || 3} // قيد تسوية
+        voucherTitle={
+          voucher.vouch_id && Number(voucher.vouch_id) > 0
+            ? `قيد تسوية رقم ${voucher.vouch_id}`
+            : voucher.id
+              ? `قيد تسوية (DB-${voucher.id})`
+              : undefined
+        }
+      />
     </>
   );
 }

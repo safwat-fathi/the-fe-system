@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Table,
   TableHeader,
@@ -62,9 +62,11 @@ export default function CostCentersClient({
   error,
 }: CostCentersClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.costCenters");
+  const prevPathnameRef = useRef(pathname);
 
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
@@ -105,7 +107,7 @@ export default function CostCentersClient({
   const rowsPerPage = 10;
 
   // إعادة تحميل البيانات
-  const loadCostCenters = async () => {
+  const loadCostCenters = useCallback(async () => {
     try {
       const data = await costCenterService.getAllCostCenters();
 
@@ -114,7 +116,18 @@ export default function CostCentersClient({
       toast.error(t("messages.loadError"));
       setCostCenters([]);
     }
-  };
+  }, [t]);
+
+  // إعادة تحميل البيانات عند العودة للصفحة من صفحة أخرى
+  useEffect(() => {
+    if (
+      pathname === "/basic/cost-centers" &&
+      prevPathnameRef.current !== pathname
+    ) {
+      loadCostCenters();
+    }
+    prevPathnameRef.current = pathname;
+  }, [pathname, loadCostCenters]);
 
   const handleDeleteClick = (costCenter: CostCenter) => {
     if (!costCenter.id) {
@@ -257,10 +270,6 @@ export default function CostCentersClient({
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className={`text-base font-semibold ${textAlign}`}>
-          {t("labels.manage")}
-        </h2>
-        <div className="h-8 w-px bg-gray-300" />
         <Button
           className="bg-gray-100"
           variant="bordered"
