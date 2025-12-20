@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { cache } from "react";
 
 import VoucherClientPage from "../VoucherClientPage";
+import VoucherStatusCheckboxes from "../components/VoucherStatusCheckboxes";
 
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
@@ -17,12 +19,15 @@ export const metadata: Metadata = {
 };
 
 // Cache the voucher lookup for better performance (مثل voucher1 و gvoucher4)
-const getVoucherById = cache(async (voucherId: number) => {
+// ملاحظة: لا نستخدم cache هنا لأننا نحتاج أحدث البيانات بعد الحفظ
+const getVoucherById = async (voucherId: number) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
       return null;
     }
 
+    // استخدام voucherService لجلب القيود
+    // ملاحظة: voucherService.getAll يستخدم cache، لكن بعد router.refresh() يجب أن يتم تحديث البيانات
     const vouchersResponse = await voucherService.getAll({
       xvouch_type: "3", // قيد التسوية فقط
     });
@@ -46,7 +51,7 @@ const getVoucherById = cache(async (voucherId: number) => {
 
     return null;
   }
-});
+};
 
 // Cache the voucher details for better performance
 const getVoucherDetails = cache(
@@ -82,6 +87,8 @@ export default async function VoucherEditPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const t = await getTranslations("forms.adjustmentVoucher");
+
   try {
     const { id } = await params;
     const searchParamsData = await searchParams;
@@ -256,7 +263,7 @@ export default async function VoucherEditPage({
         case 2:
           return "سند صرف";
         case 3:
-          return "قيد تسوية";
+          return t("breadcrumbs.list");
         default:
           return "قيد";
       }
@@ -273,17 +280,27 @@ export default async function VoucherEditPage({
 
     return (
       <div className="container mx-auto p-4">
-        <Breadcrumb
-          items={[
-            { name: voucherTitle, href: newVoucherHref },
-            {
-              name:
-                formMode === "edit"
-                  ? `تعديل ${targetVoucher.vouch_id || targetVoucher.id || ""}`
-                  : "معاينة",
-            },
-          ]}
-        />
+        <div className="flex items-center justify-between mb-2">
+          <Breadcrumb
+            items={[
+              { name: voucherTitle, href: newVoucherHref },
+              {
+                name:
+                  formMode === "edit"
+                    ? t("breadcrumbs.edit", {
+                        id: targetVoucher.vouch_id || targetVoucher.id || "",
+                      })
+                    : t("breadcrumbs.preview"),
+              },
+            ]}
+          />
+          {/* حالة القيد */}
+          <VoucherStatusCheckboxes
+            commit={formattedVoucher.commit}
+            post={formattedVoucher.post}
+            print={formattedVoucher.print}
+          />
+        </div>
         <VoucherClientPage
           accounts={formData.accounts}
           caratTypes={formData.caratTypes}
@@ -297,6 +314,7 @@ export default async function VoucherEditPage({
           voucherData={formattedVoucher}
           voucherDetailsData={details}
           voucherRecordId={targetVoucher.id}
+          voucherVouchId={targetVoucher.vouch_id || 0}
           voucherStatuses={formData.voucherStatuses}
           voucherTypes={formData.voucherTypes}
         />

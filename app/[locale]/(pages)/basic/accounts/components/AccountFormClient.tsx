@@ -9,6 +9,7 @@ import {
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
+import { useLocale } from "next-intl";
 
 import {
   findAccountById,
@@ -16,6 +17,7 @@ import {
   generateAccountId,
 } from "../utils/account-tree";
 
+import { getLocaleDir } from "@/i18n/config";
 import accountService from "@/services/api/account.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
 import { Account } from "@/types/models/account";
@@ -68,9 +70,14 @@ const AccountFormClient = ({
   suggestedAccId,
 }: AccountFormClientProps) => {
   const router = useRouter();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
   const isEditMode = mode === "edit";
+
+  // Dynamic text alignment classes based on locale
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   const flattenedAccounts = useMemo(
     () => flattenAccountTree(accounts),
@@ -318,15 +325,15 @@ const AccountFormClient = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">
+        <div className={textAlign}>
+          <h2 className={`text-xl font-bold text-gray-900 ${textAlign}`}>
             {isViewMode
               ? `عرض ${initialAccount.acc_name || initialAccount.acc_id || "الحساب"}`
               : isAddMode
                 ? "إضافة حساب جديد"
                 : `تعديل ${initialAccount.acc_name || initialAccount.acc_id || "الحساب"}`}
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className={`text-sm text-gray-600 mt-1 ${textAlign}`}>
             {isViewMode
               ? "استعراض تفاصيل الحساب المحدد"
               : isAddMode
@@ -334,7 +341,7 @@ const AccountFormClient = ({
                 : "قم بتعديل بيانات الحساب وتحديثها"}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={`flex flex-wrap items-center gap-2 ${dir === "rtl" ? "flex-row-reverse" : ""}`}>
           <Button
             variant="light"
             onPress={() => {

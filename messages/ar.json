@@ -252,7 +252,8 @@
       "actions": {
         "save": "حفظ",
         "edit": "تعديل",
-        "print": "طباعة",
+        "print": "طباع",
+        "viewGLTransactions": "القيود",
         "addRow": "+ صف",
         "delete": "حذف السطر",
         "expandNotes": "توسيع البيان",
@@ -277,14 +278,14 @@
           "cashDebit": "مدين",
           "cashCredit": "دائن",
           "goldStanding": "ذهب قائم (جم)",
-          "goldStandingDebit": "مدين (جم)",
-          "goldStandingCredit": "دائن (جم)",
+          "goldStandingDebit": "مدين",
+          "goldStandingCredit": "دائن",
           "gauge": "المعايرة",
           "gaugePlaceholder": "875",
           "gaugeTooltip": "يمكن تعديل الذهب المعاير، وسيتم تحديث المعايرة تلقائياً",
           "goldCalibrated": "ذهب معاير (جم)",
-          "goldCalibratedDebit": "مدين (جم)",
-          "goldCalibratedCredit": "دائن (جم)",
+          "goldCalibratedDebit": "مدين",
+          "goldCalibratedCredit": "دائن",
           "costCenter": "مركز التكلفة",
           "costCenterPlaceholder": "مركز التكلفة...",
           "notes": "البيان",
@@ -343,7 +344,8 @@
         "save": "حفظ",
         "edit": "تعديل",
         "new": "جديد",
-        "print": "طباعة",
+        "print": "طباع",
+        "viewGLTransactions": "القيود",
         "addRow": "+ صف",
         "delete": "حذف",
         "expandNotes": "توسيع البيان",
@@ -427,6 +429,9 @@
       }
     },
     "adjustmentVoucher": {
+      "actions": {
+        "viewGLTransactions": "عرض القيود المحاسبية"
+      },
       "title": "قيد تسوية",
       "description": "إدارة قيود التسوية",
       "breadcrumbs": {
@@ -439,14 +444,15 @@
         "save": "حفظ",
         "edit": "تعديل",
         "new": "جديد",
-        "print": "طباعة",
+        "print": "طباع",
+        "viewGLTransactions": "القيود",
         "addRow": "+ صف",
         "delete": "حذف",
         "deleteRow": "حذف السطر",
         "expandNotes": "توسيع البيان",
         "saveNotes": "حفظ",
         "search": "بحث برقم القيد...",
-        "createFromPrevious": "انشاء من قيد سابق",
+        "createFromPrevious": "من سابق",
         "revert": "تراجع",
         "select": "اختر",
         "cancel": "إلغاء"
@@ -472,14 +478,14 @@
           "cashDebit": "مدين",
           "cashCredit": "دائن",
           "goldStanding": "ذهب قائم (جم)",
-          "goldStandingDebit": "مدين (جم)",
-          "goldStandingCredit": "دائن (جم)",
+          "goldStandingDebit": "مدين",
+          "goldStandingCredit": "دائن",
           "gauge": "المعايرة",
           "gaugePlaceholder": "875",
           "gaugeTooltip": "يمكن تعديل الذهب المعاير، وسيتم تحديث المعايرة تلقائياً",
           "goldCalibrated": "ذهب معاير (جم)",
-          "goldCalibratedDebit": "مدين (جم معاير)",
-          "goldCalibratedCredit": "دائن (جم معاير)",
+          "goldCalibratedDebit": "مدين",
+          "goldCalibratedCredit": "دائن",
           "costCenter": "مركز التكلفة",
           "costCenterPlaceholder": "مركز التكلفة...",
           "notes": "البيان",
@@ -539,6 +545,50 @@
       "messages": {
         "voucherType": "قيد تسوية",
         "defaultVoucherType": "قيد تسوية"
+      }
+    },
+    "glTransactionModal": {
+      "title": "القيود المحاسبية",
+      "loading": "جاري جلب القيود...",
+      "actions": {
+        "close": "إغلاق"
+      },
+      "balanceSummary": {
+        "cashBalance": "توازن النقدية",
+        "goldBalance": "توازن الذهب",
+        "totalDebit": "إجمالي المدين",
+        "totalCredit": "إجمالي الدائن"
+      },
+      "table": {
+        "columns": {
+          "seq": "#",
+          "account": "الحساب",
+          "debitBase": "مدين أساس",
+          "creditBase": "دائن أساس",
+          "gDebitBase": "مدين ذهب (جم)",
+          "gCreditBase": "دائن ذهب (جم)",
+          "costCenter": "مركز التكلفة"
+        },
+        "totals": {
+          "total": "الإجماليات",
+          "difference": "الفارق",
+          "debit": "مدين",
+          "credit": "دائن"
+        }
+      },
+      "messages": {
+        "noTransactions": "لا توجد قيود محاسبية",
+        "fetchError": "فشل جلب القيود المحاسبية"
+      },
+      "status": {
+        "balanced": "القيد متوازن ✓",
+        "unbalanced": "القيد غير متوازن ✗",
+        "cashBalanced": "متوازن",
+        "cashUnbalanced": "غير متوازن",
+        "goldBalanced": "متوازن",
+        "goldUnbalanced": "غير متوازن",
+        "cash": "نقد",
+        "gold": "ذهب"
       }
     },
     "customerGoldVoucher": {

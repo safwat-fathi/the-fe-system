@@ -1989,13 +1989,14 @@ export default function CustomerGoldVoucherClientPage({
         }
 
         if (foundVoucher) {
-          const targetId = foundVoucher.id || foundVoucher.vouch_id;
+          // استخدام vouch_id في URL بدلاً من id
+          const targetVouchId = foundVoucher.vouch_id;
 
-          if (targetId) {
+          if (targetVouchId && Number(targetVouchId) > 0) {
             const basePath =
               vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
 
-            router.push(`${basePath}/${targetId}?mode=preview`);
+            router.push(`${basePath}/${targetVouchId}?mode=preview`);
             setSearchTerm("");
 
             return;
@@ -2034,13 +2035,14 @@ export default function CustomerGoldVoucherClientPage({
             return;
           }
 
-          const targetId = foundAny.id || foundAny.vouch_id;
+          // استخدام vouch_id في URL بدلاً من id
+          const targetVouchId = foundAny.vouch_id;
 
-          if (targetId) {
+          if (targetVouchId && Number(targetVouchId) > 0) {
             const basePath =
               vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
 
-            router.push(`${basePath}/${targetId}?mode=preview`);
+            router.push(`${basePath}/${targetVouchId}?mode=preview`);
             setSearchTerm("");
 
             return;
@@ -2067,11 +2069,15 @@ export default function CustomerGoldVoucherClientPage({
       commit: false,
     }));
 
-    if (pathname && voucherRecordId) {
+    if (pathname) {
       const basePath =
         vouchType === 4 ? "/forms/gvoucher4" : "/forms/gvoucher5";
+      // استخدام vouch_id في URL بدلاً من voucherRecordId
+      const vouchIdToUse = voucher.vouch_id;
 
-      router.push(`${basePath}/${voucherRecordId}?mode=edit`);
+      if (vouchIdToUse && Number(vouchIdToUse) > 0) {
+        router.push(`${basePath}/${vouchIdToUse}?mode=edit`);
+      }
     }
   };
 

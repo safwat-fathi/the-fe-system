@@ -57,6 +57,31 @@ export default function AccountsClient({
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = "text-center";
+  
+  // Helper function to get margin class based on level and direction
+  const getMarginClass = (level: number) => {
+    if (level === 0) return "";
+    const marginValue = level * 4;
+    if (dir === "rtl") {
+      const classes: Record<number, string> = {
+        4: "mr-4",
+        8: "mr-8",
+        12: "mr-12",
+        16: "mr-16",
+        20: "mr-20",
+      };
+      return classes[marginValue] || "";
+    } else {
+      const classes: Record<number, string> = {
+        4: "ml-4",
+        8: "ml-8",
+        12: "ml-12",
+        16: "ml-16",
+        20: "ml-20",
+      };
+      return classes[marginValue] || "";
+    }
+  };
 
   const ACCOUNT_TYPE_FILTERS = useMemo(
     () => [
@@ -321,7 +346,7 @@ export default function AccountsClient({
               ${isSelected ? "bg-blue-50 border border-blue-200" : ""}
               ${matchesSearch ? "bg-yellow-100 border border-yellow-300" : ""}
               ${!isSelected && !matchesSearch ? "hover:bg-gray-50" : ""}
-              ${level > 0 ? "mr-" + level * 4 : ""}
+              ${getMarginClass(level)}
             `}
             role="button"
             tabIndex={0}
@@ -356,7 +381,7 @@ export default function AccountsClient({
           </div>
 
           {hasChildren && isExpanded && (
-            <div className="mr-4 border-r border-gray-200">
+            <div className={`${dir === "rtl" ? "mr-4 border-r" : "ml-4 border-l"} border-gray-200`}>
               {renderAccountTree(account.children!, level + 1)}
             </div>
           )}

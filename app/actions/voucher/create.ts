@@ -17,8 +17,9 @@ import { processVoucherBoxes } from "./helpers/process-boxes";
 import { processVoucherDetails } from "./helpers/process-details";
 import { processGoldDetails } from "./helpers/process-gold-details";
 import { revalidateVoucherPaths } from "./helpers/revalidation";
+import { postVoucherToGL } from "./helpers/post-to-gl";
 
-import { voucherService } from "@/services/api";
+import { voucherService, glTransactionService } from "@/services/api";
 import { requiresBoxes } from "@/utilities/voucher/routing";
 
 /**
@@ -30,6 +31,11 @@ export async function createVoucherAction(
   voucherBoxes: VoucherBoxData[] = [],
   goldDetails: GVoucherDetailData[] = [],
 ) {
+  console.log("=== [createVoucherAction] START ===");
+  console.log("Voucher Type:", voucherData.vouch_type);
+  console.log("Vouch ID:", voucherData.vouch_id);
+  console.log("Details Count:", details.length);
+  
   try {
     const normalizeCostValue = (...values: unknown[]): number | null => {
       for (const value of values) {
@@ -75,11 +81,11 @@ export async function createVoucherAction(
       vouch_amt: 0,
       vouch_status: voucherData.vouch_status || 1,
       opps_vouch: voucherData.opps_vouch || 0,
+      commit: true, // ✅ عند الحفظ، commit: true
       handling:
         voucherData.handling !== undefined && voucherData.handling !== null
           ? voucherData.handling
           : "",
-      commit: true,
     };
 
     const resolvedCost = normalizeCostValue(
@@ -116,7 +122,22 @@ export async function createVoucherAction(
     }
 
     // حفظ السند الرئيسي
+    console.log("[createVoucherAction] Sending voucher payload:", {
+      vouch_id: voucherPayload.vouch_id,
+      vouch_type: voucherPayload.vouch_type,
+      com: voucherPayload.com,
+      year: voucherPayload.year,
+      detailsCount: details.length,
+    });
+
     let voucherResponse = await voucherService.create(voucherPayload);
+
+    // تسجيل الاستجابة للتحقق
+    console.log("[createVoucherAction] Voucher create response:", {
+      success: voucherResponse.success,
+      message: voucherResponse.message,
+      data: voucherResponse.data,
+    });
 
     if (!voucherResponse.success || !voucherResponse.data) {
       const duplicateResolution = await handleDuplicateVoucherNumber(
@@ -136,6 +157,7 @@ export async function createVoucherAction(
 
     const savedVoucher = voucherResponse.data;
     let masterId = (savedVoucher as any)?.id;
+    const savedVouchId = (savedVoucher as any)?.vouch_id || voucherData.vouch_id;
 
     // Fallback: البحث عن القيد إذا لم يكن id موجوداً
     if (!masterId || masterId <= 0) {
@@ -195,6 +217,46 @@ export async function createVoucherAction(
       };
     }
 
+    // ترحيل القيد للـ GL يدوياً بعد حفظ التفاصيل
+    console.log("[createVoucherAction] Posting voucher to GL manually...");
+    try {
+      const glPostResult = await postVoucherToGL({
+        voucher_id: Number(masterId), // id من جدول vouchers (primary key)
+        vouch_id: Number(savedVouchId), // رقم القيد (للرجوع إليه)
+        vouch_type: voucherData.vouch_type,
+        vouch_date: voucherData.vouch_date,
+        ref_no: voucherData.ref_no || "",
+        vouch_notes: voucherData.vouch_notes || "",
+        details: details.map((d) => ({
+          acc_id: d.acc_id || 0,
+          debit: d.debit || d.debit_base || 0,
+          credit: d.credit || d.credit_base || 0,
+          debit_base: d.debit_base || d.debit || 0,
+          credit_base: d.credit_base || d.credit || 0,
+          g_debit: d.g_debit || d.g_debit_base || 0,
+          g_credit: d.g_credit || d.g_credit_base || 0,
+          g_debit_base: d.g_debit_base || d.g_debit || 0,
+          g_credit_base: d.g_credit_base || d.g_credit || 0,
+          cost_id: d.cost_id || null,
+          vouch_notes: d.vouch_notes || "",
+        })),
+        voucherBoxes: voucherBoxes, // إضافة الصناديق للترحيل
+        com: 1,
+        year: 1,
+        cust_id: voucherData.cust_id || null,
+      });
+
+      if (glPostResult.success) {
+        console.log(`[createVoucherAction] ✅ Successfully posted ${glPostResult.createdCount} GL transactions`);
+      } else {
+        console.warn(`[createVoucherAction] ⚠️ Failed to post to GL: ${glPostResult.error}`);
+        // لا نفشل العملية، فقط نسجل التحذير
+      }
+    } catch (glPostError) {
+      console.error("[createVoucherAction] Error posting to GL:", glPostError);
+      // لا نفشل العملية، فقط نسجل الخطأ
+    }
+
     // حفظ تفاصيل الذهب
     const goldResult = await processGoldDetails(
       masterId,
@@ -214,8 +276,10 @@ export async function createVoucherAction(
     // Revalidate paths
     revalidateVoucherPaths(voucherData.vouch_type, masterId);
 
-    const savedVouchId = (savedVoucher as any).vouch_id || voucherData.vouch_id;
-
+    console.log("=== [createVoucherAction] SUCCESS ===");
+    console.log("Master ID:", masterId);
+    console.log("Vouch ID:", savedVouchId);
+    
     return {
       success: true,
       data: {
@@ -225,6 +289,9 @@ export async function createVoucherAction(
       message: "تم حفظ القيد بنجاح",
     };
   } catch (error) {
+    console.error("=== [createVoucherAction] ERROR ===");
+    console.error("Error:", error);
+    
     return {
       success: false,
       message: error instanceof Error ? error.message : "حدث خطأ",

@@ -641,10 +641,11 @@ export default function ReceiptVoucherClientPage({
         }
 
         if (foundVoucher) {
-          const targetId = foundVoucher.id || foundVoucher.vouch_id;
+          // استخدام vouch_id في URL بدلاً من id
+          const targetVouchId = foundVoucher.vouch_id;
 
-          if (targetId) {
-            router.push(`/forms/receipt/${targetId}?mode=preview`);
+          if (targetVouchId && Number(targetVouchId) > 0) {
+            router.push(`/forms/receipt/${targetVouchId}?mode=preview`);
             setSearchTerm("");
 
             return;
@@ -666,8 +667,13 @@ export default function ReceiptVoucherClientPage({
       commit: false,
     }));
 
-    if (pathname && voucherRecordId) {
-      router.push(`/forms/receipt/${voucherRecordId}?mode=edit`);
+    if (pathname) {
+      // استخدام vouch_id في URL بدلاً من voucherRecordId
+      const vouchIdToUse = voucher.vouch_id;
+
+      if (vouchIdToUse && Number(vouchIdToUse) > 0) {
+        router.push(`/forms/receipt/${vouchIdToUse}?mode=edit`);
+      }
     }
   };
 

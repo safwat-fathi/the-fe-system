@@ -3,6 +3,7 @@ import { cache } from "react";
 import { getTranslations } from "next-intl/server";
 
 import CashReceiptVoucherClientPage from "./CashReceiptVoucherClientPage";
+import VoucherStatusCheckboxes from "./components/VoucherStatusCheckboxes";
 
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
@@ -94,12 +95,14 @@ export default async function ReceiptVoucherPage() {
 
     return (
       <div className="container mx-auto p-4">
-        <Breadcrumb
-          items={[
-            { name: t("breadcrumbs.list"), href: "/forms/voucher1" },
-            { name: t("breadcrumbs.new") },
-          ]}
-        />
+        <div className="flex items-center justify-between mb-2">
+          <Breadcrumb
+            items={[
+              { name: t("breadcrumbs.list"), href: "/forms/voucher1" },
+              { name: t("breadcrumbs.new") },
+            ]}
+          />
+        </div>
         <CashReceiptVoucherClientPage
           accounts={formData.accounts}
           boxes={formData.boxes}

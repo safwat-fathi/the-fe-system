@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { cache } from "react";
 import { getTranslations } from "next-intl/server";
 
 import BalanceVoucherClientPage from "../BalanceVoucherClientPage";
+import VoucherStatusCheckboxes from "../components/VoucherStatusCheckboxes";
 
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
@@ -22,38 +22,35 @@ async function getVoucherById(voucherId: number) {
       return null;
     }
 
-    // جلب جميع القيود الافتتاحية والبحث محلياً
-    const vouchersResponse = await voucherService.getAll({
+    // ✅ استخدام getVoucherById مباشرة للحصول على أحدث البيانات بدون cache
+    const foundVoucher = await voucherService.getVoucherById(voucherId, {
       xvouch_type: "0", // قيد افتتاحي فقط
       xcom_id: "1",
     });
 
-    if (vouchersResponse.success && vouchersResponse.data) {
-      const vouchers = Array.isArray(vouchersResponse.data)
-        ? vouchersResponse.data
-        : [];
+    // ✅ التحقق من أن القيد هو قيد افتتاحي
+    if (foundVoucher && foundVoucher.vouch_type === 0) {
+      return foundVoucher;
+    }
 
-      // البحث أولاً بـ id (primary key) والتحقق من vouch_type = 0
-      const foundVoucher = vouchers.find(
-        (v: any) =>
-          Number(v?.id) === voucherId &&
-          (v?.vouch_type === 0 || v?.vouch_type === "0"),
-      );
+    // ✅ Fallback: البحث بـ vouch_id إذا كان voucherId هو vouch_id وليس id
+    if (foundVoucher && Number(foundVoucher.vouch_id) === voucherId) {
+      // إذا كان القيد الموجود له نفس vouch_id، نعيده
+      return foundVoucher;
+    }
 
-      if (foundVoucher) {
-        return foundVoucher;
-      }
+    // ✅ Fallback: محاولة البحث بـ vouch_id مباشرة
+    const foundByVouchId = await voucherService.getVoucherById(voucherId, {
+      xvouch_type: "0",
+      xcom_id: "1",
+    });
 
-      // البحث بـ vouch_id كـ fallback والتحقق من vouch_type = 0
-      const foundByVouchId = vouchers.find(
-        (v: any) =>
-          Number(v?.vouch_id) === voucherId &&
-          (v?.vouch_type === 0 || v?.vouch_type === "0"),
-      );
-
-      if (foundByVouchId) {
-        return foundByVouchId;
-      }
+    if (
+      foundByVouchId &&
+      foundByVouchId.vouch_type === 0 &&
+      Number(foundByVouchId.vouch_id) === voucherId
+    ) {
+      return foundByVouchId;
     }
 
     return null;
@@ -64,32 +61,34 @@ async function getVoucherById(voucherId: number) {
   }
 }
 
-// Cache the voucher details for better performance
-const getVoucherDetails = cache(
-  async (voucherId: number, branchId?: number | string) => {
-    try {
-      if (!voucherId || isNaN(voucherId)) {
-        return [];
-      }
-
-      const parsedBranchId = Number(branchId ?? 1) || 1;
-
-      const detailsResponse = await voucherService.getDetails(voucherId, {
-        xcom_id: parsedBranchId,
-      });
-
-      if (!detailsResponse.success || !detailsResponse.data) {
-        return [];
-      }
-
-      return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
-    } catch (error) {
-      console.error("Error fetching voucher details:", error);
-
+// دالة لجلب تفاصيل القيد بدون cache
+// سيتم إعادة التحقق من البيانات تلقائياً عند استخدام revalidatePath
+async function getVoucherDetails(
+  voucherId: number,
+  branchId?: number | string,
+) {
+  try {
+    if (!voucherId || isNaN(voucherId)) {
       return [];
     }
-  },
-);
+
+    const parsedBranchId = Number(branchId ?? 1) || 1;
+
+    const detailsResponse = await voucherService.getDetails(voucherId, {
+      xcom_id: parsedBranchId,
+    });
+
+    if (!detailsResponse.success || !detailsResponse.data) {
+      return [];
+    }
+
+    return Array.isArray(detailsResponse.data) ? detailsResponse.data : [];
+  } catch (error) {
+    console.error("Error fetching voucher details:", error);
+
+    return [];
+  }
+}
 
 export default async function BalanceVoucherEditPage({
   params,
@@ -224,27 +223,43 @@ export default async function BalanceVoucherEditPage({
     vouch_status: targetVoucher.vouch_status || 1,
     pay_type: targetVoucher.pay_type || 1,
     vouch_type: 0, // القيد الافتتاحي نوعه دائماً 0
-    commit: targetVoucher.commit || false,
-    post: targetVoucher.post || false,
-    print: targetVoucher.print || false,
-    cost_id: targetVoucher.cost ?? targetVoucher.cost_id ?? null,
+    // ✅ إذا كان القيد موجوداً (id > 0)، نعيّن commit: true في الـ state (للعرض فقط)
+    // ملاحظة: commit في قاعدة البيانات قد لا يتغير، لكننا نعيّنه في الـ state للعرض
+    commit:
+      targetVoucher.commit ??
+      (targetVoucher.id && targetVoucher.id > 0 ? true : false),
+    post: targetVoucher.post ?? false, // ✅ post لا يُستخدم حالياً، سيتم استخدامه لاحقاً
+    print: targetVoucher.print ?? false,
+    cost_id:
+      targetVoucher.cost_id ??
+      ((targetVoucher as any).cost !== undefined
+        ? (targetVoucher as any).cost
+        : null),
   };
 
   return (
     <div className="container mx-auto p-4">
-      <Breadcrumb
-        items={[
-          { name: t("breadcrumbs.list"), href: "/forms/balance" },
-          {
-            name:
-              formMode === "edit"
-                ? t("breadcrumbs.edit", {
-                    id: targetVoucher.vouch_id || targetVoucher.id || "",
-                  })
-                : t("breadcrumbs.preview"),
-          },
-        ]}
-      />
+      <div className="flex items-center justify-between mb-2">
+        <Breadcrumb
+          items={[
+            { name: t("breadcrumbs.list"), href: "/forms/balance" },
+            {
+              name:
+                formMode === "edit"
+                  ? t("breadcrumbs.edit", {
+                      id: targetVoucher.vouch_id || targetVoucher.id || "",
+                    })
+                  : t("breadcrumbs.preview"),
+            },
+          ]}
+        />
+        {/* ✅ إضافة checkboxes دائماً */}
+        <VoucherStatusCheckboxes
+          commit={formattedVoucher.commit ?? false}
+          post={formattedVoucher.post ?? false}
+          print={formattedVoucher.print ?? false}
+        />
+      </div>
       <BalanceVoucherClientPage
         formData={formData}
         formMode={formMode}
@@ -253,6 +268,7 @@ export default async function BalanceVoucherEditPage({
         voucherData={formattedVoucher}
         voucherDetailsData={details}
         voucherRecordId={targetVoucher.id}
+        voucherVouchId={targetVoucher.vouch_id || 0}
       />
     </div>
   );

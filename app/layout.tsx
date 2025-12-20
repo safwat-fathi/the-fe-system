@@ -1,7 +1,6 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
-import { Toaster } from "react-hot-toast";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 
@@ -60,10 +59,7 @@ export default async function RootLayout({
               enableSystem: false,
             }}
           >
-            <div className="relative min-h-screen" suppressHydrationWarning>
-              <Toaster position="top-center" />
-              {children}
-            </div>
+            {children}
           </Providers>
         </NextIntlClientProvider>
       </body>

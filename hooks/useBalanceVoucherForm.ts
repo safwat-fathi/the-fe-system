@@ -645,25 +645,19 @@ export const useBalanceVoucherForm = ({
   // التحقق من وجود قيد افتتاحي قبل الحفظ
   const checkExistingBalanceVoucher = async (): Promise<number | null> => {
     try {
-      const vouchersResponse = await voucherService.getAll({
-        xvouch_type: "0",
-      });
+      // ✅ استخدام دالة خاصة للتحقق بدون cache للدقة
+      const openingEntry = await voucherService.checkExistingOpeningEntry("1");
 
-      if (vouchersResponse.success && vouchersResponse.data) {
-        const vouchers = Array.isArray(vouchersResponse.data)
-          ? vouchersResponse.data
-          : [];
+      // ✅ إذا لم يتم العثور على قيد، لا يوجد قيد مسبق
+      if (!openingEntry) {
+        return null;
+      }
 
-        // البحث عن أول قيد افتتاحي (vouch_type = 0) فقط
-        const balanceVoucher = vouchers.find(
-          (v: any) => v?.vouch_type === 0 || v?.vouch_type === "0",
-        );
+      // ✅ فقط إذا كان قيد جديد، نعيد معرف القيد الموجود
+      if (isNewVoucher) {
+        const existingId = openingEntry.id || openingEntry.vouch_id;
 
-        if (balanceVoucher && isNewVoucher) {
-          const existingId = balanceVoucher.id || balanceVoucher.vouch_id;
-
-          return existingId || null;
-        }
+        return existingId || null;
       }
 
       return null;
@@ -683,7 +677,49 @@ export const useBalanceVoucherForm = ({
           "⚠️ يوجد قيد افتتاحي موجود مسبقاً. يرجى تعديل القيد الموجود بدلاً من إنشاء قيد جديد.",
           { duration: 6000 },
         );
-        router.push(`/forms/balance/${existingId}`);
+        // استخدام vouch_id إذا كان متاحاً، وإلا استخدم id
+        // محاولة جلب القيد للبحث عن vouch_id
+        try {
+          const vouchersResponse = await voucherService.getAll({
+            xvouch_type: "0",
+            xcom_id: "1", // ✅ إضافة xcom_id بشكل صريح للفلترة حسب الفرع
+          });
+
+          if (vouchersResponse.success && vouchersResponse.data) {
+            const vouchers = Array.isArray(vouchersResponse.data)
+              ? vouchersResponse.data
+              : [];
+            const balanceVoucher = vouchers.find(
+              (v: any) => {
+                const matchesId =
+                  v?.id === existingId || v?.vouch_id === existingId;
+                const isCorrectType =
+                  v?.vouch_type === 0 || v?.vouch_type === "0";
+                // ✅ التحقق من أن القيد ينتمي لنفس الفرع (com = 1)
+                const isCorrectBranch =
+                  Number(v?.com_id ?? v?.com ?? 1) === 1;
+
+                return matchesId && isCorrectType && isCorrectBranch;
+              },
+            );
+
+            if (balanceVoucher) {
+              const idToUse = balanceVoucher.vouch_id || existingId;
+              router.push(`/forms/balance/${idToUse}`);
+            } else {
+              // ✅ إذا لم يتم العثور على القيد، لا تقم بالتوجيه
+              console.warn(
+                "Could not find existing balance voucher for redirect",
+              );
+            }
+          } else {
+            // ✅ إذا لم تكن هناك بيانات، لا تقم بالتوجيه
+            console.warn("No voucher data found for redirect");
+          }
+        } catch (error) {
+          console.error("Error fetching voucher for redirect:", error);
+          // ✅ لا تقم بالتوجيه إذا حدث خطأ
+        }
 
         return;
       }
@@ -890,20 +926,38 @@ export const useBalanceVoucherForm = ({
         const realId = result.data.id || voucher.id || voucherRecordId;
         const vouchId = result.data.vouch_id || voucher.vouch_id;
 
+        // ✅ بعد الحفظ الناجح، نعيّن commit: true في الـ state فقط (للعرض)
+        // لأن createVoucherAction يقوم بترحيل القيد للـ GL تلقائياً
+        // ملاحظة: commit في قاعدة البيانات قد لا يتغير، لكننا نعيّنه في الـ state للعرض
         setVoucher((prev) => ({
           ...prev,
-          commit: true,
+          commit: true, // ✅ بعد الحفظ الناجح، commit: true في الـ state (للعرض فقط)
+          post: false, // ✅ post لا يُستخدم حالياً، سيتم استخدامه لاحقاً
           id: realId,
           vouch_id: vouchId,
         }));
 
         toast.success(result.message);
 
-        // استخدام realId (primary key) للتوجيه
-        if (realId && Number(realId) > 0) {
-          // إعادة التوجيه السلسة مع تحديث البيانات
-          router.push(`/forms/balance/${realId}?mode=preview`);
-          router.refresh();
+        // ✅ إضافة timestamp للـ URL لإجبار إعادة جلب البيانات
+        const timestamp = Date.now();
+        
+        // استخدام vouch_id في URL بدلاً من id
+        if (vouchId && Number(vouchId) > 0) {
+          // ✅ إضافة timestamp للـ URL لإجبار إعادة جلب البيانات
+          router.push(`/forms/balance/${vouchId}?mode=preview&_t=${timestamp}`);
+          // ✅ إعادة تحميل الصفحة بعد التوجيه لضمان جلب أحدث البيانات
+          setTimeout(() => {
+            router.refresh();
+          }, 100);
+        } else if (realId && Number(realId) > 0) {
+          // ✅ إضافة timestamp للـ URL لإجبار إعادة جلب البيانات
+          // Fallback إلى id إذا لم يكن vouch_id متاحاً
+          router.push(`/forms/balance/${realId}?mode=preview&_t=${timestamp}`);
+          // ✅ إعادة تحميل الصفحة بعد التوجيه لضمان جلب أحدث البيانات
+          setTimeout(() => {
+            router.refresh();
+          }, 100);
         } else {
           // Fallback: إعادة تحميل الصفحة الحالية
           router.refresh();
@@ -948,14 +1002,32 @@ export const useBalanceVoucherForm = ({
     }
   };
 
-  const handleEditClick = () => {
+  const handleEditClick = async () => {
+    // ✅ تحديث commit: false في قاعدة البيانات عند بدء التعديل
+    if (voucherRecordId && Number(voucherRecordId) > 0) {
+      try {
+        const { voucherService } = await import("@/services/api");
+        await voucherService.update(Number(voucherRecordId), {
+          commit: false, // ✅ عند بدء التعديل، commit: false
+        });
+      } catch (error) {
+        console.error("Error updating commit status on edit:", error);
+        // لا نفشل العملية، فقط نسجل الخطأ
+      }
+    }
+
     setVoucher((prev) => ({
       ...prev,
       commit: false,
     }));
 
-    if (voucherRecordId) {
-      // التوجيه إلى صفحة التعديل مع معرف القيد
+    // استخدام vouch_id في URL بدلاً من voucherRecordId
+    const vouchIdToUse = voucher.vouch_id;
+
+    if (vouchIdToUse && Number(vouchIdToUse) > 0) {
+      router.push(`/forms/balance/${vouchIdToUse}?mode=edit`);
+    } else if (voucherRecordId) {
+      // Fallback إلى voucherRecordId إذا لم يكن vouch_id متاحاً
       router.push(`/forms/balance/${voucherRecordId}?mode=edit`);
     } else {
       // إذا لم يكن هناك معرف قيد، تفعيل وضع التعديل مباشرة

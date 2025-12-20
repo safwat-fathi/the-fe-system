@@ -25,6 +25,7 @@ import {
   CheckIcon,
   PencilIcon,
   PrinterIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslations, useLocale } from "next-intl";
 
@@ -33,6 +34,7 @@ import useEnterKeyNavigation from "../invoices/hooks/useEnterKeyNavigation";
 import { getLocaleDir } from "@/i18n/config";
 import { ConfirmationModal } from "@/components/Modal";
 import { RiyalIcon } from "@/components/RiyalIcon";
+import GLTransactionModal from "@/components/gl-transaction/GLTransactionModal";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { useBalanceVoucherForm } from "@/hooks/useBalanceVoucherForm";
 import { formatAmount } from "@/utilities/formatAmount";
@@ -45,6 +47,7 @@ export interface BalanceVoucherClientPageProps {
   formData: any;
   formMode?: "new" | "edit" | "preview";
   voucherRecordId?: number | string | null;
+  voucherVouchId?: number;
   isNewVoucher?: boolean;
   startInEditMode?: boolean;
 }
@@ -60,6 +63,7 @@ export default function BalanceVoucherClientPage({
   formData,
   formMode: initialFormMode = "new",
   voucherRecordId,
+  voucherVouchId,
   isNewVoucher = true,
   startInEditMode: propStartInEditMode,
 }: BalanceVoucherClientPageProps) {
@@ -79,6 +83,8 @@ export default function BalanceVoucherClientPage({
 
   // حالة المودال لتوسيع البيان
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  // حالة Modal القيود المحاسبية
+  const [isGLModalOpen, setIsGLModalOpen] = useState(false);
 
   // Use the hook for all state management and business logic
   const {
@@ -282,125 +288,79 @@ export default function BalanceVoucherClientPage({
     <div className="p-1 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header - رأس القيد مع الأزرار */}
       <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-1.5 mb-1 border border-slate-200">
-        {/* الصف الأول: معلومات القيد */}
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <div>
-              <h1
-                className={`text-lg font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}
-              >
-                <span>
-                  {voucherTypes.find((type) => type.id === voucher.vouch_type)
-                    ?.name || t("messages.voucherType")}
-                </span>
-                <span className="text-slate-600 font-medium">
-                  #
-                  {voucher.vouch_id &&
-                  Number(voucher.vouch_id) > 0 &&
-                  isFinite(Number(voucher.vouch_id))
-                    ? Number(voucher.vouch_id)
-                    : voucher.id
-                      ? `DB-${voucher.id}`
-                      : t("messages.numbering")}
-                </span>
-                <span
-                  className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}
-                >
-                  <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                  {new Date(voucher.vouch_date).toLocaleString("en-US", {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: true,
-                  })}
-                </span>
-              </h1>
-            </div>
-          </div>
-        </div>
+        {/* صف واحد: عنوان الصفحة والأزرار */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <h1
+            className={`text-lg font-bold text-slate-800 flex items-center gap-1.5 ${textAlign}`}
+          >
+            <span>
+              {voucherTypes.find((type) => type.id === voucher.vouch_type)
+                ?.name || t("messages.voucherType")}
+            </span>
+            <span className="text-slate-600 font-medium">
+              #
+              {voucher.vouch_id &&
+              Number(voucher.vouch_id) > 0 &&
+              isFinite(Number(voucher.vouch_id))
+                ? Number(voucher.vouch_id)
+                : voucher.id
+                  ? `DB-${voucher.id}`
+                  : t("messages.numbering")}
+            </span>
+          </h1>
 
-        {/* الصف الثاني: الأزرار والحالة */}
-        <div className="flex items-center justify-between">
-          {/* الأزرار من اليسار لليمين */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
-              isDisabled={!isEditing}
-              isLoading={isLoading}
-              startContent={
-                !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
-              }
-              variant="solid"
-              onPress={saveVoucher}
-            >
-              {t("actions.save")}
-            </Button>
+          {/* خط فاصل ناعم */}
+          <div className="h-6 w-px bg-slate-300" />
 
-            <Button
-              className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-              isDisabled={formMode === "new" || isEditing || isLoading}
-              startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
-              variant="solid"
-              onPress={handleEditClick}
-            >
-              {t("actions.edit")}
-            </Button>
+          {/* الأزرار */}
+          <Button
+            className="h-7 px-1.5 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
+            isDisabled={!isEditing}
+            isLoading={isLoading}
+            startContent={
+              !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
+            }
+            variant="solid"
+            onPress={saveVoucher}
+          >
+            {t("actions.save")}
+          </Button>
 
-            <Button
-              className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
-              isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
-              isLoading={isPrinting}
-              startContent={
-                !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
-              }
-              variant="solid"
-              onPress={printVoucher}
-            >
-              {t("actions.print")}
-            </Button>
-          </div>
+          <Button
+            className="h-7 px-1.5 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+            isDisabled={formMode === "new" || isEditing || isLoading}
+            startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
+            variant="solid"
+            onPress={handleEditClick}
+          >
+            {t("actions.edit")}
+          </Button>
 
-          {/* حالة القيد */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-1">
-              <Checkbox
-                color="success"
-                isDisabled
-                isSelected={voucher.commit}
-                size="sm"
-              />
-              <span className={`text-xs text-slate-600 ${textAlign}`}>
-                {t("status.committed")}
-              </span>
-            </div>
+          <Button
+            className="h-7 px-1.5 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
+            isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
+            isLoading={isPrinting}
+            startContent={
+              !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
+            }
+            variant="solid"
+            onPress={printVoucher}
+          >
+            {t("actions.print")}
+          </Button>
 
-            <div className="flex items-center gap-1">
-              <Checkbox
-                color="warning"
-                isDisabled
-                isSelected={voucher.post}
-                size="sm"
-              />
-              <span className={`text-xs text-slate-600 ${textAlign}`}>
-                {t("status.posted")}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Checkbox
-                color="warning"
-                isDisabled
-                isSelected={voucher.print}
-                size="sm"
-              />
-              <span className={`text-xs text-slate-600 ${textAlign}`}>
-                {t("status.printed")}
-              </span>
-            </div>
-          </div>
+          <Button
+            className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+            isDisabled={
+              !voucher.id || Number(voucher.id) <= 0
+              // ✅ يعتمد فقط على وجود id (القيد محفوظ)، وليس على commit
+            }
+            startContent={<DocumentTextIcon className="w-4 h-4" />}
+            variant="solid"
+            onPress={() => setIsGLModalOpen(true)}
+          >
+            {t("actions.viewGLTransactions")}
+          </Button>
         </div>
       </div>
 
@@ -1884,6 +1844,25 @@ export default function BalanceVoucherClientPage({
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Modal القيود المحاسبية */}
+      <GLTransactionModal
+        isOpen={isGLModalOpen}
+        onClose={() => setIsGLModalOpen(false)}
+        transId={
+          voucher.id && Number(voucher.id) > 0
+            ? Number(voucher.id)
+            : 0
+        }
+        transType={0} // قيد افتتاحي
+        voucherTitle={
+          voucher.vouch_id && Number(voucher.vouch_id) > 0
+            ? `قيد افتتاحي رقم ${voucher.vouch_id}`
+            : voucher.id
+              ? `قيد افتتاحي (DB-${voucher.id})`
+              : undefined
+        }
+      />
     </div>
   );
 }

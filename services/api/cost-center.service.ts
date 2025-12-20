@@ -26,6 +26,51 @@ class CostCenterService extends HttpService<CostCenter> {
     super("");
   }
 
+  /**
+   * استخراج رسالة الخطأ من response
+   */
+  private extractErrorMessage(response: any): string {
+    if (!response.data) {
+      return response.message || "حدث خطأ أثناء العملية";
+    }
+
+    // إذا كان data هو object يحتوي على رسائل خطأ
+    if (typeof response.data === "object" && response.data !== null) {
+      const errors: string[] = [];
+
+      // استخراج جميع رسائل الخطأ من الحقول
+      Object.keys(response.data).forEach((key) => {
+        const fieldErrors = response.data[key];
+
+        if (Array.isArray(fieldErrors)) {
+          fieldErrors.forEach((error: string) => {
+            if (error && typeof error === "string") {
+              errors.push(error);
+            }
+          });
+        } else if (typeof fieldErrors === "string" && fieldErrors) {
+          errors.push(fieldErrors);
+        }
+      });
+
+      if (errors.length > 0) {
+        return errors.join(". ");
+      }
+
+      // إذا كان هناك message مباشر
+      if (response.data.message && typeof response.data.message === "string") {
+        return response.data.message;
+      }
+    }
+
+    // إذا كان data هو string
+    if (typeof response.data === "string") {
+      return response.data;
+    }
+
+    return response.message || "حدث خطأ أثناء العملية";
+  }
+
   async getAllCostCenters(): Promise<CostCenter[]> {
     try {
       let companyId: string;
@@ -49,7 +94,11 @@ class CostCenterService extends HttpService<CostCenter> {
           cache: "force-cache",
           next: {
             revalidate: 300, // Cache for 5 minutes
-            tags: ["cost-centers", `cost-centers-${companyId}`],
+            tags: [
+              "cost_centers_list",
+              "cost-centers",
+              `cost-centers-${companyId}`,
+            ],
           },
         },
       );
@@ -107,8 +156,16 @@ class CostCenterService extends HttpService<CostCenter> {
         return response.data as CostCenter;
       }
 
-      return null;
+      // استخراج رسالة الخطأ من response
+      const errorMessage = this.extractErrorMessage(response);
+      throw new Error(errorMessage);
     } catch (error) {
+      // إذا كان error من نوع Error، نرميه مباشرة
+      if (error instanceof Error) {
+        rethrowAuthenticationError(error);
+        throw error;
+      }
+
       console.error("Error creating cost center:", error);
       rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء إنشاء مركز التكلفة");
@@ -153,8 +210,16 @@ class CostCenterService extends HttpService<CostCenter> {
         return response.data as CostCenter;
       }
 
-      return null;
+      // استخراج رسالة الخطأ من response
+      const errorMessage = this.extractErrorMessage(response);
+      throw new Error(errorMessage);
     } catch (error) {
+      // إذا كان error من نوع Error، نرميه مباشرة
+      if (error instanceof Error) {
+        rethrowAuthenticationError(error);
+        throw error;
+      }
+
       console.error("Error updating cost center:", error);
       rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء تحديث مركز التكلفة");
