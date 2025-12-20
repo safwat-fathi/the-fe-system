@@ -292,57 +292,25 @@ export function mapRowToApiPayload(
     throw new Error("تعذر تحديد بيانات الفرع أو السنة لسطر الفاتورة");
   }
 
-  const qty = parseNumber(row.qty);
-  const weight = parseNumber(row.weight);
-  const gWeight = parseNumber(row.g_weight);
-  const price = parseNumber(row.price);
-  const priceW = parseNumber(row.price_w);
-  const itemDiscountAmount = parseNumber(row.item_disc_amt ?? 0);
-  const taxRate =
-    row.tax_prc !== undefined
-      ? parseNumber(row.tax_prc)
-      : (cfg.defaultTaxPrc ?? 15);
+  const numericValues = extractNumericValues(row, cfg);
+  const {
+    qty,
+    weight,
+    gWeight,
+    price,
+    priceW,
+    itemDiscountAmount,
+    taxRate,
+    combinedTotal,
+    computedTotalW,
+    computedTotalA,
+    taxValue,
+    stonesValue,
+  } = numericValues;
 
-  const computedTotalW =
-    row.total_w !== undefined ? parseNumber(row.total_w) : weight * priceW;
-
-  const computedTotalA =
-    row.total_a !== undefined
-      ? parseNumber(row.total_a)
-      : weight * (cfg.payType === INVOICE_PAY_TYPES.WAGES ? priceW : price);
-
-  const combinedTotal =
-    row.total !== undefined
-      ? parseNumber(row.total)
-      : weight * price + weight * priceW - itemDiscountAmount;
-
-  const taxValue =
-    row.tax !== undefined
-      ? parseNumber(row.tax)
-      : (combinedTotal - itemDiscountAmount) * (taxRate / 100);
-
-  const stonesValue =
-    row.stones === null || row.stones === "" ? null : parseNumber(row.stones);
-
-  const resolvedNote = row.note ?? row.inv_notes ?? "";
-  const normalizedNote =
-    typeof resolvedNote === "string" && resolvedNote.trim().length === 0
-      ? null
-      : resolvedNote;
-
+  const normalizedNote = normalizeNote(row);
   const normalizedRowId = getNumericRowId(row.id);
-  let normalizedKValue: number | null = null;
-
-  if (row.k !== undefined && row.k !== null) {
-    const rawK = String(row.k).trim();
-
-    if (rawK.length > 0) {
-      const numericK = parseNumber(row.k);
-
-      normalizedKValue =
-        Number.isFinite(numericK) && numericK > 0 ? numericK : null;
-    }
-  }
+  const normalizedKValue = normalizeKValue(row.k);
 
   return {
     id: normalizedRowId ?? row.id,
@@ -363,11 +331,11 @@ export function mapRowToApiPayload(
     item_disc_prc: parseNumber(row.item_disc_prc ?? 0),
     item_disc_amt: itemDiscountAmount,
     sn: row.sn ?? "",
-    item_desc: row.item_desc ?? row.item_name ?? "",
+    item_desc: row.item_desc || row.item_name || "",
     item_code:
       (row.item_code && String(row.item_code)) ||
       (itemId ? String(itemId) : ""),
-    inv_notes: normalizedNote,
+    inv_notes: normalizedNote || (row.item_desc ? String(row.item_desc) : null),
     cr_date: row.cr_date ?? new Date().toISOString(),
     cr_user: row.cr_user ?? "",
     upd_date: new Date().toISOString(),
@@ -378,4 +346,150 @@ export function mapRowToApiPayload(
     item: itemId,
     box: row.box ?? null,
   } as Partial<InvoiceDetail>;
+}
+
+function normalizeNote(row: InvoiceItemRow): string | null {
+  const resolvedNote = row.note ?? row.inv_notes ?? "";
+
+  return typeof resolvedNote === "string" && resolvedNote.trim().length === 0
+    ? null
+    : resolvedNote;
+}
+
+function normalizeKValue(k: any): number | null {
+  if (k === undefined || k === null) return null;
+  const rawK = String(k).trim();
+
+  if (rawK.length === 0) return null;
+  const numericK = parseNumber(k);
+
+  return Number.isFinite(numericK) && numericK > 0 ? numericK : null;
+}
+
+
+// Helper to extract calculations from mapRowToApiPayload to reduce complexity
+function extractNumericValues(
+  row: InvoiceItemRow,
+  cfg: {
+    defaultTaxPrc: number;
+    payType: InvoicePayType;
+  },
+) {
+  const qty = parseNumber(row.qty);
+  const weight = parseNumber(row.weight);
+  const gWeight = parseNumber(row.g_weight);
+  const price = parseNumber(row.price);
+  const priceW = parseNumber(row.price_w);
+  const itemDiscountAmount = parseNumber(row.item_disc_amt ?? 0);
+  const taxRate =
+    row.tax_prc !== undefined
+      ? parseNumber(row.tax_prc)
+      : (cfg.defaultTaxPrc ?? 15);
+
+  const computedTotalW =
+    row.total_w !== undefined ? parseNumber(row.total_w) : weight * priceW;
+
+  let computedTotalA: number;
+
+  if (row.total_a !== undefined) {
+    computedTotalA = parseNumber(row.total_a);
+  } else {
+    const basePrice = cfg.payType === INVOICE_PAY_TYPES.WAGES ? priceW : price;
+
+    computedTotalA = weight * basePrice;
+  }
+
+  const combinedTotal =
+    row.total !== undefined
+      ? parseNumber(row.total)
+      : weight * price + weight * priceW - itemDiscountAmount;
+
+  const taxValue =
+    row.tax !== undefined
+      ? parseNumber(row.tax)
+      : (combinedTotal - itemDiscountAmount) * (taxRate / 100);
+
+  const stonesValue =
+    row.stones === null || row.stones === "" ? null : parseNumber(row.stones);
+
+  return {
+    qty,
+    weight,
+    gWeight,
+    price,
+    priceW,
+    itemDiscountAmount,
+    taxRate,
+    combinedTotal,
+    computedTotalW,
+    computedTotalA,
+    taxValue,
+    stonesValue,
+  };
+}
+
+export const calculateValueAndWagesTax = (
+  invoiceItems: InvoiceItemRow[],
+  payType: InvoicePayType,
+) => {
+  let valueTax = 0;
+  let wagesTax = 0;
+
+  invoiceItems.forEach((item) => {
+    const { totalValueTax: v, totalWagesTax: w } = calculateRowTax(
+      item,
+      payType,
+    );
+
+    valueTax += v;
+    wagesTax += w;
+  });
+
+  return { totalValueTax: valueTax, totalWagesTax: wagesTax };
+};
+
+function calculateRowTax(item: InvoiceItemRow, payType: InvoicePayType) {
+  const qty = parseFloat(String(item.qty ?? 1)) || 1;
+  const weight = parseFloat(String(item.weight ?? 0));
+  const price = parseFloat(String(item.price ?? 0));
+  const priceW = parseFloat(String(item.price_w ?? 0));
+  const discount = parseFloat(String(item.item_disc_amt ?? 0));
+  const taxRate = parseFloat(String(item.tax_prc ?? 15)) / 100;
+
+  const totalA = qty * weight * price;
+  const totalW = qty * weight * priceW;
+
+  const finalTotalValue = weight > 0 ? totalA : qty * price;
+  const finalTotalWages = weight > 0 ? totalW : qty * priceW;
+
+  let valueTax = 0;
+  let wagesTax = 0;
+
+  if (
+    payType === INVOICE_PAY_TYPES.VALUE ||
+    payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
+  ) {
+    const base = finalTotalValue + finalTotalWages;
+    const proportionalDiscount =
+      payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES && base > 0
+        ? (finalTotalValue / base) * discount
+        : discount;
+
+    valueTax += (finalTotalValue - proportionalDiscount) * taxRate;
+  }
+
+  if (
+    payType === INVOICE_PAY_TYPES.WAGES ||
+    payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES
+  ) {
+    const base = finalTotalValue + finalTotalWages;
+    const proportionalDiscount =
+      payType === INVOICE_PAY_TYPES.VALUE_AND_WAGES && base > 0
+        ? (finalTotalWages / base) * discount
+        : discount;
+
+    wagesTax += (finalTotalWages - proportionalDiscount) * taxRate;
+  }
+
+  return { totalValueTax: valueTax, totalWagesTax: wagesTax };
 }

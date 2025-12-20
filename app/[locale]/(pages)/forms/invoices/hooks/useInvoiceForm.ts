@@ -173,6 +173,7 @@ type UseInvoiceFormParams = {
   initialHomePurity: number;
   invoiceRecordId?: number | string | null;
   context?: InvoiceFormContext;
+  maxInvoiceId?: number | null;
 };
 
 const INVOICE_FORM_CONFIG: Record<
@@ -284,13 +285,14 @@ const rowHasContent = (row: InvoiceItemRow): boolean =>
 
 const prepareRowsForInsertion = (
   rows: InvoiceItemRow[],
-  createEmptyRow: () => InvoiceItemRow,
+  createEmptyRow: (description?: string) => InvoiceItemRow,
+  description?: string,
 ): { rows: InvoiceItemRow[]; targetIndex: number } => {
   const firstEmptyIndex = findFirstEditableRowIndex(rows);
   const cloned = [...rows];
 
   if (firstEmptyIndex === -1) {
-    cloned.unshift(createEmptyRow());
+    cloned.unshift(createEmptyRow(description));
 
     return { rows: cloned, targetIndex: 0 };
   }
@@ -348,7 +350,7 @@ const buildRowFromItem = ({
     item: selectedItem.id ?? null,
     item_code: selectedItem.item_code ?? "",
     item_name: selectedItem.item_name ?? "",
-    item_desc: selectedItem.item_name ?? baseRow.item_desc ?? "",
+    item_desc: baseRow.item_desc ?? "",
     k: selectedItem.k ?? "",
     price: goldPrice ?? priceFromSelected,
     price_w: workPriceFromSelected,
@@ -566,6 +568,7 @@ export default function useInvoiceForm({
   initialHomePurity,
   invoiceRecordId = null,
   context = "sale",
+  maxInvoiceId = null,
 }: UseInvoiceFormParams) {
   const t = useTranslations("common");
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
@@ -749,7 +752,7 @@ export default function useInvoiceForm({
 
   // invoice items state
   const makeEmptyRow = useCallback(
-    (): InvoiceItemRow => ({
+    (description?: string): InvoiceItemRow => ({
       id: Date.now(),
       item_id: null,
       item: null,
@@ -772,7 +775,7 @@ export default function useInvoiceForm({
       item_disc_amt: 0 as number,
       item_disc_prc: 0 as number,
       sn: "",
-      item_desc: "",
+      item_desc: description ?? "",
       inv_notes: "",
       cr_date: new Date().toISOString(),
       upd_date: new Date().toISOString(),
@@ -926,29 +929,40 @@ export default function useInvoiceForm({
   const computeTotals = useCallback(
     (payType: InvoicePayType, rows: InvoiceItemRow[]) => {
       const totalAmount = rows.reduce((sum, item) => {
+        const qty = parseNumber(item.qty) || 1;
         const weight = parseNumber(item.weight);
         const price = parseNumber(item.price);
         const priceW = parseNumber(item.price_w);
         const discount = parseNumber(item.item_disc_amt);
 
-        const totalA = weight * price;
-        const totalW = weight * priceW;
+        const totalA = qty * weight * price;
+        const totalW = qty * weight * priceW;
 
-        const rowTotal = getRowBaseAmount(payType, totalA, totalW);
+        // If weight is 0, fallback to qty * price (for non-weight items)
+        // This matches logic where if weight is present, it is treated as Unit Weight
+        const finalTotalA = weight > 0 ? totalA : qty * price;
+        const finalTotalW = weight > 0 ? totalW : qty * priceW;
+
+        const rowTotal = getRowBaseAmount(payType, finalTotalA, finalTotalW);
 
         return sum + rowTotal - discount;
       }, 0);
 
       const taxAmount = rows.reduce((sum, item) => {
+        const qty = parseNumber(item.qty) || 1;
         const weight = parseNumber(item.weight);
         const price = parseNumber(item.price);
         const priceW = parseNumber(item.price_w);
         const discount = parseNumber(item.item_disc_amt);
         const taxRate = parseNumber(item.tax_prc ?? defaultTaxPrc ?? 15) / 100;
 
-        const totalA = weight * price;
-        const totalW = weight * priceW;
-        const rowTotal = getRowBaseAmount(payType, totalA, totalW);
+        const totalA = qty * weight * price;
+        const totalW = qty * weight * priceW;
+
+        const finalTotalA = weight > 0 ? totalA : qty * price;
+        const finalTotalW = weight > 0 ? totalW : qty * priceW;
+
+        const rowTotal = getRowBaseAmount(payType, finalTotalA, finalTotalW);
         const base = rowTotal - discount;
 
         return sum + base * taxRate;
@@ -961,9 +975,11 @@ export default function useInvoiceForm({
       }, 0);
 
       const totalGWeight = rows.reduce((sum, item) => {
+        const qty = parseNumber(item.qty) || 1;
         const gWeight = parseNumber(item.g_weight);
 
-        return sum + gWeight;
+        // multiply by qty to get total weight
+        return sum + gWeight * qty;
       }, 0);
 
       return {
@@ -998,6 +1014,7 @@ export default function useInvoiceForm({
         const { rows: updatedRows, targetIndex } = prepareRowsForInsertion(
           invoiceItems,
           makeEmptyRow,
+          form.inv_notes,
         );
 
         ensureItemTracked(items, selected, setItems);
@@ -1019,7 +1036,7 @@ export default function useInvoiceForm({
         );
 
         if (shouldAppendBlankRow(updatedRows, targetIndex)) {
-          setInvoiceItems((prev) => [...prev, makeEmptyRow()]);
+          setInvoiceItems((prev) => [...prev, makeEmptyRow(form.inv_notes)]);
         }
       } catch (error) {
         console.error("خطأ في البحث بالباركود:", error);
@@ -1096,7 +1113,7 @@ export default function useInvoiceForm({
       totalGWeight: number;
       netAmount: number;
     };
-    invoiceNumber: number | string | null;
+    invoiceNumber: Nullable<number | string>;
     invoicePayload: Record<string, unknown>;
     resolvedCompanyId: number;
     resolvedYearId: number;
@@ -1105,8 +1122,21 @@ export default function useInvoiceForm({
   const buildInvoiceSaveContext = useCallback(
     (validItems: InvoiceItemRow[], customer: any): InvoiceSaveContext => {
       const totals = computeTotals(form.pay_type, validItems);
-      const invoiceNumber =
-        !isNewInvoice && form.inv_id ? form.inv_id : parseNumber(form.inv_id);
+      // For new invoices, use maxInvoiceId + 1 if available, otherwise let backend generate
+      // If the user manually entered an ID, respect it
+      const rawInvId = form.inv_id ? parseNumber(form.inv_id) : 0;
+      let invoiceNumber: Nullable<number | string>;
+
+      if (isNewInvoice && (rawInvId === 0 || rawInvId === null)) {
+        // For new invoices without manual ID, use maxInvoiceId + 1 or null
+        invoiceNumber =
+          maxInvoiceId !== null && maxInvoiceId !== undefined
+            ? maxInvoiceId + 1
+            : null;
+      } else {
+        // For existing invoices or manually entered IDs, use the raw value
+        invoiceNumber = rawInvId;
+      }
 
       const invoiceQr = generateZatcaQR({
         sellerName: "شركة ثمار الصفاء المتميزة التجارية",
@@ -1217,6 +1247,7 @@ export default function useInvoiceForm({
       handlingMethod,
       invoiceData,
       isNewInvoice,
+      maxInvoiceId,
       mobileMethod,
       paymentMethod,
       selectedBranchId,
@@ -1295,11 +1326,15 @@ export default function useInvoiceForm({
         invoiceNumber,
       );
 
+      // If we didn't have a number before (auto-gen), use the one from the saved invoice
+      const finalInvoiceNumber =
+        invoiceNumber ?? savedInvoice?.inv_id ?? savedInvoice?.id;
+
       setInvoicePk(resolvedInvoicePk);
       dispatchForm({
         type: "SET_FIELD",
         field: "inv_id",
-        value: invoiceNumber,
+        value: finalInvoiceNumber,
       });
 
       return resolvedInvoicePk;
@@ -1407,19 +1442,37 @@ export default function useInvoiceForm({
         validation.customer,
       );
 
-      const resolvedInvoicePk = await persistInvoiceRecord(
+      // Persist the invoice record to get/ensure primary key
+      const savedRecordId = await persistInvoiceRecord(
         context.invoicePayload,
         context.invoiceNumber,
       );
 
       await syncInvoiceDetails(
         validation.validItems,
-        resolvedInvoicePk,
+        savedRecordId,
         context.resolvedCompanyId,
         context.resolvedYearId,
       );
 
-      await refreshInvoiceDetailsState(resolvedInvoicePk);
+      await refreshInvoiceDetailsState(savedRecordId);
+
+      // Reload the full invoice header to ensure we have the generated inv_id and other fields
+      // This solves the issue of the UI not showing the new number.
+      const freshInvoice = await getInvoiceByIdAction(String(savedRecordId));
+
+      if (freshInvoice) {
+        dispatchForm({
+          type: "SET_ALL",
+          payload: {
+            inv_id: freshInvoice.inv_id,
+            inv_date: freshInvoice.inv_date,
+            is_done: freshInvoice.is_done ?? false,
+            is_ok: freshInvoice.is_ok ?? false,
+            commit: freshInvoice.commit ?? true,
+          },
+        });
+      }
 
       toast.success(
         isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
@@ -1427,8 +1480,8 @@ export default function useInvoiceForm({
 
       return {
         ok: true,
-        recordId: resolvedInvoicePk,
-        invoiceNumber: Number(context.invoiceNumber),
+        recordId: savedRecordId,
+        invoiceNumber: Number(freshInvoice?.inv_id ?? context.invoiceNumber),
       };
     } catch (error) {
       const errorMessage =

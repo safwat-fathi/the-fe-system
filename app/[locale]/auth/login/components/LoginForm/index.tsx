@@ -5,8 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 
-import { loginAction } from "@/app/actions/auth";
 import ChangeLocale from "../ChangeLocale";
+
+import { loginAction } from "@/app/actions/auth";
 
 const LoginForm = () => {
   const t = useTranslations("auth.login");

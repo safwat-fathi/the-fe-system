@@ -62,6 +62,8 @@ export const STORAGE_KEYS = {
   CSRF_TOKEN: process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME || "csrf_token",
   USER_ID: "user_id",
   IS_ADMIN: "is_admin",
+  COMPANY_ID: "company_id",
+  COST_ID: "cost_id",
   SESSION: "session",
   USER_DATA: "user_data",
   THEME: "theme",

@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-
 import { Button, Checkbox } from "@heroui/react";
 import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   CalendarIcon,
   CheckCircleIcon,
@@ -25,10 +24,13 @@ import { useInvoiceTotalsStore } from "@/stores/invoiceTotalsStore";
 
 export default function InvoiceTotalsActions() {
   const router = useRouter();
+  const locale = useLocale();
+  const isRTL = locale === "ar";
   const t = useTranslations("forms.invoices.actions");
   const {
     metadata,
     invoiceNumber,
+    maxInvoiceId,
     formattedDateTime,
     saveInvoice,
     previewInvoice,
@@ -49,6 +51,7 @@ export default function InvoiceTotalsActions() {
     isNewInvoice,
   } = useInvoiceTotalsStore();
   const [isDateEditing, setIsDateEditing] = useState(false);
+
   useEffect(() => {
     if (!isEditing) {
       setIsDateEditing(false);
@@ -76,42 +79,69 @@ export default function InvoiceTotalsActions() {
     return fallback ? fallback.replace("T", " ") : "—";
   }, [formattedDateTime, invoiceDate, toLocalDateTimeInputValue]);
 
-  const handleInvoiceDateChange = (value: string) => {
-    const iso = value ? new Date(value).toISOString() : "";
+  const handleInvoiceDateChange = useCallback(
+    (value: string) => {
+      const iso = value ? new Date(value).toISOString() : "";
 
-    setInvoiceDate(iso);
-    setIsDateEditing(false);
-  };
+      setInvoiceDate(iso);
+      setIsDateEditing(false);
+    },
+    [setInvoiceDate],
+  );
+
+  const dateDisplayElement = useMemo(() => {
+    if (!isEditing) {
+      return displayDate;
+    }
+
+    if (isDateEditing) {
+      return (
+        <input
+          className="h-7 border px-2 rounded text-xs sm:text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+          type="datetime-local"
+          value={toLocalDateTimeInputValue(invoiceDate)}
+          onBlur={() => setIsDateEditing(false)}
+          onChange={(e) => handleInvoiceDateChange(e.target.value)}
+        />
+      );
+    }
+
+    return (
+      <button
+        className="h-7 px-2 rounded text-xs sm:text-sm hover:bg-gray-50 border border-transparent text-right"
+        type="button"
+        onClick={() => setIsDateEditing(true)}
+      >
+        {displayDate}
+      </button>
+    );
+  }, [
+    isEditing,
+    isDateEditing,
+    displayDate,
+    invoiceDate,
+    toLocalDateTimeInputValue,
+    handleInvoiceDateChange,
+  ]);
+
+  const currentInvoiceNumber = useMemo(() => {
+    if (invoiceNumber) return invoiceNumber;
+    if (maxInvoiceId) return maxInvoiceId + 1;
+
+    return "";
+  }, [invoiceNumber, maxInvoiceId]);
 
   return (
     <div className="relative bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4 border border-slate-200">
       <div className="absolute ltr:right-0 rtl:left-0 -top-[50px] flex items-center gap-3">
-        <span className="text-slate-600 font-medium text-sm sm:text-base">
-          #{invoiceNumber}
-        </span>
+        {currentInvoiceNumber && (
+          <span className="text-slate-600 font-medium text-sm sm:text-base">
+            #{currentInvoiceNumber}
+          </span>
+        )}
         <div className="flex items-center gap-1 text-sm text-slate-600 font-medium">
           <CalendarIcon className="w-4 h-4 text-slate-500" />
-          {isEditing ? (
-            isDateEditing ? (
-              <input
-                className="h-7 border px-2 rounded text-xs sm:text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
-                type="datetime-local"
-                value={toLocalDateTimeInputValue(invoiceDate)}
-                onBlur={() => setIsDateEditing(false)}
-                onChange={(e) => handleInvoiceDateChange(e.target.value)}
-              />
-            ) : (
-              <button
-                className="h-7 px-2 rounded text-xs sm:text-sm hover:bg-gray-50 border border-transparent text-right"
-                type="button"
-                onClick={() => setIsDateEditing(true)}
-              >
-                {displayDate}
-              </button>
-            )
-          ) : (
-            displayDate
-          )}
+          {dateDisplayElement}
         </div>
       </div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
@@ -186,7 +216,11 @@ export default function InvoiceTotalsActions() {
 
                 // onClick={() => navigateToInvoice("first")}
               >
-                <ChevronDoubleRightIcon className="w-4 h-4 " />
+                {isRTL ? (
+                  <ChevronDoubleRightIcon className="w-4 h-4 " />
+                ) : (
+                  <ChevronDoubleLeftIcon className="w-4 h-4 " />
+                )}
               </Link>
               <Link
                 className={clsx(
@@ -201,7 +235,11 @@ export default function InvoiceTotalsActions() {
 
                 // onClick={() => navigateToInvoice("prev")}
               >
-                <ChevronRightIcon className="w-4 h-4 " />
+                {isRTL ? (
+                  <ChevronRightIcon className="w-4 h-4 " />
+                ) : (
+                  <ChevronLeftIcon className="w-4 h-4 " />
+                )}
               </Link>
               <span className="text-xs text-slate-600 px-2 font-medium">
                 {t("invoicePosition", {
@@ -222,7 +260,11 @@ export default function InvoiceTotalsActions() {
 
                 // onClick={() => navigateToInvoice("next")}
               >
-                <ChevronLeftIcon className="w-4 h-4 " />
+                {isRTL ? (
+                  <ChevronLeftIcon className="w-4 h-4 " />
+                ) : (
+                  <ChevronRightIcon className="w-4 h-4 " />
+                )}
               </Link>
               <Link
                 className={clsx(
@@ -237,7 +279,11 @@ export default function InvoiceTotalsActions() {
 
                 // onClick={() => navigateToInvoice("last")}
               >
-                <ChevronDoubleLeftIcon className="w-4 h-4 " />
+                {isRTL ? (
+                  <ChevronDoubleLeftIcon className="w-4 h-4 " />
+                ) : (
+                  <ChevronDoubleRightIcon className="w-4 h-4 " />
+                )}
               </Link>
             </div>
           )}

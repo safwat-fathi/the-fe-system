@@ -9,8 +9,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import invoiceFormDataService from "@/services/bff/invoice-form-data.service";
 import invoiceService from "@/services/api/invoice.service";
 import { Invoice, InvoiceDetail, TransTypes } from "@/types/models/invoice";
-import { AuthenticationError } from "@/utilities/errors/Authentication";
-import { redirectToLogin } from "@/app/actions/auth";
+import { withAuthRedirect } from "@/utilities/auth/withAuthRedirect";
 
 type InvoicePageType = "sale" | "purchase" | "sale-return" | "purchase-return";
 type InvoiceFormMode = "new" | "edit" | "preview";
@@ -100,6 +99,16 @@ export async function generateMetadata({
   };
 }
 
+function InvoiceFormFallback() {
+  return (
+    <div className="p-4 my-4 bg-white rounded-lg shadow-sm border border-gray-200 min-h-[600px] flex items-center justify-center">
+      <div className="flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    </div>
+  );
+}
+
 const parseInvoicePageParams = (
   params: Record<string, RawQueryValue>,
 ): {
@@ -140,60 +149,50 @@ const loadInvoiceData = async ({
   }
 
   const lookupId = editId ?? "";
-	try {
-    const invoiceData = await invoiceService.getInvoiceById(
-      lookupId,
-      config.transType,
-    );
+  const invoiceData = await invoiceService.getInvoiceById(
+    lookupId,
+    config.transType,
+  );
 
-    if (!invoiceData) {
-      notFound();
-    }
-
-    if (
-      invoiceData.trans_type &&
-      Number(invoiceData.trans_type) !== Number(config.transType)
-    ) {
-      notFound();
-    }
-
-    const detailKeys = Array.from(
-      new Set(
-        [
-          invoiceData?.id ? String(invoiceData.id) : null,
-          invoiceData?.inv_id,
-          editId,
-        ]
-          .filter((key): key is string =>
-            Boolean(key && `${key}`.trim().length),
-          )
-          .map((key) => String(key).trim()),
-      ),
-    );
-
-    for (const key of detailKeys) {
-      const fetchedDetails =
-        (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
-
-      if (fetchedDetails.length > 0) {
-        return {
-          invoiceData,
-          invoiceDetails: fetchedDetails,
-        };
-      }
-    }
-
-    return {
-      invoiceData,
-      invoiceDetails: [],
-    };
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      redirectToLogin();
-    }
-    throw error;
+  if (!invoiceData) {
+    notFound();
   }
-  
+
+  if (
+    invoiceData.trans_type &&
+    Number(invoiceData.trans_type) !== Number(config.transType)
+  ) {
+    notFound();
+  }
+
+  const detailKeys = Array.from(
+    new Set(
+      [
+        invoiceData?.id ? String(invoiceData.id) : null,
+        invoiceData?.inv_id,
+        editId,
+      ]
+        .filter((key): key is string => Boolean(key && `${key}`.trim().length))
+        .map((key) => String(key).trim()),
+    ),
+  );
+
+  for (const key of detailKeys) {
+    const fetchedDetails =
+      (await invoiceService.getInvoiceDetails(key, config.transType)) ?? [];
+
+    if (fetchedDetails.length > 0) {
+      return {
+        invoiceData,
+        invoiceDetails: fetchedDetails,
+      };
+    }
+  }
+
+  return {
+    invoiceData,
+    invoiceDetails: [],
+  };
 };
 
 export default async function InvoicePage({
@@ -214,27 +213,11 @@ export default async function InvoicePage({
   const config = INVOICE_TYPE_CONFIG[invoiceType];
   const typeTitle = t(config.titleKey);
 
-  let invoiceData: Invoice | null = null;
-  let invoiceDetails: InvoiceDetail[] = [];
+  const { invoiceData, invoiceDetails } = await withAuthRedirect(() =>
+    loadInvoiceData({ mode, editId, config }),
+  );
 
-  try {
-    const data = await loadInvoiceData({
-      mode,
-      editId,
-      config,
-    });
-
-    invoiceData = data.invoiceData;
-    invoiceDetails = data.invoiceDetails;
-  } catch (error) {
-    if (error instanceof AuthenticationError) {
-      await redirectToLogin();
-    }
-
-    throw error;
-  }
-
-  const formData = await getInvoiceFormData();
+  const formData = await withAuthRedirect(() => getInvoiceFormData());
 
   const newInvoiceHref = `/forms/invoices?type=${encodeURIComponent(
     invoiceType,
@@ -291,12 +274,3 @@ export default async function InvoicePage({
   );
 }
 
-function InvoiceFormFallback() {
-  return (
-    <div className="p-4 my-4 bg-white rounded-lg shadow-sm border border-gray-200 min-h-[600px] flex items-center justify-center">
-      <div className="flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-      </div>
-    </div>
-  );
-}

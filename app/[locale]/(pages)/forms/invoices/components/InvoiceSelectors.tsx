@@ -13,6 +13,7 @@ import {
 import ReactSelect, { type SelectInstance } from "react-select";
 import { useTranslations } from "next-intl";
 
+import { BaseModal } from "@/components/Modal";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import {
   INVOICE_PAY_TYPES,
@@ -216,17 +217,14 @@ export default function InvoiceSelectors({
   onBarcodeSearch,
   isEditing,
   invoiceType = TransTypes.SALES,
-  // التاريخ والوقت
-  invoiceDate,
-  setInvoiceDate,
   onFocusNextSection,
 }: Props) {
   const selectorsRef = useRef<HTMLDivElement | null>(null);
   const customerSelectRef = useRef<SelectInstance<CustomerOption> | null>(null);
   const t = useTranslations("forms.invoices.selectors");
-  const [isDateEditMode, setIsDateEditMode] = useState(false);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const partyKey: "customer" | "supplier" =
     invoiceType === TransTypes.PURCHASE ||
     invoiceType === TransTypes.PURCHASE_RETURN
@@ -423,36 +421,6 @@ export default function InvoiceSelectors({
     }
   }, [isEditing]);
 
-  useEffect(() => {
-    if (!isEditing) {
-      setIsDateEditMode(false);
-    }
-  }, [isEditing]);
-
-  const toLocalDateTimeInputValue = useCallback((value?: string) => {
-    if (!value) return "";
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) return "";
-    const local = new Date(
-      parsed.getTime() - parsed.getTimezoneOffset() * 60 * 1000,
-    );
-
-    return local.toISOString().slice(0, 16);
-  }, []);
-
-  const formattedInvoiceDate = useMemo(() => {
-    const base = toLocalDateTimeInputValue(invoiceDate);
-
-    return base ? base.replace("T", " ") : "";
-  }, [invoiceDate, toLocalDateTimeInputValue]);
-
-  const handleInvoiceDateChange = (value: string) => {
-    const isoValue = value ? new Date(value).toISOString() : "";
-    setInvoiceDate?.(isoValue);
-    setIsDateEditMode(false);
-  };
-
   const selectedReferenceOption = useMemo(() => {
     if (!referenceNumber || referenceNumber.trim().length === 0) {
       return null;
@@ -493,6 +461,23 @@ export default function InvoiceSelectors({
 
   return (
     <div ref={selectorsRef} onKeyDownCapture={handleKeyDown}>
+      <BaseModal
+        className="font-cairo"
+        isOpen={isNoteModalOpen}
+        title={t("noteLabel")}
+        onClose={() => setIsNoteModalOpen(false)}
+      >
+        <div className="w-full">
+          <textarea
+            className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none min-h-[120px]"
+            dir="auto"
+            placeholder={t("noteLabel")}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+      </BaseModal>
+
       <div className="grid grid-cols-1 gap-2">
         {/* معلومات الفاتورة الأساسية */}
         <div className="bg-white border border-gray-200 rounded-lg p-2 md:p-3">
@@ -576,10 +561,10 @@ export default function InvoiceSelectors({
                       disabled={!isEditing}
                       name="payment"
                       type="radio"
-                      value="cash"
+                      value={PaymentTypes.CASH}
                       onChange={(e) => {
                         setPaymentMethod(
-                          e.target.value as unknown as PaymentTypes,
+                          Number(e.target.value) as PaymentTypes,
                         );
                         setSelectedCustomer(null);
                         setSelectedCustomerName("");
@@ -593,10 +578,10 @@ export default function InvoiceSelectors({
                       disabled={!isEditing}
                       name="payment"
                       type="radio"
-                      value="credit"
+                      value={PaymentTypes.CREDIT}
                       onChange={(e) => {
                         setPaymentMethod(
-                          e.target.value as unknown as PaymentTypes,
+                          Number(e.target.value) as PaymentTypes,
                         );
                         setSelectedCustomer(null);
                         setSelectedCustomerName("");
@@ -753,12 +738,27 @@ export default function InvoiceSelectors({
                   {`${t("noteLabel")}:`}
                 </label>
                 <input
-                  className="w-full h-[32px] border px-2 rounded text-xs"
+                  readOnly
+                  className={`w-full h-[32px] border px-2 rounded text-xs ${
+                    isEditing ? "cursor-pointer bg-white hover:bg-gray-50" : ""
+                  }`}
                   disabled={!isEditing}
                   id="note"
                   type="text"
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onClick={() => {
+                    if (isEditing) {
+                      setIsNoteModalOpen(true);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      if (isEditing) {
+                        e.preventDefault();
+                        setIsNoteModalOpen(true);
+                      }
+                    }
+                  }}
                 />
               </div>
 
@@ -869,21 +869,7 @@ export default function InvoiceSelectors({
                       onChange={(e) => setCrNo(e.target.value)}
                     />
                   </div>
-                  <div>
-                    <label
-                      className="block mb-1 font-medium text-gray-700 text-xs"
-                      htmlFor="mobile-method"
-                    >
-                      {`${t("fields.mobile")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-xs"
-                      disabled={!isEditing}
-                      type="text"
-                      value={mobileMethod}
-                      onChange={(e) => setMobileMethod(e.target.value)}
-                    />
-                  </div>
+
                   <div>
                     <label
                       className="block mb-1 text-xs font-medium text-gray-600"
@@ -994,6 +980,21 @@ export default function InvoiceSelectors({
                       type="text"
                       value={postCode}
                       onChange={(e) => setPostCode(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="block mb-1 font-medium text-gray-700 text-xs"
+                      htmlFor="mobile-method"
+                    >
+                      {`${t("fields.mobile")}:`}
+                    </label>
+                    <input
+                      className="w-full h-[32px] border px-2 rounded text-xs"
+                      disabled={!isEditing}
+                      type="text"
+                      value={mobileMethod}
+                      onChange={(e) => setMobileMethod(e.target.value)}
                     />
                   </div>
                 </div>

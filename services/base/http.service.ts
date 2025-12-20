@@ -1,3 +1,5 @@
+import { getLocale } from "next-intl/server";
+
 import {
   HttpServiceAbstract,
   IPaginatedResponse,
@@ -39,13 +41,63 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     };
   }
 
-  private async _getAuthHeaders(): Promise<HeadersInit> {
-    // Always get fresh token from cookies
+  private async _getBaseHeaders(): Promise<HeadersInit> {
+    // Always get fresh token and locale from cookies/server context
     this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
+    const locale = await getLocale();
 
-    return this._token
-      ? { Authorization: `Bearer ${this._token.replace(/['"]+/g, "")}` }
-      : {};
+    const headers: HeadersInit = {
+      "Accept-Language": locale,
+    };
+
+    if (this._token) {
+      headers.Authorization = `Bearer ${this._token.replace(/['"]+/g, "")}`;
+    }
+
+    return headers;
+  }
+
+  private async _logErrorResponse(
+    method: TMethod,
+    fullURL: string,
+    response: Response,
+  ): Promise<void> {
+    let errorBody: string | undefined;
+
+    try {
+      errorBody = await response.clone().text();
+    } catch (readError) {
+      errorBody = `<<failed to read body: ${String(readError)}>>`;
+    }
+
+    console.error(
+      `HTTP error for ${method} ${fullURL}`,
+      JSON.stringify(
+        {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          body: errorBody,
+        },
+        null,
+        2,
+      ),
+    );
+  }
+
+  private async _parseResponseData(response: Response): Promise<any> {
+    const contentType = response.headers.get("content-type");
+    const isJson = contentType?.includes("application/json");
+
+    if (isJson) {
+      try {
+        return await response.json();
+      } catch {
+        return null;
+      }
+    }
+
+    return await response.text();
   }
 
   private async _request<R = T>(
@@ -65,7 +117,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
         };
       }
 
-      const authHeaders = await this._getAuthHeaders();
+      const authHeaders = await this._getBaseHeaders();
       const urlParams = createParams(params || {});
       const searchParams = urlParams.toString();
       const fullURL = searchParams
@@ -86,78 +138,28 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       };
 
       const response = await fetch(fullURL, requestOptions);
-      const responseClone = response.clone();
 
       // Handle no content
       if (response.status === 204) {
         return { success: true };
       }
 
+      // Log error details for failed requests
       if (!response.ok) {
-        let errorBody: string | undefined;
-
-        try {
-          errorBody = await responseClone.text();
-        } catch (readError) {
-          errorBody = `<<failed to read body: ${String(readError)}>>`;
-        }
-
-        console.error(
-          `HTTP error for ${method} ${fullURL}`,
-          JSON.stringify(
-            {
-              status: response.status,
-              statusText: response.statusText,
-              headers: Object.fromEntries(response.headers.entries()),
-              body: errorBody,
-            },
-            null,
-            2,
-          ),
-        );
+        await this._logErrorResponse(method, fullURL, response);
       }
 
-      // Handle unauthorized simply: clear tokens and redirect to login
-      // console.log(
-      //   "🚀 ~ :123 ~ HttpService ~ _request ~ response.status:",
-      //   response.status,
-      // );
+      // Handle unauthorized
       if (response.status === 401) {
-        // throw new AuthenticationError("Session expired");
-        // Signal authentication failure to the caller.
-        // try {
-        //   const res = await fetch("http://localhost:3000/api/auth/refresh", {
-        //     method: "POST",
-        //     // credentials: "include",
-        //     // TODO: send refresh token
-        //     body: JSON.stringify({}),
-        //     headers: {
-        //       "Content-Type": "application/json",
-        //     },
-        //   });
-
-        //   const data = await res.json();
-        // } catch (error) {
-        //   throw new AuthenticationError("Session expired");
-        // }
+        // Throw AuthenticationError to be caught by withAuthRedirect at page level.
+        // Cannot call redirect() here because:
+        // 1. This class runs outside the Server Component/Server Action context
+        // 2. The NEXT_REDIRECT error would be caught by our try-catch below
         throw new AuthenticationError("Session expired");
       }
 
-      // Parse response
-      const contentType = response.headers.get("content-type");
-      const isJson = contentType?.includes("application/json");
-
-      let data: any;
-
-      if (isJson) {
-        try {
-          data = await response.json();
-        } catch {
-          data = null;
-        }
-      } else {
-        data = await response.text();
-      }
+      // Parse response data
+      const data = await this._parseResponseData(response);
 
       return {
         success: response.ok,
