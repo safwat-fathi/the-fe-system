@@ -692,12 +692,13 @@ export const useCashReceiptVoucherForm = ({
 
       if (result.success && result.data) {
         const realId = result.data.id;
+        const savedVouchId = result.data.vouch_id || voucher.vouch_id;
 
         setVoucher((prev) => ({
           ...prev,
           commit: true,
           id: realId,
-          vouch_id: result.data.vouch_id || voucher.vouch_id,
+          vouch_id: savedVouchId,
         }));
 
         toast.success(result.message);
@@ -705,7 +706,11 @@ export const useCashReceiptVoucherForm = ({
         const basePath =
           vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
 
-        if (realId) {
+        // استخدام vouch_id في URL بدلاً من id
+        if (savedVouchId && Number(savedVouchId) > 0) {
+          router.push(`${basePath}/${savedVouchId}?mode=preview`);
+        } else if (realId) {
+          // Fallback إلى id إذا لم يكن vouch_id متاحاً
           router.push(`${basePath}/${realId}?mode=preview`);
         }
       } else {

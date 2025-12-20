@@ -197,8 +197,16 @@ export const useVoucherActions = ({
           : await createVoucherAction(voucherData, detailsData);
 
       if (result.success && result.data) {
-        const realId = result.data.id;
+        const realId = result.data.id || voucher.id || voucherRecordId;
         const vouchId = result.data.vouch_id || voucher.vouch_id;
+
+        console.log("[useVoucherActions] Save result:", {
+          realId,
+          vouchId,
+          voucherId: voucher.id,
+          voucherRecordId,
+          commit: true,
+        });
 
         setVoucher((prev) => ({
           ...prev,
@@ -209,29 +217,26 @@ export const useVoucherActions = ({
 
         toast.success(result.message);
 
-        if (realId) {
+        // استخدام vouch_id في URL بدلاً من id
+        // ملاحظة: لا نستخدم router.refresh() مباشرة لأنها قد تجلب بيانات قديمة من الـ cache
+        // بدلاً من ذلك، نعتمد على revalidatePath في updateVoucherAction
+        if (vouchId && Number(vouchId) > 0) {
+          router.push(`/forms/voucher/${vouchId}?mode=preview`);
+          // تأخير قصير قبل refresh لضمان اكتمال revalidatePath
+          setTimeout(() => {
+            router.refresh();
+          }, 100);
+        } else if (realId) {
+          // Fallback إلى id إذا لم يكن vouch_id متاحاً
           router.push(`/forms/voucher/${realId}?mode=preview`);
-        } else if (vouchId) {
-          try {
-            const vouchersResponse = await voucherService.getAll();
-
-            if (vouchersResponse.success && vouchersResponse.data) {
-              const foundVoucher = vouchersResponse.data.find(
-                (v: any) => v.vouch_id === vouchId,
-              );
-
-              if (foundVoucher?.id) {
-                router.push(`/forms/voucher/${foundVoucher.id}?mode=preview`);
-              } else {
-                router.push(`/forms/voucher`);
-              }
-            }
-          } catch (searchError) {
-            console.error("Error searching for voucher:", searchError);
-            router.push(`/forms/voucher`);
-          }
+          setTimeout(() => {
+            router.refresh();
+          }, 100);
         } else {
           router.push(`/forms/voucher`);
+          setTimeout(() => {
+            router.refresh();
+          }, 100);
         }
       } else {
         toast.error(result.message);

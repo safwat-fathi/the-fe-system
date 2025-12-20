@@ -381,6 +381,7 @@ export default async function PaymentVoucherEditPage({
         voucherData={formattedVoucher}
         voucherDetailsData={details}
         voucherRecordId={targetVoucher.id}
+        voucherVouchId={targetVoucher.vouch_id || 0}
         voucherStatuses={formData.voucherStatuses}
         voucherTypes={formData.voucherTypes}
       />

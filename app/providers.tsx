@@ -6,6 +6,8 @@ import {
   type ThemeProviderProps,
   ThemeProvider as NextThemesProvider,
 } from "next-themes";
+import { Toaster } from "react-hot-toast";
+import { useEffect, useState } from "react";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -14,6 +16,11 @@ export interface ProvidersProps {
 
 export function Providers({ children, themeProps }: ProvidersProps) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <HeroUIProvider navigate={router.push}>
@@ -22,7 +29,10 @@ export function Providers({ children, themeProps }: ProvidersProps) {
         enableSystem={false}
         disableTransitionOnChange
       >
-        {children}
+        <div className="relative min-h-screen" suppressHydrationWarning>
+          {mounted && <Toaster position="top-center" />}
+          {children}
+        </div>
       </NextThemesProvider>
     </HeroUIProvider>
   );

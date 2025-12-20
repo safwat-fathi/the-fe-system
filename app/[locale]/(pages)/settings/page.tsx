@@ -13,8 +13,10 @@ import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 
 import Breadcrumb from "@/components/Breadcrumb";
+import { ConfirmationModal } from "@/components/Modal";
 import { API_ENDPOINTS, apiFetch } from "@/utilities/api";
 import homeService from "@/services/api/home.service";
+import { glTransactionService } from "@/services/api";
 
 interface HomeSettings {
   [key: string]: any;
@@ -25,6 +27,13 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("general");
   const [settings, setSettings] = useState<HomeSettings>({});
   const [originalSettings, setOriginalSettings] = useState<HomeSettings>({});
+  const [isDeleteGLModalOpen, setIsDeleteGLModalOpen] = useState(false);
+  const [isDeletingGL, setIsDeletingGL] = useState(false);
+  const [deleteGLConfirmText, setDeleteGLConfirmText] = useState("");
+  const [deleteGLProgress, setDeleteGLProgress] = useState<{
+    deleted: number;
+    total: number;
+  } | null>(null);
 
   const SECTIONS = useMemo(
     () => [
@@ -39,6 +48,12 @@ export default function SettingsPage() {
         label: t("sections.accounts.label"),
         icon: "💰",
         description: t("sections.accounts.description"),
+      },
+      {
+        id: "maintenance",
+        label: "صيانة البيانات",
+        icon: "🔧",
+        description: "أدوات صيانة وحذف البيانات",
       },
     ],
     [t],
@@ -184,6 +199,64 @@ export default function SettingsPage() {
     }
   };
 
+  const handleDeleteGLTransactions = async () => {
+    if (deleteGLConfirmText !== "حذف") {
+      toast.error("يرجى كتابة 'حذف' للتأكيد");
+      return;
+    }
+
+    setIsDeletingGL(true);
+    setDeleteGLProgress(null);
+    
+    try {
+      const result = await glTransactionService.deleteAll();
+
+      if (result.success) {
+        const message = result.deletedCount
+          ? `تم حذف ${result.deletedCount} من ${result.totalCount || 0} قيد محاسبي`
+          : result.message || "تم حذف جميع القيود المحاسبية بنجاح";
+        
+        toast.success(message, {
+          duration: 5000,
+        });
+        setIsDeleteGLModalOpen(false);
+        setDeleteGLConfirmText("");
+        setDeleteGLProgress(null);
+      } else {
+        // إذا كان الخطأ 500، هذا يعني أن الـ backend لا يدعم الحذف
+        const isBackendError = result.message?.includes("500") || result.message?.includes("Internal Server Error");
+        const errorMessage = isBackendError
+          ? "⚠️ الـ Backend لا يدعم حذف القيود المحاسبية حالياً. يرجى التواصل مع المطور لإصلاح endpoint الحذف."
+          : result.message || "فشل حذف القيود المحاسبية";
+        
+        toast.error(errorMessage, {
+          duration: 10000,
+        });
+      }
+    } catch (error) {
+      // التحقق من نوع الخطأ
+      const isBackendError = error instanceof Error && (
+        error.message.includes("500") || 
+        error.message.includes("Internal Server Error") ||
+        error.message.includes("api_delete_gl_transaction")
+      );
+      
+      const errorMessage = isBackendError
+        ? "⚠️ الـ Backend لا يدعم حذف القيود المحاسبية حالياً. يرجى التواصل مع المطور لإصلاح endpoint الحذف (api_delete_gl_transaction/<id>)."
+        : error instanceof Error
+          ? error.message
+          : "حدث خطأ أثناء حذف القيود المحاسبية";
+      
+      toast.error(errorMessage, {
+        duration: 10000,
+      });
+      console.error("Error deleting GL transactions:", error);
+    } finally {
+      setIsDeletingGL(false);
+      setDeleteGLProgress(null);
+    }
+  };
+
   return (
     <div className="p-4 font-cairo">
       <Breadcrumb />
@@ -231,7 +304,42 @@ export default function SettingsPage() {
               {SECTIONS.find((s) => s.id === activeSection)?.description}
             </p>
           </div>
-          {renderFields(getCurrentFields())}
+          {activeSection === "maintenance" ? (
+            <div className="space-y-6">
+              <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="text-3xl">⚠️</div>
+                  <div>
+                    <h3 className="text-lg font-bold text-red-800 mb-2">
+                      حذف جدول القيود المحاسبية (GL_Transaction)
+                    </h3>
+                    <p className="text-red-700 text-sm leading-relaxed mb-4">
+                      <strong className="font-bold">تحذير خطير:</strong> هذه
+                      العملية ستحذف جميع القيود المحاسبية من قاعدة البيانات
+                      بشكل نهائي ولا يمكن التراجع عنها. تأكد من عمل نسخة احتياطية
+                      قبل المتابعة.
+                    </p>
+                    <ul className="list-disc list-inside text-red-700 text-sm space-y-1 mb-4">
+                      <li>سيتم حذف جميع القيود المحاسبية بشكل دائم</li>
+                      <li>لا يمكن استرجاع البيانات بعد الحذف</li>
+                      <li>قد يؤثر هذا على التقارير المحاسبية</li>
+                    </ul>
+                  </div>
+                </div>
+                <Button
+                  color="danger"
+                  size="lg"
+                  variant="solid"
+                  className="font-bold"
+                  onPress={() => setIsDeleteGLModalOpen(true)}
+                >
+                  🗑️ حذف جميع القيود المحاسبية
+                </Button>
+              </div>
+            </div>
+          ) : (
+            renderFields(getCurrentFields())
+          )}
         </CardBody>
       </Card>
 
@@ -256,6 +364,58 @@ export default function SettingsPage() {
           {hasChanges ? "💾 حفظ الإعدادات" : "✅ محفوظ"}
         </Button>
       </div>
+
+      {/* Modal تأكيد حذف GL Transactions */}
+      <ConfirmationModal
+        isOpen={isDeleteGLModalOpen}
+        onClose={() => {
+          setIsDeleteGLModalOpen(false);
+          setDeleteGLConfirmText("");
+        }}
+        onConfirm={handleDeleteGLTransactions}
+        title="⚠️ تأكيد حذف جميع القيود المحاسبية"
+        confirmText={
+          isDeletingGL
+            ? deleteGLProgress
+              ? `جاري الحذف... (${deleteGLProgress.deleted}/${deleteGLProgress.total})`
+              : "جاري الحذف..."
+            : "حذف نهائي"
+        }
+        cancelText="إلغاء"
+        confirmColor="danger"
+        size="lg"
+        message={
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-800 font-semibold mb-2">
+                ⚠️ تحذير: هذه العملية لا يمكن التراجع عنها!
+              </p>
+              <p className="text-red-700 text-sm">
+                سيتم حذف جميع القيود المحاسبية من جدول GL_Transaction بشكل
+                نهائي. تأكد من عمل نسخة احتياطية قبل المتابعة.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                للتأكيد، يرجى كتابة <strong>"حذف"</strong> في المربع أدناه:
+              </label>
+              <Input
+                value={deleteGLConfirmText}
+                onChange={(e) => setDeleteGLConfirmText(e.target.value)}
+                placeholder="اكتب 'حذف' للتأكيد"
+                className="w-full"
+                variant="bordered"
+                color={deleteGLConfirmText === "حذف" ? "success" : "danger"}
+              />
+              {deleteGLConfirmText && deleteGLConfirmText !== "حذف" && (
+                <p className="text-xs text-red-600">
+                  النص المدخل غير صحيح. يجب كتابة "حذف" بالضبط.
+                </p>
+              )}
+            </div>
+          </div>
+        }
+      />
     </div>
   );
 }
