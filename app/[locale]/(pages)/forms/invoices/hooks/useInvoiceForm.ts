@@ -27,6 +27,7 @@ import {
   deleteInvoiceDetailAction,
   getInvoiceByIdAction,
   getInvoiceDetailsAction,
+  createInvoiceBoxAction,
 } from "@/app/actions/invoice";
 import { generateZatcaQR } from "@/utilities/zatca";
 import {
@@ -1473,6 +1474,19 @@ export default function useInvoiceForm({
           },
         });
       }
+
+      // Create Invoice Box
+
+      await createInvoiceBoxAction({
+        com: context.resolvedCompanyId,
+        trans_type: defaultTransType,
+        amt: formatDecimalString(context.totals.netAmount, frac),
+        box: String(validation.customer.id),
+        acc_change: "1",
+        notes: form.inv_notes,
+        cr_date: new Date().toISOString(),
+        inv: savedRecordId,
+      });
 
       toast.success(
         isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",

@@ -36,6 +36,32 @@ class ItemService extends HttpService<Item> {
     return formData;
   }
 
+  private processPaginatedResponse(data: any): IPaginatedResponse<Item> {
+    const results = Array.isArray(data?.results) ? data.results : [];
+
+    let count = 0;
+
+    if (typeof data?.count === "number") {
+      count = data.count;
+    } else if (Array.isArray(results)) {
+      count = results.length;
+    }
+
+    const next =
+      typeof data?.next === "string" || data?.next === null ? data.next : null;
+    const previous =
+      typeof data?.previous === "string" || data?.previous === null
+        ? data.previous
+        : null;
+
+    return {
+      results,
+      count,
+      next,
+      previous,
+    };
+  }
+
   async getHomeSettings(): Promise<Record<string, unknown>[]> {
     try {
       const response = await this.get<unknown[]>("home_list", undefined, {
@@ -135,7 +161,7 @@ class ItemService extends HttpService<Item> {
     itemStatus = 0,
     query = "",
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
-		const emptyResponse: IPaginatedResponse<Item> = {
+    const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
       count: 0,
       next: null,
@@ -171,20 +197,7 @@ class ItemService extends HttpService<Item> {
           return emptyResponse;
         }
 
-        const { results, count, next, previous } = response.data;
-
-        return {
-          results: Array.isArray(results) ? results : [],
-          count:
-            typeof count === "number"
-              ? count
-              : Array.isArray(results)
-                ? results.length
-                : 0,
-          next: typeof next === "string" || next === null ? next : null,
-          previous:
-            typeof previous === "string" || previous === null ? previous : null,
-        };
+        return this.processPaginatedResponse(response.data);
       }
 
       // البحث العادي بدون query
@@ -217,20 +230,7 @@ class ItemService extends HttpService<Item> {
         return emptyResponse;
       }
 
-      const { results, count, next, previous } = response.data;
-
-      return {
-        results: Array.isArray(results) ? results : [],
-        count:
-          typeof count === "number"
-            ? count
-            : Array.isArray(results)
-              ? results.length
-              : 0,
-        next: typeof next === "string" || next === null ? next : null,
-        previous:
-          typeof previous === "string" || previous === null ? previous : null,
-      };
+      return this.processPaginatedResponse(response.data);
     } catch (error) {
       console.error("Error fetching items:", error);
       rethrowAuthenticationError(error);
@@ -287,20 +287,11 @@ class ItemService extends HttpService<Item> {
         return emptyResponse;
       }
 
-      const { results, count, next, previous } = response.data;
+      const processed = this.processPaginatedResponse(response.data);
 
       return {
-        results: Array.isArray(results) ? results : [],
-        count:
-          typeof count === "number"
-            ? count
-            : Array.isArray(results)
-              ? results.length
-              : 0,
-        next: typeof next === "string" || next === null ? next : null,
-        previous:
-          typeof previous === "string" || previous === null ? previous : null,
-        hasMore: Boolean(next),
+        ...processed,
+        hasMore: Boolean(processed.next),
         currentPage: page,
       };
     } catch (error) {
@@ -344,7 +335,9 @@ class ItemService extends HttpService<Item> {
       return null;
     } catch (error) {
       console.error("Error creating item:", error);
-      throw new Error("حدث خطأ أثناء إنشاء الصنف");
+      rethrowAuthenticationError(error);
+
+      return null;
     }
   }
 
@@ -366,7 +359,9 @@ class ItemService extends HttpService<Item> {
       return null;
     } catch (error) {
       console.error("Error updating item:", error);
-      throw new Error("حدث خطأ أثناء تحديث الصنف");
+      rethrowAuthenticationError(error);
+
+      return null;
     }
   }
 
@@ -397,20 +392,9 @@ class ItemService extends HttpService<Item> {
       return false;
     } catch (error: any) {
       console.error("Error deleting item:", error);
+      rethrowAuthenticationError(error);
 
-      // إذا كان الخطأ 500 من الخادم، نعطي رسالة أوضح
-      if (
-        error?.status === 500 ||
-        error?.message?.includes("500") ||
-        error?.message?.includes("Internal Server Error")
-      ) {
-        throw new Error(
-          "لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام",
-        );
-      }
-
-      // إذا كان الخطأ من نوع آخر، نعرض الرسالة الأصلية
-      throw new Error(error?.message || "حدث خطأ أثناء حذف الصنف");
+      return false;
     }
   }
 }

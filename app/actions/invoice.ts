@@ -128,3 +128,24 @@ export async function deleteInvoiceDetailAction(
 
   return result;
 }
+
+export async function createInvoiceBoxAction(
+  payload: Omit<
+    import("@/types/models/invoice").CreateInvoiceBoxDto,
+    "cr_user"
+  >,
+) {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(STORAGE_KEYS.USER_ID)?.value;
+
+  if (!userId) {
+    throw new Error("user id not found");
+  }
+
+  const result = await invoiceService.createInvoiceBox({
+    ...payload,
+    cr_user: userId,
+  });
+
+  return result;
+}

@@ -144,3 +144,30 @@ export interface InvoiceDetail {
   box: number | null; // Assumed to be a number if not null
   year?: number | null;
 }
+
+export interface CreateInvoiceBoxDto {
+  com: number; // company id
+  trans_type: TransTypes; // transaction type (1: purchase, 2: sales, 3: purchase return, 4: sales return)
+  amt: string;
+  box: string; // customer id
+  acc_change: string; // exchange currency (SAR, USD, ...)
+  notes: string;
+  cr_date: string;
+  cr_user: string; // logged in user id
+  inv: number; // invoice id not inv_id
+}
+
+export interface InvoiceBox {
+  id: number;
+  trans_type: number;
+  amt: string;
+  acc_change: string;
+  notes: string;
+  cr_date: string;
+  cr_user: string;
+  upd_date: string | null;
+  upd_user: string | null;
+  com: number;
+  inv: number;
+  box: number;
+}

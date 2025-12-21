@@ -1,7 +1,9 @@
 import { HttpService } from "@/services/base";
 import {
   Invoice,
+  InvoiceBox,
   InvoiceDetail,
+  CreateInvoiceBoxDto,
   InvoiceTypes,
   TransTypes,
 } from "@/types/models/invoice";
@@ -552,6 +554,41 @@ class InvoiceService extends HttpService<Invoice> {
     });
 
     return monthlySales;
+  }
+  async createInvoiceBox(
+    data: CreateInvoiceBoxDto,
+  ): Promise<InvoiceBox | null> {
+    try {
+      const response = await this.post<InvoiceBox>(
+        "api_create_invoice_box",
+        data,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("createInvoiceBox failed:", errorInfo);
+
+        return null;
+      }
+
+      if (!response.data) {
+        console.error("createInvoiceBox returned without data:", response);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error creating invoice box:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
   }
 }
 
