@@ -40,11 +40,6 @@ export default function InvoiceTotalsDisplay({
 }: InvoiceTotalsDisplayProps) {
   const t = useTranslations("forms.invoices.totals");
 
-  // Don't render for new invoices
-  if (isNewInvoice) {
-    return null;
-  }
-
   // Build payment URL with all required params
   const paymentUrl = `/forms/invoices/payment?total=${netAmount}&inv_number=${encodeURIComponent(invoiceNumber)}&customer=${encodeURIComponent(customerName)}&inv=${encodeURIComponent(invoiceId)}`;
 
@@ -116,7 +111,7 @@ export default function InvoiceTotalsDisplay({
         </div>
       </div>
 
-      {paymentMethod === PaymentTypes.CASH && (
+      {isNewInvoice && paymentMethod === PaymentTypes.CASH && (
         <div className="mt-3 flex justify-start">
           <Link
             className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm inline-flex items-center gap-2 transition-colors"
