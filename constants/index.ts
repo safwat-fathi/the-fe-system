@@ -67,6 +67,7 @@ export const STORAGE_KEYS = {
   SESSION: "session",
   USER_DATA: "user_data",
   THEME: "theme",
+  LOCALE: "NEXT_LOCALE",
 } as const;
 
 // Validation Rules
