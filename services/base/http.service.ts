@@ -1,5 +1,4 @@
-import { getLocale } from "next-intl/server";
-
+import { defaultLocale } from "@/i18n/config";
 import {
   HttpServiceAbstract,
   IPaginatedResponse,
@@ -44,7 +43,8 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   private async _getBaseHeaders(): Promise<HeadersInit> {
     // Always get fresh token and locale from cookies/server context
     this._token = await getCookieAction(STORAGE_KEYS.ACCESS_TOKEN);
-    const locale = await getLocale();
+    const locale =
+      (await getCookieAction(STORAGE_KEYS.LOCALE)) || defaultLocale;
 
     const headers: HeadersInit = {
       "Accept-Language": locale,
