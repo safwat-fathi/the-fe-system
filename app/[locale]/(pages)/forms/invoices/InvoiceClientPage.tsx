@@ -581,6 +581,11 @@ export default function InvoiceClientPage({
         totalGWeight={totalGWeight ?? 0}
         totalValueTax={totalValueTax}
         totalWagesTax={totalWagesTax}
+        hasItems={invoiceItems.some((item: any) => {
+          const itemId = Number(item.item || item.item_id || 0);
+
+          return itemId > 0;
+        })}
       />
     </div>
   );

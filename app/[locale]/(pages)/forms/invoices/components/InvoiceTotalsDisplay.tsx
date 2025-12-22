@@ -21,6 +21,7 @@ interface InvoiceTotalsDisplayProps {
   invoiceNumber: string;
   customerName: string;
   invoiceId: string;
+  hasItems: boolean;
 }
 
 export default function InvoiceTotalsDisplay({
@@ -37,6 +38,7 @@ export default function InvoiceTotalsDisplay({
   invoiceNumber,
   customerName,
   invoiceId,
+  hasItems,
 }: InvoiceTotalsDisplayProps) {
   const t = useTranslations("forms.invoices.totals");
 
@@ -111,7 +113,7 @@ export default function InvoiceTotalsDisplay({
         </div>
       </div>
 
-      {isNewInvoice && paymentMethod === PaymentTypes.CASH && (
+      {hasItems && isNewInvoice && paymentMethod === PaymentTypes.CASH && (
         <div className="mt-3 flex justify-start">
           <Link
             className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm inline-flex items-center gap-2 transition-colors"
