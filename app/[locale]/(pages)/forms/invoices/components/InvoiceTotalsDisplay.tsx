@@ -22,6 +22,7 @@ interface InvoiceTotalsDisplayProps {
   customerName: string;
   invoiceId: string;
   hasItems: boolean;
+  onPaymentClick?: () => void;
 }
 
 export default function InvoiceTotalsDisplay({
@@ -39,6 +40,7 @@ export default function InvoiceTotalsDisplay({
   customerName,
   invoiceId,
   hasItems,
+  onPaymentClick,
 }: InvoiceTotalsDisplayProps) {
   const t = useTranslations("forms.invoices.totals");
 
@@ -119,6 +121,12 @@ export default function InvoiceTotalsDisplay({
             className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm inline-flex items-center gap-2 transition-colors"
             href={paymentUrl}
             prefetch
+            onClick={(e) => {
+              if (onPaymentClick) {
+                e.preventDefault();
+                onPaymentClick();
+              }
+            }}
           >
             <CreditCardIcon className="w-4 h-4" />
             {t("payment")}
