@@ -135,7 +135,7 @@ class ItemService extends HttpService<Item> {
     itemStatus = 0,
     query = "",
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
-		const emptyResponse: IPaginatedResponse<Item> = {
+    const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
       count: 0,
       next: null,
@@ -189,7 +189,7 @@ class ItemService extends HttpService<Item> {
 
       // البحث العادي بدون query
       const response = await this.get<IPaginatedResponse<Item>>(
-        "items_list",
+        "SearchItemsList",
         {
           xcom_id: companyId,
           xcat_id: categoryId || "0",
