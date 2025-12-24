@@ -14,6 +14,7 @@ export { default as costCenterService } from "./cost-center.service";
 export { default as permissionService } from "./permission.service";
 export { default as userService } from "./user.service";
 export { default as glAuditLogService } from "./gl-audit-log.service";
+export { default as glTransactionService } from "./gl-transaction.service";
 export { default as userCompanyService } from "./user-company.service";
 export { default as userCostCenterService } from "./user-cost-center.service";
 export { default as helperService } from "./helper.service";

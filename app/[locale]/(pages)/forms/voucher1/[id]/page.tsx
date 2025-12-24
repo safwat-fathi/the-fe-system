@@ -4,6 +4,7 @@ import { cache } from "react";
 import { getTranslations } from "next-intl/server";
 
 import CashReceiptVoucherClientPage from "../CashReceiptVoucherClientPage";
+import VoucherStatusCheckboxes from "../components/VoucherStatusCheckboxes";
 
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
@@ -365,19 +366,26 @@ export default async function ReceiptVoucherEditPage({
 
   return (
     <div className="container mx-auto p-4">
-      <Breadcrumb
-        items={[
-          { name: t("breadcrumbs.list"), href: "/forms/voucher1" },
-          {
-            name:
-              formMode === "edit"
-                ? t("breadcrumbs.edit", {
-                    id: targetVoucher.vouch_id || targetVoucher.id || "",
-                  })
-                : t("breadcrumbs.preview"),
-          },
-        ]}
-      />
+      <div className="flex items-center justify-between mb-2">
+        <Breadcrumb
+          items={[
+            { name: t("breadcrumbs.list"), href: "/forms/voucher1" },
+            {
+              name:
+                formMode === "edit"
+                  ? t("breadcrumbs.edit", {
+                      id: targetVoucher.vouch_id || targetVoucher.id || "",
+                    })
+                  : t("breadcrumbs.preview"),
+            },
+          ]}
+        />
+        <VoucherStatusCheckboxes
+          commit={formattedVoucher.commit ?? false}
+          post={formattedVoucher.post ?? false}
+          print={formattedVoucher.print ?? false}
+        />
+      </div>
       <CashReceiptVoucherClientPage
         accounts={formData.accounts}
         boxes={formData.boxes}
@@ -391,6 +399,7 @@ export default async function ReceiptVoucherEditPage({
         voucherData={formattedVoucher}
         voucherDetailsData={details}
         voucherRecordId={targetVoucher.id}
+        voucherVouchId={targetVoucher.vouch_id || 0}
         voucherStatuses={formData.voucherStatuses}
         voucherTypes={formData.voucherTypes}
       />

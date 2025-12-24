@@ -9,6 +9,7 @@ import { useTranslations, useLocale } from "next-intl";
 
 import { getLocaleDir } from "@/i18n/config";
 import costCenterService from "@/services/api/cost-center.service";
+import { revalidateCostCenters } from "@/app/actions/cost-center.action";
 
 type CostCenterFormMode = "view" | "edit" | "add";
 
@@ -83,17 +84,28 @@ const CostCenterFormClient = ({
       }
 
       if (result) {
+        // Revalidate cache and path
+        await revalidateCostCenters();
+
         toast.success(
           isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
+
+        // الانتقال مع إعادة تحميل فوري
         router.push("/basic/cost-centers");
         router.refresh();
       } else {
         toast.error(t("messages.operationFailed"));
       }
     } catch (error) {
-      console.error(t("messages.saveError"), error);
-      toast.error(t("messages.saveError"));
+      // استخراج رسالة الخطأ من error
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : t("messages.saveError");
+
+      console.error("Error saving cost center:", error);
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }

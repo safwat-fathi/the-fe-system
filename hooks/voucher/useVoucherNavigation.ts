@@ -83,10 +83,11 @@ export const useVoucherNavigation = ({
     const targetVoucher = vouchersList[targetIndex];
 
     if (targetVoucher) {
-      const targetId = targetVoucher.id || targetVoucher.vouch_id;
+      // استخدام vouch_id في URL بدلاً من id
+      const targetVouchId = targetVoucher.vouch_id;
 
-      if (targetId) {
-        const route = getVoucherRoute(vouchType, targetId, "preview");
+      if (targetVouchId && Number(targetVouchId) > 0) {
+        const route = getVoucherRoute(vouchType, targetVouchId, "preview");
 
         router.push(route);
       }
@@ -131,11 +132,11 @@ export const useVoucherNavigation = ({
         }
 
         if (foundVoucher) {
-          const targetId = foundVoucher.id || foundVoucher.vouch_id;
+          // استخدام vouch_id في URL بدلاً من id
+          const targetVouchId = foundVoucher.vouch_id;
 
-          if (targetId) {
-            const finalId = foundVoucher.id || targetId;
-            const route = getVoucherRoute(vouchType, finalId, "preview");
+          if (targetVouchId && Number(targetVouchId) > 0) {
+            const route = getVoucherRoute(vouchType, targetVouchId, "preview");
 
             router.push(route);
             router.refresh();
@@ -173,11 +174,11 @@ export const useVoucherNavigation = ({
             return;
           }
 
-          const targetId = foundAny.id || foundAny.vouch_id;
+          // استخدام vouch_id في URL بدلاً من id
+          const targetVouchId = foundAny.vouch_id;
 
-          if (targetId) {
-            const finalId = foundAny.id || targetId;
-            const route = getVoucherRoute(vouchType, finalId, "preview");
+          if (targetVouchId && Number(targetVouchId) > 0) {
+            const route = getVoucherRoute(vouchType, targetVouchId, "preview");
 
             router.push(route);
             router.refresh();

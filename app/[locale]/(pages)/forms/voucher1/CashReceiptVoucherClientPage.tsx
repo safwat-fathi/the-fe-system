@@ -15,6 +15,7 @@ import {
   ChevronRightIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import clsx from "clsx";
@@ -36,6 +37,7 @@ import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 import { useCashReceiptVoucherForm } from "@/hooks/useCashReceiptVoucherForm";
 import { RiyalIcon } from "@/components/RiyalIcon";
+import GLTransactionModal from "@/components/gl-transaction/GLTransactionModal";
 import { formatAmount } from "@/utilities/formatAmount";
 import { voucherService } from "@/services/api";
 
@@ -47,6 +49,7 @@ interface CashReceiptVoucherClientPageProps {
   voucherBoxes?: VoucherBox[];
   isNewVoucher?: boolean;
   voucherRecordId?: number | string | null;
+  voucherVouchId?: number;
   navigationInfo?: {
     previous?: number | null;
     next?: number | null;
@@ -70,6 +73,7 @@ export default function CashReceiptVoucherClientPage({
   voucherBoxes: initialVoucherBoxes = [],
   isNewVoucher = true,
   voucherRecordId,
+  voucherVouchId,
   navigationInfo,
   accounts: initialAccounts,
   boxes: initialBoxes,
@@ -93,6 +97,8 @@ export default function CashReceiptVoucherClientPage({
   // Handle search - must be before any conditional returns (Rules of Hooks)
   const [searchTerm, setSearchTerm] = useState("");
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  // حالة Modal القيود المحاسبية
+  const [isGLModalOpen, setIsGLModalOpen] = useState(false);
   const {
     // State
     voucher,
@@ -420,21 +426,21 @@ export default function CashReceiptVoucherClientPage({
           return;
         }
 
-        // ✅ استخدام id الحقيقي (primary key) فقط للانتقال - routing يتوقع id وليس vouch_id
-        const targetId = voucherWithId.id;
+        // ✅ استخدام vouch_id في URL بدلاً من id
+        const targetVouchId = voucherWithId.vouch_id;
 
-        if (targetId && Number(targetId) > 0) {
+        if (targetVouchId && Number(targetVouchId) > 0) {
           const basePath =
             vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
 
-          router.push(`${basePath}/${targetId}?mode=preview`);
+          router.push(`${basePath}/${targetVouchId}?mode=preview`);
           router.refresh();
           setSearchTerm(""); // مسح حقل البحث
 
           return;
         } else {
           console.error(
-            "Voucher found but missing id (primary key):",
+            "Voucher found but missing vouch_id:",
             voucherWithId,
           );
           toast.error(t("messages.voucherAccessError"));
@@ -466,10 +472,14 @@ export default function CashReceiptVoucherClientPage({
       commit: false,
     }));
 
-    if (pathname && voucherRecordId) {
+    if (pathname) {
       const basePath = vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
+      // استخدام vouch_id في URL بدلاً من id
+      const vouchIdToUse = voucherVouchId || voucher.vouch_id;
 
-      router.push(`${basePath}/${voucherRecordId}?mode=edit`);
+      if (vouchIdToUse && Number(vouchIdToUse) > 0) {
+        router.push(`${basePath}/${vouchIdToUse}?mode=edit`);
+      }
     }
   };
 
@@ -482,11 +492,13 @@ export default function CashReceiptVoucherClientPage({
   return (
     <div className="p-2 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-2 mb-2 border border-slate-200">
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="flex items-center gap-3">
+      <div className="bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg p-1.5 mb-1 border border-slate-200">
+        {/* صف واحد: عنوان الصفحة والأزرار والبحث */}
+        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+          {/* الجانب الأيسر: العنوان والأزرار */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             <h1
-              className={`text-xl font-bold text-slate-800 flex items-center gap-2 ${textAlign}`}
+              className={`text-lg font-bold text-slate-800 flex items-center gap-1.5 ${textAlign}`}
             >
               <span>{voucherTypeName}</span>
               <span className="text-slate-600 font-medium">
@@ -495,50 +507,14 @@ export default function CashReceiptVoucherClientPage({
                   ? voucher.vouch_id
                   : t("status.numbering")}
               </span>
-              <span
-                className={`text-sm text-slate-600 font-medium flex items-center gap-1 ${textAlign}`}
-              >
-                <i className="bi bi-calendar3 w-4 h-4 text-slate-500" />
-                {new Date(voucher.vouch_date).toLocaleString("en-US", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                  hour12: true,
-                })}
-              </span>
             </h1>
-          </div>
 
-          {/* البحث */}
-          <div className="flex items-center gap-2">
-            <input
-              className="w-32 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
-              placeholder={t("actions.search")}
-              type="number"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
-            />
-            <button
-              className="h-7 px-2 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
-              onClick={handleSearch}
-            >
-              <i className="bi bi-search w-4 h-4" />
-            </button>
-          </div>
-        </div>
+            {/* خط فاصل ناعم */}
+            <div className="h-6 w-px bg-slate-300" />
 
-        <div className="flex items-center justify-between mt-1">
-          <div className="flex items-center gap-2 flex-wrap">
+            {/* الأزرار */}
             <Button
-              className="h-7 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
+              className="h-7 px-1.5 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
               isDisabled={!isEditing}
               isLoading={isLoading}
               startContent={
@@ -551,7 +527,7 @@ export default function CashReceiptVoucherClientPage({
             </Button>
 
             <Button
-              className="h-7 px-3 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+              className="h-7 px-1.5 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
               isDisabled={formMode === "new" || isEditing || isLoading}
               startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
               variant="solid"
@@ -561,7 +537,7 @@ export default function CashReceiptVoucherClientPage({
             </Button>
 
             <Button
-              className="h-7 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+              className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
               startContent={<PlusIcon className="w-4 h-4" />}
               variant="solid"
               onPress={() => {
@@ -577,7 +553,7 @@ export default function CashReceiptVoucherClientPage({
             </Button>
 
             <Button
-              className="h-7 px-3 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
+              className="h-7 px-1.5 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
               isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
               isLoading={isPrinting}
               startContent={
@@ -589,11 +565,25 @@ export default function CashReceiptVoucherClientPage({
               {t("actions.print")}
             </Button>
 
+            <Button
+              className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+              isDisabled={
+                !voucher.id ||
+                Number(voucher.id) <= 0 ||
+                !voucher.commit
+              }
+              startContent={<DocumentTextIcon className="w-4 h-4" />}
+              variant="solid"
+              onPress={() => setIsGLModalOpen(true)}
+            >
+              {t("actions.viewGLTransactions")}
+            </Button>
+
             {/* أزرار التنقل - مثل الفواتير - ظاهرة دائماً */}
-            <div className="hidden md:flex items-center gap-1 mr-2">
+            <div className="hidden md:flex items-center gap-0.5">
               <Link
                 className={clsx(
-                  "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                  "flex items-center justify-center h-7 w-8 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
                   {
                     "pointer-events-none opacity-40":
                       !navigationMetadata?.firstVoucherHref,
@@ -601,11 +591,11 @@ export default function CashReceiptVoucherClientPage({
                 )}
                 href={navigationMetadata?.firstVoucherHref || ""}
               >
-                <ChevronDoubleRightIcon className="w-4 h-4" />
+                <ChevronDoubleRightIcon className="w-3 h-3" />
               </Link>
               <Link
                 className={clsx(
-                  "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                  "flex items-center justify-center h-7 w-8 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
                   {
                     "pointer-events-none opacity-40":
                       !navigationMetadata?.prevVoucherHref,
@@ -613,10 +603,10 @@ export default function CashReceiptVoucherClientPage({
                 )}
                 href={navigationMetadata?.prevVoucherHref || ""}
               >
-                <ChevronRightIcon className="w-4 h-4" />
+                <ChevronRightIcon className="w-3 h-3" />
               </Link>
               <span
-                className={`text-xs text-slate-600 px-2 font-medium ${textAlign}`}
+                className={`text-xs text-slate-600 px-0.5 font-medium ${textAlign}`}
               >
                 {t("navigation.position", {
                   current: voucherNumber,
@@ -625,7 +615,7 @@ export default function CashReceiptVoucherClientPage({
               </span>
               <Link
                 className={clsx(
-                  "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                  "flex items-center justify-center h-7 w-8 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
                   {
                     "pointer-events-none opacity-40":
                       !navigationMetadata?.nextVoucherHref,
@@ -633,11 +623,11 @@ export default function CashReceiptVoucherClientPage({
                 )}
                 href={navigationMetadata?.nextVoucherHref || ""}
               >
-                <ChevronLeftIcon className="w-4 h-4" />
+                <ChevronLeftIcon className="w-3 h-3" />
               </Link>
               <Link
                 className={clsx(
-                  "flex items-center justify-center h-7 w-12 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
+                  "flex items-center justify-center h-7 w-8 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm",
                   {
                     "pointer-events-none opacity-40":
                       !navigationMetadata?.lastVoucherHref,
@@ -645,46 +635,36 @@ export default function CashReceiptVoucherClientPage({
                 )}
                 href={navigationMetadata?.lastVoucherHref || ""}
               >
-                <ChevronDoubleLeftIcon className="w-4 h-4" />
+                <ChevronDoubleLeftIcon className="w-3 h-3" />
               </Link>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-1">
-              <Checkbox
-                color="success"
-                isDisabled
-                isSelected={voucher.commit}
-                size="sm"
-              />
-              <span className={`text-xs text-slate-600 ${textAlign}`}>
-                {t("status.committed")}
-              </span>
-            </div>
+          {/* الجانب الأيمن: خط فاصل والبحث */}
+          <div className="flex items-center gap-2">
+            {/* خط فاصل قبل البحث */}
+            <div className="h-6 w-px bg-slate-300" />
 
+            {/* البحث - ثابت في الطرف */}
             <div className="flex items-center gap-1">
-              <Checkbox
-                color="warning"
-                isDisabled
-                isSelected={voucher.post}
-                size="sm"
+              <input
+                className="w-32 h-7 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
+                placeholder={t("actions.search")}
+                type="number"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch();
+                  }
+                }}
               />
-              <span className={`text-xs text-slate-600 ${textAlign}`}>
-                {t("status.posted")}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Checkbox
-                color="warning"
-                isDisabled
-                isSelected={voucher.print}
-                size="sm"
-              />
-              <span className={`text-xs text-slate-600 ${textAlign}`}>
-                {t("status.printed")}
-              </span>
+              <button
+                className="h-7 px-2 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
+                onClick={handleSearch}
+              >
+                <i className="bi bi-search w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -693,11 +673,15 @@ export default function CashReceiptVoucherClientPage({
       {/* Form Fields */}
       <div
         ref={selectorsRef}
-        className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2"
+        className={`grid grid-cols-1 ${
+          costCenters.length > 0
+            ? "md:grid-cols-12"
+            : "md:grid-cols-10"
+        } gap-1.5 mb-2`}
         onKeyDownCapture={handleKeyDownSelectors}
       >
         {/* رقم المرجع */}
-        <div className="md:col-span-1">
+        <div className="md:col-span-2">
           <label
             className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
             htmlFor="cash-receipt-ref-no"
@@ -718,7 +702,7 @@ export default function CashReceiptVoucherClientPage({
         </div>
 
         {/* التاريخ والوقت */}
-        <div className="md:col-span-1">
+        <div className="md:col-span-3">
           <label
             className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
             htmlFor="cash-receipt-date-time"
@@ -746,7 +730,7 @@ export default function CashReceiptVoucherClientPage({
         </div>
 
         {costCenters.length > 0 && (
-          <div className="md:col-span-1">
+          <div className="md:col-span-2">
             <label
               className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
               htmlFor="cash-receipt-cost-center"
@@ -833,8 +817,8 @@ export default function CashReceiptVoucherClientPage({
           </div>
         )}
 
-        {/* الحالة */}
-        <div className="md:col-span-1">
+        {/* الحالة - أصغر */}
+        <div className={costCenters.length > 0 ? "md:col-span-1" : "md:col-span-1"}>
           <label
             className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
             htmlFor="cash-receipt-status"
@@ -842,7 +826,7 @@ export default function CashReceiptVoucherClientPage({
             {t("fields.status")}
           </label>
           <select
-            className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2"
+            className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-1"
             disabled={!isEditing}
             id="cash-receipt-status"
             value={String(voucher.vouch_status ?? 1)}
@@ -880,53 +864,53 @@ export default function CashReceiptVoucherClientPage({
             )}
           </select>
         </div>
-      </div>
 
-      {/* البيان */}
-      <div className="mb-2">
-        <label
-          className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
-          htmlFor="cash-receipt-notes"
-        >
-          {t("fields.notes")}
-        </label>
-        <div className="relative">
-          <input
-            ref={notesInputRef}
-            className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
-            disabled={!isEditing}
-            id="cash-receipt-notes"
-            placeholder={t("fields.notesPlaceholder")}
-            readOnly={!isEditing}
-            type="text"
-            value={voucher.vouch_notes || ""}
-            onChange={(e) =>
-              setVoucher((prev) => ({ ...prev, vouch_notes: e.target.value }))
-            }
-            onDoubleClick={() => {
-              if (isEditing) {
-                setIsNotesModalOpen(true);
+        {/* البيان - في نفس الصف */}
+        <div className={costCenters.length > 0 ? "md:col-span-4" : "md:col-span-4"}>
+          <label
+            className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
+            htmlFor="cash-receipt-notes"
+          >
+            {t("fields.notes")}
+          </label>
+          <div className="relative">
+            <input
+              ref={notesInputRef}
+              className="w-full h-8 text-xs border border-slate-300 rounded-md focus:border-slate-500 focus:ring-1 focus:ring-slate-500 px-2 pr-8"
+              disabled={!isEditing}
+              id="cash-receipt-notes"
+              placeholder={t("fields.notesPlaceholder")}
+              readOnly={!isEditing}
+              type="text"
+              value={voucher.vouch_notes || ""}
+              onChange={(e) =>
+                setVoucher((prev) => ({ ...prev, vouch_notes: e.target.value }))
               }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                // Move to first field in cash table
-                firstCashTableInputRef.current?.focus();
-              }
-            }}
-          />
-          {isEditing && (
-            <button
-              className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
-              data-skip-key-as-tab="true"
-              title={t("actions.expandNotes")}
-              type="button"
-              onClick={() => setIsNotesModalOpen(true)}
-            >
-              <ArrowsPointingOutIcon className="h-3 w-3" />
-            </button>
-          )}
+              onDoubleClick={() => {
+                if (isEditing) {
+                  setIsNotesModalOpen(true);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  // Move to first field in cash table
+                  firstCashTableInputRef.current?.focus();
+                }
+              }}
+            />
+            {isEditing && (
+              <button
+                className="absolute left-1 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-all duration-200"
+                data-skip-key-as-tab="true"
+                title={t("actions.expandNotes")}
+                type="button"
+                onClick={() => setIsNotesModalOpen(true)}
+              >
+                <ArrowsPointingOutIcon className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2215,6 +2199,25 @@ export default function CashReceiptVoucherClientPage({
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Modal القيود المحاسبية */}
+      <GLTransactionModal
+        isOpen={isGLModalOpen}
+        onClose={() => setIsGLModalOpen(false)}
+        transId={
+          voucher.id && Number(voucher.id) > 0
+            ? Number(voucher.id)
+            : 0
+        }
+        transType={vouchType || 1} // سند قبض
+        voucherTitle={
+          voucher.vouch_id && Number(voucher.vouch_id) > 0
+            ? `سند قبض رقم ${voucher.vouch_id}`
+            : voucher.id
+              ? `سند قبض (DB-${voucher.id})`
+              : undefined
+        }
+      />
     </div>
   );
 }

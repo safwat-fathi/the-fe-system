@@ -270,31 +270,8 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
           const normalizedResults = (response?.results ?? []).map(
             normalizeItem,
           );
-          const term = search.trim().toLowerCase();
 
-          const decorated = normalizedResults
-            .map((it) => {
-              const itemCode = (it.item_code ?? "").toLowerCase();
-              const itemName = (it.item_name ?? "").toLowerCase();
-
-              return {
-                option: buildOption(it),
-                codeMatch: itemCode.indexOf(term),
-                nameMatch: itemName.indexOf(term),
-              };
-            })
-            .filter((entry) => entry.codeMatch !== -1 || entry.nameMatch !== -1)
-            .sort((a, b) => {
-              const aCode = a.codeMatch === -1 ? Infinity : a.codeMatch;
-              const bCode = b.codeMatch === -1 ? Infinity : b.codeMatch;
-
-              if (aCode !== bCode) return aCode - bCode;
-              const aName = a.nameMatch === -1 ? Infinity : a.nameMatch;
-              const bName = b.nameMatch === -1 ? Infinity : b.nameMatch;
-
-              return aName - bName;
-            });
-          const options = decorated.map(({ option }) => option);
+          const options = normalizedResults.map(buildOption);
 
           return {
             options,
@@ -1063,6 +1040,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                   <tr key={item.id}>
                     <td className="p-1">
                       <AsyncCreatableSelect
+                        debounceTimeout={500}
                         isClearable
                         isSearchable
                         additional={initialItemAdditional}

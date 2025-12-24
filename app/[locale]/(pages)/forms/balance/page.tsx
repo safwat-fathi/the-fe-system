@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import BalanceVoucherClientPageWrapper from "./BalanceVoucherClientPageWrapper";
+import VoucherStatusCheckboxes from "./components/VoucherStatusCheckboxes";
 
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
@@ -275,20 +276,27 @@ export default async function BalanceVoucherPage({
 
       return (
         <div className="container mx-auto p-4">
-          <Breadcrumb
-            items={[
-              { name: t("breadcrumbs.list"), href: "/forms/balance" },
-              {
-                name:
-                  formMode === "edit"
-                    ? t("breadcrumbs.edit", {
-                        id:
-                          existingVoucher.vouch_id || existingVoucher.id || "",
-                      })
-                    : t("breadcrumbs.preview"),
-              },
-            ]}
-          />
+          <div className="flex items-center justify-between mb-2">
+            <Breadcrumb
+              items={[
+                { name: t("breadcrumbs.list"), href: "/forms/balance" },
+                {
+                  name:
+                    formMode === "edit"
+                      ? t("breadcrumbs.edit", {
+                          id:
+                            existingVoucher.vouch_id || existingVoucher.id || "",
+                        })
+                      : t("breadcrumbs.preview"),
+                },
+              ]}
+            />
+            <VoucherStatusCheckboxes
+              commit={voucher.commit ?? false}
+              post={voucher.post ?? false}
+              print={voucher.print ?? false}
+            />
+          </div>
           <Suspense
             key={`balance-${formMode}-${existingVoucher.id}`}
             fallback={<BalanceVoucherFormFallback />}
@@ -327,15 +335,17 @@ export default async function BalanceVoucherPage({
 
     return (
       <div className="container mx-auto p-4">
-        <Breadcrumb
-          items={[
-            {
-              name: t("breadcrumbs.vouchers"),
-              href: "/forms/voucher?type=adjustment",
-            },
-            { name: t("breadcrumbs.list"), href: "/forms/balance" },
-          ]}
-        />
+        <div className="flex items-center justify-between mb-2">
+          <Breadcrumb
+            items={[
+              {
+                name: t("breadcrumbs.vouchers"),
+                href: "/forms/voucher?type=adjustment",
+              },
+              { name: t("breadcrumbs.list"), href: "/forms/balance" },
+            ]}
+          />
+        </div>
         <Suspense key="balance-new" fallback={<BalanceVoucherFormFallback />}>
           <BalanceVoucherClientPageWrapper
             formData={formData}
