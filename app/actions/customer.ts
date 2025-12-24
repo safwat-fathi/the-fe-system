@@ -9,3 +9,7 @@ export async function getCustomerInvoicesAction(
 ) {
   return customerService.getCustomerInvoices(params);
 }
+
+export async function getCustomersAction() {
+  return customerService.getAllCustomers();
+}

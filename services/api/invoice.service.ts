@@ -6,6 +6,7 @@ import {
   CreateInvoiceBoxDto,
   InvoiceTypes,
   TransTypes,
+  PaidType,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
@@ -585,6 +586,30 @@ class InvoiceService extends HttpService<Invoice> {
       return response.data;
     } catch (error) {
       console.error("Error creating invoice box:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async getPaidTypeList(): Promise<IPaginatedResponse<PaidType> | null> {
+    try {
+      const response = await this.get<IPaginatedResponse<PaidType>>(
+        "getPaidTypeList",
+        undefined,
+        {
+          cache: "force-cache",
+          next: { tags: ["paid-type-list"] },
+        },
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching paid type list:", error);
       rethrowAuthenticationError(error);
 
       return null;

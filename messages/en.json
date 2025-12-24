@@ -240,6 +240,35 @@
         "gramUnit": "g"
       }
     },
+    "paymentPage": {
+      "title": "Payment",
+      "invoiceNumber": "Invoice Number: {number}",
+      "customer": "Customer: {name}",
+      "savePayment": "Save Payment",
+      "saving": "Saving...",
+      "overpaid": "⚠️ Paid amount is greater than invoice total",
+      "fullyPaid": "✅ Invoice fully paid",
+      "paymentMethods": "Payment Methods",
+      "addBox": "+ Add Box",
+      "box": "Box",
+      "selectBox": "Select Box",
+      "amount": "Amount",
+      "paymentMethod": "Payment Method",
+      "description": "Description",
+      "paymentSummary": "Payment Summary",
+      "invoiceValue": "Invoice Value",
+      "paidAmount": "Paid Amount",
+      "remaining": "Remaining",
+      "fullyPaidStatus": "Fully Paid",
+      "errors": {
+        "enterPayment": "Please enter payment details",
+        "fillFields": "Please ensure all fields are filled correctly",
+        "overpaid": "Paid amount is greater than invoice total",
+        "fetchBoxes": "Failed to fetch boxes list",
+        "saveSuccess": "Payment saved successfully",
+        "saveError": "Failed to save payment"
+      }
+    },
     "balanceVoucher": {
       "title": "Opening balance",
       "description": "Opening balance",

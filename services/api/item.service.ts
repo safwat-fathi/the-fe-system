@@ -159,7 +159,7 @@ class ItemService extends HttpService<Item> {
     categoryId = 0,
     itemTypeId = 0,
     itemStatus = 0,
-    query = "",
+    searchTerm = "",
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
     const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
@@ -169,59 +169,26 @@ class ItemService extends HttpService<Item> {
     };
 
     try {
-      // إذا كان هناك بحث، نستخدم SearchItemsList endpoint
-      if (query && query.trim()) {
-        const searchTerm = query.trim();
-        const response = await this.get<IPaginatedResponse<Item>>(
-          "SearchItemsList",
-          {
-            xcom_id: companyId,
-            page,
-            q: searchTerm,
-          },
-          {
-            cache: "no-store",
-            next: {
-              tags: [
-                "items-search-list",
-                `items-search-list-company-${companyId}`,
-                `items-search-list-page-${page}`,
-                `items-search-list-query-${searchTerm}`,
-              ],
-              revalidate: 0,
-            },
-          },
-        );
-
-        if (!response.success || !response.data) {
-          return emptyResponse;
-        }
-
-        return this.processPaginatedResponse(response.data);
-      }
-
-      // البحث العادي بدون query
       const response = await this.get<IPaginatedResponse<Item>>(
-        "items_list",
+        "SearchItemsList",
         {
           xcom_id: companyId,
+          page,
+          q: searchTerm,
           xcat_id: categoryId || "0",
           xtype_id: itemTypeId || "0",
           xitem_status: itemStatus || "0",
-          page,
         },
         {
-          cache: "force-cache",
+          cache: "no-store",
           next: {
             tags: [
-              "items-list",
-              `items-list-company-${companyId}`,
-              `items-list-page-${page}`,
-              `items-list-cat-${categoryId}`,
-              `items-list-type-${itemTypeId}`,
-              `items-list-status-${itemStatus}`,
+              "items-search-list",
+              `items-search-list-company-${companyId}`,
+              `items-search-list-page-${page}`,
+              `items-search-list-query-${searchTerm}`,
             ],
-            revalidate: 300,
+            revalidate: 0,
           },
         },
       );
@@ -234,7 +201,7 @@ class ItemService extends HttpService<Item> {
     } catch (error) {
       console.error("Error fetching items:", error);
       rethrowAuthenticationError(error);
-      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
+      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف", { cause: error });
     }
   }
 

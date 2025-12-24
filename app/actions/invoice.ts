@@ -149,3 +149,7 @@ export async function createInvoiceBoxAction(
 
   return result;
 }
+
+export async function getPaidTypeListAction() {
+  return invoiceService.getPaidTypeList();
+}

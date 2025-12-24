@@ -404,6 +404,14 @@ export default function InvoiceClientPage({
 
     const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
 
+    // Collect all unique box_ids from invoice items
+    const boxIds = invoiceItems
+      .map((item) => item.box)
+      .filter((box): box is number => box !== null && box !== undefined)
+      .filter((value, index, self) => self.indexOf(value) === index); // unique values only
+
+    const boxIdsParam = boxIds.length > 0 ? boxIds.join(",") : undefined;
+
     // Build payment URL with all required parameters
     const paymentUrl = new URLSearchParams({
       total: String(netAmount),
@@ -412,10 +420,19 @@ export default function InvoiceClientPage({
       inv: String(result.recordId), // Invoice PK (id, not inv_id)
       com: companyId,
       trans_type: String(selectorsInvoiceType),
+      ...(boxIdsParam && { box_ids: boxIdsParam }),
     });
 
+
     router.push(`/forms/invoices/payment?${paymentUrl.toString()}`);
-  }, [saveInvoice, netAmount, form.cust_name, selectorsInvoiceType, router]);
+  }, [
+    saveInvoice,
+    netAmount,
+    form.cust_name,
+    selectorsInvoiceType,
+    router,
+    invoiceItems,
+  ]);
 
   useEffect(() => {
     hydrateInvoiceTotalsStore({

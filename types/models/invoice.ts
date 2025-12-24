@@ -171,3 +171,11 @@ export interface InvoiceBox {
   inv: number;
   box: number;
 }
+
+export interface PaidType {
+  id: number;
+  code_id: number;
+  code_desc: string;
+  code_desc_l: string;
+  type_id: number;
+}

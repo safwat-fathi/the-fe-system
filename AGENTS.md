@@ -180,6 +180,7 @@ export const STORAGE_KEYS = {
 - Use PascalCase for all React component file and component names (e.g., InvoiceForm.tsx, Sidebar.tsx).
 - Prefer to read and summarize before editing.
 - Never overwrite or remove large files without explicit user approval.
+- user feedback messages should be localized.
 
 ## Allowed Without Prompt
 

@@ -358,6 +358,7 @@ const buildRowFromItem = ({
     purity:
       selectedItem.purity ?? (homePurity ? String(homePurity) : baseRow.purity),
     stones: selectedItem.stones ?? baseRow.stones,
+    box: selectedItem.box_id ?? baseRow.box ?? null,
   };
 
   const hasItemWeight =
