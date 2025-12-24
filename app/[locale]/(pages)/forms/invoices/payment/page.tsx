@@ -8,14 +8,14 @@ import { useTranslations } from "next-intl";
 
 import Card from "@/components/Card";
 import Breadcrumb from "@/components/Breadcrumb";
-import { API_ENDPOINTS } from "@/utilities/api";
 import useFractions from "@/utilities/useFractions";
 import { toast } from "@/utilities/toast";
 import { PaidType } from "@/types/models/invoice";
-import { getPaidTypeListAction } from "@/app/actions/invoice";
+import {
+  getPaidTypeListAction,
+  createInvoiceBoxAction,
+} from "@/app/actions/invoice";
 import { getBoxesAction } from "@/app/actions/boxes";
-
-const { CREATE_INVOICE_BOX } = API_ENDPOINTS;
 
 interface PaymentRow {
   id: string;
@@ -35,7 +35,7 @@ export default function InvoicePaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fractions = useFractions();
-  const frac = (fractions as any).frac || 2;
+  const frac = (fractions as { frac: number }).frac || 2;
 
   // البيانات الأساسية
   const [invoiceTotal, setInvoiceTotal] = useState<number>(0);
@@ -81,7 +81,6 @@ export default function InvoicePaymentPage() {
 
   // Get company ID and transaction type from URL
   const companyId = searchParams.get("com") || "1";
-  const transType = parseInt(searchParams.get("trans_type") || "2"); // Default to SALES (2)
 
   // جلب الصناديق
   useEffect(() => {
@@ -134,18 +133,21 @@ export default function InvoicePaymentPage() {
 
   const remainingAmount = invoiceTotal - paidAmount;
   const isOverpaid = paidAmount > invoiceTotal;
-  const isFullyPaid = Math.abs(remainingAmount) < 0.01;
+  const isPaymentMatchingTotal = Math.abs(remainingAmount) < 0.01;
 
   // تحديث صف الدفع
   const updatePaymentRow = (
     index: number,
     field: keyof PaymentRow,
-    value: any,
+    value: string | number | null,
   ) => {
     setPaymentRows((prev) => {
       const updated = [...prev];
 
-      (updated[index] as any)[field] = value;
+      const row = updated[index];
+
+      // @ts-expect-error - Dynamic assignment to typed object
+      row[field] = value;
 
       return updated;
     });
@@ -175,13 +177,6 @@ export default function InvoicePaymentPage() {
     }
   };
 
-  // Helper function to get payment method label
-  const getPaymentMethodLabel = (methodId: string): string => {
-    const method = paymentMethods.find((m) => m.id.toString() === methodId);
-
-    return method ? method.code_desc : "";
-  };
-
   // Helper function to validate payment rows
   const validatePaymentRows = (): boolean => {
     if (paymentRows.length === 0) {
@@ -209,31 +204,25 @@ export default function InvoicePaymentPage() {
     return true;
   };
 
-  // Helper function to create invoice box payload
   const createInvoiceBoxPayload = (
     row: PaymentRow,
-    successCount: number,
+    _successCount: number,
     inv: number,
     com: number,
     trans_type: number,
     cr_date: string,
   ) => {
     const amtNum = Number(row.amount);
-    const paymentLabel = getPaymentMethodLabel(row.paymentMethod);
 
     return {
-      id: successCount + 1,
       trans_type,
       amt: amtNum.toFixed(frac),
-      acc_change: amtNum.toFixed(frac),
-      notes: `${paymentLabel} - ${row.notes || ""}`,
+      acc_change: "1",
+      notes: row.notes,
       cr_date,
-      cr_user: null,
-      upd_date: null,
-      upd_user: null,
       com,
-      inv: !isNaN(inv) && inv > 0 ? inv : undefined,
-      box: row.boxId,
+      inv: !isNaN(inv) && inv > 0 ? inv : 0,
+      box: String(row.boxId), // Convert to string as per dto
     };
   };
 
@@ -248,48 +237,46 @@ export default function InvoicePaymentPage() {
     try {
       const inv = parseInt(searchParams.get("inv") || "0");
       const com = parseInt(companyId);
-      const trans_type = transType;
       const cr_date = new Date().toISOString();
 
-      let successCount = 0;
+      const promises = paymentRows
+        .filter((row) => {
+          if (!row.boxId || !row.amount) return false;
+          const amtNum = Number(row.amount);
 
-      for (const row of paymentRows) {
-        if (!row.boxId || !row.amount) continue;
+          return !isNaN(amtNum) && amtNum !== 0;
+        })
+        .map((row, index) => {
+          const body = createInvoiceBoxPayload(
+            row,
+            index,
+            inv,
+            com,
+            Number(row.paymentMethod), // Use selected payment method ID
+            cr_date,
+          );
 
-        const amtNum = Number(row.amount);
+          return createInvoiceBoxAction(body).then((result) => {
+            if (!result) {
+              throw new Error(`فشل في حفظ الدفع للصندوق ${row.boxId}`);
+            }
 
-        if (isNaN(amtNum) || amtNum === 0) continue;
-
-        const body = createInvoiceBoxPayload(
-          row,
-          successCount,
-          inv,
-          com,
-          trans_type,
-          cr_date,
-        );
-
-        const response = await fetch(CREATE_INVOICE_BOX, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+            return result;
+          });
         });
 
-        if (!response.ok) {
-          throw new Error(`فشل في حفظ الدفع للصندوق ${row.boxId}`);
-        }
-
-        successCount++;
-      }
+      await Promise.all(promises);
 
       toast.success(t("errors.saveSuccess"));
 
-      // إعادة التوجيه
-      if (inv > 0) {
-        router.push(`/forms/invoices/sale/${inv}`);
-      } else {
-        router.back();
-      }
+      // Redirect to invoice preview page
+      // Redirect to invoice preview page
+      const invType = searchParams.get("inv_type") || "sale";
+      const invNumber = searchParams.get("inv_number") || "";
+
+      router.push(
+        `/forms/invoices?type=${invType}&mode=preview&id=${invNumber}`,
+      );
     } catch (error) {
       console.error("خطأ في حفظ الدفع:", error);
       toast.error(t("errors.saveError"));
@@ -345,7 +332,7 @@ export default function InvoicePaymentPage() {
             <Button
               className="flex-1"
               color="default"
-              disabled={isOverpaid || !isFullyPaid}
+              disabled={isOverpaid || !isPaymentMatchingTotal}
               isLoading={isSaving}
               size="sm"
               onPress={handleSave}
@@ -362,7 +349,7 @@ export default function InvoicePaymentPage() {
               </div>
             )}
 
-            {isFullyPaid && !isOverpaid && (
+            {isPaymentMatchingTotal && !isOverpaid && (
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-green-700 text-center font-semibold text-sm">
                   {t("fullyPaid")}
@@ -378,7 +365,7 @@ export default function InvoicePaymentPage() {
           <div className="space-y-3 col-span-3">
             {/* جدول الدفع */}
             <Card className="p-2 sm:p-1">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 text-start">
                 {t("paymentMethods")}
                 {/* <span className="text-xs sm:text-sm text-gray-500 mr-2 block sm:inline">
                   (اضغط على الصف لتحديده)
@@ -560,7 +547,7 @@ export default function InvoicePaymentPage() {
           <div className="space-y-3">
             {/* ملخص الدفع */}
             <Card className="p-2 sm:p-1 h-fit">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
+              <h3 className="text-base text-start sm:text-lg font-semibold text-gray-800 mb-3">
                 {t("paymentSummary")}
               </h3>
 

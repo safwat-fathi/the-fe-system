@@ -4,6 +4,7 @@ import {
   InvoiceBox,
   InvoiceDetail,
   CreateInvoiceBoxDto,
+  CreateInvoiceGoldBoxDto,
   InvoiceTypes,
   TransTypes,
   PaidType,
@@ -586,6 +587,34 @@ class InvoiceService extends HttpService<Invoice> {
       return response.data;
     } catch (error) {
       console.error("Error creating invoice box:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async createInvoiceGoldBox(data: CreateInvoiceGoldBoxDto): Promise<any> {
+    try {
+      const response = await this.post<any>(
+        "api_create_invoice_gold_box",
+        data,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("createInvoiceGoldBox failed:", errorInfo);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error creating invoice gold box:", error);
       rethrowAuthenticationError(error);
 
       return null;

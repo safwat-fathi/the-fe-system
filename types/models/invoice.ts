@@ -145,6 +145,20 @@ export interface InvoiceDetail {
   year?: number | null;
 }
 
+export interface CreateInvoiceGoldBoxDto {
+  com: number;
+  trans_type: number;
+  gold: string;
+  box: string;
+  acc_change: string;
+  k: number;
+  gold2: number;
+  notes: string;
+  cr_date: string;
+  cr_user: string;
+  inv: number;
+}
+
 export interface CreateInvoiceBoxDto {
   com: number; // company id
   trans_type: TransTypes; // transaction type (1: purchase, 2: sales, 3: purchase return, 4: sales return)

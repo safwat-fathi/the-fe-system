@@ -275,6 +275,7 @@ export default function ItemsClient({
       } catch (error) {
         console.error("Error fetching items:", error);
         toast.error(t("messages.loadError"));
+        // setIsSearching(false); // No longer managing loading state this way
       } finally {
         setIsSearching(false);
       }
@@ -284,7 +285,7 @@ export default function ItemsClient({
 
   // جلب البيانات عند تغيير صفحة API أو الفلاتر
   // لا نجلب في التحميل الأولي لأن البيانات محملة من server component
-  const prevApiPageRef = useRef(0); // تهيئة بـ 0 لتجنب الجلب في التحميل الأولي
+  const prevApiPageRef = useRef(apiPage); // تهيئة برقم الصفحة الحالي لتجنب الجلب في التحميل الأولي
   const prevCategoryRef = useRef(params.category);
   const prevItemTypeRef = useRef(params.itemType);
   const prevStatusRef = useRef(params.status);
@@ -292,21 +293,11 @@ export default function ItemsClient({
 
   // جلب البيانات عند تغيير الفلاتر أو الصفحة
   useEffect(() => {
-    const apiPageChanged = prevApiPageRef.current !== apiPage;
-    const categoryChanged = prevCategoryRef.current !== params.category;
-    const itemTypeChanged = prevItemTypeRef.current !== params.itemType;
-    const statusChanged = prevStatusRef.current !== params.status;
-    const hasSearch = deferredSearch.trim().length > 0;
-
     // فقط إذا تغيرت صفحة API أو الفلاتر (وليس في التحميل الأولي)
     // إذا كان هناك بحث، نستخدم البحث، وإلا نستخدم البحث العادي
-    if (apiPageChanged || categoryChanged || itemTypeChanged || statusChanged) {
-      if (hasSearch) {
-        fetchItems(deferredSearch.trim());
-      } else {
-        fetchItems("");
-      }
-    }
+    // We rely on Server Component to fetch data based on URL params.
+    // The ItemsClient receives new data via 'initialItems' prop.
+    // effectively removing the redundant client-side fetch.
 
     // تحديث المراجع
     prevApiPageRef.current = apiPage;
@@ -328,7 +319,6 @@ export default function ItemsClient({
     const searchChanged = prevSearchRef.current !== deferredSearch;
 
     if (searchChanged) {
-      // إعادة تعيين الصفحة إلى 1 عند تغيير البحث
       const shouldResetPage = currentPageNum !== 1;
 
       if (shouldResetPage) {
@@ -338,24 +328,24 @@ export default function ItemsClient({
             search: deferredSearch,
           }),
         );
-        // جلب البيانات مع الصفحة 1
-        if (!deferredSearch.trim()) {
-          fetchItems("", 1);
-        } else {
-          fetchItems(deferredSearch.trim(), 1);
-        }
+        // Data will be fetched by Server Component when URL changes
       } else {
-        // إذا لم نغير الصفحة، نجلب البيانات بشكل طبيعي
-        if (!deferredSearch.trim()) {
-          fetchItems("");
-        } else {
-          fetchItems(deferredSearch.trim());
+        // Data will be fetched by Server Component when URL changes
+        // We might only need to set params if they haven't been set by the input onChange
+        if (params.search !== deferredSearch) {
+          startTransition(() => setParams({ search: deferredSearch }));
         }
       }
     }
 
     prevSearchRef.current = deferredSearch;
-  }, [deferredSearch, fetchItems, currentPageNum, setParams, startTransition]);
+  }, [
+    deferredSearch,
+    currentPageNum,
+    setParams,
+    startTransition,
+    params.search,
+  ]);
 
   // نعرض كل البيانات المحملة (20 صنف) بدون تقسيم إضافي
   // البحث يتم من server-side الآن

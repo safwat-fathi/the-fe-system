@@ -247,7 +247,7 @@
       "savePayment": "Save Payment",
       "saving": "Saving...",
       "overpaid": "⚠️ Paid amount is greater than invoice total",
-      "fullyPaid": "✅ Invoice fully paid",
+      "fullyPaid": "✅ Payment amount equal to invoice total",
       "paymentMethods": "Payment Methods",
       "addBox": "+ Add Box",
       "box": "Box",
@@ -259,7 +259,7 @@
       "invoiceValue": "Invoice Value",
       "paidAmount": "Paid Amount",
       "remaining": "Remaining",
-      "fullyPaidStatus": "Fully Paid",
+      "fullyPaidStatus": "Payment Matches Total",
       "errors": {
         "enterPayment": "Please enter payment details",
         "fillFields": "Please ensure all fields are filled correctly",

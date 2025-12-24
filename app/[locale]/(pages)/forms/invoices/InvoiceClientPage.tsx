@@ -383,7 +383,7 @@ export default function InvoiceClientPage({
 
   const handlePaymentClick = useCallback(async () => {
     // Save the invoice first
-    const result = await saveInvoice();
+    const result = await saveInvoice({ skipDefaultBoxCreation: true });
 
     if (!result || result.ok !== true) {
       toast.error("فشل في حفظ الفاتورة. يرجى المحاولة مرة أخرى.");
@@ -404,14 +404,6 @@ export default function InvoiceClientPage({
 
     const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
 
-    // Collect all unique box_ids from invoice items
-    const boxIds = invoiceItems
-      .map((item) => item.box)
-      .filter((box): box is number => box !== null && box !== undefined)
-      .filter((value, index, self) => self.indexOf(value) === index); // unique values only
-
-    const boxIdsParam = boxIds.length > 0 ? boxIds.join(",") : undefined;
-
     // Build payment URL with all required parameters
     const paymentUrl = new URLSearchParams({
       total: String(netAmount),
@@ -420,7 +412,7 @@ export default function InvoiceClientPage({
       inv: String(result.recordId), // Invoice PK (id, not inv_id)
       com: companyId,
       trans_type: String(selectorsInvoiceType),
-      ...(boxIdsParam && { box_ids: boxIdsParam }),
+      inv_type: invoiceType,
     });
 
 

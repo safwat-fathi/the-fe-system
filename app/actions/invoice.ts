@@ -150,6 +150,27 @@ export async function createInvoiceBoxAction(
   return result;
 }
 
+export async function createInvoiceGoldBoxAction(
+  payload: Omit<
+    import("@/types/models/invoice").CreateInvoiceGoldBoxDto,
+    "cr_user"
+  >,
+) {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(STORAGE_KEYS.USER_ID)?.value;
+
+  if (!userId) {
+    throw new Error("user id not found");
+  }
+
+  const result = await invoiceService.createInvoiceGoldBox({
+    ...payload,
+    cr_user: userId,
+  });
+
+  return result;
+}
+
 export async function getPaidTypeListAction() {
   return invoiceService.getPaidTypeList();
 }
