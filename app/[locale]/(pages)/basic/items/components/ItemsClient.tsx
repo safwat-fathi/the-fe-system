@@ -20,7 +20,7 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import AppDataTable from "@/components/AppDataTable";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
@@ -28,6 +28,7 @@ import useFractions, { Fractions } from "@/utilities/useFractions";
 import itemService from "@/services/api/item.service";
 import { createItemColumns } from "@/components/items/itemColumns";
 import { ConfirmationModal } from "@/components/Modal";
+import { getLocale } from "next-intl/server";
 
 type ItemsClientProps = {
   initialItems: ItemModel[];
@@ -66,6 +67,7 @@ export default function ItemsClient({
 }: ItemsClientProps) {
   const router = useRouter();
   const t = useTranslations("basic.items" as any) as any;
+  const locale = useLocale();
   const [items, setItems] = useState<ItemModel[]>(initialItems);
   const [itemsCount, setItemsCount] = useState(totalItems);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
@@ -248,6 +250,9 @@ export default function ItemsClient({
   const apiPage = currentPageNum;
 
   // دالة لجلب البيانات من API
+
+  console.log(locale);
+
   const fetchItems = useCallback(
     async (searchQuery: string = "", pageOverride?: number) => {
       try {
@@ -265,6 +270,7 @@ export default function ItemsClient({
                 ? "2"
                 : "0",
           query: searchQuery,
+          locale,
         });
 
         if (itemsData.results) {
@@ -278,7 +284,15 @@ export default function ItemsClient({
         setIsSearching(false);
       }
     },
-    [apiPage, companyId, params.category, params.itemType, params.status, t],
+    [
+      apiPage,
+      companyId,
+      params.category,
+      params.itemType,
+      params.status,
+      t,
+      locale,
+    ],
   );
 
   // جلب البيانات عند تغيير صفحة API أو الفلاتر

@@ -419,7 +419,6 @@ export default function CategoriesClient({
     }
   };
 
-
   const filteredCategories = useMemo(() => {
     if (!searchQuery) return categories;
 
@@ -539,7 +538,6 @@ export default function CategoriesClient({
     if (Number.isNaN(categoryId)) return;
     setSelectedCategoryId(categoryId);
   };
-
 
   const loadCategoryAccounts = useCallback(
     async (categoryId: number) => {
@@ -764,7 +762,13 @@ export default function CategoriesClient({
                     <TableCell>{cat.id}</TableCell>
                     <TableCell>{cat.cat_name}</TableCell>
                     <TableCell>{cat.cat_name_e}</TableCell>
+                    <TableCell>{cat.k}</TableCell>
                     <TableCell>{cat.purity}</TableCell>
+                    <TableCell>{cat.box_name}</TableCell>
+                    <TableCell>{cat.tax_type}</TableCell>
+                    <TableCell>{cat.tax}</TableCell>
+                    <TableCell>{cat.cat_type_name}</TableCell>
+                    <TableCell>{cat.cat_status_name}</TableCell>
                     <TableCell>{renderActions(cat)}</TableCell>
                   </TableRow>
                 ))}
@@ -816,7 +820,9 @@ export default function CategoriesClient({
               <Button
                 color="success"
                 isDisabled={
-                  !selectedCategoryId || isAccountsLoading || !isAccountFormDirty
+                  !selectedCategoryId ||
+                  isAccountsLoading ||
+                  !isAccountFormDirty
                 }
                 isLoading={isSavingAccounts}
                 onPress={handleSaveAccounts}

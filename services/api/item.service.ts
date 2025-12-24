@@ -8,6 +8,7 @@ import {
   SearchItemsVoucherListParams,
 } from "@/types/models/item";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
+import { getLocale } from "next-intl/server";
 
 class ItemService extends HttpService<Item> {
   constructor() {
@@ -134,6 +135,7 @@ class ItemService extends HttpService<Item> {
     itemTypeId = 0,
     itemStatus = 0,
     query = "",
+    locale,
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
     const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
@@ -161,6 +163,7 @@ class ItemService extends HttpService<Item> {
                 `items-search-list-company-${companyId}`,
                 `items-search-list-page-${page}`,
                 `items-search-list-query-${searchTerm}`,
+                `items-search-list-local-${locale}`,
               ],
               revalidate: 0,
             },
@@ -196,6 +199,7 @@ class ItemService extends HttpService<Item> {
           xtype_id: itemTypeId || "0",
           xitem_status: itemStatus || "0",
           page,
+          lang: locale, // ضيفت lang كا param عشان يغير الـ cache key حسب اللغة
         },
         {
           cache: "force-cache",
@@ -207,6 +211,7 @@ class ItemService extends HttpService<Item> {
               `items-list-cat-${categoryId}`,
               `items-list-type-${itemTypeId}`,
               `items-list-status-${itemStatus}`,
+              `items-list-locale-${locale}`,
             ],
             revalidate: 300,
           },
