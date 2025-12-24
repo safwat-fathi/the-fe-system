@@ -253,18 +253,19 @@ export default function ItemsClient({
       try {
         setIsSearching(true);
         const pageToUse = pageOverride ?? apiPage;
+        const getItemStatus = (status: string): string => {
+          if (status === "active") return "1";
+          if (status === "inactive") return "2";
+
+          return "0";
+        };
         const itemsData = await itemService.searchItems({
           page: pageToUse,
           companyId,
           categoryId: params.category || "0",
           itemTypeId: params.itemType || "0",
-          itemStatus:
-            params.status === "active"
-              ? "1"
-              : params.status === "inactive"
-                ? "2"
-                : "0",
-          query: searchQuery,
+          itemStatus: getItemStatus(params.status),
+          searchTerm: searchQuery,
         });
 
         if (itemsData.results) {

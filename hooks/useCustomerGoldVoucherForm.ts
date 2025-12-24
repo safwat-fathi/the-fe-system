@@ -236,7 +236,7 @@ export const useCustomerGoldVoucherForm = ({
     try {
       const trimmed = search.trim();
       const result = await itemService.searchItems({
-        query: trimmed || "",
+        searchTerm: trimmed || "",
         page: page || 1,
         companyId: 1,
       });
@@ -398,6 +398,7 @@ export const useCustomerGoldVoucherForm = ({
           if (field === "box_id" && (!value || value === 0)) {
             updatedBox.box = undefined;
           } else if (field === "box_id" && value && value > 0) {
+            // eslint-disable-next-line sonarjs/no-nested-functions
             const selectedBox = boxes.find((b) => b.id === value);
 
             if (selectedBox) {
@@ -445,8 +446,10 @@ export const useCustomerGoldVoucherForm = ({
   };
 
   // Gold Details Management
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   const updateGoldDetail = (index: number, field: string, value: any) => {
     setGoldDetails((prev) => {
+      // eslint-disable-next-line sonarjs/no-nested-functions, sonarjs/cognitive-complexity
       const updated = prev.map((detail, i) => {
         if (i !== index) return detail;
 
@@ -472,6 +475,7 @@ export const useCustomerGoldVoucherForm = ({
         // عند تغيير item_id، جلب k و weight من الصنف المحدد
         // ثم حساب g_weight إذا كان weight و k موجودان
         if (field === "item_id" && value) {
+          // eslint-disable-next-line sonarjs/no-nested-functions
           const selectedItem = items.find((item) => item.id === value);
 
           if (selectedItem) {
@@ -569,6 +573,7 @@ export const useCustomerGoldVoucherForm = ({
   }, [voucherBoxes, goldDetails]);
 
   // Save voucher
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   const saveVoucher = async () => {
     const voucherDate = new Date(voucher.vouch_date);
     const today = new Date();
