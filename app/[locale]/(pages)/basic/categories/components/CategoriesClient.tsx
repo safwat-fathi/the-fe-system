@@ -419,7 +419,6 @@ export default function CategoriesClient({
     }
   };
 
-
   const filteredCategories = useMemo(() => {
     if (!searchQuery) return categories;
 
@@ -539,7 +538,6 @@ export default function CategoriesClient({
     if (Number.isNaN(categoryId)) return;
     setSelectedCategoryId(categoryId);
   };
-
 
   const loadCategoryAccounts = useCallback(
     async (categoryId: number) => {
@@ -713,6 +711,164 @@ export default function CategoriesClient({
     </div>
   );
 
+  const renderAutocomplete = (
+    key: AccountFieldKey,
+    ariaLabel: string,
+    column: "value" | "wage",
+    text: string,
+  ) => {
+    const normalizedText = getAccountDisplayValue(text).trim().toLowerCase();
+    const filteredOptions = normalizedText
+      ? accountOptions.filter((option) => {
+          const target = option.label?.toLowerCase() ?? "";
+          const code = option.code?.toLowerCase() ?? "";
+
+          return (
+            target.includes(normalizedText) || code.includes(normalizedText)
+          );
+        })
+      : accountOptions;
+
+    return (
+      <Autocomplete
+        allowsCustomValue
+        aria-label={ariaLabel}
+        className="max-w-full text-right leading-tight"
+        classNames={{
+          selectorButton:
+            column === "wage"
+              ? "bg-amber-100 border-amber-300"
+              : "bg-white border-gray-200",
+          listbox: "text-right",
+        }}
+        inputValue={getAccountDisplayValue(text)}
+        items={filteredOptions}
+        menuTrigger="input"
+        placeholder={t("labels.accountPlaceholder")}
+        selectedKey={null}
+        variant="bordered"
+        onInputChange={(value) => {
+          const option = getAccountOption(value);
+
+          if (option) {
+            handleAccountFieldChange(
+              key,
+              option.code || option.name || option.key,
+            );
+
+            return;
+          }
+
+          handleAccountFieldChange(key, value);
+        }}
+        onSelectionChange={(selection) => {
+          if (!selection) {
+            handleAccountFieldChange(key, "");
+
+            return;
+          }
+
+          const option = accountOptions.find((item) => item.key === selection);
+
+          if (option) {
+            handleAccountFieldChange(
+              key,
+              option.code || option.name || option.key,
+            );
+          }
+        }}
+      >
+        {(option) => (
+          <AutocompleteItem key={option.key} textValue={option.label}>
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-medium text-gray-800">
+                {option.name}
+              </span>
+              {option.code && (
+                <span className="text-xs text-gray-500">{option.code}</span>
+              )}
+            </div>
+          </AutocompleteItem>
+        )}
+      </Autocomplete>
+    );
+  };
+
+  const renderCategoryAccountsContent = () => {
+    if (!selectedCategoryId) {
+      return (
+        <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+          {t("labels.selectCategoryHint")}
+        </div>
+      );
+    }
+
+    if (isAccountsLoading) {
+      return (
+        <div className="flex items-center justify-center py-10">
+          <Spinner color="primary" label={t("labels.loadingAccounts")} />
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-hidden rounded-lg border border-gray-200">
+        <div
+          className="grid grid-cols-3 bg-gray-50 text-sm font-semibold text-gray-700"
+          dir={dir}
+        >
+          <div className="border-l border-gray-200 px-4 py-2">
+            {t("labels.accounts")}
+          </div>
+          <div className="border-l border-gray-200 px-4 py-2">
+            {t("labels.value")}
+          </div>
+          <div className="px-4 py-2">{t("labels.wages")}</div>
+        </div>
+
+        <div className="divide-y divide-gray-100" dir={dir}>
+          {ACCOUNT_ROWS.map(({ label, valueKey, wageKey }) => {
+            const valueSelected = accountForm[valueKey] ?? "";
+            const wageSelected = wageKey ? (accountForm[wageKey] ?? "") : "";
+
+            return (
+              <div
+                key={label}
+                className="grid grid-cols-3 bg-white text-sm text-gray-700"
+              >
+                <div className="border-l border-gray-100 px-3 py-1.5 font-medium text-gray-800">
+                  {label}
+                </div>
+                <div className="border-l border-gray-100 px-3 py-1.5">
+                  {renderAutocomplete(
+                    valueKey,
+                    `اختيار الحساب (قيمة) لـ ${label}`,
+                    "value",
+                    valueSelected,
+                  )}
+                </div>
+                <div className="px-3 py-1.5">
+                  {wageKey ? (
+                    renderAutocomplete(
+                      wageKey,
+                      `اختيار الحساب (أجور) لـ ${label}`,
+                      "wage",
+                      wageSelected,
+                    )
+                  ) : (
+                    <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
+                      -
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-6 font-cairo">
       <div className="flex flex-wrap items-center gap-3">
@@ -740,7 +896,7 @@ export default function CategoriesClient({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* حاوية اليسار: الجدول مع معلومات أساسية */}
-        <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-scroll">
           <div className="px-4 py-2">
             <Table
               removeWrapper
@@ -764,7 +920,13 @@ export default function CategoriesClient({
                     <TableCell>{cat.id}</TableCell>
                     <TableCell>{cat.cat_name}</TableCell>
                     <TableCell>{cat.cat_name_e}</TableCell>
+                    <TableCell>{cat.k}</TableCell>
                     <TableCell>{cat.purity}</TableCell>
+                    <TableCell>{cat.box_name}</TableCell>
+                    <TableCell>{cat.tax_type}</TableCell>
+                    <TableCell>{cat.tax}</TableCell>
+                    <TableCell>{cat.cat_type_name}</TableCell>
+                    <TableCell>{cat.cat_status_name}</TableCell>
                     <TableCell>{renderActions(cat)}</TableCell>
                   </TableRow>
                 ))}
@@ -816,7 +978,9 @@ export default function CategoriesClient({
               <Button
                 color="success"
                 isDisabled={
-                  !selectedCategoryId || isAccountsLoading || !isAccountFormDirty
+                  !selectedCategoryId ||
+                  isAccountsLoading ||
+                  !isAccountFormDirty
                 }
                 isLoading={isSavingAccounts}
                 onPress={handleSaveAccounts}
@@ -826,165 +990,7 @@ export default function CategoriesClient({
             </div>
           </div>
 
-          {!selectedCategoryId ? (
-            <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-              {t("labels.selectCategoryHint")}
-            </div>
-          ) : isAccountsLoading ? (
-            <div className="flex items-center justify-center py-10">
-              <Spinner color="primary" label={t("labels.loadingAccounts")} />
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-lg border border-gray-200">
-              <div
-                className="grid grid-cols-3 bg-gray-50 text-sm font-semibold text-gray-700"
-                dir={dir}
-              >
-                <div className="border-l border-gray-200 px-4 py-2">
-                  {t("labels.accounts")}
-                </div>
-                <div className="border-l border-gray-200 px-4 py-2">
-                  {t("labels.value")}
-                </div>
-                <div className="px-4 py-2">{t("labels.wages")}</div>
-              </div>
-
-              <div className="divide-y divide-gray-100" dir={dir}>
-                {ACCOUNT_ROWS.map(({ label, valueKey, wageKey }) => {
-                  const valueSelected = accountForm[valueKey] ?? "";
-                  const wageSelected = wageKey
-                    ? (accountForm[wageKey] ?? "")
-                    : "";
-
-                  const renderAutocomplete = (
-                    key: AccountFieldKey,
-                    ariaLabel: string,
-                    column: "value" | "wage",
-                    text: string,
-                  ) => {
-                    const normalizedText = getAccountDisplayValue(text)
-                      .trim()
-                      .toLowerCase();
-                    const filteredOptions = normalizedText
-                      ? accountOptions.filter((option) => {
-                          const target = option.label?.toLowerCase() ?? "";
-                          const code = option.code?.toLowerCase() ?? "";
-
-                          return (
-                            target.includes(normalizedText) ||
-                            code.includes(normalizedText)
-                          );
-                        })
-                      : accountOptions;
-
-                    return (
-                      <Autocomplete
-                        allowsCustomValue
-                        aria-label={ariaLabel}
-                        className="max-w-full text-right leading-tight"
-                        classNames={{
-                          selectorButton:
-                            column === "wage"
-                              ? "bg-amber-100 border-amber-300"
-                              : "bg-white border-gray-200",
-                          listbox: "text-right",
-                        }}
-                        inputValue={getAccountDisplayValue(text)}
-                        items={filteredOptions}
-                        menuTrigger="input"
-                        placeholder={t("labels.accountPlaceholder")}
-                        selectedKey={null}
-                        variant="bordered"
-                        onInputChange={(value) => {
-                          const option = getAccountOption(value);
-
-                          if (option) {
-                            handleAccountFieldChange(
-                              key,
-                              option.code || option.name || option.key,
-                            );
-
-                            return;
-                          }
-
-                          handleAccountFieldChange(key, value);
-                        }}
-                        onSelectionChange={(selection) => {
-                          if (!selection) {
-                            handleAccountFieldChange(key, "");
-
-                            return;
-                          }
-
-                          const option = accountOptions.find(
-                            (item) => item.key === selection,
-                          );
-
-                          if (option) {
-                            handleAccountFieldChange(
-                              key,
-                              option.code || option.name || option.key,
-                            );
-                          }
-                        }}
-                      >
-                        {(option) => (
-                          <AutocompleteItem
-                            key={option.key}
-                            textValue={option.label}
-                          >
-                            <div className="flex flex-col items-start">
-                              <span className="text-sm font-medium text-gray-800">
-                                {option.name}
-                              </span>
-                              {option.code && (
-                                <span className="text-xs text-gray-500">
-                                  {option.code}
-                                </span>
-                              )}
-                            </div>
-                          </AutocompleteItem>
-                        )}
-                      </Autocomplete>
-                    );
-                  };
-
-                  return (
-                    <div
-                      key={label}
-                      className="grid grid-cols-3 bg-white text-sm text-gray-700"
-                    >
-                      <div className="border-l border-gray-100 px-3 py-1.5 font-medium text-gray-800">
-                        {label}
-                      </div>
-                      <div className="border-l border-gray-100 px-3 py-1.5">
-                        {renderAutocomplete(
-                          valueKey,
-                          `اختيار الحساب (قيمة) لـ ${label}`,
-                          "value",
-                          valueSelected,
-                        )}
-                      </div>
-                      <div className="px-3 py-1.5">
-                        {wageKey ? (
-                          renderAutocomplete(
-                            wageKey,
-                            `اختيار الحساب (أجور) لـ ${label}`,
-                            "wage",
-                            wageSelected,
-                          )
-                        ) : (
-                          <div className="flex h-full items-center justify-center rounded-md border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-400">
-                            -
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {renderCategoryAccountsContent()}
         </div>
       </div>
 
