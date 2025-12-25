@@ -261,6 +261,9 @@
       "remaining": "Remaining",
       "fullyPaidStatus": "Payment Matches Total",
       "errors": {
+        "invalidInvoice": "Invalid invoice",
+        "invoiceNotFound": "Invoice not found or does not match the given number",
+        "alreadyPaid": "This invoice has already been paid",
         "enterPayment": "Please enter payment details",
         "fillFields": "Please ensure all fields are filled correctly",
         "overpaid": "Paid amount is greater than invoice total",

@@ -47,6 +47,15 @@ export default function InvoiceTotalsDisplay({
   // Build payment URL with all required params
   const paymentUrl = `/forms/invoices/payment?total=${netAmount}&inv_number=${encodeURIComponent(invoiceNumber)}&customer=${encodeURIComponent(customerName)}&inv=${encodeURIComponent(invoiceId)}`;
 
+	const handlePaymentClick: React.MouseEventHandler<HTMLAnchorElement> = (
+    e,
+  ) => {
+    if (onPaymentClick) {
+      e.preventDefault();
+      onPaymentClick();
+    }
+  };
+
   return (
     <>
       <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-200 print:border-0 print:mt-2">
@@ -121,12 +130,7 @@ export default function InvoiceTotalsDisplay({
             className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm inline-flex items-center gap-2 transition-colors"
             href={paymentUrl}
             prefetch
-            onClick={(e) => {
-              if (onPaymentClick) {
-                e.preventDefault();
-                onPaymentClick();
-              }
-            }}
+            onClick={handlePaymentClick}
           >
             <CreditCardIcon className="w-4 h-4" />
             {t("payment")}

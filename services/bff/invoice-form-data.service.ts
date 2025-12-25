@@ -6,6 +6,7 @@ import boxesService from "../api/boxes.service";
 
 import { getBranchParams } from "@/app/actions/branch-params";
 import { HttpService } from "@/services/base";
+import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 interface InvoiceFormData {
   boxes: any[];
@@ -80,6 +81,7 @@ class InvoiceFormDataService extends HttpService<any> {
       };
     } catch (error) {
       console.error("Error fetching invoice form data:", error);
+      rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب بيانات نموذج الفاتورة");
     }
   }

@@ -27,19 +27,23 @@ class CustomerService extends HttpService<Customer> {
 
   async getAllCustomers(params?: GetCustomerParams): Promise<Customer[]> {
     try {
+      
+      const xcom_id = params?.xcom_id || 1;
+      const xcust_type = params?.xcust_type || 0;
+      const xcust_code = params?.xcust_code || 0;
+
       const response = await this.get<Customer[]>(
         "customers_list",
         {
-          xcom_id: params?.xcom_id || 1,
-          xcust_type: params?.xcust_type || 0,
-          xcust_code: params?.xcust_code || 0,
+          xcom_id,
+          xcust_type,
+          xcust_code,
         },
         {
           cache: "force-cache",
           next: {
-            tags: [
-              `customers-${params?.xcom_id}-${params?.xcust_type}-${params?.xcust_code}`,
-            ],
+            tags: [`customers-${xcom_id}-${xcust_type}-${xcust_code}`],
+            revalidate: 60 * 60 * 24, // 1 day
           },
         },
       );
@@ -80,9 +84,6 @@ class CustomerService extends HttpService<Customer> {
         "api_create_customer",
         customer,
         undefined,
-        {
-          cache: "no-store",
-        },
       );
 
       if (response.success) {
@@ -106,9 +107,6 @@ class CustomerService extends HttpService<Customer> {
         `api_update_customer/${id}`,
         customer,
         undefined,
-        {
-          cache: "no-store",
-        },
       );
 
       if (response.success) {
@@ -128,9 +126,6 @@ class CustomerService extends HttpService<Customer> {
       const response = await this.delete(
         `api_delete_customer/${id}`,
         undefined,
-        {
-          cache: "no-store",
-        },
       );
 
       return response.success;
