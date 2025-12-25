@@ -2,32 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button, Input, Select, SelectItem, Divider } from "@heroui/react";
+import { Button, Input, Select, SelectItem } from "@heroui/react";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 import Card from "@/components/Card";
 import Breadcrumb from "@/components/Breadcrumb";
-import { API_ENDPOINTS } from "@/utilities/api";
 import useFractions from "@/utilities/useFractions";
 import { toast } from "@/utilities/toast";
-
-const { CREATE_INVOICE_BOX, INVOICE_BOX_LIST } = API_ENDPOINTS;
-
-// أنواع الدفع المتاحة
-const PAYMENT_METHODS = [
-  { key: "cash", label: "نقداً", icon: "💵" },
-  { key: "card", label: "بطاقة ائتمان", icon: "💳" },
-  { key: "bank", label: "تحويل بنكي", icon: "🏦" },
-  { key: "check", label: "شيك", icon: "📄" },
-];
-
-// أزرار الكيباد المبسطة
-const KEYPAD_BUTTONS = [
-  ["7", "8", "9", "+100"],
-  ["4", "5", "6", "+500"],
-  ["1", "2", "3", "+1000"],
-  ["C", "0", ".", "⌫"],
-];
+import { PaidType } from "@/types/models/invoice";
+import {
+  getPaidTypeListAction,
+  createInvoiceBoxAction,
+} from "@/app/actions/invoice";
+import { getBoxesAction } from "@/app/actions/boxes";
 
 interface PaymentRow {
   id: string;
@@ -39,22 +27,23 @@ interface PaymentRow {
 
 interface Box {
   id: number;
-  box_name: string;
+  cust_name: string;
 }
 
 export default function InvoicePaymentPage() {
+  const t = useTranslations("forms.paymentPage");
   const router = useRouter();
   const searchParams = useSearchParams();
   const fractions = useFractions();
-  const frac = (fractions as any).frac || 2;
+  const frac = (fractions as { frac: number }).frac || 2;
 
   // البيانات الأساسية
   const [invoiceTotal, setInvoiceTotal] = useState<number>(0);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
   const [customerName, setCustomerName] = useState<string>("");
   const [boxes, setBoxes] = useState<Box[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<PaidType[]>([]);
 
   // بيانات الدفع المتعددة
   const [paymentRows, setPaymentRows] = useState<PaymentRow[]>([
@@ -62,7 +51,7 @@ export default function InvoicePaymentPage() {
       id: "1",
       boxId: null,
       amount: "",
-      paymentMethod: "cash",
+      paymentMethod: "",
       notes: "",
     },
   ]);
@@ -90,35 +79,51 @@ export default function InvoicePaymentPage() {
     setCustomerName(customer);
   }, [searchParams]);
 
+  // Get company ID and transaction type from URL
+  const companyId = searchParams.get("com") || "1";
+
   // جلب الصناديق
   useEffect(() => {
     const fetchBoxes = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(INVOICE_BOX_LIST);
+      const response = await getBoxesAction();
 
-        if (!response.ok)
-          throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-
-        setBoxes(data);
-        if (data.length > 0) {
-          setPaymentRows((prev) => [
-            {
-              ...prev[0],
-              boxId: data[0].id,
-            },
-          ]);
-        }
-      } catch (error) {
-        console.error("خطأ في جلب الصناديق:", error);
-        toast.error("فشل في جلب قائمة الصناديق");
-      } finally {
-        setIsLoading(false);
+      if (response && response.length > 0) {
+        setBoxes(response);
       }
     };
 
     fetchBoxes();
+  }, []);
+
+  // Helper to update payment rows with default method
+  const updatePaymentRowsWithDefault = (
+    rows: PaymentRow[],
+    defaultMethodId: string,
+  ): PaymentRow[] =>
+    rows.map((row) => ({
+      ...row,
+      paymentMethod:
+        row.paymentMethod === "cash" || row.paymentMethod === ""
+          ? defaultMethodId
+          : row.paymentMethod,
+    }));
+
+  // جلب أنواع الدفع
+  useEffect(() => {
+    const fetchPaymentMethods = async () => {
+      const response = await getPaidTypeListAction();
+
+      if (!response?.results || response.results.length === 0) return;
+
+      setPaymentMethods(response.results);
+      const defaultMethodId = response.results[0].id.toString();
+
+      setPaymentRows((prev) =>
+        updatePaymentRowsWithDefault(prev, defaultMethodId),
+      );
+    };
+
+    fetchPaymentMethods();
   }, []);
 
   // حساب الإجماليات
@@ -128,31 +133,21 @@ export default function InvoicePaymentPage() {
 
   const remainingAmount = invoiceTotal - paidAmount;
   const isOverpaid = paidAmount > invoiceTotal;
-  const isFullyPaid = Math.abs(remainingAmount) < 0.01;
+  const isPaymentMatchingTotal = Math.abs(remainingAmount) < 0.01;
 
   // تحديث صف الدفع
   const updatePaymentRow = (
     index: number,
     field: keyof PaymentRow,
-    value: any,
+    value: string | number | null,
   ) => {
     setPaymentRows((prev) => {
       const updated = [...prev];
 
-      (updated[index] as any)[field] = value;
+      const row = updated[index];
 
-      // إذا كان هذا الصف الأول، تحديث المبلغ تلقائياً
-      if (index === 0 && field === "amount") {
-        const otherRowsTotal = updated.slice(1).reduce((sum, row) => {
-          return sum + parseFloat(row.amount || "0");
-        }, 0);
-
-        const newFirstAmount = (invoiceTotal - otherRowsTotal).toString();
-
-        if (Math.abs(parseFloat(value) - parseFloat(newFirstAmount)) > 0.01) {
-          updated[0].amount = newFirstAmount;
-        }
-      }
+      // @ts-expect-error - Dynamic assignment to typed object
+      row[field] = value;
 
       return updated;
     });
@@ -164,7 +159,8 @@ export default function InvoicePaymentPage() {
       id: Date.now().toString(),
       boxId: null,
       amount: "",
-      paymentMethod: "cash",
+      paymentMethod:
+        paymentMethods.length > 0 ? paymentMethods[0].id.toString() : "",
       notes: "",
     };
 
@@ -181,57 +177,12 @@ export default function InvoicePaymentPage() {
     }
   };
 
-  // معالجة الكيباد
-  const handleKeypadInput = (value: string) => {
-    if (selectedRowIndex === null) return;
-
-    const currentRow = paymentRows[selectedRowIndex];
-    const currentAmount = currentRow.amount || "0";
-
-    switch (value) {
-      case "C":
-        updatePaymentRow(selectedRowIndex, "amount", "0");
-        break;
-      case "⌫":
-        updatePaymentRow(
-          selectedRowIndex,
-          "amount",
-          currentAmount.slice(0, -1) || "0",
-        );
-        break;
-      case ".":
-        if (!currentAmount.includes(".")) {
-          updatePaymentRow(selectedRowIndex, "amount", currentAmount + ".");
-        }
-        break;
-      case "+100":
-      case "+500":
-      case "+1000":
-        const currentNum = parseFloat(currentAmount) || 0;
-        const quickAmount = parseInt(value.replace("+", ""));
-
-        updatePaymentRow(
-          selectedRowIndex,
-          "amount",
-          (currentNum + quickAmount).toString(),
-        );
-        break;
-      default:
-        if (currentAmount === "0") {
-          updatePaymentRow(selectedRowIndex, "amount", value);
-        } else {
-          updatePaymentRow(selectedRowIndex, "amount", currentAmount + value);
-        }
-        break;
-    }
-  };
-
-  // حفظ الدفع
-  const handleSave = async () => {
+  // Helper function to validate payment rows
+  const validatePaymentRows = (): boolean => {
     if (paymentRows.length === 0) {
-      toast.error("يرجى إدخال بيانات الدفع");
+      toast.error(t("errors.enterPayment"));
 
-      return;
+      return false;
     }
 
     const invalidRows = paymentRows.filter(
@@ -239,14 +190,45 @@ export default function InvoicePaymentPage() {
     );
 
     if (invalidRows.length > 0) {
-      toast.error("يرجى التأكد من ملء جميع الحقول بشكل صحيح");
+      toast.error(t("errors.fillFields"));
 
-      return;
+      return false;
     }
 
     if (isOverpaid) {
-      toast.error("المبلغ المدفوع أكبر من قيمة الفاتورة");
+      toast.error(t("errors.overpaid"));
 
+      return false;
+    }
+
+    return true;
+  };
+
+  const createInvoiceBoxPayload = (
+    row: PaymentRow,
+    _successCount: number,
+    inv: number,
+    com: number,
+    trans_type: number,
+    cr_date: string,
+  ) => {
+    const amtNum = Number(row.amount);
+
+    return {
+      trans_type,
+      amt: amtNum.toFixed(frac),
+      acc_change: "1",
+      notes: row.notes,
+      cr_date,
+      com,
+      inv: !isNaN(inv) && inv > 0 ? inv : 0,
+      box: String(row.boxId), // Convert to string as per dto
+    };
+  };
+
+  // حفظ الدفع
+  const handleSave = async () => {
+    if (!validatePaymentRows()) {
       return;
     }
 
@@ -254,84 +236,68 @@ export default function InvoicePaymentPage() {
 
     try {
       const inv = parseInt(searchParams.get("inv") || "0");
-      const com = 1;
-      const trans_type = 1;
+      const com = parseInt(companyId);
       const cr_date = new Date().toISOString();
 
-      let successCount = 0;
+      const promises = paymentRows
+        .filter((row) => {
+          if (!row.boxId || !row.amount) return false;
+          const amtNum = Number(row.amount);
 
-      for (const row of paymentRows) {
-        if (!row.boxId || !row.amount) continue;
+          return !isNaN(amtNum) && amtNum !== 0;
+        })
+        .map((row, index) => {
+          const body = createInvoiceBoxPayload(
+            row,
+            index,
+            inv,
+            com,
+            Number(row.paymentMethod), // Use selected payment method ID
+            cr_date,
+          );
 
-        const amtNum = Number(row.amount);
+          return createInvoiceBoxAction(body).then((result) => {
+            if (!result) {
+              throw new Error(`فشل في حفظ الدفع للصندوق ${row.boxId}`);
+            }
 
-        if (isNaN(amtNum) || amtNum === 0) continue;
-
-        const body = {
-          id: successCount + 1,
-          trans_type,
-          amt: amtNum.toFixed(frac),
-          acc_change: amtNum.toFixed(frac),
-          notes: `${
-            row.paymentMethod === "cash"
-              ? "نقداً"
-              : row.paymentMethod === "card"
-                ? "بطاقة ائتمان"
-                : row.paymentMethod === "bank"
-                  ? "تحويل بنكي"
-                  : "شيك"
-          } - ${row.notes || ""}`,
-          cr_date,
-          cr_user: null,
-          upd_date: null,
-          upd_user: null,
-          com,
-          inv: !isNaN(inv) && inv > 0 ? inv : undefined,
-          box: row.boxId,
-        };
-
-        const response = await fetch(CREATE_INVOICE_BOX, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+            return result;
+          });
         });
 
-        if (!response.ok) {
-          throw new Error(`فشل في حفظ الدفع للصندوق ${row.boxId}`);
-        }
+      await Promise.all(promises);
 
-        successCount++;
-      }
+      toast.success(t("errors.saveSuccess"));
 
-      toast.success("تم حفظ الدفع بنجاح");
+      // Redirect to invoice preview page
+      // Redirect to invoice preview page
+      const invType = searchParams.get("inv_type") || "sale";
+      const invNumber = searchParams.get("inv_number") || "";
 
-      // إعادة التوجيه
-      if (inv > 0) {
-        router.push(`/forms/invoices/sale/${inv}`);
-      } else {
-        router.back();
-      }
+      router.push(
+        `/forms/invoices?type=${invType}&mode=preview&id=${invNumber}`,
+      );
     } catch (error) {
       console.error("خطأ في حفظ الدفع:", error);
-      toast.error("فشل في حفظ الدفع");
+      toast.error(t("errors.saveError"));
     } finally {
       setIsSaving(false);
     }
   };
 
   // تصفير الكل
-  const clearAll = () => {
-    setPaymentRows([
-      {
-        id: "1",
-        boxId: boxes.length > 0 ? boxes[0].id : null,
-        amount: invoiceTotal.toString(),
-        paymentMethod: "cash",
-        notes: "",
-      },
-    ]);
-    setSelectedRowIndex(0);
-  };
+  // const clearAll = () => {
+  //   setPaymentRows([
+  //     {
+  //       id: "1",
+  //       boxId: boxes.length > 0 ? boxes[0].id : null,
+  //       amount: invoiceTotal.toString(),
+  //       paymentMethod: "cash",
+  //       notes: "",
+  //     },
+  //   ]);
+  //   setSelectedRowIndex(0);
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4 font-cairo">
@@ -339,18 +305,22 @@ export default function InvoicePaymentPage() {
         <Breadcrumb />
         {/* الهيدر المدمج */}
         <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4 mb-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex justify-between items-center gap-3">
             <div className="flex-1 w-full">
               <h1 className="text-lg sm:text-xl font-bold text-gray-800">
-                دفع الفاتورة
+                {t("title")}
               </h1>
               <div className="flex flex-col sm:flex-row gap-2 text-xs sm:text-sm text-gray-600 mt-1">
-                {invoiceNumber && <span>رقم الفاتورة: {invoiceNumber}</span>}
-                {customerName && <span>العميل: {customerName}</span>}
+                {invoiceNumber && (
+                  <span>{t("invoiceNumber", { number: invoiceNumber })}</span>
+                )}
+                {customerName && (
+                  <span>{t("customer", { name: customerName })}</span>
+                )}
               </div>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto justify-end">
-              <Button
+
+            {/* <Button
                 className="flex-1"
                 color="default"
                 size="sm"
@@ -358,127 +328,60 @@ export default function InvoicePaymentPage() {
                 onClick={() => router.back()}
               >
                 العودة
-              </Button>
-              <Button
-                className="flex-1"
-                color="primary"
-                disabled={isOverpaid || !isFullyPaid || isLoading}
-                isLoading={isSaving}
-                size="sm"
-                onClick={handleSave}
-              >
-                {isSaving ? "جاري الحفظ..." : "حفظ الدفع"}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* المحتوى الرئيسي */}
-        <div className="flex-1 grid grid-cols-1 gap-3 sm:gap-4">
-          {/* الجانب الأيسر - ملخص الدفع */}
-          <div className="space-y-3">
-            {/* ملخص الدفع */}
-            <Card className="p-3 sm:p-4 h-fit">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
-                ملخص الدفع
-              </h3>
-
-              <div className="space-y-2 sm:space-y-3">
-                <div className="bg-green-50 rounded-lg p-2 sm:p-3 text-center">
-                  <p className="text-xs sm:text-sm text-green-600">
-                    قيمة الفاتورة
-                  </p>
-                  <p className="text-lg sm:text-xl font-bold text-green-700">
-                    {invoiceTotal.toFixed(frac)} ريال
-                  </p>
-                </div>
-
-                <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
-                  <p className="text-xs sm:text-sm text-blue-600">
-                    المبلغ المدفوع
-                  </p>
-                  <p className="text-lg sm:text-xl font-bold text-blue-700">
-                    {paidAmount.toFixed(frac)} ريال
-                  </p>
-                </div>
-
-                <div
-                  className={`rounded-lg p-2 sm:p-3 text-center ${
-                    remainingAmount > 0 ? "bg-red-50" : "bg-emerald-50"
-                  }`}
-                >
-                  <p
-                    className={`text-xs sm:text-sm ${
-                      remainingAmount > 0 ? "text-red-600" : "text-emerald-600"
-                    }`}
-                  >
-                    {remainingAmount > 0 ? "المتبقي" : "المدفوع بالكامل"}
-                  </p>
-                  <p
-                    className={`text-lg sm:text-xl font-bold ${
-                      remainingAmount > 0 ? "text-red-700" : "text-emerald-700"
-                    }`}
-                  >
-                    {Math.abs(remainingAmount).toFixed(frac)} ريال
-                  </p>
-                </div>
-              </div>
-
-              <Divider className="my-3" />
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  className="w-full"
-                  color="success"
-                  size="sm"
-                  variant="bordered"
-                  onClick={addPaymentRow}
-                >
-                  + إضافة صندوق
-                </Button>
-
-                <Button
-                  className="w-full"
-                  color="warning"
-                  size="sm"
-                  variant="bordered"
-                  onClick={clearAll}
-                >
-                  تصفير الكل
-                </Button>
-              </div>
-            </Card>
+              </Button> */}
+            <Button
+              className="flex-1"
+              color="default"
+              disabled={isOverpaid || !isPaymentMatchingTotal}
+              isLoading={isSaving}
+              size="sm"
+              onPress={handleSave}
+            >
+              {isSaving ? t("saving") : t("savePayment")}
+            </Button>
 
             {/* رسائل الحالة */}
             {isOverpaid && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-700 text-center font-semibold text-sm">
-                  ⚠️ المبلغ المدفوع أكبر من قيمة الفاتورة
+                  {t("overpaid")}
                 </p>
               </div>
             )}
 
-            {isFullyPaid && !isOverpaid && (
+            {isPaymentMatchingTotal && !isOverpaid && (
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-green-700 text-center font-semibold text-sm">
-                  ✅ تم دفع الفاتورة بالكامل
+                  {t("fullyPaid")}
                 </p>
               </div>
             )}
           </div>
+        </div>
 
+        {/* المحتوى الرئيسي */}
+        <div className="flex-1 grid grid-cols-4 gap-3 sm:gap-4">
           {/* الجانب الأيمن - جدول الدفع والكيباد */}
-          <div className="space-y-3">
+          <div className="space-y-3 col-span-3">
             {/* جدول الدفع */}
-            <Card className="p-3 sm:p-4">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
-                طرق الدفع
-                <span className="text-xs sm:text-sm text-gray-500 mr-2 block sm:inline">
+            <Card className="p-2 sm:p-1">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 text-start">
+                {t("paymentMethods")}
+                {/* <span className="text-xs sm:text-sm text-gray-500 mr-2 block sm:inline">
                   (اضغط على الصف لتحديده)
-                </span>
+                </span> */}
               </h3>
 
               <div className="space-y-3 max-h-64 overflow-y-auto">
+                <Button
+                  className="w-full"
+                  color="success"
+                  size="sm"
+                  variant="bordered"
+                  onPress={addPaymentRow}
+                >
+                  {t("addBox")}
+                </Button>
                 {paymentRows.map((row, index) => (
                   <motion.div
                     key={row.id}
@@ -496,11 +399,8 @@ export default function InvoicePaymentPage() {
                       {/* الصندوق */}
                       <div className="md:col-span-3">
                         <Select
-                          isDisabled={isLoading}
-                          label="الصندوق"
-                          placeholder={
-                            isLoading ? "جاري التحميل..." : "اختر الصندوق"
-                          }
+                          label={t("box")}
+                          placeholder={t("selectBox")}
                           selectedKeys={row.boxId ? [row.boxId.toString()] : []}
                           size="sm"
                           onSelectionChange={(keys) => {
@@ -514,7 +414,9 @@ export default function InvoicePaymentPage() {
                           }}
                         >
                           {boxes.map((box) => (
-                            <SelectItem key={box.id}>{box.box_name}</SelectItem>
+                            <SelectItem key={box.id} textValue={box.cust_name}>
+                              {box.cust_name}
+                            </SelectItem>
                           ))}
                         </Select>
                       </div>
@@ -522,7 +424,7 @@ export default function InvoicePaymentPage() {
                       {/* المبلغ */}
                       <div className="md:col-span-2">
                         <Input
-                          label="المبلغ"
+                          label={t("amount")}
                           placeholder="0"
                           size="sm"
                           startContent={
@@ -543,8 +445,10 @@ export default function InvoicePaymentPage() {
                       {/* طريقة الدفع */}
                       <div className="md:col-span-2">
                         <Select
-                          label="طريقة الدفع"
-                          selectedKeys={[row.paymentMethod]}
+                          label={t("paymentMethod")}
+                          selectedKeys={
+                            row.paymentMethod ? [row.paymentMethod] : []
+                          }
                           size="sm"
                           onSelectionChange={(keys) => {
                             const selected = Array.from(keys)[0] as string;
@@ -552,11 +456,13 @@ export default function InvoicePaymentPage() {
                             updatePaymentRow(index, "paymentMethod", selected);
                           }}
                         >
-                          {PAYMENT_METHODS.map((method) => (
-                            <SelectItem key={method.key}>
+                          {paymentMethods.map((method) => (
+                            <SelectItem
+                              key={method.id.toString()}
+                              textValue={method.code_desc}
+                            >
                               <div className="flex items-center gap-2">
-                                <span>{method.icon}</span>
-                                <span>{method.label}</span>
+                                <span>{method.code_desc}</span>
                               </div>
                             </SelectItem>
                           ))}
@@ -566,8 +472,8 @@ export default function InvoicePaymentPage() {
                       {/* البيان */}
                       <div className="md:col-span-3">
                         <Input
-                          label="البيان"
-                          placeholder="ملاحظات الدفع"
+                          label={t("description")}
+                          placeholder={t("description")}
                           size="sm"
                           value={row.notes}
                           onChange={(e) =>
@@ -598,7 +504,7 @@ export default function InvoicePaymentPage() {
               </div>
             </Card>
 
-            {/* الكيباد المبسط */}
+            {/* الكيباد المبسط
             <Card className="p-3 sm:p-4">
               <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
                 لوحة المفاتيح الرقمية
@@ -634,6 +540,59 @@ export default function InvoicePaymentPage() {
                   اختر صف الدفع لاستخدام لوحة المفاتيح
                 </p>
               )}
+            </Card> */}
+          </div>
+
+          {/* الجانب الأيسر - ملخص الدفع */}
+          <div className="space-y-3">
+            {/* ملخص الدفع */}
+            <Card className="p-2 sm:p-1 h-fit">
+              <h3 className="text-base text-start sm:text-lg font-semibold text-gray-800 mb-3">
+                {t("paymentSummary")}
+              </h3>
+
+              <div className="space-y-2 sm:space-y-3">
+                <div className="bg-green-50 rounded-lg p-2 sm:p-3 text-center">
+                  <p className="text-xs sm:text-sm text-green-600">
+                    {t("invoiceValue")}
+                  </p>
+                  <p className="text-lg sm:text-xl font-bold text-green-700">
+                    {invoiceTotal.toFixed(frac)} ريال
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 rounded-lg p-2 sm:p-3 text-center">
+                  <p className="text-xs sm:text-sm text-blue-600">
+                    {t("paidAmount")}
+                  </p>
+                  <p className="text-lg sm:text-xl font-bold text-blue-700">
+                    {paidAmount.toFixed(frac)} ريال
+                  </p>
+                </div>
+
+                <div
+                  className={`rounded-lg p-2 sm:p-3 text-center ${
+                    remainingAmount > 0 ? "bg-red-50" : "bg-emerald-50"
+                  }`}
+                >
+                  <p
+                    className={`text-xs sm:text-sm ${
+                      remainingAmount > 0 ? "text-red-600" : "text-emerald-600"
+                    }`}
+                  >
+                    {remainingAmount > 0
+                      ? t("remaining")
+                      : t("fullyPaidStatus")}
+                  </p>
+                  <p
+                    className={`text-lg sm:text-xl font-bold ${
+                      remainingAmount > 0 ? "text-red-700" : "text-emerald-700"
+                    }`}
+                  >
+                    {Math.abs(remainingAmount).toFixed(frac)} ريال
+                  </p>
+                </div>
+              </div>
             </Card>
           </div>
         </div>

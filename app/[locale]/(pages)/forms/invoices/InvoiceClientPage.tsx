@@ -35,6 +35,7 @@ import {
 import useFractions from "@/utilities/useFractions";
 import { calculateValueAndWagesTax } from "@/utilities/invoiceForm";
 import { getMaxInvoiceIdAction } from "@/app/actions/invoice";
+import { STORAGE_KEYS } from "@/constants";
 
 const InvoiceItemTable = dynamic(
   () =>
@@ -380,6 +381,51 @@ export default function InvoiceClientPage({
     [dispatchForm],
   );
 
+  const handlePaymentClick = useCallback(async () => {
+    // Save the invoice first
+    const result = await saveInvoice({ skipDefaultBoxCreation: true });
+
+    if (!result || result.ok !== true) {
+      toast.error("فشل في حفظ الفاتورة. يرجى المحاولة مرة أخرى.");
+
+      return;
+    }
+
+    // Get company ID from cookies (client-side)
+    const getCookieValue = (name: string): string | null => {
+      if (typeof document === "undefined") return null;
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+
+      if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+
+      return null;
+    };
+
+    const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
+
+    // Build payment URL with all required parameters
+    const paymentUrl = new URLSearchParams({
+      total: String(netAmount),
+      inv_number: String(result.invoiceNumber),
+      customer: form.cust_name || "",
+      inv: String(result.recordId), // Invoice PK (id, not inv_id)
+      com: companyId,
+      trans_type: String(selectorsInvoiceType),
+      inv_type: invoiceType,
+    });
+
+
+    router.push(`/forms/invoices/payment?${paymentUrl.toString()}`);
+  }, [
+    saveInvoice,
+    netAmount,
+    form.cust_name,
+    selectorsInvoiceType,
+    router,
+    invoiceItems,
+  ]);
+
   useEffect(() => {
     hydrateInvoiceTotalsStore({
       metadata,
@@ -581,6 +627,12 @@ export default function InvoiceClientPage({
         totalGWeight={totalGWeight ?? 0}
         totalValueTax={totalValueTax}
         totalWagesTax={totalWagesTax}
+        hasItems={invoiceItems.some((item: any) => {
+          const itemId = Number(item.item || item.item_id || 0);
+
+          return itemId > 0;
+        })}
+        onPaymentClick={handlePaymentClick}
       />
     </div>
   );

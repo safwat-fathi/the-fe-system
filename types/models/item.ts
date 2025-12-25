@@ -21,6 +21,7 @@ export type Item = {
   cat: number | null;
   item_type: number | null;
   unit: number | null;
+  box_id?: number;
 };
 
 export type SearchItemsParams = {
@@ -29,7 +30,7 @@ export type SearchItemsParams = {
   categoryId?: number | string;
   itemTypeId?: number | string;
   itemStatus?: number | string;
-  query?: string;
+  searchTerm?: string;
 };
 
 export type SearchItemsVoucherListParams = {

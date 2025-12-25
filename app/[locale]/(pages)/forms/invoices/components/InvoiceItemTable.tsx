@@ -249,7 +249,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
 
         try {
           const response = await itemService.searchItems({
-            query: search,
+            searchTerm: search,
             page,
           });
 
@@ -642,6 +642,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         weight: String(selected.item_weight ?? 0),
         g_weight: String(selected.item_g_weight ?? selected.item_weight ?? 0),
         stones: selected.stones ?? null,
+        box: (selected as any).box_id ?? updated[rowIndex].box ?? null,
       };
 
       const w = toNum(updated[rowIndex].weight);

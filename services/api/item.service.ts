@@ -36,6 +36,32 @@ class ItemService extends HttpService<Item> {
     return formData;
   }
 
+  private processPaginatedResponse(data: any): IPaginatedResponse<Item> {
+    const results = Array.isArray(data?.results) ? data.results : [];
+
+    let count = 0;
+
+    if (typeof data?.count === "number") {
+      count = data.count;
+    } else if (Array.isArray(results)) {
+      count = results.length;
+    }
+
+    const next =
+      typeof data?.next === "string" || data?.next === null ? data.next : null;
+    const previous =
+      typeof data?.previous === "string" || data?.previous === null
+        ? data.previous
+        : null;
+
+    return {
+      results,
+      count,
+      next,
+      previous,
+    };
+  }
+
   async getHomeSettings(): Promise<Record<string, unknown>[]> {
     try {
       const response = await this.get<unknown[]>("home_list", undefined, {
@@ -133,9 +159,9 @@ class ItemService extends HttpService<Item> {
     categoryId = 0,
     itemTypeId = 0,
     itemStatus = 0,
-    query = "",
+    searchTerm = "",
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
-		const emptyResponse: IPaginatedResponse<Item> = {
+    const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
       count: 0,
       next: null,
@@ -143,72 +169,26 @@ class ItemService extends HttpService<Item> {
     };
 
     try {
-      // إذا كان هناك بحث، نستخدم SearchItemsList endpoint
-      if (query && query.trim()) {
-        const searchTerm = query.trim();
-        const response = await this.get<IPaginatedResponse<Item>>(
-          "SearchItemsList",
-          {
-            xcom_id: companyId,
-            page,
-            q: searchTerm,
-          },
-          {
-            cache: "no-store",
-            next: {
-              tags: [
-                "items-search-list",
-                `items-search-list-company-${companyId}`,
-                `items-search-list-page-${page}`,
-                `items-search-list-query-${searchTerm}`,
-              ],
-              revalidate: 0,
-            },
-          },
-        );
-
-        if (!response.success || !response.data) {
-          return emptyResponse;
-        }
-
-        const { results, count, next, previous } = response.data;
-
-        return {
-          results: Array.isArray(results) ? results : [],
-          count:
-            typeof count === "number"
-              ? count
-              : Array.isArray(results)
-                ? results.length
-                : 0,
-          next: typeof next === "string" || next === null ? next : null,
-          previous:
-            typeof previous === "string" || previous === null ? previous : null,
-        };
-      }
-
-      // البحث العادي بدون query
       const response = await this.get<IPaginatedResponse<Item>>(
-        "items_list",
+        "SearchItemsList",
         {
           xcom_id: companyId,
+          page,
+          q: searchTerm,
           xcat_id: categoryId || "0",
           xtype_id: itemTypeId || "0",
           xitem_status: itemStatus || "0",
-          page,
         },
         {
-          cache: "force-cache",
+          cache: "no-store",
           next: {
             tags: [
-              "items-list",
-              `items-list-company-${companyId}`,
-              `items-list-page-${page}`,
-              `items-list-cat-${categoryId}`,
-              `items-list-type-${itemTypeId}`,
-              `items-list-status-${itemStatus}`,
+              "items-search-list",
+              `items-search-list-company-${companyId}`,
+              `items-search-list-page-${page}`,
+              `items-search-list-query-${searchTerm}`,
             ],
-            revalidate: 300,
+            revalidate: 0,
           },
         },
       );
@@ -217,24 +197,11 @@ class ItemService extends HttpService<Item> {
         return emptyResponse;
       }
 
-      const { results, count, next, previous } = response.data;
-
-      return {
-        results: Array.isArray(results) ? results : [],
-        count:
-          typeof count === "number"
-            ? count
-            : Array.isArray(results)
-              ? results.length
-              : 0,
-        next: typeof next === "string" || next === null ? next : null,
-        previous:
-          typeof previous === "string" || previous === null ? previous : null,
-      };
+      return this.processPaginatedResponse(response.data);
     } catch (error) {
       console.error("Error fetching items:", error);
       rethrowAuthenticationError(error);
-      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف");
+      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف", { cause: error });
     }
   }
 
@@ -287,20 +254,11 @@ class ItemService extends HttpService<Item> {
         return emptyResponse;
       }
 
-      const { results, count, next, previous } = response.data;
+      const processed = this.processPaginatedResponse(response.data);
 
       return {
-        results: Array.isArray(results) ? results : [],
-        count:
-          typeof count === "number"
-            ? count
-            : Array.isArray(results)
-              ? results.length
-              : 0,
-        next: typeof next === "string" || next === null ? next : null,
-        previous:
-          typeof previous === "string" || previous === null ? previous : null,
-        hasMore: Boolean(next),
+        ...processed,
+        hasMore: Boolean(processed.next),
         currentPage: page,
       };
     } catch (error) {
@@ -344,7 +302,9 @@ class ItemService extends HttpService<Item> {
       return null;
     } catch (error) {
       console.error("Error creating item:", error);
-      throw new Error("حدث خطأ أثناء إنشاء الصنف");
+      rethrowAuthenticationError(error);
+
+      return null;
     }
   }
 
@@ -366,7 +326,9 @@ class ItemService extends HttpService<Item> {
       return null;
     } catch (error) {
       console.error("Error updating item:", error);
-      throw new Error("حدث خطأ أثناء تحديث الصنف");
+      rethrowAuthenticationError(error);
+
+      return null;
     }
   }
 
@@ -397,20 +359,9 @@ class ItemService extends HttpService<Item> {
       return false;
     } catch (error: any) {
       console.error("Error deleting item:", error);
+      rethrowAuthenticationError(error);
 
-      // إذا كان الخطأ 500 من الخادم، نعطي رسالة أوضح
-      if (
-        error?.status === 500 ||
-        error?.message?.includes("500") ||
-        error?.message?.includes("Internal Server Error")
-      ) {
-        throw new Error(
-          "لا يمكن حذف الصنف حالياً. قد يكون مرتبطاً ببيانات أخرى في النظام",
-        );
-      }
-
-      // إذا كان الخطأ من نوع آخر، نعرض الرسالة الأصلية
-      throw new Error(error?.message || "حدث خطأ أثناء حذف الصنف");
+      return false;
     }
   }
 }

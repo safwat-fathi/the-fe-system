@@ -1,9 +1,13 @@
 import { HttpService } from "@/services/base";
 import {
   Invoice,
+  InvoiceBox,
   InvoiceDetail,
+  CreateInvoiceBoxDto,
+  CreateInvoiceGoldBoxDto,
   InvoiceTypes,
   TransTypes,
+  PaidType,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
@@ -552,6 +556,93 @@ class InvoiceService extends HttpService<Invoice> {
     });
 
     return monthlySales;
+  }
+  async createInvoiceBox(
+    data: CreateInvoiceBoxDto,
+  ): Promise<InvoiceBox | null> {
+    try {
+      const response = await this.post<InvoiceBox>(
+        "api_create_invoice_box",
+        data,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("createInvoiceBox failed:", errorInfo);
+
+        return null;
+      }
+
+      if (!response.data) {
+        console.error("createInvoiceBox returned without data:", response);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error creating invoice box:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async createInvoiceGoldBox(data: CreateInvoiceGoldBoxDto): Promise<any> {
+    try {
+      const response = await this.post<any>(
+        "api_create_invoice_gold_box",
+        data,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("createInvoiceGoldBox failed:", errorInfo);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error creating invoice gold box:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async getPaidTypeList(): Promise<IPaginatedResponse<PaidType> | null> {
+    try {
+      const response = await this.get<IPaginatedResponse<PaidType>>(
+        "getPaidTypeList",
+        undefined,
+        {
+          cache: "force-cache",
+          next: { tags: ["paid-type-list"] },
+        },
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching paid type list:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
   }
 }
 

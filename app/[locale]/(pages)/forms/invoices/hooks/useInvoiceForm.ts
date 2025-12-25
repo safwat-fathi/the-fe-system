@@ -27,6 +27,8 @@ import {
   deleteInvoiceDetailAction,
   getInvoiceByIdAction,
   getInvoiceDetailsAction,
+  createInvoiceBoxAction,
+  createInvoiceGoldBoxAction,
 } from "@/app/actions/invoice";
 import { generateZatcaQR } from "@/utilities/zatca";
 import {
@@ -357,6 +359,7 @@ const buildRowFromItem = ({
     purity:
       selectedItem.purity ?? (homePurity ? String(homePurity) : baseRow.purity),
     stones: selectedItem.stones ?? baseRow.stones,
+    box: selectedItem.box_id ?? baseRow.box ?? null,
   };
 
   const hasItemWeight =
@@ -1425,93 +1428,127 @@ export default function useInvoiceForm({
     ],
   );
 
-  const saveInvoice = useCallback(async (): Promise<
-    { ok: true; recordId: number; invoiceNumber: number } | { ok: false }
-  > => {
-    const validation = validateBeforeSave();
+  const saveInvoice = useCallback(
+    async (options?: {
+      skipDefaultBoxCreation?: boolean;
+    }): Promise<
+      { ok: true; recordId: number; invoiceNumber: number } | { ok: false }
+    > => {
+      const validation = validateBeforeSave();
 
-    if (!validation.ok) {
-      return { ok: false };
-    }
-
-    setIsLoading(true);
-
-    try {
-      const context = buildInvoiceSaveContext(
-        validation.validItems,
-        validation.customer,
-      );
-
-      // Persist the invoice record to get/ensure primary key
-      const savedRecordId = await persistInvoiceRecord(
-        context.invoicePayload,
-        context.invoiceNumber,
-      );
-
-      await syncInvoiceDetails(
-        validation.validItems,
-        savedRecordId,
-        context.resolvedCompanyId,
-        context.resolvedYearId,
-      );
-
-      await refreshInvoiceDetailsState(savedRecordId);
-
-      // Reload the full invoice header to ensure we have the generated inv_id and other fields
-      // This solves the issue of the UI not showing the new number.
-      const freshInvoice = await getInvoiceByIdAction(String(savedRecordId));
-
-      if (freshInvoice) {
-        dispatchForm({
-          type: "SET_ALL",
-          payload: {
-            inv_id: freshInvoice.inv_id,
-            inv_date: freshInvoice.inv_date,
-            is_done: freshInvoice.is_done ?? false,
-            is_ok: freshInvoice.is_ok ?? false,
-            commit: freshInvoice.commit ?? true,
-          },
-        });
+      if (!validation.ok) {
+        return { ok: false };
       }
 
-      toast.success(
-        isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
-      );
+      setIsLoading(true);
 
-      return {
-        ok: true,
-        recordId: savedRecordId,
-        invoiceNumber: Number(freshInvoice?.inv_id ?? context.invoiceNumber),
-      };
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "حدث خطأ غير متوقع أثناء حفظ الفاتورة";
+      try {
+        const context = buildInvoiceSaveContext(
+          validation.validItems,
+          validation.customer,
+        );
 
-      console.error("خطأ في حفظ الفاتورة:", errorMessage, error);
-      if (error instanceof Error) {
-        console.error("تفاصيل الخطأ:", {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-        });
+        // Persist the invoice record to get/ensure primary key
+        const savedRecordId = await persistInvoiceRecord(
+          context.invoicePayload,
+          context.invoiceNumber,
+        );
+
+        await syncInvoiceDetails(
+          validation.validItems,
+          savedRecordId,
+          context.resolvedCompanyId,
+          context.resolvedYearId,
+        );
+
+        await refreshInvoiceDetailsState(savedRecordId);
+
+        // Reload the full invoice header to ensure we have the generated inv_id and other fields
+        // This solves the issue of the UI not showing the new number.
+        const freshInvoice = await getInvoiceByIdAction(String(savedRecordId));
+
+        if (freshInvoice) {
+          dispatchForm({
+            type: "SET_ALL",
+            payload: {
+              inv_id: freshInvoice.inv_id,
+              inv_date: freshInvoice.inv_date,
+              is_done: freshInvoice.is_done ?? false,
+              is_ok: freshInvoice.is_ok ?? false,
+              commit: freshInvoice.commit ?? true,
+            },
+          });
+        }
+
+        // Create Invoice Box - only if not skipped
+        if (!options?.skipDefaultBoxCreation) {
+          await createInvoiceBoxAction({
+            com: context.resolvedCompanyId,
+            trans_type: defaultTransType,
+            amt: formatDecimalString(context.totals.netAmount, frac),
+            box: String(validation.customer.id),
+            acc_change: "1",
+            notes: form.inv_notes,
+            cr_date: new Date().toISOString(),
+            inv: savedRecordId,
+          });
+        }
+
+        if (context.totals.totalGWeight > 0) {
+          await createInvoiceGoldBoxAction({
+            com: context.resolvedCompanyId,
+            trans_type: defaultTransType,
+            gold: formatDecimalString(context.totals.totalGWeight, frac),
+            box: "1",
+            acc_change: "1",
+            k: 21,
+            gold2: 21,
+            notes: form.inv_notes,
+            cr_date: new Date().toISOString(),
+            inv: savedRecordId,
+          });
+        }
+
+        toast.success(
+          isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
+        );
+
+        return {
+          ok: true,
+          recordId: savedRecordId,
+          invoiceNumber: Number(freshInvoice?.inv_id ?? context.invoiceNumber),
+        };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "حدث خطأ غير متوقع أثناء حفظ الفاتورة";
+
+        console.error("خطأ في حفظ الفاتورة:", errorMessage, error);
+        if (error instanceof Error) {
+          console.error("تفاصيل الخطأ:", {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          });
+        }
+
+        toast.error(errorMessage);
+
+        return { ok: false };
+      } finally {
+        setIsLoading(false);
       }
-
-      toast.error(errorMessage);
-
-      return { ok: false };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    buildInvoiceSaveContext,
-    isNewInvoice,
-    persistInvoiceRecord,
-    refreshInvoiceDetailsState,
-    syncInvoiceDetails,
-    validateBeforeSave,
-  ]);
+    },
+    [
+      buildInvoiceSaveContext,
+      isNewInvoice,
+      persistInvoiceRecord,
+      refreshInvoiceDetailsState,
+      syncInvoiceDetails,
+      validateBeforeSave,
+    ],
+  );
 
   const previewInvoice = useCallback(() => {
     if (!selectedCustomer) {

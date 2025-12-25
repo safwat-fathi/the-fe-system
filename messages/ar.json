@@ -240,6 +240,35 @@
         "gramUnit": "جم"
       }
     },
+    "paymentPage": {
+      "title": "دفع الفاتورة",
+      "invoiceNumber": "رقم الفاتورة: {number}",
+      "customer": "العميل: {name}",
+      "savePayment": "حفظ الدفع",
+      "saving": "جاري الحفظ...",
+      "overpaid": "⚠️ المبلغ المدفوع أكبر من قيمة الفاتورة",
+      "fullyPaid": "✅ المبلغ المدفوع يساوي قيمة الفاتورة",
+      "paymentMethods": "طرق الدفع",
+      "addBox": "+ إضافة صندوق",
+      "box": "الصندوق",
+      "selectBox": "اختر الصندوق",
+      "amount": "المبلغ",
+      "paymentMethod": "طريقة الدفع",
+      "description": "البيان",
+      "paymentSummary": "ملخص الدفع",
+      "invoiceValue": "قيمة الفاتورة",
+      "paidAmount": "المبلغ المدفوع",
+      "remaining": "المتبقي",
+      "fullyPaidStatus": "المبلغ مطابق للإجمالي",
+      "errors": {
+        "enterPayment": "يرجى إدخال بيانات الدفع",
+        "fillFields": "يرجى التأكد من ملء جميع الحقول بشكل صحيح",
+        "overpaid": "المبلغ المدفوع أكبر من قيمة الفاتورة",
+        "fetchBoxes": "فشل في جلب قائمة الصناديق",
+        "saveSuccess": "تم حفظ الدفع بنجاح",
+        "saveError": "فشل في حفظ الدفع"
+      }
+    },
     "balanceVoucher": {
       "title": "قيد افتتاحي",
       "description": "القيد الافتتاحي",
