@@ -153,13 +153,48 @@ class ItemService extends HttpService<Item> {
     }
   }
 
+  async searchItemByName(name: string): Promise<IPaginatedResponse<Item>> {
+    try {
+      const emptyResponse: IPaginatedResponse<Item> = {
+        results: [],
+        count: 0,
+        next: null,
+        previous: null,
+      };
+      console.log(name);
+      const response = await this.get<Item[]>(
+        "SearchItemsList",
+        {
+          xcom_id: 1,
+          page: 1,
+          q: name,
+        },
+        {
+          cache: "no-store",
+          next: {
+            tags: [`item-by-name-${name}`],
+          },
+        },
+      );
+
+      if (!response.success || !response.data) {
+        return emptyResponse;
+      }
+      console.log(response.data);
+      return this.processPaginatedResponse(response.data);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      rethrowAuthenticationError(error);
+      throw new Error("حدث خطأ أثناء جلب بيانات الأصناف", { cause: error });
+    }
+  }
+
   async searchItems({
     page = 1,
     companyId = 1,
     categoryId = 0,
     itemTypeId = 0,
     itemStatus = 0,
-    searchTerm = "",
   }: SearchItemsParams = {}): Promise<IPaginatedResponse<Item>> {
     const emptyResponse: IPaginatedResponse<Item> = {
       results: [],
@@ -170,11 +205,10 @@ class ItemService extends HttpService<Item> {
 
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
-        "SearchItemsList",
+        "items_list",
         {
           xcom_id: companyId,
           page,
-          q: searchTerm,
           xcat_id: categoryId || "0",
           xtype_id: itemTypeId || "0",
           xitem_status: itemStatus || "0",
@@ -186,7 +220,6 @@ class ItemService extends HttpService<Item> {
               "items-search-list",
               `items-search-list-company-${companyId}`,
               `items-search-list-page-${page}`,
-              `items-search-list-query-${searchTerm}`,
             ],
             revalidate: 0,
           },
@@ -196,6 +229,7 @@ class ItemService extends HttpService<Item> {
       if (!response.success || !response.data) {
         return emptyResponse;
       }
+      // console.log(response.data);
 
       return this.processPaginatedResponse(response.data);
     } catch (error) {

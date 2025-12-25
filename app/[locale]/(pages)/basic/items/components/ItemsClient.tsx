@@ -259,18 +259,19 @@ export default function ItemsClient({
 
           return "0";
         };
+
+        const itemDataByName = await itemService.searchItemByName(searchQuery);
         const itemsData = await itemService.searchItems({
           page: pageToUse,
           companyId,
           categoryId: params.category || "0",
           itemTypeId: params.itemType || "0",
           itemStatus: getItemStatus(params.status),
-          searchTerm: searchQuery,
         });
 
-        if (itemsData.results) {
-          setItems(itemsData.results);
-          setItemsCount(itemsData.count);
+        if (itemDataByName.results) {
+          setItems(itemDataByName.results);
+          setItemsCount(itemDataByName.count);
         }
       } catch (error) {
         console.error("Error fetching items:", error);
@@ -314,38 +315,21 @@ export default function ItemsClient({
     fetchItems,
   ]);
 
-  // جلب البيانات عند البحث (server-side search)
+  // جلب البيانات عند البحث بالاسم (client-side search)
   useEffect(() => {
     const searchChanged = prevSearchRef.current !== deferredSearch;
 
     if (searchChanged) {
-      const shouldResetPage = currentPageNum !== 1;
-
-      if (shouldResetPage) {
-        startTransition(() =>
-          setParams({
-            page: "1",
-            search: deferredSearch,
-          }),
-        );
-        // Data will be fetched by Server Component when URL changes
+      if (deferredSearch.trim()) {
+        fetchItems(deferredSearch);
       } else {
-        // Data will be fetched by Server Component when URL changes
-        // We might only need to set params if they haven't been set by the input onChange
-        if (params.search !== deferredSearch) {
-          startTransition(() => setParams({ search: deferredSearch }));
-        }
+        setItems(initialItems);
+        setItemsCount(totalItems);
       }
     }
 
     prevSearchRef.current = deferredSearch;
-  }, [
-    deferredSearch,
-    currentPageNum,
-    setParams,
-    startTransition,
-    params.search,
-  ]);
+  }, [deferredSearch, fetchItems, initialItems, totalItems]);
 
   // نعرض كل البيانات المحملة (20 صنف) بدون تقسيم إضافي
   // البحث يتم من server-side الآن
@@ -366,6 +350,7 @@ export default function ItemsClient({
   );
 
   const clearFilters = useCallback(() => {
+    setSearchValue("");
     startTransition(() =>
       setParams({
         category: "",
@@ -401,7 +386,9 @@ export default function ItemsClient({
             className="input-field flex-1 min-w-[90px]"
             placeholder={t("labels.selectCategory")}
             size="sm"
-            selectedKeys={params.category ? [params.category] : []}
+            selectedKeys={
+              params.category ? new Set([params.category]) : new Set()
+            }
             onSelectionChange={(keys) =>
               startTransition(() =>
                 setParams({
@@ -421,7 +408,9 @@ export default function ItemsClient({
             className="input-field flex-1 min-w-[90px]"
             placeholder={t("labels.itemType")}
             size="sm"
-            selectedKeys={params.itemType ? [params.itemType] : []}
+            selectedKeys={
+              params.itemType ? new Set([params.itemType]) : new Set()
+            }
             onSelectionChange={(keys) =>
               startTransition(() =>
                 setParams({
@@ -441,7 +430,7 @@ export default function ItemsClient({
             className="input-field flex-1 min-w-[90px]"
             placeholder={t("labels.status")}
             size="sm"
-            selectedKeys={[params.status || "all"]}
+            selectedKeys={new Set([params.status || "all"])}
             onSelectionChange={(keys) =>
               startTransition(() =>
                 setParams({
@@ -487,9 +476,17 @@ export default function ItemsClient({
             value={searchValue}
             onChange={(e) => {
               const value = e.target.value;
-
               setSearchValue(value);
-              startTransition(() => setParams({ page: "1", search: value }));
+              // مسح جميع الفلاتر وتعيين البحث في استدعاء واحد
+              startTransition(() =>
+                setParams({
+                  category: "",
+                  itemType: "",
+                  status: "all",
+                  page: "1",
+                  search: value,
+                }),
+              );
             }}
           />
         </div>
