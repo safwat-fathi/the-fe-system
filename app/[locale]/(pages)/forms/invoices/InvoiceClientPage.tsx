@@ -186,6 +186,16 @@ export default function InvoiceClientPage({
   const allowEditing = formMode === "edit" || isNewInvoice;
   const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
 
+  // Derive selected box ID from customer selection
+  const selectedBoxId = useMemo(() => {
+    if (!form.cust_code) return null;
+    const selectedBox = customers.find(
+      (c: any) => String(c.cust_code) === String(form.cust_code),
+    );
+
+    return selectedBox?.id ?? null;
+  }, [customers, form.cust_code]);
+
   // Update note field and all item descriptions
   const handleNoteChange = useCallback(
     (newNote: string) => {
@@ -415,6 +425,10 @@ export default function InvoiceClientPage({
       inv_type: invoiceType,
     });
 
+    // Add box_id if available
+    if (selectedBoxId) {
+      paymentUrl.set("box_id", String(selectedBoxId));
+    }
 
     router.push(`/forms/invoices/payment?${paymentUrl.toString()}`);
   }, [
@@ -424,6 +438,7 @@ export default function InvoiceClientPage({
     selectorsInvoiceType,
     router,
     invoiceItems,
+    selectedBoxId,
   ]);
 
   useEffect(() => {
@@ -611,6 +626,7 @@ export default function InvoiceClientPage({
       />
 
       <InvoiceTotalsDisplay
+        boxId={selectedBoxId}
         customerName={form.cust_name || ""}
         fractions={{
           frac: typeof fractions === "object" ? fractions.frac : 2,

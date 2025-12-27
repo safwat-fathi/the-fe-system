@@ -245,6 +245,7 @@
       "invoiceNumber": "Invoice Number: {number}",
       "customer": "Customer: {name}",
       "savePayment": "Save Payment",
+      "back": "Back",
       "saving": "Saving...",
       "overpaid": "⚠️ Paid amount is greater than invoice total",
       "fullyPaid": "✅ Payment amount equal to invoice total",
@@ -259,6 +260,7 @@
       "invoiceValue": "Invoice Value",
       "paidAmount": "Paid Amount",
       "remaining": "Remaining",
+      "overpaymentAmount": "Overpayment",
       "fullyPaidStatus": "Payment Matches Total",
       "errors": {
         "invalidInvoice": "Invalid invoice",
@@ -269,7 +271,9 @@
         "overpaid": "Paid amount is greater than invoice total",
         "fetchBoxes": "Failed to fetch boxes list",
         "saveSuccess": "Payment saved successfully",
-        "saveError": "Failed to save payment"
+        "saveError": "Failed to save payment",
+        "paymentNotMatching": "Payment amount does not match invoice total. Remaining: {remaining} SAR",
+        "overpayment": "Payment amount exceeds invoice total by: {extra} SAR"
       }
     },
     "balanceVoucher": {
