@@ -3,8 +3,10 @@ import type { Category, ItemType, Unit } from "@/types/items";
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 
 import ItemsClient from "./components/ItemsClient";
+import ItemsFilter from "./components/ItemsFilter";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
@@ -12,7 +14,7 @@ import helperService from "@/services/api/helper.service";
 import itemService from "@/services/api/item.service";
 import { Item } from "@/types/models/item";
 import { IPaginatedResponse } from "@/types/services/base";
-import ItemsFilter from "./components/ItemsFilter";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = (await getTranslations("basic.items" as any)) as any;
@@ -52,8 +54,13 @@ export default async function ItemsPage({
   const itemTypeId = Array.isArray(itemTypeParam)
     ? itemTypeParam[0] || "0"
     : itemTypeParam || "0";
-  const itemStatus =
-    statusParam === "active" ? "1" : statusParam === "inactive" ? "2" : "0";
+  let itemStatus = "0";
+
+  if (statusParam === "active") {
+    itemStatus = "1";
+  } else if (statusParam === "inactive") {
+    itemStatus = "2";
+  }
   const searchTerm = Array.isArray(params.search)
     ? params.search[0] || ""
     : params.search || "";
@@ -68,32 +75,34 @@ export default async function ItemsPage({
   // حساب صفحة API بناءً على صفحة الجدول
   // كل صفحة من الجدول (20 صنف لكل صفحة) = صفحة واحدة من API (20 صنف)
 
-  const apiPage = currentPage;
-
   // جلب البيانات من API مع الفلاتر
-  const itemsData = await itemService
-    .searchItems({
-      page: apiPage,
-      companyId,
-      categoryId: categoryId || "0",
-      itemTypeId: itemTypeId || "0",
-      itemStatus: itemStatus || "0",
-      searchTerm: searchTerm,
-    })
-    .catch(
-      (): IPaginatedResponse<Item> => ({
-        count: 0,
-        next: null,
-        previous: null,
-        results: [],
-      }),
-    );
 
-  const [categoriesData, itemTypesData, unitsData] = await Promise.all([
-    helperService.getCategories(companyId).catch(() => []),
-    helperService.getItemTypes().catch(() => []),
-    helperService.getUnits().catch(() => []),
-  ]);
+  let itemsData: IPaginatedResponse<Item>;
+
+  let categoriesData: Category[] = [];
+  let itemTypesData: ItemType[] = [];
+  let unitsData: Unit[] = [];
+
+  try {
+    [categoriesData, itemTypesData, unitsData, itemsData] = await Promise.all([
+      helperService.getCategories(companyId).catch(() => []),
+      helperService.getItemTypes().catch(() => []),
+      helperService.getUnits().catch(() => []),
+      itemService.searchItems({
+        page: currentPage,
+        companyId,
+        categoryId: categoryId || "0",
+        itemTypeId: itemTypeId || "0",
+        itemStatus: itemStatus || "0",
+        searchTerm: searchTerm,
+      }),
+    ]);
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      redirect("/auth/login");
+    }
+    throw error;
+  }
 
   const t = (await getTranslations("basic.items" as any)) as any;
 
@@ -108,7 +117,17 @@ export default async function ItemsPage({
         itemTypes={itemTypesData as ItemType[]}
         units={unitsData as Unit[]}
       />
-      <Suspense fallback={<ItemsFallback />}>
+      <Suspense
+        key={JSON.stringify({
+          companyId,
+          categoryId,
+          itemTypeId,
+          itemStatus,
+          searchTerm,
+          currentPage,
+        })}
+        fallback={<ItemsFallback />}
+      >
         <ItemsClient
           companyId={companyId}
           initialCategories={categoriesData as Category[]}

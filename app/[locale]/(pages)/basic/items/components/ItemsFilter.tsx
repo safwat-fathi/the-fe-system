@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 
@@ -115,10 +116,6 @@ export default function ItemsFilter({
     [itemTypes],
   );
 
-  const handleOpenAddModal = () => {
-    router.push("/basic/items/new");
-  };
-
   const clearFilters = () => {
     setSearchValue("");
     startTransition(() =>
@@ -157,18 +154,36 @@ export default function ItemsFilter({
     };
   }, []);
 
+  // Prefetch the "new item" page when the browser is idle
+  useEffect(() => {
+    const idleCallback = window.requestIdleCallback
+      ? window.requestIdleCallback
+      : (cb: () => void) => setTimeout(cb, 1);
+
+    const handle = idleCallback(() => {
+      router.prefetch("/basic/items/new");
+    });
+
+    return () => {
+      if (window.cancelIdleCallback) {
+        window.cancelIdleCallback(handle as number);
+      }
+    };
+  }, [router]);
+
   return (
     <div className="flex-shrink-0 flex flex-wrap items-center gap-1.5 mb-1">
       {/* زر إضافة صنف */}
-      <Button
-        className="bg-gray-100 hover:bg-gray-200 border-gray-300"
-        size="sm"
-        startContent={<PlusIcon className="h-3 w-3" />}
-        variant="bordered"
-        onPress={handleOpenAddModal}
-      >
-        {t("actions.add")}
-      </Button>
+      <Link href="/basic/items/new" prefetch={false}>
+        <Button
+          className="bg-gray-100 hover:bg-gray-200 border-gray-300"
+          size="sm"
+          startContent={<PlusIcon className="h-3 w-3" />}
+          variant="bordered"
+        >
+          {t("actions.add")}
+        </Button>
+      </Link>
 
       {/* فاصل خطي */}
       <div className="h-5 w-px bg-gray-300" />
