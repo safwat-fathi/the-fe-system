@@ -55,7 +55,7 @@ const TABLE_CONFIGS: Record<string, TableConfig> = {
 
   // Items (قوائم أساسية - بدون year)
   items_list: {
-    endpoint: "items_list",
+    endpoint: "SearchItemsList",
     paramTransform: (params) => ({
       xcom_id: params.com || params.xcom_id || params.xcomp_id || "1",
       xitem_code: params.xitem_code || "0",

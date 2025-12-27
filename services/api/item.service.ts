@@ -118,7 +118,7 @@ class ItemService extends HttpService<Item> {
 
       while (!found && page <= maxPages) {
         const response = await this.get<IPaginatedResponse<Item>>(
-          "items_list",
+          "SearchItemsList",
           {
             xcom_id: companyId,
             xcat_id: "0",
@@ -205,7 +205,7 @@ class ItemService extends HttpService<Item> {
 
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
-        "items_list",
+        "SearchItemsList",
         {
           xcom_id: companyId,
           page,
