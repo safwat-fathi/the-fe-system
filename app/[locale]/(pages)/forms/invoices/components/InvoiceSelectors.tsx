@@ -738,25 +738,15 @@ export default function InvoiceSelectors({
                   {`${t("noteLabel")}:`}
                 </label>
                 <input
-                  readOnly
-                  className={`w-full h-[32px] border px-2 rounded text-xs ${
-                    isEditing ? "cursor-pointer bg-white hover:bg-gray-50" : ""
-                  }`}
+                  className="w-full h-[32px] border px-2 rounded text-xs"
                   disabled={!isEditing}
                   id="note"
                   type="text"
                   value={note}
-                  onClick={() => {
+                  onChange={(e) => setNote(e.target.value)}
+                  onDoubleClick={() => {
                     if (isEditing) {
                       setIsNoteModalOpen(true);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      if (isEditing) {
-                        e.preventDefault();
-                        setIsNoteModalOpen(true);
-                      }
                     }
                   }}
                 />

@@ -245,6 +245,7 @@
       "invoiceNumber": "رقم الفاتورة: {number}",
       "customer": "العميل: {name}",
       "savePayment": "حفظ الدفع",
+      "back": "رجوع",
       "saving": "جاري الحفظ...",
       "overpaid": "⚠️ المبلغ المدفوع أكبر من قيمة الفاتورة",
       "fullyPaid": "✅ المبلغ المدفوع يساوي قيمة الفاتورة",
@@ -259,6 +260,7 @@
       "invoiceValue": "قيمة الفاتورة",
       "paidAmount": "المبلغ المدفوع",
       "remaining": "المتبقي",
+      "overpaymentAmount": "زيادة في الدفع",
       "fullyPaidStatus": "المبلغ مطابق للإجمالي",
       "errors": {
         "invalidInvoice": "فاتورة غير صالحة",
@@ -269,7 +271,9 @@
         "overpaid": "المبلغ المدفوع أكبر من قيمة الفاتورة",
         "fetchBoxes": "فشل في جلب قائمة الصناديق",
         "saveSuccess": "تم حفظ الدفع بنجاح",
-        "saveError": "فشل في حفظ الدفع"
+        "saveError": "فشل في حفظ الدفع",
+        "paymentNotMatching": "المبلغ المدفوع لا يطابق قيمة الفاتورة. المتبقي: {remaining} ريال",
+        "overpayment": "المبلغ المدفوع يتجاوز قيمة الفاتورة بمقدار: {extra} ريال"
       }
     },
     "balanceVoucher": {

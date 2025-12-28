@@ -43,6 +43,7 @@ export default async function PaymentPage({
     customer: string;
     inv_type: string;
     com: string;
+    box_id?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -90,6 +91,7 @@ export default async function PaymentPage({
     invoiceId: toSingleValue(params.inv),
     companyId: toSingleValue(params.com) || "1",
     invoiceType: toSingleValue(params.inv_type) || "sale",
+    boxId: toSingleValue(params.box_id),
   };
 
   return (

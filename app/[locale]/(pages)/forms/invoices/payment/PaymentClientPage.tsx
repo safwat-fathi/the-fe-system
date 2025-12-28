@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Select, SelectItem } from "@heroui/react";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 import Card from "@/components/Card";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -36,6 +37,7 @@ interface PaymentClientPageProps {
     invoiceId: string;
     companyId: string;
     invoiceType: string;
+    boxId?: string;
   };
 }
 
@@ -45,6 +47,8 @@ export default function PaymentClientPage({
   initialData,
 }: PaymentClientPageProps) {
   const t = useTranslations("forms.paymentPage");
+  const locale = useLocale();
+  const isRtl = locale === "ar";
   const router = useRouter();
   const fractions = useFractions();
   const frac = (fractions as { frac: number }).frac || 2;
@@ -59,11 +63,12 @@ export default function PaymentClientPage({
   const getInitialPaymentRows = (): PaymentRow[] => {
     const defaultMethodId =
       paymentMethods.length > 0 ? paymentMethods[0].id.toString() : "";
+    const defaultBoxId = initialData.boxId ? parseInt(initialData.boxId) : null;
 
     return [
       {
         id: "1",
-        boxId: null,
+        boxId: defaultBoxId,
         amount: initialData.total > 0 ? initialData.total.toString() : "",
         paymentMethod: defaultMethodId,
         notes: "",
@@ -83,8 +88,39 @@ export default function PaymentClientPage({
   }, 0);
 
   const remainingAmount = invoiceTotal - paidAmount;
-  const isOverpaid = paidAmount > invoiceTotal;
+  const isOverpaid = paidAmount - invoiceTotal > 0.01;
   const isPaymentMatchingTotal = Math.abs(remainingAmount) < 0.01;
+
+  // Track if payment has been saved
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Check if form has unsaved data (any payment row with a box selected)
+  const hasUnsavedData = useCallback(() => {
+    if (isSaved) return false;
+
+    return paymentRows.some(
+      (row) => row.boxId !== null && row.amount && parseFloat(row.amount) > 0,
+    );
+  }, [paymentRows, isSaved]);
+
+  // Warn user when trying to leave the page with unsaved data
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedData()) {
+        e.preventDefault();
+        // Modern browsers ignore custom messages but still show a warning
+        e.returnValue = "";
+
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedData]);
 
   // تحديث صف الدفع
   const updatePaymentRow = (
@@ -92,15 +128,27 @@ export default function PaymentClientPage({
     field: keyof PaymentRow,
     value: string | number | null,
   ) => {
-    setPaymentRows((prev) => {
-      const updated = [...prev];
-      const row = updated[index];
+    setPaymentRows((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) return row;
 
-      // @ts-expect-error - Dynamic assignment to typed object
-      row[field] = value;
+        const updatedRow = { ...row };
 
-      return updated;
-    });
+        if (field === "boxId") {
+          updatedRow.boxId = value as number | null;
+        } else if (field === "amount") {
+          updatedRow.amount = value as string;
+        } else if (field === "paymentMethod") {
+          updatedRow.paymentMethod = value as string;
+        } else if (field === "notes") {
+          updatedRow.notes = value as string;
+        } else if (field === "id") {
+          updatedRow.id = value as string;
+        }
+
+        return updatedRow;
+      }),
+    );
   };
 
   // إضافة صف دفع جديد
@@ -117,9 +165,11 @@ export default function PaymentClientPage({
     const defaultAmount =
       currentRemaining > 0 ? currentRemaining.toFixed(frac) : "";
 
+    const defaultBoxId = initialData.boxId ? parseInt(initialData.boxId) : null;
+
     const newRow: PaymentRow = {
       id: Date.now().toString(),
-      boxId: null,
+      boxId: defaultBoxId,
       amount: defaultAmount,
       paymentMethod:
         paymentMethods.length > 0 ? paymentMethods[0].id.toString() : "",
@@ -190,6 +240,29 @@ export default function PaymentClientPage({
 
   // حفظ الدفع
   const handleSave = async () => {
+    // Check if payment matches invoice total
+    if (!isPaymentMatchingTotal) {
+      const diff = Math.abs(remainingAmount).toFixed(frac);
+
+      if (remainingAmount > 0) {
+        toast.error(
+          t("errors.paymentNotMatching", {
+            remaining: diff,
+            defaultValue: `المبلغ المدفوع لا يطابق قيمة الفاتورة. المتبقي: ${diff} ريال`,
+          }),
+        );
+      } else {
+        toast.error(
+          t("errors.overpayment", {
+            extra: diff,
+            defaultValue: `المبلغ المدفوع يتجاوز قيمة الفاتورة بمقدار: ${diff} ريال`,
+          }),
+        );
+      }
+
+      return;
+    }
+
     if (!validatePaymentRows()) {
       return;
     }
@@ -229,6 +302,9 @@ export default function PaymentClientPage({
 
       await Promise.all(promises);
 
+      // Mark as saved to disable the beforeunload warning
+      setIsSaved(true);
+
       toast.success(t("errors.saveSuccess"));
 
       // Redirect to invoice preview page
@@ -245,6 +321,35 @@ export default function PaymentClientPage({
       setIsSaving(false);
     }
   };
+
+  const getPaymentStatusStyles = () => {
+    if (remainingAmount > 0)
+      return { bg: "bg-red-50", text: "text-red-600", value: "text-red-700" };
+    if (remainingAmount < -0.01)
+      return {
+        bg: "bg-orange-50",
+        text: "text-orange-600",
+        value: "text-orange-700",
+      };
+
+    return {
+      bg: "bg-emerald-50",
+      text: "text-emerald-600",
+      value: "text-emerald-700",
+    };
+  };
+
+  const statusStyles = getPaymentStatusStyles();
+  
+  let statusText: string;
+
+  if (remainingAmount > 0) {
+    statusText = t("remaining");
+  } else if (remainingAmount < -0.01) {
+    statusText = t("overpaymentAmount");
+  } else {
+    statusText = t("fullyPaidStatus");
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4 font-cairo">
@@ -270,7 +375,6 @@ export default function PaymentClientPage({
             <Button
               className="flex-1"
               color="default"
-              disabled={isOverpaid || !isPaymentMatchingTotal}
               isLoading={isSaving}
               size="sm"
               onPress={handleSave}
@@ -278,22 +382,38 @@ export default function PaymentClientPage({
               {isSaving ? t("saving") : t("savePayment")}
             </Button>
 
-            {/* رسائل الحالة */}
-            {isOverpaid && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-center font-semibold text-sm">
-                  {t("overpaid")}
-                </p>
-              </div>
-            )}
+            <Button
+              className="h-8"
+              color="default"
+              size="sm"
+              variant="bordered"
+              startContent={
+                !isRtl ? <ArrowLeftIcon className="w-4 h-4" /> : undefined
+              }
+              endContent={
+                isRtl ? <ArrowLeftIcon className="w-4 h-4" /> : undefined
+              }
+              onPress={() => {
+                if (hasUnsavedData()) {
+                  const confirmed = window.confirm(
+                    "لديك بيانات دفع غير محفوظة. هل تريد المغادرة؟",
+                  );
 
-            {isPaymentMatchingTotal && !isOverpaid && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-700 text-center font-semibold text-sm">
-                  {t("fullyPaid")}
-                </p>
-              </div>
-            )}
+                  if (!confirmed) return;
+                }
+                setIsSaved(true); // Disable beforeunload warning
+                const invType = initialData.invoiceType || "sale";
+                const invNumber = initialData.invoiceNumber || "";
+
+                router.push(
+                  `/forms/invoices?type=${invType}&mode=preview&id=${invNumber}`,
+                );
+              }}
+            >
+              {t("back")}
+            </Button>
+
+            {/* رسائل الحالة */}
           </div>
         </div>
 
@@ -468,23 +588,13 @@ export default function PaymentClientPage({
                 </div>
 
                 <div
-                  className={`rounded-lg p-2 sm:p-3 text-center ${
-                    remainingAmount > 0 ? "bg-red-50" : "bg-emerald-50"
-                  }`}
+                  className={`rounded-lg p-2 sm:p-3 text-center ${statusStyles.bg}`}
                 >
-                  <p
-                    className={`text-xs sm:text-sm ${
-                      remainingAmount > 0 ? "text-red-600" : "text-emerald-600"
-                    }`}
-                  >
-                    {remainingAmount > 0
-                      ? t("remaining")
-                      : t("fullyPaidStatus")}
+                  <p className={`text-xs sm:text-sm ${statusStyles.text}`}>
+                    {statusText}
                   </p>
                   <p
-                    className={`text-lg sm:text-xl font-bold ${
-                      remainingAmount > 0 ? "text-red-700" : "text-emerald-700"
-                    }`}
+                    className={`text-lg sm:text-xl font-bold ${statusStyles.value}`}
                   >
                     {Math.abs(remainingAmount).toFixed(frac)} ريال
                   </p>
