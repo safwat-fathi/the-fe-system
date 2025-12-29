@@ -17,7 +17,6 @@ interface InvoiceTotalsDisplayProps {
   netAmount: number;
   fractions: { frac: number; frac2: number };
   paymentMethod: PaymentTypes;
-  isNewInvoice: boolean;
   invoiceNumber: string;
   customerName: string;
   invoiceId: string;
@@ -36,7 +35,6 @@ export default function InvoiceTotalsDisplay({
   netAmount,
   fractions,
   paymentMethod,
-  isNewInvoice,
   invoiceNumber,
   customerName,
   invoiceId,
@@ -129,7 +127,7 @@ export default function InvoiceTotalsDisplay({
         </div>
       </div>
 
-      {hasItems && isNewInvoice && paymentMethod === PaymentTypes.CASH && (
+      {hasItems && paymentMethod === PaymentTypes.CASH && (
         <div className="mt-3 flex justify-start">
           <Link
             className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm inline-flex items-center gap-2 transition-colors"
