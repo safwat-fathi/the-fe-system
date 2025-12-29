@@ -23,10 +23,18 @@ export async function getInvoiceDetailsAction(invoiceId: string) {
 
 export async function getInvoiceBoxListAction(id: string) {
   const com_id = (await cookies()).get(STORAGE_KEYS.COMPANY_ID)?.value;
-  console.log(com_id);
+
   if (!com_id) throw new Error("company id not found");
 
   return invoiceService.getInvoiceBoxList(id, Number(com_id));
+}
+
+export async function getInvoiceGoldBoxListAction(id: string) {
+  const com_id = (await cookies()).get(STORAGE_KEYS.COMPANY_ID)?.value;
+
+  if (!com_id) throw new Error("company id not found");
+
+  return invoiceService.getInvoiceGoldBoxList(id, Number(com_id));
 }
 
 export async function getMaxInvoiceIdAction(transType: number) {
@@ -171,6 +179,28 @@ export async function createInvoiceGoldBoxAction(
   }
 
   const result = await invoiceService.createInvoiceGoldBox({
+    ...payload,
+    cr_user: userId,
+  });
+
+  return result;
+}
+
+export async function updateInvoiceGoldBoxAction(
+  id: number,
+  payload: Omit<
+    import("@/types/models/invoice").UpdateInvoiceGoldBoxDto,
+    "cr_user"
+  >,
+) {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(STORAGE_KEYS.USER_ID)?.value;
+
+  if (!userId) {
+    throw new Error("user id not found");
+  }
+
+  const result = await invoiceService.updateInvoiceGoldBox(id, {
     ...payload,
     cr_user: userId,
   });

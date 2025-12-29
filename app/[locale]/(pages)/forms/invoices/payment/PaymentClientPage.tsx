@@ -34,6 +34,7 @@ interface Box {
 interface PaymentClientPageProps {
   boxes: Box[];
   paymentMethods: PaidType[];
+  initialInvoiceBoxes: InvoiceBox[];
   initialData: {
     total: number;
     invoiceNumber: string;
@@ -49,6 +50,7 @@ export default function PaymentClientPage({
   boxes,
   paymentMethods,
   initialData,
+  initialInvoiceBoxes = [],
 }: PaymentClientPageProps) {
   const t = useTranslations("forms.paymentPage");
   const locale = useLocale();
@@ -62,29 +64,22 @@ export default function PaymentClientPage({
   const [invoiceNumber] = useState<string>(initialData.invoiceNumber);
   const [customerName] = useState<string>(initialData.customerName);
   const [isSaving, setIsSaving] = useState(false);
-  const [invoiceBoxes, setInvoiceBoxes] = useState<InvoiceBox[]>([]);
+  const [invoiceBoxes, setInvoiceBoxes] =
+    useState<InvoiceBox[]>(initialInvoiceBoxes);
   const [invoiceBoxLoading, setInvoiceBoxLoading] = useState(false);
-
-  const getInvoiceBoxList = async () => {
-    try {
-      setInvoiceBoxLoading(true);
-      console.log(initialData.invoiceId);
-      const response = await getInvoiceBoxListAction(initialData.invoiceId);
-      setInvoiceBoxes(response);
-      console.log(response);
-    } catch (error) {
-      console.error("Error fetching invoice box list:", error);
-    } finally {
-      setInvoiceBoxLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    getInvoiceBoxList();
-  }, []);
 
   // Helper to update payment rows with default method
   const getInitialPaymentRows = (): PaymentRow[] => {
+    if (initialInvoiceBoxes && initialInvoiceBoxes.length > 0) {
+      return initialInvoiceBoxes.map((box) => ({
+        id: String(box.id),
+        boxId: box.box,
+        amount: String(box.amt),
+        paymentMethod: String(box.trans_type),
+        notes: box.notes || "",
+      }));
+    }
+
     const defaultMethodId =
       paymentMethods.length > 0 ? paymentMethods[0].id.toString() : "";
     const defaultBoxId = initialData.boxId ? parseInt(initialData.boxId) : null;
@@ -99,6 +94,38 @@ export default function PaymentClientPage({
       },
     ];
   };
+
+  const getInvoiceBoxList = async () => {
+    try {
+      setInvoiceBoxLoading(true);
+      const response = await getInvoiceBoxListAction(initialData.invoiceId);
+
+      setInvoiceBoxes(response);
+
+      if (response && response.length > 0) {
+        const mappedRows = response.map((box) => ({
+          id: String(box.id),
+          boxId: box.box,
+          amount: String(box.amt),
+          paymentMethod: String(box.trans_type),
+          notes: box.notes || "",
+        }));
+
+        setPaymentRows(mappedRows);
+      }
+    } catch (error) {
+      console.error("Error fetching invoice box list:", error);
+    } finally {
+      setInvoiceBoxLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Only fetch if no initial data provided (though we expect it to be passed now)
+    if (initialInvoiceBoxes.length === 0) {
+      getInvoiceBoxList();
+    }
+  }, []);
 
   // بيانات الدفع المتعددة
   const [paymentRows, setPaymentRows] = useState<PaymentRow[]>(
@@ -306,8 +333,6 @@ export default function PaymentClientPage({
           return !isNaN(amtNum) && amtNum !== 0;
         })
         .map((row, index) => {
-          console.log(row);
-
           const body = InvoiceBoxPayload(
             row,
             index,
@@ -317,7 +342,10 @@ export default function PaymentClientPage({
             cr_date,
           );
 
-          const existingBox = invoiceBoxes.find((box) => box.box === row.boxId);
+          // Update existing logic
+          const existingBox = invoiceBoxes.find(
+            (box) => Number(box.box) === Number(row.boxId),
+          );
 
           if (existingBox) {
             const updateBody = {

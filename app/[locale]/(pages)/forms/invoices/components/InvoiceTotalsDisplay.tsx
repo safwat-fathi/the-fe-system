@@ -23,6 +23,7 @@ interface InvoiceTotalsDisplayProps {
   boxId?: string | number | null;
   hasItems: boolean;
   onPaymentClick?: () => void;
+  formMode?: "new" | "edit" | "preview";
 }
 
 export default function InvoiceTotalsDisplay({
@@ -41,6 +42,7 @@ export default function InvoiceTotalsDisplay({
   boxId,
   hasItems,
   onPaymentClick,
+  formMode = "new",
 }: InvoiceTotalsDisplayProps) {
   const t = useTranslations("forms.invoices.totals");
 
@@ -127,19 +129,21 @@ export default function InvoiceTotalsDisplay({
         </div>
       </div>
 
-      {hasItems && paymentMethod === PaymentTypes.CASH && (
-        <div className="mt-3 flex justify-start">
-          <Link
-            className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm inline-flex items-center gap-2 transition-colors"
-            href={paymentUrl}
-            prefetch
-            onClick={handlePaymentClick}
-          >
-            <CreditCardIcon className="w-4 h-4" />
-            {t("payment")}
-          </Link>
-        </div>
-      )}
+      {hasItems &&
+        paymentMethod === PaymentTypes.CASH &&
+        formMode !== "preview" && (
+          <div className="mt-3 flex justify-start">
+            <Link
+              className="h-8 px-4 text-sm bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 rounded-md shadow-sm inline-flex items-center gap-2 transition-colors"
+              href={paymentUrl}
+              prefetch
+              onClick={handlePaymentClick}
+            >
+              <CreditCardIcon className="w-4 h-4" />
+              {t("payment")}
+            </Link>
+          </div>
+        )}
     </>
   );
 }

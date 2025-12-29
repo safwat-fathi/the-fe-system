@@ -628,6 +628,7 @@ export default function InvoiceClientPage({
       <InvoiceTotalsDisplay
         boxId={selectedBoxId}
         customerName={form.cust_name || ""}
+        formMode={formMode}
         fractions={{
           frac: typeof fractions === "object" ? fractions.frac : 2,
           frac2: typeof fractions === "object" ? fractions.frac2 : 3,

@@ -3,8 +3,10 @@ import {
   Invoice,
   InvoiceBox,
   InvoiceDetail,
+  InvoiceGoldBox,
   CreateInvoiceBoxDto,
   CreateInvoiceGoldBoxDto,
+  UpdateInvoiceGoldBoxDto,
   InvoiceTypes,
   TransTypes,
   PaidType,
@@ -275,6 +277,7 @@ class InvoiceService extends HttpService<Invoice> {
   async getInvoiceBoxList(id: string, com: number): Promise<InvoiceBox[]> {
     const xinv_id = String(id).trim();
     const xcom_id = Number(com);
+
     try {
       const response = await this.get<{ results: InvoiceBox[] }>(
         "invoices_box_list",
@@ -657,6 +660,88 @@ class InvoiceService extends HttpService<Invoice> {
       return response.data;
     } catch (error) {
       console.error("Error creating invoice gold box:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async getInvoiceGoldBoxList(
+    id: string,
+    com: number,
+  ): Promise<InvoiceGoldBox[]> {
+    const xinv_id = String(id).trim();
+    const xcom_id = Number(com);
+
+    try {
+      const response = await this.get<{ results: InvoiceGoldBox[] }>(
+        "invoices_gold_box_list",
+        {
+          xinv_id,
+          xcom_id,
+        },
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("getInvoiceGoldBoxList failed:", errorInfo);
+        throw new Error(
+          `فشل جلب تفاصيل صندوق الذهب للفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error("getInvoiceGoldBoxList returned without data:", response);
+        throw new Error(
+          "فشل جلب تفاصيل صندوق الذهب للفاتورة: لم يتم إرجاع بيانات من الخادم",
+        );
+      }
+
+      return response.data.results;
+    } catch (error) {
+      rethrowAuthenticationError(error);
+      throw new Error("حدث خطأ أثناء جلب تفاصيل صندوق الذهب للفاتورة");
+    }
+  }
+
+  async updateInvoiceGoldBox(
+    id: number,
+    data: UpdateInvoiceGoldBoxDto,
+  ): Promise<InvoiceGoldBox | null> {
+    try {
+      const response = await this.put<InvoiceGoldBox>(
+        `api_update_invoice_gold_box/${id}`,
+        data,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("updateInvoiceGoldBox failed:", errorInfo);
+
+        return null;
+      }
+
+      if (!response.data) {
+        console.error("updateInvoiceGoldBox returned without data:", response);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error updating invoice gold box:", error);
       rethrowAuthenticationError(error);
 
       return null;
