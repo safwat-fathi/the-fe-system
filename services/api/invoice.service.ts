@@ -8,6 +8,7 @@ import {
   InvoiceTypes,
   TransTypes,
   PaidType,
+  UpdateInvoiceBoxDto,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
@@ -265,6 +266,47 @@ class InvoiceService extends HttpService<Invoice> {
       }
 
       return [];
+    } catch (error) {
+      rethrowAuthenticationError(error);
+      throw new Error("حدث خطأ أثناء جلب تفاصيل الفاتورة");
+    }
+  }
+
+  async getInvoiceBoxList(id: string, com: number): Promise<InvoiceBox[]> {
+    const xinv_id = String(id).trim();
+    const xcom_id = Number(com);
+    try {
+      const response = await this.get<{ results: InvoiceBox[] }>(
+        "invoices_box_list",
+        {
+          xinv_id,
+          xcom_id,
+        },
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("getInvoiceBoxList failed:", errorInfo);
+        throw new Error(
+          `فشل جلب تفاصيل الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (!response.data) {
+        console.error("getInvoiceBoxList returned without data:", response);
+        throw new Error(
+          "فشل جلب تفاصيل الفاتورة: لم يتم إرجاع بيانات من الخادم",
+        );
+      }
+
+      return response.data.results;
     } catch (error) {
       rethrowAuthenticationError(error);
       throw new Error("حدث خطأ أثناء جلب تفاصيل الفاتورة");
@@ -615,6 +657,43 @@ class InvoiceService extends HttpService<Invoice> {
       return response.data;
     } catch (error) {
       console.error("Error creating invoice gold box:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async updateInvoiceBox(
+    id: number,
+    data: UpdateInvoiceBoxDto,
+  ): Promise<InvoiceBox | null> {
+    try {
+      const response = await this.put<InvoiceBox>(
+        `api_update_invoice_box/${id}`,
+        data,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("updateInvoiceBox failed:", errorInfo);
+
+        return null;
+      }
+
+      if (!response.data) {
+        console.error("updateInvoiceBox returned without data:", response);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error updating invoice box:", error);
       rethrowAuthenticationError(error);
 
       return null;
