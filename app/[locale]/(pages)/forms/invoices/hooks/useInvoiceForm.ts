@@ -28,7 +28,11 @@ import {
   getInvoiceByIdAction,
   getInvoiceDetailsAction,
   createInvoiceBoxAction,
+  getInvoiceBoxListAction,
+  updateInvoiceBoxAction,
   createInvoiceGoldBoxAction,
+  getInvoiceGoldBoxListAction,
+  updateInvoiceGoldBoxAction,
 } from "@/app/actions/invoice";
 import { generateZatcaQR } from "@/utilities/zatca";
 import {
@@ -1480,34 +1484,28 @@ export default function useInvoiceForm({
           });
         }
 
-        // Create Invoice Box - only if not skipped
+        // Create/Update Invoice Box - only if not skipped
+        // Create/Update Invoice Box - only if not skipped
         if (!options?.skipDefaultBoxCreation) {
-          await createInvoiceBoxAction({
-            com: context.resolvedCompanyId,
-            trans_type: defaultTransType,
-            amt: formatDecimalString(context.totals.netAmount, frac),
-            box: String(validation.customer.id),
-            acc_change: "1",
-            notes: form.inv_notes,
-            cr_date: new Date().toISOString(),
-            inv: savedRecordId,
-          });
+          await handleInvoiceBox(
+            savedRecordId,
+            context.resolvedCompanyId,
+            defaultTransType,
+            context.totals.netAmount,
+            String(validation.customer.id),
+            form.inv_notes,
+            frac,
+          );
         }
 
-        if (context.totals.totalGWeight > 0) {
-          await createInvoiceGoldBoxAction({
-            com: context.resolvedCompanyId,
-            trans_type: defaultTransType,
-            gold: formatDecimalString(context.totals.totalGWeight, frac),
-            box: "1",
-            acc_change: "1",
-            k: 21,
-            gold2: 21,
-            notes: form.inv_notes,
-            cr_date: new Date().toISOString(),
-            inv: savedRecordId,
-          });
-        }
+        await handleGoldBox(
+          savedRecordId,
+          context.resolvedCompanyId,
+          defaultTransType,
+          context.totals.totalGWeight,
+          form.inv_notes,
+          frac,
+        );
 
         toast.success(
           isNewInvoice ? "تم حفظ الفاتورة بنجاح" : "تم تحديث الفاتورة بنجاح",
@@ -1819,4 +1817,79 @@ export default function useInvoiceForm({
     handleManualTotalChange,
     resetManualTotals,
   } as const;
+}
+
+async function handleInvoiceBox(
+  savedRecordId: number,
+  companyId: number,
+  transType: number,
+  amount: number,
+  customerId: string,
+  notes: string | null,
+  frac: number,
+) {
+  const invoiceBoxes = await getInvoiceBoxListAction(String(savedRecordId));
+  const existingBox = invoiceBoxes.find(
+    (b) => String(b.box) === String(customerId),
+  );
+
+  const boxPayload = {
+    com: companyId,
+    trans_type: transType,
+    amt: formatDecimalString(amount, frac),
+    box: String(customerId),
+    acc_change: "1",
+    notes: notes ?? "",
+    inv: savedRecordId,
+  };
+
+  if (existingBox) {
+    await updateInvoiceBoxAction(existingBox.id, {
+      ...boxPayload,
+      up_date: new Date().toISOString(),
+    });
+  } else {
+    await createInvoiceBoxAction({
+      ...boxPayload,
+      cr_date: new Date().toISOString(),
+    });
+  }
+}
+
+async function handleGoldBox(
+  savedRecordId: number,
+  companyId: number,
+  transType: number,
+  totalGWeight: number,
+  notes: string | null,
+  frac: number,
+) {
+  if (totalGWeight <= 0) return;
+
+  const goldBoxes = await getInvoiceGoldBoxListAction(String(savedRecordId));
+  const existingBox = goldBoxes && goldBoxes.length > 0 ? goldBoxes[0] : null;
+
+  const goldBoxPayload = {
+    com: companyId,
+    trans_type: transType,
+    gold: formatDecimalString(totalGWeight, frac),
+    box: "1",
+    acc_change: "1",
+    k: 21,
+    gold2: 21,
+    notes: notes ?? "",
+    inv: savedRecordId,
+  };
+
+  if (existingBox) {
+    await updateInvoiceGoldBoxAction(existingBox.id, {
+      ...goldBoxPayload,
+      up_date: new Date().toISOString(),
+    });
+  } else {
+    await createInvoiceGoldBoxAction({
+      ...goldBoxPayload,
+      cr_date: new Date().toISOString(),
+    });
+  }
 }

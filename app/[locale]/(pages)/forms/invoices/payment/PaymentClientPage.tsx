@@ -11,8 +11,12 @@ import Card from "@/components/Card";
 import Breadcrumb from "@/components/Breadcrumb";
 import useFractions from "@/utilities/useFractions";
 import { toast } from "@/utilities/toast";
-import { PaidType } from "@/types/models/invoice";
-import { createInvoiceBoxAction } from "@/app/actions/invoice";
+import { PaidType, type InvoiceBox } from "@/types/models/invoice";
+import {
+  createInvoiceBoxAction,
+  getInvoiceBoxListAction,
+  updateInvoiceBoxAction,
+} from "@/app/actions/invoice";
 
 interface PaymentRow {
   id: string;
@@ -30,6 +34,7 @@ interface Box {
 interface PaymentClientPageProps {
   boxes: Box[];
   paymentMethods: PaidType[];
+  initialInvoiceBoxes: InvoiceBox[];
   initialData: {
     total: number;
     invoiceNumber: string;
@@ -45,6 +50,7 @@ export default function PaymentClientPage({
   boxes,
   paymentMethods,
   initialData,
+  initialInvoiceBoxes = [],
 }: PaymentClientPageProps) {
   const t = useTranslations("forms.paymentPage");
   const locale = useLocale();
@@ -58,9 +64,22 @@ export default function PaymentClientPage({
   const [invoiceNumber] = useState<string>(initialData.invoiceNumber);
   const [customerName] = useState<string>(initialData.customerName);
   const [isSaving, setIsSaving] = useState(false);
+  const [invoiceBoxes, setInvoiceBoxes] =
+    useState<InvoiceBox[]>(initialInvoiceBoxes);
+  const [invoiceBoxLoading, setInvoiceBoxLoading] = useState(false);
 
   // Helper to update payment rows with default method
   const getInitialPaymentRows = (): PaymentRow[] => {
+    if (initialInvoiceBoxes && initialInvoiceBoxes.length > 0) {
+      return initialInvoiceBoxes.map((box) => ({
+        id: String(box.id),
+        boxId: box.box,
+        amount: String(box.amt),
+        paymentMethod: String(box.trans_type),
+        notes: box.notes || "",
+      }));
+    }
+
     const defaultMethodId =
       paymentMethods.length > 0 ? paymentMethods[0].id.toString() : "";
     const defaultBoxId = initialData.boxId ? parseInt(initialData.boxId) : null;
@@ -75,6 +94,38 @@ export default function PaymentClientPage({
       },
     ];
   };
+
+  const getInvoiceBoxList = async () => {
+    try {
+      setInvoiceBoxLoading(true);
+      const response = await getInvoiceBoxListAction(initialData.invoiceId);
+
+      setInvoiceBoxes(response);
+
+      if (response && response.length > 0) {
+        const mappedRows = response.map((box) => ({
+          id: String(box.id),
+          boxId: box.box,
+          amount: String(box.amt),
+          paymentMethod: String(box.trans_type),
+          notes: box.notes || "",
+        }));
+
+        setPaymentRows(mappedRows);
+      }
+    } catch (error) {
+      console.error("Error fetching invoice box list:", error);
+    } finally {
+      setInvoiceBoxLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Only fetch if no initial data provided (though we expect it to be passed now)
+    if (initialInvoiceBoxes.length === 0) {
+      getInvoiceBoxList();
+    }
+  }, []);
 
   // بيانات الدفع المتعددة
   const [paymentRows, setPaymentRows] = useState<PaymentRow[]>(
@@ -216,7 +267,7 @@ export default function PaymentClientPage({
     return true;
   };
 
-  const createInvoiceBoxPayload = (
+  const InvoiceBoxPayload = (
     row: PaymentRow,
     _successCount: number,
     inv: number,
@@ -282,7 +333,7 @@ export default function PaymentClientPage({
           return !isNaN(amtNum) && amtNum !== 0;
         })
         .map((row, index) => {
-          const body = createInvoiceBoxPayload(
+          const body = InvoiceBoxPayload(
             row,
             index,
             inv,
@@ -291,13 +342,49 @@ export default function PaymentClientPage({
             cr_date,
           );
 
-          return createInvoiceBoxAction(body).then((result) => {
-            if (!result) {
-              throw new Error(`فشل في حفظ الدفع للصندوق ${row.boxId}`);
-            }
+          // Update existing logic
+          const existingBox = invoiceBoxes.find(
+            (box) => Number(box.box) === Number(row.boxId),
+          );
 
-            return result;
-          });
+          if (existingBox) {
+            const updateBody = {
+              trans_type: Number(row.paymentMethod),
+              amt: Number(row.amount).toFixed(frac),
+              acc_change: "1",
+              notes: row.notes,
+              up_date: cr_date,
+              com,
+              inv: !isNaN(inv) && inv > 0 ? inv : 0,
+              box: String(row.boxId),
+            };
+
+            return updateInvoiceBoxAction(existingBox.id, updateBody).then(
+              (result) => {
+                if (!result) {
+                  throw new Error(`فشل في حفظ الدفع للصندوق ${row.boxId}`);
+                }
+
+                return result;
+              },
+            );
+          } else {
+            return createInvoiceBoxAction(body).then((result) => {
+              if (!result) {
+                throw new Error(`فشل في حفظ الدفع للصندوق ${row.boxId}`);
+              }
+
+              return result;
+            });
+          }
+
+          // return createInvoiceBoxAction(body).then((result) => {
+          //   if (!result) {
+          //     throw new Error(`فشل في حفظ الدفع للصندوق ${row.boxId}`);
+          //   }
+
+          //   return result;
+          // });
         });
 
       await Promise.all(promises);
@@ -340,7 +427,7 @@ export default function PaymentClientPage({
   };
 
   const statusStyles = getPaymentStatusStyles();
-  
+
   let statusText: string;
 
   if (remainingAmount > 0) {
@@ -378,6 +465,7 @@ export default function PaymentClientPage({
               isLoading={isSaving}
               size="sm"
               onPress={handleSave}
+              disabled={invoiceBoxLoading}
             >
               {isSaving ? t("saving") : t("savePayment")}
             </Button>

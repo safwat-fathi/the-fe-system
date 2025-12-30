@@ -21,6 +21,22 @@ export async function getInvoiceDetailsAction(invoiceId: string) {
   return invoiceService.getInvoiceDetails(invoiceId);
 }
 
+export async function getInvoiceBoxListAction(id: string) {
+  const com_id = (await cookies()).get(STORAGE_KEYS.COMPANY_ID)?.value;
+
+  if (!com_id) throw new Error("company id not found");
+
+  return invoiceService.getInvoiceBoxList(id, Number(com_id));
+}
+
+export async function getInvoiceGoldBoxListAction(id: string) {
+  const com_id = (await cookies()).get(STORAGE_KEYS.COMPANY_ID)?.value;
+
+  if (!com_id) throw new Error("company id not found");
+
+  return invoiceService.getInvoiceGoldBoxList(id, Number(com_id));
+}
+
 export async function getMaxInvoiceIdAction(transType: number) {
   const com_id = (await cookies()).get(STORAGE_KEYS.COMPANY_ID)?.value;
 
@@ -28,7 +44,6 @@ export async function getMaxInvoiceIdAction(transType: number) {
 
   return invoiceService.getMaxInvoiceId(transType, Number(com_id));
 }
-
 
 export async function createInvoiceAction(payload: Partial<Invoice>) {
   const result = await invoiceService.createInvoice(payload);
@@ -164,6 +179,50 @@ export async function createInvoiceGoldBoxAction(
   }
 
   const result = await invoiceService.createInvoiceGoldBox({
+    ...payload,
+    cr_user: userId,
+  });
+
+  return result;
+}
+
+export async function updateInvoiceGoldBoxAction(
+  id: number,
+  payload: Omit<
+    import("@/types/models/invoice").UpdateInvoiceGoldBoxDto,
+    "cr_user"
+  >,
+) {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(STORAGE_KEYS.USER_ID)?.value;
+
+  if (!userId) {
+    throw new Error("user id not found");
+  }
+
+  const result = await invoiceService.updateInvoiceGoldBox(id, {
+    ...payload,
+    cr_user: userId,
+  });
+
+  return result;
+}
+
+export async function updateInvoiceBoxAction(
+  id: number,
+  payload: Omit<
+    import("@/types/models/invoice").UpdateInvoiceBoxDto,
+    "cr_user"
+  >,
+) {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(STORAGE_KEYS.USER_ID)?.value;
+
+  if (!userId) {
+    throw new Error("user id not found");
+  }
+
+  const result = await invoiceService.updateInvoiceBox(id, {
     ...payload,
     cr_user: userId,
   });

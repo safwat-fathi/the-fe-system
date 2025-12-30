@@ -57,13 +57,18 @@ export default async function PaymentPage({
   let boxes: Box[] = [];
   let paymentMethodsResponse: IPaginatedResponse<PaidType> | null = null;
   let invoice: Invoice | null = null;
+  let invoiceBoxes: any[] = [];
 
   // Fetch data in parallel
   try {
-    [boxes, paymentMethodsResponse, invoice] = await Promise.all([
+    [boxes, paymentMethodsResponse, invoice, invoiceBoxes] = await Promise.all([
       boxesService.getBoxes(),
       invoiceService.getPaidTypeList(),
       invoiceService.getInvoiceById(toSingleValue(params.inv_number)),
+      invoiceService.getInvoiceBoxList(
+        toSingleValue(params.inv),
+        Number(toSingleValue(params.com) || "1"),
+      ),
     ]);
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -98,6 +103,7 @@ export default async function PaymentPage({
     <PaymentClientPage
       boxes={boxes || []}
       initialData={initialData}
+      initialInvoiceBoxes={invoiceBoxes || []}
       paymentMethods={paymentMethods}
     />
   );

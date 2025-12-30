@@ -199,7 +199,7 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       return buildOption({
         id: itemId,
         item_code: row.item_code ?? String(itemId),
-        item_name: row.item_desc ?? row.item_code ?? String(itemId),
+        item_name: row.item_code ?? String(itemId),
       });
     };
 
