@@ -274,6 +274,13 @@
         "saveError": "Failed to save payment",
         "paymentNotMatching": "Payment amount does not match invoice total. Remaining: {remaining} SAR",
         "overpayment": "Payment amount exceeds invoice total by: {extra} SAR"
+      },
+      "backDialog": {
+        "title": "Unsaved Payment Data",
+        "message": "You have unsaved payment data. Would you like to save before leaving?",
+        "save": "Save",
+        "goBackAnyway": "Go Back Anyway",
+        "cancel": "Cancel"
       }
     },
     "balanceVoucher": {

@@ -2,7 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Select, SelectItem } from "@heroui/react";
+import {
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { useTranslations, useLocale } from "next-intl";
@@ -64,9 +74,9 @@ export default function PaymentClientPage({
   const [invoiceNumber] = useState<string>(initialData.invoiceNumber);
   const [customerName] = useState<string>(initialData.customerName);
   const [isSaving, setIsSaving] = useState(false);
-  const [invoiceBoxes, setInvoiceBoxes] =
-    useState<InvoiceBox[]>(initialInvoiceBoxes);
+
   const [invoiceBoxLoading, setInvoiceBoxLoading] = useState(false);
+  const [showBackDialog, setShowBackDialog] = useState(false);
 
   // Helper to update payment rows with default method
   const getInitialPaymentRows = (): PaymentRow[] => {
@@ -100,8 +110,6 @@ export default function PaymentClientPage({
       setInvoiceBoxLoading(true);
       const response = await getInvoiceBoxListAction(initialData.invoiceId);
 
-      setInvoiceBoxes(response);
-
       if (response && response.length > 0) {
         const mappedRows = response.map((box) => ({
           id: String(box.id),
@@ -132,6 +140,25 @@ export default function PaymentClientPage({
     getInitialPaymentRows(),
   );
   const [selectedRowIndex, setSelectedRowIndex] = useState<number>(0);
+
+  // Sync payment rows with initialInvoiceBoxes on mount, then fetch fresh data
+  useEffect(() => {
+    // First sync with initial data if available to avoid flicker
+    if (initialInvoiceBoxes && initialInvoiceBoxes.length > 0) {
+      const mappedRows = initialInvoiceBoxes.map((box) => ({
+        id: String(box.id),
+        boxId: box.box,
+        amount: String(box.amt),
+        paymentMethod: String(box.trans_type),
+        notes: box.notes || "",
+      }));
+
+      setPaymentRows(mappedRows);
+    }
+
+    // Always fetch fresh data to ensure accuracy and bypass server cache issues
+    getInvoiceBoxList();
+  }, []);
 
   // حساب الإجماليات
   const paidAmount = paymentRows.reduce((sum, row) => {
@@ -342,9 +369,10 @@ export default function PaymentClientPage({
             cr_date,
           );
 
-          // Update existing logic
-          const existingBox = invoiceBoxes.find(
-            (box) => Number(box.box) === Number(row.boxId),
+          // Check if this payment row corresponds to an existing invoiceBox record
+          // by comparing row.id (which is the invoiceBox record ID from initial data)
+          const existingBox = initialInvoiceBoxes.find(
+            (box) => String(box.id) === row.id,
           );
 
           if (existingBox) {
@@ -403,6 +431,70 @@ export default function PaymentClientPage({
       );
     } catch (error) {
       console.error("خطأ في حفظ الدفع:", error);
+      toast.error(t("errors.saveError"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save current invoice box state and navigate back (without requiring full payment completion)
+  const handleGoBackWithBoxSave = async () => {
+    setIsSaving(true);
+    try {
+      const inv = parseInt(initialData.invoiceId || "0");
+      const com = parseInt(initialData.companyId);
+      const cr_date = new Date().toISOString();
+
+      const validRows = paymentRows.filter((row) => {
+        if (!row.boxId) return false;
+        const amtNum = Number(row.amount || "0");
+
+        return !isNaN(amtNum) && amtNum >= 0;
+      });
+
+      if (validRows.length > 0) {
+        const promises = validRows.map((row) => {
+          const body = {
+            trans_type: Number(row.paymentMethod),
+            amt: Number(row.amount || "0").toFixed(frac),
+            acc_change: "1",
+            notes: row.notes,
+            cr_date,
+            com,
+            inv: !isNaN(inv) && inv > 0 ? inv : 0,
+            box: String(row.boxId),
+          };
+
+          // Check if this payment row corresponds to an existing invoiceBox record
+          // by comparing row.id (which is the invoiceBox record ID from initial data)
+          const existingBox = initialInvoiceBoxes.find(
+            (box) => String(box.id) === row.id,
+          );
+
+          if (existingBox) {
+            return updateInvoiceBoxAction(existingBox.id, {
+              ...body,
+              up_date: cr_date,
+            });
+          } else {
+            return createInvoiceBoxAction(body);
+          }
+        });
+
+        await Promise.all(promises);
+      }
+
+      setIsSaved(true);
+      setShowBackDialog(false);
+
+      const invType = initialData.invoiceType || "sale";
+      const invNumber = initialData.invoiceNumber || "";
+
+      router.push(
+        `/forms/invoices?type=${invType}&mode=preview&id=${invNumber}`,
+      );
+    } catch (error) {
+      console.error("Error saving invoice box state:", error);
       toast.error(t("errors.saveError"));
     } finally {
       setIsSaving(false);
@@ -483,19 +575,16 @@ export default function PaymentClientPage({
               }
               onPress={() => {
                 if (hasUnsavedData()) {
-                  const confirmed = window.confirm(
-                    "لديك بيانات دفع غير محفوظة. هل تريد المغادرة؟",
+                  setShowBackDialog(true);
+                } else {
+                  setIsSaved(true);
+                  const invType = initialData.invoiceType || "sale";
+                  const invNumber = initialData.invoiceNumber || "";
+
+                  router.push(
+                    `/forms/invoices?type=${invType}&mode=preview&id=${invNumber}`,
                   );
-
-                  if (!confirmed) return;
                 }
-                setIsSaved(true); // Disable beforeunload warning
-                const invType = initialData.invoiceType || "sale";
-                const invNumber = initialData.invoiceNumber || "";
-
-                router.push(
-                  `/forms/invoices?type=${invType}&mode=preview&id=${invNumber}`,
-                );
               }}
             >
               {t("back")}
@@ -692,6 +781,73 @@ export default function PaymentClientPage({
           </div>
         </div>
       </div>
+
+      {/* Back Confirmation Dialog */}
+      <Modal
+        isOpen={showBackDialog}
+        onClose={() => setShowBackDialog(false)}
+        isDismissable={false}
+        size="md"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <p className="text-lg font-semibold">{t("backDialog.title")}</p>
+          </ModalHeader>
+          <ModalBody>
+            <div className="flex flex-col items-center gap-3 py-2">
+              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-amber-100">
+                <svg
+                  className="w-8 h-8 text-amber-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
+                </svg>
+              </div>
+              <p className="text-gray-700 text-center text-sm leading-relaxed">
+                {t("backDialog.message")}
+              </p>
+            </div>
+          </ModalBody>
+          <ModalFooter className="gap-3">
+            <Button
+              className="font-medium min-w-[100px]"
+              color="default"
+              variant="flat"
+              onPress={() => setShowBackDialog(false)}
+            >
+              {t("backDialog.cancel")}
+            </Button>
+            <Button
+              className="font-medium min-w-[100px]"
+              color="warning"
+              variant="flat"
+              isLoading={isSaving}
+              onPress={handleGoBackWithBoxSave}
+            >
+              {t("backDialog.goBackAnyway")}
+            </Button>
+            <Button
+              className="font-medium min-w-[100px] bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-md"
+              color="success"
+              variant="solid"
+              isLoading={isSaving}
+              onPress={() => {
+                setShowBackDialog(false);
+                handleSave();
+              }}
+            >
+              {t("backDialog.save")}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

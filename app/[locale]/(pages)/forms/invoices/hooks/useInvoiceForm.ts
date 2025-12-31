@@ -1485,7 +1485,6 @@ export default function useInvoiceForm({
         }
 
         // Create/Update Invoice Box - only if not skipped
-        // Create/Update Invoice Box - only if not skipped
         if (!options?.skipDefaultBoxCreation) {
           await handleInvoiceBox(
             savedRecordId,
