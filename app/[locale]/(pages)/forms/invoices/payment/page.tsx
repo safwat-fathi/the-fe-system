@@ -1,9 +1,12 @@
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 
 import PaymentClientPage from "@/app/[locale]/(pages)/forms/invoices/payment/PaymentClientPage";
 import { boxesService, invoiceService } from "@/services/api";
-import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
+import {
+  AuthenticationError,
+} from "@/utilities/errors/Authentication";
 import { Box } from "@/types/models/box";
 import { Invoice, PaidType } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
@@ -72,9 +75,12 @@ export default async function PaymentPage({
     ]);
   } catch (error) {
     console.error("Error fetching data:", error);
-    rethrowAuthenticationError(error);
+    if (error instanceof AuthenticationError) {
+      redirect("/auth/login");
+    }
     throw error;
   }
+
 
   // Guard: Validate invoice exists with matching invoice number
   if (!invoice) {
