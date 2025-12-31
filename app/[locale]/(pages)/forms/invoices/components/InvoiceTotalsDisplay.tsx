@@ -22,7 +22,7 @@ interface InvoiceTotalsDisplayProps {
   invoiceId: string;
   boxId?: string | number | null;
   hasItems: boolean;
-  onPaymentClick?: () => void;
+  onPaymentClick?: () => Promise<void> | void;
   formMode?: "new" | "edit" | "preview";
 }
 
@@ -46,18 +46,18 @@ export default function InvoiceTotalsDisplay({
 }: InvoiceTotalsDisplayProps) {
   const t = useTranslations("forms.invoices.totals");
 
-  // Build payment URL with all required params
+  // Build payment URL with all required params (fallback, not used when onPaymentClick is provided)
   const boxIdParam = boxId
     ? `&box_id=${encodeURIComponent(String(boxId))}`
     : "";
   const paymentUrl = `/forms/invoices/payment?total=${netAmount}&inv_number=${encodeURIComponent(invoiceNumber)}&customer=${encodeURIComponent(customerName)}&inv=${encodeURIComponent(invoiceId)}${boxIdParam}`;
 
-  const handlePaymentClick: React.MouseEventHandler<HTMLAnchorElement> = (
+  const handlePaymentClick: React.MouseEventHandler<HTMLAnchorElement> = async (
     e,
   ) => {
     if (onPaymentClick && hasItems) {
       e.preventDefault();
-      onPaymentClick();
+      await onPaymentClick();
     }
   };
 
