@@ -393,7 +393,7 @@ export default function InvoiceClientPage({
 
   const handlePaymentClick = useCallback(async () => {
     // Save the invoice first
-    const result = await saveInvoice({ skipDefaultBoxCreation: false });
+    const result = await saveInvoice({ skipDefaultBoxCreation: !isNewInvoice });
 
     if (!result || result.ok !== true) {
       toast.error("فشل في حفظ الفاتورة. يرجى المحاولة مرة أخرى.");
