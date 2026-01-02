@@ -24,6 +24,7 @@ import { toast } from "@/utilities/toast";
 import { PaidType, type InvoiceBox } from "@/types/models/invoice";
 import {
   createInvoiceBoxAction,
+  deleteInvoiceBoxAction,
   getInvoiceBoxListAction,
   updateInvoiceBoxAction,
 } from "@/app/actions/invoice";
@@ -261,10 +262,13 @@ export default function PaymentClientPage({
   // حذف صف دفع
   const removePaymentRow = (index: number) => {
     if (index === 0) return; // لا يمكن حذف الصف الأول
-    setPaymentRows((prev) => prev.filter((_, i) => i !== index));
-    if (selectedRowIndex >= index) {
-      setSelectedRowIndex(Math.max(0, selectedRowIndex - 1));
-    }
+    const currentBoxId = paymentRows[index].id;
+    deleteInvoiceBoxAction(Number(currentBoxId)).then(() => {
+      setPaymentRows((prev) => prev.filter((_, i) => i !== index));
+      if (selectedRowIndex >= index) {
+        setSelectedRowIndex(Math.max(0, selectedRowIndex - 1));
+      }
+    });
   };
 
   // Helper function to validate payment rows
