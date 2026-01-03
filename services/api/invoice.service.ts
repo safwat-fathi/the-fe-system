@@ -785,6 +785,33 @@ class InvoiceService extends HttpService<Invoice> {
     }
   }
 
+  async deleteInvoiceBox(id: number): Promise<boolean> {
+    try {
+      const response = await this.delete<boolean>(
+        `api_delete_invoice_box/${id}`,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("deleteInvoiceBox failed:", errorInfo);
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error deleting invoice box:", error);
+      rethrowAuthenticationError(error);
+
+      return false;
+    }
+  }
+
   async getPaidTypeList(): Promise<IPaginatedResponse<PaidType> | null> {
     try {
       const response = await this.get<IPaginatedResponse<PaidType>>(
