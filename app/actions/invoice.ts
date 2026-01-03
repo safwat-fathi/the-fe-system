@@ -230,6 +230,12 @@ export async function updateInvoiceBoxAction(
   return result;
 }
 
+export async function deleteInvoiceBoxAction(id: number) {
+  const result = await invoiceService.deleteInvoiceBox(id);
+
+  return result;
+}
+
 export async function getPaidTypeListAction() {
   return invoiceService.getPaidTypeList();
 }

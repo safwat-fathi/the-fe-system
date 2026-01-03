@@ -267,12 +267,58 @@ export default function InvoiceClientPage({
 
     if (!result || result.ok !== true) return;
 
+    console.log(result);
+
+    if (result.invoiceBoxCount > 1 && result.hasAmountChanged) {
+      const getCookieValue = (name: string): string | null => {
+        if (typeof document === "undefined") return null;
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+
+        if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+
+        return null;
+      };
+
+      const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
+
+      const totalsForPayment = computeTotals(form.pay_type, invoiceItems);
+
+      const paymentUrl = new URLSearchParams({
+        total: String(totalsForPayment.netAmount),
+        inv_number: String(result.invoiceNumber),
+        customer: form.cust_name || "",
+        inv: String(result.recordId),
+        com: companyId,
+        trans_type: String(selectorsInvoiceType),
+        inv_type: invoiceType,
+      });
+
+      if (selectedBoxId) {
+        paymentUrl.set("box_id", String(selectedBoxId));
+      }
+
+      router.push(`/forms/invoices/payment?${paymentUrl.toString()}`);
+      return;
+    }
+
     const invNumber = String(result.invoiceNumber);
     // Prefer inv_id; also remove id to avoid ambiguity
     const url = buildUrl({ mode: "preview", inv_id: invNumber, id: null });
 
     router.replace(url);
-  }, [buildUrl, router, saveInvoice]);
+  }, [
+    buildUrl,
+    router,
+    saveInvoice,
+    computeTotals,
+    form.pay_type,
+    invoiceItems,
+    form.cust_name,
+    selectorsInvoiceType,
+    invoiceType,
+    selectedBoxId,
+  ]);
 
   // Navigate to entered invoice id on search
   const handleSearchByInvoiceId = useCallback(() => {
