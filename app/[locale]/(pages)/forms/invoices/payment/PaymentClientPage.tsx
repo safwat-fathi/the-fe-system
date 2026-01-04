@@ -166,6 +166,8 @@ export default function PaymentClientPage({
     return sum + parseFloat(row.amount || "0");
   }, 0);
 
+  const [initialOverpayment] = useState<number>(paidAmount - invoiceTotal);
+
   const remainingAmount = invoiceTotal - paidAmount;
   const isOverpaid = paidAmount - invoiceTotal > 0.01;
   const isPaymentMatchingTotal = Math.abs(remainingAmount) < 0.01;
@@ -443,6 +445,14 @@ export default function PaymentClientPage({
 
   // Save current invoice box state and navigate back (without requiring full payment completion)
   const handleGoBackWithBoxSave = async () => {
+    const currentOverpayment = paidAmount - invoiceTotal;
+
+    if (initialOverpayment > 0.01 && currentOverpayment > 0.01) {
+      toast.error(
+        "لا يمكن الخروج بدون حفظ لأن الفاتورة كانت تحتوي على زيادة في البداية ولم يتم تسويتها.",
+      );
+      return;
+    }
     setIsSaving(true);
     try {
       const inv = parseInt(initialData.invoiceId || "0");
