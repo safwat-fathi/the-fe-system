@@ -1436,7 +1436,14 @@ export default function useInvoiceForm({
     async (options?: {
       skipDefaultBoxCreation?: boolean;
     }): Promise<
-      { ok: true; recordId: number; invoiceNumber: number } | { ok: false }
+      | {
+          ok: true;
+          recordId: number;
+          invoiceNumber: number;
+          invoiceBoxCount: number;
+          hasAmountChanged: boolean;
+        }
+      | { ok: false }
     > => {
       const validation = validateBeforeSave();
 
@@ -1484,8 +1491,21 @@ export default function useInvoiceForm({
           });
         }
 
-        // Create/Update Invoice Box - only if not skipped
-        if (!options?.skipDefaultBoxCreation) {
+        const existingInvoiceBoxes = await getInvoiceBoxListAction(
+          String(savedRecordId),
+        );
+        const invoiceBoxCount = existingInvoiceBoxes?.length ?? 0;
+
+        const existingBoxesTotal =
+          existingInvoiceBoxes?.reduce(
+            (sum, box) => sum + (parseFloat(String(box.amt)) || 0),
+            0,
+          ) ?? 0;
+
+        const hasAmountChanged =
+          Math.abs(existingBoxesTotal - context.totals.netAmount) > 0.01;
+
+        if (!options?.skipDefaultBoxCreation && invoiceBoxCount <= 1) {
           await handleInvoiceBox(
             savedRecordId,
             context.resolvedCompanyId,
@@ -1514,6 +1534,8 @@ export default function useInvoiceForm({
           ok: true,
           recordId: savedRecordId,
           invoiceNumber: Number(freshInvoice?.inv_id ?? context.invoiceNumber),
+          invoiceBoxCount,
+          hasAmountChanged,
         };
       } catch (error) {
         const errorMessage =
