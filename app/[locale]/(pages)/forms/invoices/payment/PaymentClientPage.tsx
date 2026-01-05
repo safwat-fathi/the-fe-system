@@ -447,10 +447,19 @@ export default function PaymentClientPage({
   const handleGoBackWithBoxSave = async () => {
     const currentOverpayment = paidAmount - invoiceTotal;
 
-    if (initialOverpayment > 0.01 && currentOverpayment > 0.01) {
+    if (initialOverpayment > 0.01) {
       toast.error(
-        "لا يمكن الخروج بدون حفظ لأن الفاتورة كانت تحتوي على زيادة في البداية ولم يتم تسويتها.",
+        "لا يمكن الخروج بدون حفظ لأن الفاتورة كانت تحتوي على زيادة في البداية. يجب الحفظ.",
       );
+      setShowBackDialog(false);
+      return;
+    }
+
+    if (initialOverpayment < -0.01) {
+      toast.error(
+        "لا يمكن الخروج بدون حفظ لأن الفاتورة كانت تحتوي على نقصان في البداية. يجب الحفظ.",
+      );
+      setShowBackDialog(false);
       return;
     }
     setIsSaving(true);
