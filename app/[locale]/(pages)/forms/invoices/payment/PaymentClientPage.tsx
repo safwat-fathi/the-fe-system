@@ -262,15 +262,16 @@ export default function PaymentClientPage({
   };
 
   // حذف صف دفع
-  const removePaymentRow = (index: number) => {
+  const removePaymentRow = async (index: number) => {
     if (index === 0) return; // لا يمكن حذف الصف الأول
     const currentBoxId = paymentRows[index].id;
-    deleteInvoiceBoxAction(Number(currentBoxId)).then(() => {
-      setPaymentRows((prev) => prev.filter((_, i) => i !== index));
-      if (selectedRowIndex >= index) {
-        setSelectedRowIndex(Math.max(0, selectedRowIndex - 1));
-      }
-    });
+
+    await deleteInvoiceBoxAction(Number(currentBoxId));
+
+    setPaymentRows((prev) => prev.filter((_, i) => i !== index));
+    if (selectedRowIndex >= index) {
+      setSelectedRowIndex(Math.max(0, selectedRowIndex - 1));
+    }
   };
 
   // Helper function to validate payment rows

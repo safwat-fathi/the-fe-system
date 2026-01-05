@@ -83,6 +83,16 @@ const TOTALS_TYPE_MAP: Record<InvoicePageType, TransTypes> = {
   "purchase-return": TransTypes.PURCHASE_RETURN,
 };
 
+const getCookieValue = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+
+  return null;
+};
+
 export interface InvoiceClientPageProps {
   invoiceData: Invoice | null;
   invoiceDetailsData: InvoiceDetail[];
@@ -267,19 +277,7 @@ export default function InvoiceClientPage({
 
     if (!result || result.ok !== true) return;
 
-    console.log(result);
-
     if (result.invoiceBoxCount > 1 && result.hasAmountChanged) {
-      const getCookieValue = (name: string): string | null => {
-        if (typeof document === "undefined") return null;
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-
-        if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-
-        return null;
-      };
-
       const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
 
       const totalsForPayment = computeTotals(form.pay_type, invoiceItems);
@@ -299,6 +297,7 @@ export default function InvoiceClientPage({
       }
 
       router.push(`/forms/invoices/payment?${paymentUrl.toString()}`);
+
       return;
     }
 
@@ -448,16 +447,6 @@ export default function InvoiceClientPage({
     }
 
     // Get company ID from cookies (client-side)
-    const getCookieValue = (name: string): string | null => {
-      if (typeof document === "undefined") return null;
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-
-      if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-
-      return null;
-    };
-
     const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
 
     // Build payment URL with all required parameters
