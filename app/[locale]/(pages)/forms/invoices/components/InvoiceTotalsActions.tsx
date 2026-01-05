@@ -126,7 +126,8 @@ export default function InvoiceTotalsActions() {
 
   const currentInvoiceNumber = useMemo(() => {
     if (invoiceNumber) return invoiceNumber;
-    if (maxInvoiceId) return maxInvoiceId + 1;
+    if (maxInvoiceId !== null && maxInvoiceId !== undefined)
+      return maxInvoiceId + 1;
 
     return "";
   }, [invoiceNumber, maxInvoiceId]);

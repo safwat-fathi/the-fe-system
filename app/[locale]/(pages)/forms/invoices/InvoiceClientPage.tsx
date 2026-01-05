@@ -242,17 +242,24 @@ export default function InvoiceClientPage({
 
   // Fetch max invoice ID for new invoices
   useEffect(() => {
-    if (isNewInvoice && !maxInvoiceId) {
-      getMaxInvoiceIdAction(selectorsInvoiceType)
-        .then((response) => {
-          if (response?.max_inv_id) {
-            setMaxInvoiceId(response.max_inv_id);
+    async function generateMaxInvoiceId() {
+      if (isNewInvoice && maxInvoiceId === null) {
+        try {
+          const data = await getMaxInvoiceIdAction(selectorsInvoiceType);
+
+          if (data && typeof data.max_inv_id === "number") {
+            setMaxInvoiceId(data.max_inv_id);
+          } else {
+            setMaxInvoiceId(0);
           }
-        })
-        .catch((error) => {
+        } catch (error) {
           console.error("Failed to fetch max invoice ID:", error);
-        });
+          setMaxInvoiceId(0);
+        }
+      }
     }
+
+    generateMaxInvoiceId();
   }, [isNewInvoice, selectorsInvoiceType, maxInvoiceId]);
 
   const buildUrl = useCallback(
