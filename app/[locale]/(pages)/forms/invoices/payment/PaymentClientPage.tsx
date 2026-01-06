@@ -166,6 +166,8 @@ export default function PaymentClientPage({
     return sum + parseFloat(row.amount || "0");
   }, 0);
 
+  const [initialOverpayment] = useState<number>(paidAmount - invoiceTotal);
+
   const remainingAmount = invoiceTotal - paidAmount;
   const isOverpaid = paidAmount - invoiceTotal > 0.01;
   const isPaymentMatchingTotal = Math.abs(remainingAmount) < 0.01;
@@ -444,66 +446,30 @@ export default function PaymentClientPage({
 
   // Save current invoice box state and navigate back (without requiring full payment completion)
   const handleGoBackWithBoxSave = async () => {
-    setIsSaving(true);
-    try {
-      const inv = parseInt(initialData.invoiceId || "0");
-      const com = parseInt(initialData.companyId);
-      const cr_date = new Date().toISOString();
+    const currentOverpayment = paidAmount - invoiceTotal;
 
-      const validRows = paymentRows.filter((row) => {
-        if (!row.boxId) return false;
-        const amtNum = Number(row.amount || "0");
-
-        return !isNaN(amtNum) && amtNum >= 0;
-      });
-
-      if (validRows.length > 0) {
-        const promises = validRows.map((row) => {
-          const body = {
-            trans_type: Number(row.paymentMethod),
-            amt: Number(row.amount || "0").toFixed(frac),
-            acc_change: "1",
-            notes: row.notes,
-            cr_date,
-            com,
-            inv: !isNaN(inv) && inv > 0 ? inv : 0,
-            box: String(row.boxId),
-          };
-
-          // Check if this payment row corresponds to an existing invoiceBox record
-          // by comparing row.id (which is the invoiceBox record ID from initial data)
-          const existingBox = initialInvoiceBoxes.find(
-            (box) => String(box.id) === row.id,
-          );
-
-          if (existingBox) {
-            return updateInvoiceBoxAction(existingBox.id, {
-              ...body,
-              up_date: cr_date,
-            });
-          } else {
-            return createInvoiceBoxAction(body);
-          }
-        });
-
-        await Promise.all(promises);
-      }
-
-      setIsSaved(true);
-      setShowBackDialog(false);
-
-      const invType = initialData.invoiceType || "sale";
-      const invNumber = initialData.invoiceNumber || "";
-
-      router.push(
-        `/forms/invoices?type=${invType}&mode=preview&id=${invNumber}`,
+    if (initialOverpayment > 0.01) {
+      toast.error(
+        "لا يمكن الخروج بدون حفظ لأن الفاتورة كانت تحتوي على زيادة في البداية. يجب الحفظ.",
       );
-    } catch (error) {
-      console.error("Error saving invoice box state:", error);
-      toast.error(t("errors.saveError"));
-    } finally {
-      setIsSaving(false);
+      setShowBackDialog(false);
+      return;
     }
+
+    if (initialOverpayment < -0.01) {
+      toast.error(
+        "لا يمكن الخروج بدون حفظ لأن الفاتورة كانت تحتوي على نقصان في البداية. يجب الحفظ.",
+      );
+      setShowBackDialog(false);
+      return;
+    }
+    setIsSaving(true);
+    const invType = initialData.invoiceType || "sale";
+    const invNumber = initialData.invoiceNumber || "";
+
+    router.push(`/forms/invoices?type=${invType}&mode=preview&id=${invNumber}`);
+    setIsSaving(false);
+    setShowBackDialog(false);
   };
 
   const getPaymentStatusStyles = () => {
