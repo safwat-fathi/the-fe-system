@@ -179,7 +179,7 @@ export async function loginAction(
   const { username, password } = result.data;
 
   const requestOptions: RequestInit = {
-    signal: AbortSignal.timeout(3000), // 30 seconds
+    signal: AbortSignal.timeout(30000), // 30 seconds
   };
 
   try {
