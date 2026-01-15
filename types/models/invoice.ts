@@ -145,6 +145,31 @@ export interface InvoiceDetail {
   year?: number | null;
 }
 
+export interface CreateInvoiceAccDto {
+  com: number;
+  trans_type: number;
+  acc: number;
+  amt: number;
+  acc_change: number;
+  notes: string;
+  cr_date: string;
+  cr_user: string;
+  inv: number;
+}
+
+export interface UpdateInvoiceAccDto {
+  com: number;
+  id: number;
+  trans_type: number;
+  acc: number;
+  amt: number;
+  acc_change: number;
+  notes: string;
+  upd_data: string;
+  upd_user: string;
+  inv: number;
+}
+
 export interface CreateInvoiceGoldBoxDto {
   com: number;
   trans_type: number;

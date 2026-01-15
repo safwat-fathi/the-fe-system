@@ -11,6 +11,8 @@ import {
   TransTypes,
   PaidType,
   UpdateInvoiceBoxDto,
+  type CreateInvoiceAccDto,
+  type UpdateInvoiceAccDto,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
@@ -635,6 +637,78 @@ class InvoiceService extends HttpService<Invoice> {
       rethrowAuthenticationError(error);
 
       return null;
+    }
+  }
+
+  async createInvoiceAcc(data: CreateInvoiceAccDto): Promise<any> {
+    try {
+      const response = await this.post<any>("api_create_invoice_acc", data);
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("createInvoiceAcc failed:", errorInfo);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error creating invoice acc:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async updateInvoiceAcc({
+    id,
+    data,
+  }: {
+    id: number;
+    data: UpdateInvoiceAccDto;
+  }) {
+    try {
+      const response = await this.put<any>(
+        `api_update_invoice_acc/${id}`,
+        data,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("updateInvoiceAcc failed:", errorInfo);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error updating invoice acc:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async deleteInvoiceAcc(id: number): Promise<boolean> {
+    try {
+      const response = await this.delete(`api_delete_invoice_acc/${id}`);
+
+      return response.success;
+    } catch (error) {
+      console.error("Error deleting invoice acc:", error);
+      rethrowAuthenticationError(error);
+
+      return false;
     }
   }
 

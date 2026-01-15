@@ -201,6 +201,17 @@
             "customer": "Select a customer to show the address information",
             "supplier": "Select a supplier to show the address information"
           }
+        },
+        "additionalExpanses": {
+          "title": "Additional Expenses",
+          "addRow": "Row",
+          "selectAccount": "Select account...",
+          "columns": {
+            "account": "Account",
+            "amount": "Amount",
+            "description": "Description",
+            "delete": "Delete"
+          }
         }
       },
       "items": {

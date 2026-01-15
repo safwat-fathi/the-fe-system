@@ -53,6 +53,37 @@ class AccountService extends HttpService<Account> {
     }
   }
 
+  async getAccounts(xcom_id?: number | string): Promise<Account[]> {
+    try {
+      const response = await this.get<Account[]>(
+        "getAccounts",
+        {
+          xcom_id: xcom_id || "1",
+        },
+        {
+          next: {
+            revalidate: 300,
+            tags: ["getAccounts"],
+          },
+        },
+      );
+
+      if (response.success) {
+        if (Array.isArray(response.data)) {
+          return response.data;
+        } else if (Array.isArray((response.data as any)?.results)) {
+          return (response.data as any).results;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching accounts:", error);
+      rethrowAuthenticationError(error);
+      throw new Error("حدث خطأ أثناء جلب بيانات الحسابات");
+    }
+  }
+
   async createAccount(account: Omit<Account, "id">): Promise<Account | null> {
     try {
       const accountData = {

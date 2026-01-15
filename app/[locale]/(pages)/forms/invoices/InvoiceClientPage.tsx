@@ -4,6 +4,7 @@ import type {
   InvoiceItemTableHandle,
   InvoiceItemTableProps,
 } from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
+import { type AdditionalExpansesTableHandle } from "@/app/[locale]/(pages)/forms/invoices/components/AdditionalExpansesTable";
 
 import {
   forwardRef,
@@ -36,6 +37,8 @@ import useFractions from "@/utilities/useFractions";
 import { calculateValueAndWagesTax } from "@/utilities/invoiceForm";
 import { getMaxInvoiceIdAction } from "@/app/actions/invoice";
 import { STORAGE_KEYS } from "@/constants";
+import accountService from "@/services/api/account.service";
+import { Account } from "@/types/models/account";
 
 const InvoiceItemTable = dynamic(
   () =>
@@ -130,6 +133,7 @@ export default function InvoiceClientPage({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [maxInvoiceId, setMaxInvoiceId] = useState<number | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
 
   const {
     // lists
@@ -195,6 +199,9 @@ export default function InvoiceClientPage({
   const fractions = useFractions();
   const allowEditing = formMode === "edit" || isNewInvoice;
   const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
+  const additionalExpansesRef = useRef<AdditionalExpansesTableHandle | null>(
+    null,
+  );
 
   // Derive selected box ID from customer selection
   const selectedBoxId = useMemo(() => {
@@ -255,6 +262,13 @@ export default function InvoiceClientPage({
     }
   }, [isNewInvoice, selectorsInvoiceType, maxInvoiceId]);
 
+  useEffect(() => {
+    accountService
+      .getAccounts()
+      .then((data) => setAccounts(data || []))
+      .catch((error) => console.error("Error loading accounts:", error));
+  }, []);
+
   const buildUrl = useCallback(
     (updates: Record<string, string | null | undefined>) => {
       const sp = new URLSearchParams(searchParams?.toString() || "");
@@ -272,10 +286,33 @@ export default function InvoiceClientPage({
     [pathname, searchParams],
   );
 
+  const saveAdditionalExpenses = useCallback(
+    async (invoiceId: number) => {
+      if (additionalExpansesRef.current) {
+        const companyId = parseInt(
+          getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1",
+        );
+        const userId = getCookieValue(STORAGE_KEYS.USER_ID) || "1";
+
+        await additionalExpansesRef.current.saveRows({
+          invoiceId,
+          transType: selectorsInvoiceType,
+          companyId,
+          userId,
+        });
+      }
+    },
+    [selectorsInvoiceType],
+  );
+
   const handleSaveAndNavigate = useCallback(async () => {
     const result = await saveInvoice();
 
     if (!result || result.ok !== true) return;
+
+    if (result.recordId) {
+      await saveAdditionalExpenses(result.recordId);
+    }
 
     if (result.invoiceBoxCount > 1 && result.hasAmountChanged) {
       const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
@@ -437,7 +474,6 @@ export default function InvoiceClientPage({
   );
 
   const handlePaymentClick = useCallback(async () => {
-    // Save the invoice first
     const result = await saveInvoice({ skipDefaultBoxCreation: !isNewInvoice });
 
     if (!result || result.ok !== true) {
@@ -446,15 +482,17 @@ export default function InvoiceClientPage({
       return;
     }
 
-    // Get company ID from cookies (client-side)
+    if (result.recordId) {
+      await saveAdditionalExpenses(result.recordId);
+    }
+
     const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
 
-    // Build payment URL with all required parameters
     const paymentUrl = new URLSearchParams({
       total: String(netAmount),
       inv_number: String(result.invoiceNumber),
       customer: form.cust_name || "",
-      inv: String(result.recordId), // Invoice PK (id, not inv_id)
+      inv: String(result.recordId),
       com: companyId,
       trans_type: String(selectorsInvoiceType),
       inv_type: invoiceType,
@@ -558,6 +596,7 @@ export default function InvoiceClientPage({
   return (
     <div className="space-y-2">
       <InvoiceSelectors
+        accounts={accounts}
         area={form.area}
         buildNo={form.build_no}
         city={form.city}
@@ -643,6 +682,7 @@ export default function InvoiceClientPage({
           itemTableRef.current?.focusFirstRow() ?? false
         }
         onInvoiceSelect={() => {}}
+        additionalExpansesRef={additionalExpansesRef}
       />
 
       <InvoiceItemTable
