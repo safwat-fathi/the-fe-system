@@ -89,6 +89,7 @@ const normalizeNode = (
 
   const account: Account = {
     id,
+    acc_code: node.acc_code ?? accId,
     acc_id: accId,
     acc_name: accName,
     acc_name_e: toStringSafe(node.acc_name_e, ""),
