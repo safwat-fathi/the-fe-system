@@ -1139,7 +1139,7 @@ export default function useInvoiceForm({
         invoiceNumber =
           maxInvoiceId !== null && maxInvoiceId !== undefined
             ? maxInvoiceId + 1
-            : null;
+            : 1;
       } else {
         // For existing invoices or manually entered IDs, use the raw value
         invoiceNumber = rawInvId;

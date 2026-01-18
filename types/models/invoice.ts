@@ -149,7 +149,7 @@ export interface CreateInvoiceAccDto {
   com: number;
   trans_type: number;
   acc: number;
-  amt: number;
+  amount: number;
   acc_change: number;
   notes: string;
   cr_date: string;
@@ -162,10 +162,10 @@ export interface UpdateInvoiceAccDto {
   id: number;
   trans_type: number;
   acc: number;
-  amt: number;
+  amount: number;
   acc_change: number;
   notes: string;
-  upd_data: string;
+  upd_date: string;
   upd_user: string;
   inv: number;
 }
@@ -260,4 +260,20 @@ export interface PaidType {
   code_desc: string;
   code_desc_l: string;
   type_id: number;
+}
+
+export interface InvoiceAcc {
+  id: number;
+  trans_type: number;
+  acc_id2: number | null;
+  amount: string | number | null;
+  acc_change: string;
+  notes: string;
+  cr_date: string;
+  cr_user: string;
+  upd_date: string | null;
+  upd_user: string | null;
+  com: number;
+  inv: number;
+  acc: number;
 }

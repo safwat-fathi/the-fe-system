@@ -4,7 +4,10 @@ import type {
   InvoiceItemTableHandle,
   InvoiceItemTableProps,
 } from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
-import { type AdditionalExpansesTableHandle } from "@/app/[locale]/(pages)/forms/invoices/components/AdditionalExpansesTable";
+import {
+  type AdditionalExpansesTableHandle,
+  type AdditionalExpanseRow,
+} from "@/app/[locale]/(pages)/forms/invoices/components/AdditionalExpansesTable";
 
 import {
   forwardRef,
@@ -38,7 +41,9 @@ import { calculateValueAndWagesTax } from "@/utilities/invoiceForm";
 import { getMaxInvoiceIdAction } from "@/app/actions/invoice";
 import { STORAGE_KEYS } from "@/constants";
 import accountService from "@/services/api/account.service";
+import invoiceService from "@/services/api/invoice.service";
 import { Account } from "@/types/models/account";
+import { InvoiceAcc } from "@/types/models/invoice";
 
 const InvoiceItemTable = dynamic(
   () =>
@@ -252,7 +257,7 @@ export default function InvoiceClientPage({
     if (isNewInvoice && !maxInvoiceId) {
       getMaxInvoiceIdAction(selectorsInvoiceType)
         .then((response) => {
-          if (response?.max_inv_id) {
+          if (response && response.max_inv_id !== undefined) {
             setMaxInvoiceId(response.max_inv_id);
           }
         })
@@ -268,6 +273,35 @@ export default function InvoiceClientPage({
       .then((data) => setAccounts(data || []))
       .catch((error) => console.error("Error loading accounts:", error));
   }, []);
+
+  // Load existing additional expanses when editing an invoice
+  useEffect(() => {
+    if (isNewInvoice || !invoiceData?.id) return;
+
+    const companyId = parseInt(getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1");
+
+    invoiceService
+      .getInvoiceAcc({
+        xinv_id: Number(invoiceData.id),
+        xcom_id: companyId,
+      })
+      .then((data: InvoiceAcc[]) => {
+        if (data && data.length > 0 && additionalExpansesRef.current) {
+          const mappedRows: AdditionalExpanseRow[] = data.map((acc, index) => ({
+            localId: Date.now() + index,
+            serverId: acc.id,
+            accountId: acc.acc,
+            accountLabel: String(acc.acc),
+            amount: String(acc.amount ?? "0.00"),
+            description: acc.notes || "",
+          }));
+          additionalExpansesRef.current.setRows(mappedRows);
+        }
+      })
+      .catch((error) =>
+        console.error("Error loading additional expanses:", error),
+      );
+  }, [isNewInvoice, invoiceData?.id]);
 
   const buildUrl = useCallback(
     (updates: Record<string, string | null | undefined>) => {
@@ -306,12 +340,27 @@ export default function InvoiceClientPage({
   );
 
   const handleSaveAndNavigate = useCallback(async () => {
+    // IMPORTANT: Capture the saveRows function BEFORE saveInvoice() triggers state updates
+    // that could cause re-renders and null the ref
+    const saveRowsFn = additionalExpansesRef.current?.saveRows;
+
     const result = await saveInvoice();
 
     if (!result || result.ok !== true) return;
 
-    if (result.recordId) {
-      await saveAdditionalExpenses(result.recordId);
+    // Use the captured function instead of reading from ref (which might be null after state updates)
+    if (result.recordId && saveRowsFn) {
+      const companyId = parseInt(
+        getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1",
+      );
+      const userId = getCookieValue(STORAGE_KEYS.USER_ID) || "1";
+
+      await saveRowsFn({
+        invoiceId: result.recordId,
+        transType: selectorsInvoiceType,
+        companyId,
+        userId,
+      });
     }
 
     if (result.invoiceBoxCount > 1 && result.hasAmountChanged) {
@@ -474,6 +523,9 @@ export default function InvoiceClientPage({
   );
 
   const handlePaymentClick = useCallback(async () => {
+    // IMPORTANT: Capture the saveRows function BEFORE saveInvoice() triggers state updates
+    const saveRowsFn = additionalExpansesRef.current?.saveRows;
+
     const result = await saveInvoice({ skipDefaultBoxCreation: !isNewInvoice });
 
     if (!result || result.ok !== true) {
@@ -482,8 +534,19 @@ export default function InvoiceClientPage({
       return;
     }
 
-    if (result.recordId) {
-      await saveAdditionalExpenses(result.recordId);
+    // Use the captured function instead of reading from ref
+    if (result.recordId && saveRowsFn) {
+      const companyId = parseInt(
+        getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1",
+      );
+      const userId = getCookieValue(STORAGE_KEYS.USER_ID) || "1";
+
+      await saveRowsFn({
+        invoiceId: result.recordId,
+        transType: selectorsInvoiceType,
+        companyId,
+        userId,
+      });
     }
 
     const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";

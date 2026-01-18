@@ -13,6 +13,7 @@ import {
   UpdateInvoiceBoxDto,
   type CreateInvoiceAccDto,
   type UpdateInvoiceAccDto,
+  type InvoiceAcc,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
@@ -637,6 +638,46 @@ class InvoiceService extends HttpService<Invoice> {
       rethrowAuthenticationError(error);
 
       return null;
+    }
+  }
+
+  async getInvoiceAcc(params: {
+    xinv_id: number;
+    xcom_id: number;
+  }): Promise<InvoiceAcc[]> {
+    try {
+      const queryParams = {
+        xinv_id: params.xinv_id,
+        xcom_id: params.xcom_id,
+      };
+      const response = await this.get<IPaginatedResponse<InvoiceAcc>>(
+        `invoices_acc_list`,
+        queryParams,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+        console.error("getInvoiceAcc failed:", errorInfo);
+        throw new Error(
+          `فشل جلب حسابات الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (response.success && response.data) {
+        return response.data.results;
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching invoice acc:", error);
+      rethrowAuthenticationError(error);
+      return [];
     }
   }
 

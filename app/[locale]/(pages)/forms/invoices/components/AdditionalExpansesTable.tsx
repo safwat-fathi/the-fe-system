@@ -67,14 +67,23 @@ const AdditionalExpansesTable = forwardRef<
 
   const originalRowsRef = useRef<AdditionalExpanseRow[]>([]);
 
+  // حل مشكله hydration
+  const idCounterRef = useRef(0);
+
+  const getNextLocalId = useCallback(() => {
+    idCounterRef.current += 1;
+    return idCounterRef.current;
+  }, []);
+
   const [rows, setRowsState] = useState<AdditionalExpanseRow[]>(() => {
     if (initialRows && initialRows.length > 0) {
       originalRowsRef.current = [...initialRows];
       return initialRows;
     }
+    idCounterRef.current = 1;
     return [
       {
-        localId: Date.now(),
+        localId: 1,
         serverId: null,
         accountId: null,
         accountLabel: "",
@@ -163,7 +172,7 @@ const AdditionalExpansesTable = forwardRef<
     setRowsState((prev) => [
       ...prev,
       {
-        localId: Date.now(),
+        localId: getNextLocalId(),
         serverId: null,
         accountId: null,
         accountLabel: "",
@@ -183,7 +192,7 @@ const AdditionalExpansesTable = forwardRef<
     if (rows.length === 1) {
       setRowsState([
         {
-          localId: Date.now(),
+          localId: getNextLocalId(),
           serverId: null,
           accountId: null,
           accountLabel: "",
@@ -262,13 +271,14 @@ const AdditionalExpansesTable = forwardRef<
     }) => {
       try {
         const now = new Date().toISOString();
-        const results: boolean[] = [];
 
         for (const serverId of deletedServerIds) {
           const deleted = await invoiceService.deleteInvoiceAcc(serverId);
-          results.push(deleted);
           if (!deleted) {
-            console.error(`Failed to delete invoice acc id: ${serverId}`);
+            const errorMsg = `فشل في حذف المصروف الإضافي (ID: ${serverId})`;
+            console.error(errorMsg);
+            toast.error(errorMsg);
+            return false;
           }
         }
 
@@ -284,10 +294,10 @@ const AdditionalExpansesTable = forwardRef<
               id: row.serverId,
               trans_type: transType,
               acc: row.accountId,
-              amt: amount,
+              amount: amount,
               acc_change: 1,
               notes: row.description || "",
-              upd_data: now,
+              upd_date: now,
               upd_user: userId,
               inv: invoiceId,
             };
@@ -296,16 +306,19 @@ const AdditionalExpansesTable = forwardRef<
               id: row.serverId,
               data: updateData,
             });
-            results.push(!!updated);
+
             if (!updated) {
-              console.error(`Failed to update invoice acc id: ${row.serverId}`);
+              const errorMsg = `فشل في تحديث المصروف الإضافي (ID: ${row.serverId})`;
+              console.error(errorMsg, { updateData });
+              toast.error(errorMsg);
+              return false;
             }
           } else {
             const createData: CreateInvoiceAccDto = {
               com: companyId,
               trans_type: transType,
               acc: row.accountId,
-              amt: amount,
+              amount: amount,
               acc_change: 1,
               notes: row.description || "",
               cr_date: now,
@@ -314,21 +327,26 @@ const AdditionalExpansesTable = forwardRef<
             };
 
             const created = await invoiceService.createInvoiceAcc(createData);
-            results.push(!!created);
-            if (created) {
-              row.serverId = created.id;
-            } else {
-              console.error(`Failed to create invoice acc for row`);
+
+            if (!created) {
+              const errorMsg = "فشل في إنشاء المصروف الإضافي";
+              console.error(errorMsg, { createData });
+              toast.error(errorMsg);
+              return false;
             }
+
+            row.serverId = created.id;
           }
         }
 
         setDeletedServerIds([]);
         originalRowsRef.current = [...rows];
 
-        return results.every((r) => r);
+        return true;
       } catch (error) {
-        console.error("Error saving additional expanses:", error);
+        const errorMsg = "حدث خطأ أثناء حفظ المصاريف الإضافية";
+        console.error(errorMsg, error);
+        toast.error(errorMsg);
         return false;
       }
     },
