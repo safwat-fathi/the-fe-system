@@ -11,6 +11,9 @@ import {
   TransTypes,
   PaidType,
   UpdateInvoiceBoxDto,
+  type CreateInvoiceAccDto,
+  type UpdateInvoiceAccDto,
+  type InvoiceAcc,
 } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
@@ -57,9 +60,10 @@ class InvoiceService extends HttpService<Invoice> {
     params?: GetAllInvoicesParams,
   ): Promise<IPaginatedResponse<Invoice> | null> {
     try {
+      const companyId = await this._getCompanyId();
       const queryParams = {
         page: params?.page || "1",
-        xcom_id: params?.xcom_id || "1",
+        xcom_id: String(companyId),
         xyear_id: params?.xyear_id || "0",
         xtrans_type: params?.xtrans_type || "0",
         xinv_id: params?.xinv_id || "0",
@@ -99,9 +103,10 @@ class InvoiceService extends HttpService<Invoice> {
     transType?: TransTypes,
   ): Promise<Invoice | null> {
     try {
+      const companyId = await this._getCompanyId();
       const queryParams = {
         page: "1",
-        xcom_id: "1",
+        xcom_id: String(companyId),
         xyear_id: "0",
         xtrans_type: transType || "0",
         xinv_id: id,
@@ -318,12 +323,8 @@ class InvoiceService extends HttpService<Invoice> {
 
   async createInvoice(invoiceData: Partial<Invoice>): Promise<Invoice | null> {
     try {
-      const companyId = Number(invoiceData?.com);
+      const companyId = await this._getCompanyId();
       const yearId = Number(invoiceData?.year);
-
-      if (!Number.isFinite(companyId) || companyId <= 0) {
-        throw new Error("رمز الفرع مطلوب قبل إنشاء الفاتورة");
-      }
 
       if (!Number.isFinite(yearId) || yearId <= 0) {
         throw new Error("رمز السنة مطلوب قبل إنشاء الفاتورة");
@@ -389,9 +390,15 @@ class InvoiceService extends HttpService<Invoice> {
     }
 
     try {
+      const companyId = await this._getCompanyId();
+      const payload = {
+        ...invoiceData,
+        com: companyId,
+      };
+
       const response = await this.patch<Invoice>(
         `api_update_invoice/${parsedId}`,
-        invoiceData,
+        payload,
         undefined,
         {
           signal: AbortSignal.timeout(60000),
@@ -432,16 +439,12 @@ class InvoiceService extends HttpService<Invoice> {
     detailData: Partial<InvoiceDetail>,
   ): Promise<InvoiceDetail | null> {
     try {
-      const companyId = Number(detailData?.com);
+      const companyId = await this._getCompanyId();
       const invoicePk = Number(detailData?.inv);
       const maybeYear =
         detailData?.year !== undefined && detailData?.year !== null
           ? Number(detailData.year)
           : null;
-
-      if (!Number.isFinite(companyId) || companyId <= 0) {
-        throw new Error("رمز الفرع مطلوب قبل إنشاء تفاصيل الفاتورة");
-      }
 
       if (!Number.isFinite(invoicePk) || invoicePk <= 0) {
         throw new Error("رمز الفاتورة غير صالح لإنشاء التفاصيل");
@@ -511,9 +514,15 @@ class InvoiceService extends HttpService<Invoice> {
         return this.createInvoiceDetail(detailData);
       }
 
+      const companyId = await this._getCompanyId();
+      const payload = {
+        ...detailData,
+        com: companyId,
+      };
+
       const response = await this.patch<InvoiceDetail>(
         `api_update_invoice_dtl/${parsedId}`,
-        detailData,
+        payload,
       );
 
       if (!response.success) {
@@ -558,11 +567,12 @@ class InvoiceService extends HttpService<Invoice> {
 
   async getMaxInvoiceId(
     transType: TransTypes,
-    com_id: number,
+    _com_id?: number,
   ): Promise<{ max_inv_id: number } | null> {
     try {
+      const companyId = await this._getCompanyId();
       const queryParams = {
-        xcom_id: String(com_id), // Will be read from server-side cookie
+        xcom_id: String(companyId),
         xtrans_type: String(transType),
       };
 
@@ -606,9 +616,15 @@ class InvoiceService extends HttpService<Invoice> {
     data: CreateInvoiceBoxDto,
   ): Promise<InvoiceBox | null> {
     try {
+      const companyId = await this._getCompanyId();
+      const payload = {
+        ...data,
+        com: companyId,
+      };
+
       const response = await this.post<InvoiceBox>(
         "api_create_invoice_box",
-        data,
+        payload,
       );
 
       if (!response.success) {
@@ -638,11 +654,137 @@ class InvoiceService extends HttpService<Invoice> {
     }
   }
 
+  async getInvoiceAcc(params: {
+    xinv_id: number;
+    xcom_id: number;
+  }): Promise<InvoiceAcc[]> {
+    try {
+      const queryParams = {
+        xinv_id: params.xinv_id,
+        xcom_id: params.xcom_id,
+      };
+      const response = await this.get<IPaginatedResponse<InvoiceAcc>>(
+        `invoices_acc_list`,
+        queryParams,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("getInvoiceAcc failed:", errorInfo);
+        throw new Error(
+          `فشل جلب حسابات الفاتورة: ${
+            response.message ?? "استجابة غير متوقعة من الخادم"
+          }`,
+        );
+      }
+
+      if (response.success && response.data) {
+        return response.data.results;
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching invoice acc:", error);
+      rethrowAuthenticationError(error);
+
+      return [];
+    }
+  }
+
+  async createInvoiceAcc(data: CreateInvoiceAccDto): Promise<any> {
+    try {
+      const companyId = await this._getCompanyId();
+      const payload = {
+        ...data,
+        com: companyId,
+      };
+
+      const response = await this.post<any>("api_create_invoice_acc", payload);
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("createInvoiceAcc failed:", errorInfo);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error creating invoice acc:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async updateInvoiceAcc({
+    id,
+    data,
+  }: {
+    id: number;
+    data: UpdateInvoiceAccDto;
+  }) {
+    try {
+      const response = await this.put<any>(
+        `api_update_invoice_acc/${id}`,
+        data,
+      );
+
+      if (!response.success) {
+        const errorInfo = {
+          message: response.message ?? "No message provided",
+          errors: response.errors,
+          data: response.data,
+        };
+
+        console.error("updateInvoiceAcc failed:", errorInfo);
+
+        return null;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("Error updating invoice acc:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
+
+  async deleteInvoiceAcc(id: number): Promise<boolean> {
+    try {
+      const response = await this.delete(`api_delete_invoice_acc/${id}`);
+
+      return response.success;
+    } catch (error) {
+      console.error("Error deleting invoice acc:", error);
+      rethrowAuthenticationError(error);
+
+      return false;
+    }
+  }
+
   async createInvoiceGoldBox(data: CreateInvoiceGoldBoxDto): Promise<any> {
     try {
+      const companyId = await this._getCompanyId();
+      const payload = {
+        ...data,
+        com: companyId,
+      };
+
       const response = await this.post<any>(
         "api_create_invoice_gold_box",
-        data,
+        payload,
       );
 
       if (!response.success) {
@@ -753,9 +895,15 @@ class InvoiceService extends HttpService<Invoice> {
     data: UpdateInvoiceBoxDto,
   ): Promise<InvoiceBox | null> {
     try {
+      const companyId = await this._getCompanyId();
+      const payload = {
+        ...data,
+        com: companyId,
+      };
+
       const response = await this.put<InvoiceBox>(
         `api_update_invoice_box/${id}`,
-        data,
+        payload,
       );
 
       if (!response.success) {

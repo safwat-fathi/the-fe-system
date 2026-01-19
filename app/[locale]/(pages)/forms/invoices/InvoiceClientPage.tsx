@@ -5,6 +5,7 @@ import type {
   InvoiceItemTableProps,
 } from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
 
+
 import {
   forwardRef,
   useCallback,
@@ -18,11 +19,16 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { useLocale } from "next-intl";
 
+import {
+  type AdditionalExpansesTableHandle,
+  type AdditionalExpanseRow,
+} from "@/app/[locale]/(pages)/forms/invoices/components/AdditionalExpansesTable";
 import InvoiceSelectors from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceSelectors";
 import InvoiceItemTableSkeleton from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTableSkeleton";
 import InvoiceTotalsDisplay from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceTotalsDisplay";
 import {
   Invoice,
+  InvoiceAcc,
   InvoiceDetail,
   PaymentTypes,
   TransTypes,
@@ -36,6 +42,9 @@ import useFractions from "@/utilities/useFractions";
 import { calculateValueAndWagesTax } from "@/utilities/invoiceForm";
 import { getMaxInvoiceIdAction } from "@/app/actions/invoice";
 import { STORAGE_KEYS } from "@/constants";
+import accountService from "@/services/api/account.service";
+import invoiceService from "@/services/api/invoice.service";
+import { Account } from "@/types/models/account";
 
 const InvoiceItemTable = dynamic(
   () =>
@@ -130,6 +139,7 @@ export default function InvoiceClientPage({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [maxInvoiceId, setMaxInvoiceId] = useState<number | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
 
   const {
     // lists
@@ -195,6 +205,9 @@ export default function InvoiceClientPage({
   const fractions = useFractions();
   const allowEditing = formMode === "edit" || isNewInvoice;
   const itemTableRef = useRef<InvoiceItemTableHandle | null>(null);
+  const additionalExpansesRef = useRef<AdditionalExpansesTableHandle | null>(
+    null,
+  );
 
   // Derive selected box ID from customer selection
   const selectedBoxId = useMemo(() => {
@@ -242,25 +255,55 @@ export default function InvoiceClientPage({
 
   // Fetch max invoice ID for new invoices
   useEffect(() => {
-    async function generateMaxInvoiceId() {
-      if (isNewInvoice && maxInvoiceId === null) {
-        try {
-          const data = await getMaxInvoiceIdAction(selectorsInvoiceType);
-
-          if (data && typeof data.max_inv_id === "number") {
-            setMaxInvoiceId(data.max_inv_id);
-          } else {
-            setMaxInvoiceId(0);
+    if (isNewInvoice && !maxInvoiceId) {
+      getMaxInvoiceIdAction(selectorsInvoiceType)
+        .then((response) => {
+          if (response && response.max_inv_id !== undefined) {
+            setMaxInvoiceId(response.max_inv_id);
           }
-        } catch (error) {
+        })
+        .catch((error) => {
           console.error("Failed to fetch max invoice ID:", error);
-          setMaxInvoiceId(0);
-        }
-      }
+        });
     }
-
-    generateMaxInvoiceId();
   }, [isNewInvoice, selectorsInvoiceType, maxInvoiceId]);
+
+  useEffect(() => {
+    accountService
+      .getAccounts()
+      .then((data) => setAccounts(data || []))
+      .catch((error) => console.error("Error loading accounts:", error));
+  }, []);
+
+  // Load existing additional expanses when editing an invoice
+  useEffect(() => {
+    if (isNewInvoice || !invoiceData?.id) return;
+
+    const companyId = parseInt(getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1");
+
+    invoiceService
+      .getInvoiceAcc({
+        xinv_id: Number(invoiceData.id),
+        xcom_id: companyId,
+      })
+      .then((data: InvoiceAcc[]) => {
+        if (data && data.length > 0 && additionalExpansesRef.current) {
+          const mappedRows: AdditionalExpanseRow[] = data.map((acc, index) => ({
+            localId: Date.now() + index,
+            serverId: acc.id,
+            accountId: acc.acc,
+            accountLabel: String(acc.acc),
+            amount: String(acc.amount ?? "0.00"),
+            description: acc.notes || "",
+          }));
+
+          additionalExpansesRef.current.setRows(mappedRows);
+        }
+      })
+      .catch((error) =>
+        console.error("Error loading additional expanses:", error),
+      );
+  }, [isNewInvoice, invoiceData?.id]);
 
   const buildUrl = useCallback(
     (updates: Record<string, string | null | undefined>) => {
@@ -279,10 +322,31 @@ export default function InvoiceClientPage({
     [pathname, searchParams],
   );
 
+
+
   const handleSaveAndNavigate = useCallback(async () => {
+    // IMPORTANT: Capture the saveRows function BEFORE saveInvoice() triggers state updates
+    // that could cause re-renders and null the ref
+    const saveRowsFn = additionalExpansesRef.current?.saveRows;
+
     const result = await saveInvoice();
 
     if (!result || result.ok !== true) return;
+
+    // Use the captured function instead of reading from ref (which might be null after state updates)
+    if (result.recordId && saveRowsFn) {
+      const companyId = parseInt(
+        getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1",
+      );
+      const userId = getCookieValue(STORAGE_KEYS.USER_ID) || "1";
+
+      await saveRowsFn({
+        invoiceId: result.recordId,
+        transType: selectorsInvoiceType,
+        companyId,
+        userId,
+      });
+    }
 
     if (result.invoiceBoxCount > 1 && result.hasAmountChanged) {
       const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
@@ -444,7 +508,9 @@ export default function InvoiceClientPage({
   );
 
   const handlePaymentClick = useCallback(async () => {
-    // Save the invoice first
+    // IMPORTANT: Capture the saveRows function BEFORE saveInvoice() triggers state updates
+    const saveRowsFn = additionalExpansesRef.current?.saveRows;
+
     const result = await saveInvoice({ skipDefaultBoxCreation: !isNewInvoice });
 
     if (!result || result.ok !== true) {
@@ -453,15 +519,28 @@ export default function InvoiceClientPage({
       return;
     }
 
-    // Get company ID from cookies (client-side)
+    // Use the captured function instead of reading from ref
+    if (result.recordId && saveRowsFn) {
+      const companyId = parseInt(
+        getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1",
+      );
+      const userId = getCookieValue(STORAGE_KEYS.USER_ID) || "1";
+
+      await saveRowsFn({
+        invoiceId: result.recordId,
+        transType: selectorsInvoiceType,
+        companyId,
+        userId,
+      });
+    }
+
     const companyId = getCookieValue(STORAGE_KEYS.COMPANY_ID) || "1";
 
-    // Build payment URL with all required parameters
     const paymentUrl = new URLSearchParams({
       total: String(netAmount),
       inv_number: String(result.invoiceNumber),
       customer: form.cust_name || "",
-      inv: String(result.recordId), // Invoice PK (id, not inv_id)
+      inv: String(result.recordId),
       com: companyId,
       trans_type: String(selectorsInvoiceType),
       inv_type: invoiceType,
@@ -565,6 +644,7 @@ export default function InvoiceClientPage({
   return (
     <div className="space-y-2">
       <InvoiceSelectors
+        accounts={accounts}
         area={form.area}
         buildNo={form.build_no}
         city={form.city}
@@ -650,6 +730,7 @@ export default function InvoiceClientPage({
           itemTableRef.current?.focusFirstRow() ?? false
         }
         onInvoiceSelect={() => {}}
+        additionalExpansesRef={additionalExpansesRef}
       />
 
       <InvoiceItemTable

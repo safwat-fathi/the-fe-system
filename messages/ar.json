@@ -201,6 +201,17 @@
             "customer": "اختر عميلاً لعرض معلومات العنوان",
             "supplier": "اختر مورداً لعرض معلومات العنوان"
           }
+        },
+        "additionalExpanses": {
+          "title": "المصروفات الإضافية",
+          "addRow": "صف",
+          "selectAccount": "اختر الحساب...",
+          "columns": {
+            "account": "الحساب",
+            "amount": "المبلغ",
+            "description": "البيان",
+            "delete": "حذف"
+          }
         }
       },
       "items": {

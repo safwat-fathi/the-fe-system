@@ -106,7 +106,7 @@ export default function PaymentClientPage({
     ];
   };
 
-  const getInvoiceBoxList = async () => {
+  const getInvoiceBoxList = useCallback(async () => {
     try {
       setInvoiceBoxLoading(true);
       const response = await getInvoiceBoxListAction(initialData.invoiceId);
@@ -127,14 +127,14 @@ export default function PaymentClientPage({
     } finally {
       setInvoiceBoxLoading(false);
     }
-  };
+  }, [initialData.invoiceId]);
 
   useEffect(() => {
     // Only fetch if no initial data provided (though we expect it to be passed now)
     if (initialInvoiceBoxes.length === 0) {
       getInvoiceBoxList();
     }
-  }, []);
+  }, [initialInvoiceBoxes.length, getInvoiceBoxList]);
 
   // بيانات الدفع المتعددة
   const [paymentRows, setPaymentRows] = useState<PaymentRow[]>(
@@ -159,7 +159,7 @@ export default function PaymentClientPage({
 
     // Always fetch fresh data to ensure accuracy and bypass server cache issues
     getInvoiceBoxList();
-  }, []);
+  }, [initialInvoiceBoxes, getInvoiceBoxList]);
 
   // حساب الإجماليات
   const paidAmount = paymentRows.reduce((sum, row) => {
@@ -263,7 +263,7 @@ export default function PaymentClientPage({
 
   // حذف صف دفع
   const removePaymentRow = async (index: number) => {
-    if (index === 0) return; // لا يمكن حذف الصف الأول
+    if (index === 0 || index < 0 || index >= paymentRows.length) return; // لا يمكن حذف الصف الأول
     const currentBoxId = paymentRows[index].id;
 
     await deleteInvoiceBoxAction(Number(currentBoxId));

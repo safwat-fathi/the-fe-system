@@ -1,8 +1,7 @@
-"use client";
-
 import {
   ChangeEvent,
   Dispatch,
+  RefObject,
   SetStateAction,
   useCallback,
   useEffect,
@@ -12,6 +11,10 @@ import {
 } from "react";
 import ReactSelect, { type SelectInstance } from "react-select";
 import { useTranslations } from "next-intl";
+
+import { AdditionalExpansesTableHandle } from "./AdditionalExpansesTable";
+import InvoiceAddressSection from "./InvoiceAddressSection";
+import InvoiceAdditionalExpansesSection from "./InvoiceAdditionalExpansesSection";
 
 import { BaseModal } from "@/components/Modal";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
@@ -23,6 +26,7 @@ import {
   TransTypes,
 } from "@/types/models/invoice";
 import { getCustomerInvoicesAction } from "@/app/actions/customer";
+import { Account } from "@/types/models/account";
 
 interface Customer {
   id: string;
@@ -122,6 +126,7 @@ const useCustomerInvoices = ({
 };
 
 interface Props {
+  accounts: Account[];
   customers: Customer[];
   selectedCustomer: string | null;
   selectedCustomerName: string;
@@ -171,9 +176,11 @@ interface Props {
   invoiceDate?: string;
   setInvoiceDate?: (val: string) => void;
   onFocusNextSection?: () => boolean;
+  additionalExpansesRef?: RefObject<AdditionalExpansesTableHandle | null>;
 }
 
 export default function InvoiceSelectors({
+  accounts,
   customers,
   selectedCustomer,
   selectedCustomerName,
@@ -218,12 +225,12 @@ export default function InvoiceSelectors({
   isEditing,
   invoiceType = TransTypes.SALES,
   onFocusNextSection,
+  additionalExpansesRef,
 }: Props) {
   const selectorsRef = useRef<HTMLDivElement | null>(null);
   const customerSelectRef = useRef<SelectInstance<CustomerOption> | null>(null);
   const t = useTranslations("forms.invoices.selectors");
 
-  const [isOpen, setIsOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const partyKey: "customer" | "supplier" =
     invoiceType === TransTypes.PURCHASE ||
@@ -233,7 +240,6 @@ export default function InvoiceSelectors({
   const partyLabel = t(`customerLabel.${partyKey}`);
   const partyPlaceholder = t(`customerPlaceholder.${partyKey}`);
   const customerInvoicesLabel = t(`customerInvoicesLabel.${partyKey}`);
-  const addressEmptyText = t(`address.empty.${partyKey}`);
   const getFallbackName = useCallback(
     (code: string) => t(`fallbackName.${partyKey}`, { code }),
     [partyKey, t],
@@ -247,29 +253,22 @@ export default function InvoiceSelectors({
       const target = event.target as HTMLElement | null;
 
       if (!target) return false;
-      if (target.closest("[data-skip-key-as-tab='true']")) {
-        return true;
-      }
+
+      if (target.closest("[data-skip-key-as-tab='true']")) return true;
+
       const comboRoot = target.closest('[role="combobox"]');
 
-      if (comboRoot && comboRoot.getAttribute("aria-expanded") === "true") {
+      if (comboRoot && comboRoot.getAttribute("aria-expanded") === "true")
         return true;
-      }
+
       const tagName = target.tagName.toLowerCase();
 
-      if (tagName === "textarea" || tagName === "button") {
-        return true;
-      }
+      if (["textarea", "button"].includes(tagName)) return true;
+
       if (tagName === "input") {
         const input = target as HTMLInputElement;
 
-        if (
-          input.type === "checkbox" ||
-          input.type === "button" ||
-          input.type === "submit"
-        ) {
-          return true;
-        }
+        return ["checkbox", "button", "submit"].includes(input.type);
       }
 
       return false;
@@ -787,216 +786,38 @@ export default function InvoiceSelectors({
           </div>
         </div>
 
-        {/* مربع معلومات العنوان */}
-        <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          {/* Header with Toggle Button */}
-          <div
-            role="button"
-            className="flex items-center justify-between p-2 md:p-3 hover:bg-gray-50 transition-colors"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <span>📍</span>
-              <span>{t("address.title")}</span>
-            </h3>
-            <button
-              className="pointer-events-none text-gray-600 hover:text-gray-800 transition-transform duration-200"
-              style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-              tabIndex={-1}
-            >
-              <svg
-                fill="none"
-                height="20"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                width="20"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-          </div>
+        <InvoiceAddressSection
+          isEditing={isEditing}
+          selectedCustomer={selectedCustomer}
+          partyKey={partyKey}
+          setVatNumber={setVatNumber}
+          crNo={crNo}
+          setCrNo={setCrNo}
+          gov={gov}
+          setGov={setGov}
+          city={city}
+          setCity={setCity}
+          area={area}
+          setArea={setArea}
+          street={street}
+          setStreet={setStreet}
+          buildNo={buildNo}
+          setBuildNo={setBuildNo}
+          postNo={postNo}
+          setPostNo={setPostNo}
+          postCode={postCode}
+          setPostCode={setPostCode}
+          mobileMethod={mobileMethod}
+          setMobileMethod={setMobileMethod}
+        />
 
-          {/* Collapsible Content */}
-          <div
-            className="overflow-hidden transition-all duration-300 ease-in-out"
-            style={{
-              maxHeight: isOpen ? "1000px" : "0",
-              opacity: isOpen ? 1 : 0,
-            }}
-          >
-            <div className="px-3 pb-3 md:px-4 md:pb-4 border-t border-gray-200">
-              {selectedCustomer ? (
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mt-3">
-                  <div>
-                    <label
-                      className="block mb-1 font-medium text-gray-700 text-xs"
-                      htmlFor="vat-number"
-                    >
-                      {`${t("fields.vatNumber")}:`}
-                    </label>
-                    <input
-                      readOnly
-                      className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
-                      disabled={!isEditing}
-                      type="text"
-                      onChange={(e) => setVatNumber(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-1 text-xs font-medium text-gray-600"
-                      htmlFor="cr-no"
-                    >
-                      {`${t("fields.crNumber")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      disabled={!isEditing}
-                      id="cr-no"
-                      type="text"
-                      value={crNo}
-                      onChange={(e) => setCrNo(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      className="block mb-1 text-xs font-medium text-gray-600"
-                      htmlFor="gov"
-                    >
-                      {`${t("fields.gov")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      disabled={!isEditing}
-                      id="gov"
-                      type="text"
-                      value={gov}
-                      onChange={(e) => setGov(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-1 text-xs font-medium text-gray-600"
-                      htmlFor="city"
-                    >
-                      {`${t("fields.city")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      disabled={!isEditing}
-                      id="city"
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-1 text-xs font-medium text-gray-600"
-                      htmlFor="area"
-                    >
-                      {`${t("fields.area")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      disabled={!isEditing}
-                      id="area"
-                      type="text"
-                      value={area}
-                      onChange={(e) => setArea(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-1 text-xs font-medium text-gray-600"
-                      htmlFor="street"
-                    >
-                      {`${t("fields.street")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      disabled={!isEditing}
-                      id="street"
-                      type="text"
-                      value={street}
-                      onChange={(e) => setStreet(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-1 text-xs font-medium text-gray-600"
-                      htmlFor="build-no"
-                    >
-                      {`${t("fields.building")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      disabled={!isEditing}
-                      id="build-no"
-                      type="text"
-                      value={buildNo}
-                      onChange={(e) => setBuildNo(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-1 text-xs font-medium text-gray-600"
-                      htmlFor="post-no"
-                    >
-                      {`${t("fields.postBox")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      disabled={!isEditing}
-                      id="post-no"
-                      type="text"
-                      value={postNo}
-                      onChange={(e) => setPostNo(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-1 text-xs font-medium text-gray-600"
-                      htmlFor="post-code"
-                    >
-                      {`${t("fields.postCode")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-sm bg-white"
-                      disabled={!isEditing}
-                      id="post-code"
-                      type="text"
-                      value={postCode}
-                      onChange={(e) => setPostCode(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-1 font-medium text-gray-700 text-xs"
-                      htmlFor="mobile-method"
-                    >
-                      {`${t("fields.mobile")}:`}
-                    </label>
-                    <input
-                      className="w-full h-[32px] border px-2 rounded text-xs"
-                      disabled={!isEditing}
-                      type="text"
-                      value={mobileMethod}
-                      onChange={(e) => setMobileMethod(e.target.value)}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-6 md:py-8">
-                  <div className="text-2xl mb-2">📍</div>
-                  <p className="text-xs sm:text-sm">{addressEmptyText}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+        {invoiceType === 1 && (
+          <InvoiceAdditionalExpansesSection
+            isEditing={isEditing}
+            accounts={accounts}
+            additionalExpansesRef={additionalExpansesRef}
+          />
+        )}
       </div>
     </div>
   );
