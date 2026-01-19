@@ -1,8 +1,11 @@
+import type { InvoiceAcc } from "@/types/models/invoice";
+
 import customerService from "../api/customer.service";
 import itemService from "../api/item.service";
 import goldPriceService from "../api/gold-price.service";
 import categoryService from "../api/category.service";
 import boxesService from "../api/boxes.service";
+import { invoiceService } from "../api";
 
 import { getBranchParams } from "@/app/actions/branch-params";
 import { HttpService } from "@/services/base";
@@ -15,6 +18,7 @@ interface InvoiceFormData {
   categories: any[];
   goldPrice: number | null;
   homePurity: number;
+  invoiceAcc: InvoiceAcc[];
 }
 
 class InvoiceFormDataService extends HttpService<any> {
@@ -29,18 +33,25 @@ class InvoiceFormDataService extends HttpService<any> {
       const companyId = Number.isFinite(parsedCompanyId) ? parsedCompanyId : 1;
 
       // Fetch all required data in parallel
-      const [boxes, customers, itemsResponse, categories, goldPrice] =
-        await Promise.all([
-          boxesService.getBoxes({ xcom_id: companyId }),
-          customerService.getAllCustomers({
-            xcom_id: companyId,
-            xcust_type: 0,
-            xcust_code: 0,
-          }),
-          itemService.searchItems({ searchTerm: "", page: 1 }),
-          categoryService.getAllCategories(companyId),
-          goldPriceService.getCurrentGoldPrice(),
-        ]);
+      const [
+        boxes,
+        customers,
+        itemsResponse,
+        categories,
+        goldPrice,
+        invoiceAcc,
+      ] = await Promise.all([
+        boxesService.getBoxes({ xcom_id: companyId }),
+        customerService.getAllCustomers({
+          xcom_id: companyId,
+          xcust_type: 0,
+          xcust_code: 0,
+        }),
+        itemService.searchItems({ searchTerm: "", page: 1 }),
+        categoryService.getAllCategories(companyId),
+        goldPriceService.getCurrentGoldPrice(),
+        invoiceService.getInvoiceAcc({ xinv_id: 0, xcom_id: companyId }),
+      ]);
 
       const resolvedBoxes = Array.isArray(boxes) ? boxes : [];
       const resolvedCustomers = Array.isArray(customers) ? customers : [];
@@ -78,6 +89,7 @@ class InvoiceFormDataService extends HttpService<any> {
         categories,
         goldPrice,
         homePurity,
+        invoiceAcc,
       };
     } catch (error) {
       console.error("Error fetching invoice form data:", error);

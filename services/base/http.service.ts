@@ -299,4 +299,19 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
   ): Promise<ServiceResponse<IPaginatedResponse<R>>> {
     return this._request<IPaginatedResponse<R>>(route, "GET", options, params);
   }
+
+  protected async _getCompanyId(): Promise<number> {
+    const comId = await getCookieAction(STORAGE_KEYS.COMPANY_ID);
+
+    if (comId) {
+      const parsed = Number(comId);
+
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    // Default or fail? For now, let's treat it as critical if missing for logic that requires it
+    throw new Error("Company ID not found in session");
+  }
 }

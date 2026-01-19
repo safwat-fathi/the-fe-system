@@ -20,7 +20,11 @@ const toStringSafe = (value: unknown, fallback = ""): string => {
   return stringified.trim().length > 0 ? stringified : fallback;
 };
 
-const extractChildren = (node: any): any[] => {
+interface RawNode {
+  [key: string]: any;
+}
+
+const extractChildren = (node: RawNode | null): RawNode[] => {
   if (!node) return [];
 
   const candidates = [
@@ -41,8 +45,35 @@ const extractChildren = (node: any): any[] => {
   return [];
 };
 
+const getParentRawValue = (
+  node: RawNode,
+  parentId: number | null,
+): number | null => {
+  if (node.parent !== undefined && node.parent !== null) {
+    return toNumber(node.parent);
+  }
+  if (node.acc_parent !== undefined && node.acc_parent !== null) {
+    return toNumber(node.acc_parent);
+  }
+  if (node.parent_id !== undefined && node.parent_id !== null) {
+    return toNumber(node.parent_id);
+  }
+
+  return parentId;
+};
+
+const calculateAccType = (node: RawNode, hasChildren: boolean): number => {
+  if (node.acc_type !== undefined && node.acc_type !== null) {
+    const defaultType = hasChildren ? 1 : 2;
+
+    return toNumber(node.acc_type, defaultType) || defaultType;
+  }
+
+  return hasChildren ? 1 : 2;
+};
+
 const normalizeNode = (
-  node: any,
+  node: RawNode | null,
   parentId: number | null = null,
 ): Account | null => {
   if (!node) {
@@ -68,17 +99,7 @@ const normalizeNode = (
     .map((child) => normalizeNode(child, id))
     .filter(Boolean) as Account[];
 
-  let parentRawValue: number | null | undefined = undefined;
-
-  if (node.parent !== undefined && node.parent !== null) {
-    parentRawValue = toNumber(node.parent);
-  } else if (node.acc_parent !== undefined && node.acc_parent !== null) {
-    parentRawValue = toNumber(node.acc_parent);
-  } else if (node.parent_id !== undefined && node.parent_id !== null) {
-    parentRawValue = toNumber(node.parent_id);
-  } else {
-    parentRawValue = parentId ?? null;
-  }
+  const parentRawValue = getParentRawValue(node, parentId);
 
   const parentNormalized =
     parentRawValue === undefined ||
@@ -87,18 +108,15 @@ const normalizeNode = (
       ? null
       : parentRawValue;
 
+  const accType = calculateAccType(node, normalizedChildren.length > 0);
+
   const account: Account = {
     id,
+    acc_code: node.acc_code ?? accId,
     acc_id: accId,
     acc_name: accName,
     acc_name_e: toStringSafe(node.acc_name_e, ""),
-    acc_type:
-      node.acc_type !== undefined && node.acc_type !== null
-        ? toNumber(node.acc_type, normalizedChildren.length > 0 ? 1 : 2) ||
-          (normalizedChildren.length > 0 ? 1 : 2)
-        : normalizedChildren.length > 0
-          ? 1
-          : 2,
+    acc_type: accType,
     parent: parentNormalized,
     acc_level: accLevel,
     acc_kind: accKind,
@@ -115,7 +133,13 @@ const normalizeNode = (
 };
 
 export const normalizeAccountsTree = (tree: any): Account[] => {
-  const nodes = Array.isArray(tree) ? tree : tree ? [tree] : [];
+  let nodes: RawNode[] = [];
+
+  if (Array.isArray(tree)) {
+    nodes = tree;
+  } else if (tree) {
+    nodes = [tree];
+  }
 
   const normalizedNodes = nodes
     .map((node) => normalizeNode(node))

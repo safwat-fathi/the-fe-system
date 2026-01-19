@@ -53,6 +53,37 @@ class AccountService extends HttpService<Account> {
     }
   }
 
+  async getAccounts(xcom_id?: number | string): Promise<Account[]> {
+    try {
+      const response = await this.get<Account[]>(
+        "getAccounts",
+        {
+          xcom_id: xcom_id || "1",
+        },
+        {
+          next: {
+            revalidate: 300,
+            tags: ["getAccounts"],
+          },
+        },
+      );
+
+      if (response.success) {
+        if (Array.isArray(response.data)) {
+          return response.data;
+        } else if (Array.isArray((response.data as any)?.results)) {
+          return (response.data as any).results;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching accounts:", error);
+      rethrowAuthenticationError(error);
+      throw new Error("حدث خطأ أثناء جلب بيانات الحسابات");
+    }
+  }
+
   async createAccount(account: Omit<Account, "id">): Promise<Account | null> {
     try {
       const accountData = {
@@ -172,7 +203,80 @@ class AccountService extends HttpService<Account> {
       return [];
     }
   }
+  private async resolveCompanyId(
+    xcom_id?: number | string,
+  ): Promise<string | number> {
+    if (xcom_id) return xcom_id;
 
+    try {
+      const branchParams = await import("@/app/actions/branch-params").then(
+        (m) => m.getBranchParams(),
+      );
+
+      return branchParams.com || "1";
+    } catch {
+      return "1";
+    }
+  }
+
+  private buildTreeQueryParams(
+    payload: {
+      id: number;
+      acc_id: string;
+      acc_code: string;
+      acc_name: string;
+      acc_name_e: string | null;
+      parent: number | null;
+      acc_level: number;
+    },
+    companyId: string | number,
+  ): Record<string, string | number> {
+    const queryParams: Record<string, string | number> = {
+      xcom_id: companyId || "1",
+      id: payload.id ?? 0,
+      acc_id: payload.acc_id ?? "0",
+      acc_code: payload.acc_code ?? "0",
+      acc_name: payload.acc_name ?? "0",
+      acc_level: payload.acc_level ?? 1,
+    };
+
+    if (payload.acc_name_e) {
+      queryParams.acc_name_e = payload.acc_name_e;
+    }
+
+    if (payload.parent !== undefined && payload.parent !== null) {
+      queryParams.parent = payload.parent;
+    }
+
+    return queryParams;
+  }
+
+  private parseTreeResponse(response: any): Account[] {
+    if (!response.success) return [];
+
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+
+    if (response.data && typeof response.data === "object") {
+      const dataObj = response.data as any;
+
+      if (Array.isArray(dataObj.results)) {
+        return dataObj.results;
+      }
+
+      if (
+        Array.isArray(dataObj.children) ||
+        Array.isArray(dataObj.childs) ||
+        Array.isArray(dataObj.child) ||
+        Array.isArray(dataObj.children_list)
+      ) {
+        return [dataObj as Account];
+      }
+    }
+
+    return [];
+  }
   async getAccountsTree(
     payload: {
       id: number;
@@ -187,36 +291,8 @@ class AccountService extends HttpService<Account> {
     forceRefresh = false,
   ): Promise<Account[]> {
     try {
-      let companyId = xcom_id;
-
-      if (!companyId) {
-        try {
-          const branchParams = await import("@/app/actions/branch-params").then(
-            (m) => m.getBranchParams(),
-          );
-
-          companyId = branchParams.com || "1";
-        } catch {
-          companyId = "1";
-        }
-      }
-
-      const queryParams: Record<string, string | number> = {
-        xcom_id: companyId || "1",
-        id: payload.id ?? 0,
-        acc_id: payload.acc_id ?? "0",
-        acc_code: payload.acc_code ?? "0",
-        acc_name: payload.acc_name ?? "0",
-        acc_level: payload.acc_level ?? 1,
-      };
-
-      if (payload.acc_name_e) {
-        queryParams.acc_name_e = payload.acc_name_e;
-      }
-
-      if (payload.parent !== undefined && payload.parent !== null) {
-        queryParams.parent = payload.parent;
-      }
+      const companyId = await this.resolveCompanyId(xcom_id);
+      const queryParams = this.buildTreeQueryParams(payload, companyId);
 
       const requestOptions: RequestInit & {
         next?: {
@@ -245,30 +321,7 @@ class AccountService extends HttpService<Account> {
         requestOptions,
       );
 
-      if (response.success) {
-        if (Array.isArray(response.data)) {
-          return response.data;
-        }
-
-        if (response.data && typeof response.data === "object") {
-          const dataObj = response.data as any;
-
-          if (Array.isArray(dataObj.results)) {
-            return dataObj.results;
-          }
-
-          if (
-            Array.isArray(dataObj.children) ||
-            Array.isArray(dataObj.childs) ||
-            Array.isArray(dataObj.child) ||
-            Array.isArray(dataObj.children_list)
-          ) {
-            return [dataObj as Account];
-          }
-        }
-      }
-
-      return [];
+      return this.parseTreeResponse(response);
     } catch (error) {
       console.error("Error fetching accounts tree:", error);
       throw new Error("حدث خطأ أثناء جلب شجرة الحسابات");
