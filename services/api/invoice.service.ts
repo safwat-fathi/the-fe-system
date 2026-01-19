@@ -216,6 +216,7 @@ class InvoiceService extends HttpService<Invoice> {
       if (requestedIsNumeric) {
         const header = await this.getInvoiceById(requested, transType);
         const invNo = header?.inv_id ? String(header.inv_id).trim() : null;
+        const companyId = await this._getCompanyId();
 
         if (invNo && invNo.length > 0) {
           const byInvNoResponse = await this.get<
@@ -223,7 +224,7 @@ class InvoiceService extends HttpService<Invoice> {
           >(
             `invoices_dtl_list`,
             {
-              xcom_id: "1",
+              xcom_id: String(companyId),
               xtrans_type: transType || "0",
               xinv_id: invNo,
               xfrom_date: "0",
@@ -249,13 +250,14 @@ class InvoiceService extends HttpService<Invoice> {
         }
       }
 
+      const companyId = await this._getCompanyId();
       // Fallback: treat provided identifier as xinv_id directly
       const byInvIdResponse = await this.get<
         InvoiceDetail[] | { results?: InvoiceDetail[] }
       >(
         `invoices_dtl_list`,
         {
-          xcom_id: "1",
+          xcom_id: String(companyId),
           xtrans_type: transType || "0",
           xinv_id: requested,
           xfrom_date: "0",
@@ -279,11 +281,13 @@ class InvoiceService extends HttpService<Invoice> {
     }
   }
 
-  async getInvoiceBoxList(id: string, com: number): Promise<InvoiceBox[]> {
+  async getInvoiceBoxList(id: string, _com?: number): Promise<InvoiceBox[]> {
     const xinv_id = String(id).trim();
-    const xcom_id = Number(com);
 
     try {
+      const companyId = await this._getCompanyId();
+      const xcom_id = Number(companyId);
+
       const response = await this.get<{ results: InvoiceBox[] }>(
         "invoices_box_list",
         {
@@ -656,13 +660,15 @@ class InvoiceService extends HttpService<Invoice> {
 
   async getInvoiceAcc(params: {
     xinv_id: number;
-    xcom_id: number;
+    xcom_id?: number;
   }): Promise<InvoiceAcc[]> {
     try {
+      const companyId = await this._getCompanyId();
       const queryParams = {
         xinv_id: params.xinv_id,
-        xcom_id: params.xcom_id,
+        xcom_id: companyId,
       };
+
       const response = await this.get<IPaginatedResponse<InvoiceAcc>>(
         `invoices_acc_list`,
         queryParams,
@@ -735,9 +741,15 @@ class InvoiceService extends HttpService<Invoice> {
     data: UpdateInvoiceAccDto;
   }) {
     try {
+      const companyId = await this._getCompanyId();
+      const payload = {
+        ...data,
+        com: companyId,
+      };
+
       const response = await this.put<any>(
         `api_update_invoice_acc/${id}`,
-        data,
+        payload,
       );
 
       if (!response.success) {
@@ -810,12 +822,14 @@ class InvoiceService extends HttpService<Invoice> {
 
   async getInvoiceGoldBoxList(
     id: string,
-    com: number,
+    _com?: number,
   ): Promise<InvoiceGoldBox[]> {
     const xinv_id = String(id).trim();
-    const xcom_id = Number(com);
 
     try {
+      const companyId = await this._getCompanyId();
+      const xcom_id = Number(companyId);
+
       const response = await this.get<{ results: InvoiceGoldBox[] }>(
         "invoices_gold_box_list",
         {
@@ -858,9 +872,15 @@ class InvoiceService extends HttpService<Invoice> {
     data: UpdateInvoiceGoldBoxDto,
   ): Promise<InvoiceGoldBox | null> {
     try {
+      const companyId = await this._getCompanyId();
+      const payload = {
+        ...data,
+        com: companyId,
+      };
+
       const response = await this.put<InvoiceGoldBox>(
         `api_update_invoice_gold_box/${id}`,
-        data,
+        payload,
       );
 
       if (!response.success) {
