@@ -109,7 +109,6 @@ const BoxFormClient = ({
         expt: !!updatedBox.expt,
         hide: !!updatedBox.hide,
         post_code: updatedBox.post_code || "",
-        com: companyId,
       };
 
       let result: Box | null = null;

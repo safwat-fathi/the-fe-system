@@ -212,7 +212,25 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     params?: IParams,
     options?: RequestInit,
   ): Promise<ServiceResponse<R>> {
-    return this._request<R>(route, "GET", options, params);
+    const comId = await this._getCompanyId();
+    const mergedParams = comId
+      ? { xcom_id: String(comId), ...params }
+      : { ...params };
+
+    let finalOptions = options;
+    if (comId && options?.next?.tags) {
+      finalOptions = {
+        ...options,
+        next: {
+          ...options.next,
+          tags: options.next.tags.map((tag) =>
+            tag.replace("{xcom_id}", String(comId)),
+          ),
+        },
+      };
+    }
+
+    return this._request<R>(route, "GET", finalOptions, mergedParams);
   }
 
   protected async getList<R = T[]>(
@@ -220,7 +238,26 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     params?: IParams,
     options?: RequestInit,
   ): Promise<ServiceResponse<R>> {
-    return this._request<R>(route, "GET", options, params);
+    const comId = await this._getCompanyId();
+    const mergedParams = comId
+      ? { xcom_id: String(comId), ...params }
+      : { ...params };
+
+    // Process cache tags to inject correct company ID
+    let finalOptions = options;
+    if (comId && options?.next?.tags) {
+      finalOptions = {
+        ...options,
+        next: {
+          ...options.next,
+          tags: options.next.tags.map((tag) =>
+            tag.replace("{xcom_id}", String(comId)),
+          ),
+        },
+      };
+    }
+
+    return this._request<R>(route, "GET", finalOptions, mergedParams);
   }
 
   protected async post<R = T>(
@@ -229,7 +266,19 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     params?: IParams,
     options?: RequestInit,
   ): Promise<ServiceResponse<R>> {
-    const { processedBody, headers } = this._prepareBody(body);
+    const comId = await this._getCompanyId();
+
+    let finalBody = body;
+    if (
+      comId &&
+      body &&
+      typeof body === "object" &&
+      !(body instanceof FormData)
+    ) {
+      finalBody = { com_id: String(comId), ...body };
+    }
+
+    const { processedBody, headers } = this._prepareBody(finalBody);
 
     return this._request<R>(
       route,
@@ -249,7 +298,20 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     params?: IParams,
     options?: RequestInit,
   ): Promise<ServiceResponse<R>> {
-    const { processedBody, headers } = this._prepareBody(body);
+    const comId = await this._getCompanyId();
+
+    // Inject xcom_id into body if it's an object and not FormData
+    let finalBody = body;
+    if (
+      comId &&
+      body &&
+      typeof body === "object" &&
+      !(body instanceof FormData)
+    ) {
+      finalBody = { com: String(comId), ...body };
+    }
+
+    const { processedBody, headers } = this._prepareBody(finalBody);
 
     return this._request<R>(
       route,
@@ -269,7 +331,19 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     params?: IParams,
     options?: RequestInit,
   ): Promise<ServiceResponse<R>> {
-    const { processedBody, headers } = this._prepareBody(body);
+    const comId = await this._getCompanyId();
+
+    let finalBody = body;
+    if (
+      comId &&
+      body &&
+      typeof body === "object" &&
+      !(body instanceof FormData)
+    ) {
+      finalBody = { com: String(comId), ...body };
+    }
+
+    const { processedBody, headers } = this._prepareBody(finalBody);
 
     return this._request<R>(
       route,
@@ -300,7 +374,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     return this._request<IPaginatedResponse<R>>(route, "GET", options, params);
   }
 
-  protected async _getCompanyId(): Promise<number> {
+  protected async _getCompanyId(): Promise<number | null> {
     const comId = await getCookieAction(STORAGE_KEYS.COMPANY_ID);
 
     if (comId) {
@@ -311,7 +385,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       }
     }
 
-    // Default or fail? For now, let's treat it as critical if missing for logic that requires it
-    throw new Error("Company ID not found in session");
+    // عشان لو بيعمل login لسه مفيش company id
+    return null;
   }
 }

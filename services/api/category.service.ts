@@ -19,11 +19,11 @@ class CategoryService extends HttpService<Category> {
     super("");
   }
 
-  async getAllCategories(companyId: number | string = 1): Promise<Category[]> {
+  async getAllCategories(): Promise<Category[]> {
     try {
       const response = await this.get<Category[]>(
         "categories_list",
-        { xcom_id: String(companyId) },
+        undefined,
         {
           cache: "force-cache",
           next: { tags: ["categories"] },
@@ -46,9 +46,9 @@ class CategoryService extends HttpService<Category> {
     }
   }
 
-  async getCategoryCount(companyId: number | string = 1): Promise<number> {
+  async getCategoryCount(): Promise<number> {
     try {
-      const categories = await this.getAllCategories(companyId);
+      const categories = await this.getAllCategories();
 
       return categories.length;
     } catch (error) {
@@ -127,12 +127,9 @@ class CategoryService extends HttpService<Category> {
     }
   }
 
-  async getCategoryById(
-    id: number,
-    companyId: number | string = 1,
-  ): Promise<Category | null> {
+  async getCategoryById(id: number): Promise<Category | null> {
     try {
-      const categories = await this.getAllCategories(companyId);
+      const categories = await this.getAllCategories();
 
       return categories.find((cat) => cat.id === id) || null;
     } catch (error) {
