@@ -409,7 +409,7 @@ export default function CategoriesClient({
 
   const loadData = async () => {
     try {
-      const categoriesList = await categoryService.getAllCategories(companyId);
+      const categoriesList = await categoryService.getAllCategories();
       const sanitized = categoriesList.map(mapCategoryToRow);
 
       setCategories(sanitized);

@@ -48,7 +48,7 @@ class InvoiceFormDataService extends HttpService<any> {
           xcust_code: 0,
         }),
         itemService.searchItems({ searchTerm: "", page: 1 }),
-        categoryService.getAllCategories(companyId),
+        categoryService.getAllCategories(),
         goldPriceService.getCurrentGoldPrice(),
         invoiceService.getInvoiceAcc({ xinv_id: 0, xcom_id: companyId }),
       ]);

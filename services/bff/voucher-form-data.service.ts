@@ -122,7 +122,7 @@ const getVoucherFormData = cache(
       goldBoxesPromise,
       itemService.searchItems({ companyId: 1, page: 1 }), // ✅ استخدام pagination
       customerService.getAllCustomers({ xcom_id: 1 }),
-      categoryService.getAllCategories(1),
+      categoryService.getAllCategories(),
     ]);
 
     // معالجة الحسابات

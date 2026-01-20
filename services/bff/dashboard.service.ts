@@ -55,7 +55,7 @@ class DashboardService extends HttpService<any> {
 
               return [];
             }),
-          categoryService.getAllCategories(companyId).catch((error) => {
+          categoryService.getAllCategories().catch((error) => {
             if (error instanceof AuthenticationError) {
               throw error;
             }
