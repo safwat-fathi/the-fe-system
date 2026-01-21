@@ -145,7 +145,6 @@ const CustomerFormClient = ({
         expt: !!updatedCustomer.expt,
         hide: !!updatedCustomer.hide,
         post_code: updatedCustomer.post_code || "",
-        com: companyId,
       };
 
       let result: CustomerModel | null = null;

@@ -43,24 +43,10 @@ class BoxService extends HttpService<Box> {
 
   async createBox(box: CreateBoxDTO): Promise<Box | null> {
     try {
-      // جلب معاملات الفرع لإضافة com
-      let companyId: string;
-
-      try {
-        const branchParams = await import("@/app/actions/branch-params").then(
-          (m) => m.getBranchParams(),
-        );
-
-        companyId = branchParams.com || "1";
-      } catch {
-        companyId = "1";
-      }
-
       // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
       const { ...rest } = box as any;
       const boxData = {
         ...rest,
-        com: companyId, // إضافة حقل com المطلوب
         cust_type: 99, // Set customer type to 99 for boxes
         cust_code: (box as any).cust_code || "",
         cust_status: (box as any).cust_status || 1, // Default active status
@@ -166,24 +152,10 @@ class BoxService extends HttpService<Box> {
 
   async updateBox(id: number, box: UpdateBoxDTO): Promise<Box | null> {
     try {
-      // جلب معاملات الفرع لإضافة com
-      let companyId: string;
-
-      try {
-        const branchParams = await import("@/app/actions/branch-params").then(
-          (m) => m.getBranchParams(),
-        );
-
-        companyId = branchParams.com || "1";
-      } catch {
-        companyId = "1";
-      }
-
       // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
       const { ...rest } = box as any;
       const boxData = {
         ...rest,
-        com: companyId, // إضافة حقل com المطلوب
         cust_type: 99, // Ensure it remains a box
         cust_code: box.cust_code || String(id),
         cust_status: box.cust_status || 1,

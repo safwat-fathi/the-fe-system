@@ -15,15 +15,11 @@ class BoxesService extends HttpService<Box> {
         : "1";
 
     try {
-      const response = await this.get<Box[]>(
-        "boxes_list",
-        { xcom_id: companyId },
-        {
-          cache: "force-cache",
-          next: { tags: ["boxes", `boxes-company-${companyId}`] },
-          signal: AbortSignal.timeout(30000),
-        },
-      );
+      const response = await this.get<Box[]>("boxes_list", undefined, {
+        cache: "force-cache",
+        next: { tags: ["boxes", `boxes-company-{xcom_id}`] },
+        signal: AbortSignal.timeout(30000),
+      });
 
       if (!response.success) {
         return [];
@@ -55,17 +51,13 @@ class BoxesService extends HttpService<Box> {
         : "1";
 
     try {
-      const response = await this.get<Box[]>(
-        "boxes_list_gold",
-        { xcom_id: companyId },
-        {
-          cache: "force-cache",
-          next: {
-            tags: ["boxes", "boxes-gold", `boxes-gold-company-${companyId}`],
-          },
-          signal: AbortSignal.timeout(30000),
+      const response = await this.get<Box[]>("boxes_list_gold", undefined, {
+        cache: "force-cache",
+        next: {
+          tags: ["boxes", "boxes-gold"],
         },
-      );
+        signal: AbortSignal.timeout(30000),
+      });
 
       if (!response.success) {
         return [];

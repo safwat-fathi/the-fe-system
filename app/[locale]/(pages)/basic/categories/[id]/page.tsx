@@ -49,7 +49,7 @@ export default async function CategoryDetailPage({
       : 1;
 
   // جلب بيانات الفئة
-  const category = await categoryService.getCategoryById(categoryId, companyId);
+  const category = await categoryService.getCategoryById(categoryId);
 
   if (!category) {
     notFound();
