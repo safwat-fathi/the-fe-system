@@ -43,43 +43,17 @@ class BoxService extends HttpService<Box> {
 
   async createBox(box: CreateBoxDTO): Promise<Box | null> {
     try {
-      // جلب معاملات الفرع لإضافة com
-      let companyId: string;
-
-      try {
-        const branchParams = await import("@/app/actions/branch-params").then(
-          (m) => m.getBranchParams(),
-        );
-
-        companyId = branchParams.com || "1";
-      } catch {
-        companyId = "1";
-      }
-
       // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
       const { ...rest } = box as any;
       const boxData = {
         ...rest,
-        com: companyId, // إضافة حقل com المطلوب
         cust_type: 99, // Set customer type to 99 for boxes
         cust_code: (box as any).cust_code || "",
         cust_status: (box as any).cust_status || 1, // Default active status
-        acc:
-          box.acc !== undefined && box.acc !== null
-            ? Number(box.acc as any) || null
-            : null,
-        vat_no:
-          box.vat_no !== undefined && box.vat_no !== null
-            ? Number(box.vat_no as any) || null
-            : null,
-        cr_no:
-          box.cr_no !== undefined && box.cr_no !== null
-            ? Number(box.cr_no as any) || null
-            : null,
-        perc:
-          box.perc !== undefined && box.perc !== null
-            ? Number(box.perc as any) || null
-            : null,
+        acc: this.parseUpdateField(box.acc) ?? null,
+        vat_no: this.parseUpdateField(box.vat_no) ?? null,
+        cr_no: this.parseUpdateField(box.cr_no) ?? null,
+        perc: this.parseUpdateField(box.perc) ?? null,
         expt: !!(box as any).expt,
         hide: !!(box as any).hide,
         post_code: (box as any).post_code || "",
@@ -100,57 +74,9 @@ class BoxService extends HttpService<Box> {
       }
 
       // استخراج رسائل الخطأ من API response
-      let errorMessage = "حدث خطأ أثناء إنشاء الصندوق";
-
-      if (response.data && typeof response.data === "object") {
-        const errorData = response.data as any;
-        const errorMessages: string[] = [];
-
-        if (errorData.cust_code) {
-          const messages = Array.isArray(errorData.cust_code)
-            ? errorData.cust_code
-            : [errorData.cust_code];
-
-          if (messages.some((msg: string) => msg.includes("already exists"))) {
-            errorMessages.push("❌ كود الصندوق موجود مسبقاً");
-          } else {
-            errorMessages.push(
-              ...messages.map((msg: string) => `كود الصندوق: ${msg}`),
-            );
-          }
-        }
-
-        if (errorData.cust_name) {
-          const messages = Array.isArray(errorData.cust_name)
-            ? errorData.cust_name
-            : [errorData.cust_name];
-
-          if (messages.some((msg: string) => msg.includes("already exists"))) {
-            errorMessages.push("❌ اسم الصندوق موجود مسبقاً");
-          } else {
-            errorMessages.push(
-              ...messages.map((msg: string) => `اسم الصندوق: ${msg}`),
-            );
-          }
-        }
-
-        // إضافة أي رسائل خطأ أخرى
-        Object.keys(errorData).forEach((key) => {
-          if (key !== "cust_code" && key !== "cust_name") {
-            const messages = Array.isArray(errorData[key])
-              ? errorData[key]
-              : [errorData[key]];
-
-            errorMessages.push(
-              ...messages.map((msg: string) => `${key}: ${msg}`),
-            );
-          }
-        });
-
-        if (errorMessages.length > 0) {
-          errorMessage = errorMessages.join("\n");
-        }
-      }
+      const errorMessage =
+        this.extractErrorMessages(response.data) ||
+        "حدث خطأ أثناء إنشاء الصندوق";
 
       throw new Error(errorMessage);
     } catch (error) {
@@ -166,51 +92,17 @@ class BoxService extends HttpService<Box> {
 
   async updateBox(id: number, box: UpdateBoxDTO): Promise<Box | null> {
     try {
-      // جلب معاملات الفرع لإضافة com
-      let companyId: string;
-
-      try {
-        const branchParams = await import("@/app/actions/branch-params").then(
-          (m) => m.getBranchParams(),
-        );
-
-        companyId = branchParams.com || "1";
-      } catch {
-        companyId = "1";
-      }
-
       // تنظيف البيانات - إزالة acc_name وضمان تحويل الأرقام
       const { ...rest } = box as any;
       const boxData = {
         ...rest,
-        com: companyId, // إضافة حقل com المطلوب
         cust_type: 99, // Ensure it remains a box
         cust_code: box.cust_code || String(id),
         cust_status: box.cust_status || 1,
-        acc:
-          box.acc !== undefined
-            ? box.acc !== null
-              ? Number(box.acc as any) || null
-              : null
-            : undefined,
-        vat_no:
-          box.vat_no !== undefined
-            ? box.vat_no !== null
-              ? Number(box.vat_no as any) || null
-              : null
-            : undefined,
-        cr_no:
-          box.cr_no !== undefined
-            ? box.cr_no !== null
-              ? Number(box.cr_no as any) || null
-              : null
-            : undefined,
-        perc:
-          box.perc !== undefined
-            ? box.perc !== null
-              ? Number(box.perc as any) || null
-              : null
-            : undefined,
+        acc: this.parseUpdateField(box.acc),
+        vat_no: this.parseUpdateField(box.vat_no),
+        cr_no: this.parseUpdateField(box.cr_no),
+        perc: this.parseUpdateField(box.perc),
         expt: (box as any).expt !== undefined ? !!(box as any).expt : undefined,
         hide: (box as any).hide !== undefined ? !!(box as any).hide : undefined,
         post_code: box.post_code || "",
@@ -231,57 +123,9 @@ class BoxService extends HttpService<Box> {
       }
 
       // استخراج رسائل الخطأ من API response
-      let errorMessage = "حدث خطأ أثناء تحديث الصندوق";
-
-      if (response.data && typeof response.data === "object") {
-        const errorData = response.data as any;
-        const errorMessages: string[] = [];
-
-        if (errorData.cust_code) {
-          const messages = Array.isArray(errorData.cust_code)
-            ? errorData.cust_code
-            : [errorData.cust_code];
-
-          if (messages.some((msg: string) => msg.includes("already exists"))) {
-            errorMessages.push("❌ كود الصندوق موجود مسبقاً");
-          } else {
-            errorMessages.push(
-              ...messages.map((msg: string) => `كود الصندوق: ${msg}`),
-            );
-          }
-        }
-
-        if (errorData.cust_name) {
-          const messages = Array.isArray(errorData.cust_name)
-            ? errorData.cust_name
-            : [errorData.cust_name];
-
-          if (messages.some((msg: string) => msg.includes("already exists"))) {
-            errorMessages.push("❌ اسم الصندوق موجود مسبقاً");
-          } else {
-            errorMessages.push(
-              ...messages.map((msg: string) => `اسم الصندوق: ${msg}`),
-            );
-          }
-        }
-
-        // إضافة أي رسائل خطأ أخرى
-        Object.keys(errorData).forEach((key) => {
-          if (key !== "cust_code" && key !== "cust_name") {
-            const messages = Array.isArray(errorData[key])
-              ? errorData[key]
-              : [errorData[key]];
-
-            errorMessages.push(
-              ...messages.map((msg: string) => `${key}: ${msg}`),
-            );
-          }
-        });
-
-        if (errorMessages.length > 0) {
-          errorMessage = errorMessages.join("\n");
-        }
-      }
+      const errorMessage =
+        this.extractErrorMessages(response.data) ||
+        "حدث خطأ أثناء تحديث الصندوق";
 
       throw new Error(errorMessage);
     } catch (error) {
@@ -380,6 +224,66 @@ class BoxService extends HttpService<Box> {
 
       return [];
     }
+  }
+  private parseUpdateField(value: any): number | null | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+    if (value === null) {
+      return null;
+    }
+
+    return Number(value) || null;
+  }
+
+  private extractErrorMessages(data: any): string | null {
+    if (!data || typeof data !== "object") {
+      return null;
+    }
+
+    const errorMessages: string[] = [];
+    const errorData = data;
+
+    if (errorData.cust_code) {
+      const messages = Array.isArray(errorData.cust_code)
+        ? errorData.cust_code
+        : [errorData.cust_code];
+
+      if (messages.some((msg: string) => msg.includes("already exists"))) {
+        errorMessages.push("❌ كود الصندوق موجود مسبقاً");
+      } else {
+        errorMessages.push(
+          ...messages.map((msg: string) => `كود الصندوق: ${msg}`),
+        );
+      }
+    }
+
+    if (errorData.cust_name) {
+      const messages = Array.isArray(errorData.cust_name)
+        ? errorData.cust_name
+        : [errorData.cust_name];
+
+      if (messages.some((msg: string) => msg.includes("already exists"))) {
+        errorMessages.push("❌ اسم الصندوق موجود مسبقاً");
+      } else {
+        errorMessages.push(
+          ...messages.map((msg: string) => `اسم الصندوق: ${msg}`),
+        );
+      }
+    }
+
+    // إضافة أي رسائل خطأ أخرى
+    Object.keys(errorData).forEach((key) => {
+      if (key !== "cust_code" && key !== "cust_name") {
+        const messages = Array.isArray(errorData[key])
+          ? errorData[key]
+          : [errorData[key]];
+
+        errorMessages.push(...messages.map((msg: string) => `${key}: ${msg}`));
+      }
+    });
+
+    return errorMessages.length > 0 ? errorMessages.join("\n") : null;
   }
 }
 

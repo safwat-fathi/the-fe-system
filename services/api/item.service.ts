@@ -8,6 +8,7 @@ import {
   SearchItemsVoucherListParams,
 } from "@/types/models/item";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 class ItemService extends HttpService<Item> {
   constructor() {
@@ -155,7 +156,6 @@ class ItemService extends HttpService<Item> {
 
   async searchItems({
     page = 1,
-    companyId = 1,
     categoryId = 0,
     itemTypeId = 0,
     itemStatus = 0,
@@ -168,11 +168,13 @@ class ItemService extends HttpService<Item> {
       previous: null,
     };
 
+    const { com } = await getBranchParams();
+
     try {
       const response = await this.get<IPaginatedResponse<Item>>(
         "SearchItemsList",
         {
-          xcom_id: companyId,
+          xcom_id: com,
           page,
           q: searchTerm,
           xcat_id: categoryId || "0",
@@ -184,7 +186,7 @@ class ItemService extends HttpService<Item> {
           next: {
             tags: [
               "items-search-list",
-              `items-search-list-company-${companyId}`,
+              `items-search-list-company-${com}`,
               `items-search-list-page-${page}`,
               `items-search-list-query-${searchTerm}`,
             ],
@@ -214,6 +216,7 @@ class ItemService extends HttpService<Item> {
     }
   > {
     const { query = "", page = 1, companyId = 1 } = params;
+		const { com } = await getBranchParams();
 
     const emptyResponse: IPaginatedResponse<Item> & {
       hasMore: boolean;
@@ -231,7 +234,7 @@ class ItemService extends HttpService<Item> {
       const response = await this.get<IPaginatedResponse<Item>>(
         "SearchItemsList",
         {
-          xcom_id: companyId,
+          xcom_id: com,
           page,
           ...(query ? { q: query } : {}),
         },

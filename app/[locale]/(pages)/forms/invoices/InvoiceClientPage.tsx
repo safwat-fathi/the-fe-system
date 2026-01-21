@@ -5,7 +5,6 @@ import type {
   InvoiceItemTableProps,
 } from "@/app/[locale]/(pages)/forms/invoices/components/InvoiceItemTable";
 
-
 import {
   forwardRef,
   useCallback,
@@ -321,8 +320,6 @@ export default function InvoiceClientPage({
     },
     [pathname, searchParams],
   );
-
-
 
   const handleSaveAndNavigate = useCallback(async () => {
     // IMPORTANT: Capture the saveRows function BEFORE saveInvoice() triggers state updates

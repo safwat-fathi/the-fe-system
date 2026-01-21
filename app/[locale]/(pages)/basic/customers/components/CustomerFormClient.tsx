@@ -60,7 +60,6 @@ const CustomerFormClient = ({
   customerStatus,
   accounts,
   boxTypes,
-  companyId,
 }: CustomerFormClientProps) => {
   const router = useRouter();
   const t = useTranslations("basic.customers" as any) as any;
@@ -145,7 +144,6 @@ const CustomerFormClient = ({
         expt: !!updatedCustomer.expt,
         hide: !!updatedCustomer.hide,
         post_code: updatedCustomer.post_code || "",
-        com: companyId,
       };
 
       let result: CustomerModel | null = null;

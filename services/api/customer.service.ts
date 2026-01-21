@@ -4,7 +4,7 @@ import { Invoice, TransTypes } from "@/types/models/invoice";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 interface GetCustomerParams {
-  xcom_id: number;
+  xcom_id?: number;
   xcust_type?: number;
   xcust_code?: number;
 }
@@ -27,22 +27,26 @@ class CustomerService extends HttpService<Customer> {
 
   async getAllCustomers(params?: GetCustomerParams): Promise<Customer[]> {
     try {
-      
-      const xcom_id = params?.xcom_id || 1;
       const xcust_type = params?.xcust_type || 0;
       const xcust_code = params?.xcust_code || 0;
 
+      // Prepare params, including xcom_id only if provided explicitly
+      const queryParams: any = {
+        xcust_type,
+        xcust_code,
+      };
+
+      if (params?.xcom_id) {
+        queryParams.xcom_id = params.xcom_id;
+      }
+
       const response = await this.get<Customer[]>(
         "customers_list",
-        {
-          xcom_id,
-          xcust_type,
-          xcust_code,
-        },
+        queryParams,
         {
           cache: "force-cache",
           next: {
-            tags: [`customers-${xcom_id}-${xcust_type}-${xcust_code}`],
+            tags: [`customers-{xcom_id}-${xcust_type}-${xcust_code}`],
             revalidate: 60 * 60 * 24, // 1 day
           },
         },
@@ -151,23 +155,28 @@ class CustomerService extends HttpService<Customer> {
   async getCustomerInvoices({
     xcust_id,
     xtrans_type,
-    xcom_id = 1,
+    xcom_id,
     xyear_id = 1,
   }: GetCustomerInvoicesParams): Promise<Invoice[]> {
     try {
+      const queryParams: any = {
+        xcust_id,
+        xtrans_type,
+        xyear_id,
+      };
+
+      if (xcom_id) {
+        queryParams.xcom_id = xcom_id;
+      }
+
       const response = await this.get<Invoice[] | { results?: Invoice[] }>(
         "getCustomerInvoices",
-        {
-          xcust_id,
-          xtrans_type,
-          xcom_id,
-          xyear_id,
-        },
+        queryParams,
         {
           cache: "force-cache",
           next: {
             tags: [
-              `customer-invoices-${xcom_id}-${xyear_id}-${xcust_id}-${xtrans_type}`,
+              `customer-invoices-{xcom_id}-${xyear_id}-${xcust_id}-${xtrans_type}`,
             ],
           },
         },
