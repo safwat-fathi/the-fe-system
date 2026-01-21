@@ -8,22 +8,13 @@ class BoxesService extends HttpService<Box> {
     super("");
   }
 
-  async getBoxes(params: GetBoxesParams = {}): Promise<Box[]> {
-    const companyId =
-      params.xcom_id !== undefined && params.xcom_id !== null
-        ? String(params.xcom_id)
-        : "1";
-
+  async getBoxes(_params: GetBoxesParams = {}): Promise<Box[]> {
     try {
-      const response = await this.get<Box[]>(
-        "boxes_list",
-        { xcom_id: companyId },
-        {
-          cache: "force-cache",
-          next: { tags: ["boxes", `boxes-company-${companyId}`] },
-          signal: AbortSignal.timeout(30000),
-        },
-      );
+      const response = await this.get<Box[]>("boxes_list", undefined, {
+        cache: "force-cache",
+        next: { tags: ["boxes", `boxes-company-{xcom_id}`] },
+        signal: AbortSignal.timeout(30000),
+      });
 
       if (!response.success) {
         return [];
@@ -48,24 +39,15 @@ class BoxesService extends HttpService<Box> {
     }
   }
 
-  async getGoldBoxes(params: GetBoxesParams = {}): Promise<Box[]> {
-    const companyId =
-      params.xcom_id !== undefined && params.xcom_id !== null
-        ? String(params.xcom_id)
-        : "1";
-
+  async getGoldBoxes(_params: GetBoxesParams = {}): Promise<Box[]> {
     try {
-      const response = await this.get<Box[]>(
-        "boxes_list_gold",
-        { xcom_id: companyId },
-        {
-          cache: "force-cache",
-          next: {
-            tags: ["boxes", "boxes-gold", `boxes-gold-company-${companyId}`],
-          },
-          signal: AbortSignal.timeout(30000),
+      const response = await this.get<Box[]>("boxes_list_gold", undefined, {
+        cache: "force-cache",
+        next: {
+          tags: ["boxes", "boxes-gold"],
         },
-      );
+        signal: AbortSignal.timeout(30000),
+      });
 
       if (!response.success) {
         return [];

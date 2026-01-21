@@ -31,7 +31,7 @@ export default async function CategoriesPage() {
   // جلب البيانات بالتوازي
   const [categoriesData, boxesDataRaw, catTypesData, catStatusesData] =
     await Promise.all([
-      categoryService.getAllCategories(companyId).catch(() => []),
+      categoryService.getAllCategories().catch(() => []),
       boxesService.getGoldBoxes({ xcom_id: companyId }).catch(() => []),
       helperService.getCatTypes().catch(() => []),
       helperService.getCatStatuses().catch(() => []),

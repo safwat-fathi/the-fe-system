@@ -27,6 +27,30 @@ type VoucherFormDataOptions = {
   goldBoxes?: boolean;
 };
 
+// خدمات مساعدة لمعالجة البيانات
+// Helper to ensure data is an array
+const ensureArray = (data: any) => (Array.isArray(data) ? data : []);
+
+const extractData = (response: any) => {
+  return response?.success && Array.isArray(response?.data)
+    ? response.data
+    : [];
+};
+
+const filterAccounts = (response: any) => {
+  return ensureArray(response).filter(
+    (account: any) => account.acc_level === 5,
+  );
+};
+
+const processItems = (response: any) => {
+  if (Array.isArray(response?.results)) {
+    return response.results;
+  }
+
+  return ensureArray(response);
+};
+
 // خدمة محسّنة للقيد الافتتاحي - تجلب البيانات الضرورية فقط
 const getBalanceVoucherFormData = cache(
   async (): Promise<Omit<VoucherFormData, "items" | "customers" | "boxes">> => {
@@ -44,50 +68,12 @@ const getBalanceVoucherFormData = cache(
       voucherService.getCaratTypes(),
     ]);
 
-    // معالجة الحسابات
-    let accounts: any[] = [];
-
-    if (accountsResponse && Array.isArray(accountsResponse)) {
-      accounts = accountsResponse.filter(
-        (account: any) => account.acc_level === 5,
-      );
-    }
-
-    // معالجة مراكز التكلفة
-    const costCenters = Array.isArray(costCentersResponse)
-      ? costCentersResponse
-      : [];
-
-    // معالجة أنواع السندات
-    const voucherTypes =
-      voucherTypesResponse.success && voucherTypesResponse.data
-        ? Array.isArray(voucherTypesResponse.data)
-          ? voucherTypesResponse.data
-          : []
-        : [];
-
-    // معالجة حالات السندات
-    const voucherStatuses =
-      voucherStagesResponse.success && voucherStagesResponse.data
-        ? Array.isArray(voucherStagesResponse.data)
-          ? voucherStagesResponse.data
-          : []
-        : [];
-
-    // معالجة أنواع المعايرة
-    const caratTypes =
-      caratTypesResponse.success && caratTypesResponse.data
-        ? Array.isArray(caratTypesResponse.data)
-          ? caratTypesResponse.data
-          : []
-        : [];
-
     return {
-      accounts,
-      costCenters,
-      voucherTypes,
-      voucherStatuses,
-      caratTypes,
+      accounts: filterAccounts(accountsResponse),
+      costCenters: ensureArray(costCentersResponse),
+      voucherTypes: extractData(voucherTypesResponse),
+      voucherStatuses: extractData(voucherStagesResponse),
+      caratTypes: extractData(caratTypesResponse),
     };
   },
 );
@@ -96,11 +82,6 @@ const getVoucherFormData = cache(
   async (options: VoucherFormDataOptions = {}): Promise<VoucherFormData> => {
     const useGoldBoxes = options.goldBoxes ?? false;
 
-    const boxesPromise = boxesService.getBoxes({ xcom_id: 1 });
-    const goldBoxesPromise = useGoldBoxes
-      ? boxesService.getGoldBoxes({ xcom_id: 1 })
-      : Promise.resolve(null);
-
     const [
       accountsResponse,
       costCentersResponse,
@@ -108,7 +89,6 @@ const getVoucherFormData = cache(
       voucherStagesResponse,
       caratTypesResponse,
       boxesResponse,
-      goldBoxesResponse,
       itemsResponse,
       customersResponse,
       categoriesResponse,
@@ -118,84 +98,30 @@ const getVoucherFormData = cache(
       voucherService.getVoucherTypes({ com: "1", year: "1" }),
       voucherService.getVoucherStages({ com: "1", year: "1" }),
       voucherService.getCaratTypes(),
-      boxesPromise,
-      goldBoxesPromise,
-      itemService.searchItems({ companyId: 1, page: 1 }), // ✅ استخدام pagination
+      boxesService.getBoxes({ xcom_id: 1 }),
+      itemService.searchItems({ companyId: 1, page: 1 }),
       customerService.getAllCustomers({ xcom_id: 1 }),
-      categoryService.getAllCategories(1),
+      categoryService.getAllCategories(),
     ]);
 
-    // معالجة الحسابات
-    let accounts: any[] = [];
+    // Handle Optional gold boxes independently to avoid complicating the Promise.all array order
+    let goldBoxesResponse = null;
 
-    if (accountsResponse && Array.isArray(accountsResponse)) {
-      accounts = accountsResponse.filter(
-        (account: any) => account.acc_level === 5,
-      );
+    if (useGoldBoxes) {
+      goldBoxesResponse = await boxesService.getGoldBoxes({ xcom_id: 1 });
     }
-
-    // معالجة مراكز التكلفة
-    const costCenters = Array.isArray(costCentersResponse)
-      ? costCentersResponse
-      : [];
-
-    // معالجة أنواع السندات
-    const voucherTypes =
-      voucherTypesResponse.success && voucherTypesResponse.data
-        ? Array.isArray(voucherTypesResponse.data)
-          ? voucherTypesResponse.data
-          : []
-        : [];
-
-    // معالجة حالات السندات
-    const voucherStatuses =
-      voucherStagesResponse.success && voucherStagesResponse.data
-        ? Array.isArray(voucherStagesResponse.data)
-          ? voucherStagesResponse.data
-          : []
-        : [];
-
-    // معالجة أنواع المعايرة
-    const caratTypes =
-      caratTypesResponse.success && caratTypesResponse.data
-        ? Array.isArray(caratTypesResponse.data)
-          ? caratTypesResponse.data
-          : []
-        : [];
-
-    // معالجة الصناديق
-    const boxes = Array.isArray(boxesResponse) ? boxesResponse : [];
-    const goldBoxes =
-      useGoldBoxes && Array.isArray(goldBoxesResponse)
-        ? goldBoxesResponse
-        : undefined;
-
-    // معالجة الأصناف
-    let items: any[] = [];
-
-    if (itemsResponse && itemsResponse.results) {
-      items = Array.isArray(itemsResponse.results) ? itemsResponse.results : [];
-    } else if (Array.isArray(itemsResponse)) {
-      items = itemsResponse;
-    }
-
-    // معالجة العملاء
-    const customers = Array.isArray(customersResponse) ? customersResponse : [];
-    const categories = Array.isArray(categoriesResponse)
-      ? categoriesResponse
-      : [];
 
     return {
-      accounts,
-      costCenters,
-      voucherTypes,
-      voucherStatuses,
-      caratTypes,
-      boxes,
-      goldBoxes,
-      items,
-      customers,
-      categories,
+      accounts: filterAccounts(accountsResponse),
+      costCenters: ensureArray(costCentersResponse),
+      voucherTypes: extractData(voucherTypesResponse),
+      voucherStatuses: extractData(voucherStagesResponse),
+      caratTypes: extractData(caratTypesResponse),
+      boxes: ensureArray(boxesResponse),
+      goldBoxes: useGoldBoxes ? ensureArray(goldBoxesResponse) : undefined,
+      items: processItems(itemsResponse),
+      customers: ensureArray(customersResponse),
+      categories: ensureArray(categoriesResponse),
     };
   },
 );

@@ -83,7 +83,6 @@ export default async function ItemsPage({
       helperService.getUnits().catch(() => []),
       itemService.searchItems({
         page: currentPage,
-        companyId,
         categoryId: categoryId || "0",
         itemTypeId: itemTypeId || "0",
         itemStatus: itemStatus || "0",

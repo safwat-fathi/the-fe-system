@@ -25,96 +25,92 @@ class DashboardService extends HttpService<any> {
   }
 
   async getDashboardStats(): Promise<DashboardStats | null> {
-    try {
-      // Get company ID
-      const branchParams = await getBranchParams();
-      const parsedCompanyId = Number(branchParams.com ?? "1");
-      const companyId =
-        Number.isFinite(parsedCompanyId) && parsedCompanyId > 0
-          ? parsedCompanyId
-          : 1;
+    // Get company ID
+    const branchParams = await getBranchParams();
+    const parsedCompanyId = Number(branchParams.com ?? "1");
+    const companyId =
+      Number.isFinite(parsedCompanyId) && parsedCompanyId > 0
+        ? parsedCompanyId
+        : 1;
 
-      // Fetch all required data in parallel with individual error handling.
-      // AuthenticationError must be allowed to bubble up for proper redirects.
-      const [invoices, customers, categories, items, goldPrice] =
-        await Promise.all([
-          invoiceService.getAllInvoices({
-            xcom_id: String(companyId),
-            xyear_id: "0",
-          }),
-          customerService
-            .getAllCustomers({
-              xcom_id: companyId,
-              xcust_type: 0,
-              xcust_code: 0,
-            })
-            .catch((error) => {
-              if (error instanceof AuthenticationError) {
-                throw error;
-              }
-
-              return [];
-            }),
-          categoryService.getAllCategories(companyId).catch((error) => {
+    // Fetch all required data in parallel with individual error handling.
+    // AuthenticationError must be allowed to bubble up for proper redirects.
+    const [invoices, customers, categories, items, goldPrice] =
+      await Promise.all([
+        invoiceService.getAllInvoices({
+          xcom_id: String(companyId),
+          xyear_id: "0",
+        }),
+        customerService
+          .getAllCustomers({
+            xcom_id: companyId,
+            xcust_type: 0,
+            xcust_code: 0,
+          })
+          .catch((error) => {
             if (error instanceof AuthenticationError) {
               throw error;
             }
 
             return [];
           }),
-          itemService
-            .searchItems({
-              page: 1,
-              companyId,
-              categoryId: "0",
-              itemTypeId: "0",
-              itemStatus: "0",
-            })
-            .catch((error) => {
-              if (error instanceof AuthenticationError) {
-                throw error;
-              }
+        categoryService.getAllCategories().catch((error) => {
+          if (error instanceof AuthenticationError) {
+            throw error;
+          }
 
-              return {
-                count: 0,
-                results: [],
-                next: null,
-                previous: null,
-              };
-            }),
-          goldPriceService.getCurrentGoldPrice().catch((error) => {
+          return [];
+        }),
+        itemService
+          .searchItems({
+            page: 1,
+            companyId,
+            categoryId: "0",
+            itemTypeId: "0",
+            itemStatus: "0",
+          })
+          .catch((error) => {
             if (error instanceof AuthenticationError) {
               throw error;
             }
 
-            return null;
+            return {
+              count: 0,
+              results: [],
+              next: null,
+              previous: null,
+            };
           }),
-        ]);
+        goldPriceService.getCurrentGoldPrice().catch((error) => {
+          if (error instanceof AuthenticationError) {
+            throw error;
+          }
 
-      // Calculate monthly sales
-      const invoicesList = Array.isArray(invoices?.results)
-        ? invoices.results
-        : [];
+          return null;
+        }),
+      ]);
 
-      const monthlySales = await invoiceService
-        .calculateMonthlySales(invoicesList)
-        .catch((err) => {
-          console.error("Error calculating monthly sales:", err);
+    // Calculate monthly sales
+    const invoicesList = Array.isArray(invoices?.results)
+      ? invoices.results
+      : [];
 
-          return new Array(12).fill(0);
-        });
+    const monthlySales = await invoiceService
+      .calculateMonthlySales(invoicesList)
+      .catch((err) => {
+        console.error("Error calculating monthly sales:", err);
 
-      return {
-        invoices,
-        customerCount: customers.length,
-        itemCount: items?.count || 0,
-        categoryCount: categories.length,
-        goldPrice,
-        monthlySales,
-      };
-    } catch (error) {
-      throw error;
-    }
+        return new Array(12).fill(0);
+      });
+
+    return {
+      invoices,
+      customerCount: customers.length,
+      itemCount: items?.count || 0,
+      categoryCount: categories.length,
+      goldPrice,
+      monthlySales,
+    };
   }
 }
 
