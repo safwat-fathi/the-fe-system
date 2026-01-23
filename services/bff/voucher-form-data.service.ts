@@ -9,6 +9,7 @@ import {
   customerService,
   categoryService,
 } from "@/services/api";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 export interface VoucherFormData {
   accounts: any[];
@@ -81,6 +82,7 @@ const getBalanceVoucherFormData = cache(
 const getVoucherFormData = cache(
   async (options: VoucherFormDataOptions = {}): Promise<VoucherFormData> => {
     const useGoldBoxes = options.goldBoxes ?? false;
+			const { com } = await getBranchParams();
 
     const [
       accountsResponse,
@@ -95,12 +97,12 @@ const getVoucherFormData = cache(
     ] = await Promise.all([
       accountService.getAllAccounts(),
       costCenterService.getAllCostCenters(),
-      voucherService.getVoucherTypes({ com: "1", year: "1" }),
-      voucherService.getVoucherStages({ com: "1", year: "1" }),
+      voucherService.getVoucherTypes({ com, year: "1" }),
+      voucherService.getVoucherStages({ com, year: "1" }),
       voucherService.getCaratTypes(),
-      boxesService.getBoxes({ xcom_id: 1 }),
-      itemService.searchItems({ companyId: 1, page: 1 }),
-      customerService.getAllCustomers({ xcom_id: 1 }),
+      boxesService.getBoxes({ xcom_id: com }),
+      itemService.searchItems({ companyId: com, page: 1 }),
+      customerService.getAllCustomers({ xcom_id: Number(com) }),
       categoryService.getAllCategories(),
     ]);
 

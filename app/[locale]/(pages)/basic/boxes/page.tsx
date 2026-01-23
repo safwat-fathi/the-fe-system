@@ -14,12 +14,9 @@ export const metadata: Metadata = {
 
 export default async function BoxesPage() {
   const t = await getTranslations("basic.boxes");
-  // جلب معاملات الفرع والسنة
-  const branchParams = await getBranchParams();
-
-  // جلب بيانات الصناديق باستخدام GenericService
-
-  const response = await boxesService.getBoxes({ xcom_id: branchParams.com });
+  const { com } = await getBranchParams();
+  
+  const response = await boxesService.getBoxes({ xcom_id: com });
 
   return (
     <div className="responsive-container font-cairo">

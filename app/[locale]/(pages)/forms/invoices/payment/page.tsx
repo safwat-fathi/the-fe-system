@@ -10,6 +10,7 @@ import {
 import { Box } from "@/types/models/box";
 import { Invoice, PaidType } from "@/types/models/invoice";
 import { IPaginatedResponse } from "@/types/services/base";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 type RawQueryValue = string | string[] | undefined;
 type RawSearchParams = Promise<Record<string, RawQueryValue>>;
@@ -52,6 +53,7 @@ export default async function PaymentPage({
   const params = await searchParams;
 
   const t = await getTranslations("forms.paymentPage");
+	const { com } = await getBranchParams();
 
   if (!params.inv || !params.inv_number) {
     throw new Error(t("errors.invalidInvoice"));
@@ -65,13 +67,10 @@ export default async function PaymentPage({
   // Fetch data in parallel
   try {
     [boxes, paymentMethodsResponse, invoice, invoiceBoxes] = await Promise.all([
-      boxesService.getBoxes(),
+      boxesService.getBoxes({ xcom_id: com }),
       invoiceService.getPaidTypeList(),
       invoiceService.getInvoiceById(toSingleValue(params.inv_number)),
-      invoiceService.getInvoiceBoxList(
-        toSingleValue(params.inv),
-        Number(toSingleValue(params.com) || "1"),
-      ),
+      invoiceService.getInvoiceBoxList(toSingleValue(params.inv), Number(com)),
     ]);
   } catch (error) {
     console.error("Error fetching data:", error);

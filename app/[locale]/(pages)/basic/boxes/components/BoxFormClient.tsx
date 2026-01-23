@@ -48,6 +48,7 @@ const BoxFormClient = ({
   initialBox,
   boxTypes,
   accounts,
+  companyId,
 }: BoxFormClientProps) => {
   const router = useRouter();
   const locale = useLocale();
@@ -114,6 +115,7 @@ const BoxFormClient = ({
 
     return {
       ...boxWithoutAccName,
+      com: companyId,
       acc: normalizeNumberField(updatedBox.acc),
       vat_no: normalizeNumberField(updatedBox.vat_no),
       cr_no: normalizeNumberField(updatedBox.cr_no),
