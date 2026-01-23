@@ -54,6 +54,8 @@ class BoxService extends HttpService<Box> {
         vat_no: this.parseUpdateField(box.vat_no) ?? null,
         cr_no: this.parseUpdateField(box.cr_no) ?? null,
         perc: this.parseUpdateField(box.perc) ?? null,
+        build_no: this.parseUpdateField(box.build_no) ?? null,
+        com: (box as any).com,
         expt: !!(box as any).expt,
         hide: !!(box as any).hide,
         post_code: (box as any).post_code || "",
@@ -68,6 +70,7 @@ class BoxService extends HttpService<Box> {
           cache: "no-store",
         },
       );
+
 
       if (response.success) {
         return response.data as Box;
@@ -103,6 +106,8 @@ class BoxService extends HttpService<Box> {
         vat_no: this.parseUpdateField(box.vat_no),
         cr_no: this.parseUpdateField(box.cr_no),
         perc: this.parseUpdateField(box.perc),
+        build_no: this.parseUpdateField(box.build_no),
+        com: (box as any).com,
         expt: (box as any).expt !== undefined ? !!(box as any).expt : undefined,
         hide: (box as any).hide !== undefined ? !!(box as any).hide : undefined,
         post_code: box.post_code || "",
