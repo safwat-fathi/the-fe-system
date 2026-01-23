@@ -11,6 +11,7 @@ import { useTranslations, useLocale } from "next-intl";
 
 import { getLocaleDir } from "@/i18n/config";
 import boxService from "@/services/api/box.service";
+import { revalidateBoxes } from "@/app/actions/revalidate.action";
 
 type BoxFormMode = "view" | "edit" | "add";
 
@@ -151,6 +152,7 @@ const BoxFormClient = ({
         toast.success(
           isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
+        await revalidateBoxes();
         router.push("/basic/boxes");
         router.refresh();
       } else {
