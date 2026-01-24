@@ -139,6 +139,7 @@ interface Props {
   referenceNumber: string;
   setReferenceNumber: (val: string) => void;
 
+  vatNumber: string;
   setVatNumber: (val: string) => void;
   crNo: string;
   setCrNo: (val: string) => void;
@@ -192,6 +193,7 @@ export default function InvoiceSelectors({
   setPayType,
   referenceNumber,
   setReferenceNumber,
+  vatNumber,
   setVatNumber,
   crNo,
   setCrNo,
@@ -790,6 +792,7 @@ export default function InvoiceSelectors({
           isEditing={isEditing}
           selectedCustomer={selectedCustomer}
           partyKey={partyKey}
+          vatNumber={vatNumber}
           setVatNumber={setVatNumber}
           crNo={crNo}
           setCrNo={setCrNo}

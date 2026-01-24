@@ -6,6 +6,7 @@ interface InvoiceAddressSectionProps {
   selectedCustomer: string | null;
   partyKey: "customer" | "supplier";
   setVatNumber: (val: string) => void;
+  vatNumber: string;
   crNo: string;
   setCrNo: (val: string) => void;
   gov: string;
@@ -30,6 +31,7 @@ export default function InvoiceAddressSection({
   isEditing,
   selectedCustomer,
   partyKey,
+  vatNumber,
   setVatNumber,
   crNo,
   setCrNo,
@@ -109,6 +111,7 @@ export default function InvoiceAddressSection({
                   className="w-full h-[32px] border px-2 rounded bg-gray-50 text-xs"
                   disabled={!isEditing}
                   type="text"
+                  value={vatNumber}
                   onChange={(e) => setVatNumber(e.target.value)}
                 />
               </div>

@@ -1418,6 +1418,7 @@ export default function useInvoiceForm({
       setInvoiceItems(
         mappedDetails.length > 0 ? mappedDetails : [makeEmptyRow()],
       );
+
       setOriginalInvoiceItems(mappedDetails);
       setDeletedItemIds([]);
       setIsEditing(false);
@@ -1594,6 +1595,7 @@ export default function useInvoiceForm({
       const totals = computeTotals(form.pay_type, invoiceItems);
 
       // Build the HTML for the printable invoice
+      console.log(form);
       const html = buildInvoicePrintHtml({
         invoice: form,
         invoiceItems: validItems,
