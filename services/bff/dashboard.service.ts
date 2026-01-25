@@ -61,21 +61,7 @@ class DashboardService extends HttpService<any> {
 
           return [];
         }),
-        itemService
-          .searchItems({
-            page: 1,
-            companyId,
-            categoryId: "0",
-            itemTypeId: "0",
-            itemStatus: "0",
-          })
-          .catch((error) => {
-            if (error instanceof AuthenticationError) {
-              throw error;
-            }
 
-          return [];
-        }),
         itemService
           .searchItems({
             page: 1,
