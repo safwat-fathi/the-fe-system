@@ -8,7 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 import toast from "react-hot-toast";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import useFractions, { type Fractions } from "@/utilities/useFractions";
 import {
@@ -46,7 +46,10 @@ import {
   formatDecimalString as formatDecimalStringUtil,
   formatNumber as formatNumberUtil,
 } from "@/utilities/invoiceForm";
-import { buildInvoicePrintHtml } from "@/utilities/table/print";
+import {
+  buildInvoicePrintHtml,
+  type PrintTranslations,
+} from "@/utilities/table/print";
 import { Nullable } from "@/types";
 
 type NumericValue = number | string;
@@ -578,7 +581,8 @@ export default function useInvoiceForm({
   context = "sale",
   maxInvoiceId = null,
 }: UseInvoiceFormParams) {
-	const locale = useLocale();
+  const locale = useLocale();
+  const tPrint = useTranslations("forms.invoices.print");
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
   const defaultTransType = invoiceConfig.transType;
   const contactLabel = invoiceConfig.contactLabel;
@@ -1597,6 +1601,69 @@ export default function useInvoiceForm({
       const totals = computeTotals(form.pay_type, invoiceItems);
 
       // Build the HTML for the printable invoice
+      const printTranslations: PrintTranslations = {
+        invoiceTitle: tPrint("invoiceTitle"),
+        simpleInvoiceTitle: tPrint("simpleInvoiceTitle"),
+        invoiceTypes: {
+          sale: tPrint("invoiceTypes.sale"),
+          salesReturn: tPrint("invoiceTypes.salesReturn"),
+          purchase: tPrint("invoiceTypes.purchase"),
+          purchaseReturn: tPrint("invoiceTypes.purchaseReturn"),
+        },
+        header: {
+          phone: tPrint("header.phone"),
+          crNumber: tPrint("header.crNumber"),
+          metalLicense: tPrint("header.metalLicense"),
+          mobile: tPrint("header.mobile"),
+          forGoldJewellery: tPrint("header.forGoldJewellery"),
+        },
+        customer: {
+          vatNumber: tPrint("customer.vatNumber"),
+          customerCode: tPrint("customer.customerCode"),
+          customerName: tPrint("customer.customerName"),
+          mobile: tPrint("customer.mobile"),
+          area: tPrint("customer.area"),
+          street: tPrint("customer.street"),
+          postalCode: tPrint("customer.postalCode"),
+          city: tPrint("customer.city"),
+          building: tPrint("customer.building"),
+          crNumber: tPrint("customer.crNumber"),
+        },
+        invoice: {
+          invoiceNumber: tPrint("invoice.invoiceNumber"),
+          reference: tPrint("invoice.reference"),
+          invoiceDate: tPrint("invoice.invoiceDate"),
+          hijriDate: tPrint("invoice.hijriDate"),
+        },
+        columns: {
+          description: tPrint("columns.description"),
+          quantity: tPrint("columns.quantity"),
+          weight: tPrint("columns.weight"),
+          calibration: tPrint("columns.calibration"),
+          stoneWeight: tPrint("columns.stoneWeight"),
+          price: tPrint("columns.price"),
+          taxAmount: tPrint("columns.taxAmount"),
+          taxRate: tPrint("columns.taxRate"),
+          total: tPrint("columns.total"),
+        },
+        totals: {
+          total: tPrint("totals.total"),
+          discount: tPrint("totals.discount"),
+          beforeTax: tPrint("totals.beforeTax"),
+          vat: tPrint("totals.vat"),
+          netAmount: tPrint("totals.netAmount"),
+        },
+        footer: {
+          countryEn: tPrint("footer.countryEn"),
+          countryAr: tPrint("footer.countryAr"),
+          seller: tPrint("footer.seller"),
+          box: tPrint("footer.box"),
+        },
+        notSpecified: tPrint("notSpecified"),
+        notAvailable: tPrint("notAvailable"),
+        noReference: tPrint("noReference"),
+      };
+
       const html = await buildInvoicePrintHtml({
         locale,
         invoice: form,
@@ -1605,6 +1672,7 @@ export default function useInvoiceForm({
         invoiceType: defaultTransType,
         selectedCustomer,
         fractions: { frac, frac2 },
+        translations: printTranslations,
       });
 
       // Open a new window and print the invoice
