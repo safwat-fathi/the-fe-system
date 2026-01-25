@@ -721,6 +721,7 @@ export default function InvoiceClientPage({
         setVatNumber={(v) =>
           dispatchForm({ type: "SET_FIELD", field: "vat_no", value: v })
         }
+        vatNumber={form.vat_no}
         street={form.street}
         onBarcodeSearch={() => handleBarcodeSearch()}
         onFocusNextSection={() =>

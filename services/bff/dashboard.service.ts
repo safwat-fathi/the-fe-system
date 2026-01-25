@@ -61,6 +61,7 @@ class DashboardService extends HttpService<any> {
 
           return [];
         }),
+
         itemService
           .searchItems({
             page: 1,
