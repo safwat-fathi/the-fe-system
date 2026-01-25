@@ -89,12 +89,6 @@ export function buildSimpleTablePrintHtml<T>(
     });
   };
 
-  const hijriDateTime = (date: Date) =>
-    new Intl.DateTimeFormat("ar-SA-u-ca-islamic", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(date);
 
   const bodyHtml = rows
     .map((row: any) => {
@@ -105,24 +99,24 @@ export function buildSimpleTablePrintHtml<T>(
             : row.original?.[col!.id];
           let text = "";
 
-          if (v === null || v === undefined) {
-            text = "";
-          } else if (String(col!.id).includes("date")) {
-            text = toDateOnly(v);
-          } else if (typeof v === "number") {
-            text = fmtNum(v);
-          } else if (typeof v === "string") {
-            const cleaned = v.replace(/,/g, "").trim();
+          if (v !== null && v !== undefined) {
+            if (String(col!.id).includes("date")) {
+              text = toDateOnly(v);
+            } else if (typeof v === "number") {
+              text = fmtNum(v);
+            } else if (typeof v === "string") {
+              const cleaned = v.replace(/,/g, "").trim();
 
-            if (isNumericString(cleaned)) {
-              const num = Number.parseFloat(cleaned);
+              if (isNumericString(cleaned)) {
+                const num = Number.parseFloat(cleaned);
 
-              text = fmtNum(num);
+                text = fmtNum(num);
+              } else {
+                text = v;
+              }
             } else {
-              text = v;
+              text = String(v);
             }
-          } else {
-            text = String(v);
           }
 
           return `<td>${escapeHtml(text)}</td>`;
@@ -179,6 +173,7 @@ function escapeHtml(input: string): string {
 
 function hijriDateTime(date: string): string {
   const d = new Date(date);
+
   return new Intl.DateTimeFormat("ar-SA-u-ca-islamic", {
     day: "numeric",
     month: "long",
@@ -221,7 +216,6 @@ export const buildInvoicePrintHtml = ({
   invoiceType,
   selectedCustomer,
   fractions,
-  systemName = "نظام نفيس ويب",
 }: {
   invoice: FormState;
   invoiceItems: InvoiceItemRow[];
@@ -235,7 +229,6 @@ export const buildInvoicePrintHtml = ({
   invoiceType: TransTypes;
   selectedCustomer: any;
   fractions: { frac: number; frac2: number };
-  systemName?: string;
 }): string => {
   const frac = fractions?.frac ?? 2;
   const frac2 = fractions?.frac2 ?? 3;
@@ -291,6 +284,7 @@ export const buildInvoicePrintHtml = ({
     .fill(null)
     .map((_, index) => {
       const rowIndex = invoiceItems.length + index;
+
       return `
 				<tr style="${rowIndex % 2 === 0 ? "background-color: #f9fafb;" : ""}">
         <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; height: 24px;">&nbsp;</td>
@@ -412,73 +406,95 @@ export const buildInvoicePrintHtml = ({
     </div>
     <div>
       <p style="margin: 2px 0;"><strong>رقم الفاتورة:</strong> ${escapeHtml(String(invoice.inv_id || "غير محدد"))}</p>
-      <p style="margin: 2px 0;"><strong>المراجع:</strong> ${escapeHtml(invoice.ref_no || "لا يوجد")}</p>
-      <p style="margin: 2px 0;"><strong>تاريخ الفاتورة:</strong> ${escapeHtml(new Date(invoice.inv_date).toLocaleDateString("ar-SA"))}</p>
+      <p style="margin: 2px 0;"><strong>المرجع:</strong> ${escapeHtml(invoice.ref_no || "لا يوجد")}</p>
+      <p style="margin: 2px 0;"><strong>تاريخ الفاتورة:</strong> ${escapeHtml(
+        (() => {
+          const d = new Date(invoice.inv_date);
+          const dateStr = d.toLocaleDateString("ar-SA");
+          const hours = d.getHours();
+          const minutes = d.getMinutes();
+          const period = hours >= 12 ? "م" : "ص";
+          const h12 = hours % 12 || 12;
+          const arabicHH = h12.toLocaleString("ar-EG", {
+            minimumIntegerDigits: 2,
+          });
+          const arabicMM = minutes.toLocaleString("ar-EG", {
+            minimumIntegerDigits: 2,
+          });
+
+          return `${dateStr} - ${arabicHH}:${arabicMM} ${period}`;
+        })(),
+      )}</p>
       <p style="margin: 2px 0;"><strong>موافق:</strong> ${escapeHtml(hijriDateTime(invoice.inv_date))}</p>
     </div>
 		</div>
 
-		<table>
-			<thead>
+			<table>
+				<thead>
+					<tr>
+						<th style="text-align: center; background-color: #DBE7F3; width: 8%;">الإجمالي (ريال)</th>
+						<th style="text-align:center; background-color: #DBE7F3; width: 6%;">نسبه الضريبة</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">ضريبة القيمه</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">السعر</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">وزن الاحجار</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 6%;">العيار</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">الوزن</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 6%;">العدد</th>
+						<th style="text-align: right; background-color: #DBE7F3; width: 46%;">البيان</th>
+					</tr>
+				</thead>
+				<tbody style="border-bottom: 2px solid #000;">
+					${allRowsHtml}
+				</tbody>
+				<tfoot>
+					<tr>
+						<td style="text-align: right;">
+							${(totals.totalAmount - totals.totalDiscount).toFixed(2)}
+						</td>
+						<td colspan="5" style="text-align: right; font-weight: bold;">
+						الاجمالي
+						</td>
+						<td style="text-align: center;">
+							${(totals.totalGWeight ?? 0).toFixed(2)}
+						</td>
+						<td colspan="2"></td>
+					</tr>
+					<tr>
+						<td  style="text-align: right;">
+							${totals.totalDiscount.toFixed(2)}
+						</td>
+						<td colspan="8" style="text-align: right; font-weight: bold;">
+						الخصم
+						</td>
+					</tr>
 				<tr>
-          <th style="text-align: center; background-color: #DBE7F3;">الإجمالي (ريال)</th>
-          <th style="text-align:center; background-color: #DBE7F3;">نسبه الضريبة</th>
-          <th style="text-align: center; background-color: #DBE7F3;">ضريبة القيمه</th>
-          <th style="text-align: center; background-color: #DBE7F3;">السعر</th>
-					<th style="text-align: center; background-color: #DBE7F3;">وزن الاحجار</th>
-					<th style="text-align: center; background-color: #DBE7F3;">العيار</th>
-					<th style="text-align: center; background-color: #DBE7F3;">الوزن</th>
-          <th style="text-align: center; background-color: #DBE7F3;">العدد</th>
-					<th style="text-align: right; background-color: #DBE7F3;">البيان</th>
-				</tr>
-			</thead>
-			<tbody>
-				${allRowsHtml}
-			</tbody>
-      <tfoot>
-        <tr>
-          <td  style="text-align: right;">
-            ${totals.totalAmount - totals.totalDiscount}
-          </td>
-          <td colspan="8" style="text-align: right; font-weight: bold;">
-           الاجمالي
-          </td>
-        </tr>
-        <tr>
-          <td  style="text-align: right;">
-            ${totals.totalDiscount}
-          </td>
-          <td colspan="8" style="text-align: right; font-weight: bold;">
-           الخصم
-          </td>
-        </tr>
-       <tr>
-          <td  style="text-align: right;">
-            ${totals.totalAmount}
-          </td>
-          <td colspan="8" style="text-align: right; font-weight: bold;">
-           الاجمالي غير شامل ضريبة القيمة المضافة
-          </td>
-        </tr>
-        <tr>
-          <td  style="text-align: right;">
-            ${totals.taxAmount}
-          </td>
-          <td colspan="8" style="text-align: right; font-weight: bold;">
-           ضريبه القيمه المضافه
-          </td>
-        </tr>
-        <tr>
-          <td  style="text-align: right;">
-            ${totals.netAmount}
-          </td>
-          <td colspan="8" style="text-align: right; font-weight: bold;">
-           مجموع شامل ضريبه القيمه المضافه 
-          </td>
-        </tr>
-      </tfoot>
-		</table>
+						<td  style="text-align: right;">
+							${totals.totalAmount.toFixed(2)}
+						</td>
+						<td colspan="8" style="text-align: right; font-weight: bold;">
+						الاجمالي غير شامل ضريبة القيمة المضافة
+						</td>
+					</tr>
+					<tr>
+						<td  style="text-align: right;">
+							${totals.taxAmount.toFixed(2)}
+						</td>
+						<td colspan="8" style="text-align: right; font-weight: bold;">
+						ضريبه القيمه المضافه
+						</td>
+					</tr>
+					<tr>
+						<td  style="text-align: right;">
+							${totals.netAmount.toFixed(2)}
+						</td>
+						<td colspan="8" style="text-align: right; font-weight: bold;">
+						مجموع شامل ضريبه القيمه المضافه 
+						</td>
+					</tr>
+				</tfoot>
+			</table>
     </div>
+		${`<p style="text-align: right; font-size: 11px; margin-top: 10px; padding: 0 10px;">البائع : ${escapeHtml(invoice.seller_name || "")}</p>`}
 	</body>
 </html>`;
 };
