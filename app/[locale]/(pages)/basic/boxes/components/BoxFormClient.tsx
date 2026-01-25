@@ -11,6 +11,7 @@ import { useTranslations, useLocale } from "next-intl";
 
 import { getLocaleDir } from "@/i18n/config";
 import boxService from "@/services/api/box.service";
+import { revalidateBoxes } from "@/app/actions/revalidate.action";
 
 type BoxFormMode = "view" | "edit" | "add";
 
@@ -32,6 +33,16 @@ interface BoxFormClientProps {
   accounts: any[];
   companyId: number;
 }
+
+const normalizeNumberField = (value: unknown): number | undefined => {
+  if (value === null || value === undefined || value === "") {
+    return undefined;
+  }
+
+  const numeric = Number(value);
+
+  return Number.isFinite(numeric) ? numeric : undefined;
+};
 
 const BoxFormClient = ({
   mode,
@@ -68,6 +79,55 @@ const BoxFormClient = ({
     });
   };
 
+  const handleSaveError = (error: unknown) => {
+    let errorMessage = t("messages.saveError");
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+
+    const messages = errorMessage.split("\n");
+
+    if (messages.length > 1) {
+      toast.error(messages[0], { duration: 5000 });
+      messages.slice(1).forEach((msg) => {
+        if (msg.trim()) {
+          toast.error(msg.trim(), { duration: 4000 });
+        }
+      });
+    } else {
+      toast.error(errorMessage, { duration: 5000 });
+    }
+  };
+
+  const prepareBoxPayload = (currentBox: Partial<Box>) => {
+    const updatedBox = { ...currentBox };
+
+    if (!updatedBox.cust_code) {
+      updatedBox.cust_code = updatedBox.id ? String(updatedBox.id) : "";
+    }
+
+    // Extract acc_name if it exists (it's not part of Box type but might be in initialBox)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { acc_name, ...boxWithoutAccName } =
+      updatedBox as typeof updatedBox & { acc_name?: string };
+
+    return {
+      ...boxWithoutAccName,
+      com: companyId,
+      acc: normalizeNumberField(updatedBox.acc),
+      vat_no: normalizeNumberField(updatedBox.vat_no),
+      cr_no: normalizeNumberField(updatedBox.cr_no),
+      perc: normalizeNumberField(updatedBox.perc),
+      cust_type: 99, // Boxes are always cust_type = 99
+      expt: !!updatedBox.expt,
+      hide: !!updatedBox.hide,
+      post_code: updatedBox.post_code || "",
+    };
+  };
+
   const handleSave = async () => {
     if (!box.cust_name) {
       toast.error(t("messages.nameRequired"));
@@ -78,38 +138,7 @@ const BoxFormClient = ({
     setIsSaving(true);
 
     try {
-      const updatedBox = { ...box };
-
-      if (!updatedBox.cust_code) {
-        updatedBox.cust_code = updatedBox.id ? String(updatedBox.id) : "";
-      }
-
-      const normalizeNumberField = (value: unknown): number | undefined => {
-        if (value === null || value === undefined || value === "") {
-          return undefined;
-        }
-
-        const numeric = Number(value);
-
-        return Number.isFinite(numeric) ? numeric : undefined;
-      };
-
-      // Extract acc_name if it exists (it's not part of Box type but might be in initialBox)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { acc_name, ...boxWithoutAccName } =
-        updatedBox as typeof updatedBox & { acc_name?: string };
-
-      const cleanedBox = {
-        ...boxWithoutAccName,
-        acc: normalizeNumberField(updatedBox.acc),
-        vat_no: normalizeNumberField(updatedBox.vat_no),
-        cr_no: normalizeNumberField(updatedBox.cr_no),
-        perc: normalizeNumberField(updatedBox.perc),
-        cust_type: 99, // Boxes are always cust_type = 99
-        expt: !!updatedBox.expt,
-        hide: !!updatedBox.hide,
-        post_code: updatedBox.post_code || "",
-      };
+      const cleanedBox = prepareBoxPayload(box);
 
       let result: Box | null = null;
 
@@ -123,32 +152,14 @@ const BoxFormClient = ({
         toast.success(
           isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
+        await revalidateBoxes();
         router.push("/basic/boxes");
         router.refresh();
       } else {
         toast.error(t("messages.operationFailed"));
       }
     } catch (error) {
-      let errorMessage = t("messages.saveError");
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
-      }
-
-      const messages = errorMessage.split("\n");
-
-      if (messages.length > 1) {
-        toast.error(messages[0], { duration: 5000 });
-        messages.slice(1).forEach((msg) => {
-          if (msg.trim()) {
-            toast.error(msg.trim(), { duration: 4000 });
-          }
-        });
-      } else {
-        toast.error(errorMessage, { duration: 5000 });
-      }
+      handleSaveError(error);
     } finally {
       setIsSaving(false);
     }

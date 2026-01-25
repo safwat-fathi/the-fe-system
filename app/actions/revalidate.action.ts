@@ -93,3 +93,19 @@ export async function revalidateDashboard() {
     return { success: false, error };
   }
 }
+
+/**
+ * Revalidate boxes data
+ */
+export async function revalidateBoxes() {
+  try {
+    revalidateTag("boxes");
+    revalidateTag("boxes_list");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error revalidating boxes:", error);
+
+    return { success: false, error };
+  }
+}

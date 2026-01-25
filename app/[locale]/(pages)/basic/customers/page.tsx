@@ -7,7 +7,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import customerService from "@/services/api/customer.service";
 import helperService from "@/services/api/helper.service";
 import accountService from "@/services/api/account.service";
-import { getBranchParams } from "@/app/actions/branch-params";
+
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = (await getTranslations("basic.customers" as any)) as any;
@@ -19,13 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CustomersPage() {
-  // جلب معاملات الفرع
-  const branchParams = await getBranchParams();
-  const parsedCompanyId = Number(branchParams.com ?? "1");
-  const companyId =
-    Number.isFinite(parsedCompanyId) && parsedCompanyId > 0
-      ? parsedCompanyId
-      : 1;
+
 
   // جلب البيانات بالتوازي للأداء الأفضل
   const [

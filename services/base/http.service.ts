@@ -218,6 +218,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       : { ...params };
 
     let finalOptions = options;
+
     if (comId && options?.next?.tags) {
       finalOptions = {
         ...options,
@@ -238,26 +239,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     params?: IParams,
     options?: RequestInit,
   ): Promise<ServiceResponse<R>> {
-    const comId = await this._getCompanyId();
-    const mergedParams = comId
-      ? { xcom_id: String(comId), ...params }
-      : { ...params };
-
-    // Process cache tags to inject correct company ID
-    let finalOptions = options;
-    if (comId && options?.next?.tags) {
-      finalOptions = {
-        ...options,
-        next: {
-          ...options.next,
-          tags: options.next.tags.map((tag) =>
-            tag.replace("{xcom_id}", String(comId)),
-          ),
-        },
-      };
-    }
-
-    return this._request<R>(route, "GET", finalOptions, mergedParams);
+    return this.get<R>(route, params, options);
   }
 
   protected async post<R = T>(
@@ -269,6 +251,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     const comId = await this._getCompanyId();
 
     let finalBody = body;
+
     if (
       comId &&
       body &&
@@ -302,6 +285,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
 
     // Inject xcom_id into body if it's an object and not FormData
     let finalBody = body;
+
     if (
       comId &&
       body &&
@@ -334,6 +318,7 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     const comId = await this._getCompanyId();
 
     let finalBody = body;
+
     if (
       comId &&
       body &&

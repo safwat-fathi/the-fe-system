@@ -60,7 +60,6 @@ const CustomerFormClient = ({
   customerStatus,
   accounts,
   boxTypes,
-  companyId,
 }: CustomerFormClientProps) => {
   const router = useRouter();
   const t = useTranslations("basic.customers" as any) as any;

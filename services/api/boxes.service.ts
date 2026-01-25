@@ -8,12 +8,7 @@ class BoxesService extends HttpService<Box> {
     super("");
   }
 
-  async getBoxes(params: GetBoxesParams = {}): Promise<Box[]> {
-    const companyId =
-      params.xcom_id !== undefined && params.xcom_id !== null
-        ? String(params.xcom_id)
-        : "1";
-
+  async getBoxes(_params: GetBoxesParams = {}): Promise<Box[]> {
     try {
       const response = await this.get<Box[]>("boxes_list", undefined, {
         cache: "force-cache",
@@ -44,12 +39,7 @@ class BoxesService extends HttpService<Box> {
     }
   }
 
-  async getGoldBoxes(params: GetBoxesParams = {}): Promise<Box[]> {
-    const companyId =
-      params.xcom_id !== undefined && params.xcom_id !== null
-        ? String(params.xcom_id)
-        : "1";
-
+  async getGoldBoxes(_params: GetBoxesParams = {}): Promise<Box[]> {
     try {
       const response = await this.get<Box[]>("boxes_list_gold", undefined, {
         cache: "force-cache",

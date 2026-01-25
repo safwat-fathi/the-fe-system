@@ -4,6 +4,8 @@
 
 import { cookies } from "next/headers";
 
+import { getBranchParams } from "../../branch-params";
+
 import { STORAGE_KEYS } from "@/constants";
 import { customerService } from "@/services/api";
 
@@ -128,12 +130,12 @@ export async function getBoxAccountId(boxId: number): Promise<number | null> {
 
   try {
     const { boxesService } = await import("@/services/api");
-
-    const boxes = await boxesService.getBoxes({ xcom_id: 1 });
+		const { com } = await getBranchParams();
+    const boxes = await boxesService.getBoxes({ xcom_id: com });
     let box = boxes.find((b) => b.id === boxId);
 
     if (!box) {
-      const goldBoxes = await boxesService.getGoldBoxes({ xcom_id: 1 });
+      const goldBoxes = await boxesService.getGoldBoxes({ xcom_id: com });
 
       box = goldBoxes.find((b) => b.id === boxId);
     }

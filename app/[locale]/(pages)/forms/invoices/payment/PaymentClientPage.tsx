@@ -446,8 +446,6 @@ export default function PaymentClientPage({
 
   // Save current invoice box state and navigate back (without requiring full payment completion)
   const handleGoBackWithBoxSave = async () => {
-
-
     if (initialOverpayment > 0.01) {
       toast.error(
         "لا يمكن الخروج بدون حفظ لأن الفاتورة كانت تحتوي على زيادة في البداية. يجب الحفظ.",
