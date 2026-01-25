@@ -7,7 +7,6 @@ import {
   useState,
   type SetStateAction,
 } from "react";
-import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 
 import useFractions, { type Fractions } from "@/utilities/useFractions";
@@ -108,6 +107,7 @@ export type FormState = {
   print: boolean;
   is_done: boolean;
   is_ok: boolean;
+  seller_name?: string;
 };
 
 type FormAction =
@@ -577,7 +577,6 @@ export default function useInvoiceForm({
   context = "sale",
   maxInvoiceId = null,
 }: UseInvoiceFormParams) {
-  const t = useTranslations("common");
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
   const defaultTransType = invoiceConfig.transType;
   const contactLabel = invoiceConfig.contactLabel;
@@ -640,6 +639,7 @@ export default function useInvoiceForm({
       print: invoiceData?.print ?? false,
       is_ok: invoiceData?.is_ok ?? false,
       is_done: invoiceData?.is_done ?? false,
+      seller_name: "",
     };
   }, [invoiceData, resolvedInvoiceCustomerCode]);
 
@@ -1418,6 +1418,7 @@ export default function useInvoiceForm({
       setInvoiceItems(
         mappedDetails.length > 0 ? mappedDetails : [makeEmptyRow()],
       );
+
       setOriginalInvoiceItems(mappedDetails);
       setDeletedItemIds([]);
       setIsEditing(false);
@@ -1601,7 +1602,6 @@ export default function useInvoiceForm({
         invoiceType: defaultTransType,
         selectedCustomer,
         fractions: { frac, frac2 },
-        systemName: t("systemName"),
       });
 
       // Open a new window and print the invoice

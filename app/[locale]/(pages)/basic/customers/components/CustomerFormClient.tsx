@@ -4,7 +4,7 @@ import type { Customer as CustomerModel } from "@/types/models/customer";
 import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Checkbox } from "@heroui/react";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
@@ -206,7 +206,13 @@ const CustomerFormClient = ({
             </Button>
           )}
           {!isViewMode && (
-            <Button color="primary" isLoading={isSaving} onPress={handleSave}>
+            <Button
+              color="primary"
+              className="bg-emerald-600 hover:bg-emerald-700"
+              startContent={<CheckCircleIcon className="h-4 w-4" />}
+              isLoading={isSaving}
+              onPress={handleSave}
+            >
               {isAddMode ? t("actions.save") : t("actions.update")}
             </Button>
           )}

@@ -89,6 +89,7 @@ export function buildSimpleTablePrintHtml<T>(
     });
   };
 
+
   const bodyHtml = rows
     .map((row: any) => {
       const cells = selected
@@ -98,24 +99,24 @@ export function buildSimpleTablePrintHtml<T>(
             : row.original?.[col!.id];
           let text = "";
 
-          if (v === null || v === undefined) {
-            text = "";
-          } else if (String(col!.id).includes("date")) {
-            text = toDateOnly(v);
-          } else if (typeof v === "number") {
-            text = fmtNum(v);
-          } else if (typeof v === "string") {
-            const cleaned = v.replace(/,/g, "").trim();
+          if (v !== null && v !== undefined) {
+            if (String(col!.id).includes("date")) {
+              text = toDateOnly(v);
+            } else if (typeof v === "number") {
+              text = fmtNum(v);
+            } else if (typeof v === "string") {
+              const cleaned = v.replace(/,/g, "").trim();
 
-            if (isNumericString(cleaned)) {
-              const num = Number.parseFloat(cleaned);
+              if (isNumericString(cleaned)) {
+                const num = Number.parseFloat(cleaned);
 
-              text = fmtNum(num);
+                text = fmtNum(num);
+              } else {
+                text = v;
+              }
             } else {
-              text = v;
+              text = String(v);
             }
-          } else {
-            text = String(v);
           }
 
           return `<td>${escapeHtml(text)}</td>`;
@@ -139,7 +140,7 @@ export function buildSimpleTablePrintHtml<T>(
       body { direction: ${direction}; font-family: 'Cairo', system-ui, -apple-system, Segoe UI, Tahoma, sans-serif; color: #000; }
       h1 { font-size: 16px; margin: 0 0 8px 0; text-align: center; }
       table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-      th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: ${direction === "rtl" ? "right" : "left"}; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      th, td { border: 1px solid #000; padding: 6px 8px; text-align: ${direction === "rtl" ? "right" : "left"}; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       th { background: #f3f4f6; font-weight: 700; }
       /* Default widths optimized for 7 columns (inv_id, inv_date, cust_name, inv_net, tax, inv_amt, type) */
       thead th:nth-child(1), tbody td:nth-child(1) { width: 8%; }
@@ -168,6 +169,16 @@ function escapeHtml(input: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function hijriDateTime(date: string): string {
+  const d = new Date(date);
+
+  return new Intl.DateTimeFormat("ar-SA-u-ca-islamic", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(d);
 }
 
 // Convenience: open a new window and print the table contents (all rows pre‑pagination).
@@ -205,7 +216,6 @@ export const buildInvoicePrintHtml = ({
   invoiceType,
   selectedCustomer,
   fractions,
-  systemName = "نظام نفيس ويب",
 }: {
   invoice: FormState;
   invoiceItems: InvoiceItemRow[];
@@ -219,7 +229,6 @@ export const buildInvoicePrintHtml = ({
   invoiceType: TransTypes;
   selectedCustomer: any;
   fractions: { frac: number; frac2: number };
-  systemName?: string;
 }): string => {
   const frac = fractions?.frac ?? 2;
   const frac2 = fractions?.frac2 ?? 3;
@@ -251,22 +260,48 @@ export const buildInvoicePrintHtml = ({
   };
 
   // Build invoice items table rows
+  const MIN_ROWS = 15;
   const itemsHtml = invoiceItems
     .map((item, index) => {
       return `
 				<tr style="${index % 2 === 0 ? "background-color: #f9fafb;" : ""}">
-					<td style="border: 1px solid #d1d5db; padding: 6px; text-align: center;">${index + 1}</td>
-					<td style="border: 1px solid #d1d5db; padding: 6px; text-align: right;">${escapeHtml(item.item_desc || item.sn || "غير محدد")}</td>
-					<td style="border: 1px solid #d1d5db; padding: 6px; text-align: center;">${Number(item.qty).toFixed(frac2)}</td>
-					<td style="border: 1px solid #d1d5db; padding: 6px; text-align: center;">${Number(item.weight).toFixed(frac2)}</td>
-					<td style="border: 1px solid #d1d5db; padding: 6px; text-align: center;">${Number(item.g_weight).toFixed(frac2)}</td>
-					<td style="border: 1px solid #d1d5db; padding: 6px; text-align: center;">${escapeHtml(item.k || "غير محدد")}</td>
-					<td style="border: 1px solid #d1d5db; padding: 6px; text-align: center;">${Number(item.price).toFixed(frac)}</td>
-					<td style="border: 1px solid #d1d5db; padding: 6px; text-align: center;">${Number(item.total).toFixed(frac)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.total).toFixed(frac)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${escapeHtml(`${item.tax_prc} %`)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.tax).toFixed(frac)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.price).toFixed(frac)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.g_weight).toFixed(frac2)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.g_weight).toFixed(frac2)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.weight).toFixed(frac2)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.qty).toFixed(frac2)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: right;">${escapeHtml(item.item_desc || item.sn || "غير محدد")}</td>
 				</tr>
 			`;
     })
     .join("");
+
+  const emptyRowsCount = Math.max(0, MIN_ROWS - invoiceItems.length);
+  const emptyRowsHtml = Array(emptyRowsCount)
+    .fill(null)
+    .map((_, index) => {
+      const rowIndex = invoiceItems.length + index;
+
+      return `
+				<tr style="${rowIndex % 2 === 0 ? "background-color: #f9fafb;" : ""}">
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; height: 24px;">&nbsp;</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px;">&nbsp;</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px;">&nbsp;</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px;">&nbsp;</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px;">&nbsp;</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px;">&nbsp;</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px;">&nbsp;</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px;">&nbsp;</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px;">&nbsp;</td>
+				</tr>
+			`;
+    })
+    .join("");
+
+  const allRowsHtml = itemsHtml + emptyRowsHtml;
 
   return `<!doctype html>
 <html lang="ar" dir="rtl">
@@ -288,14 +323,42 @@ export const buildInvoicePrintHtml = ({
 				padding: 16px; 
 				background: white;
 			}
-			.header { text-align: center; border-bottom: 2px solid black; padding-bottom: 15px; margin-bottom: 20px; }
-			.header h1 { font-size: 24px; margin: 0; }
-			.header h2 { font-size: 18px; margin: 10px 0 0 0; }
-			.customer-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+      
+		.page-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: flex-start;
+				padding: 8px 10px;
+				font-size: 10px;
+				line-height: 1.4;
+			}
+			.page-header p { margin: 1px 0; }
+			.page-header .right-info { text-align: right; }
+			.page-header .left-info { text-align: left; direction: ltr; }
+			.container {
+				border: 2px solid #000;
+				margin: 0 10px;
+        position: relative;
+			}
+        .title {
+        position: absolute;
+        top: 65px;
+        border: 1px solid #000;
+        padding: 0px 10px;
+        background-color: white;
+        z-index: 1000;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 8px;
+        font-weight: bold;
+      }
+			.customer-info { display:flex; border-bottom: 2px solid black; padding: 5px 20px; justify-content: space-between; align-items: start; font-size:10px }
 			.customer-info div { text-align: right; }
-			table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
-			th, td { border: 1px solid #d1d5db; padding: 6px; text-align: right; }
-			th { background-color: #f3f4f6; font-weight: bold; text-align: center; }
+      .address-info { display:flex; justify-content: space-between; align-items: start; font-size:8px }
+			table { width: 100%; border-collapse: collapse; font-size: 11px; }
+			th { border: 1px solid black; padding: 6px; text-align: center; background-color: #f3f4f6; font-weight: bold; }
+			tbody td { border-left: 1px solid black; border-right: 1px solid black; border-top: none; border-bottom: none; padding: 6px; text-align: right; }
+			tfoot td { border: 1px solid black; font-size: 10px; padding: 0 2px; }
 			.totals { background-color: #f9fafb; border: 1px solid #d1d5db; border-radius: 6px; padding: 15px; margin-bottom: 20px; }
 			.totals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 			.totals-right { text-align: right; }
@@ -305,86 +368,133 @@ export const buildInvoicePrintHtml = ({
 		</style>
 	</head>
 	<body>
-		<div class="header">
-			<h1>نظام الفواتير</h1>
-			<h2>فاتورة ${escapeHtml(invoiceTitle)}</h2>
+  <div class="title">
+    <h1>فاتورة ضريبية مبسطة</h1>
+  </div>
+		<div class="page-header">
+			<div class="right-info">
+				<p>تليفون :</p>
+				<p>سجل تجاري : 5907523858</p>
+				<p>رخصه معادن : ص.ب 6511</p>
+				<p>جوال : 0532800540</p>
+			</div>
+			<div class="left-info">
+				<p>For Gold & Jewellery</p>
+				<p>C.R: - Tel.:</p>
+				<p>Metal license:</p>
+			</div>
 		</div>
-		
+		<div class="container">
 		<div class="customer-info">
-			<div>
-				<p style="margin: 5px 0;"><strong>رقم الفاتورة:</strong> ${escapeHtml(String(invoice.inv_id || "غير محدد"))}</p>
-				<p style="margin: 5px 0;"><strong>تاريخ الفاتورة:</strong> ${escapeHtml(new Date(invoice.inv_date).toLocaleDateString("ar-EG"))}</p>
-				<p style="margin: 5px 0;"><strong>ملاحظات:</strong> ${escapeHtml(invoice.inv_notes || "لا توجد")}</p>
-			</div>
-			<div>
-				<p style="margin: 5px 0;"><strong>اسم العميل:</strong> ${escapeHtml(invoice.cust_name)}</p>
-				<p style="margin: 5px 0;"><strong>رقم العميل:</strong> ${escapeHtml(String(invoice.cust_code || ""))}</p>
-				<p style="margin: 5px 0;"><strong>الهاتف:</strong> ${escapeHtml(selectedCustomer?.mobile || "غير متوفر")}</p>
-			</div>
-			<div>
-				<p style="margin: 5px 0;"><strong>العنوان:</strong> ${escapeHtml(selectedCustomer?.address || "غير متوفر")}</p>
-				<p style="margin: 5px 0;"><strong>الرقم الضريبي:</strong> ${escapeHtml(invoice.vat_no)}</p>
-				<p style="margin: 5px 0;"><strong>رقم المراجع:</strong> ${escapeHtml(invoice.ref_no || "لا يوجد")}</p>
-			</div>
-		</div>
+    <div>
+				<p style="margin: 2px 0;"><strong>الرقم الضريبي:</strong> ${escapeHtml(String(invoice.vat_no || "غير محدد"))}</p>
+				<p style="margin: 2px 0;"><strong>رقم العميل:</strong> ${escapeHtml(String(invoice.cust_code || ""))}</p>
+      	<p style="margin: 2px 0;"><strong>اسم العميل:</strong> ${escapeHtml(invoice.cust_name)}</p>
+        <div class="address-info">
+         <div class="address-line">
+          <p style="margin: 2px 0;"><strong>الجوال:</strong> ${escapeHtml(selectedCustomer?.mobile || "غير متوفر")}</p>
+          <p style="margin: 2px 0;"><strong>المنطقه:</strong> ${escapeHtml(selectedCustomer?.area || "غير متوفر")}</p>
+          <p style="margin: 2px 0;"><strong>الشارع:</strong> ${escapeHtml(selectedCustomer?.street || "غير متوفر")}</p>
+          <p style="margin: 2px 0;"><strong>الرمز البريدي:</strong> ${escapeHtml(selectedCustomer?.post_code || "غير متوفر")}</p>
+         </div>
+          <div class="address-line">
+          <p style="margin: 2px 0;"><strong>المدينه:</strong> ${escapeHtml(selectedCustomer?.city || "غير متوفر")}</p>
+          <p style="margin: 2px 0;"><strong>المبني:</strong> ${escapeHtml(selectedCustomer?.build_no || "غير متوفر")}</p>
+          <p style="margin: 2px 0;"><strong>س.ت:</strong> ${escapeHtml(selectedCustomer?.cr_no || "غير متوفر")}</p>
+         </div>
+        </div>
+    </div>
+    <div>
+      <p style="margin: 2px 0;"><strong>رقم الفاتورة:</strong> ${escapeHtml(String(invoice.inv_id || "غير محدد"))}</p>
+      <p style="margin: 2px 0;"><strong>المرجع:</strong> ${escapeHtml(invoice.ref_no || "لا يوجد")}</p>
+      <p style="margin: 2px 0;"><strong>تاريخ الفاتورة:</strong> ${escapeHtml(
+        (() => {
+          const d = new Date(invoice.inv_date);
+          const dateStr = d.toLocaleDateString("ar-SA");
+          const hours = d.getHours();
+          const minutes = d.getMinutes();
+          const period = hours >= 12 ? "م" : "ص";
+          const h12 = hours % 12 || 12;
+          const arabicHH = h12.toLocaleString("ar-EG", {
+            minimumIntegerDigits: 2,
+          });
+          const arabicMM = minutes.toLocaleString("ar-EG", {
+            minimumIntegerDigits: 2,
+          });
 
-		<table>
-			<thead>
-				<tr>
-					<th style="text-align: center;">#</th>
-					<th style="text-align: right;">اسم الصنف</th>
-					<th style="text-align: center;">الكمية</th>
-					<th style="text-align: center;">الوزن</th>
-					<th style="text-align: center;">الوزن المعاير</th>
-					<th style="text-align: center;">النوع</th>
-					<th style="text-align: center;">السعر</th>
-					<th style="text-align: center;">الإجمالي</th>
-				</tr>
-			</thead>
-			<tbody>
-				${itemsHtml}
-			</tbody>
-		</table>
-
-		<div class="totals">
-			<div class="totals-grid">
-				<div class="text-right">
-					<p style="margin: 5px 0;"><strong>إجمالي الأصناف:</strong> ${invoiceItems.length}</p>
-					<p style="margin: 5px 0;"><strong>إجمالي الوزن المعاير:</strong> ${(totals.totalGWeight || 0).toFixed(frac2)} جم</p>
-				</div>
-				<div class="totals-right">
-					<div class="total-row">
-						<span><strong>إجمالي الأصناف:</strong></span>
-						<span>${totals.totalAmount.toFixed(frac)}</span>
-					</div>
-					<div class="total-row">
-						<span><strong>إجمالي الخصم:</strong></span>
-						<span>${totals.totalDiscount.toFixed(frac)}</span>
-					</div>
-					<div class="total-row">
-						<span><strong>قيمة الضريبة:</strong></span>
-						<span>${totals.taxAmount.toFixed(frac)}</span>
-					</div>
-					<div class="net-amount">
-						<span>الصافي:</span>
-						<span>${totals.netAmount.toFixed(frac)}</span>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div class="footer">
-			<p>تم إنشاء هذه الفاتورة عبر ${escapeHtml(systemName)}</p>
-			<p style="margin-top: 8px;">تاريخ الطباعة: ${escapeHtml(
-        new Date().toLocaleDateString("ar-EG", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+          return `${dateStr} - ${arabicHH}:${arabicMM} ${period}`;
+        })(),
       )}</p>
+      <p style="margin: 2px 0;"><strong>موافق:</strong> ${escapeHtml(hijriDateTime(invoice.inv_date))}</p>
+    </div>
 		</div>
+
+			<table>
+				<thead>
+					<tr>
+						<th style="text-align: center; background-color: #DBE7F3; width: 8%;">الإجمالي (ريال)</th>
+						<th style="text-align:center; background-color: #DBE7F3; width: 6%;">نسبه الضريبة</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">ضريبة القيمه</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">السعر</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">وزن الاحجار</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 6%;">العيار</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">الوزن</th>
+						<th style="text-align: center; background-color: #DBE7F3; width: 6%;">العدد</th>
+						<th style="text-align: right; background-color: #DBE7F3; width: 46%;">البيان</th>
+					</tr>
+				</thead>
+				<tbody style="border-bottom: 2px solid #000;">
+					${allRowsHtml}
+				</tbody>
+				<tfoot>
+					<tr>
+						<td style="text-align: right;">
+							${(totals.totalAmount - totals.totalDiscount).toFixed(2)}
+						</td>
+						<td colspan="5" style="text-align: right; font-weight: bold;">
+						الاجمالي
+						</td>
+						<td style="text-align: center;">
+							${(totals.totalGWeight ?? 0).toFixed(2)}
+						</td>
+						<td colspan="2"></td>
+					</tr>
+					<tr>
+						<td  style="text-align: right;">
+							${totals.totalDiscount.toFixed(2)}
+						</td>
+						<td colspan="8" style="text-align: right; font-weight: bold;">
+						الخصم
+						</td>
+					</tr>
+				<tr>
+						<td  style="text-align: right;">
+							${totals.totalAmount.toFixed(2)}
+						</td>
+						<td colspan="8" style="text-align: right; font-weight: bold;">
+						الاجمالي غير شامل ضريبة القيمة المضافة
+						</td>
+					</tr>
+					<tr>
+						<td  style="text-align: right;">
+							${totals.taxAmount.toFixed(2)}
+						</td>
+						<td colspan="8" style="text-align: right; font-weight: bold;">
+						ضريبه القيمه المضافه
+						</td>
+					</tr>
+					<tr>
+						<td  style="text-align: right;">
+							${totals.netAmount.toFixed(2)}
+						</td>
+						<td colspan="8" style="text-align: right; font-weight: bold;">
+						مجموع شامل ضريبه القيمه المضافه 
+						</td>
+					</tr>
+				</tfoot>
+			</table>
+    </div>
+		${`<p style="text-align: right; font-size: 11px; margin-top: 10px; padding: 0 10px;">البائع : ${escapeHtml(invoice.seller_name || "")}</p>`}
 	</body>
 </html>`;
 };
