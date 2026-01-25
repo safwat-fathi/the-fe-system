@@ -8,6 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 import toast from "react-hot-toast";
+import { useLocale } from "next-intl";
 
 import useFractions, { type Fractions } from "@/utilities/useFractions";
 import {
@@ -577,6 +578,7 @@ export default function useInvoiceForm({
   context = "sale",
   maxInvoiceId = null,
 }: UseInvoiceFormParams) {
+	const locale = useLocale();
   const invoiceConfig = INVOICE_FORM_CONFIG[context];
   const defaultTransType = invoiceConfig.transType;
   const contactLabel = invoiceConfig.contactLabel;
@@ -1570,7 +1572,7 @@ export default function useInvoiceForm({
     ],
   );
 
-  const previewInvoice = useCallback(() => {
+  const previewInvoice = useCallback(async () => {
     if (!selectedCustomer) {
       toast.error(`يرجى اختيار ${contactLabel}`);
 
@@ -1595,7 +1597,8 @@ export default function useInvoiceForm({
       const totals = computeTotals(form.pay_type, invoiceItems);
 
       // Build the HTML for the printable invoice
-      const html = buildInvoicePrintHtml({
+      const html = await buildInvoicePrintHtml({
+        locale,
         invoice: form,
         invoiceItems: validItems,
         totals,

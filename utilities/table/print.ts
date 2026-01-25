@@ -1,7 +1,7 @@
 import type { Table } from "@tanstack/react-table";
 
 import { InvoiceItemRow } from "../invoiceForm";
-import { amountToArabic } from "../formatAmount";
+import { amountToWords } from "../formatAmount";
 
 import { FormState } from "@/app/[locale]/(pages)/forms/invoices/hooks/useInvoiceForm";
 import { TransTypes } from "@/types/models/invoice";
@@ -210,6 +210,7 @@ export function printTableInNewWindow<T>(
 
 // Build HTML for printing invoice
 export const buildInvoicePrintHtml = ({
+  locale,
   invoice,
   invoiceItems,
   totals,
@@ -217,6 +218,7 @@ export const buildInvoicePrintHtml = ({
   selectedCustomer,
   fractions,
 }: {
+  locale: string;
   invoice: FormState;
   invoiceItems: InvoiceItemRow[];
   totals: {
@@ -488,7 +490,7 @@ export const buildInvoicePrintHtml = ({
 							${totals.netAmount.toFixed(2)}
 						</td>
 						<td colspan="8" style="text-align: right; font-weight: bold;">
-						المجموع شامل الضريبه القيمه المضافه: <span style="font-weight: normal; font-size: 10px;">${amountToArabic(totals.netAmount)}</span>
+						المجموع شامل الضريبه القيمه المضافه: <span style="font-weight: normal; font-size: 10px;">${amountToWords(totals.netAmount, { language: locale as "en" | "ar" })}</span>
 						</td>
 					</tr>
 				</tfoot>
