@@ -1,6 +1,7 @@
 import type { Table } from "@tanstack/react-table";
 
 import { InvoiceItemRow } from "../invoiceForm";
+import { amountToWords } from "../formatAmount";
 
 import { FormState } from "@/app/[locale]/(pages)/forms/invoices/hooks/useInvoiceForm";
 import { TransTypes } from "@/types/models/invoice";
@@ -89,7 +90,6 @@ export function buildSimpleTablePrintHtml<T>(
     });
   };
 
-
   const bodyHtml = rows
     .map((row: any) => {
       const cells = selected
@@ -162,8 +162,8 @@ export function buildSimpleTablePrintHtml<T>(
   </html>`;
 }
 
-function escapeHtml(input: string): string {
-  return input
+function escapeHtml(input: any): string {
+  return String(input ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -208,59 +208,89 @@ export function printTableInNewWindow<T>(
   };
 }
 
-// Build HTML for printing invoice
-export const buildInvoicePrintHtml = ({
-  invoice,
-  invoiceItems,
-  totals,
-  invoiceType,
-  selectedCustomer,
-  fractions,
-}: {
-  invoice: FormState;
-  invoiceItems: InvoiceItemRow[];
+// Print translations type
+export type PrintTranslations = {
+  invoiceTitle: string;
+  simpleInvoiceTitle: string;
+  invoiceTypes: {
+    sale: string;
+    salesReturn: string;
+    purchase: string;
+    purchaseReturn: string;
+  };
+  header: {
+    phone: string;
+    crNumber: string;
+    metalLicense: string;
+    mobile: string;
+    forGoldJewellery: string;
+  };
+  customer: {
+    vatNumber: string;
+    customerCode: string;
+    customerName: string;
+    mobile: string;
+    area: string;
+    street: string;
+    postalCode: string;
+    city: string;
+    building: string;
+    crNumber: string;
+  };
+  invoice: {
+    invoiceNumber: string;
+    reference: string;
+    invoiceDate: string;
+    hijriDate: string;
+  };
+  columns: {
+    description: string;
+    quantity: string;
+    weight: string;
+    calibration: string;
+    stoneWeight: string;
+    price: string;
+    taxAmount: string;
+    taxRate: string;
+    total: string;
+  };
   totals: {
-    totalAmount: number;
-    taxAmount: number;
-    netAmount: number;
-    totalDiscount: number;
-    totalGWeight?: number;
+    total: string;
+    discount: string;
+    beforeTax: string;
+    vat: string;
+    netAmount: string;
   };
-  invoiceType: TransTypes;
-  selectedCustomer: any;
-  fractions: { frac: number; frac2: number };
-}): string => {
-  const frac = fractions?.frac ?? 2;
-  const frac2 = fractions?.frac2 ?? 3;
-
-  // Determine invoice title
-  const getInvoiceTitle = () => {
-    switch (invoiceType) {
-      case TransTypes.SALES_RETURN:
-        return "مردود بيع";
-      case TransTypes.PURCHASE:
-        return "شراء";
-      case TransTypes.PURCHASE_RETURN:
-        return "مردود شراء";
-      default:
-        return "بيع";
-    }
+  footer: {
+    countryEn: string;
+    countryAr: string;
+    seller: string;
+    box: string;
   };
+  notSpecified: string;
+  notAvailable: string;
+  noReference: string;
+};
 
-  const invoiceTitle = getInvoiceTitle();
+// Helper to determine AM/PM period
+const getPeriod = (hours: number, locale: string): string => {
+  if (hours >= 12) {
+    return locale === "ar" ? "م" : "PM";
+  }
 
-  // Escape HTML function
-  const escapeHtml = (input: string): string => {
-    return String(input)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  };
+  return locale === "ar" ? "ص" : "AM";
+};
 
-  // Build invoice items table rows
+// Helper to render invoice rows
+const renderInvoiceRows = (
+  invoiceItems: InvoiceItemRow[],
+  fractions: { frac: number; frac2: number },
+  isRtl: boolean,
+  notSpecified: string,
+): string => {
+  const { frac, frac2 } = fractions;
   const MIN_ROWS = 15;
+
   const itemsHtml = invoiceItems
     .map((item, index) => {
       return `
@@ -273,7 +303,7 @@ export const buildInvoicePrintHtml = ({
         <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.g_weight).toFixed(frac2)}</td>
         <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.weight).toFixed(frac2)}</td>
         <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.qty).toFixed(frac2)}</td>
-        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: right;">${escapeHtml(item.item_desc || item.sn || "غير محدد")}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: ${isRtl ? "right" : "left"};">${escapeHtml(item.item_desc || item.sn || notSpecified)}</td>
 				</tr>
 			`;
     })
@@ -301,22 +331,70 @@ export const buildInvoicePrintHtml = ({
     })
     .join("");
 
-  const allRowsHtml = itemsHtml + emptyRowsHtml;
+  return itemsHtml + emptyRowsHtml;
+};
 
-  return `<!doctype html>
-<html lang="ar" dir="rtl">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>فاتورة ${escapeHtml(invoiceTitle)} - ${escapeHtml(String(invoice.inv_id || ""))}</title>
-		<style>
+// Helper to get invoice title text
+const getInvoiceTitleText = (
+  invoiceType: TransTypes,
+  t: PrintTranslations,
+): string => {
+  switch (invoiceType) {
+    case TransTypes.SALES_RETURN:
+      return t.invoiceTypes.salesReturn;
+    case TransTypes.PURCHASE:
+      return t.invoiceTypes.purchase;
+    case TransTypes.PURCHASE_RETURN:
+      return t.invoiceTypes.purchaseReturn;
+    default:
+      return t.invoiceTypes.sale;
+  }
+};
+
+// Helper to format invoice date
+const formatInvoiceDate = (date: string, locale: string): string => {
+  const d = new Date(date);
+  const dateStr = d.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US");
+  const hours = d.getHours();
+  const minutes = d.getMinutes();
+  const period = getPeriod(hours, locale);
+  const h12 = hours % 12 || 12;
+  const hh = h12.toLocaleString(locale === "ar" ? "ar-EG" : "en-US", {
+    minimumIntegerDigits: 2,
+  });
+  const mm = minutes.toLocaleString(locale === "ar" ? "ar-EG" : "en-US", {
+    minimumIntegerDigits: 2,
+  });
+
+  return `${dateStr} - ${hh}:${mm} ${period}`;
+};
+
+// Helper to get current timestamp for key
+const getCurrentTimestamp = (locale: string): string => {
+  const now = new Date();
+  const d = String(now.getDate()).padStart(2, "0");
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const y = now.getFullYear();
+  const hrs = now.getHours();
+  const mins = String(now.getMinutes()).padStart(2, "0");
+  const secs = String(now.getSeconds()).padStart(2, "0");
+  const period = getPeriod(hrs, locale);
+  const h = hrs % 12 || 12;
+  const hStr = String(h).padStart(2, "0");
+
+  return `${hStr}:${mins}:${secs} ${d}/${m}/${y} ${period}`;
+};
+
+// Helper to get print styles
+const getPrintStyles = (direction: string, isRtl: boolean): string => {
+  return `
 			@font-face {
 				font-family: "Cairo";
 				src: url("/fonts/CairoFont.ttf") format("truetype");
 			}
 			@page { size: A4; margin: 0.8cm; }
 			body { 
-				direction: rtl; 
+				direction: ${direction}; 
 				font-family: 'Cairo', system-ui, -apple-system, Segoe UI, Tahoma, sans-serif; 
 				color: #000; 
 				margin: 0; 
@@ -333,8 +411,8 @@ export const buildInvoicePrintHtml = ({
 				line-height: 1.4;
 			}
 			.page-header p { margin: 1px 0; }
-			.page-header .right-info { text-align: right; }
-			.page-header .left-info { text-align: left; direction: ltr; }
+			.page-header .right-info { text-align: ${isRtl ? "right" : "left"}; }
+			.page-header .left-info { text-align: ${isRtl ? "left" : "right"}; direction: ${isRtl ? "ltr" : "rtl"}; }
 			.container {
 				border: 2px solid #000;
 				margin: 0 10px;
@@ -351,6 +429,7 @@ export const buildInvoicePrintHtml = ({
         transform: translateX(-50%);
         font-size: 8px;
         font-weight: bold;
+        text-align: center;
       }
 			.customer-info { display:flex; border-bottom: 2px solid black; padding: 5px 20px; justify-content: space-between; align-items: start; font-size:10px }
 			.customer-info div { text-align: right; }
@@ -365,21 +444,74 @@ export const buildInvoicePrintHtml = ({
 			.total-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
 			.net-amount { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; border-top: 2px solid #d1d5db; padding-top: 8px; margin-top: 8px; }
 			.footer { text-align: center; border-top: 1px solid #d1d5db; padding-top: 15px; font-size: 11px; color: #6b7280; }
+  `;
+};
+
+// Build HTML for printing invoice
+export const buildInvoicePrintHtml = ({
+  locale,
+  invoice,
+  invoiceItems,
+  totals,
+  invoiceType,
+  selectedCustomer,
+  fractions,
+  translations,
+}: {
+  locale: string;
+  invoice: FormState;
+  invoiceItems: InvoiceItemRow[];
+  totals: {
+    totalAmount: number;
+    taxAmount: number;
+    netAmount: number;
+    totalDiscount: number;
+    totalGWeight?: number;
+  };
+  invoiceType: TransTypes;
+  selectedCustomer: any;
+  fractions: { frac: number; frac2: number };
+  translations: PrintTranslations;
+}): string => {
+  const frac = fractions?.frac ?? 2;
+  const frac2 = fractions?.frac2 ?? 3;
+  const isRtl = locale === "ar";
+  const dir = isRtl ? "rtl" : "ltr";
+  const lang = isRtl ? "ar" : "en";
+  const t = translations;
+
+  const invoiceTitle = getInvoiceTitleText(invoiceType, t);
+  const allRowsHtml = renderInvoiceRows(
+    invoiceItems,
+    { frac, frac2 },
+    isRtl,
+    t.notSpecified,
+  );
+  const styles = getPrintStyles(dir, isRtl);
+
+  return `<!doctype html>
+<html lang="${lang}" dir="${dir}">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>${escapeHtml(t.invoiceTitle)} ${escapeHtml(invoiceTitle)} - ${escapeHtml(String(invoice.inv_id || ""))}</title>
+		<style>
+      ${styles}
 		</style>
 	</head>
 	<body>
   <div class="title">
-    <h1>فاتورة ضريبية مبسطة</h1>
+    <h1>${invoice.vat_no ? t.invoiceTitle : t.simpleInvoiceTitle}</h1>
   </div>
 		<div class="page-header">
 			<div class="right-info">
-				<p>تليفون :</p>
-				<p>سجل تجاري : 5907523858</p>
-				<p>رخصه معادن : ص.ب 6511</p>
-				<p>جوال : 0532800540</p>
+				<p>${t.header.phone}:</p>
+				<p>${t.header.crNumber}: 5907523858</p>
+				<p>${t.header.metalLicense}: ص.ب 6511</p>
+				<p>${t.header.mobile}: 0532800540</p>
 			</div>
 			<div class="left-info">
-				<p>For Gold & Jewellery</p>
+				<p>${t.header.forGoldJewellery}</p>
 				<p>C.R: - Tel.:</p>
 				<p>Metal license:</p>
 			</div>
@@ -387,60 +519,45 @@ export const buildInvoicePrintHtml = ({
 		<div class="container">
 		<div class="customer-info">
     <div>
-				<p style="margin: 2px 0;"><strong>الرقم الضريبي:</strong> ${escapeHtml(String(invoice.vat_no || "غير محدد"))}</p>
-				<p style="margin: 2px 0;"><strong>رقم العميل:</strong> ${escapeHtml(String(invoice.cust_code || ""))}</p>
-      	<p style="margin: 2px 0;"><strong>اسم العميل:</strong> ${escapeHtml(invoice.cust_name)}</p>
+				<p style="margin: 2px 0;"><strong>${t.customer.vatNumber}:</strong> ${escapeHtml(String(invoice.vat_no || t.notSpecified))}</p>
+				<p style="margin: 2px 0;"><strong>${t.customer.customerCode}:</strong> ${escapeHtml(String(invoice.cust_code || ""))}</p>
+      	<p style="margin: 2px 0;"><strong>${t.customer.customerName}:</strong> ${escapeHtml(invoice.cust_name)}</p>
         <div class="address-info">
          <div class="address-line">
-          <p style="margin: 2px 0;"><strong>الجوال:</strong> ${escapeHtml(selectedCustomer?.mobile || "غير متوفر")}</p>
-          <p style="margin: 2px 0;"><strong>المنطقه:</strong> ${escapeHtml(selectedCustomer?.area || "غير متوفر")}</p>
-          <p style="margin: 2px 0;"><strong>الشارع:</strong> ${escapeHtml(selectedCustomer?.street || "غير متوفر")}</p>
-          <p style="margin: 2px 0;"><strong>الرمز البريدي:</strong> ${escapeHtml(selectedCustomer?.post_code || "غير متوفر")}</p>
+          <p style="margin: 2px 0;"><strong>${t.customer.mobile}:</strong> ${escapeHtml(selectedCustomer?.mobile || t.notAvailable)}</p>
+          <p style="margin: 2px 0;"><strong>${t.customer.area}:</strong> ${escapeHtml(selectedCustomer?.area || t.notAvailable)}</p>
+          <p style="margin: 2px 0;"><strong>${t.customer.street}:</strong> ${escapeHtml(selectedCustomer?.street || t.notAvailable)}</p>
+          <p style="margin: 2px 0;"><strong>${t.customer.postalCode}:</strong> ${escapeHtml(selectedCustomer?.post_code || t.notAvailable)}</p>
          </div>
           <div class="address-line">
-          <p style="margin: 2px 0;"><strong>المدينه:</strong> ${escapeHtml(selectedCustomer?.city || "غير متوفر")}</p>
-          <p style="margin: 2px 0;"><strong>المبني:</strong> ${escapeHtml(selectedCustomer?.build_no || "غير متوفر")}</p>
-          <p style="margin: 2px 0;"><strong>س.ت:</strong> ${escapeHtml(selectedCustomer?.cr_no || "غير متوفر")}</p>
+          <p style="margin: 2px 0;"><strong>${t.customer.city}:</strong> ${escapeHtml(selectedCustomer?.city || t.notAvailable)}</p>
+          <p style="margin: 2px 0;"><strong>${t.customer.building}:</strong> ${escapeHtml(selectedCustomer?.build_no || t.notAvailable)}</p>
+          <p style="margin: 2px 0;"><strong>${t.customer.crNumber}:</strong> ${escapeHtml(selectedCustomer?.cr_no || t.notAvailable)}</p>
          </div>
         </div>
     </div>
     <div>
-      <p style="margin: 2px 0;"><strong>رقم الفاتورة:</strong> ${escapeHtml(String(invoice.inv_id || "غير محدد"))}</p>
-      <p style="margin: 2px 0;"><strong>المرجع:</strong> ${escapeHtml(invoice.ref_no || "لا يوجد")}</p>
-      <p style="margin: 2px 0;"><strong>تاريخ الفاتورة:</strong> ${escapeHtml(
-        (() => {
-          const d = new Date(invoice.inv_date);
-          const dateStr = d.toLocaleDateString("ar-SA");
-          const hours = d.getHours();
-          const minutes = d.getMinutes();
-          const period = hours >= 12 ? "م" : "ص";
-          const h12 = hours % 12 || 12;
-          const arabicHH = h12.toLocaleString("ar-EG", {
-            minimumIntegerDigits: 2,
-          });
-          const arabicMM = minutes.toLocaleString("ar-EG", {
-            minimumIntegerDigits: 2,
-          });
-
-          return `${dateStr} - ${arabicHH}:${arabicMM} ${period}`;
-        })(),
+      <p style="margin: 2px 0;"><strong>${t.invoice.invoiceNumber}:</strong> ${escapeHtml(String(invoice.inv_id || t.notSpecified))}</p>
+      <p style="margin: 2px 0;"><strong>${t.invoice.reference}:</strong> ${escapeHtml(invoice.ref_no || t.noReference)}</p>
+      <p style="margin: 2px 0;"><strong>${t.invoice.invoiceDate}:</strong> ${escapeHtml(
+        formatInvoiceDate(invoice.inv_date, locale),
       )}</p>
-      <p style="margin: 2px 0;"><strong>موافق:</strong> ${escapeHtml(hijriDateTime(invoice.inv_date))}</p>
+      <p style="margin: 2px 0;"><strong>${t.invoice.hijriDate}:</strong> ${escapeHtml(hijriDateTime(invoice.inv_date))}</p>
     </div>
 		</div>
 
 			<table>
 				<thead>
 					<tr>
-						<th style="text-align: center; background-color: #DBE7F3; width: 8%;">الإجمالي (ريال)</th>
-						<th style="text-align:center; background-color: #DBE7F3; width: 6%;">نسبه الضريبة</th>
-						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">ضريبة القيمه</th>
-						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">السعر</th>
-						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">وزن الاحجار</th>
-						<th style="text-align: center; background-color: #DBE7F3; width: 6%;">العيار</th>
-						<th style="text-align: center; background-color: #DBE7F3; width: 7%;">الوزن</th>
-						<th style="text-align: center; background-color: #DBE7F3; width: 6%;">العدد</th>
-						<th style="text-align: right; background-color: #DBE7F3; width: 46%;">البيان</th>
+						<th style="text-align: center; background-color: #DBE7F3; white-space: nowrap;">${t.columns.total}</th>
+						<th style="text-align:center; background-color: #DBE7F3; white-space: nowrap;">${t.columns.taxRate}</th>
+						<th style="text-align: center; background-color: #DBE7F3; white-space: nowrap;">${t.columns.taxAmount}</th>
+						<th style="text-align: center; background-color: #DBE7F3; white-space: nowrap;">${t.columns.price}</th>
+						<th style="text-align: center; background-color: #DBE7F3; white-space: nowrap;">${t.columns.stoneWeight}</th>
+						<th style="text-align: center; background-color: #DBE7F3; white-space: nowrap;">${t.columns.calibration}</th>
+						<th style="text-align: center; background-color: #DBE7F3; white-space: nowrap;">${t.columns.weight}</th>
+						<th style="text-align: center; background-color: #DBE7F3; white-space: nowrap;">${t.columns.quantity}</th>
+						<th style="text-align: ${isRtl ? "right" : "left"}; background-color: #DBE7F3;">${t.columns.description}</th>
 					</tr>
 				</thead>
 				<tbody style="border-bottom: 2px solid #000;">
@@ -448,11 +565,11 @@ export const buildInvoicePrintHtml = ({
 				</tbody>
 				<tfoot>
 					<tr>
-						<td style="text-align: right;">
+						<td style="text-align: ${isRtl ? "right" : "left"};">
 							${(totals.totalAmount - totals.totalDiscount).toFixed(2)}
 						</td>
-						<td colspan="5" style="text-align: right; font-weight: bold;">
-						الاجمالي
+						<td colspan="5" style="text-align: ${isRtl ? "right" : "left"}; font-weight: bold;">
+						${t.totals.total}
 						</td>
 						<td style="text-align: center;">
 							${(totals.totalGWeight ?? 0).toFixed(2)}
@@ -460,41 +577,55 @@ export const buildInvoicePrintHtml = ({
 						<td colspan="2"></td>
 					</tr>
 					<tr>
-						<td  style="text-align: right;">
+						<td  style="text-align: ${isRtl ? "right" : "left"};">
 							${totals.totalDiscount.toFixed(2)}
 						</td>
-						<td colspan="8" style="text-align: right; font-weight: bold;">
-						الخصم
+						<td colspan="8" style="text-align: ${isRtl ? "right" : "left"}; font-weight: bold;">
+						${t.totals.discount}
 						</td>
 					</tr>
 				<tr>
-						<td  style="text-align: right;">
+						<td  style="text-align: ${isRtl ? "right" : "left"};">
 							${totals.totalAmount.toFixed(2)}
 						</td>
-						<td colspan="8" style="text-align: right; font-weight: bold;">
-						الاجمالي غير شامل ضريبة القيمة المضافة
+						<td colspan="8" style="text-align: ${isRtl ? "right" : "left"}; font-weight: bold;">
+						${t.totals.beforeTax}
 						</td>
 					</tr>
 					<tr>
-						<td  style="text-align: right;">
+						<td  style="text-align: ${isRtl ? "right" : "left"};">
 							${totals.taxAmount.toFixed(2)}
 						</td>
-						<td colspan="8" style="text-align: right; font-weight: bold;">
-						ضريبه القيمه المضافه
+						<td colspan="8" style="text-align: ${isRtl ? "right" : "left"}; font-weight: bold;">
+						${t.totals.vat}
 						</td>
 					</tr>
 					<tr>
-						<td  style="text-align: right;">
+						<td  style="text-align: ${isRtl ? "right" : "left"};">
 							${totals.netAmount.toFixed(2)}
 						</td>
-						<td colspan="8" style="text-align: right; font-weight: bold;">
-						مجموع شامل ضريبه القيمه المضافه 
+						<td colspan="8" style="text-align: ${isRtl ? "right" : "left"}; font-weight: bold;">
+						${t.totals.netAmount}: <span style="font-weight: normal; font-size: 10px;">${amountToWords(totals.netAmount, { language: locale as "en" | "ar" })}</span>
 						</td>
 					</tr>
 				</tfoot>
 			</table>
+     
     </div>
-		${`<p style="text-align: right; font-size: 11px; margin-top: 10px; padding: 0 10px;">البائع : ${escapeHtml(invoice.seller_name || "")}</p>`}
+     <div style="text-align: ${isRtl ? "right" : "left"}; font-size: 11px; margin-top: 10px; padding: 0 10px;">${t.footer.box}: </div>
+    <footer style="position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid #d1d5db; padding-top: 5px; font-size: 11px; background-color: white;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <div style="font-weight: bold;">${t.footer.countryAr}</div>
+        <div style="font-weight: bold;">${t.footer.countryEn}</div>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <div>${t.footer.seller}: ${escapeHtml(invoice.seller_name || "")}</div>
+        <div style="direction: ltr;">
+          ${getCurrentTimestamp(locale)}
+        </div>
+      </div>
+    </footer>
 	</body>
 </html>`;
 };
+
