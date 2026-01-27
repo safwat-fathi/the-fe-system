@@ -249,6 +249,68 @@
         "netAmount": "Total Including Tax",
         "payment": "Payment",
         "gramUnit": "g"
+      },
+      "print": {
+        "invoiceTitle": "Tax Invoice",
+        "simpleInvoiceTitle": "Simplified Tax Invoice",
+        "invoiceTypes": {
+          "sale": "Sale",
+          "salesReturn": "Sales Return",
+          "purchase": "Purchase",
+          "purchaseReturn": "Purchase Return"
+        },
+        "header": {
+          "phone": "Phone",
+          "crNumber": "C.R.",
+          "metalLicense": "Metal License",
+          "mobile": "Mobile",
+          "forGoldJewellery": "For Gold & Jewellery"
+        },
+        "customer": {
+          "vatNumber": "VAT Number",
+          "customerCode": "Customer Code",
+          "customerName": "Customer Name",
+          "mobile": "Mobile",
+          "area": "Area",
+          "street": "Street",
+          "postalCode": "Postal Code",
+          "city": "City",
+          "building": "Building",
+          "crNumber": "C.R."
+        },
+        "invoice": {
+          "invoiceNumber": "Invoice Number",
+          "reference": "Reference",
+          "invoiceDate": "Invoice Date",
+          "hijriDate": "Hijri Date"
+        },
+        "columns": {
+          "description": "Description",
+          "quantity": "Qty",
+          "weight": "Weight",
+          "calibration": "Calibration",
+          "stoneWeight": "Stone Wt.",
+          "price": "Price",
+          "taxAmount": "Tax",
+          "taxRate": "Tax %",
+          "total": "Total (SAR)"
+        },
+        "totals": {
+          "total": "Total",
+          "discount": "Discount",
+          "beforeTax": "Total excl. VAT",
+          "vat": "VAT",
+          "netAmount": "Total incl. VAT"
+        },
+        "footer": {
+          "countryEn": "Kingdom Of Saudi Arabia - - Market",
+          "countryAr": "المملكة العربية السعودية-",
+          "seller": "Seller",
+          "box": "Box"
+        },
+        "notSpecified": "Not specified",
+        "notAvailable": "N/A",
+        "noReference": "None"
       }
     },
     "paymentPage": {

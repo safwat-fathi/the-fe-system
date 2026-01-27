@@ -249,6 +249,68 @@
         "netAmount": "الإجمالي شامل الضريبة",
         "payment": "دفع",
         "gramUnit": "جم"
+      },
+      "print": {
+        "invoiceTitle": "فاتورة ضريبية",
+        "simpleInvoiceTitle": "فاتورة ضريبية بسيطه",
+        "invoiceTypes": {
+          "sale": "بيع",
+          "salesReturn": "مردود بيع",
+          "purchase": "شراء",
+          "purchaseReturn": "مردود شراء"
+        },
+        "header": {
+          "phone": "تليفون",
+          "crNumber": "سجل تجاري",
+          "metalLicense": "رخصه معادن",
+          "mobile": "جوال",
+          "forGoldJewellery": "للذهب والمجوهرات"
+        },
+        "customer": {
+          "vatNumber": "الرقم الضريبي",
+          "customerCode": "رقم العميل",
+          "customerName": "اسم العميل",
+          "mobile": "الجوال",
+          "area": "المنطقه",
+          "street": "الشارع",
+          "postalCode": "الرمز البريدي",
+          "city": "المدينه",
+          "building": "المبني",
+          "crNumber": "س.ت"
+        },
+        "invoice": {
+          "invoiceNumber": "رقم الفاتورة",
+          "reference": "المرجع",
+          "invoiceDate": "تاريخ الفاتورة",
+          "hijriDate": "موافق"
+        },
+        "columns": {
+          "description": "البيان",
+          "quantity": "العدد",
+          "weight": "الوزن",
+          "calibration": "العيار",
+          "stoneWeight": "وزن الاحجار",
+          "price": "السعر",
+          "taxAmount": "ضريبة القيمه",
+          "taxRate": "نسبه الضريبة",
+          "total": "الإجمالي (ريال)"
+        },
+        "totals": {
+          "total": "الاجمالي",
+          "discount": "الخصم",
+          "beforeTax": "الاجمالي غير شامل ضريبة القيمة المضافة",
+          "vat": "ضريبه القيمه المضافه",
+          "netAmount": "المجموع شامل الضريبه القيمه المضافه"
+        },
+        "footer": {
+          "countryEn": "Kingdom Of Saudi Arabia - - Market",
+          "countryAr": "المملكة العربية السعودية-",
+          "seller": "البائع",
+          "box": "الصندوق"
+        },
+        "notSpecified": "غير محدد",
+        "notAvailable": "غير متوفر",
+        "noReference": "لا يوجد"
       }
     },
     "paymentPage": {
