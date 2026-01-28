@@ -1663,7 +1663,6 @@ export default function useInvoiceForm({
         notAvailable: tPrint("notAvailable"),
         noReference: tPrint("noReference"),
       };
-
       const html = await buildInvoicePrintHtml({
         locale,
         invoice: form,
@@ -1673,6 +1672,7 @@ export default function useInvoiceForm({
         selectedCustomer,
         fractions: { frac, frac2 },
         translations: printTranslations,
+        invoiceQrLink: invoiceData?.inv_QR,
       });
 
       // Open a new window and print the invoice

@@ -1,5 +1,9 @@
 import type { Table } from "@tanstack/react-table";
 
+import QRCode from "react-qr-code";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createElement } from "react";
+
 import { InvoiceItemRow } from "../invoiceForm";
 import { amountToWords } from "../formatAmount";
 
@@ -431,8 +435,8 @@ const getPrintStyles = (direction: string, isRtl: boolean): string => {
         font-weight: bold;
         text-align: center;
       }
-			.customer-info { display:flex; border-bottom: 2px solid black; padding: 5px 20px; justify-content: space-between; align-items: start; font-size:10px }
-			.customer-info div { text-align: right; }
+			.customer-info { display:flex; border-bottom: 2px solid black; padding: 5px 20px; justify-content: space-between; align-items: start; font-size:10px; margin-top: 30px; }
+			.customer-info div { text-align: ${isRtl ? "right" : "left"}; }
       .address-info { display:flex; justify-content: space-between; align-items: start; font-size:8px }
 			table { width: 100%; border-collapse: collapse; font-size: 11px; }
 			th { border: 1px solid black; padding: 6px; text-align: center; background-color: #f3f4f6; font-weight: bold; }
@@ -447,7 +451,27 @@ const getPrintStyles = (direction: string, isRtl: boolean): string => {
   `;
 };
 
-// Build HTML for printing invoice
+const generateQrCodeHtml = (
+  data: string | null | undefined,
+  size: number = 120,
+): string => {
+  if (!data) return "";
+
+  const qrCodeSvg = renderToStaticMarkup(
+    createElement(QRCode, {
+      value: data,
+      size: size,
+      level: "M",
+    }),
+  );
+
+  return `
+    <div style="display: flex; justify-content: center; align-items: center; padding: 10px;">
+      ${qrCodeSvg}
+    </div>
+  `;
+};
+
 export const buildInvoicePrintHtml = ({
   locale,
   invoice,
@@ -457,6 +481,7 @@ export const buildInvoicePrintHtml = ({
   selectedCustomer,
   fractions,
   translations,
+  invoiceQrLink,
 }: {
   locale: string;
   invoice: FormState;
@@ -472,7 +497,9 @@ export const buildInvoicePrintHtml = ({
   selectedCustomer: any;
   fractions: { frac: number; frac2: number };
   translations: PrintTranslations;
+  invoiceQrLink?: string | null;
 }): string => {
+  const qrCodeHtml = generateQrCodeHtml(invoiceQrLink);
   const frac = fractions?.frac ?? 2;
   const frac2 = fractions?.frac2 ?? 3;
   const isRtl = locale === "ar";
@@ -523,12 +550,14 @@ export const buildInvoicePrintHtml = ({
 				<p style="margin: 2px 0;"><strong>${t.customer.customerCode}:</strong> ${escapeHtml(String(invoice.cust_code || ""))}</p>
       	<p style="margin: 2px 0;"><strong>${t.customer.customerName}:</strong> ${escapeHtml(invoice.cust_name)}</p>
         <div class="address-info">
+         
          <div class="address-line">
           <p style="margin: 2px 0;"><strong>${t.customer.mobile}:</strong> ${escapeHtml(selectedCustomer?.mobile || t.notAvailable)}</p>
           <p style="margin: 2px 0;"><strong>${t.customer.area}:</strong> ${escapeHtml(selectedCustomer?.area || t.notAvailable)}</p>
           <p style="margin: 2px 0;"><strong>${t.customer.street}:</strong> ${escapeHtml(selectedCustomer?.street || t.notAvailable)}</p>
           <p style="margin: 2px 0;"><strong>${t.customer.postalCode}:</strong> ${escapeHtml(selectedCustomer?.post_code || t.notAvailable)}</p>
          </div>
+         
           <div class="address-line">
           <p style="margin: 2px 0;"><strong>${t.customer.city}:</strong> ${escapeHtml(selectedCustomer?.city || t.notAvailable)}</p>
           <p style="margin: 2px 0;"><strong>${t.customer.building}:</strong> ${escapeHtml(selectedCustomer?.build_no || t.notAvailable)}</p>
@@ -536,6 +565,7 @@ export const buildInvoicePrintHtml = ({
          </div>
         </div>
     </div>
+    ${qrCodeHtml}
     <div>
       <p style="margin: 2px 0;"><strong>${t.invoice.invoiceNumber}:</strong> ${escapeHtml(String(invoice.inv_id || t.notSpecified))}</p>
       <p style="margin: 2px 0;"><strong>${t.invoice.reference}:</strong> ${escapeHtml(invoice.ref_no || t.noReference)}</p>
@@ -613,14 +643,15 @@ export const buildInvoicePrintHtml = ({
      
     </div>
      <div style="text-align: ${isRtl ? "right" : "left"}; font-size: 11px; margin-top: 10px; padding: 0 10px;">${t.footer.box}: </div>
-    <footer style="position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid #d1d5db; padding-top: 5px; font-size: 11px; background-color: white;">
+    
+    <footer style="position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid #d1d5db; padding-top: 5px; font-size: 11px; background-color: white; direction: ltr;">
       <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-        <div style="font-weight: bold;">${t.footer.countryAr}</div>
         <div style="font-weight: bold;">${t.footer.countryEn}</div>
+        <div style="font-weight: bold;">${t.footer.countryAr}</div>
       </div>
       <div style="display: flex; justify-content: space-between;">
         <div>${t.footer.seller}: ${escapeHtml(invoice.seller_name || "")}</div>
-        <div style="direction: ltr;">
+        <div>
           ${getCurrentTimestamp(locale)}
         </div>
       </div>
@@ -628,4 +659,3 @@ export const buildInvoicePrintHtml = ({
 	</body>
 </html>`;
 };
-
