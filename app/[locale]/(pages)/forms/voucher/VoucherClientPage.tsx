@@ -15,7 +15,6 @@ import {
   ModalFooter,
   Textarea,
   Button,
-  Checkbox,
 } from "@heroui/react";
 import {
   CheckIcon,
@@ -73,7 +72,7 @@ export default function VoucherClientPage({
   voucherDetailsData,
   isNewVoucher = true,
   voucherRecordId,
-  voucherVouchId,
+  voucherVouchId: _voucherVouchId,
   accounts: initialAccounts,
   costCenters: initialCostCenters,
   voucherTypes: initialVoucherTypes,
@@ -501,114 +500,112 @@ export default function VoucherClientPage({
 
               {/* الأزرار */}
               <Button
-              className="h-7 px-1.5 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
-              isDisabled={!isEditing}
-              isLoading={isLoading}
-              startContent={
-                !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
-              }
-              variant="solid"
-              onPress={saveVoucher}
-            >
-              {t("actions.save")}
-            </Button>
-
-            <Button
-              className="h-7 px-1.5 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-              isDisabled={formMode === "new" || isEditing || isLoading}
-              startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
-              variant="solid"
-              onPress={() => {
-                // عند فتح وضع التعديل، نلغي commit (تصبح false) حتى يتم الحفظ
-                setVoucher((prev) => ({
-                  ...prev,
-                  commit: false,
-                }));
-
-                // تغيير الـ URL إلى وضع edit
-                if (pathname) {
-                  // إذا كنا في صفحة [id]، نضيف mode=edit
-                  if (
-                    pathname.startsWith("/forms/voucher/") &&
-                    pathname !== "/forms/voucher"
-                  ) {
-                    router.push(`${pathname}?mode=edit`);
-                  } else {
-                    // إذا كنا في صفحة أخرى، نستخدم searchParams
-                    const currentUrl = new URL(window.location.href);
-
-                    currentUrl.searchParams.set("mode", "edit");
-                    router.push(currentUrl.pathname + currentUrl.search);
-                  }
+                className="h-7 px-1.5 text-xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 rounded-md shadow-sm"
+                isDisabled={!isEditing}
+                isLoading={isLoading}
+                startContent={
+                  !isLoading ? <CheckIcon className="w-4 h-4" /> : undefined
                 }
-              }}
-            >
-              {t("actions.edit")}
-            </Button>
-
-            {/* زر "جديد" */}
-            <Button
-              className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-              startContent={<PlusIcon className="w-4 h-4" />}
-              variant="solid"
-              onPress={() => {
-                // الانتقال إلى صفحة جديدة
-                router.push(newVoucherHref || "/forms/voucher");
-              }}
-            >
-              {t("actions.new")}
-            </Button>
-
-            <Button
-              className="h-7 px-1.5 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
-              isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
-              isLoading={isPrinting}
-              startContent={
-                !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
-              }
-              variant="solid"
-              onPress={printVoucher}
-            >
-              {t("actions.print")}
-            </Button>
-
-            <Button
-              className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
-              isDisabled={
-                !voucher.id ||
-                Number(voucher.id) <= 0 ||
-                !voucher.commit
-              }
-              startContent={<DocumentTextIcon className="w-4 h-4" />}
-              variant="solid"
-              onPress={() => setIsGLModalOpen(true)}
-            >
-              {t("actions.viewGLTransactions")}
-            </Button>
-
-            <Button
-              className="h-7 px-1.5 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
-              startContent={
-                <DocumentTextIcon className="w-4 h-4 text-slate-500" />
-              }
-              variant="solid"
-              onPress={() => setIsModalOpen(true)}
-            >
-              <span className="hidden sm:inline">
-                {t("actions.createFromPrevious")}
-              </span>
-            </Button>
-
-            {isCreatedFromPrevious && (
-              <Button
-                className="h-7 px-1.5 text-xs bg-orange-600 text-white hover:bg-orange-700 border border-orange-600 rounded-md shadow-sm"
-                startContent={<ArrowUturnLeftIcon className="w-4 h-4" />}
                 variant="solid"
-                onPress={resetToNew}
+                onPress={saveVoucher}
               >
-                {t("actions.revert")}
+                {t("actions.save")}
               </Button>
-            )}
+
+              <Button
+                className="h-7 px-1.5 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+                isDisabled={formMode === "new" || isEditing || isLoading}
+                startContent={<PencilIcon className="w-4 h-4 text-slate-500" />}
+                variant="solid"
+                onPress={() => {
+                  // عند فتح وضع التعديل، نلغي commit (تصبح false) حتى يتم الحفظ
+                  setVoucher((prev) => ({
+                    ...prev,
+                    commit: false,
+                  }));
+
+                  // تغيير الـ URL إلى وضع edit
+                  if (pathname) {
+                    // إذا كنا في صفحة [id]، نضيف mode=edit
+                    if (
+                      pathname.startsWith("/forms/voucher/") &&
+                      pathname !== "/forms/voucher"
+                    ) {
+                      router.push(`${pathname}?mode=edit`);
+                    } else {
+                      // إذا كنا في صفحة أخرى، نستخدم searchParams
+                      const currentUrl = new URL(window.location.href);
+
+                      currentUrl.searchParams.set("mode", "edit");
+                      router.push(currentUrl.pathname + currentUrl.search);
+                    }
+                  }
+                }}
+              >
+                {t("actions.edit")}
+              </Button>
+
+              {/* زر "جديد" */}
+              <Button
+                className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+                startContent={<PlusIcon className="w-4 h-4" />}
+                variant="solid"
+                onPress={() => {
+                  // الانتقال إلى صفحة جديدة
+                  router.push(newVoucherHref || "/forms/voucher");
+                }}
+              >
+                {t("actions.new")}
+              </Button>
+
+              <Button
+                className="h-7 px-1.5 text-xs bg-slate-600 text-white hover:bg-slate-700 border border-slate-600 rounded-md shadow-sm"
+                isDisabled={!voucher.vouch_id || Number(voucher.vouch_id) <= 0}
+                isLoading={isPrinting}
+                startContent={
+                  !isPrinting ? <PrinterIcon className="w-4 h-4" /> : undefined
+                }
+                variant="solid"
+                onPress={printVoucher}
+              >
+                {t("actions.print")}
+              </Button>
+
+              <Button
+                className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
+                isDisabled={
+                  !voucher.id || Number(voucher.id) <= 0 || !voucher.commit
+                }
+                startContent={<DocumentTextIcon className="w-4 h-4" />}
+                variant="solid"
+                onPress={() => setIsGLModalOpen(true)}
+              >
+                {t("actions.viewGLTransactions")}
+              </Button>
+
+              <Button
+                className="h-7 px-1.5 text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-md shadow-sm"
+                startContent={
+                  <DocumentTextIcon className="w-4 h-4 text-slate-500" />
+                }
+                variant="solid"
+                onPress={() => setIsModalOpen(true)}
+              >
+                <span className="hidden sm:inline">
+                  {t("actions.createFromPrevious")}
+                </span>
+              </Button>
+
+              {isCreatedFromPrevious && (
+                <Button
+                  className="h-7 px-1.5 text-xs bg-orange-600 text-white hover:bg-orange-700 border border-orange-600 rounded-md shadow-sm"
+                  startContent={<ArrowUturnLeftIcon className="w-4 h-4" />}
+                  variant="solid"
+                  onPress={resetToNew}
+                >
+                  {t("actions.revert")}
+                </Button>
+              )}
 
               {/* أزرار التنقل - مثل الفواتير - ظاهرة دائماً */}
               <div className="hidden md:flex items-center gap-0.5">
@@ -2609,11 +2606,7 @@ export default function VoucherClientPage({
       <GLTransactionModal
         isOpen={isGLModalOpen}
         onClose={() => setIsGLModalOpen(false)}
-        transId={
-          voucher.id && Number(voucher.id) > 0
-            ? Number(voucher.id)
-            : 0
-        }
+        transId={voucher.id && Number(voucher.id) > 0 ? Number(voucher.id) : 0}
         transType={vouchType || 3} // قيد تسوية
         voucherTitle={
           voucher.vouch_id && Number(voucher.vouch_id) > 0

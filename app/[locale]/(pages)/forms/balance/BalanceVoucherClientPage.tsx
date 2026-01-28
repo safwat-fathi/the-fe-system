@@ -12,7 +12,6 @@ import AsyncCreatableSelect from "react-select/async-creatable";
 import ReactSelect, { type CSSObjectWithLabel } from "react-select";
 import {
   Button,
-  Checkbox,
   Modal,
   ModalBody,
   ModalContent,
@@ -63,7 +62,7 @@ export default function BalanceVoucherClientPage({
   formData,
   formMode: initialFormMode = "new",
   voucherRecordId,
-  voucherVouchId,
+  voucherVouchId: _voucherVouchId,
   isNewVoucher = true,
   startInEditMode: propStartInEditMode,
 }: BalanceVoucherClientPageProps) {
@@ -1849,11 +1848,7 @@ export default function BalanceVoucherClientPage({
       <GLTransactionModal
         isOpen={isGLModalOpen}
         onClose={() => setIsGLModalOpen(false)}
-        transId={
-          voucher.id && Number(voucher.id) > 0
-            ? Number(voucher.id)
-            : 0
-        }
+        transId={voucher.id && Number(voucher.id) > 0 ? Number(voucher.id) : 0}
         transType={0} // قيد افتتاحي
         voucherTitle={
           voucher.vouch_id && Number(voucher.vouch_id) > 0

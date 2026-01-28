@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import toast from "react-hot-toast";
 
-import { voucherService } from "@/services/api";
 import {
   createVoucherAction,
   updateVoucherAction,
@@ -200,13 +199,13 @@ export const useVoucherActions = ({
         const realId = result.data.id || voucher.id || voucherRecordId;
         const vouchId = result.data.vouch_id || voucher.vouch_id;
 
-        console.log("[useVoucherActions] Save result:", {
+        /* console.log("[useVoucherActions] Save result:", {
           realId,
           vouchId,
           voucherId: voucher.id,
           voucherRecordId,
           commit: true,
-        });
+        }); */
 
         setVoucher((prev) => ({
           ...prev,

@@ -9,8 +9,6 @@ import {
   ModalFooter,
   Button,
   Spinner,
-} from "@heroui/react";
-import {
   Table,
   TableHeader,
   TableColumn,
@@ -21,10 +19,8 @@ import {
 import { useTranslations } from "next-intl";
 
 import { GLTransaction } from "@/types/models/gl-transaction";
-import { glTransactionService } from "@/services/api";
-import { accountService } from "@/services/api";
+import { glTransactionService, accountService } from "@/services/api";
 import { formatAmount } from "@/utilities/formatAmount";
-import { formatVoucherDate } from "@/utilities/voucher/formatting";
 import { getVoucherTypeName } from "@/utilities/voucher/routing";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
@@ -53,6 +49,7 @@ export default function GLTransactionModal({
   // جلب القيود عند فتح Modal
   useEffect(() => {
     const numericTransId = Number(transId);
+
     if (isOpen && transId && Number.isFinite(numericTransId) && numericTransId > 0) {
       loadTransactions();
       loadAccounts();
@@ -82,7 +79,7 @@ export default function GLTransactionModal({
         if (response.success && response.data) {
           transactions = response.data;
         }
-      } catch (err) {
+      } catch {
         // تجاهل الخطأ ومحاولة الطريقة البديلة
       }
       
@@ -100,7 +97,7 @@ export default function GLTransactionModal({
               (glTrans) => Number(glTrans.trans_id) === numericTransId
             );
           }
-        } catch (filterErr) {
+        } catch {
           // تجاهل الخطأ
         }
       }
@@ -125,6 +122,7 @@ export default function GLTransactionModal({
   const loadAccounts = async () => {
     try {
       const accountsData = await accountService.getAllAccounts();
+
       setAccounts(accountsData || []);
     } catch (error) {
       console.error("Error loading accounts:", error);

@@ -158,6 +158,7 @@ class CostCenterService extends HttpService<CostCenter> {
 
       // استخراج رسالة الخطأ من response
       const errorMessage = this.extractErrorMessage(response);
+
       throw new Error(errorMessage);
     } catch (error) {
       // إذا كان error من نوع Error، نرميه مباشرة
@@ -212,6 +213,7 @@ class CostCenterService extends HttpService<CostCenter> {
 
       // استخراج رسالة الخطأ من response
       const errorMessage = this.extractErrorMessage(response);
+
       throw new Error(errorMessage);
     } catch (error) {
       // إذا كان error من نوع Error، نرميه مباشرة

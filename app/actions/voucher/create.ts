@@ -19,7 +19,7 @@ import { processGoldDetails } from "./helpers/process-gold-details";
 import { revalidateVoucherPaths } from "./helpers/revalidation";
 import { postVoucherToGL } from "./helpers/post-to-gl";
 
-import { voucherService, glTransactionService } from "@/services/api";
+import { voucherService } from "@/services/api";
 import { requiresBoxes } from "@/utilities/voucher/routing";
 
 /**
@@ -31,11 +31,11 @@ export async function createVoucherAction(
   voucherBoxes: VoucherBoxData[] = [],
   goldDetails: GVoucherDetailData[] = [],
 ) {
-  console.log("=== [createVoucherAction] START ===");
+  /* console.log("=== [createVoucherAction] START ===");
   console.log("Voucher Type:", voucherData.vouch_type);
   console.log("Vouch ID:", voucherData.vouch_id);
-  console.log("Details Count:", details.length);
-  
+  console.log("Details Count:", details.length); */
+
   try {
     const normalizeCostValue = (...values: unknown[]): number | null => {
       for (const value of values) {
@@ -122,22 +122,22 @@ export async function createVoucherAction(
     }
 
     // حفظ السند الرئيسي
-    console.log("[createVoucherAction] Sending voucher payload:", {
+    /* console.log("[createVoucherAction] Sending voucher payload:", {
       vouch_id: voucherPayload.vouch_id,
       vouch_type: voucherPayload.vouch_type,
       com: voucherPayload.com,
       year: voucherPayload.year,
       detailsCount: details.length,
-    });
+    }); */
 
     let voucherResponse = await voucherService.create(voucherPayload);
 
     // تسجيل الاستجابة للتحقق
-    console.log("[createVoucherAction] Voucher create response:", {
+    /* console.log("[createVoucherAction] Voucher create response:", {
       success: voucherResponse.success,
       message: voucherResponse.message,
       data: voucherResponse.data,
-    });
+    }); */
 
     if (!voucherResponse.success || !voucherResponse.data) {
       const duplicateResolution = await handleDuplicateVoucherNumber(
@@ -157,7 +157,8 @@ export async function createVoucherAction(
 
     const savedVoucher = voucherResponse.data;
     let masterId = (savedVoucher as any)?.id;
-    const savedVouchId = (savedVoucher as any)?.vouch_id || voucherData.vouch_id;
+    const savedVouchId =
+      (savedVoucher as any)?.vouch_id || voucherData.vouch_id;
 
     // Fallback: البحث عن القيد إذا لم يكن id موجوداً
     if (!masterId || masterId <= 0) {
@@ -218,7 +219,7 @@ export async function createVoucherAction(
     }
 
     // ترحيل القيد للـ GL يدوياً بعد حفظ التفاصيل
-    console.log("[createVoucherAction] Posting voucher to GL manually...");
+    // console.log("[createVoucherAction] Posting voucher to GL manually...");
     try {
       const glPostResult = await postVoucherToGL({
         voucher_id: Number(masterId), // id من جدول vouchers (primary key)
@@ -247,9 +248,9 @@ export async function createVoucherAction(
       });
 
       if (glPostResult.success) {
-        console.log(`[createVoucherAction] ✅ Successfully posted ${glPostResult.createdCount} GL transactions`);
+        // console.log(`[createVoucherAction] ✅ Successfully posted ${glPostResult.createdCount} GL transactions`);
       } else {
-        console.warn(`[createVoucherAction] ⚠️ Failed to post to GL: ${glPostResult.error}`);
+        // console.warn(`[createVoucherAction] ⚠️ Failed to post to GL: ${glPostResult.error}`);
         // لا نفشل العملية، فقط نسجل التحذير
       }
     } catch (glPostError) {
@@ -276,10 +277,10 @@ export async function createVoucherAction(
     // Revalidate paths
     revalidateVoucherPaths(voucherData.vouch_type, masterId);
 
-    console.log("=== [createVoucherAction] SUCCESS ===");
+    /* console.log("=== [createVoucherAction] SUCCESS ===");
     console.log("Master ID:", masterId);
-    console.log("Vouch ID:", savedVouchId);
-    
+    console.log("Vouch ID:", savedVouchId); */
+
     return {
       success: true,
       data: {
@@ -291,7 +292,7 @@ export async function createVoucherAction(
   } catch (error) {
     console.error("=== [createVoucherAction] ERROR ===");
     console.error("Error:", error);
-    
+
     return {
       success: false,
       message: error instanceof Error ? error.message : "حدث خطأ",

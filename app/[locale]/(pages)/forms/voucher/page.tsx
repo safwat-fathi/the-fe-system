@@ -3,8 +3,9 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import VoucherClientPage from "@/app/[locale]/(pages)/forms/voucher/VoucherClientPage";
 import VoucherStatusCheckboxes from "./components/VoucherStatusCheckboxes";
+
+import VoucherClientPage from "@/app/[locale]/(pages)/forms/voucher/VoucherClientPage";
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail } from "@/types/voucher";

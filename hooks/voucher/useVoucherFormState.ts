@@ -113,19 +113,20 @@ export const useVoucherFormState = ({
         // إلا إذا كان voucherData يحتوي على commit = true أيضاً (محدث من الخادم)
         const hasLocalCommit = prev.id && prev.commit === true;
         const serverHasCommit = voucherData.id && voucherData.commit === true;
-        
-        console.log("[useVoucherFormState] voucherData changed:", {
+
+        /* console.log("[useVoucherFormState] voucherData changed:", {
           prevId: prev.id,
           prevCommit: prev.commit,
           serverId: voucherData.id,
           serverCommit: voucherData.commit,
           hasLocalCommit,
           serverHasCommit,
-        });
-        
+        }); */
+
         // إذا كان هناك commit محلي و voucherData لا يحتوي على commit = true، نحافظ على القيم المحلية
         if (hasLocalCommit && !serverHasCommit) {
-          console.log("[useVoucherFormState] Preserving local commit=true");
+          // console.log("[useVoucherFormState] Preserving local commit=true");
+
           return {
             ...prev,
             ...voucherData,
@@ -135,21 +136,25 @@ export const useVoucherFormState = ({
             // تحديث باقي القيم من voucherData
             vouch_id: voucherData.vouch_id || prev.vouch_id,
             post: voucherData.post !== undefined ? voucherData.post : prev.post,
-            print: voucherData.print !== undefined ? voucherData.print : prev.print,
+            print:
+              voucherData.print !== undefined ? voucherData.print : prev.print,
           };
         }
-        
+
         // استخدام voucherData (إما لا يوجد commit محلي، أو voucherData محدث)
-        console.log("[useVoucherFormState] Using server data");
+        // console.log("[useVoucherFormState] Using server data");
+
         return {
           ...prev,
           ...voucherData,
           // الحفاظ على القيم المحدثة محلياً إذا كانت موجودة
           id: voucherData.id || prev.id,
           vouch_id: voucherData.vouch_id || prev.vouch_id,
-          commit: voucherData.commit !== undefined ? voucherData.commit : prev.commit,
+          commit:
+            voucherData.commit !== undefined ? voucherData.commit : prev.commit,
           post: voucherData.post !== undefined ? voucherData.post : prev.post,
-          print: voucherData.print !== undefined ? voucherData.print : prev.print,
+          print:
+            voucherData.print !== undefined ? voucherData.print : prev.print,
         };
       });
     }

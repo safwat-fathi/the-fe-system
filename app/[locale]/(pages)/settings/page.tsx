@@ -202,6 +202,7 @@ export default function SettingsPage() {
   const handleDeleteGLTransactions = async () => {
     if (deleteGLConfirmText !== "حذف") {
       toast.error("يرجى كتابة 'حذف' للتأكيد");
+
       return;
     }
 
@@ -315,9 +316,9 @@ export default function SettingsPage() {
                     </h3>
                     <p className="text-red-700 text-sm leading-relaxed mb-4">
                       <strong className="font-bold">تحذير خطير:</strong> هذه
-                      العملية ستحذف جميع القيود المحاسبية من قاعدة البيانات
-                      بشكل نهائي ولا يمكن التراجع عنها. تأكد من عمل نسخة احتياطية
-                      قبل المتابعة.
+                      العملية ستحذف جميع القيود المحاسبية من قاعدة البيانات بشكل
+                      نهائي ولا يمكن التراجع عنها. تأكد من عمل نسخة احتياطية قبل
+                      المتابعة.
                     </p>
                     <ul className="list-disc list-inside text-red-700 text-sm space-y-1 mb-4">
                       <li>سيتم حذف جميع القيود المحاسبية بشكل دائم</li>
@@ -396,10 +397,15 @@ export default function SettingsPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                للتأكيد، يرجى كتابة <strong>"حذف"</strong> في المربع أدناه:
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor="delete-gl-confirm"
+              >
+                للتأكيد، يرجى كتابة <strong>&quot;حذف&quot;</strong> في المربع
+                أدناه:
               </label>
               <Input
+                id="delete-gl-confirm"
                 value={deleteGLConfirmText}
                 onChange={(e) => setDeleteGLConfirmText(e.target.value)}
                 placeholder="اكتب 'حذف' للتأكيد"
@@ -409,7 +415,7 @@ export default function SettingsPage() {
               />
               {deleteGLConfirmText && deleteGLConfirmText !== "حذف" && (
                 <p className="text-xs text-red-600">
-                  النص المدخل غير صحيح. يجب كتابة "حذف" بالضبط.
+                  النص المدخل غير صحيح. يجب كتابة &quot;حذف&quot; بالضبط.
                 </p>
               )}
             </div>
