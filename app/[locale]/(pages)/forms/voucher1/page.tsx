@@ -3,7 +3,6 @@ import { cache } from "react";
 import { getTranslations } from "next-intl/server";
 
 import CashReceiptVoucherClientPage from "./CashReceiptVoucherClientPage";
-import VoucherStatusCheckboxes from "./components/VoucherStatusCheckboxes";
 
 import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";

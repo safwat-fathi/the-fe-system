@@ -19,7 +19,7 @@ import { updateGoldDetails } from "./helpers/process-gold-details";
 import { revalidateVoucherPaths } from "./helpers/revalidation";
 import { postVoucherToGL } from "./helpers/post-to-gl";
 
-import { voucherService, glTransactionService } from "@/services/api";
+import { voucherService } from "@/services/api";
 import { requiresBoxes } from "@/utilities/voucher/routing";
 import { getCookieAction } from "@/app/actions/cookie-store";
 import { STORAGE_KEYS } from "@/constants";
@@ -38,12 +38,12 @@ export async function updateVoucherAction(
   goldDetails: GVoucherDetailData[] = [],
   deletedGoldDetailIds: number[] = [],
 ) {
-  console.log("=== [updateVoucherAction] START ===");
+  /* console.log("=== [updateVoucherAction] START ===");
   console.log("Voucher Type:", voucherData.vouch_type);
   console.log("Vouch ID:", voucherData.vouch_id);
   console.log("Details Count:", details.length);
-  console.log("Voucher Record ID:", voucherRecordId);
-  
+  console.log("Voucher Record ID:", voucherRecordId); */
+
   try {
     const normalizeCostValue = (...values: unknown[]): number | null => {
       for (const value of values) {
@@ -181,7 +181,7 @@ export async function updateVoucherAction(
     }
 
     // تحديث السند الرئيسي
-    console.log("[updateVoucherAction] Sending voucher payload:", {
+    /* console.log("[updateVoucherAction] Sending voucher payload:", {
       id: realVoucherId,
       vouch_id: voucherPayload.vouch_id,
       vouch_type: voucherPayload.vouch_type,
@@ -189,7 +189,7 @@ export async function updateVoucherAction(
       year: voucherPayload.year,
       detailsCount: details.length,
       deletedDetailsCount: deletedDetailIds.length,
-    });
+    }); */
 
     const voucherResponse = await voucherService.update(
       realVoucherId,
@@ -197,11 +197,11 @@ export async function updateVoucherAction(
     );
 
     // تسجيل الاستجابة للتحقق
-    console.log("[updateVoucherAction] Voucher update response:", {
+    /* console.log("[updateVoucherAction] Voucher update response:", {
       success: voucherResponse.success,
       message: voucherResponse.message,
       data: voucherResponse.data,
-    });
+    }); */
 
     if (!voucherResponse.success) {
       return {
@@ -268,10 +268,12 @@ export async function updateVoucherAction(
 
     // إعادة جلب التفاصيل المحدثة من قاعدة البيانات لضمان استخدام القيم الصحيحة في الترحيل إلى GL
     // استخدام fetch مباشرة مع cache: "no-store" لتجنب مشاكل الـ cache
-    console.log("[updateVoucherAction] Fetching updated details from database (bypassing cache)...");
+    // console.log("[updateVoucherAction] Fetching updated details from database (bypassing cache)...");
     let updatedDetails: any[] = [];
+
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
       if (!baseUrl) {
         throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
       }
@@ -282,9 +284,9 @@ export async function updateVoucherAction(
         xcom_id: branchId.toString(),
         page: "1",
       });
-      
+
       const url = `${baseUrl}/vouchers_dtl_list?${queryParams.toString()}`;
-      
+
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -299,38 +301,39 @@ export async function updateVoucherAction(
       }
 
       const data = await response.json();
-      
-      console.log("[updateVoucherAction] API Response structure:", {
+
+      /* console.log("[updateVoucherAction] API Response structure:", {
         hasResults: !!data.results,
         isArray: Array.isArray(data),
         hasData: !!data.data,
         dataKeys: Object.keys(data || {}),
-      });
-      
+      }); */
+
       // معالجة الاستجابة (pagination أو array مباشرة)
       let detailsArray: any[] = [];
+
       if (data.results && Array.isArray(data.results)) {
         detailsArray = data.results;
-        console.log("[updateVoucherAction] Found details in data.results");
+        // console.log("[updateVoucherAction] Found details in data.results");
       } else if (Array.isArray(data)) {
         detailsArray = data;
-        console.log("[updateVoucherAction] Found details as direct array");
+        // console.log("[updateVoucherAction] Found details as direct array");
       } else if (data.data) {
         if (Array.isArray(data.data)) {
           detailsArray = data.data;
-          console.log("[updateVoucherAction] Found details in data.data");
+          // console.log("[updateVoucherAction] Found details in data.data");
         } else if (data.data.results && Array.isArray(data.data.results)) {
           detailsArray = data.data.results;
-          console.log("[updateVoucherAction] Found details in data.data.results");
+          // console.log("[updateVoucherAction] Found details in data.data.results");
         }
       }
 
       if (detailsArray.length > 0) {
         updatedDetails = detailsArray;
-        console.log(`[updateVoucherAction] ✅ Fetched ${updatedDetails.length} updated details from database (bypassed cache)`);
-        
+        // console.log(`[updateVoucherAction] ✅ Fetched ${updatedDetails.length} updated details from database (bypassed cache)`);
+
         // تسجيل القيم المحدثة للتحقق
-        updatedDetails.forEach((d, index) => {
+        /* updatedDetails.forEach((d, index) => {
           console.log(`[updateVoucherAction] Detail ${index + 1} (all fields):`, d);
           console.log(`[updateVoucherAction] Detail ${index + 1} (account fields):`, {
             acc_id: d.acc_id,
@@ -339,75 +342,101 @@ export async function updateVoucherAction(
             account_id: d.account_id,
             vouch: d.vouch,
           });
-        });
+        }); */
       } else {
-        console.warn("[updateVoucherAction] ⚠️ No details found in response, using original details");
-        console.warn("[updateVoucherAction] Response data:", JSON.stringify(data, null, 2));
+        console.warn(
+          "[updateVoucherAction] ⚠️ No details found in response, using original details",
+        );
+        console.warn(
+          "[updateVoucherAction] Response data:",
+          JSON.stringify(data, null, 2),
+        );
         updatedDetails = details;
       }
     } catch (fetchError) {
-      console.error("[updateVoucherAction] Error fetching updated details:", fetchError);
+      console.error(
+        "[updateVoucherAction] Error fetching updated details:",
+        fetchError,
+      );
       // Fallback: استخدام التفاصيل الأصلية إذا حدث خطأ
       updatedDetails = details;
     }
 
     // ترحيل القيد للـ GL يدوياً بعد تحديث جميع التفاصيل
     // دمج: استخدام acc_id من details الأصلية (لأن API لا يعيده) مع القيم المحدثة من updatedDetails
-    console.log("[updateVoucherAction] ========== POSTING TO GL ==========");
+    /* console.log("[updateVoucherAction] ========== POSTING TO GL ==========");
     console.log(`[updateVoucherAction] Original details count: ${details.length}`);
     console.log(`[updateVoucherAction] Updated details count: ${updatedDetails.length}`);
-    console.log(`[updateVoucherAction] Voucher ID: ${realVoucherId}, Vouch ID: ${voucherData.vouch_id}, Type: ${voucherData.vouch_type}`);
-    
+    console.log(`[updateVoucherAction] Voucher ID: ${realVoucherId}, Vouch ID: ${voucherData.vouch_id}, Type: ${voucherData.vouch_type}`); */
+
     // التأكد من أن لدينا تفاصيل للترحيل
     if (details.length === 0) {
-      console.error("[updateVoucherAction] ❌ CRITICAL: No details available for GL posting!");
-      console.error("[updateVoucherAction] This means the voucher has no details. Skipping GL posting.");
+      console.error(
+        "[updateVoucherAction] ❌ CRITICAL: No details available for GL posting!",
+      );
+      console.error(
+        "[updateVoucherAction] This means the voucher has no details. Skipping GL posting.",
+      );
     } else {
       // دمج التفاصيل: استخدام acc_id من details الأصلية والقيم المحدثة من updatedDetails
       // إذا كانت updatedDetails موجودة، نستخدم القيم منها، وإلا نستخدم details الأصلية
       const glDetails = details.map((originalDetail, index) => {
         // البحث عن التفصيل المحدث المقابل (حسب الفهرس أو acc_id)
-        const updatedDetail = updatedDetails.length > index ? updatedDetails[index] : null;
-        
+        const updatedDetail =
+          updatedDetails.length > index ? updatedDetails[index] : null;
+
         // استخدام القيم المحدثة إذا كانت متاحة، وإلا استخدام القيم الأصلية
         const detailToUse = updatedDetail || originalDetail;
-        
+
         // تحويل القيم من strings إلى numbers إذا لزم الأمر
         const parseValue = (val: any): number => {
           if (val === null || val === undefined) return 0;
-          const num = typeof val === 'string' ? parseFloat(val) : Number(val);
+          const num = typeof val === "string" ? parseFloat(val) : Number(val);
+
           return Number.isFinite(num) ? num : 0;
         };
-        
+
         const glDetail = {
           acc_id: originalDetail.acc_id || 0, // دائماً من details الأصلية لأن API لا يعيده
           debit: parseValue(detailToUse.debit || detailToUse.debit_base),
           credit: parseValue(detailToUse.credit || detailToUse.credit_base),
           debit_base: parseValue(detailToUse.debit_base || detailToUse.debit),
-          credit_base: parseValue(detailToUse.credit_base || detailToUse.credit),
+          credit_base: parseValue(
+            detailToUse.credit_base || detailToUse.credit,
+          ),
           g_debit: parseValue(detailToUse.g_debit || detailToUse.g_debit_base),
-          g_credit: parseValue(detailToUse.g_credit || detailToUse.g_credit_base),
-          g_debit_base: parseValue(detailToUse.g_debit_base || detailToUse.g_debit),
-          g_credit_base: parseValue(detailToUse.g_credit_base || detailToUse.g_credit),
+          g_credit: parseValue(
+            detailToUse.g_credit || detailToUse.g_credit_base,
+          ),
+          g_debit_base: parseValue(
+            detailToUse.g_debit_base || detailToUse.g_debit,
+          ),
+          g_credit_base: parseValue(
+            detailToUse.g_credit_base || detailToUse.g_credit,
+          ),
           cost_id: detailToUse.cost_id || originalDetail.cost_id || null,
-          vouch_notes: detailToUse.vouch_notes || detailToUse.notes || originalDetail.vouch_notes || "",
+          vouch_notes:
+            detailToUse.vouch_notes ||
+            detailToUse.notes ||
+            originalDetail.vouch_notes ||
+            "",
         };
-        
-        console.log(`[updateVoucherAction] GL Detail ${index + 1}:`, {
+
+        /* console.log(`[updateVoucherAction] GL Detail ${index + 1}:`, {
           acc_id: glDetail.acc_id,
           debit: glDetail.debit,
           credit: glDetail.credit,
           g_debit: glDetail.g_debit,
           g_credit: glDetail.g_credit,
-        });
-        
+        }); */
+
         return glDetail;
       });
-      
-      console.log(`[updateVoucherAction] Prepared ${glDetails.length} details for GL posting`);
-      
+
+      // console.log(`[updateVoucherAction] Prepared ${glDetails.length} details for GL posting`);
+
       try {
-        console.log("[updateVoucherAction] Calling postVoucherToGL...");
+        // console.log("[updateVoucherAction] Calling postVoucherToGL...");
         const glPostResult = await postVoucherToGL({
           voucher_id: Number(realVoucherId), // id من جدول vouchers (primary key)
           vouch_id: Number(voucherData.vouch_id), // رقم القيد (للرجوع إليه)
@@ -422,25 +451,31 @@ export async function updateVoucherAction(
           cust_id: voucherData.cust_id || null,
         });
 
-        console.log("[updateVoucherAction] postVoucherToGL returned:", {
+        /* console.log("[updateVoucherAction] postVoucherToGL returned:", {
           success: glPostResult.success,
           createdCount: glPostResult.createdCount,
           error: glPostResult.error,
-        });
+        }); */
 
         if (glPostResult.success) {
-          console.log(`[updateVoucherAction] ✅ SUCCESS: Posted ${glPostResult.createdCount} GL transactions`);
+          // console.log(`[updateVoucherAction] ✅ SUCCESS: Posted ${glPostResult.createdCount} GL transactions`);
         } else {
-          console.error(`[updateVoucherAction] ❌ FAILED: Failed to post to GL: ${glPostResult.error}`);
+          // console.error(`[updateVoucherAction] ❌ FAILED: Failed to post to GL: ${glPostResult.error}`);
           // لا نفشل العملية، فقط نسجل الخطأ
         }
       } catch (glPostError) {
-        console.error("[updateVoucherAction] ❌ EXCEPTION: Error posting to GL:", glPostError);
-        console.error("[updateVoucherAction] Error stack:", glPostError instanceof Error ? glPostError.stack : "No stack trace");
+        console.error(
+          "[updateVoucherAction] ❌ EXCEPTION: Error posting to GL:",
+          glPostError,
+        );
+        console.error(
+          "[updateVoucherAction] Error stack:",
+          glPostError instanceof Error ? glPostError.stack : "No stack trace",
+        );
         // لا نفشل العملية، فقط نسجل الخطأ
       }
     }
-    console.log("[updateVoucherAction] ========== END POSTING TO GL ==========");
+    // console.log("[updateVoucherAction] ========== END POSTING TO GL ==========");
 
     // Revalidate paths
     // استخدام vouch_id في revalidatePath لأن URL يستخدم vouch_id
@@ -450,10 +485,10 @@ export async function updateVoucherAction(
       Number(voucherData.vouch_id),
     );
 
-    console.log("=== [updateVoucherAction] SUCCESS ===");
+    /* console.log("=== [updateVoucherAction] SUCCESS ===");
     console.log("Real Voucher ID:", realVoucherId);
-    console.log("Vouch ID:", voucherData.vouch_id);
-    
+    console.log("Vouch ID:", voucherData.vouch_id); */
+
     return {
       success: true,
       data: { vouch_id: voucherData.vouch_id, id: realVoucherId },
@@ -462,7 +497,7 @@ export async function updateVoucherAction(
   } catch (error) {
     console.error("=== [updateVoucherAction] ERROR ===");
     console.error("Error:", error);
-    
+
     return {
       success: false,
       message: error instanceof Error ? error.message : "حدث خطأ",

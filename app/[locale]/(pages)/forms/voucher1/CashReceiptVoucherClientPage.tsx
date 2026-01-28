@@ -22,7 +22,6 @@ import clsx from "clsx";
 import { useTranslations, useLocale } from "next-intl";
 import {
   Button,
-  Checkbox,
   Modal,
   ModalContent,
   ModalHeader,

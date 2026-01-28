@@ -62,6 +62,7 @@ export default function AccountsClient({
   const getMarginClass = (level: number) => {
     if (level === 0) return "";
     const marginValue = level * 4;
+
     if (dir === "rtl") {
       const classes: Record<number, string> = {
         4: "mr-4",
@@ -70,6 +71,7 @@ export default function AccountsClient({
         16: "mr-16",
         20: "mr-20",
       };
+
       return classes[marginValue] || "";
     } else {
       const classes: Record<number, string> = {
@@ -79,6 +81,7 @@ export default function AccountsClient({
         16: "ml-16",
         20: "ml-20",
       };
+
       return classes[marginValue] || "";
     }
   };

@@ -1,5 +1,5 @@
 import { HttpService } from "@/services/base";
-import { IParams, IPaginatedResponse } from "@/types/services/base";
+import { IParams } from "@/types/services/base";
 import { GLTransaction } from "@/types/models/gl-transaction";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
@@ -192,6 +192,7 @@ class GLTransactionService extends HttpService<GLTransaction> {
       } catch (error) {
         rethrowAuthenticationError(error);
         console.error("Error fetching GL transactions:", error);
+
         return {
           success: false,
           data: [],
@@ -286,6 +287,7 @@ class GLTransactionService extends HttpService<GLTransaction> {
     const queryParams = this.buildQueryParams(params);
     
     const result = await this.delete(`api_delete_gl_transaction/${id}`, queryParams);
+
     return result;
   }
 
@@ -381,6 +383,7 @@ class GLTransactionService extends HttpService<GLTransaction> {
 
       // إنشاء خريطة للوصول السريع للقيود
       const transactionMap = new Map<number, GLTransaction>();
+
       uniqueTransactions.forEach(t => {
         if (t.id) {
           transactionMap.set(t.id, t);
@@ -429,6 +432,7 @@ class GLTransactionService extends HttpService<GLTransaction> {
             // إذا فشلت المحاولة الأخيرة
             if (attempt === retries) {
               console.error(`Failed to delete GL transaction ${id} after ${retries} attempts:`, error);
+
               return false;
             }
 
@@ -436,6 +440,7 @@ class GLTransactionService extends HttpService<GLTransaction> {
             await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
           }
         }
+
         return false;
       };
 

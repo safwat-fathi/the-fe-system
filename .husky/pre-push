@@ -1,30 +1,26 @@
 echo "Checking types and building the project before pushing..."
 
+# Determine the correct npm command based on OS
+NPM_CMD="npm"
+
+# Check for Windows environments (Git Bash, Cygwin, MSYS, or standard CMD/PowerShell if running through sh)
+if [ -n "$COMSPEC" ] || [ -n "$MSYSTEM" ] || [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "cygwin" ] || [ "$OSTYPE" = "win32" ]; then
+    NPM_CMD="npm.cmd"
+elif command -v uname >/dev/null 2>&1; then
+    case "$(uname)" in
+        *CYGWIN*|*MINGW*|*MSYS*)
+            NPM_CMD="npm.cmd"
+        ;;
+    esac
+fi
+
 echo "⏳ Checking types..."
-
-case `uname` in
-  *CYGWIN*|*MINGW*|*MSYS*)
-    npm.cmd run type-check
-  ;;
-  *)
-    npm run type-check
-  ;;
-esac
-
+$NPM_CMD run type-check
 echo "✅ Type checking passed"
 
 echo "------"
 echo "------"
 
 echo "⏳ Building the project..."
-
-case `uname` in
-  *CYGWIN*|*MINGW*|*MSYS*)
-    npm.cmd run build
-  ;;
-  *)
-    npm run build
-  ;;
-esac
-
+$NPM_CMD run build
 echo "✅ Build successful"

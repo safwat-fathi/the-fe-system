@@ -705,6 +705,7 @@ export const useBalanceVoucherForm = ({
 
             if (balanceVoucher) {
               const idToUse = balanceVoucher.vouch_id || existingId;
+
               router.push(`/forms/balance/${idToUse}`);
             } else {
               // ✅ إذا لم يتم العثور على القيد، لا تقم بالتوجيه
@@ -1007,6 +1008,7 @@ export const useBalanceVoucherForm = ({
     if (voucherRecordId && Number(voucherRecordId) > 0) {
       try {
         const { voucherService } = await import("@/services/api");
+
         await voucherService.update(Number(voucherRecordId), {
           commit: false, // ✅ عند بدء التعديل، commit: false
         });
