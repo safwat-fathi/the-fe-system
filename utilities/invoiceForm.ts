@@ -41,6 +41,8 @@ export type InvoiceItemRow = {
   year?: number | null;
   inv?: number;
   box?: number | null;
+  totalBeforeTax?: number;
+  totalWithTax?: number;
 };
 
 export type ComparableRow = {

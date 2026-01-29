@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import DashboardClient from "./components/DashboardClient";
 
+import { STORAGE_KEYS } from "@/constants";
 import { StatCard } from "@/components/Card";
 import Breadcrumb from "@/components/Breadcrumb";
 import dashboardService from "@/services/bff/dashboard.service";
@@ -28,7 +29,7 @@ export default async function DashboardPage() {
   const cookieStore = await cookies();
 
   const branch = cookieStore.get("selectedBranch")?.value || "";
-  const year = cookieStore.get("selectedYear")?.value || "";
+  const year = cookieStore.get(STORAGE_KEYS.FIN_YEAR)?.value || "";
 
   let dashboardData;
 
