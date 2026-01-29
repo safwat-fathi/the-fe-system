@@ -482,6 +482,7 @@ export const buildInvoicePrintHtml = ({
   fractions,
   translations,
   invoiceQrLink,
+  companyInfo,
 }: {
   locale: string;
   invoice: FormState;
@@ -498,6 +499,20 @@ export const buildInvoicePrintHtml = ({
   fractions: { frac: number; frac2: number };
   translations: PrintTranslations;
   invoiceQrLink?: string | null;
+  companyInfo?: {
+    comp_name?: string;
+    comp_name_e?: string;
+    address?: string;
+    address_e?: string | null;
+    vat_no?: number | string | null;
+    comp_CR_no?: string | null;
+    comp_gov?: string | null;
+    comp_city?: string | null;
+    comp_street?: string | null;
+    comp_build_no?: string | null;
+    comp_post_no?: string | null;
+    comp_dist?: string | null;
+  } | null;
 }): string => {
   const qrCodeHtml = generateQrCodeHtml(invoiceQrLink);
   const frac = fractions?.frac ?? 2;
@@ -538,15 +553,15 @@ export const buildInvoicePrintHtml = ({
   </div>
 		<div class="page-header">
 			<div class="right-info">
-				<p>${t.header.phone}:</p>
-				<p>${t.header.crNumber}: 5907523858</p>
-				<p>${t.header.metalLicense}: ص.ب 6511</p>
-				<p>${t.header.mobile}: 0532800540</p>
+				<p><strong>${escapeHtml(companyInfo?.comp_name || "")}</strong></p>
+				<p>${t.header.crNumber}: ${escapeHtml(String(companyInfo?.comp_CR_no || ""))}</p>
+				<p>${escapeHtml(companyInfo?.address || "")}</p>
+				<p>VAT: ${escapeHtml(String(companyInfo?.vat_no || ""))}</p>
 			</div>
 			<div class="left-info">
-				<p>${t.header.forGoldJewellery}</p>
-				<p>C.R: - Tel.:</p>
-				<p>Metal license:</p>
+				<p><strong>${escapeHtml(companyInfo?.comp_name_e || t.header.forGoldJewellery)}</strong></p>
+				<p>C.R: ${escapeHtml(String(companyInfo?.comp_CR_no || ""))}</p>
+				<p>${escapeHtml(companyInfo?.address_e || "")}</p>
 			</div>
 		</div>
 		<div class="container">

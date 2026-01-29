@@ -52,9 +52,10 @@ export default async function BoxDetailPage({
   }
 
   // جلب البيانات الأساسية
-  const [boxTypesData, accountsData] = await Promise.all([
+  const [boxTypesData, accountsData, itemsStatusData] = await Promise.all([
     boxService.getBoxTypes().catch(() => []),
     accountService.getAllAccounts(branchParams.com).catch(() => []),
+    boxService.getItemsStatus().catch(() => []),
   ]);
 
   const t = await getTranslations("basic.boxes");
@@ -84,6 +85,7 @@ export default async function BoxDetailPage({
         companyId={companyId}
         initialBox={box}
         mode={formMode}
+        itemsStatus={itemsStatusData as any}
       />
     </div>
   );

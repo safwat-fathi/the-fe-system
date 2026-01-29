@@ -1003,6 +1003,68 @@ class InvoiceService extends HttpService<Invoice> {
       return null;
     }
   }
+
+  async getCompanyInfo(xcom_id?: number | string): Promise<{
+    id: number;
+    comp_name: string;
+    comp_name_e: string;
+    address: string;
+    address_e: string | null;
+    vat_no: number | string | null;
+    comp_CR_no: string | null;
+    comp_gov: string | null;
+    comp_city: string | null;
+    comp_street: string | null;
+    comp_build_no: string | null;
+    comp_post_no: string | null;
+    comp_dist: string | null;
+  } | null> {
+    try {
+      const companyId = xcom_id ?? (await this._getCompanyId());
+      const response = await this.get<
+        | {
+            id: number;
+            comp_name: string;
+            comp_name_e: string;
+            address: string;
+            address_e: string | null;
+            vat_no: number | string | null;
+            comp_CR_no: string | null;
+            comp_gov: string | null;
+            comp_city: string | null;
+            comp_street: string | null;
+            comp_build_no: string | null;
+            comp_post_no: string | null;
+            comp_dist: string | null;
+          }[]
+        | { results: any[] }
+      >(
+        "companies_list",
+        { xcom_id: String(companyId) },
+        { cache: "no-store" },
+      );
+
+      if (response.success && response.data) {
+        const data = response.data;
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray((data as any)?.results)
+            ? (data as any).results
+            : [];
+
+        if (list.length > 0) {
+          return list[0];
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching company info:", error);
+      rethrowAuthenticationError(error);
+
+      return null;
+    }
+  }
 }
 
 export default new InvoiceService();

@@ -22,9 +22,10 @@ export default async function NewBoxPage() {
       : 1;
 
   // جلب البيانات الأساسية
-  const [boxTypesData, accountsData] = await Promise.all([
+  const [boxTypesData, accountsData, itemsStatusData] = await Promise.all([
     boxService.getBoxTypes().catch(() => []),
     accountService.getAllAccounts(branchParams.com).catch(() => []),
+    boxService.getItemsStatus().catch(() => []),
   ]);
 
   // إنشاء صندوق فارغ
@@ -71,6 +72,7 @@ export default async function NewBoxPage() {
       <BoxFormClient
         accounts={accountsData as any}
         boxTypes={boxTypesData as any}
+        itemsStatus={itemsStatusData as any}
         companyId={companyId}
         initialBox={emptyBox}
         mode="add"

@@ -21,9 +21,10 @@ export default async function NewCategoryPage() {
       : 1;
 
   // جلب البيانات الأساسية
-  const [boxesData, accountsData] = await Promise.all([
+  const [boxesData, accountsData, catTypesData] = await Promise.all([
     helperService.getBoxes(companyId).catch(() => []),
     accountService.getAllAccounts(companyId).catch(() => []),
+    helperService.getCatTypes().catch(() => []),
   ]);
 
   // إنشاء فئة فارغة
@@ -50,6 +51,7 @@ export default async function NewCategoryPage() {
       />
       <CategoryFormClient
         boxes={boxesData as any}
+        catTypes={catTypesData as any}
         companyId={companyId}
         initialAccounts={accountsData as any}
         initialCategory={emptyCategory}

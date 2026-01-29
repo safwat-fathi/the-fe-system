@@ -19,6 +19,7 @@ export type Item = {
   upd_date: string | null;
   upd_user: string | null;
   cat: number | null;
+  cat_id?: number | null;
   item_type: number | null;
   unit: number | null;
   box_id?: number;

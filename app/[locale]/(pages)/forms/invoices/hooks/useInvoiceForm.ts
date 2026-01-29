@@ -33,6 +33,7 @@ import {
   createInvoiceGoldBoxAction,
   getInvoiceGoldBoxListAction,
   updateInvoiceGoldBoxAction,
+  getCompanyInfoAction,
 } from "@/app/actions/invoice";
 import { generateZatcaQR } from "@/utilities/zatca";
 import {
@@ -1663,7 +1664,11 @@ export default function useInvoiceForm({
         notAvailable: tPrint("notAvailable"),
         noReference: tPrint("noReference"),
       };
-      const html = await buildInvoicePrintHtml({
+
+      // Fetch company info for print header
+      const companyInfo = await getCompanyInfoAction().catch(() => null);
+
+      const html = buildInvoicePrintHtml({
         locale,
         invoice: form,
         invoiceItems: validItems,
@@ -1673,6 +1678,7 @@ export default function useInvoiceForm({
         fractions: { frac, frac2 },
         translations: printTranslations,
         invoiceQrLink: invoiceData?.inv_QR,
+        companyInfo,
       });
 
       // Open a new window and print the invoice

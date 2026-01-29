@@ -26,12 +26,21 @@ interface BoxType {
   type_id: number;
 }
 
+interface ItemStatus {
+  id: number;
+  code_id: number;
+  code_desc: string;
+  code_desc_l: string | null;
+  type_id: number;
+}
+
 interface BoxFormClientProps {
   mode: BoxFormMode;
   initialBox: Partial<Box>;
   boxTypes: BoxType[];
   accounts: any[];
   companyId: number;
+  itemsStatus: ItemStatus[];
 }
 
 const normalizeNumberField = (value: unknown): number | undefined => {
@@ -50,6 +59,7 @@ const BoxFormClient = ({
   boxTypes,
   accounts,
   companyId,
+  itemsStatus,
 }: BoxFormClientProps) => {
   const router = useRouter();
   const locale = useLocale();
@@ -71,13 +81,6 @@ const BoxFormClient = ({
         [key]: event.target.value,
       });
     };
-
-  const handleCheckboxChange = (key: "expt" | "hide") => (value: boolean) => {
-    setBox({
-      ...box,
-      [key]: value,
-    });
-  };
 
   const handleSaveError = (error: unknown) => {
     let errorMessage = t("messages.saveError");
@@ -383,29 +386,22 @@ const BoxFormClient = ({
           />
         </div>
         <div className="md:col-span-2 flex gap-6 items-center">
-          <Checkbox
-            isDisabled={isViewMode}
-            isSelected={Boolean(box.cust_status)}
-            onValueChange={(val) =>
-              setBox({ ...box, cust_status: val ? 1 : 0 })
-            }
-          >
-            {t("labels.statusEnabled")}
-          </Checkbox>
-          <Checkbox
-            isDisabled={isViewMode}
-            isSelected={Boolean(box.expt)}
-            onValueChange={handleCheckboxChange("expt")}
-          >
-            {t("labels.excludedFromBalance")}
-          </Checkbox>
-          <Checkbox
-            isDisabled={isViewMode}
-            isSelected={Boolean(box.hide)}
-            onValueChange={handleCheckboxChange("hide")}
-          >
-            {t("labels.hidden")}
-          </Checkbox>
+          {itemsStatus.map((status) => (
+            <Checkbox
+              key={status.id}
+              isDisabled={isViewMode}
+              isSelected={Boolean(box.cust_status === status.code_id)}
+              classNames={{
+                wrapper: "after:bg-blue-500 after:text-white",
+                icon: "text-white",
+              }}
+              onValueChange={(val) =>
+                setBox({ ...box, cust_status: val ? status.code_id : 0 })
+              }
+            >
+              {status.code_desc}
+            </Checkbox>
+          ))}
         </div>
       </div>
     </div>

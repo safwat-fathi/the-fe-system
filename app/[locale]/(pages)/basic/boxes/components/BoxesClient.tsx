@@ -11,7 +11,6 @@ import {
   TableCell,
   Input,
   Button,
-  Checkbox,
   Pagination,
 } from "@heroui/react";
 import {
@@ -281,7 +280,9 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
                   "-"}
               </TableCell>
               <TableCell>
-                <Checkbox isReadOnly isSelected={!!box.cust_status} />
+                {box.cust_status === 1
+                  ? t("labels.active")
+                  : t("labels.inactive")}
               </TableCell>
               <TableCell>{renderActions(box)}</TableCell>
             </TableRow>

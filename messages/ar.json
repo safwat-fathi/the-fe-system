@@ -1661,7 +1661,9 @@
         "totalCount": "عدد الصناديق: {count}",
         "statusEnabled": "مفعلة",
         "excludedFromBalance": "مستثنى من كشف الأرصدة",
-        "hidden": "مخفي"
+        "hidden": "مخفي",
+        "active": "مفعل",
+        "inactive": "غير مفعل"
       },
       "fields": {
         "code": "كود الصندوق",
