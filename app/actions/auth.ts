@@ -30,6 +30,7 @@ type LoginResponseData = {
   username?: string;
   com?: number;
   cost?: number;
+  fin_year?: number;
 };
 
 const buildRedirectPath = (redirectPath: string, locale: string) => {
@@ -56,6 +57,7 @@ async function persistCredentials(responseData: LoginResponseData) {
   const isAdmin = responseData.is_admin;
   const companyId = responseData.com;
   const costId = responseData.cost;
+  const finYear = responseData.fin_year;
 
   if (!accessToken || !refreshToken) {
     return false;
@@ -112,6 +114,16 @@ async function persistCredentials(responseData: LoginResponseData) {
 
   if (typeof costId !== "undefined") {
     await setCookieAction(STORAGE_KEYS.COST_ID, String(costId), {
+      maxAge: refreshTokenExpires.getTime() / 1000,
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+  }
+
+  if (typeof finYear !== "undefined") {
+    await setCookieAction(STORAGE_KEYS.FIN_YEAR, String(finYear), {
       maxAge: refreshTokenExpires.getTime() / 1000,
       path: "/",
       httpOnly: true,
@@ -225,6 +237,7 @@ export async function deleteCredentials() {
   cookieStore.set(STORAGE_KEYS.IS_ADMIN, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.COMPANY_ID, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.COST_ID, "", { maxAge: 0 });
+  cookieStore.set(STORAGE_KEYS.FIN_YEAR, "", { maxAge: 0 });
 }
 export async function onLogoutAction() {
   await deleteCredentials();
