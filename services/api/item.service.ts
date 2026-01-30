@@ -216,7 +216,7 @@ class ItemService extends HttpService<Item> {
     }
   > {
     const { query = "", page = 1, companyId = 1 } = params;
-		const { com } = await getBranchParams();
+    const { com } = await getBranchParams();
 
     const emptyResponse: IPaginatedResponse<Item> & {
       hasMore: boolean;

@@ -292,14 +292,10 @@ class HelperService extends HttpService {
   // جلب حالات الفئات
   async getCatStatuses(): Promise<CatStatus[]> {
     try {
-      const response = await this.get<CatStatus[]>(
-        "getCatStatusList",
-        undefined,
-        {
-          cache: "no-store",
-          next: { tags: ["cat-statuses"] },
-        },
-      );
+      const response = await this.get<CatStatus[]>("getCatStatus", undefined, {
+        cache: "no-store",
+        next: { tags: ["cat-statuses"] },
+      });
 
       if (response.success) {
         if (Array.isArray(response.data)) {

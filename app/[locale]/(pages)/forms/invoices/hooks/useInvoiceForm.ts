@@ -33,6 +33,7 @@ import {
   createInvoiceGoldBoxAction,
   getInvoiceGoldBoxListAction,
   updateInvoiceGoldBoxAction,
+  getCompanyInfoAction,
 } from "@/app/actions/invoice";
 import { generateZatcaQR } from "@/utilities/zatca";
 import {
@@ -51,6 +52,7 @@ import {
   type PrintTranslations,
 } from "@/utilities/table/print";
 import { Nullable } from "@/types";
+import { STORAGE_KEYS } from "@/constants";
 
 type NumericValue = number | string;
 
@@ -623,7 +625,22 @@ export default function useInvoiceForm({
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
 
+  const getCurrentUserFromCookies = useCallback((): string => {
+    if (typeof window === "undefined") return "";
+    const cookies = document.cookie.split(";");
+    const usernameCookie = cookies
+      .map((c) => c.trim())
+      .find((c) => c.startsWith(`${STORAGE_KEYS.USERNAME}=`));
+
+    if (!usernameCookie) return "";
+    const value = usernameCookie.split("=")[1];
+
+    return value && value !== "undefined" && value !== "null" ? value : "";
+  }, []);
+
   const buildInitialFormState = useCallback((): FormState => {
+    const currentUser = getCurrentUserFromCookies();
+
     return {
       cust_code: resolvedInvoiceCustomerCode,
       cust_name: invoiceData?.cust_name ?? "",
@@ -645,9 +662,9 @@ export default function useInvoiceForm({
       print: invoiceData?.print ?? false,
       is_ok: invoiceData?.is_ok ?? false,
       is_done: invoiceData?.is_done ?? false,
-      seller_name: "",
+      seller_name: currentUser,
     };
-  }, [invoiceData, resolvedInvoiceCustomerCode]);
+  }, [invoiceData, resolvedInvoiceCustomerCode, getCurrentUserFromCookies]);
 
   const customers = useMemo(
     () =>
@@ -1583,9 +1600,17 @@ export default function useInvoiceForm({
       return;
     }
 
-    const validItems = invoiceItems.filter(
-      (item) => getItemIdFromRow(item) !== null,
-    );
+    const validItems = invoiceItems
+      .filter((item) => getItemIdFromRow(item) !== null)
+      .map((row) => {
+        const itemId = getItemIdFromRow(row);
+        const refItem = items.find((i) => i.id === itemId);
+
+        return {
+          ...row,
+          item_name: refItem?.item_name || row.item_name || "",
+        };
+      });
 
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
@@ -1663,7 +1688,11 @@ export default function useInvoiceForm({
         notAvailable: tPrint("notAvailable"),
         noReference: tPrint("noReference"),
       };
-      const html = await buildInvoicePrintHtml({
+
+      // Fetch company info for print header
+      const companyInfo = await getCompanyInfoAction().catch(() => null);
+
+      const html = buildInvoicePrintHtml({
         locale,
         invoice: form,
         invoiceItems: validItems,
@@ -1673,6 +1702,7 @@ export default function useInvoiceForm({
         fractions: { frac, frac2 },
         translations: printTranslations,
         invoiceQrLink: invoiceData?.inv_QR,
+        companyInfo,
       });
 
       // Open a new window and print the invoice
