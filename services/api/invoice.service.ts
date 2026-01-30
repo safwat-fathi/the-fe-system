@@ -1041,7 +1041,10 @@ class InvoiceService extends HttpService<Invoice> {
       >(
         "companies_list",
         { xcom_id: String(companyId) },
-        { cache: "no-store" },
+        {
+          cache: "force-cache",
+          next: { tags: ["company-info", `company-info-${companyId}`] },
+        },
       );
 
       if (response.success && response.data) {

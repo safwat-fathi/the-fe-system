@@ -307,7 +307,7 @@ const renderInvoiceRows = (
         <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.g_weight).toFixed(frac2)}</td>
         <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.weight).toFixed(frac2)}</td>
         <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: center;">${Number(item.qty).toFixed(frac2)}</td>
-        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: ${isRtl ? "right" : "left"};">${escapeHtml(item.item_desc || item.sn || notSpecified)}</td>
+        <td style="border-left: 1px solid #000; border-right: 1px solid #000; padding: 6px; text-align: ${isRtl ? "right" : "left"};">${escapeHtml(item.item_name || item.sn || notSpecified)}</td>
 				</tr>
 			`;
     })

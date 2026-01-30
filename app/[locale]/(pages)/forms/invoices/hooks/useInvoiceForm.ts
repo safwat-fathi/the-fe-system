@@ -1600,9 +1600,17 @@ export default function useInvoiceForm({
       return;
     }
 
-    const validItems = invoiceItems.filter(
-      (item) => getItemIdFromRow(item) !== null,
-    );
+    const validItems = invoiceItems
+      .filter((item) => getItemIdFromRow(item) !== null)
+      .map((row) => {
+        const itemId = getItemIdFromRow(row);
+        const refItem = items.find((i) => i.id === itemId);
+
+        return {
+          ...row,
+          item_name: refItem?.item_name || row.item_name || "",
+        };
+      });
 
     if (validItems.length === 0) {
       toast.error("يرجى إدخال تفاصيل الفاتورة");
