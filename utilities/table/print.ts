@@ -666,10 +666,6 @@ export const buildInvoicePrintHtml = ({
      <div style="text-align: ${isRtl ? "right" : "left"}; font-size: 11px; margin-top: 10px; padding: 0 10px;">${t.footer.box}: </div>
     
     <footer style="position: fixed; bottom: 0; left: 0; right: 0; border-top: 1px solid #d1d5db; padding-top: 5px; font-size: 11px; background-color: white; direction: ltr;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-        <div style="font-weight: bold;">${t.footer.countryEn}</div>
-        <div style="font-weight: bold;">${t.footer.countryAr}</div>
-      </div>
       <div style="display: flex; justify-content: space-between;">
         <div>${t.footer.seller}: ${escapeHtml(invoice.seller_name || "")}</div>
         <div>
