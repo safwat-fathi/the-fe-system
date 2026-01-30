@@ -56,9 +56,10 @@ export default async function CategoryDetailPage({
   }
 
   // جلب البيانات الأساسية
-  const [boxesData, accountsData] = await Promise.all([
+  const [boxesData, accountsData, catTypesData] = await Promise.all([
     helperService.getBoxes(companyId).catch(() => []),
     accountService.getAllAccounts(companyId).catch(() => []),
+    helperService.getCatTypes().catch(() => []),
   ]);
 
   const categoryAccount = await ensureCategoryAccountAction({
@@ -92,6 +93,7 @@ export default async function CategoryDetailPage({
       />
       <CategoryFormClient
         boxes={boxesData as any}
+        catTypes={catTypesData as any}
         companyId={companyId}
         initialAccounts={accountsData as any}
         initialCategory={category}

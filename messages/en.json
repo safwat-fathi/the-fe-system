@@ -1658,7 +1658,9 @@
         "totalCount": "Total Boxes: {count}",
         "statusEnabled": "Enabled",
         "excludedFromBalance": "Excluded from balance report",
-        "hidden": "Hidden"
+        "hidden": "Hidden",
+        "active": "Active",
+        "inactive": "Inactive"
       },
       "fields": {
         "code": "Box Code",

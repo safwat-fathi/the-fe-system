@@ -90,9 +90,9 @@ export const createItemColumns = ({
       cell: (info) => info.getValue() ?? "-",
       enableSorting: true,
     }),
-    columnHelper.accessor("cat", {
+    columnHelper.accessor("cat_id", {
       header: () => t("columns.category"),
-      cell: (info) => getCategoryLabel(info.getValue() ?? null),
+      cell: (info) => getCategoryLabel(Number(info.getValue()) || null),
     }),
     columnHelper.accessor("item_type", {
       header: () => t("columns.itemType"),

@@ -636,6 +636,8 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
         ...updated[rowIndex],
         item: selected.id ?? 0,
         ...(selected.id ? { item_id: selected.id } : {}),
+        item_name: selected.item_name ?? "",
+        item_code: selected.item_code ?? "",
         item_desc: defaultDescription || updated[rowIndex].item_desc || "",
         price: String(goldPrice ?? selected.item_price ?? 0),
         price_w: String(selected.work_price ?? 0),

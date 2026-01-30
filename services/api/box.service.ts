@@ -11,6 +11,14 @@ interface BoxType {
   type_id: number;
 }
 
+interface ItemStatus {
+  id: number;
+  code_id: number;
+  code_desc: string;
+  code_desc_l: string | null;
+  type_id: number;
+}
+
 type CreateBoxDTO = Omit<Box, "id">;
 type UpdateBoxDTO = Partial<Box>;
 
@@ -70,7 +78,6 @@ class BoxService extends HttpService<Box> {
           cache: "no-store",
         },
       );
-
 
       if (response.success) {
         return response.data as Box;
@@ -226,6 +233,33 @@ class BoxService extends HttpService<Box> {
       return [];
     } catch (error) {
       console.error("Error fetching box types:", error);
+
+      return [];
+    }
+  }
+
+  async getItemsStatus(): Promise<ItemStatus[]> {
+    try {
+      const response = await this.get<ItemStatus[]>(
+        "getItemStatus",
+        undefined,
+        {
+          cache: "no-store",
+          next: { tags: ["item-status"] },
+        },
+      );
+
+      if (response.success) {
+        if (Array.isArray(response.data)) {
+          return response.data;
+        } else if (Array.isArray((response.data as any)?.results)) {
+          return (response.data as any).results;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching item status:", error);
 
       return [];
     }

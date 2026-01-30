@@ -35,9 +35,9 @@ export default async function ItemDetailPage({
   const itemId = parseInt(id);
 
   // التحقق من صحة المعرف
-  if (isNaN(itemId) || itemId <= 0) {
-    notFound();
-  }
+  // if (isNaN(itemId) || itemId <= 0) {
+  //   notFound();
+  // }
 
   const branchParams = await getBranchParams();
   const parsedCompanyId = Number(branchParams.com ?? "1");

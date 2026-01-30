@@ -61,6 +61,7 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: process.env.NEXT_PUBLIC_REFRESH_TOKEN || "refresh_token",
   CSRF_TOKEN: process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME || "csrf_token",
   USER_ID: "user_id",
+  USERNAME: "username",
   IS_ADMIN: "is_admin",
   COMPANY_ID: "com",
   COST_ID: "cost",

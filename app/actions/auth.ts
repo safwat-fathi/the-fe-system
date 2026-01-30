@@ -132,6 +132,18 @@ async function persistCredentials(responseData: LoginResponseData) {
     });
   }
 
+  const username = responseData.username;
+
+  if (typeof username !== "undefined") {
+    await setCookieAction(STORAGE_KEYS.USERNAME, String(username), {
+      maxAge: refreshTokenExpires.getTime() / 1000,
+      path: "/",
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+  }
+
   await generateCSRFToken();
 
   return true;
@@ -234,6 +246,7 @@ export async function deleteCredentials() {
   cookieStore.set(STORAGE_KEYS.REFRESH_TOKEN, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.CSRF_TOKEN, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.USER_ID, "", { maxAge: 0 });
+  cookieStore.set(STORAGE_KEYS.USERNAME, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.IS_ADMIN, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.COMPANY_ID, "", { maxAge: 0 });
   cookieStore.set(STORAGE_KEYS.COST_ID, "", { maxAge: 0 });

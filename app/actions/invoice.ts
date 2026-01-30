@@ -239,3 +239,11 @@ export async function deleteInvoiceBoxAction(id: number) {
 export async function getPaidTypeListAction() {
   return invoiceService.getPaidTypeList();
 }
+
+export async function getCompanyInfoAction() {
+  const com_id = (await cookies()).get(STORAGE_KEYS.COMPANY_ID)?.value;
+
+  if (!com_id) throw new Error("company id not found");
+
+  return invoiceService.getCompanyInfo(Number(com_id));
+}

@@ -42,10 +42,16 @@ interface Category {
   cat_status: boolean;
 }
 
+interface CatType {
+  code_id: number;
+  code_desc: string;
+}
+
 interface CategoryFormClientProps {
   mode: CategoryFormMode;
   initialCategory: Partial<Category>;
-  boxes: { id: number; box_name: string }[];
+  boxes: { id: number; cust_name: string }[];
+  catTypes: CatType[];
   companyId: number;
   initialAccounts: Account[];
   initialCategoryAccount: CategoryAccount | null;
@@ -116,6 +122,7 @@ const CategoryFormClient = ({
   mode,
   initialCategory,
   boxes,
+  catTypes,
   companyId,
   initialAccounts,
   initialCategoryAccount,
@@ -442,8 +449,8 @@ const CategoryFormClient = ({
           }}
         >
           {boxes.map((b) => (
-            <SelectItem key={b.id} textValue={b.box_name}>
-              {b.box_name}
+            <SelectItem key={b.id} textValue={b.cust_name}>
+              {b.cust_name}
             </SelectItem>
           ))}
         </Select>
@@ -459,14 +466,22 @@ const CategoryFormClient = ({
             })
           }
         />
-        <Input
+        <Select
           isDisabled={isViewMode}
           label={t("fields.catType")}
-          value={category.cat_type || ""}
-          onChange={(e) =>
-            setCategory({ ...category, cat_type: e.target.value })
-          }
-        />
+          selectedKeys={category.cat_type ? [String(category.cat_type)] : []}
+          onSelectionChange={(keys) => {
+            const value = Array.from(keys)[0];
+
+            setCategory({ ...category, cat_type: value ? String(value) : "" });
+          }}
+        >
+          {catTypes.map((ct) => (
+            <SelectItem key={ct.code_id} textValue={ct.code_desc}>
+              {ct.code_desc}
+            </SelectItem>
+          ))}
+        </Select>
         <div className="md:col-span-2 flex gap-4">
           <Checkbox
             isDisabled={isViewMode}
