@@ -11,7 +11,7 @@ interface BoxType {
   type_id: number;
 }
 
-interface ItemStatus {
+interface BoxStatus {
   id: number;
   code_id: number;
   code_desc: string;
@@ -238,14 +238,14 @@ class BoxService extends HttpService<Box> {
     }
   }
 
-  async getItemsStatus(): Promise<ItemStatus[]> {
+  async getBoxStatus(): Promise<BoxStatus[]> {
     try {
-      const response = await this.get<ItemStatus[]>(
-        "getItemStatus",
+      const response = await this.get<BoxStatus[]>(
+        "getBoxStatus",
         undefined,
         {
           cache: "no-store",
-          next: { tags: ["item-status"] },
+          next: { tags: ["box-status"] },
         },
       );
 
@@ -259,7 +259,7 @@ class BoxService extends HttpService<Box> {
 
       return [];
     } catch (error) {
-      console.error("Error fetching item status:", error);
+      console.error("Error fetching box status:", error);
 
       return [];
     }

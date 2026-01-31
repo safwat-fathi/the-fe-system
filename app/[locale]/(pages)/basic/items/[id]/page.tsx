@@ -35,9 +35,9 @@ export default async function ItemDetailPage({
   const itemId = parseInt(id);
 
   // التحقق من صحة المعرف
-  // if (isNaN(itemId) || itemId <= 0) {
-  //   notFound();
-  // }
+  if (isNaN(itemId) || itemId <= 0) {
+    notFound();
+  }
 
   const branchParams = await getBranchParams();
   const parsedCompanyId = Number(branchParams.com ?? "1");
@@ -64,11 +64,13 @@ export default async function ItemDetailPage({
   }
 
   // جلب البيانات الأساسية
-  const [categoriesData, itemTypesData, unitsData] = await Promise.all([
-    helperService.getCategories(companyId).catch(() => []),
-    helperService.getItemTypes().catch(() => []),
-    helperService.getUnits().catch(() => []),
-  ]);
+  const [categoriesData, itemTypesData, unitsData, itemStatusData] =
+    await Promise.all([
+      helperService.getCategories(companyId).catch(() => []),
+      helperService.getItemTypes().catch(() => []),
+      helperService.getUnits().catch(() => []),
+      itemService.getItemStatus().catch(() => []),
+    ]);
 
   // تحويل Item إلى ItemForm
   const itemForm = {
@@ -118,6 +120,7 @@ export default async function ItemDetailPage({
         itemTypes={itemTypesData}
         mode={formMode}
         units={unitsData}
+        itemStatus={itemStatusData}
       />
     </div>
   );
