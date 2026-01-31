@@ -7,6 +7,7 @@ import ItemFormClient from "../components/ItemFormClient";
 import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
 import helperService from "@/services/api/helper.service";
+import { itemService } from "@/services/api";
 
 export const metadata: Metadata = {
   title: "إضافة صنف جديد - NafeesWeb",
@@ -22,11 +23,13 @@ export default async function NewItemPage() {
       : 1;
 
   // جلب البيانات الأساسية
-  const [categoriesData, itemTypesData, unitsData] = await Promise.all([
-    helperService.getCategories(companyId).catch(() => []),
-    helperService.getItemTypes().catch(() => []),
-    helperService.getUnits().catch(() => []),
-  ]);
+  const [categoriesData, itemTypesData, unitsData, itemStatusData] =
+    await Promise.all([
+      helperService.getCategories(companyId).catch(() => []),
+      helperService.getItemTypes().catch(() => []),
+      helperService.getUnits().catch(() => []),
+      itemService.getItemStatus().catch(() => []),
+    ]);
 
   // إنشاء صنف فارغ
   const emptyItem: ItemForm & { item_img_url?: string | null } = {
@@ -71,6 +74,7 @@ export default async function NewItemPage() {
         itemTypes={itemTypesData}
         mode="add"
         units={unitsData}
+        itemStatus={itemStatusData}
       />
     </div>
   );

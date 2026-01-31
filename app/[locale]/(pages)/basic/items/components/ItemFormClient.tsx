@@ -1,5 +1,11 @@
 "use client";
-import type { Category, ItemForm, ItemType, Unit } from "@/types/items";
+import type {
+  Category,
+  ItemForm,
+  ItemType,
+  Unit,
+  ItemStatus,
+} from "@/types/items";
 
 import { useState, useRef, type ChangeEvent, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -30,6 +36,7 @@ type ItemFormClientProps = {
   itemTypes: ItemType[];
   units: Unit[];
   companyId: number;
+  itemStatus: ItemStatus[];
 };
 
 const ItemFormClient = ({
@@ -39,6 +46,7 @@ const ItemFormClient = ({
   itemTypes,
   units,
   companyId: _companyId,
+  itemStatus,
 }: ItemFormClientProps) => {
   const router = useRouter();
   const t = useTranslations("basic.items" as any) as any;
@@ -60,7 +68,8 @@ const ItemFormClient = ({
     };
 
   const handleSelectChange =
-    (key: "cat" | "item_type" | "unit") => (selection: Selection) => {
+    (key: "cat" | "item_type" | "unit" | "item_status") =>
+    (selection: Selection) => {
       const selectedKey = Array.from(selection)[0] as string | undefined;
       const value = selectedKey ? Number(selectedKey) : null;
 
@@ -377,6 +386,19 @@ const ItemFormClient = ({
             >
               {(units || []).map((unit) => (
                 <SelectItem key={unit.id}>{unit.unit_name}</SelectItem>
+              ))}
+            </Select>
+            <Select
+              className="input-field"
+              isDisabled={isViewMode}
+              label={t("fields.itemStatus")}
+              selectedKeys={
+                item.item_status ? [item.item_status.toString()] : []
+              }
+              onSelectionChange={handleSelectChange("item_status")}
+            >
+              {(itemStatus || []).map((status) => (
+                <SelectItem key={status.id}>{status.code_desc}</SelectItem>
               ))}
             </Select>
           </div>
