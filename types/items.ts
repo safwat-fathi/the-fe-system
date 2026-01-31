@@ -48,6 +48,14 @@ export type ItemType = {
   type_name_e: string;
 };
 
+export type ItemStatus = {
+  id: number;
+  code_id: number;
+  code_desc: string;
+  code_desc_l: string;
+  type_id: number;
+};
+
 export type ItemBox = {
   id: number;
   box_name: string;

@@ -47,11 +47,17 @@ interface CatType {
   code_desc: string;
 }
 
+interface CatStatus {
+  code_id: number;
+  code_desc: string;
+}
+
 interface CategoryFormClientProps {
   mode: CategoryFormMode;
   initialCategory: Partial<Category>;
   boxes: { id: number; cust_name: string }[];
   catTypes: CatType[];
+  catStatuses: CatStatus[];
   companyId: number;
   initialAccounts: Account[];
   initialCategoryAccount: CategoryAccount | null;
@@ -126,6 +132,7 @@ const CategoryFormClient = ({
   companyId,
   initialAccounts,
   initialCategoryAccount,
+  catStatuses,
 }: CategoryFormClientProps) => {
   const router = useRouter();
   const t = useTranslations("basic.categories" as any) as any;
@@ -482,22 +489,38 @@ const CategoryFormClient = ({
             </SelectItem>
           ))}
         </Select>
+        <Select
+          isDisabled={isViewMode}
+          label={t("fields.catStatus")}
+          selectedKeys={
+            category.cat_status ? [String(category.cat_status)] : []
+          }
+          onSelectionChange={(keys) => {
+            const value = Array.from(keys)[0];
+
+            setCategory({
+              ...category,
+              cat_status: value ? Boolean(Number(value)) : false,
+            });
+          }}
+        >
+          {catStatuses.map((cs) => (
+            <SelectItem key={cs.code_id} textValue={cs.code_desc}>
+              {cs.code_desc}
+            </SelectItem>
+          ))}
+        </Select>
         <div className="md:col-span-2 flex gap-4">
           <Checkbox
             isDisabled={isViewMode}
             isSelected={Boolean(category.tax_type)}
             onValueChange={(val) => setCategory({ ...category, tax_type: val })}
+            classNames={{
+              wrapper: "after:bg-blue-500 after:text-white",
+              icon: "text-white",
+            }}
           >
             {t("fields.taxType")}
-          </Checkbox>
-          <Checkbox
-            isDisabled={isViewMode}
-            isSelected={Boolean(category.cat_status)}
-            onValueChange={(val) =>
-              setCategory({ ...category, cat_status: val })
-            }
-          >
-            {t("fields.catStatus")}
           </Checkbox>
         </div>
       </div>

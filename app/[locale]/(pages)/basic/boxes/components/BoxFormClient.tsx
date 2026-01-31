@@ -3,7 +3,7 @@ import type { Box as BoxModel } from "@/types/models/box";
 
 import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Checkbox } from "@heroui/react";
+import { Button, Checkbox, Input } from "@heroui/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
@@ -26,7 +26,7 @@ interface BoxType {
   type_id: number;
 }
 
-interface ItemStatus {
+interface BoxStatus {
   id: number;
   code_id: number;
   code_desc: string;
@@ -40,7 +40,7 @@ interface BoxFormClientProps {
   boxTypes: BoxType[];
   accounts: any[];
   companyId: number;
-  itemsStatus: ItemStatus[];
+  boxStatus: BoxStatus[];
 }
 
 const normalizeNumberField = (value: unknown): number | undefined => {
@@ -59,7 +59,7 @@ const BoxFormClient = ({
   boxTypes,
   accounts,
   companyId,
-  itemsStatus,
+  boxStatus,
 }: BoxFormClientProps) => {
   const router = useRouter();
   const locale = useLocale();
@@ -81,6 +81,13 @@ const BoxFormClient = ({
         [key]: event.target.value,
       });
     };
+
+  const handleCheckboxChange = (key: "expt" | "hide") => (value: boolean) => {
+    setBox({
+      ...box,
+      [key]: value,
+    });
+  };
 
   const handleSaveError = (error: unknown) => {
     let errorMessage = t("messages.saveError");
@@ -385,23 +392,56 @@ const BoxFormClient = ({
             }
           />
         </div>
+        <div>
+          <label
+            className={`block text-sm font-medium text-gray-700 mb-1 ${textAlign}`}
+            htmlFor="box-status"
+          >
+            {t("fields.status")}
+          </label>
+          <ReactSelect
+            isClearable
+            className="react-select-container"
+            classNamePrefix="react-select"
+            id="box-status"
+            inputId="box-status"
+            isDisabled={isViewMode}
+            options={boxStatus.map((status) => ({
+              value: String(status.code_id),
+              label: status.code_desc,
+            }))}
+            placeholder={t("placeholders.selectStatus")}
+            value={
+              boxStatus
+                .map((status) => ({
+                  value: String(status.code_id),
+                  label: status.code_desc,
+                }))
+                .find((opt) => opt.value === String(box.cust_status)) || null
+            }
+            onChange={(selected) =>
+              setBox({
+                ...box,
+                cust_status: selected ? Number(selected.value) : 0,
+              })
+            }
+          />
+        </div>
         <div className="md:col-span-2 flex gap-6 items-center">
-          {itemsStatus.map((status) => (
-            <Checkbox
-              key={status.id}
-              isDisabled={isViewMode}
-              isSelected={Boolean(box.cust_status === status.code_id)}
-              classNames={{
-                wrapper: "after:bg-blue-500 after:text-white",
-                icon: "text-white",
-              }}
-              onValueChange={(val) =>
-                setBox({ ...box, cust_status: val ? status.code_id : 0 })
-              }
-            >
-              {status.code_desc}
-            </Checkbox>
-          ))}
+          <Checkbox
+            isDisabled={isViewMode}
+            isSelected={Boolean(box.expt)}
+            onValueChange={handleCheckboxChange("expt")}
+          >
+            {t("labels.excludedFromBalance")}
+          </Checkbox>
+          <Checkbox
+            isDisabled={isViewMode}
+            isSelected={Boolean(box.hide)}
+            onValueChange={handleCheckboxChange("hide")}
+          >
+            {t("labels.hidden")}
+          </Checkbox>
         </div>
       </div>
     </div>

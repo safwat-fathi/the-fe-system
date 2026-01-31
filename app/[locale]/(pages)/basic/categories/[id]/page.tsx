@@ -56,11 +56,13 @@ export default async function CategoryDetailPage({
   }
 
   // جلب البيانات الأساسية
-  const [boxesData, accountsData, catTypesData] = await Promise.all([
-    helperService.getBoxes(companyId).catch(() => []),
-    accountService.getAllAccounts(companyId).catch(() => []),
-    helperService.getCatTypes().catch(() => []),
-  ]);
+  const [boxesData, accountsData, catTypesData, catStatusesData] =
+    await Promise.all([
+      helperService.getBoxes(companyId).catch(() => []),
+      accountService.getAllAccounts(companyId).catch(() => []),
+      helperService.getCatTypes().catch(() => []),
+      helperService.getCatStatuses().catch(() => []),
+    ]);
 
   const categoryAccount = await ensureCategoryAccountAction({
     companyId,
@@ -98,6 +100,7 @@ export default async function CategoryDetailPage({
         initialAccounts={accountsData as any}
         initialCategory={category}
         initialCategoryAccount={categoryAccount}
+        catStatuses={catStatusesData as any}
         mode={formMode}
       />
     </div>

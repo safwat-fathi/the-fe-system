@@ -21,11 +21,13 @@ export default async function NewCategoryPage() {
       : 1;
 
   // جلب البيانات الأساسية
-  const [boxesData, accountsData, catTypesData] = await Promise.all([
-    helperService.getBoxes(companyId).catch(() => []),
-    accountService.getAllAccounts(companyId).catch(() => []),
-    helperService.getCatTypes().catch(() => []),
-  ]);
+  const [boxesData, accountsData, catTypesData, catStatusesData] =
+    await Promise.all([
+      helperService.getBoxes(companyId).catch(() => []),
+      accountService.getAllAccounts(companyId).catch(() => []),
+      helperService.getCatTypes().catch(() => []),
+      helperService.getCatStatuses().catch(() => []),
+    ]);
 
   // إنشاء فئة فارغة
   const emptyCategory = {
@@ -56,6 +58,7 @@ export default async function NewCategoryPage() {
         initialAccounts={accountsData as any}
         initialCategory={emptyCategory}
         initialCategoryAccount={null}
+        catStatuses={catStatusesData as any}
         mode="add"
       />
     </div>

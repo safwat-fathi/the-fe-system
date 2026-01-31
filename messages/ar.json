@@ -1662,8 +1662,8 @@
         "statusEnabled": "مفعلة",
         "excludedFromBalance": "مستثنى من كشف الأرصدة",
         "hidden": "مخفي",
-        "active": "مفعل",
-        "inactive": "غير مفعل"
+        "active": "فعال",
+        "inactive": "غير فعال"
       },
       "fields": {
         "code": "كود الصندوق",
@@ -1683,11 +1683,13 @@
         "fax": "الفاكس",
         "handling": "المحصل",
         "handlingEn": "المحصل (بالإنجليزي)",
-        "account": "الحساب المرتبط"
+        "account": "الحساب المرتبط",
+        "status": "الحالة"
       },
       "placeholders": {
         "selectType": "اختر نوع الصندوق",
-        "selectAccount": "اختر الحساب (اختياري)"
+        "selectAccount": "اختر الحساب (اختياري)",
+        "selectStatus": "اختر الحالة"
       },
       "messages": {
         "loadError": "فشل في جلب الصناديق",
@@ -2240,7 +2242,8 @@
           "purity": "المعايرة",
           "category": "الفئة",
           "itemType": "نوع الصنف",
-          "unit": "الوحدة"
+          "unit": "الوحدة",
+          "itemStatus": "حالة الصنف"
         },
         "imageUpload": {
           "selectOrDrag": "اختر ملف أو اسحبه وأفلته هنا",
@@ -2496,7 +2499,7 @@
         "tax": "نسبة الضريبة",
         "catType": "النوع",
         "taxType": "خاضعة للضريبة",
-        "catStatus": "مفعّلة"
+        "catStatus": "الحاله"
       },
       "messages": {
         "loadError": "فشل في جلب البيانات",
@@ -2604,7 +2607,8 @@
         "purity": "المعايرة",
         "category": "الفئة",
         "itemType": "نوع الصنف",
-        "unit": "الوحدة"
+        "unit": "الوحدة",
+        "itemStatus": "حالة الصنف"
       },
       "imageUpload": {
         "selectOrDrag": "اختر ملف أو اسحبه وأفلته هنا",

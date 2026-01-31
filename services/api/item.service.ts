@@ -1,4 +1,4 @@
-import type { ItemForm } from "@/types/items";
+import type { ItemForm, ItemStatus } from "@/types/items";
 
 import { HttpService } from "@/services/base";
 import { IPaginatedResponse } from "@/types/services/base";
@@ -119,7 +119,7 @@ class ItemService extends HttpService<Item> {
 
       while (!found && page <= maxPages) {
         const response = await this.get<IPaginatedResponse<Item>>(
-          "items_list",
+          "SearchItemsList",
           {
             xcom_id: companyId,
             xcat_id: "0",
@@ -270,6 +270,37 @@ class ItemService extends HttpService<Item> {
       throw new Error(
         "حدث خطأ أثناء جلب بيانات الأصناف لقائمة سند الاستلام/التسليم",
       );
+    }
+  }
+
+  async getItemStatus(): Promise<ItemStatus[]> {
+    try {
+      const response = await this.get<{ results: ItemStatus[] } | ItemStatus[]>(
+        "getItemStatus",
+        undefined,
+        {
+          cache: "force-cache",
+          next: { tags: ["item-status"] },
+        },
+      );
+
+      if (response.success && response.data) {
+        if (
+          "results" in response.data &&
+          Array.isArray(response.data.results)
+        ) {
+          return response.data.results;
+        }
+        if (Array.isArray(response.data)) {
+          return response.data;
+        }
+      }
+
+      return [];
+    } catch (error) {
+      console.error("Error fetching item status:", error);
+      rethrowAuthenticationError(error);
+      throw new Error("حدث خطأ أثناء جلب حالة الصنف");
     }
   }
 
