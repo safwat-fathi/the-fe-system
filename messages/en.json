@@ -2243,7 +2243,8 @@
         "purity": "Calibration",
         "category": "Category",
         "itemType": "Item Type",
-        "unit": "Unit"
+        "unit": "Unit",
+        "itemStatus": "Item Status"
       },
       "imageUpload": {
         "selectOrDrag": "Select a file or drag and drop it here",

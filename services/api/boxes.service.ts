@@ -41,7 +41,7 @@ class BoxesService extends HttpService<Box> {
 
   async getGoldBoxes(_params: GetBoxesParams = {}): Promise<Box[]> {
     try {
-      const response = await this.get<Box[]>("boxes_list_gold", undefined, {
+      const response = await this.get<Box[]>("getGoldBoxes", undefined, {
         cache: "force-cache",
         next: {
           tags: ["boxes", "boxes-gold"],
