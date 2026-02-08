@@ -49,6 +49,7 @@ export default async function RootLayout({
     <html suppressHydrationWarning dir={dir} lang={locale}>
       <head />
       <body
+        suppressHydrationWarning
         className={clsx("min-h-screen bg-background font-sans antialiased")}
       >
         <NextIntlClientProvider locale={locale} messages={messages as any}>

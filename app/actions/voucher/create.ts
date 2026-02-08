@@ -31,11 +31,6 @@ export async function createVoucherAction(
   voucherBoxes: VoucherBoxData[] = [],
   goldDetails: GVoucherDetailData[] = [],
 ) {
-  /* console.log("=== [createVoucherAction] START ===");
-  console.log("Voucher Type:", voucherData.vouch_type);
-  console.log("Vouch ID:", voucherData.vouch_id);
-  console.log("Details Count:", details.length); */
-
   try {
     const normalizeCostValue = (...values: unknown[]): number | null => {
       for (const value of values) {

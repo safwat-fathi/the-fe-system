@@ -74,7 +74,6 @@ export const useReceiptDeliveryVoucherForm = ({
         },
   );
 
-  const [currentTime, setCurrentTime] = useState("");
   const [isClient, setIsClient] = useState(false);
   const [voucherBoxes, setVoucherBoxes] = useState<VoucherBox[]>(
     initialVoucherBoxes || [],
@@ -153,7 +152,6 @@ export const useReceiptDeliveryVoucherForm = ({
   // Initialize component
   useEffect(() => {
     setIsClient(true);
-    updateCurrentTime();
 
     if (isNewVoucher) {
       generateNextVoucherNumber();
@@ -292,20 +290,6 @@ export const useReceiptDeliveryVoucherForm = ({
       setIsEditing(startInEditMode !== false);
     }
   }, [formMode, startInEditMode]);
-
-  useEffect(() => {
-    if (!isClient) return;
-    const interval = setInterval(updateCurrentTime, 1000);
-
-    return () => clearInterval(interval);
-  }, [isClient]);
-
-  // Helper Functions
-  const updateCurrentTime = () => {
-    const now = new Date();
-
-    setCurrentTime(now.toLocaleTimeString("ar-EG"));
-  };
 
   const generateNextVoucherNumber = async () => {
     try {
@@ -978,13 +962,11 @@ export const useReceiptDeliveryVoucherForm = ({
     setSelectedCustomer,
     defaultCustomerOptions,
     isClient,
-    currentTime,
 
     // Totals
     totals,
 
     // Functions
-    updateCurrentTime,
     generateNextVoucherNumber,
     loadItemOptions,
     loadMoreItems,
