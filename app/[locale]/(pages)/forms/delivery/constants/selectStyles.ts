@@ -1,6 +1,6 @@
 import type { CSSObjectWithLabel, StylesConfig } from "react-select";
 
-export const baseSelectStyles: StylesConfig<object, false> = {
+export const baseSelectStyles: StylesConfig<any, false> = {
   control: (base: CSSObjectWithLabel) => ({
     ...base,
     minHeight: "32px",
@@ -25,7 +25,7 @@ export const baseSelectStyles: StylesConfig<object, false> = {
   }),
 };
 
-export const tableSelectStyles: StylesConfig<object, false> = {
+export const tableSelectStyles: StylesConfig<any, false> = {
   ...baseSelectStyles,
   control: (base: CSSObjectWithLabel, state) => ({
     ...base,

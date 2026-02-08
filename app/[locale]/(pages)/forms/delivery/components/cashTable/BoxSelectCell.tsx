@@ -4,7 +4,7 @@ import type { VoucherBox } from "@/types/voucher";
 
 import { useTranslations } from "next-intl";
 import { memo, useCallback, type KeyboardEvent } from "react";
-import ReactSelect from "react-select";
+import ReactSelect, { SingleValue } from "react-select";
 
 import { tableSelectStyles } from "../../constants/selectStyles";
 
@@ -52,10 +52,10 @@ const BoxSelectCell = ({
   );
 
   const handleChange = useCallback(
-    (selectedOption: BoxOption | null) => {
+    (newValue: SingleValue<BoxOption>) => {
       if (!isEditing) return;
 
-      const boxId = selectedOption?.value ?? 0;
+      const boxId = newValue?.value ?? 0;
 
       onChange(index, "box_id", boxId);
       setTimeout(() => focusNextField(index, COL_INDEX), FOCUS_DELAY);
@@ -112,7 +112,7 @@ const BoxSelectCell = ({
 
   return (
     <div id={`cash-box-wrapper-${index}`} ref={handleRef} className="h-full">
-      <ReactSelect
+      <ReactSelect<BoxOption>
         isSearchable
         className="text-xs"
         classNamePrefix="react-select"
