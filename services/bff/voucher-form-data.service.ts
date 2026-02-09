@@ -1,5 +1,21 @@
+
+import type {
+  VoucherFormData,
+  VoucherFormDataOptions,
+  BalanceVoucherFormData,
+  VoucherType,
+  VoucherStatus,
+  CaratType,
+} from "@/types/voucher-form";
+import type { Account } from "@/types/models/account";
+import type { Box } from "@/types/models/box";
+import type { Item } from "@/types/models/item";
+import type { Customer } from "@/types/models/customer";
+import type { Category } from "@/types/items";
+
 import { cache } from "react";
 
+import { getBranchParams } from "@/app/actions/branch-params";
 import {
   voucherService,
   accountService,
@@ -9,121 +25,164 @@ import {
   customerService,
   categoryService,
 } from "@/services/api";
-import { getBranchParams } from "@/app/actions/branch-params";
 
-export interface VoucherFormData {
-  accounts: any[];
-  costCenters: any[];
-  voucherTypes: any[];
-  voucherStatuses: any[];
-  caratTypes: any[];
-  boxes: any[];
-  goldBoxes?: any[];
-  items?: any[];
-  customers?: any[];
-  categories?: any[];
-}
-
-type VoucherFormDataOptions = {
-  goldBoxes?: boolean;
-};
+// Re-export types for consumers
+export type { VoucherFormData, VoucherFormDataOptions, BalanceVoucherFormData };
 
 // خدمات مساعدة لمعالجة البيانات
 // Helper to ensure data is an array
-const ensureArray = (data: any) => (Array.isArray(data) ? data : []);
+const ensureArray = <T>(data: unknown): T[] =>
+  Array.isArray(data) ? data : [];
 
-const extractData = (response: any) => {
+const extractData = <T>(response: { success?: boolean; data?: T[] }): T[] => {
   return response?.success && Array.isArray(response?.data)
     ? response.data
     : [];
 };
 
-const filterAccounts = (response: any) => {
-  return ensureArray(response).filter(
-    (account: any) => account.acc_level === 5,
+const filterAccounts = (response: unknown): Account[] => {
+  return ensureArray<Account>(response).filter(
+    (account) => account.acc_level === 5,
   );
 };
 
-const processItems = (response: any) => {
-  if (Array.isArray(response?.results)) {
-    return response.results;
+const processItems = (response: { results?: Item[] } | unknown): Item[] => {
+  if (
+    typeof response === "object" &&
+    response !== null &&
+    "results" in response &&
+    Array.isArray((response as { results?: Item[] }).results)
+  ) {
+    return (response as { results: Item[] }).results;
   }
 
-  return ensureArray(response);
+  return ensureArray<Item>(response);
+};
+
+// Type for Promise.allSettled result handling
+type SettledResult<T> = PromiseSettledResult<T>;
+
+const getSettledValue = <T>(result: SettledResult<T>, fallback: T): T => {
+  return result.status === "fulfilled" ? result.value : fallback;
 };
 
 // خدمة محسّنة للقيد الافتتاحي - تجلب البيانات الضرورية فقط
 const getBalanceVoucherFormData = cache(
-  async (): Promise<Omit<VoucherFormData, "items" | "customers" | "boxes">> => {
-    const [
-      accountsResponse,
-      costCentersResponse,
-      voucherTypesResponse,
-      voucherStagesResponse,
-      caratTypesResponse,
-    ] = await Promise.all([
+  async (): Promise<BalanceVoucherFormData> => {
+    const { com } = await getBranchParams();
+
+    const results = await Promise.allSettled([
       accountService.getAllAccounts(),
       costCenterService.getAllCostCenters(),
-      voucherService.getVoucherTypes({ com: "1", year: "1" }),
-      voucherService.getVoucherStages({ com: "1", year: "1" }),
+      voucherService.getVoucherTypes({ com, year: "1" }),
+      voucherService.getVoucherStages({ com, year: "1" }),
       voucherService.getCaratTypes(),
     ]);
 
+    const [
+      accountsResult,
+      costCentersResult,
+      voucherTypesResult,
+      voucherStagesResult,
+      caratTypesResult,
+    ] = results;
+
     return {
-      accounts: filterAccounts(accountsResponse),
-      costCenters: ensureArray(costCentersResponse),
-      voucherTypes: extractData(voucherTypesResponse),
-      voucherStatuses: extractData(voucherStagesResponse),
-      caratTypes: extractData(caratTypesResponse),
+      accounts: filterAccounts(getSettledValue(accountsResult, [])),
+      costCenters: ensureArray(getSettledValue(costCentersResult, [])),
+      voucherTypes: extractData<VoucherType>(
+        getSettledValue(voucherTypesResult, { success: false, data: [] }),
+      ),
+      voucherStatuses: extractData<VoucherStatus>(
+        getSettledValue(voucherStagesResult, { success: false, data: [] }),
+      ),
+      caratTypes: extractData<CaratType>(
+        getSettledValue(caratTypesResult, { success: false, data: [] }),
+      ),
     };
   },
 );
 
 const getVoucherFormData = cache(
   async (options: VoucherFormDataOptions = {}): Promise<VoucherFormData> => {
-    const useGoldBoxes = options.goldBoxes ?? false;
-			const { com } = await getBranchParams();
+    const {
+      goldBoxes: useGoldBoxes = false,
+      includeItems = true,
+      includeCustomers = true,
+      includeCategories = true,
+    } = options;
 
-    const [
-      accountsResponse,
-      costCentersResponse,
-      voucherTypesResponse,
-      voucherStagesResponse,
-      caratTypesResponse,
-      boxesResponse,
-      itemsResponse,
-      customersResponse,
-      categoriesResponse,
-    ] = await Promise.all([
+    const { com } = await getBranchParams();
+
+    // Build dynamic promise array based on options
+    const results = await Promise.allSettled([
       accountService.getAllAccounts(),
       costCenterService.getAllCostCenters(),
       voucherService.getVoucherTypes({ com, year: "1" }),
       voucherService.getVoucherStages({ com, year: "1" }),
       voucherService.getCaratTypes(),
       boxesService.getBoxes({ xcom_id: com }),
-      itemService.searchItems({ companyId: com, page: 1 }),
-      customerService.getAllCustomers({ xcom_id: Number(com) }),
-      categoryService.getAllCategories(),
+      // Optional data - fetch only if needed
+      includeItems
+        ? itemService.searchItems({ companyId: com, page: 1 })
+        : Promise.resolve(null),
+      includeCustomers
+        ? customerService.getAllCustomers({ xcom_id: Number(com) })
+        : Promise.resolve(null),
+      includeCategories
+        ? categoryService.getAllCategories()
+        : Promise.resolve(null),
+      // Gold boxes - parallel with other requests
+      useGoldBoxes
+        ? boxesService.getGoldBoxes({ xcom_id: Number(com) })
+        : Promise.resolve(null),
     ]);
 
-    // Handle Optional gold boxes independently to avoid complicating the Promise.all array order
-    let goldBoxesResponse = null;
-
-    if (useGoldBoxes) {
-      goldBoxesResponse = await boxesService.getGoldBoxes({ xcom_id: 1 });
-    }
+    const [
+      accountsResult,
+      costCentersResult,
+      voucherTypesResult,
+      voucherStagesResult,
+      caratTypesResult,
+      boxesResult,
+      itemsResult,
+      customersResult,
+      categoriesResult,
+      goldBoxesResult,
+    ] = results;
 
     return {
-      accounts: filterAccounts(accountsResponse),
-      costCenters: ensureArray(costCentersResponse),
-      voucherTypes: extractData(voucherTypesResponse),
-      voucherStatuses: extractData(voucherStagesResponse),
-      caratTypes: extractData(caratTypesResponse),
-      boxes: ensureArray(boxesResponse),
-      goldBoxes: useGoldBoxes ? ensureArray(goldBoxesResponse) : undefined,
-      items: processItems(itemsResponse),
-      customers: ensureArray(customersResponse),
-      categories: ensureArray(categoriesResponse),
+      accounts: filterAccounts(getSettledValue(accountsResult, [])),
+      costCenters: ensureArray(getSettledValue(costCentersResult, [])),
+      voucherTypes: extractData<VoucherType>(
+        getSettledValue(voucherTypesResult, { success: false, data: [] }),
+      ),
+      voucherStatuses: extractData<VoucherStatus>(
+        getSettledValue(voucherStagesResult, { success: false, data: [] }),
+      ),
+      caratTypes: extractData<CaratType>(
+        getSettledValue(caratTypesResult, { success: false, data: [] }),
+      ),
+      boxes: ensureArray<Box>(getSettledValue(boxesResult, [])),
+      goldBoxes: useGoldBoxes
+        ? ensureArray<Box>(getSettledValue(goldBoxesResult, []))
+        : undefined,
+      items: includeItems
+        ? processItems(
+            getSettledValue(itemsResult, {
+              results: [],
+              count: 0,
+              next: null,
+              previous: null,
+            }),
+          )
+        : undefined,
+      customers: includeCustomers
+        ? ensureArray<Customer>(getSettledValue(customersResult, []))
+        : undefined,
+      categories: includeCategories
+        ? ensureArray<Category>(getSettledValue(categoriesResult, []))
+        : undefined,
     };
   },
 );

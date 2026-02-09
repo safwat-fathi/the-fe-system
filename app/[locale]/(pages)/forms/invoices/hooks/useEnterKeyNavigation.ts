@@ -33,6 +33,7 @@ export default function useEnterKeyNavigation<Row>(
   options: UseEnterKeyNavigationOptions<Row>,
 ): UseEnterKeyNavigationResult {
   const { rows, rowHasValue, onAddRow, onLastCell } = options;
+
   const inputRefs = useRef<NullableInput[][]>([]);
 
   // ✅ دالة مساعدة للبحث المباشر عن combobox في حقل معين
@@ -293,7 +294,10 @@ export default function useEnterKeyNavigation<Row>(
       event: KeyboardEvent,
       rowIndex: number,
       colIndex: number,
-      { isLastCol, allowEnterDefaultWhenRowMissing: _allowEnterDefaultWhenRowMissing }: HandleKeyDownOptions = {},
+      {
+        isLastCol,
+        allowEnterDefaultWhenRowMissing: _allowEnterDefaultWhenRowMissing,
+      }: HandleKeyDownOptions = {},
     ) => {
       const key = event.key;
       const target = event.target as HTMLElement | null;
