@@ -755,6 +755,8 @@
             "weight": "Standing Weight",
             "calibration": "Calibration",
             "calibratedWeight": "Calibrated Weight",
+            "wageRate": "Wage Rate",
+            "wages": "Wages",
             "box": "Box",
             "notes": "Description",
             "caliberDifference": "Caliber Difference",

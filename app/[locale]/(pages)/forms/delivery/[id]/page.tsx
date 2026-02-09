@@ -1,13 +1,12 @@
+import type { DeliveryCategory } from "../useDeliveryForm";
+
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { cache } from "react";
 import { getTranslations } from "next-intl/server";
 
 import DeliveryVoucherClientPage from "../DeliveryVoucherClientPage";
 
-import voucherFormDataService from "@/services/bff/voucher-form-data.service";
-import { voucherService } from "@/services/api";
-import { Voucher, VoucherBox, GVoucherDetail } from "@/types/voucher";
+import deliveryFormDataService from "@/services/bff/delivery-form-data.service";
 import Breadcrumb from "@/components/Breadcrumb";
 import { redirectToLogin } from "@/app/actions/auth";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
@@ -16,95 +15,6 @@ export const metadata: Metadata = {
   title: "عرض سند تسليم - NafeesWeb",
   description: "عرض وتعديل سند التسليم",
 };
-
-const getVoucherById = cache(async (voucherId: number) => {
-  try {
-    if (!voucherId || isNaN(voucherId)) {
-      return null;
-    }
-
-    const vouchersResponse = await voucherService.getAll({
-      xvouch_type: "222", // سند التسليم فقط
-    });
-
-    if (!vouchersResponse.success || !vouchersResponse.data) {
-      return null;
-    }
-
-    const vouchers = Array.isArray(vouchersResponse.data)
-      ? vouchersResponse.data
-      : [];
-
-    const foundVoucher = vouchers.find(
-      (v: any) => v.id === voucherId || v.vouch_id === voucherId,
-    );
-
-    return foundVoucher;
-  } catch (error) {
-    console.error("Error fetching voucher:", error);
-
-    return null;
-  }
-});
-
-const getGoldDetails = cache(
-  async (voucherId: number, branchId?: number | string) => {
-    try {
-      if (!voucherId || isNaN(voucherId)) {
-        return [];
-      }
-
-      const parsedBranchId = Number(branchId ?? 1) || 1;
-
-      const goldDetailsResponse = await voucherService.getGoldDetails(
-        voucherId,
-        {
-          xcom_id: parsedBranchId,
-        },
-      );
-
-      if (!goldDetailsResponse.success || !goldDetailsResponse.data) {
-        return [];
-      }
-
-      return Array.isArray(goldDetailsResponse.data)
-        ? goldDetailsResponse.data
-        : [];
-    } catch (error) {
-      console.error("Error fetching gold details:", error);
-
-      return [];
-    }
-  },
-);
-
-const getVoucherBoxes = cache(
-  async (voucherId: number, branchId?: number | string) => {
-    try {
-      if (!voucherId || isNaN(voucherId)) {
-        return [];
-      }
-
-      const parsedBranchId = Number(branchId ?? 1) || 1;
-
-      const boxesResponse = await voucherService.getBoxes(voucherId, {
-        xcom_id: parsedBranchId,
-      });
-
-      if (!boxesResponse.success || !boxesResponse.data) {
-        return [];
-      }
-
-      const boxes = Array.isArray(boxesResponse.data) ? boxesResponse.data : [];
-
-      return boxes;
-    } catch (error) {
-      console.error("Error fetching voucher boxes:", error);
-
-      return [];
-    }
-  },
-);
 
 export default async function DeliveryVoucherEditPage({
   params,
@@ -129,234 +39,22 @@ export default async function DeliveryVoucherEditPage({
       notFound();
     }
 
-    const [targetVoucher, formData] = await Promise.all([
-      getVoucherById(voucherId),
-      voucherFormDataService.getVoucherFormData({ goldBoxes: true }),
-    ]);
+    // Fetch form data and voucher data in parallel
+    const formData = await deliveryFormDataService.getDeliveryFormData();
 
-    if (!targetVoucher) {
+    const voucherData = await deliveryFormDataService.getVoucherWithDetails(
+      voucherId,
+      formData,
+    );
+
+    if (!voucherData.voucher) {
       notFound();
     }
-
-    const branchId =
-      Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
-    const [goldDetailsData, boxesData] = await Promise.all([
-      getGoldDetails(targetVoucher.id, branchId),
-      getVoucherBoxes(targetVoucher.id, branchId),
-    ]);
-
-    const goldDetails: GVoucherDetail[] = goldDetailsData.map((detail: any) => {
-      const item = formData.items?.find(
-        (itm: any) => itm.id === (detail.item_id || detail.item),
-      );
-      const box = formData.boxes?.find(
-        (bx: any) => bx.id === (detail.box_id || detail.box),
-      );
-      const costCenter = formData.costCenters.find(
-        (cc: any) => cc.id === (detail.cost_id || detail.cost),
-      );
-
-      return {
-        id: detail.id || 0,
-        vouch_id: targetVoucher.vouch_id || 0,
-        item_id: detail.item_id || detail.item || 0,
-        item_code: item?.item_code || detail.item_code || "",
-        item_name: item?.item_name || detail.item_name || "",
-        k: parseFloat(detail.k) || undefined,
-        weight: parseFloat(detail.weight) || undefined,
-        g_weight: parseFloat(detail.g_weight) || undefined,
-        weight2: parseFloat(detail.weight2) || undefined,
-        g_weight2: parseFloat(detail.g_weight2) || undefined,
-        box_id: detail.box_id || detail.box || undefined,
-        box_name: box?.cust_name || box?.name || detail.box_name || "",
-        notes: detail.notes || detail.vouch_notes || "",
-        diff: parseFloat(detail.diff) || undefined,
-        close_amt: parseFloat(detail.close_amt) || undefined,
-        close_weight: parseFloat(detail.close_weight) || undefined,
-        inv_id: detail.inv_id || detail.inv || undefined,
-        cost_id: detail.cost_id || detail.cost || undefined,
-        cost_name:
-          costCenter?.name || costCenter?.cost_name || detail.cost_name || "",
-        work_amt: parseFloat(detail.work_amt) || undefined,
-        total_work: parseFloat(detail.total_work) || undefined,
-        qty: parseInt(detail.qty) || undefined,
-        vouch_status: detail.vouch_status || 1,
-        cr_date: detail.cr_date || new Date().toISOString(),
-      };
-    });
-
-    const voucherBoxes: VoucherBox[] = boxesData.map((boxData: any) => {
-      let boxId = 0;
-      let boxObject: VoucherBox["box"] = undefined;
-
-      if (boxData.hasOwnProperty("box")) {
-        if (boxData.box !== null && boxData.box !== undefined) {
-          if (typeof boxData.box === "object" && !Array.isArray(boxData.box)) {
-            boxObject = {
-              id: boxData.box.id || boxData.box.Id || 0,
-              cust_name:
-                boxData.box.cust_name ||
-                boxData.box.name ||
-                boxData.box.cust_name_e ||
-                "",
-              cust_code: boxData.box.cust_code || boxData.box.code || "",
-              box_type:
-                boxData.box.box_type || boxData.box.type_id || undefined,
-            };
-            boxId = boxObject.id;
-          } else if (
-            typeof boxData.box === "number" ||
-            (typeof boxData.box === "string" && boxData.box !== "")
-          ) {
-            boxId = Number(boxData.box);
-          }
-        }
-      }
-
-      if (boxId === 0 && boxData.hasOwnProperty("box_id")) {
-        if (
-          boxData.box_id !== null &&
-          boxData.box_id !== undefined &&
-          boxData.box_id !== ""
-        ) {
-          boxId = Number(boxData.box_id);
-        }
-      }
-
-      let costId: number | null = null;
-
-      if (boxData.hasOwnProperty("cost")) {
-        if (
-          boxData.cost !== null &&
-          boxData.cost !== undefined &&
-          boxData.cost !== ""
-        ) {
-          costId = Number(boxData.cost);
-        }
-      } else if (boxData.hasOwnProperty("cost_id")) {
-        if (
-          boxData.cost_id !== null &&
-          boxData.cost_id !== undefined &&
-          boxData.cost_id !== ""
-        ) {
-          costId = Number(boxData.cost_id);
-        }
-      }
-
-      let invId: number | null = null;
-
-      if (boxData.hasOwnProperty("inv")) {
-        if (
-          boxData.inv !== null &&
-          boxData.inv !== undefined &&
-          boxData.inv !== ""
-        ) {
-          invId = Number(boxData.inv);
-        }
-      } else if (boxData.hasOwnProperty("inv_id")) {
-        if (
-          boxData.inv_id !== null &&
-          boxData.inv_id !== undefined &&
-          boxData.inv_id !== ""
-        ) {
-          invId = Number(boxData.inv_id);
-        }
-      }
-
-      return {
-        id: boxData.id || 0,
-        vouch_id: boxData.vouch || boxData.vouch_id || targetVoucher.id || 0,
-        box_id: boxId,
-        box: boxObject,
-        amount: parseFloat(String(boxData.vouch_amt || boxData.amount || 0)),
-        vouch_notes:
-          boxData.box_note || boxData.vouch_notes || boxData.notes || "",
-        cost_id: costId,
-        inv_id: invId,
-        close_weight:
-          parseFloat(String(boxData.close_weight || 0)) || undefined,
-        cr_date: boxData.cr_date || new Date().toISOString(),
-      };
-    });
-
-    // معالجة cust - قد يكون cust أو cust_id في API
-    const custValue =
-      targetVoucher.cust_id || (targetVoucher as any).cust || undefined;
-
-    // معالجة cost_id - قد يكون cost (object أو ID) أو cost_id في API
-    let costValue: number | null = null;
-
-    if (
-      (targetVoucher as any).cost_id !== undefined &&
-      (targetVoucher as any).cost_id !== null
-    ) {
-      costValue = Number((targetVoucher as any).cost_id);
-    } else if (
-      (targetVoucher as any).cost !== undefined &&
-      (targetVoucher as any).cost !== null
-    ) {
-      // إذا كان cost object (يحتوي على id)
-      if (
-        typeof (targetVoucher as any).cost === "object" &&
-        !Array.isArray((targetVoucher as any).cost)
-      ) {
-        costValue = Number(
-          (targetVoucher as any).cost.id || (targetVoucher as any).cost.Id || 0,
-        );
-      } else {
-        // إذا كان cost ID مباشرة
-        costValue = Number((targetVoucher as any).cost);
-      }
-    }
-
-    const formattedVoucher: Voucher = {
-      ...targetVoucher,
-      vouch_date: targetVoucher.vouch_date || new Date().toISOString(),
-      cr_date: targetVoucher.cr_date || new Date().toISOString(),
-      vouch_id: targetVoucher.vouch_id || 0,
-      ref_no: targetVoucher.ref_no || "",
-      vouch_notes: targetVoucher.vouch_notes || "",
-      vouch_status: targetVoucher.vouch_status || 1,
-      pay_type: targetVoucher.pay_type || 1,
-      commit: targetVoucher.commit || false,
-      post: targetVoucher.post || false,
-      handling: (targetVoucher as any).handling || "",
-      print: targetVoucher.print || false,
-      cust_id: custValue,
-      cost_id: costValue && costValue > 0 ? costValue : null,
-    };
-
-    const parseNavId = (value: unknown): number | null => {
-      if (value === null || value === undefined || value === "") {
-        return null;
-      }
-
-      const numeric = Number(value);
-
-      return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-    };
-
-    const navigationInfo = {
-      previous: parseNavId(
-        (targetVoucher as any).previous_voucher_id ??
-          (targetVoucher as any).previous,
-      ),
-      next: parseNavId(
-        (targetVoucher as any).next_voucher_id ?? (targetVoucher as any).next,
-      ),
-      first: parseNavId(
-        (targetVoucher as any).first_voucher_id ?? (targetVoucher as any).first,
-      ),
-      last: parseNavId(
-        (targetVoucher as any).last_voucher_id ?? (targetVoucher as any).last,
-      ),
-      vouchersCount: (targetVoucher as any).vouchers_count ?? null,
-    };
 
     const t = await getTranslations("navigation.breadcrumbs.segments");
 
     const voucherIdForBreadcrumb =
-      targetVoucher.vouch_id || targetVoucher.id || "";
+      voucherData.voucher.vouch_id || voucherData.voucher.id || "";
     const breadcrumbLabel =
       formMode === "edit"
         ? `${t("edit")} ${voucherIdForBreadcrumb}`
@@ -374,21 +72,21 @@ export default async function DeliveryVoucherEditPage({
         />
         <DeliveryVoucherClientPage
           accounts={formData.accounts}
-          boxes={formData.boxes || []}
-          categories={formData.categories || []}
+          boxes={formData.boxes}
+          categories={formData.categories as DeliveryCategory[]}
           costCenters={formData.costCenters}
-          customers={formData.customers || []}
+          customers={formData.customers}
           formMode={formMode}
-          goldBoxes={formData.goldBoxes || formData.boxes || []}
-          goldDetailsData={goldDetails}
+          goldBoxes={formData.goldBoxes}
+          goldDetailsData={voucherData.goldDetails}
           isNewVoucher={false}
-          items={formData.items || []}
-          navigationInfo={navigationInfo}
+          items={formData.items}
+          navigationInfo={voucherData.navigationInfo}
           startInEditMode={startInEditMode}
           vouchType={222}
-          voucherBoxes={voucherBoxes}
-          voucherData={formattedVoucher}
-          voucherRecordId={targetVoucher.id}
+          voucherBoxes={voucherData.voucherBoxes}
+          voucherData={voucherData.voucher}
+          voucherRecordId={voucherData.voucher.id}
           voucherTypes={formData.voucherTypes}
         />
       </div>
