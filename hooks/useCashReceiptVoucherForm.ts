@@ -826,9 +826,9 @@ export const useCashReceiptVoucherForm = ({
     addVoucherBoxRow,
     removeVoucherBoxRow,
     updateDetail,
-    handleMasterCostChange,
     addDetailRow,
     removeDetailRow,
+    handleMasterCostChange,
     saveVoucher,
     printVoucher,
   };
