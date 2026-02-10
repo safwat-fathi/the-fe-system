@@ -28,6 +28,7 @@ class AccountService extends HttpService<Account> {
         "accounts_list",
         {
           xcom_id: companyId || "1",
+          page_size: 10000,
         },
         {
           next: {
@@ -59,6 +60,7 @@ class AccountService extends HttpService<Account> {
         "getAccounts",
         {
           xcom_id: xcom_id || "1",
+          page_size: 10000,
         },
         {
           next: {
