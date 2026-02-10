@@ -113,7 +113,7 @@ export default function CashReceiptVoucherClientPage({
     isEditing,
     isPrinting,
     isClient,
-    // defaultAccountOptions,
+    defaultAccountOptions,
 
     // Totals and balance
     totals,
@@ -438,10 +438,7 @@ export default function CashReceiptVoucherClientPage({
 
           return;
         } else {
-          console.error(
-            "Voucher found but missing vouch_id:",
-            voucherWithId,
-          );
+          console.error("Voucher found but missing vouch_id:", voucherWithId);
           toast.error(t("messages.voucherAccessError"));
         }
       }
@@ -567,9 +564,7 @@ export default function CashReceiptVoucherClientPage({
             <Button
               className="h-7 px-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 rounded-md shadow-sm"
               isDisabled={
-                !voucher.id ||
-                Number(voucher.id) <= 0 ||
-                !voucher.commit
+                !voucher.id || Number(voucher.id) <= 0 || !voucher.commit
               }
               startContent={<DocumentTextIcon className="w-4 h-4" />}
               variant="solid"
@@ -673,9 +668,7 @@ export default function CashReceiptVoucherClientPage({
       <div
         ref={selectorsRef}
         className={`grid grid-cols-1 ${
-          costCenters.length > 0
-            ? "md:grid-cols-12"
-            : "md:grid-cols-10"
+          costCenters.length > 0 ? "md:grid-cols-12" : "md:grid-cols-10"
         } gap-1.5 mb-2`}
         onKeyDownCapture={handleKeyDownSelectors}
       >
@@ -817,7 +810,9 @@ export default function CashReceiptVoucherClientPage({
         )}
 
         {/* الحالة - أصغر */}
-        <div className={costCenters.length > 0 ? "md:col-span-1" : "md:col-span-1"}>
+        <div
+          className={costCenters.length > 0 ? "md:col-span-1" : "md:col-span-1"}
+        >
           <label
             className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
             htmlFor="cash-receipt-status"
@@ -865,7 +860,9 @@ export default function CashReceiptVoucherClientPage({
         </div>
 
         {/* البيان - في نفس الصف */}
-        <div className={costCenters.length > 0 ? "md:col-span-4" : "md:col-span-4"}>
+        <div
+          className={costCenters.length > 0 ? "md:col-span-4" : "md:col-span-4"}
+        >
           <label
             className={`block text-xs font-medium text-slate-700 mb-0.5 ${textAlign}`}
             htmlFor="cash-receipt-notes"
@@ -1646,6 +1643,7 @@ export default function CashReceiptVoucherClientPage({
                                 className="text-xs"
                                 classNamePrefix="select"
                                 components={{ IndicatorSeparator: () => null }}
+                                defaultOptions={defaultAccountOptions}
                                 formatCreateLabel={(inputValue) =>
                                   t("tables.accounts.addAccountLabel", {
                                     value: inputValue,
@@ -2203,11 +2201,7 @@ export default function CashReceiptVoucherClientPage({
       <GLTransactionModal
         isOpen={isGLModalOpen}
         onClose={() => setIsGLModalOpen(false)}
-        transId={
-          voucher.id && Number(voucher.id) > 0
-            ? Number(voucher.id)
-            : 0
-        }
+        transId={voucher.id && Number(voucher.id) > 0 ? Number(voucher.id) : 0}
         transType={vouchType || 1} // سند قبض
         voucherTitle={
           voucher.vouch_id && Number(voucher.vouch_id) > 0
