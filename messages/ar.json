@@ -45,6 +45,7 @@
         "voucher": "القيود",
         "voucher1": "سند قبض",
         "voucher2": "سند صرف",
+        "adjustment": "قيد تسوية",
         "gvoucher4": "سند قبض عميل",
         "gvoucher5": "سند صرف عميل",
         "receipt": "سند استلام",
@@ -544,10 +545,7 @@
         "voucherTypePayment": "سند صرف"
       }
     },
-    "adjustmentVoucher": {
-      "actions": {
-        "viewGLTransactions": "عرض القيود المحاسبية"
-      },
+    "adjustment": {
       "title": "قيد تسوية",
       "description": "إدارة قيود التسوية",
       "breadcrumbs": {

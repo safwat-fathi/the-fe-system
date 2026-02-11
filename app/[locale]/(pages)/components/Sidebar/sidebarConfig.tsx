@@ -111,9 +111,9 @@ export const accountingFormLinks: SidebarLinkConfig[] = [
     requiredObjectIds: [124],
   },
   {
-    translationKey: "links.adjustmentEntry",
-    translationSource: "sidebar",
-    href: "/forms/voucher?mode=new",
+    translationKey: "adjustment",
+    translationSource: "segment",
+    href: "/forms/adjustment?mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
     requiredObjectIds: [122],
   },
