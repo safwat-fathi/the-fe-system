@@ -22,6 +22,7 @@ const AdjustmentInfo = ({
   voucherTypes,
   costCenters,
   handleCostCenter,
+  updateVoucherType,
 
   setIsNotesModalOpen,
   registerField,
@@ -35,6 +36,7 @@ const AdjustmentInfo = ({
   voucherTypes: VoucherType[];
   costCenters: CostCenter[];
   handleCostCenter: (costCenter: CostCenter) => void;
+  updateVoucherType: (newType: number) => void;
 
   setIsNotesModalOpen: (open: boolean) => void;
   registerField: (index: number) => (el: { focus: () => void } | null) => void;
@@ -68,7 +70,7 @@ const AdjustmentInfo = ({
     const typeValue =
       type.Id !== undefined && type.Id !== null
         ? String(type.Id)
-        : String(type.Id || "");
+        : String(type.id || "");
     const typeKey = voucherTypeKeyMap[type.name];
     const translatedLabel = typeKey
       ? t(`voucherTypes.${typeKey}` as const, {
@@ -220,12 +222,11 @@ const AdjustmentInfo = ({
                 ) as unknown as React.RefObject<HTMLSelectElement>
               }
               value={voucher.vouch_type || 2}
-              onChange={(e) =>
-                setVoucher((prev) => ({
-                  ...prev,
-                  vouch_type: parseInt(e.target.value),
-                }))
-              }
+              onChange={(e) => {
+                const newType = parseInt(e.target.value);
+
+                updateVoucherType(newType);
+              }}
               onKeyDown={(e) => handleFieldEnter(e, 3)}
             >
               {voucherTypes.length > 0 &&

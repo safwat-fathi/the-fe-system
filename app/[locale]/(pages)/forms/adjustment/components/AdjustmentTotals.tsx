@@ -1,4 +1,4 @@
-import type { AdjustmentTotalsResult } from "../utilities/adjustmentCalculations";
+import type { VoucherTotals } from "@/utilities/voucher/balance";
 
 import { useTranslations } from "next-intl";
 
@@ -9,7 +9,7 @@ const AdjustmentTotals = ({
   totals,
   textAlign,
 }: {
-  totals: AdjustmentTotalsResult;
+  totals: VoucherTotals;
   textAlign: string;
 }) => {
   const t = useTranslations("forms.adjustment");
