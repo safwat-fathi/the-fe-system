@@ -296,15 +296,13 @@ class VoucherService extends HttpService<Voucher> {
       }
 
       // البحث عن قيد افتتاحي ينتمي للفرع المحدد
-      const openingEntry = vouchers.find(
-        (v: any) => {
-          const isCorrectType = v?.vouch_type === 0 || v?.vouch_type === "0";
-          const voucherCom = Number(v?.com_id ?? v?.com ?? 1);
-          const isCorrectBranch = voucherCom === Number(comId);
+      const openingEntry = vouchers.find((v: any) => {
+        const isCorrectType = v?.vouch_type === 0 || v?.vouch_type === "0";
+        const voucherCom = Number(v?.com_id ?? v?.com ?? 1);
+        const isCorrectBranch = voucherCom === Number(comId);
 
-          return isCorrectType && isCorrectBranch;
-        },
-      );
+        return isCorrectType && isCorrectBranch;
+      });
 
       return openingEntry || null;
     }
@@ -659,7 +657,7 @@ class VoucherService extends HttpService<Voucher> {
     const com = params?.com || params?.xcom_id || "1";
     const year = params?.year || params?.xyear_id || "1";
 
-    return this._getListData("getVoucherStageList", params, {
+    const response = await this._getListData("getVoucherStageList", params, {
       useBranchParams: true,
       logLabel: "Voucher stages",
       cache: "force-cache",
@@ -668,6 +666,8 @@ class VoucherService extends HttpService<Voucher> {
         tags: ["voucher-stages", `voucher-stages-${com}-${year}`],
       },
     });
+
+    return response;
   }
 
   /**

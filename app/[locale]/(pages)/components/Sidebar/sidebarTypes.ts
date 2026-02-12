@@ -21,14 +21,14 @@ export type SegmentTranslationKey =
   | "units"
   | "voucher1"
   | "voucher2"
-  | "balance";
+  | "balance"
+  | "adjustment";
 
 export type SidebarNamespaceLinkKey =
   | "links.systemSettings"
   | "links.userBranches"
   | "links.saleReturnInvoices"
-  | "links.purchaseReturnInvoices"
-  | "links.adjustmentEntry";
+  | "links.purchaseReturnInvoices";
 
 export type SidebarLinkBase = {
   href: string;

@@ -116,23 +116,7 @@ export async function createVoucherAction(
       }
     }
 
-    // حفظ السند الرئيسي
-    /* console.log("[createVoucherAction] Sending voucher payload:", {
-      vouch_id: voucherPayload.vouch_id,
-      vouch_type: voucherPayload.vouch_type,
-      com: voucherPayload.com,
-      year: voucherPayload.year,
-      detailsCount: details.length,
-    }); */
-
     let voucherResponse = await voucherService.create(voucherPayload);
-
-    // تسجيل الاستجابة للتحقق
-    /* console.log("[createVoucherAction] Voucher create response:", {
-      success: voucherResponse.success,
-      message: voucherResponse.message,
-      data: voucherResponse.data,
-    }); */
 
     if (!voucherResponse.success || !voucherResponse.data) {
       const duplicateResolution = await handleDuplicateVoucherNumber(
