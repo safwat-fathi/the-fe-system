@@ -1,4 +1,3 @@
-
 import type {
   VoucherFormData,
   VoucherFormDataOptions,
@@ -15,6 +14,7 @@ import type { Category } from "@/types/items";
 
 import { cache } from "react";
 
+import { Voucher, VoucherDetail } from "@/types/voucher";
 import { getBranchParams } from "@/app/actions/branch-params";
 import {
   voucherService,
@@ -187,7 +187,237 @@ const getVoucherFormData = cache(
   },
 );
 
+// Helper to parse navigation IDs
+const parseNavId = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numeric = Number(value);
+
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+};
+
+export interface VoucherWithDetails {
+  voucher: Voucher | null;
+  details: VoucherDetail[];
+  navigationInfo: {
+    previous: number | null;
+    next: number | null;
+    first: number | null;
+    last: number | null;
+    vouchersCount: number | null;
+  };
+}
+
+const getVoucherById = cache(
+  async (voucherId: number): Promise<Voucher | null> => {
+    try {
+      if (!voucherId || isNaN(voucherId)) {
+        return null;
+      }
+
+      // Adjustment voucher type
+      const ADJUSTMENT_VOUCHER_TYPE = "3";
+
+      const vouchersResponse = await voucherService.getAll({
+        xvouch_type: ADJUSTMENT_VOUCHER_TYPE,
+      });
+
+      if (!vouchersResponse.success || !vouchersResponse.data) {
+        return null;
+      }
+
+      const vouchers = ensureArray<any>(vouchersResponse.data);
+
+      const foundVoucher = vouchers.find(
+        (v) => v.id === voucherId || v.vouch_id === voucherId,
+      );
+
+      return foundVoucher || null;
+    } catch (error) {
+      console.error("Error fetching voucher:", error);
+
+      return null;
+    }
+  },
+);
+
+const getVoucherDetails = cache(
+  async (
+    voucherId: number,
+    branchId?: number | string,
+  ): Promise<VoucherDetail[]> => {
+    try {
+      if (!voucherId || isNaN(voucherId)) {
+        return [];
+      }
+
+      const parsedBranchId = Number(branchId ?? 1) || 1;
+
+      const detailsResponse = await voucherService.getDetails(voucherId, {
+        xcom_id: parsedBranchId,
+      });
+
+      if (!detailsResponse.success || !detailsResponse.data) {
+        return [];
+      }
+
+      return ensureArray<VoucherDetail>(detailsResponse.data);
+    } catch (error) {
+      console.error("Error fetching voucher details:", error);
+
+      return [];
+    }
+  },
+);
+
+const getVoucherWithDetails = async (
+  voucherId: number,
+  formData: VoucherFormData,
+): Promise<VoucherWithDetails> => {
+  const voucher = await getVoucherById(voucherId);
+
+  if (!voucher) {
+    return {
+      voucher: null,
+      details: [],
+      navigationInfo: {
+        previous: null,
+        next: null,
+        first: null,
+        last: null,
+        vouchersCount: null,
+      },
+    };
+  }
+
+  const branchId = Number(voucher.com_id ?? voucher.com ?? 1) || 1;
+  const resolvedVoucherId = voucher.id ?? 0;
+
+  // Fetch details
+  const detailsData = await getVoucherDetails(resolvedVoucherId, branchId);
+
+  // Normalize cost helper
+  const normalizeCost = (value: unknown): number | undefined => {
+    if (value === undefined || value === null || value === "") {
+      return undefined;
+    }
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
+  };
+
+  const resolvedVoucherCost =
+    normalizeCost(voucher.cost_id) ??
+    normalizeCost((voucher as any).cost) ??
+    null;
+
+  // Process details
+  const details: VoucherDetail[] = detailsData.map((detail: any) => {
+    const account = formData.accounts.find(
+      (acc: any) => acc.id === (detail.acc_id || detail.acc),
+    );
+
+    let costId: number | undefined = undefined;
+
+    if (detail.hasOwnProperty("cost")) {
+      if (
+        detail.cost !== null &&
+        detail.cost !== undefined &&
+        detail.cost !== ""
+      ) {
+        costId = Number(detail.cost);
+      }
+    } else if (detail.hasOwnProperty("cost_id")) {
+      if (
+        detail.cost_id !== null &&
+        detail.cost_id !== undefined &&
+        detail.cost_id !== ""
+      ) {
+        costId = Number(detail.cost_id);
+      }
+    }
+
+    return {
+      id: detail.id || 0,
+      vouch_id: voucher.vouch_id || 0,
+      acc_id: detail.acc_id || detail.acc || 0,
+      acc_code: (account as any)?.acc_code || detail.acc_code || "",
+      acc_name: (account as any)?.acc_name || detail.acc_name || "",
+      cost_id: costId,
+      debit: parseFloat(detail.debit) || 0,
+      credit: parseFloat(detail.credit) || 0,
+      debit_base:
+        detail.debit_base !== undefined
+          ? parseFloat(String(detail.debit_base))
+          : parseFloat(detail.debit) || 0,
+      credit_base:
+        detail.credit_base !== undefined
+          ? parseFloat(String(detail.credit_base))
+          : parseFloat(detail.credit) || 0,
+      g_debit:
+        detail.g_debit !== undefined
+          ? parseFloat(String(detail.g_debit))
+          : parseFloat(detail.debit_g) || 0,
+      g_credit:
+        detail.g_credit !== undefined
+          ? parseFloat(String(detail.g_credit))
+          : parseFloat(detail.credit_g) || 0,
+      g_debit_base:
+        detail.g_debit_base !== undefined
+          ? parseFloat(String(detail.g_debit_base))
+          : 0,
+      g_credit_base:
+        detail.g_credit_base !== undefined
+          ? parseFloat(String(detail.g_credit_base))
+          : 0,
+      gauge: parseFloat(detail.gauge) || 875,
+      tax: parseFloat(detail.tax) || 0,
+      tax_prc: parseFloat(detail.tax_prc) || 0,
+      vat_no: parseInt(detail.vat_no) || 0,
+      vouch_notes: detail.vouch_notes || "",
+      cr_date: detail.cr_date || new Date().toISOString(),
+    };
+  });
+
+  const formattedVoucher: Voucher = {
+    ...voucher,
+    vouch_date: voucher.vouch_date || new Date().toISOString(),
+    cr_date: voucher.cr_date || new Date().toISOString(),
+    vouch_id: voucher.vouch_id || 0,
+    vouch_amt: voucher.vouch_amt || 0,
+    ref_no: voucher.ref_no || "",
+    vouch_notes: voucher.vouch_notes || "",
+    vouch_status: voucher.vouch_status || 1,
+    pay_type: voucher.pay_type || 1,
+    commit: voucher.commit || false,
+    post: voucher.post || false,
+    print: voucher.print || false,
+    cost_id: resolvedVoucherCost,
+  };
+
+  const navigationInfo = {
+    previous: parseNavId(
+      (voucher as any).previous_voucher_id ?? (voucher as any).previous,
+    ),
+    next: parseNavId((voucher as any).next_voucher_id ?? (voucher as any).next),
+    first: parseNavId(
+      (voucher as any).first_voucher_id ?? (voucher as any).first,
+    ),
+    last: parseNavId((voucher as any).last_voucher_id ?? (voucher as any).last),
+    vouchersCount: (voucher as any).vouchers_count ?? null,
+  };
+
+  return {
+    voucher: formattedVoucher,
+    details,
+    navigationInfo,
+  };
+};
+
 export default {
   getVoucherFormData,
   getBalanceVoucherFormData,
+  getVoucherWithDetails,
 };
