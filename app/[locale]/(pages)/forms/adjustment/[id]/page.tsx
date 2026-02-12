@@ -31,22 +31,17 @@ export default async function VoucherEditPage({
       ? searchParamsData.mode[0]
       : searchParamsData.mode;
 
-    // تحديد الوضع: preview (افتراضي بعد الحفظ) أو edit
     const formMode = mode === "edit" ? "edit" : "preview";
     const startInEditMode = mode === "edit";
 
     const voucherId = parseInt(id);
 
-    // التحقق من صحة المعرف
     if (isNaN(voucherId) || voucherId <= 0) {
       notFound();
     }
-
-    // جلب البيانات باستخدام الخدمة الموحدة
     const formData =
       await adjustmentVoucherFormDataService.getAdjustmentVoucherFormData();
 
-    // جلب بيانات القيد وتفاصيله ومعلومات التنقل
     const voucherData =
       await adjustmentVoucherFormDataService.getAdjustmentVoucherWithDetails(
         voucherId,
@@ -59,7 +54,6 @@ export default async function VoucherEditPage({
 
     const { voucher, details, navigationInfo } = voucherData;
 
-    // تحديد عنوان القيد بناءً على النوع
     const getVoucherTitle = (vouchType: number) => {
       switch (vouchType) {
         case 1:
@@ -98,7 +92,6 @@ export default async function VoucherEditPage({
               },
             ]}
           />
-          {/* حالة القيد */}
           <VoucherStatusCheckboxes
             commit={voucher.commit}
             post={voucher.post}

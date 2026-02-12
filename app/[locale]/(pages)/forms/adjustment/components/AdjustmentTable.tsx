@@ -1,5 +1,6 @@
 import type { VoucherDetail } from "@/types/voucher";
 import type { Account } from "@/types/models/account";
+import type { CostCenter } from "@/types/voucher-form";
 
 import {
   CheckCircleIcon,
@@ -14,21 +15,32 @@ import AdjustmentColumn from "./AdjustmentColumn";
 interface AdjustmentTableProps {
   isEditing: boolean;
   addDetailRow: () => void;
+  removeDetailRow: (index: number) => void;
   textAlign: string;
   isVoucherBalanced?: boolean;
   details: VoucherDetail[];
   initialAccounts: Account[];
   updateDetail: (index: number, newValues: Partial<VoucherDetail>) => void;
+  registerField: (index: number) => (el: { focus: () => void } | null) => void;
+  handleFieldEnter: (
+    e: React.KeyboardEvent<HTMLElement>,
+    index: number,
+  ) => void;
+  initialCostCenters: CostCenter[];
 }
 
 const AdjustmentTable = ({
   isEditing,
   addDetailRow,
+  removeDetailRow,
   textAlign,
   isVoucherBalanced = false,
   details,
   initialAccounts,
   updateDetail,
+  registerField,
+  handleFieldEnter,
+  initialCostCenters,
 }: AdjustmentTableProps) => {
   const t = useTranslations("forms.adjustment");
   const textAlignCenter = "text-center";
@@ -94,12 +106,17 @@ const AdjustmentTable = ({
             <tbody>
               {details.map((detail, index) => (
                 <AdjustmentColumn
-                  key={detail.id}
+                  key={detail.id && detail.id > 0 ? detail.id : `new-${index}`}
                   detail={detail}
+                  details={details}
                   isEditing={isEditing}
                   initialAccounts={initialAccounts}
+                  initialCostCenters={initialCostCenters}
                   updateDetail={updateDetail}
+                  removeDetailRow={removeDetailRow}
                   index={index}
+                  registerField={registerField}
+                  handleFieldEnter={handleFieldEnter}
                 />
               ))}
             </tbody>

@@ -23,8 +23,6 @@ const AdjustmentInfo = ({
   costCenters,
   handleCostCenter,
 
-  focusFirstInRow,
-
   setIsNotesModalOpen,
   registerField,
   handleFieldEnter,
@@ -38,8 +36,6 @@ const AdjustmentInfo = ({
   costCenters: CostCenter[];
   handleCostCenter: (costCenter: CostCenter) => void;
 
-  focusFirstInRow: (index: number) => void;
-
   setIsNotesModalOpen: (open: boolean) => void;
   registerField: (index: number) => (el: { focus: () => void } | null) => void;
   handleFieldEnter: (
@@ -48,16 +44,6 @@ const AdjustmentInfo = ({
   ) => void;
 }) => {
   const t = useTranslations("forms.adjustment");
-
-  // Register the jump-to-table action at index 6 (after Notes)
-  React.useEffect(() => {
-    registerField(6)({
-      focus: () => {
-        // When focusing "index 6", we actually want to focus the first row of the table
-        focusFirstInRow(0);
-      },
-    } as HTMLElement);
-  }, [registerField, focusFirstInRow]);
 
   const renderVoucherStatus = (status: VoucherStatus) => {
     const statusValue =

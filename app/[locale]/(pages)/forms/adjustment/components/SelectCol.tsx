@@ -3,6 +3,7 @@ import type {
   OptionsOrGroups,
   SingleValue,
   ActionMeta,
+  SelectInstance,
 } from "react-select";
 
 import AsyncCreatableSelect from "react-select/async-creatable";
@@ -31,6 +32,10 @@ interface SelectColProps<OptionType extends OptionTypeWithLabel> {
   defaultOptions?: boolean | OptionsOrGroups<OptionType, GroupBase<OptionType>>;
   value?: OptionType | null;
   isEditing: boolean;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLElement>) => void;
+  selectRef?: React.Ref<
+    SelectInstance<OptionType, false, GroupBase<OptionType>>
+  >;
 }
 
 function SelectCol<OptionType extends OptionTypeWithLabel>({
@@ -42,6 +47,8 @@ function SelectCol<OptionType extends OptionTypeWithLabel>({
   defaultOptions = true,
   value,
   isEditing,
+  onKeyDown,
+  selectRef,
 }: SelectColProps<OptionType>) {
   const internalLoadOptions = (
     inputValue: string,
@@ -68,6 +75,7 @@ function SelectCol<OptionType extends OptionTypeWithLabel>({
 
   return (
     <AsyncCreatableSelect<OptionType, false, GroupBase<OptionType>>
+      ref={selectRef}
       isClearable
       isSearchable
       cacheOptions
@@ -81,6 +89,7 @@ function SelectCol<OptionType extends OptionTypeWithLabel>({
       menuPosition="fixed"
       placeholder={placeholder}
       value={value}
+      onKeyDown={onKeyDown}
       onChange={onChange}
       styles={{
         control: (base, _state) => ({

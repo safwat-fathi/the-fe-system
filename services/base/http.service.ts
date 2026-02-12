@@ -166,7 +166,14 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
         data,
         message: response.ok
           ? undefined
-          : `Request failed with status ${response.status}`,
+          : `Request failed with status ${response.status}: ${
+              typeof data === "string"
+                ? data
+                : data?.detail ||
+                  data?.message ||
+                  JSON.stringify(data) ||
+                  "Unknown error"
+            }`,
       };
     } catch (error) {
       if (error instanceof AuthenticationError) {

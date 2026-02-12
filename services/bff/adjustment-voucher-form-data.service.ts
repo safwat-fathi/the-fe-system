@@ -1,6 +1,5 @@
 import type { Account } from "@/types/models/account";
 import type {
-  VoucherFormData,
   VoucherType,
   VoucherStatus,
   CaratType,
@@ -17,7 +16,7 @@ import {
 import { getBranchParams } from "@/app/actions/branch-params";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
-interface AdjustmentVoucherFormData {
+export interface AdjustmentVoucherFormData {
   accounts: Account[];
   costCenters: CostCenter[];
   voucherTypes: VoucherType[];
@@ -109,7 +108,7 @@ class AdjustmentVoucherFormDataService extends HttpService<any> {
    */
   async getAdjustmentVoucherWithDetails(
     voucherId: number,
-    formData: VoucherFormData,
+    formData: AdjustmentVoucherFormData,
   ): Promise<AdjustmentVoucherWithDetails> {
     try {
       if (!voucherId || isNaN(voucherId)) {
@@ -185,7 +184,7 @@ class AdjustmentVoucherFormDataService extends HttpService<any> {
 
   private _processDetails(
     detailsData: any[],
-    formData: VoucherFormData,
+    formData: AdjustmentVoucherFormData,
     vouchId: number,
   ): VoucherDetail[] {
     return detailsData.map((detail: any) => {
