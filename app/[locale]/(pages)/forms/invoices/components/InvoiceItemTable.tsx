@@ -77,6 +77,7 @@ interface Props {
 
 export type InvoiceItemTableHandle = {
   focusFirstRow: () => boolean;
+  focusRow: (index: number) => boolean;
 };
 
 export type InvoiceItemTableProps = Props;
@@ -756,6 +757,11 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
 
           return focusFirstInRow(0);
         },
+        focusRow: (index: number) => {
+          if (!isEditing) return false;
+
+          return focusFirstInRow(index);
+        },
       }),
       [focusFirstInRow, isEditing],
     );
@@ -1063,11 +1069,17 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                         styles={selectStyles}
                         value={selectedOption}
                         onChange={handleSelectChange}
-                        onKeyDown={(e) =>
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.stopPropagation();
+
+                            return;
+                          }
+
                           handleKeyDown(e, index, itemSelectCol, {
                             allowEnterDefaultWhenRowMissing: true,
-                          })
-                        }
+                          });
+                        }}
                       />
                     </td>
                     {registerCells.map(

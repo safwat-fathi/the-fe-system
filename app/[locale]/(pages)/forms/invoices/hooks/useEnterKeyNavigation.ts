@@ -313,8 +313,11 @@ export default function useEnterKeyNavigation<Row>(
       const selectButton = target?.closest('[role="combobox"]');
       const isExpanded = selectButton?.getAttribute("aria-expanded") === "true";
 
-      if (isExpanded && (key === "ArrowDown" || key === "ArrowUp")) {
-        return; // نترك الأسهم تعمل داخل القائمة المفتوحة
+      if (
+        isExpanded &&
+        (key === "ArrowDown" || key === "ArrowUp" || key === "Enter")
+      ) {
+        return; // نترك الأسهم والإنتر تعمل داخل القائمة المفتوحة
       }
 
       const rowRefs = inputRefs.current[rowIndex] || [];
