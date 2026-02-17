@@ -11,9 +11,16 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 
-import { calculateAdjustmentTotals } from "../utilities/adjustmentCalculations";
-
-import { getAccountGauge } from "@/utilities/voucherForm";
+import {
+  calculateVoucherTotals,
+  isVoucherBalanced,
+} from "@/utilities/voucher/balance";
+import {
+  getAccountGauge,
+  calculateCalibratedGold,
+  calculateReverseCalibratedGold,
+  calculateGaugeFromCalibrated,
+} from "@/utilities/voucherForm";
 import {
   createAdjustmentVoucherAction,
   updateAdjustmentVoucherAction,
@@ -62,7 +69,7 @@ export const initialVoucher: Voucher = {
   post: false,
   print: false,
   pay_type: 1, // Default Cash
-  cost_id: 1, // Default Main Cost Center
+  cost_id: null, // Default to null (no cost center selected)
 };
 
 /**
@@ -215,22 +222,10 @@ export function useAdjustmentVoucherForm({
   const [isSaving, setIsSaving] = useState(false);
 
   // Memoized calculations
-  const totals = useMemo(() => calculateAdjustmentTotals(details), [details]);
+  const totals = useMemo(() => calculateVoucherTotals(details), [details]);
 
-  // Derived state for balance check (Performance optimization: verify on render/memo instead of effect)
-  const isVoucherBalanced = useMemo(() => {
-    const totalDebit = details.reduce(
-      (acc, detail) => acc + (detail.debit || 0),
-      0,
-    );
-    const totalCredit = details.reduce(
-      (acc, detail) => acc + (detail.credit || 0),
-      0,
-    );
-
-    // Use a small epsilon for floating point comparison if necessary, but exact match is standard for currency if integers/fixed
-    return Math.abs(totalDebit - totalCredit) < 0.001; // handling floating point errors
-  }, [details]);
+  // Derived state for balance check
+  const isBalanced = useMemo(() => isVoucherBalanced(totals), [totals]);
 
   /**
    * Adds a new empty row to the details grid.
@@ -261,7 +256,45 @@ export function useAdjustmentVoucherForm({
 
           const updatedDetail = { ...detail, ...newValues };
 
-          // If account changed, update gauge automatically
+          const parseNum = (val: any) =>
+            val !== undefined && val !== null && val !== "" ? Number(val) : 0;
+
+          if (newValues.debit !== undefined && parseNum(newValues.debit) > 0) {
+            updatedDetail.credit = undefined;
+          }
+          if (
+            newValues.credit !== undefined &&
+            parseNum(newValues.credit) > 0
+          ) {
+            updatedDetail.debit = undefined;
+          }
+
+          if (
+            newValues.g_debit !== undefined &&
+            parseNum(newValues.g_debit) > 0
+          ) {
+            updatedDetail.g_credit = undefined;
+          }
+          if (
+            newValues.g_credit !== undefined &&
+            parseNum(newValues.g_credit) > 0
+          ) {
+            updatedDetail.g_debit = undefined;
+          }
+
+          if (
+            newValues.g_debit_base !== undefined &&
+            parseNum(newValues.g_debit_base) > 0
+          ) {
+            updatedDetail.g_credit_base = undefined;
+          }
+          if (
+            newValues.g_credit_base !== undefined &&
+            parseNum(newValues.g_credit_base) > 0
+          ) {
+            updatedDetail.g_debit_base = undefined;
+          }
+
           if (
             newValues.acc_id !== undefined &&
             newValues.acc_id !== detail.acc_id
@@ -272,6 +305,130 @@ export function useAdjustmentVoucherForm({
             const gauge = getAccountGauge(selectedAccount, caratTypes);
 
             updatedDetail.gauge = gauge;
+          }
+
+          const baseGauge = 875;
+          const currentGauge = parseNum(updatedDetail.gauge) || baseGauge;
+
+          // 1. If g_debit (Outstanding Debit) changed -> Calculate g_debit_base (Calibrated)
+          if ("g_debit" in newValues) {
+            const gDebit = parseNum(newValues.g_debit);
+
+            if (gDebit > 0 && currentGauge > 0) {
+              updatedDetail.g_debit_base = calculateCalibratedGold(
+                gDebit,
+                currentGauge,
+                baseGauge,
+                2,
+              );
+            } else {
+              updatedDetail.g_debit_base = undefined;
+            }
+          }
+
+          // 2. If g_credit (Outstanding Credit) changed -> Calculate g_credit_base (Calibrated)
+          if ("g_credit" in newValues) {
+            const gCredit = parseNum(newValues.g_credit);
+
+            if (gCredit > 0 && currentGauge > 0) {
+              updatedDetail.g_credit_base = calculateCalibratedGold(
+                gCredit,
+                currentGauge,
+                baseGauge,
+                2,
+              );
+            } else {
+              updatedDetail.g_credit_base = undefined;
+            }
+          }
+
+          // 3. If g_debit_base (Calibrated Debit) changed -> Calculate g_debit or Gauge
+          if ("g_debit_base" in newValues) {
+            const gDebitBase = parseNum(newValues.g_debit_base);
+
+            if (gDebitBase > 0) {
+              const currentGDebit = parseNum(updatedDetail.g_debit);
+
+              // Normalize base to 2 decimals as per reference logic
+              const normalizedBase = parseFloat(gDebitBase.toFixed(2));
+
+              updatedDetail.g_debit_base = normalizedBase;
+
+              if (currentGDebit > 0) {
+                // Return Gauge from Calibrated
+                updatedDetail.gauge = calculateGaugeFromCalibrated(
+                  normalizedBase,
+                  currentGDebit,
+                  baseGauge,
+                  3,
+                );
+              } else {
+                // Calculate Reverse
+                updatedDetail.g_debit = calculateReverseCalibratedGold(
+                  normalizedBase,
+                  currentGauge,
+                  baseGauge,
+                );
+              }
+            } else {
+              // If base is cleared, but main value exists, keep main value?
+              // The original logic clears base if main is cleared.
+            }
+          }
+
+          // 4. If g_credit_base (Calibrated Credit) changed -> Calculate g_credit or Gauge
+          if ("g_credit_base" in newValues) {
+            const gCreditBase = parseNum(newValues.g_credit_base);
+
+            if (gCreditBase > 0) {
+              const currentGCredit = parseNum(updatedDetail.g_credit);
+
+              // Normalize base to 2 decimals
+              const normalizedBase = parseFloat(gCreditBase.toFixed(2));
+
+              updatedDetail.g_credit_base = normalizedBase;
+
+              if (currentGCredit > 0) {
+                // Return Gauge from Calibrated
+                updatedDetail.gauge = calculateGaugeFromCalibrated(
+                  normalizedBase,
+                  currentGCredit,
+                  baseGauge,
+                  3,
+                );
+              } else {
+                // Calculate Reverse
+                updatedDetail.g_credit = calculateReverseCalibratedGold(
+                  normalizedBase,
+                  currentGauge,
+                  baseGauge,
+                );
+              }
+            }
+          }
+
+          // 5. If Gauge changed -> Recalculate Bases
+          if (parseNum(updatedDetail.gauge) !== parseNum(detail.gauge)) {
+            const newGauge = parseNum(updatedDetail.gauge);
+
+            if (newGauge > 0) {
+              if (parseNum(updatedDetail.g_debit) > 0) {
+                updatedDetail.g_debit_base = calculateCalibratedGold(
+                  parseNum(updatedDetail.g_debit),
+                  newGauge,
+                  baseGauge,
+                  2,
+                );
+              }
+              if (parseNum(updatedDetail.g_credit) > 0) {
+                updatedDetail.g_credit_base = calculateCalibratedGold(
+                  parseNum(updatedDetail.g_credit),
+                  newGauge,
+                  baseGauge,
+                  2,
+                );
+              }
+            }
           }
 
           return updatedDetail;
@@ -436,6 +593,31 @@ export function useAdjustmentVoucherForm({
     voucherDetailsData,
   ]);
 
+  /**
+   * Update voucher type and regenerate number if needed.
+   */
+  const updateVoucherType = async (newType: number) => {
+    setVoucher((prev) => ({ ...prev, vouch_type: newType }));
+
+    if (formMode === "new") {
+      try {
+        setIsLoading(true);
+        const nextNumber = await getNextAdjustmentVoucherNumberAction();
+
+        if (nextNumber) {
+          setVoucher((prev) => ({
+            ...prev,
+            vouch_id: nextNumber,
+          }));
+        }
+      } catch (error) {
+        console.error("Error updating voucher type number:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   return {
     voucher,
     setVoucher,
@@ -453,7 +635,8 @@ export function useAdjustmentVoucherForm({
     updateDetail,
     handleCostCenter,
     handlePrint,
-    isVoucherBalanced,
+    updateVoucherType,
+    isVoucherBalanced: isBalanced,
     totals,
   };
 }

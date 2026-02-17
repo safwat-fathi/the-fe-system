@@ -723,11 +723,16 @@ export default function InvoiceClientPage({
         }
         vatNumber={form.vat_no}
         street={form.street}
-        onBarcodeSearch={() => handleBarcodeSearch()}
-        onFocusNextSection={() =>
-          itemTableRef.current?.focusFirstRow() ?? false
-        }
-        onInvoiceSelect={() => {}}
+        onBarcodeSearch={async () => {
+          const index = await handleBarcodeSearch();
+
+          if (index !== undefined && itemTableRef.current) {
+            // Small timeout to ensure row is rendered
+            setTimeout(() => {
+              itemTableRef.current?.focusRow(index);
+            }, 50);
+          }
+        }}
         additionalExpansesRef={additionalExpansesRef}
       />
 

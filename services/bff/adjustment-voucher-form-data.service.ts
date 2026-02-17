@@ -49,6 +49,64 @@ const parseNavId = (value: unknown): number | null => {
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
+const parseNumericValue = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const numeric = Number(value);
+
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const normalizeStringValue = (value: unknown): string | null => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const normalized = String(value).trim();
+
+  return normalized.length > 0 ? normalized : null;
+};
+
+const resolveDetailAccount = (
+  detail: any,
+  accounts: Account[],
+): Account | undefined => {
+  const candidates = [detail.acc_id, detail.acc, detail.acc_code];
+
+  return accounts.find((account) =>
+    candidates.some((candidate) => {
+      if (candidate === null || candidate === undefined || candidate === "") {
+        return false;
+      }
+
+      const candidateNumber = parseNumericValue(candidate);
+
+      if (candidateNumber !== null) {
+        const accountIdNumber = parseNumericValue(account.id);
+        const accountNumber = parseNumericValue(account.acc_id);
+
+        if (
+          (accountIdNumber !== null && candidateNumber === accountIdNumber) ||
+          (accountNumber !== null && candidateNumber === accountNumber)
+        ) {
+          return true;
+        }
+      }
+
+      const candidateString = normalizeStringValue(candidate);
+      const accountNumberString = normalizeStringValue(account.acc_id);
+
+      return (
+        candidateString !== null &&
+        accountNumberString !== null &&
+        candidateString === accountNumberString
+      );
+    }),
+  );
+};
+
 export interface AdjustmentVoucherWithDetails {
   voucher: Voucher | null;
   details: VoucherDetail[];
@@ -188,18 +246,21 @@ class AdjustmentVoucherFormDataService extends HttpService<any> {
     vouchId: number,
   ): VoucherDetail[] {
     return detailsData.map((detail: any) => {
-      const account = formData.accounts.find(
-        (acc: any) => acc.id === (detail.acc_id || detail.acc),
-      );
+      const account = resolveDetailAccount(detail, formData.accounts);
+      const resolvedAccountId =
+        account?.id ??
+        parseNavId(detail.acc_id) ??
+        parseNavId(detail.acc) ??
+        0;
 
       const costId = detail.cost_id || detail.cost || undefined;
 
       return {
         id: detail.id || 0,
         vouch_id: vouchId || 0,
-        acc_id: detail.acc_id || detail.acc || 0,
-        acc_code: (account as any)?.acc_code || detail.acc_code || "",
-        acc_name: (account as any)?.acc_name || detail.acc_name || "",
+        acc_id: resolvedAccountId,
+        acc_code: account?.acc_code || detail.acc_code || "",
+        acc_name: account?.acc_name || detail.acc_name || "",
         cost_id: costId ? Number(costId) : undefined,
         debit: parseFloat(detail.debit) || 0,
         credit: parseFloat(detail.credit) || 0,
