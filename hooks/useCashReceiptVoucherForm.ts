@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-import { voucherService } from "@/services/api";
 import {
   createVoucherAction,
   updateVoucherAction,
@@ -26,6 +25,7 @@ interface UseCashReceiptVoucherFormProps {
   startInEditMode?: boolean;
   vouchType: number; // 1 للقبض، 2 للصرف
   formMode?: "new" | "edit" | "preview";
+  initialVoucherNumber?: number;
 }
 
 export const useCashReceiptVoucherForm = ({
@@ -42,6 +42,7 @@ export const useCashReceiptVoucherForm = ({
   startInEditMode = false,
   vouchType,
   formMode = "new",
+  initialVoucherNumber = 1,
 }: UseCashReceiptVoucherFormProps) => {
   const router = useRouter();
 
@@ -55,7 +56,7 @@ export const useCashReceiptVoucherForm = ({
     }
 
     return {
-      vouch_id: 0,
+      vouch_id: initialVoucherNumber,
       vouch_date: new Date().toISOString(),
       vouch_type: vouchType,
       vouch_amt: 0,
@@ -91,7 +92,6 @@ export const useCashReceiptVoucherForm = ({
   const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>([]);
   const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
 
-  const hasGeneratedVoucherNumber = useRef(false);
   const hasLoadedVoucherBoxes = useRef(false);
   const previousVouchNotesRef = useRef<string>(voucher.vouch_notes || "");
 
@@ -103,33 +103,11 @@ export const useCashReceiptVoucherForm = ({
     setCurrentTime(now.toLocaleTimeString("ar-EG"));
   }, []);
 
-  const generateNextVoucherNumber = async () => {
-    try {
-      const nextId = await voucherService.getNextNumber(vouchType);
-
-      setVoucher((prev) => ({
-        ...prev,
-        vouch_id: nextId,
-        vouch_date: new Date().toISOString(),
-        cr_date: new Date().toISOString(),
-      }));
-    } catch {
-      setVoucher((prev) => ({
-        ...prev,
-        vouch_id: 1,
-        vouch_date: new Date().toISOString(),
-        cr_date: new Date().toISOString(),
-      }));
-    }
-  };
-
   // Initialize component
   useEffect(() => {
     updateCurrentTime();
 
-    if (isNewVoucher && !hasGeneratedVoucherNumber.current) {
-      generateNextVoucherNumber();
-      hasGeneratedVoucherNumber.current = true;
+    if (isNewVoucher) {
       if (voucherBoxes.length === 0) {
         setVoucherBoxes([
           {
@@ -260,12 +238,6 @@ export const useCashReceiptVoucherForm = ({
       account: acc,
     }));
   }, [accounts]);
-
-  const updateAccountsList = (newAccount: any) => {
-    if (!accounts.find((acc) => acc.id === newAccount.id)) {
-      setAccounts([...accounts, newAccount]);
-    }
-  };
 
   const loadAccountOptions = async (search: string): Promise<any[]> => {
     try {
@@ -704,7 +676,7 @@ export const useCashReceiptVoucherForm = ({
         toast.success(result.message);
 
         const basePath =
-          vouchType === 1 ? "/forms/voucher1" : "/forms/voucher2";
+          vouchType === 1 ? "/forms/cash-receipt" : "/forms/payment-receipt";
 
         // استخدام vouch_id في URL بدلاً من id
         if (savedVouchId && Number(savedVouchId) > 0) {
@@ -818,9 +790,8 @@ export const useCashReceiptVoucherForm = ({
 
     // Functions
     updateCurrentTime,
-    updateAccountsList,
-    generateNextVoucherNumber,
     loadAccountOptions,
+
     getAccountSelectValue,
     updateVoucherBox,
     addVoucherBoxRow,

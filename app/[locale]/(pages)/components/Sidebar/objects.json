@@ -363,7 +363,7 @@
     "id": 123,
     "obj_name": "سند مقبوضات عامة",
     "obj_type": "f",
-    "obj_source": "voucher1",
+    "obj_source": "cash-receipt",
     "obj_status": 1,
     "obj_parent": 12
   },
@@ -371,7 +371,7 @@
     "id": 124,
     "obj_name": "سند مصروفات عامة",
     "obj_type": "f",
-    "obj_source": "voucher2",
+    "obj_source": "payment-receipt",
     "obj_status": 1,
     "obj_parent": 12
   },

@@ -17,8 +17,8 @@ export function getVoucherRoute(
 ): string {
   const routes: Record<number, string> = {
     0: "/forms/balance", // قيد افتتاحي
-    1: "/forms/voucher1", // سند قبض
-    2: "/forms/voucher2", // سند صرف
+    1: "/forms/cash-receipt", // سند قبض
+    2: "/forms/payment-receipt", // سند صرف
     3: "/forms/voucher", // قيد تسوية
     4: "/forms/gvoucher4", // سند قبض عميل
     5: "/forms/gvoucher5", // سند صرف عميل

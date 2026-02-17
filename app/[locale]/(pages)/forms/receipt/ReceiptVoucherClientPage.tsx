@@ -3044,7 +3044,7 @@ export default function ReceiptVoucherClientPage({
           </ModalBody>
           <ModalFooter>
             <Button
-              color="primary"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
               variant="solid"
               onPress={() => setIsNotesModalOpen(false)}
             >

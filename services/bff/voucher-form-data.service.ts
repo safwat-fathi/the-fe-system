@@ -87,8 +87,6 @@ const getBalanceVoucherFormData = cache(
       caratTypesResult,
     ] = results;
 
-    console.log("voucherStagesResult", voucherStagesResult);
-
     return {
       accounts: filterAccounts(getSettledValue(accountsResult, [])),
       costCenters: ensureArray(getSettledValue(costCentersResult, [])),
