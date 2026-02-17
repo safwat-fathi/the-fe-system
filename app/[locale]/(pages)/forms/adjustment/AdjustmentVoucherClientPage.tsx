@@ -130,6 +130,7 @@ export default function VoucherClientPage({
     handlePrint,
     isVoucherBalanced,
     totals,
+    updateVoucherType,
   } = useAdjustmentVoucherForm({
     formMode,
     initialVoucherNumber,
@@ -228,6 +229,7 @@ export default function VoucherClientPage({
           voucherTypes={initialVoucherTypes}
           costCenters={costCenters}
           handleCostCenter={handleCostCenter}
+          updateVoucherType={updateVoucherType}
           setIsNotesModalOpen={setIsNotesModalOpen}
           registerField={registerField}
           handleFieldEnter={handleFieldEnter}

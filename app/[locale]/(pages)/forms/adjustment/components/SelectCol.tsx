@@ -7,7 +7,7 @@ import type {
 } from "react-select";
 
 import AsyncCreatableSelect from "react-select/async-creatable";
-import React from "react";
+import React, { useState } from "react";
 
 // Constraint: OptionType must have a label property
 interface OptionTypeWithLabel {
@@ -50,6 +50,8 @@ function SelectCol<OptionType extends OptionTypeWithLabel>({
   onKeyDown,
   selectRef,
 }: SelectColProps<OptionType>) {
+  const [menuIsOpen, setMenuIsOpen] = useState(false);
+
   const internalLoadOptions = (
     inputValue: string,
     callback: (
@@ -89,7 +91,19 @@ function SelectCol<OptionType extends OptionTypeWithLabel>({
       menuPosition="fixed"
       placeholder={placeholder}
       value={value}
-      onKeyDown={onKeyDown}
+      onMenuOpen={() => setMenuIsOpen(true)}
+      onMenuClose={() => setMenuIsOpen(false)}
+      onKeyDown={(e) => {
+        if (menuIsOpen && e.key === "Enter") {
+          e.stopPropagation();
+
+          return;
+        }
+
+        if (onKeyDown) {
+          onKeyDown(e);
+        }
+      }}
       onChange={onChange}
       styles={{
         control: (base, _state) => ({

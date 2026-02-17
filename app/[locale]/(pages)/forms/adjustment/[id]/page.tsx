@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import VoucherClientPage from "../AdjustmentVoucherClientPage";
 import VoucherStatusCheckboxes from "../components/VoucherStatusCheckboxes";
+import { voucherStatuses, voucherTypes } from "../constants";
 
 import adjustmentVoucherFormDataService from "@/services/bff/adjustment-voucher-form-data.service";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -112,8 +113,16 @@ export default async function VoucherEditPage({
           voucherDetailsData={details}
           voucherRecordId={voucher.id}
           voucherVouchId={Number(voucher.vouch_id) || 0}
-          voucherStatuses={formData.voucherStatuses}
-          voucherTypes={formData.voucherTypes}
+          voucherStatuses={
+            formData.voucherStatuses.length > 0
+              ? formData.voucherStatuses
+              : voucherStatuses
+          }
+          voucherTypes={
+            formData.voucherTypes.length > 0
+              ? formData.voucherTypes
+              : voucherTypes
+          }
         />
       </div>
     );

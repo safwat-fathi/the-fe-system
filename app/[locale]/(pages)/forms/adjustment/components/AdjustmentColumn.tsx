@@ -79,8 +79,14 @@ const AdjustmentColumn = ({
           value={getAccountSelectValue(detail, initialAccounts)}
           onChange={(selectedOption) => {
             if (selectedOption) {
+              const selectedAccountId = Number(
+                selectedOption.account?.id ?? selectedOption.value,
+              );
+
               updateDetail(index, {
-                acc_id: selectedOption.value,
+                acc_id: Number.isFinite(selectedAccountId)
+                  ? selectedAccountId
+                  : 0,
                 acc_code: selectedOption.account.acc_code,
                 acc_name: selectedOption.account.acc_name,
               });

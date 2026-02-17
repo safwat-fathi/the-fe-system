@@ -304,9 +304,10 @@ const prepareRowsForInsertion = (
   const cloned = [...rows];
 
   if (firstEmptyIndex === -1) {
-    cloned.unshift(createEmptyRow(description));
+    // If no empty row, APPEND to the end instead of unshifting to start
+    cloned.push(createEmptyRow(description));
 
-    return { rows: cloned, targetIndex: 0 };
+    return { rows: cloned, targetIndex: cloned.length - 1 };
   }
 
   return { rows: cloned, targetIndex: firstEmptyIndex };
@@ -1026,7 +1027,7 @@ export default function useInvoiceForm({
   // barcode search logic kept here so consumer can call it. It mutates invoiceItems and items lists.
   // NOTE: This function needs to be updated to not make API calls, but will require more complex refactoring
   const handleBarcodeSearch = useCallback(
-    async (term?: string) => {
+    async (term?: string): Promise<number | undefined> => {
       const searchTerm = (term ?? searchValue).trim();
 
       if (!searchTerm || !isEditing) return;
@@ -1068,9 +1069,13 @@ export default function useInvoiceForm({
         if (shouldAppendBlankRow(updatedRows, targetIndex)) {
           setInvoiceItems((prev) => [...prev, makeEmptyRow(form.inv_notes)]);
         }
+
+        return targetIndex;
       } catch (error) {
         console.error("خطأ في البحث بالباركود:", error);
         toast.error("حدث خطأ أثناء البحث بالباركود");
+
+        return undefined;
       }
     },
     [
