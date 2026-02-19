@@ -62,12 +62,63 @@ class VoucherService extends HttpService<Voucher> {
     super("");
   }
 
+  private normalizeCompanyId(value: unknown): string | null {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return null;
+    }
+
+    return String(numeric);
+  }
+
+  private extractCompanyFromParams(params?: IParams): string | null {
+    if (!params) {
+      return null;
+    }
+
+    return (
+      this.normalizeCompanyId(params["xcom_id"]) ??
+      this.normalizeCompanyId(params["com_id"]) ??
+      this.normalizeCompanyId(params["xcomp_id"]) ??
+      this.normalizeCompanyId(params["com"])
+    );
+  }
+
+  private async resolveCompanyId(params?: IParams): Promise<string> {
+    const explicitCompanyId = this.extractCompanyFromParams(params);
+
+    if (explicitCompanyId) {
+      return explicitCompanyId;
+    }
+
+    try {
+      const branchParams = await import("@/app/actions/branch-params").then(
+        (module) => module.getBranchParams(),
+      );
+      const branchCompanyId = this.normalizeCompanyId(branchParams?.com);
+
+      if (branchCompanyId) {
+        return branchCompanyId;
+      }
+    } catch {
+      // fallback handled below
+    }
+
+    return "1";
+  }
+
   /**
    * الحصول على جميع السندات (مع pagination)
    */
   async getAll(params?: IParams) {
+    const companyId = await this.resolveCompanyId(params);
     const queryParams: any = {
-      xcom_id: "1",
+      xcom_id: companyId,
       xyear_id: "0",
       xvouch_type: params?.xvouch_type || params?.vouch_type || "0",
       xvouch_id: params?.xvouch_id || "0",
@@ -265,9 +316,13 @@ class VoucherService extends HttpService<Voucher> {
   /**
    * التحقق من وجود قيد افتتاحي (بدون cache للدقة)
    */
-  async checkExistingOpeningEntry(comId: string | number = "1") {
+  async checkExistingOpeningEntry(comId?: string | number) {
+    const explicitCompanyId = this.normalizeCompanyId(comId);
+    const resolvedComId =
+      explicitCompanyId ?? (await this.resolveCompanyId(undefined));
+
     const queryParams: any = {
-      xcom_id: String(comId),
+      xcom_id: resolvedComId,
       xyear_id: "0",
       xvouch_type: "0", // قيد افتتاحي فقط
       xvouch_id: "0",
@@ -299,7 +354,7 @@ class VoucherService extends HttpService<Voucher> {
       const openingEntry = vouchers.find((v: any) => {
         const isCorrectType = v?.vouch_type === 0 || v?.vouch_type === "0";
         const voucherCom = Number(v?.com_id ?? v?.com ?? 1);
-        const isCorrectBranch = voucherCom === Number(comId);
+        const isCorrectBranch = voucherCom === Number(resolvedComId);
 
         return isCorrectType && isCorrectBranch;
       });
@@ -318,8 +373,7 @@ class VoucherService extends HttpService<Voucher> {
     params?: IParams,
   ): Promise<Voucher | null> {
     try {
-      const branchParam =
-        params?.["xcom_id"] ?? params?.["com_id"] ?? params?.["com"] ?? "1";
+      const branchParam = await this.resolveCompanyId(params);
 
       // البحث بالـ ID يمكن أن يكون id (primary key) أو vouch_id (رقم القيد)
       const requestedId = String(id).trim();
@@ -426,12 +480,7 @@ class VoucherService extends HttpService<Voucher> {
    * ملاحظة: vouchers_dtl_list يستخدم xvouch_id (id من جدول vouchers) و xcom_id
    */
   async getDetails(voucherId: number, params?: IParams) {
-    const branchParam =
-      params?.["xcom_id"] ??
-      params?.["com_id"] ??
-      params?.["com"] ??
-      params?.["xcomp_id"] ??
-      "1";
+    const branchParam = await this.resolveCompanyId(params);
 
     // إزالة com من البارامترات لعدم إرساله في الطلب
 
@@ -526,12 +575,7 @@ class VoucherService extends HttpService<Voucher> {
    * ملاحظة: vouchers_box_list يستخدم xvouch_id (id من جدول vouchers) و xcom_id
    */
   async getBoxes(vouchId: number, params?: IParams) {
-    const branchParam =
-      params?.["xcom_id"] ??
-      params?.["com_id"] ??
-      params?.["com"] ??
-      params?.["xcomp_id"] ??
-      "1";
+    const branchParam = await this.resolveCompanyId(params);
 
     // إزالة com من البارامترات لعدم إرساله في الطلب
 
@@ -590,8 +634,10 @@ class VoucherService extends HttpService<Voucher> {
       let queryParams: IParams = {};
 
       if (options?.useBranchParams !== false) {
+        const companyId = await this.resolveCompanyId(params);
+
         queryParams = {
-          com: params?.com || params?.xcom_id || "1",
+          com: companyId,
           year: params?.year || params?.xyear_id || "1",
         };
       } else {
@@ -636,10 +682,11 @@ class VoucherService extends HttpService<Voucher> {
    * الحصول على أنواع السندات
    */
   async getVoucherTypes(params?: IParams) {
-    const com = params?.com || params?.xcom_id || "1";
+    const com = await this.resolveCompanyId(params);
     const year = params?.year || params?.xyear_id || "1";
+    const queryParams: IParams = { ...(params || {}), com, year };
 
-    return this._getListData("getVoucherTypeList", params, {
+    return this._getListData("getVoucherTypeList", queryParams, {
       useBranchParams: true,
       logLabel: "Voucher types",
       cache: "force-cache",
@@ -654,18 +701,23 @@ class VoucherService extends HttpService<Voucher> {
    * الحصول على حالات السندات
    */
   async getVoucherStages(params?: IParams) {
-    const com = params?.com || params?.xcom_id || "1";
+    const com = await this.resolveCompanyId(params);
     const year = params?.year || params?.xyear_id || "1";
+    const queryParams: IParams = { ...(params || {}), com, year };
 
-    const response = await this._getListData("getVoucherStageList", params, {
-      useBranchParams: true,
-      logLabel: "Voucher stages",
-      cache: "force-cache",
-      next: {
-        revalidate: 600, // Cache for 10 minutes (voucher stages don't change often)
-        tags: ["voucher-stages", `voucher-stages-${com}-${year}`],
+    const response = await this._getListData(
+      "getVoucherStageList",
+      queryParams,
+      {
+        useBranchParams: true,
+        logLabel: "Voucher stages",
+        cache: "force-cache",
+        next: {
+          revalidate: 600, // Cache for 10 minutes (voucher stages don't change often)
+          tags: ["voucher-stages", `voucher-stages-${com}-${year}`],
+        },
       },
-    });
+    );
 
     return response;
   }
@@ -765,12 +817,7 @@ class VoucherService extends HttpService<Voucher> {
    * ملاحظة: gvouchers_dtl_list يستخدم xvouch_id (id من جدول vouchers) و xcom_id
    */
   async getGoldDetails(vouchId: number, params?: IParams) {
-    const branchParam =
-      params?.["xcom_id"] ??
-      params?.["com_id"] ??
-      params?.["com"] ??
-      params?.["xcomp_id"] ??
-      "1";
+    const branchParam = await this.resolveCompanyId(params);
 
     // إزالة com من البارامترات لعدم إرساله في الطلب
 
@@ -846,10 +893,10 @@ class VoucherService extends HttpService<Voucher> {
    * حذف تفصيل سند ذهبي
    */
   async deleteGoldDetail(id: number, params?: IParams) {
-    // إضافة com إذا كان مطلوباً
+    const companyId = await this.resolveCompanyId(params);
     const queryParams: IParams = {
       ...params,
-      com: params?.com || params?.xcom_id || "1",
+      com: companyId,
     };
 
     return this.delete(`api_delete_gvouch_dtl/${id}`, queryParams);

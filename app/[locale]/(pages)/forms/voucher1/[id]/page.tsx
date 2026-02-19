@@ -10,6 +10,7 @@ import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
 import Breadcrumb from "@/components/Breadcrumb";
+import { getBranchParams } from "@/app/actions/branch-params";
 
 export const metadata: Metadata = {
   title: "عرض سند قبض - NafeesWeb",
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 // Cache the voucher lookup for better performance - استخدام getVoucherById مباشرة (مثل الفواتير)
-const getVoucherById = cache(async (voucherId: number) => {
+const getVoucherById = cache(async (voucherId: number, companyId: string) => {
   try {
     if (!voucherId || isNaN(voucherId)) {
       return null;
@@ -26,6 +27,7 @@ const getVoucherById = cache(async (voucherId: number) => {
     // ✅ استخدام getVoucherById مباشرة (أسرع من getAll)
     const voucher = await voucherService.getVoucherById(voucherId, {
       xvouch_type: "1", // سند القبض فقط
+      xcom_id: companyId,
     });
 
     return voucher || null;
@@ -38,13 +40,17 @@ const getVoucherById = cache(async (voucherId: number) => {
 
 // Cache the voucher details for better performance
 const getVoucherDetails = cache(
-  async (voucherId: number, branchId?: number | string) => {
+  async (voucherId: number, branchId: number | string) => {
     try {
       if (!voucherId || isNaN(voucherId)) {
         return [];
       }
 
-      const parsedBranchId = Number(branchId ?? 1) || 1;
+      const parsedBranchId = Number(branchId);
+
+      if (!Number.isFinite(parsedBranchId) || parsedBranchId <= 0) {
+        return [];
+      }
 
       const detailsResponse = await voucherService.getDetails(voucherId, {
         xcom_id: parsedBranchId,
@@ -65,13 +71,17 @@ const getVoucherDetails = cache(
 
 // Cache the voucher boxes for better performance
 const getVoucherBoxes = cache(
-  async (voucherId: number, branchId?: number | string) => {
+  async (voucherId: number, branchId: number | string) => {
     try {
       if (!voucherId || isNaN(voucherId)) {
         return [];
       }
 
-      const parsedBranchId = Number(branchId ?? 1) || 1;
+      const parsedBranchId = Number(branchId);
+
+      if (!Number.isFinite(parsedBranchId) || parsedBranchId <= 0) {
+        return [];
+      }
 
       const boxesResponse = await voucherService.getBoxes(voucherId, {
         xcom_id: parsedBranchId,
@@ -111,6 +121,12 @@ export default async function ReceiptVoucherEditPage({
   const startInEditMode = mode === "edit";
 
   const voucherId = parseInt(id);
+  const branchParams = await getBranchParams();
+  const parsedCompanyId = Number(branchParams.com);
+  const companyId =
+    Number.isFinite(parsedCompanyId) && parsedCompanyId > 0
+      ? String(parsedCompanyId)
+      : "1";
 
   // التحقق من صحة المعرف
   if (isNaN(voucherId) || voucherId <= 0) {
@@ -119,7 +135,7 @@ export default async function ReceiptVoucherEditPage({
 
   // جلب البيانات بشكل متوازي
   const [targetVoucher, formData] = await Promise.all([
-    getVoucherById(voucherId),
+    getVoucherById(voucherId, companyId),
     voucherFormDataService.getVoucherFormData(),
   ]);
 
@@ -128,7 +144,11 @@ export default async function ReceiptVoucherEditPage({
   }
 
   // جلب تفاصيل القيد والصناديق بشكل متوازي
-  const branchId = Number(targetVoucher.com_id ?? targetVoucher.com ?? 1) || 1;
+  const voucherCompanyId = Number(targetVoucher.com_id ?? targetVoucher.com);
+  const branchId =
+    Number.isFinite(voucherCompanyId) && voucherCompanyId > 0
+      ? String(voucherCompanyId)
+      : companyId;
   // استخدام id (primary key) لجلب التفاصيل والصناديق
   // ملاحظة: getBoxes في voucherService يتوقع id من جدول vouchers وليس vouch_id
   const voucherIdValue = targetVoucher.id;

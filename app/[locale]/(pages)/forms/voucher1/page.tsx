@@ -8,6 +8,7 @@ import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import Breadcrumb from "@/components/Breadcrumb";
 import { redirectToLogin } from "@/app/actions/auth";
+import { getBranchParams } from "@/app/actions/branch-params";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export const metadata: Metadata = {
@@ -19,9 +20,10 @@ const getVoucherFormData = voucherFormDataService.getVoucherFormData;
 
 // جلب سند قبض للحصول على navigationInfo
 // نحاول جلب أي سند قبض للحصول على معلومات التنقل
-const getReceiptVoucherForNavigation = cache(async () => {
+const getReceiptVoucherForNavigation = cache(async (companyId: string) => {
   try {
     const vouchersResponse = await voucherService.getAll({
+      xcom_id: companyId,
       xvouch_type: "1", // سند القبض فقط
       page: "1", // ✅ جلب الصفحة الأولى فقط
     });
@@ -52,9 +54,16 @@ export default async function ReceiptVoucherPage() {
   const t = await getTranslations("forms.cashReceiptVoucher");
 
   try {
+    const branchParams = await getBranchParams();
+    const parsedCompanyId = Number(branchParams.com);
+    const companyId =
+      Number.isFinite(parsedCompanyId) && parsedCompanyId > 0
+        ? String(parsedCompanyId)
+        : "1";
+
     const [formData, voucherForNav] = await Promise.all([
       getVoucherFormData(),
-      getReceiptVoucherForNavigation(),
+      getReceiptVoucherForNavigation(companyId),
     ]);
 
     // بناء navigationInfo من آخر سند قبض
