@@ -58,16 +58,12 @@ export function useBalanceKeyboardNavigation({
         return true;
       }
 
-      // Ignore select button itself when Enter is pressed (don't open it)
-      const selectButton = target.closest('[role="combobox"]');
-
-      if (selectButton) {
-        const isExpanded =
-          selectButton.getAttribute("aria-expanded") === "true";
-
-        if (!isExpanded) {
-          return true; // Ignore select on Enter if closed
-        }
+      // Ignore if React Select menu is open
+      if (
+        target.getAttribute("aria-expanded") === "true" ||
+        target.closest('[aria-expanded="true"]')
+      ) {
+        return true;
       }
 
       return false;
@@ -83,24 +79,6 @@ export function useBalanceKeyboardNavigation({
         if (
           element.hasAttribute("data-skip-key-as-tab") ||
           element.closest("[data-skip-key-as-tab='true']")
-        ) {
-          return false;
-        }
-      }
-
-      // Skip Cost Center select from navigation
-      const selectButton = element.closest('[role="combobox"]');
-
-      if (selectButton) {
-        const selectContainer = selectButton.closest(
-          '[class*="flex flex-col gap-1"]',
-        );
-
-        if (
-          selectContainer &&
-          selectContainer
-            .querySelector("label")
-            ?.textContent?.includes("مركز التكلفة")
         ) {
           return false;
         }
