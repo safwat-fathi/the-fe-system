@@ -742,12 +742,32 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
       setInvoiceItems(updated);
     };
 
-    const { setInputRef, handleKeyDown, focusFirstInRow } =
+    const { setInputRef, handleKeyDown, focusFirstInRow, focusNextField } =
       useEnterKeyNavigation<InvoiceItemRow>({
         rows: invoiceItems,
         rowHasValue: rowHasItem,
         onAddRow: addRow,
       });
+
+    const focusNextAfterItemSelection = useCallback(
+      (rowIndex: number, colIndex: number, tries = 6) => {
+        const attemptFocus = (remaining: number) => {
+          if (focusNextField(rowIndex, colIndex)) return;
+          if (remaining <= 0) return;
+
+          if (typeof requestAnimationFrame !== "undefined") {
+            requestAnimationFrame(() => attemptFocus(remaining - 1));
+          } else {
+            setTimeout(() => attemptFocus(remaining - 1), 16);
+          }
+        };
+
+        attemptFocus(tries);
+        setTimeout(() => focusNextField(rowIndex, colIndex), 0);
+        setTimeout(() => focusNextField(rowIndex, colIndex), 40);
+      },
+      [focusNextField],
+    );
 
     useImperativeHandle(
       ref,
@@ -897,8 +917,12 @@ const InvoiceItemTable = forwardRef<InvoiceItemTableHandle, Props>(
                 const selectedOption = resolveSelectedOption(
                   item as InvoiceItemRowWithLegacy,
                 );
-                const handleSelectChange = (option: ItemOption | null) =>
+                const handleSelectChange = (option: ItemOption | null) => {
                   handleSelectItemChange(index, option);
+                  if (!option) return;
+
+                  focusNextAfterItemSelection(index, itemSelectCol);
+                };
                 const itemSelectRef = (
                   instance: SelectInstance<ItemOption> | null,
                 ) =>

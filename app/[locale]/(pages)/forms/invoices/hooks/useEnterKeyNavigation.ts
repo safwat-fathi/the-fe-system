@@ -26,6 +26,7 @@ interface UseEnterKeyNavigationResult {
     options?: HandleKeyDownOptions,
   ) => void;
   focusFirstInRow: (rowIndex: number) => boolean;
+  focusNextField: (rowIndex: number, colIndex: number) => boolean;
   focusNode: (node: NullableInput) => void;
 }
 
@@ -216,27 +217,63 @@ export default function useEnterKeyNavigation<Row>(
     }
   };
 
-  const focusFirstInRow = useCallback((rowIndex: number) => {
-    // ✅ محاولة 1: البحث عن combobox في حقل الحساب أولاً
-    const accountCombobox = findComboboxByCol(rowIndex, 0);
+  const focusCell = useCallback(
+    (rowIndex: number, colIndex: number) => {
+      const rowRefs = inputRefs.current[rowIndex] || [];
+      const targetInRow = rowRefs[colIndex];
 
-    if (accountCombobox) {
-      // ✅ إضافة tabIndex
-      if (
-        !accountCombobox.hasAttribute("tabindex") ||
-        accountCombobox.getAttribute("tabindex") === "-1"
-      ) {
-        accountCombobox.setAttribute("tabindex", "0");
+      if (targetInRow) {
+        focusNode(targetInRow);
+
+        return true;
       }
-      accountCombobox.focus();
 
-      return true;
-    }
+      const combobox = findComboboxByCol(rowIndex, colIndex);
+
+      if (combobox) {
+        if (
+          !combobox.hasAttribute("tabindex") ||
+          combobox.getAttribute("tabindex") === "-1"
+        ) {
+          combobox.setAttribute("tabindex", "0");
+        }
+        combobox.focus();
+
+        return true;
+      }
+
+      const inputByDataCol = document.querySelector(
+        `input[data-row="${rowIndex}"][data-col="${colIndex}"]`,
+      ) as HTMLInputElement | null;
+
+      if (inputByDataCol) {
+        inputByDataCol.focus();
+
+        return true;
+      }
+
+      const selectByDataCol = document.querySelector(
+        `select[data-row="${rowIndex}"][data-col="${colIndex}"]`,
+      ) as HTMLSelectElement | null;
+
+      if (selectByDataCol) {
+        selectByDataCol.focus();
+
+        return true;
+      }
+
+      return false;
+    },
+    [focusNode],
+  );
+
+  const focusFirstInRow = useCallback((rowIndex: number) => {
+    if (focusCell(rowIndex, 0)) return true;
 
     const rowRefs = inputRefs.current[rowIndex] || [];
 
     // ✅ محاولة 2: استخدام refs
-    for (let i = 0; i < rowRefs.length; i += 1) {
+    for (let i = 1; i < rowRefs.length; i += 1) {
       const el = rowRefs[i];
 
       if (el) {
@@ -246,19 +283,13 @@ export default function useEnterKeyNavigation<Row>(
       }
     }
 
-    // ✅ محاولة 3: البحث باستخدام data-col
-    const firstInput = document.querySelector(
-      `input[data-row="${rowIndex}"][data-col="0"]`,
-    ) as HTMLInputElement;
-
-    if (firstInput) {
-      firstInput.focus();
-
-      return true;
-    }
-
     return false;
-  }, []);
+  }, [focusCell]);
+
+  const focusNextField = useCallback(
+    (rowIndex: number, colIndex: number) => focusCell(rowIndex, colIndex + 1),
+    [focusCell],
+  );
 
   const focusFirstInRowAsync = useCallback(
     (rowIndex: number, tries = 6) => {
@@ -734,6 +765,7 @@ export default function useEnterKeyNavigation<Row>(
     setInputRef,
     handleKeyDown,
     focusFirstInRow,
+    focusNextField,
     focusNode,
   };
 }
