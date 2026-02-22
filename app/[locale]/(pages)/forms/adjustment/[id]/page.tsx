@@ -35,9 +35,9 @@ export default async function VoucherEditPage({
     const formMode = mode === "edit" ? "edit" : "preview";
     const startInEditMode = mode === "edit";
 
-    const voucherId = parseInt(id);
+    const vouchId = parseInt(id);
 
-    if (isNaN(voucherId) || voucherId <= 0) {
+    if (isNaN(vouchId) || vouchId <= 0) {
       notFound();
     }
     const formData =
@@ -45,7 +45,7 @@ export default async function VoucherEditPage({
 
     const voucherData =
       await adjustmentVoucherFormDataService.getAdjustmentVoucherWithDetails(
-        voucherId,
+        vouchId,
         formData,
       );
 

@@ -165,11 +165,11 @@ class AdjustmentVoucherFormDataService extends HttpService<any> {
    * جلب قيد تسوية محدد مع تفاصيله ومعلومات التنقل
    */
   async getAdjustmentVoucherWithDetails(
-    voucherId: number,
+    vouchId: number,
     formData: AdjustmentVoucherFormData,
   ): Promise<AdjustmentVoucherWithDetails> {
     try {
-      if (!voucherId || isNaN(voucherId)) {
+      if (!vouchId || isNaN(vouchId)) {
         return this._getEmptyVoucherResponse();
       }
 
@@ -185,7 +185,7 @@ class AdjustmentVoucherFormDataService extends HttpService<any> {
 
       const vouchers = ensureArray<any>(vouchersResponse.data);
       const foundVoucher = vouchers.find(
-        (v) => v.id === voucherId || v.vouch_id === voucherId,
+        (v) => Number(v?.vouch_id) === Number(vouchId),
       );
 
       if (!foundVoucher) {
@@ -196,7 +196,7 @@ class AdjustmentVoucherFormDataService extends HttpService<any> {
       const branchId =
         Number(foundVoucher.com_id ?? foundVoucher.com ?? 1) || 1;
       const detailsResponse = await voucherService.getDetails(
-        foundVoucher.id || voucherId,
+        foundVoucher.id || vouchId,
         {
           xcom_id: branchId,
         },

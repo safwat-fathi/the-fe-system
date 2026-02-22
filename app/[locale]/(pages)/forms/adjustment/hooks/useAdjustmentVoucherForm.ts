@@ -442,22 +442,57 @@ export function useAdjustmentVoucherForm({
    * Search for a voucher by ID and navigate to it.
    */
   const handleSearch = useCallback(async () => {
-    if (!searchTerm) return;
-    try {
-      const response = await adjustmentVoucherService.getById(searchTerm);
+    const normalizedSearchTerm = String(searchTerm ?? "").trim();
 
-      if (
-        response.success &&
-        response.data &&
-        response.data.results.length > 0
-      ) {
-        // Optimistic navigation: valid voucher found
-        router.push(`/forms/adjustment/${response.data.results[0].vouch_id}`);
+    if (!normalizedSearchTerm) return;
+
+    const searchedNumber = Number(normalizedSearchTerm);
+
+    if (!Number.isFinite(searchedNumber) || searchedNumber <= 0) {
+      toast.error(`لم يتم العثور على قيد تسوية برقم: ${normalizedSearchTerm}`);
+
+      return;
+    }
+
+    try {
+      const response = await adjustmentVoucherService.getById(
+        normalizedSearchTerm,
+      );
+
+      const results = Array.isArray(response?.data?.results)
+        ? response.data.results
+        : [];
+
+      if (response.success && results.length > 0) {
+        const targetVoucher = results.find((voucherResult) => {
+          return Number(voucherResult?.vouch_id) === searchedNumber;
+        });
+
+        if (!targetVoucher) {
+          toast.error(
+            `لم يتم العثور على قيد تسوية برقم: ${normalizedSearchTerm}`,
+          );
+
+          return;
+        }
+
+        const candidateVouchId = Number(targetVoucher.vouch_id);
+        const resolvedVouchId = candidateVouchId;
+
+        if (!Number.isFinite(resolvedVouchId) || resolvedVouchId <= 0) {
+          toast.error(
+            `لم يتم العثور على قيد تسوية برقم: ${normalizedSearchTerm}`,
+          );
+
+          return;
+        }
+
+        router.push(`/forms/adjustment/${resolvedVouchId}`);
 
         return;
       }
 
-      toast.error(`لم يتم العثور على قيد تسوية برقم: ${searchTerm}`);
+      toast.error(`لم يتم العثور على قيد تسوية برقم: ${normalizedSearchTerm}`);
     } catch (error) {
       await redirectToLogin();
       console.error("Search error:", error);
