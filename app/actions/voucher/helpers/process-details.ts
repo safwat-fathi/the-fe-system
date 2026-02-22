@@ -10,6 +10,7 @@ import { voucherService } from "@/services/api";
 import { parseNumber } from "@/utilities/voucherForm";
 
 const NUMERIC_TOLERANCE = 0.01;
+const MISSING_COST_CENTER_MESSAGE = "يرجى اختيار مركز التكلفة قبل الحفظ.";
 
 export interface NormalizedDetail {
   payload: any;
@@ -63,11 +64,31 @@ const collectSettledErrors = (
       }
     });
 
+const normalizeDetailApiErrorMessage = (rawMessage?: string): string => {
+  if (!rawMessage || typeof rawMessage !== "string") {
+    return "خطأ غير معروف";
+  }
+
+  const lowerMessage = rawMessage.toLowerCase();
+  const hasCostKey = lowerMessage.includes('"cost"') || lowerMessage.includes("cost");
+  const hasRequiredHint =
+    lowerMessage.includes("this field is required") ||
+    lowerMessage.includes("field is required");
+
+  if (hasCostKey && hasRequiredHint) {
+    return MISSING_COST_CENTER_MESSAGE;
+  }
+
+  return rawMessage;
+};
+
 function sanitizeDetailData(
   detail: VoucherDetailData,
   voucherId: number,
   currentDate: string,
   currentUsername: string | null,
+  companyId: number,
+  year: number,
   isUpdate: boolean,
 ): NormalizedDetail | null {
   if (!detail.acc_id || detail.acc_id === 0) {
@@ -116,8 +137,8 @@ function sanitizeDetailData(
     g_debit_base: parseFloat(gDebitBaseValue.toFixed(2)),
     g_credit_base: parseFloat(gCreditBaseValue.toFixed(2)),
     vouch_notes: detail.vouch_notes || "",
-    com: 1,
-    year: 1,
+    com: companyId,
+    year,
   };
 
   if (isUpdate) {
@@ -226,6 +247,8 @@ export async function processVoucherDetails(
   currentDate: string,
   currentUsername: string | null,
   voucherType: number,
+  companyId: number,
+  year: number,
 ): Promise<{
   success: boolean;
   error?: string;
@@ -233,7 +256,15 @@ export async function processVoucherDetails(
 }> {
   const normalizedDetails = details
     .map((detail) =>
-      sanitizeDetailData(detail, masterId, currentDate, currentUsername, false),
+      sanitizeDetailData(
+        detail,
+        masterId,
+        currentDate,
+        currentUsername,
+        companyId,
+        year,
+        false,
+      ),
     )
     .filter((detail): detail is NormalizedDetail => detail !== null);
 
@@ -255,8 +286,12 @@ export async function processVoucherDetails(
     normalizedDetails.map((detail) =>
       voucherService.createDetail(detail.payload).then((response) => {
         if (!response.success) {
+          const normalizedMessage = normalizeDetailApiErrorMessage(
+            response.message,
+          );
+
           throw new Error(
-            response.message ||
+            normalizedMessage ||
               `فشل حفظ التفصيل للحساب ${detail.payload?.acc ?? ""}`,
           );
         }
@@ -289,6 +324,7 @@ export async function updateVoucherDetails(
   currentUsername: string | null,
   branchId: number = 1,
   voucherType: number,
+  year: number,
 ): Promise<{
   success: boolean;
   error?: string;
@@ -358,6 +394,8 @@ export async function updateVoucherDetails(
         realVoucherId,
         currentDate,
         currentUsername,
+        branchId,
+        year,
         true,
       ),
     )
@@ -382,8 +420,12 @@ export async function updateVoucherDetails(
         .updateDetail(detail.id!, detail.payload)
         .then((response) => {
           if (!response.success) {
+            const normalizedMessage = normalizeDetailApiErrorMessage(
+              response.message,
+            );
+
             throw new Error(
-              response.message ||
+              normalizedMessage ||
                 `فشل تعديل التفصيل للحساب ${detail.payload?.acc ?? ""}`,
             );
           }
@@ -397,8 +439,12 @@ export async function updateVoucherDetails(
     .map((detail) =>
       voucherService.createDetail(detail.payload).then((response) => {
         if (!response.success) {
+          const normalizedMessage = normalizeDetailApiErrorMessage(
+            response.message,
+          );
+
           throw new Error(
-            response.message ||
+            normalizedMessage ||
               `فشل إضافة التفصيل للحساب ${detail.payload?.acc ?? ""}`,
           );
         }

@@ -11,7 +11,10 @@ import type {
   GVoucherDetailData,
 } from "./helpers/types";
 
-import { getCurrentUsername } from "./helpers/common";
+import {
+  getCurrentUsername,
+  resolveVoucherBranchContextStrict,
+} from "./helpers/common";
 import { validateVoucherData } from "./helpers/validation";
 import { updateVoucherBoxes } from "./helpers/process-boxes";
 import { updateVoucherDetails } from "./helpers/process-details";
@@ -85,6 +88,7 @@ export async function updateVoucherAction(
       };
     }
 
+    const branchContext = await resolveVoucherBranchContextStrict();
     const currentUsername = await getCurrentUsername();
     const currentDate = new Date().toISOString();
 
@@ -96,6 +100,7 @@ export async function updateVoucherAction(
       realVoucherId = voucherRecordId;
       const vouchersResponse = await voucherService.getAll({
         xvouch_type: voucherData.vouch_type?.toString() || "0",
+        xcom_id: String(branchContext.com),
       });
 
       voucherRecord = vouchersResponse.data?.find(
@@ -106,6 +111,7 @@ export async function updateVoucherAction(
     } else {
       const vouchersResponse = await voucherService.getAll({
         xvouch_type: voucherData.vouch_type?.toString() || "0",
+        xcom_id: String(branchContext.com),
       });
 
       voucherRecord = vouchersResponse.data?.find(
@@ -141,8 +147,8 @@ export async function updateVoucherAction(
         voucherData.handling !== undefined && voucherData.handling !== null
           ? voucherData.handling
           : "",
-      com: 1, // رقم الفرع - مطلوب للترحيل
-      year: 1, // رقم السنة - مطلوب للترحيل
+      com: branchContext.com, // رقم الفرع - مطلوب للترحيل
+      year: branchContext.year, // رقم السنة - مطلوب للترحيل
       upd_date: currentDate,
       upd_user: currentUsername || null,
     };
@@ -218,6 +224,7 @@ export async function updateVoucherAction(
         voucherData.vouch_type,
         currentDate,
         currentUsername,
+        branchContext.com,
       );
 
       if (!boxesResult.success) {
@@ -229,9 +236,7 @@ export async function updateVoucherAction(
     }
 
     // تحديث التفاصيل
-    const branchId = voucherRecord
-      ? Number(voucherRecord.com_id ?? voucherRecord.com ?? 1) || 1
-      : 1;
+    const branchId = branchContext.com;
     const detailsResult = await updateVoucherDetails(
       realVoucherId,
       details,
@@ -240,6 +245,7 @@ export async function updateVoucherAction(
       currentUsername,
       branchId,
       voucherData.vouch_type,
+      branchContext.year,
     );
 
     if (!detailsResult.success) {
@@ -256,6 +262,7 @@ export async function updateVoucherAction(
       voucherData.vouch_type,
       currentDate,
       currentUsername,
+      branchContext.com,
       deletedGoldDetailIds,
     );
 
@@ -446,8 +453,8 @@ export async function updateVoucherAction(
           vouch_notes: voucherData.vouch_notes || "",
           details: glDetails,
           voucherBoxes: voucherBoxes, // إضافة الصناديق للترحيل
-          com: 1,
-          year: 1,
+          com: branchContext.com,
+          year: branchContext.year,
           cust_id: voucherData.cust_id || null,
         });
 

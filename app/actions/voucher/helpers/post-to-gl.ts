@@ -111,7 +111,7 @@ export async function postVoucherToGL(
       // جلب جميع القيود من نفس النوع ثم التصفية محلياً
       // نستخدم skipCache=true لضمان جلب أحدث البيانات (بما فيها القيود الجديدة)
       const byTypeResponse = await glTransactionService.getByType(vouch_type, {
-        xcom_id: "1",
+        xcom_id: String(com),
         xyear_id: "0",
         skipCache: true,
       });
@@ -133,7 +133,7 @@ export async function postVoucherToGL(
             const deleteResults = await Promise.allSettled(
               toDelete.map((id) =>
                 glTransactionService.deleteTransaction(id, {
-                  xcom_id: "1",
+                  xcom_id: String(com),
                   xyear_id: "0",
                   xtrans_type: String(vouch_type),
                   xtrans_id: String(transId),

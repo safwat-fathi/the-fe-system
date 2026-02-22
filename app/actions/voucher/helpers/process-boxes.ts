@@ -58,6 +58,7 @@ export async function processVoucherBoxes(
   vouchType: number,
   currentDate: string,
   currentUsername: string | null,
+  companyId: number,
 ): Promise<{ success: boolean; error?: string }> {
   if (!requiresBoxes(vouchType) || !voucherBoxes || voucherBoxes.length === 0) {
     return { success: true };
@@ -74,7 +75,7 @@ export async function processVoucherBoxes(
         vouch_amt: box.amount.toString(),
         vouch_base_amt: box.amount.toString(),
         box_note: box.vouch_notes || "",
-        com: 1,
+        com: companyId,
         cur: 1,
         change: "1.00000",
         vouch_status: 1,
@@ -133,6 +134,7 @@ export async function updateVoucherBoxes(
   vouchType: number,
   currentDate: string,
   currentUsername: string | null,
+  companyId: number,
 ): Promise<{ success: boolean; error?: string }> {
   // حذف الصناديق المحذوفة
   if (deletedBoxIds.length > 0) {
@@ -223,7 +225,7 @@ export async function updateVoucherBoxes(
         vouch_amt: box.amount.toString(),
         vouch_base_amt: box.amount.toString(),
         box_note: box.vouch_notes || "",
-        com: 1,
+        com: companyId,
         cur: 1,
         change: "1.00000",
         vouch_status: 1,

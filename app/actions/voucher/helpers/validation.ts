@@ -115,6 +115,20 @@ export function validateVoucherData(
     };
   }
 
+  const hasMissingCostCenter = validDetails.some(
+    (detail) =>
+      detail.cost_id === undefined ||
+      detail.cost_id === null ||
+      Number(detail.cost_id) <= 0,
+  );
+
+  if (hasMissingCostCenter) {
+    return {
+      isValid: false,
+      error: "يرجى اختيار مركز التكلفة قبل الحفظ.",
+    };
+  }
+
   // التحقق من التوازن
   const balanceValidation = validateVoucherBalance(
     validDetails as any[],
