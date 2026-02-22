@@ -22,13 +22,49 @@ class GLTransactionService extends HttpService<GLTransaction> {
     super("");
   }
 
+  private normalizeCompanyId(value: unknown): string | null {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    const numeric = Number(value);
+
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+      return null;
+    }
+
+    return String(numeric);
+  }
+
+  private async resolveCompanyId(
+    params?: Partial<GetGLTransactionsParams>,
+  ): Promise<string> {
+    const explicitCompanyId = this.normalizeCompanyId(params?.xcom_id);
+
+    if (explicitCompanyId) {
+      return explicitCompanyId;
+    }
+
+    const activeCompanyId = await this._getCompanyId();
+    const normalizedActiveCompanyId = this.normalizeCompanyId(activeCompanyId);
+
+    if (normalizedActiveCompanyId) {
+      return normalizedActiveCompanyId;
+    }
+
+    return "1";
+  }
+
   /**
    * إعداد جميع الـ params المطلوبة للـ API
    * دالة واحدة بسيطة وذكية تضمن إرسال جميع الـ params دائماً
    */
-  private buildQueryParams(params?: Partial<GetGLTransactionsParams>): any {
+  private buildQueryParams(
+    params: Partial<GetGLTransactionsParams> | undefined,
+    companyId: string,
+  ): any {
     return {
-      xcom_id: String(params?.xcom_id || "1"),
+      xcom_id: companyId,
       xyear_id: String(params?.xyear_id || "0"),
       xtrans_type: String(params?.xtrans_type || params?.trans_type || "0"),
       xtrans_id: String(params?.xtrans_id || params?.trans_id || "0"),
@@ -45,7 +81,8 @@ class GLTransactionService extends HttpService<GLTransaction> {
    * الحصول على جميع القيود المحاسبية (مع pagination)
    */
   async getAll(params?: GetGLTransactionsParams) {
-    const queryParams = this.buildQueryParams(params);
+    const companyId = await this.resolveCompanyId(params);
+    const queryParams = this.buildQueryParams(params, companyId);
     const skipCache = params?.skipCache || false;
 
     try {
@@ -135,13 +172,16 @@ class GLTransactionService extends HttpService<GLTransaction> {
     params?: Omit<GetGLTransactionsParams, "xtrans_id" | "xtrans_type">,
     skipCache: boolean = false,
   ) {
+    const companyId = await this.resolveCompanyId(params);
+
     if (skipCache) {
       // استخدام buildQueryParams لضمان إرسال جميع الـ params
       const queryParams = this.buildQueryParams({
-        ...params,
+        ...(params || {}),
+        xcom_id: companyId,
         xtrans_id: String(transId),
         xtrans_type: String(transType),
-      });
+      }, companyId);
 
       try {
         const response = await this.getPaginated<GLTransaction>(
@@ -203,7 +243,8 @@ class GLTransactionService extends HttpService<GLTransaction> {
     }
     
     return this.getAll({
-      ...params,
+      ...(params || {}),
+      xcom_id: companyId,
       xtrans_id: String(transId),
       xtrans_type: String(transType),
     });
@@ -283,8 +324,12 @@ class GLTransactionService extends HttpService<GLTransaction> {
     id: number,
     params?: Partial<GetGLTransactionsParams>,
   ) {
+    const companyId = await this.resolveCompanyId(params);
     // إرسال جميع الـ params المطلوبة مع طلب الحذف
-    const queryParams = this.buildQueryParams(params);
+    const queryParams = this.buildQueryParams({
+      ...(params || {}),
+      xcom_id: companyId,
+    }, companyId);
     
     const result = await this.delete(`api_delete_gl_transaction/${id}`, queryParams);
 
@@ -306,9 +351,11 @@ class GLTransactionService extends HttpService<GLTransaction> {
     failedIds?: number[];
   }> {
     try {
+      const companyId = await this.resolveCompanyId();
+
       // أولاً: جلب جميع القيود مع skipCache لضمان أحدث البيانات
       const allTransactionsResponse = await this.getAll({
-        xcom_id: "1",
+        xcom_id: companyId,
         xyear_id: "0",
         xtrans_type: "0",
         xtrans_id: "0",
@@ -345,7 +392,7 @@ class GLTransactionService extends HttpService<GLTransaction> {
 
         for (let page = 1; page <= totalPages; page++) {
           const pageResponse = await this.getAll({
-            xcom_id: "1",
+            xcom_id: companyId,
             xyear_id: "0",
             xtrans_type: "0",
             xtrans_id: "0",
@@ -406,7 +453,7 @@ class GLTransactionService extends HttpService<GLTransaction> {
             const transType = transaction?.trans_type ? String(transaction.trans_type) : "0";
 
             const response = await this.deleteTransaction(id, {
-              xcom_id: "1",
+              xcom_id: companyId,
               xyear_id: "0",
               xtrans_type: transType,
               xtrans_id: transId,
@@ -501,4 +548,3 @@ class GLTransactionService extends HttpService<GLTransaction> {
 }
 
 export default new GLTransactionService();
-
