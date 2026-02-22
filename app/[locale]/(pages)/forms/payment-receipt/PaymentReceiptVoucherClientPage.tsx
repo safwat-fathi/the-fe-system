@@ -9,7 +9,7 @@ import type {
 } from "@/types/voucher-form";
 import type { Voucher, VoucherBox, VoucherDetail } from "@/types/voucher";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 
@@ -55,10 +55,17 @@ const GLTransactionModal = dynamic(
   () => import("@/components/gl-transaction/GLTransactionModal"),
 );
 
-import { loadBoxes } from "@/utilities/box.actions";
-import { loadCostCenters } from "@/utilities/costCenter.actions";
 import { getLocaleDir } from "@/i18n/config";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
+import { useSelectOptions } from "@/utilities/hooks/useSelectOptions";
+
+const EMPTY_NAVIGATION_INFO = {
+  next: null,
+  previous: null,
+  last: null,
+  first: null,
+  vouchersCount: null,
+};
 
 interface PaymentReceiptVoucherClientPageProps {
   accounts: Account[];
@@ -94,11 +101,11 @@ const PaymentReceiptVoucherClientPage = ({
   voucherDetailsData,
   voucherBoxes: initialVoucherBoxes = [],
 }: PaymentReceiptVoucherClientPageProps) => {
-  const boxOptions = useMemo(() => loadBoxes(boxes), [boxes]);
-  const costCenterOptions = useMemo(
-    () => loadCostCenters(costCenters),
-    [costCenters],
-  );
+  const { boxOptions, costCenterOptions } = useSelectOptions({
+    accounts,
+    boxes,
+    costCenters,
+  });
 
   const {
     isEditing,
@@ -144,17 +151,20 @@ const PaymentReceiptVoucherClientPage = ({
   const firstCashTableInputRef = useRef<HTMLInputElement | null>(null);
   const firstAccountTableInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleCashChange = (index: number, changes: Partial<VoucherBox>) => {
-    updateVoucherBoxForm(index, changes);
-  };
-  const handleDetailKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    index: number,
-    col: number,
-    options?: { isLastCol?: boolean },
-  ) => {
-    handleKeyDownTable(e, index, col, options);
-  };
+  const handleCashChange = useCallback(
+    (index: number, changes: Partial<VoucherBox>) => {
+      updateVoucherBoxForm(index, changes);
+    },
+    [updateVoucherBoxForm],
+  );
+
+  const focusFirstPaymentTableInput = useCallback(() => {
+    firstCashTableInputRef.current?.focus();
+  }, []);
+
+  const handleGLModalClose = useCallback(() => {
+    setIsGLModalOpen(false);
+  }, []);
 
   const { setInputRef: setCashInputRef, handleKeyDown: handleCashKeyDown } =
     useEnterKeyNavigation({
@@ -183,6 +193,38 @@ const PaymentReceiptVoucherClientPage = ({
       },
       onAddRow: handleAddDetail,
     });
+
+  const handleDetailKeyDown = useCallback(
+    (
+      e: React.KeyboardEvent<HTMLInputElement>,
+      index: number,
+      col: number,
+      options?: { isLastCol?: boolean },
+    ) => {
+      handleKeyDownTable(e, index, col, options);
+    },
+    [handleKeyDownTable],
+  );
+
+  const setCashInputRefWrapper = useCallback(
+    (rowIndex: number, colIndex: number) => (el: HTMLInputElement | null) => {
+      setCashInputRef(rowIndex, colIndex)(el);
+      if (rowIndex === 0 && colIndex === 0) {
+        firstCashTableInputRef.current = el;
+      }
+    },
+    [setCashInputRef],
+  );
+
+  const setAccountInputRefWrapper = useCallback(
+    (rowIndex: number, colIndex: number) => (el: HTMLInputElement | null) => {
+      setInputRef(rowIndex, colIndex)(el);
+      if (rowIndex === 0 && colIndex === 0) {
+        firstAccountTableInputRef.current = el;
+      }
+    },
+    [setInputRef],
+  );
 
   const { handleKeyDown: handleKeyDownSelectors } = useKeyAsTab({
     keys: ["Enter"],
@@ -265,15 +307,7 @@ const PaymentReceiptVoucherClientPage = ({
         setVoucher={setVoucher}
         formMode={formMode}
         isPrinting={isPrinting}
-        navigationInfo={
-          navigationInfo || {
-            next: null,
-            previous: null,
-            last: null,
-            first: null,
-            vouchersCount: null,
-          }
-        }
+        navigationInfo={navigationInfo || EMPTY_NAVIGATION_INFO}
         vouchType={vouchType}
       />
       <PaymentReceiptInfo
@@ -284,9 +318,7 @@ const PaymentReceiptVoucherClientPage = ({
         handleMasterCostChange={handleMasterCostChange}
         voucherStatuses={voucherStatuses}
         setIsNotesModalOpen={setIsNotesModalOpen}
-        focusFirstPaymentTableInput={() =>
-          firstCashTableInputRef.current?.focus()
-        }
+        focusFirstPaymentTableInput={focusFirstPaymentTableInput}
         notesInputRef={notesInputRef}
         refNoInput={refNoInput}
         onKeyDownCapture={handleKeyDownSelectors}
@@ -313,12 +345,7 @@ const PaymentReceiptVoucherClientPage = ({
             costCenterOptions={costCenterOptions}
             removeCashBox={removeCashBox}
             isRemoveDisabled={voucherBoxes.length === 1}
-            setInputRef={(rowIndex, colIndex) => (el) => {
-              setCashInputRef(rowIndex, colIndex)(el);
-              if (rowIndex === 0 && colIndex === 0) {
-                firstCashTableInputRef.current = el;
-              }
-            }}
+            setInputRef={setCashInputRefWrapper}
           />
         ))}
       </SharedTable>
@@ -342,12 +369,7 @@ const PaymentReceiptVoucherClientPage = ({
             handleDetailKeyDown={handleDetailKeyDown}
             removeDetail={removeDetail}
             isRemoveDisabled={details.length === 1}
-            setInputRef={(rowIndex, colIndex) => (el) => {
-              setInputRef(rowIndex, colIndex)(el);
-              if (rowIndex === 0 && colIndex === 0) {
-                firstAccountTableInputRef.current = el;
-              }
-            }}
+            setInputRef={setAccountInputRefWrapper}
           />
         ))}
       </SharedTable>
@@ -367,7 +389,7 @@ const PaymentReceiptVoucherClientPage = ({
       />
       <GLTransactionModal
         isOpen={isGLModalOpen}
-        onClose={() => setIsGLModalOpen(false)}
+        onClose={handleGLModalClose}
         transId={voucher.id && Number(voucher.id) > 0 ? Number(voucher.id) : 0}
         transType={vouchType || 2}
         voucherTitle={

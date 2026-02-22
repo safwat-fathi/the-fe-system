@@ -8,7 +8,7 @@ import type {
   VoucherType,
 } from "@/types/voucher-form";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import dynamic from "next/dynamic";
 
@@ -29,8 +29,15 @@ import { getLocaleDir } from "@/i18n/config";
 import useEnterKeyNavigation from "@/app/[locale]/(pages)/forms/invoices/hooks/useEnterKeyNavigation";
 import useKeyAsTab from "@/hooks/useKeyAsTab";
 import { Voucher, VoucherDetail, VoucherBox } from "@/types/voucher";
-import { loadBoxes } from "@/utilities/box.actions";
-import { loadCostCenters } from "@/utilities/costCenter.actions";
+import { useSelectOptions } from "@/utilities/hooks/useSelectOptions";
+
+const EMPTY_NAVIGATION_INFO = {
+  next: null,
+  previous: null,
+  last: null,
+  first: null,
+  vouchersCount: null,
+};
 
 const CashReceiptHeader = dynamic(
   () => import("./components/CashReceiptHeader"),
@@ -103,11 +110,11 @@ export default function CashReceiptVoucherClientPage({
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isGLModalOpen, setIsGLModalOpen] = useState(false);
 
-  const boxOptions = useMemo(() => loadBoxes(boxes), [boxes]);
-  const costCenterOptions = useMemo(
-    () => loadCostCenters(costCenters),
-    [costCenters],
-  );
+  const { accountOptions, boxOptions, costCenterOptions } = useSelectOptions({
+    accounts,
+    boxes,
+    costCenters,
+  });
 
   const {
     isEditing,
@@ -138,28 +145,28 @@ export default function CashReceiptVoucherClientPage({
     vouchType,
   });
 
-  const handleCashChange = (index: number, changes: Partial<VoucherBox>) => {
-    updateVoucherBoxForm(index, changes);
-  };
+  const handleCashChange = useCallback(
+    (index: number, changes: Partial<VoucherBox>) => {
+      updateVoucherBoxForm(index, changes);
+    },
+    [updateVoucherBoxForm],
+  );
 
-  const handleDetailKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    index: number,
-    col: number,
-    options?: { isLastCol?: boolean },
-  ) => {
-    handleKeyDownTable(e, index, col, options);
-  };
+  const focusFirstCashTableInput = useCallback(() => {
+    firstCashTableInputRef.current?.focus();
+  }, []);
+
+  const handleGLModalClose = useCallback(() => {
+    setIsGLModalOpen(false);
+  }, []);
 
   const { refNoInput } = useNavigationFelids();
 
-  // Refs for keyboard navigation
   const selectorsRef = useRef<HTMLDivElement>(null);
   const notesInputRef = useRef<HTMLInputElement>(null);
   const firstCashTableInputRef = useRef<HTMLInputElement | null>(null);
   const firstAccountTableInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Hook for Enter key navigation in top form fields
   const { handleKeyDown: handleKeyDownSelectors } = useKeyAsTab({
     keys: ["Enter"],
     containerRef: selectorsRef,
@@ -268,6 +275,38 @@ export default function CashReceiptVoucherClientPage({
       onAddRow: handleAddDetail,
     });
 
+  const handleDetailKeyDown = useCallback(
+    (
+      e: React.KeyboardEvent<HTMLInputElement>,
+      index: number,
+      col: number,
+      options?: { isLastCol?: boolean },
+    ) => {
+      handleKeyDownTable(e, index, col, options);
+    },
+    [handleKeyDownTable],
+  );
+
+  const setCashInputRefWrapper = useCallback(
+    (rowIndex: number, colIndex: number) => (el: HTMLInputElement | null) => {
+      setCashInputRef(rowIndex, colIndex)(el);
+      if (rowIndex === 0 && colIndex === 0) {
+        firstCashTableInputRef.current = el;
+      }
+    },
+    [setCashInputRef],
+  );
+
+  const setAccountInputRefWrapper = useCallback(
+    (rowIndex: number, colIndex: number) => (el: HTMLInputElement | null) => {
+      setInputRef(rowIndex, colIndex)(el);
+      if (rowIndex === 0 && colIndex === 0) {
+        firstAccountTableInputRef.current = el;
+      }
+    },
+    [setInputRef],
+  );
+
   return (
     <div className="p-2 max-w-[1500px] mx-auto bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Header */}
@@ -276,15 +315,7 @@ export default function CashReceiptVoucherClientPage({
         isEditing={isEditing}
         isLoading={isLoading}
         isPrinting={isPrinting}
-        navigationInfo={
-          navigationInfo || {
-            next: null,
-            previous: null,
-            last: null,
-            first: null,
-            vouchersCount: null,
-          }
-        }
+        navigationInfo={navigationInfo || EMPTY_NAVIGATION_INFO}
         printVoucher={printVoucher}
         saveVoucher={saveVoucher}
         setIsGLModalOpen={setIsGLModalOpen}
@@ -305,7 +336,7 @@ export default function CashReceiptVoucherClientPage({
         voucherStatuses={voucherStatuses}
         notesInputRef={notesInputRef}
         setIsNotesModalOpen={setIsNotesModalOpen}
-        focusFirstCashTableInput={() => firstCashTableInputRef.current?.focus()}
+        focusFirstCashTableInput={focusFirstCashTableInput}
       />
 
       <SharedTable
@@ -329,12 +360,7 @@ export default function CashReceiptVoucherClientPage({
             costCenterOptions={costCenterOptions}
             removeCashBox={removeCashBox}
             isRemoveDisabled={voucherBoxes.length === 1}
-            setInputRef={(rowIndex, colIndex) => (el) => {
-              setCashInputRef(rowIndex, colIndex)(el);
-              if (rowIndex === 0 && colIndex === 0) {
-                firstCashTableInputRef.current = el;
-              }
-            }}
+            setInputRef={setCashInputRefWrapper}
           />
         ))}
       </SharedTable>
@@ -350,6 +376,7 @@ export default function CashReceiptVoucherClientPage({
             key={detail.id}
             detail={detail}
             accounts={accounts}
+            accountOptions={accountOptions}
             costCenters={costCenters}
             costCenterOptions={costCenterOptions}
             detailIndex={index}
@@ -358,12 +385,7 @@ export default function CashReceiptVoucherClientPage({
             handleDetailKeyDown={handleDetailKeyDown}
             removeDetail={removeDetail}
             isRemoveDisabled={details.length === 1}
-            setInputRef={(rowIndex, colIndex) => (el) => {
-              setInputRef(rowIndex, colIndex)(el);
-              if (rowIndex === 0 && colIndex === 0) {
-                firstAccountTableInputRef.current = el;
-              }
-            }}
+            setInputRef={setAccountInputRefWrapper}
           />
         ))}
       </SharedTable>
@@ -388,9 +410,9 @@ export default function CashReceiptVoucherClientPage({
       {/* Modal القيود المحاسبية */}
       <GLTransactionModal
         isOpen={isGLModalOpen}
-        onClose={() => setIsGLModalOpen(false)}
+        onClose={handleGLModalClose}
         transId={voucher.id && Number(voucher.id) > 0 ? Number(voucher.id) : 0}
-        transType={vouchType || 1} // سند قبض
+        transType={vouchType || 1}
         voucherTitle={
           voucher.vouch_id && Number(voucher.vouch_id) > 0
             ? `سند قبض رقم ${voucher.vouch_id}`

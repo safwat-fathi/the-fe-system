@@ -2,6 +2,7 @@ import type { Box } from "@/types/models/box";
 import type { VoucherBox } from "@/types/voucher";
 import type { CostCenter } from "@/types/voucher-form";
 
+import React from "react";
 import { useTranslations } from "next-intl";
 
 import InputTable from "./shared/InputTable";
@@ -305,4 +306,4 @@ const CashItemRow = ({
   );
 };
 
-export default CashItemRow;
+export default React.memo(CashItemRow);

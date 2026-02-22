@@ -5,7 +5,7 @@ import type {
   SaveVoucherData,
 } from "@/app/actions/voucher/types";
 
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -52,6 +52,7 @@ export const useCashReceiptForm = ({
   formMode,
   vouchType = 1,
 }: UseCashReceiptFormProps) => {
+  const voucherRef = useRef<Voucher>(null!);
   const router = useRouter();
 
   // --- State Initialization ---
@@ -107,21 +108,14 @@ export const useCashReceiptForm = ({
     ];
   });
 
-  const [isEditing, setIsEditing] = useState(
-    formMode === "edit" || formMode === "new",
-  );
+  const isEditing = formMode === "edit" || formMode === "new";
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  // Keep track of original data for identifying deletions in edit mode
   const [originalDetails, setOriginalDetails] = useState<VoucherDetail[]>([]);
   const [originalBoxes, setOriginalBoxes] = useState<VoucherBox[]>([]);
 
-  // --- Effects ---
-
-  useEffect(() => {
-    setIsEditing(formMode === "edit" || formMode === "new");
-  }, [formMode]);
+  voucherRef.current = voucher;
 
   // Set original data when editing
   useEffect(() => {
@@ -133,61 +127,54 @@ export const useCashReceiptForm = ({
 
   // --- Handlers ---
 
-  const handleMasterCostChange = useCallback(
-    (costId: number | null) => {
-      const previousCost = voucher.cost_id;
+  const handleMasterCostChange = useCallback((costId: number | null) => {
+    const previousCost = voucherRef.current?.cost_id;
 
-      setVoucher((prev) => ({
-        ...prev,
-        cost_id: costId ?? null,
-      }));
+    setVoucher((prev) => ({
+      ...prev,
+      cost_id: costId ?? null,
+    }));
 
-      // Update details cost_id if it matched the previous master cost or was empty
-      setDetails((prev) =>
-        prev.map((detail) => {
-          const detailCost = detail.cost_id;
+    setDetails((prev) =>
+      prev.map((detail) => {
+        const detailCost = detail.cost_id;
 
-          // If detail has a specific cost different from previous master, keep it.
-          // Otherwise update to new master cost.
-          if (
-            detailCost &&
-            previousCost &&
-            detailCost !== previousCost &&
-            detailCost !== 0
-          ) {
-            return detail;
-          }
+        if (
+          detailCost &&
+          previousCost &&
+          detailCost !== previousCost &&
+          detailCost !== 0
+        ) {
+          return detail;
+        }
 
-          return {
-            ...detail,
-            cost_id: costId ?? null,
-          };
-        }),
-      );
+        return {
+          ...detail,
+          cost_id: costId ?? null,
+        };
+      }),
+    );
 
-      // Update boxes cost_id similarly
-      setVoucherBoxes((prev) =>
-        prev.map((box) => {
-          const boxCost = box.cost_id;
+    setVoucherBoxes((prev) =>
+      prev.map((box) => {
+        const boxCost = box.cost_id;
 
-          if (
-            boxCost &&
-            previousCost &&
-            boxCost !== previousCost &&
-            boxCost !== 0
-          ) {
-            return box;
-          }
+        if (
+          boxCost &&
+          previousCost &&
+          boxCost !== previousCost &&
+          boxCost !== 0
+        ) {
+          return box;
+        }
 
-          return {
-            ...box,
-            cost_id: costId ?? null,
-          };
-        }),
-      );
-    },
-    [voucher.cost_id],
-  );
+        return {
+          ...box,
+          cost_id: costId ?? null,
+        };
+      }),
+    );
+  }, []);
 
   const handleAddCashBox = useCallback(() => {
     setVoucherBoxes((prev) => {
@@ -197,14 +184,14 @@ export const useCashReceiptForm = ({
           id: prev.length > 0 ? Math.max(...prev.map((b) => b.id || 0)) + 1 : 1,
           amount: 0,
           box_id: 0,
-          cost_id: voucher.cost_id ?? null,
+          cost_id: voucherRef.current?.cost_id ?? null,
           cr_date: new Date().toISOString(),
-          vouch_id: voucher.vouch_id,
+          vouch_id: voucherRef.current?.vouch_id,
           vouch_notes: "",
         },
       ];
     });
-  }, [voucher.cost_id, voucher.vouch_id]);
+  }, []);
 
   const handleAddDetail = useCallback(() => {
     setDetails((prev) => {
@@ -215,14 +202,14 @@ export const useCashReceiptForm = ({
           acc_id: 0,
           debit: 0,
           credit: 0,
-          cost_id: voucher.cost_id ?? null,
+          cost_id: voucherRef.current?.cost_id ?? null,
           cr_date: new Date().toISOString(),
-          vouch_id: voucher.vouch_id,
+          vouch_id: voucherRef.current?.vouch_id,
           vouch_notes: "",
         },
       ];
     });
-  }, [voucher.cost_id, voucher.vouch_id]);
+  }, []);
 
   const removeCashBox = useCallback((index: number) => {
     setVoucherBoxes((prev) => prev.filter((_, i) => i !== index));
@@ -295,13 +282,17 @@ export const useCashReceiptForm = ({
     return { totalBoxes, totalDetails };
   }, [voucherBoxes, details, vouchType]);
 
-  const balance = totals.totalBoxes - totals.totalDetails;
-  const isBalanced = Math.abs(balance) < 0.01;
+  const balance = useMemo(
+    () => totals.totalBoxes - totals.totalDetails,
+    [totals],
+  );
+  const isBalanced = useMemo(() => Math.abs(balance) < 0.01, [balance]);
 
   // --- Actions ---
 
-  const saveVoucher = async () => {
-    const voucherDate = new Date(voucher.vouch_date);
+  const saveVoucher = useCallback(async () => {
+    const currentVoucher = voucherRef.current;
+    const voucherDate = new Date(currentVoucher.vouch_date);
     const today = new Date();
 
     today.setHours(23, 59, 59, 999);
@@ -320,7 +311,6 @@ export const useCashReceiptForm = ({
       return;
     }
 
-    // Filter out empty rows
     const validBoxes = voucherBoxes.filter(
       (box) => box.box_id && box.box_id > 0 && box.amount && box.amount > 0,
     );
@@ -349,27 +339,27 @@ export const useCashReceiptForm = ({
 
     try {
       const masterCostId =
-        voucher.cost_id !== undefined &&
-        voucher.cost_id !== null &&
-        voucher.cost_id > 0
-          ? voucher.cost_id
+        currentVoucher.cost_id !== undefined &&
+        currentVoucher.cost_id !== null &&
+        currentVoucher.cost_id > 0
+          ? currentVoucher.cost_id
           : null;
 
       const voucherDataPayload: SaveVoucherData = {
-        vouch_id: voucher.vouch_id,
-        vouch_date: voucher.vouch_date,
+        vouch_id: currentVoucher.vouch_id,
+        vouch_date: currentVoucher.vouch_date,
         vouch_type: vouchType,
-        vouch_amt: 0, // Calculated by server or ignored
-        vouch_notes: voucher.vouch_notes || "",
-        vouch_status: voucher.vouch_status || 1,
-        pay_type: voucher.pay_type,
-        ref_no: voucher.ref_no || "",
-        opps_vouch: voucher.opps_vouch || 0,
+        vouch_amt: 0,
+        vouch_notes: currentVoucher.vouch_notes || "",
+        vouch_status: currentVoucher.vouch_status || 1,
+        pay_type: currentVoucher.pay_type,
+        ref_no: currentVoucher.ref_no || "",
+        opps_vouch: currentVoucher.opps_vouch || 0,
         cost_id: masterCostId,
       };
 
       const boxesData: VoucherBoxData[] = validBoxes.map((box) => ({
-        id: box.id && box.id > 0 ? box.id : 0, // 0 for new
+        id: box.id && box.id > 0 ? box.id : 0,
         box_id: box.box_id,
         amount: box.amount,
         vouch_notes: box.vouch_notes || "",
@@ -378,10 +368,9 @@ export const useCashReceiptForm = ({
       }));
 
       const detailsData: VoucherDetailData[] = validDetails.map((detail) => ({
-        id: detail.id && detail.id > 0 ? detail.id : 0, // 0 for new
-        vouch_id: voucher.vouch_id,
+        id: detail.id && detail.id > 0 ? detail.id : 0,
+        vouch_id: currentVoucher.vouch_id,
         acc_id: detail.acc_id,
-        // Strict logic for debit/credit based on type
         debit: vouchType === 2 ? detail.debit || 0 : 0,
         credit: vouchType === 1 ? detail.credit || 0 : 0,
         debit_g: 0,
@@ -392,7 +381,6 @@ export const useCashReceiptForm = ({
           detail.cost_id && detail.cost_id > 0 ? detail.cost_id : masterCostId,
       }));
 
-      // Calculate deleted items for update
       const currentDetailIds = detailsData
         .map((d) => d.id)
         .filter((id): id is number => !!id && id > 0);
@@ -419,7 +407,7 @@ export const useCashReceiptForm = ({
               voucherDataPayload,
               detailsData,
               deletedDetailIds,
-              voucher.id as number | undefined,
+              currentVoucher.id as number | undefined,
               boxesData,
               deletedBoxIds,
             )
@@ -431,7 +419,7 @@ export const useCashReceiptForm = ({
 
       if (result.success && result.data) {
         const realId = result.data.id;
-        const savedVouchId = result.data.vouch_id || voucher.vouch_id;
+        const savedVouchId = result.data.vouch_id || currentVoucher.vouch_id;
 
         setVoucher((prev) => ({
           ...prev,
@@ -459,16 +447,28 @@ export const useCashReceiptForm = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [
+    isBalanced,
+    totals,
+    voucherBoxes,
+    details,
+    vouchType,
+    formMode,
+    originalDetails,
+    originalBoxes,
+    router,
+  ]);
 
-  const printVoucher = async () => {
+  const printVoucher = useCallback(async () => {
+    const currentVoucher = voucherRef.current;
+
     setIsPrinting(true);
     try {
       const printWindow = window.open("", "_blank");
 
       if (printWindow) {
-        const formattedDate = voucher.vouch_date
-          ? new Date(voucher.vouch_date).toLocaleDateString("ar-SA", {
+        const formattedDate = currentVoucher.vouch_date
+          ? new Date(currentVoucher.vouch_date).toLocaleDateString("ar-SA", {
               year: "numeric",
               month: "long",
               day: "numeric",
@@ -485,7 +485,7 @@ export const useCashReceiptForm = ({
           <html dir="rtl">
             <head>
               <meta charset="UTF-8">
-              <title>${voucherTypeName} - ${voucher.vouch_id}</title>
+              <title>${voucherTypeName} - ${currentVoucher.vouch_id}</title>
               <style>
                 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
                 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -501,7 +501,7 @@ export const useCashReceiptForm = ({
             <body>
               <div class="header">
                 <h1>${voucherTypeName}</h1>
-                <div>رقم السند: ${voucher.vouch_id || "-"}</div>
+                <div>رقم السند: ${currentVoucher.vouch_id || "-"}</div>
                 <div>التاريخ: ${formattedDate}</div>
               </div>
               <div>عدد الصناديق: ${validBoxes.length}</div>
@@ -521,7 +521,7 @@ export const useCashReceiptForm = ({
     } finally {
       setIsPrinting(false);
     }
-  };
+  }, [voucherBoxes, details, vouchType, totals]);
 
   return {
     voucher,

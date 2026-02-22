@@ -137,33 +137,20 @@ export const useVoucherEntryNavigation = ({
           return;
         }
 
-        // ✅ Retry logic
-        requestAnimationFrame(() => {
-          if (focusToAccountField()) return;
-
+        // ✅ Simple retry logic (try up to 3 more times with increasing delays)
+        const attemptFocus = (retries = 3, delay = 50) => {
           setTimeout(() => {
             if (focusToAccountField()) return;
 
-            setTimeout(() => {
-              if (focusToAccountField()) return;
-
-              setTimeout(() => {
-                if (focusToAccountField()) return;
-                focusFirstInRow(0);
-              }, 100);
-            }, 50);
-          }, 10);
-        });
-
-        focusFirstInRow(0);
-
-        // ✅ Additional retries
-        [20, 80, 150, 250].forEach((delay) => {
-          setTimeout(() => {
-            focusFirstInRow(0);
-            focusToAccountField();
+            if (retries > 0) {
+              attemptFocus(retries - 1, delay * 2);
+            } else {
+              focusFirstInRow(0);
+            }
           }, delay);
-        });
+        };
+
+        attemptFocus();
       }
     },
     [details.length, addDetailRow, focusFirstInRow],

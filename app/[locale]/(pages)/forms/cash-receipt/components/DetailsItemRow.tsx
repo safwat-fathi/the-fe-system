@@ -2,7 +2,7 @@ import type { VoucherDetail } from "@/types/voucher";
 import type { Account } from "@/types/models/account";
 import type { CostCenter } from "@/types/voucher-form";
 
-import React, { memo } from "react";
+import React, { memo, useCallback } from "react";
 import { useTranslations } from "next-intl";
 
 import TableAsyncSelect from "./shared/TableAsyncSelect";
@@ -11,7 +11,7 @@ import TableSelect from "./shared/TableSelect";
 
 import {
   getAccountSelectValue,
-  loadAccounts,
+  type AccountOption,
 } from "@/utilities/account.actions";
 import {
   getCostCenterSelectValue,
@@ -21,6 +21,7 @@ import {
 interface DetailsItemRowProps {
   detail: VoucherDetail;
   accounts: Account[];
+  accountOptions: AccountOption[];
   costCenters: CostCenter[];
   costCenterOptions: CostCenterOption[];
   detailIndex: number;
@@ -47,6 +48,7 @@ interface DetailsItemRowProps {
 const DetailsItemRow = ({
   detail,
   accounts,
+  accountOptions,
   costCenters,
   costCenterOptions,
   detailIndex,
@@ -59,19 +61,20 @@ const DetailsItemRow = ({
   setInputRef,
 }: DetailsItemRowProps) => {
   const t = useTranslations("forms.cashReceiptVoucher");
-  const loadAccountOptions = (inputValue: string) =>
-    new Promise<{ label: string; value: number; account: Account }[]>(
-      (resolve) => {
-        const options = loadAccounts(accounts);
-        const filteredOptions = options.filter(
+
+  const loadAccountOptions = useCallback(
+    (inputValue: string) =>
+      new Promise<AccountOption[]>((resolve) => {
+        const filteredOptions = accountOptions.filter(
           (option) =>
             option.label.toLowerCase().includes(inputValue.toLowerCase()) ||
             option.value.toString().includes(inputValue),
         );
 
         resolve(filteredOptions);
-      },
-    );
+      }),
+    [accountOptions],
+  );
 
   return (
     <tr className="border-b">

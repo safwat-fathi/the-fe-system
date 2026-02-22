@@ -2,17 +2,14 @@ import type { Account } from "@/types/models/account";
 import type { AccountOption, VoucherDetail } from "@/types/voucher";
 import type { CostCenter } from "@/types/voucher-form";
 
+import React from "react";
 import { useTranslations } from "next-intl";
 
 import SelectCol from "./SelectCol";
 
-import {
-  getAccountSelectValue,
-  loadAccounts,
-} from "@/utilities/account.actions";
+import { getAccountSelectValue } from "@/utilities/account.actions";
 import {
   getCostCenterSelectValue,
-  loadCostCenters,
   type CostCenterOption,
 } from "@/utilities/costCenter.actions";
 
@@ -26,7 +23,9 @@ interface AdjustmentColumnProps {
   detail: VoucherDetail;
   isEditing: boolean;
   initialAccounts: Account[];
+  accountOptions: AccountOption[];
   initialCostCenters: CostCenter[];
+  costCenterOptions: CostCenterOption[];
   updateDetail: (index: number, detail: Partial<VoucherDetail>) => void;
   removeDetailRow: (index: number) => void;
   details: VoucherDetail[];
@@ -51,7 +50,9 @@ const AdjustmentColumn = ({
   detail,
   isEditing,
   initialAccounts,
+  accountOptions,
   initialCostCenters,
+  costCenterOptions,
   updateDetail,
   removeDetailRow,
   details,
@@ -59,8 +60,6 @@ const AdjustmentColumn = ({
   registerField,
   handleFieldEnter,
 }: AdjustmentColumnProps) => {
-  const loadAccountOptions = loadAccounts(initialAccounts);
-  const loadCostCenterOptions = loadCostCenters(initialCostCenters);
   const t = useTranslations("forms.adjustment");
 
   return (
@@ -70,7 +69,7 @@ const AdjustmentColumn = ({
         <SelectCol<AccountOption>
           selectRef={registerField(fieldIndex(index, 0))}
           onKeyDown={(e) => handleFieldEnter(e, fieldIndex(index, 0))}
-          options={loadAccountOptions}
+          options={accountOptions}
           placeholder={t("table.columns.accountPlaceholder")}
           formatCreateLabel={(inputValue) =>
             t("table.addAccountLabel", { value: inputValue })
@@ -289,7 +288,7 @@ const AdjustmentColumn = ({
         <SelectCol<CostCenterOption>
           selectRef={registerField(fieldIndex(index, 8))}
           onKeyDown={(e) => handleFieldEnter(e, fieldIndex(index, 8))}
-          options={loadCostCenterOptions}
+          options={costCenterOptions}
           placeholder={t("table.columns.costCenterPlaceholder")}
           isEditing={isEditing}
           value={getCostCenterSelectValue(detail, initialCostCenters)}
@@ -345,4 +344,4 @@ const AdjustmentColumn = ({
   );
 };
 
-export default AdjustmentColumn;
+export default React.memo(AdjustmentColumn);
