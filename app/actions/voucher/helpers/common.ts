@@ -14,6 +14,30 @@ interface CustomerInfo {
   accountId: number | null;
 }
 
+export interface VoucherBranchContext {
+  com: number;
+  year: number;
+}
+
+const INVALID_COMPANY_CONTEXT_MESSAGE =
+  "تعذر تحديد الشركة الحالية. يرجى تسجيل الدخول مرة أخرى ثم إعادة المحاولة.";
+
+export async function resolveVoucherBranchContextStrict(): Promise<VoucherBranchContext> {
+  const cookieStore = await cookies();
+  const rawCompanyId = cookieStore.get(STORAGE_KEYS.COMPANY_ID)?.value;
+  const companyId = Number(rawCompanyId);
+
+  if (!rawCompanyId || !Number.isFinite(companyId) || companyId <= 0) {
+    throw new Error(INVALID_COMPANY_CONTEXT_MESSAGE);
+  }
+
+  return {
+    com: Math.floor(companyId),
+    // Voucher endpoints expect year as DB PK/id, while fin_year cookie can be calendar-like (e.g. 2026).
+    year: 1,
+  };
+}
+
 /**
  * Get current user username from cookies
  */
@@ -49,7 +73,10 @@ export async function getCustomerInfo(
   }
 
   try {
-    const customers = await customerService.getAllCustomers({ xcom_id: 1 });
+    const { com } = await getBranchParams();
+    const customers = await customerService.getAllCustomers({
+      xcom_id: Number(com) || 1,
+    });
     const customer = customers.find((c) => c.id === custId);
 
     if (!customer) {
@@ -130,7 +157,7 @@ export async function getBoxAccountId(boxId: number): Promise<number | null> {
 
   try {
     const { boxesService } = await import("@/services/api");
-		const { com } = await getBranchParams();
+    const { com } = await getBranchParams();
     const boxes = await boxesService.getBoxes({ xcom_id: com });
     let box = boxes.find((b) => b.id === boxId);
 

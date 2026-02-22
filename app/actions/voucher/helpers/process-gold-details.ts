@@ -18,6 +18,7 @@ export async function processGoldDetails(
   vouchType: number,
   currentDate: string,
   currentUsername: string | null,
+  companyId: number,
 ): Promise<{ success: boolean; error?: string }> {
   if (
     !requiresGoldDetails(vouchType) ||
@@ -35,7 +36,7 @@ export async function processGoldDetails(
     const goldDetailData: any = {
       vouch: masterId,
       item: goldDetail.item_id,
-      com: 1,
+      com: companyId,
       vouch_type: vouchType,
       vouch_status: 1,
       cr_date: currentDate,
@@ -116,6 +117,7 @@ export async function updateGoldDetails(
   vouchType: number,
   currentDate: string,
   currentUsername: string | null,
+  companyId: number,
   deletedGoldDetailIds: number[] = [],
 ): Promise<{ success: boolean; error?: string }> {
   if (!requiresGoldDetails(vouchType)) {
@@ -131,7 +133,7 @@ export async function updateGoldDetails(
 
       try {
         const deleteResponse = await voucherService.deleteGoldDetail(detailId, {
-          com: 1,
+          com: companyId,
         });
 
         if (!deleteResponse.success) {
@@ -162,7 +164,7 @@ export async function updateGoldDetails(
     const goldDetailData: any = {
       vouch: realVoucherId,
       item: goldDetail.item_id,
-      com: 1,
+      com: companyId,
       vouch_type: vouchType,
       vouch_status: 1,
     };
