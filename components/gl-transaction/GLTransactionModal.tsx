@@ -72,7 +72,7 @@ export default function GLTransactionModal({
         const response = await glTransactionService.getByTransaction(
           transId,
           transType,
-          { xcom_id: "1", xyear_id: "0" },
+          { xyear_id: "0" },
           true, // skipCache: true لضمان جلب أحدث البيانات بعد التعديل
         );
 
@@ -88,7 +88,7 @@ export default function GLTransactionModal({
         try {
           const byTypeResponse = await glTransactionService.getByType(
             transType,
-            { xcom_id: "1", xyear_id: "0", skipCache: true }, // skipCache: true لضمان جلب أحدث البيانات
+            { xyear_id: "0", skipCache: true }, // skipCache: true لضمان جلب أحدث البيانات
           );
           
           if (byTypeResponse.success && byTypeResponse.data) {
@@ -480,4 +480,3 @@ export default function GLTransactionModal({
     </Modal>
   );
 }
-
