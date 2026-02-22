@@ -14,6 +14,7 @@ import useFractions, { type Fractions } from "@/utilities/useFractions";
 import {
   Invoice,
   InvoiceDetail,
+  InvoiceBox,
   InvoicePayType,
   INVOICE_PAY_TYPES,
   TransTypes,
@@ -30,6 +31,7 @@ import {
   createInvoiceBoxAction,
   getInvoiceBoxListAction,
   updateInvoiceBoxAction,
+  deleteInvoiceBoxAction,
   createInvoiceGoldBoxAction,
   getInvoiceGoldBoxListAction,
   updateInvoiceGoldBoxAction,
@@ -615,9 +617,11 @@ export default function useInvoiceForm({
 
   const [goldPrice] = useState<number | null>(initialGoldPrice);
   const [homePurity] = useState<number>(initialHomePurity);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentTypes>(
+  const [paymentMethod, setPaymentMethodState] = useState<PaymentTypes>(
     PaymentTypes.CASH,
   );
+  const [requireCustomerSelectionAfterPaymentSwitch, setRequireCustomerSelectionAfterPaymentSwitch] =
+    useState(false);
   const [handlingMethod, setHandlingMethod] = useState<string>("");
   const [mobileMethod, setMobileMethod] = useState<string>("");
   const [searchNumber, setSearchNumber] = useState<string>("");
@@ -781,6 +785,26 @@ export default function useInvoiceForm({
     buildInitialFormState,
   );
 
+  const setPaymentMethod = useCallback(
+    (nextMethod: PaymentTypes) => {
+      const hasPaymentMethodChanged = nextMethod !== paymentMethod;
+
+      if (hasPaymentMethodChanged) {
+        dispatchForm({
+          type: "SET_ALL",
+          payload: {
+            cust_code: null,
+            cust_name: "",
+          },
+        });
+        setRequireCustomerSelectionAfterPaymentSwitch(true);
+      }
+
+      setPaymentMethodState(nextMethod);
+    },
+    [dispatchForm, paymentMethod],
+  );
+
   // invoice items state
   const makeEmptyRow = useCallback(
     (description?: string): InvoiceItemRow => ({
@@ -821,7 +845,7 @@ export default function useInvoiceForm({
   const selectedCustomer = useMemo(() => {
     const normalizedCode = normalizeCustomerCode(
       form.cust_code,
-      resolvedInvoiceCustomerCode,
+      requireCustomerSelectionAfterPaymentSwitch ? null : resolvedInvoiceCustomerCode,
     );
 
     if (!normalizedCode) {
@@ -872,7 +896,7 @@ export default function useInvoiceForm({
       return secondaryMatch;
     }
 
-    if (invoiceData) {
+    if (invoiceData && !requireCustomerSelectionAfterPaymentSwitch) {
       return {
         id:
           invoiceData.cust ??
@@ -904,6 +928,7 @@ export default function useInvoiceForm({
     form.cust_name,
     invoiceData,
     paymentMethod,
+    requireCustomerSelectionAfterPaymentSwitch,
     resolvedInvoiceCustomerCode,
   ]);
 
@@ -926,6 +951,8 @@ export default function useInvoiceForm({
   useEffect(() => {
     if (!invoiceData) return;
 
+    setRequireCustomerSelectionAfterPaymentSwitch(false);
+
     setInvoicePk(invoiceData.id ? Number(invoiceData.id) : null);
     dispatchForm({
       type: "RESET",
@@ -933,7 +960,7 @@ export default function useInvoiceForm({
     });
 
     if (invoiceData.inv_type) {
-      setPaymentMethod(
+      setPaymentMethodState(
         invoiceData.inv_type === PAYMENT_METHOD_INV_TYPES.credit
           ? PaymentTypes.CREDIT
           : PaymentTypes.CASH,
@@ -955,6 +982,19 @@ export default function useInvoiceForm({
     invoiceData,
     invoiceDetailsData,
   ]);
+
+  useEffect(() => {
+    if (!requireCustomerSelectionAfterPaymentSwitch) return;
+
+    const hasSelectedCustomer =
+      form.cust_code !== null &&
+      form.cust_code !== undefined &&
+      String(form.cust_code).trim().length > 0;
+
+    if (hasSelectedCustomer) {
+      setRequireCustomerSelectionAfterPaymentSwitch(false);
+    }
+  }, [form.cust_code, requireCustomerSelectionAfterPaymentSwitch]);
 
   // totals (simple helpers returned to consumer can compute more if needed)
   const computeTotals = useCallback(
@@ -1093,8 +1133,21 @@ export default function useInvoiceForm({
     ],
   );
 
+  type InvoiceTotalsSnapshot = {
+    totalAmount: number;
+    taxAmount: number;
+    totalDiscount: number;
+    totalGWeight: number;
+    netAmount: number;
+  };
+
   type ValidationResult =
-    | { ok: true; validItems: InvoiceItemRow[]; customer: any }
+    | {
+        ok: true;
+        validItems: InvoiceItemRow[];
+        customer: any;
+        totals: InvoiceTotalsSnapshot;
+      }
     | { ok: false };
 
   const validateBeforeSave = useCallback((): ValidationResult => {
@@ -1137,17 +1190,19 @@ export default function useInvoiceForm({
       }
     }
 
-    return { ok: true, validItems, customer: selectedCustomer };
-  }, [contactLabel, form.pay_type, invoiceItems, selectedCustomer]);
+    const totals = computeTotals(form.pay_type, validItems);
+
+    if (!Number.isFinite(totals.netAmount) || totals.netAmount <= 0) {
+      toast.error("لا يمكن حفظ فاتورة بقيمة صفر أو أقل");
+
+      return { ok: false };
+    }
+
+    return { ok: true, validItems, customer: selectedCustomer, totals };
+  }, [computeTotals, contactLabel, form.pay_type, invoiceItems, selectedCustomer]);
 
   type InvoiceSaveContext = {
-    totals: {
-      totalAmount: number;
-      taxAmount: number;
-      totalDiscount: number;
-      totalGWeight: number;
-      netAmount: number;
-    };
+    totals: InvoiceTotalsSnapshot;
     invoiceNumber: Nullable<number | string>;
     invoicePayload: Record<string, unknown>;
     resolvedCompanyId: number;
@@ -1155,8 +1210,7 @@ export default function useInvoiceForm({
   };
 
   const buildInvoiceSaveContext = useCallback(
-    (validItems: InvoiceItemRow[], customer: any): InvoiceSaveContext => {
-      const totals = computeTotals(form.pay_type, validItems);
+    (customer: any, totals: InvoiceTotalsSnapshot): InvoiceSaveContext => {
       // For new invoices, use maxInvoiceId + 1 if available, otherwise let backend generate
       // If the user manually entered an ID, respect it
       const rawInvId = form.inv_id ? parseNumber(form.inv_id) : 0;
@@ -1256,7 +1310,6 @@ export default function useInvoiceForm({
       };
     },
     [
-      computeTotals,
       defaultTaxPrc,
       defaultTransType,
       employee,
@@ -1484,8 +1537,8 @@ export default function useInvoiceForm({
 
       try {
         const context = buildInvoiceSaveContext(
-          validation.validItems,
           validation.customer,
+          validation.totals,
         );
 
         // Persist the invoice record to get/ensure primary key
@@ -1523,27 +1576,33 @@ export default function useInvoiceForm({
         const existingInvoiceBoxes = await getInvoiceBoxListAction(
           String(savedRecordId),
         );
-        const invoiceBoxCount = existingInvoiceBoxes?.length ?? 0;
+        let invoiceBoxCount = existingInvoiceBoxes?.length ?? 0;
+        let hasAmountChanged = false;
 
-        const existingBoxesTotal =
-          existingInvoiceBoxes?.reduce(
-            (sum, box) => sum + (parseFloat(String(box.amt)) || 0),
-            0,
-          ) ?? 0;
+        if (paymentMethod === PaymentTypes.CREDIT) {
+          await deleteAllInvoiceBoxes(existingInvoiceBoxes ?? []);
+          invoiceBoxCount = 0;
+        } else {
+          const existingBoxesTotal =
+            existingInvoiceBoxes?.reduce(
+              (sum, box) => sum + (parseFloat(String(box.amt)) || 0),
+              0,
+            ) ?? 0;
 
-        const hasAmountChanged =
-          Math.abs(existingBoxesTotal - context.totals.netAmount) > 0.01;
+          hasAmountChanged =
+            Math.abs(existingBoxesTotal - context.totals.netAmount) > 0.01;
 
-        if (!options?.skipDefaultBoxCreation && invoiceBoxCount <= 1) {
-          await handleInvoiceBox(
-            savedRecordId,
-            context.resolvedCompanyId,
-            defaultTransType,
-            context.totals.netAmount,
-            String(validation.customer.id),
-            form.inv_notes,
-            frac,
-          );
+          if (!options?.skipDefaultBoxCreation && invoiceBoxCount <= 1) {
+            await handleInvoiceBox(
+              savedRecordId,
+              context.resolvedCompanyId,
+              defaultTransType,
+              context.totals.netAmount,
+              String(validation.customer.id),
+              form.inv_notes,
+              frac,
+            );
+          }
         }
 
         await handleGoldBox(
@@ -1590,7 +1649,11 @@ export default function useInvoiceForm({
     },
     [
       buildInvoiceSaveContext,
+      defaultTransType,
+      form.inv_notes,
+      frac,
       isNewInvoice,
+      paymentMethod,
       persistInvoiceRecord,
       refreshInvoiceDetailsState,
       syncInvoiceDetails,
@@ -1786,7 +1849,8 @@ export default function useInvoiceForm({
     setDeletedItemIds([]);
     setInvoicePk(null);
     setEmployee("");
-    setPaymentMethod(PaymentTypes.CASH);
+    setPaymentMethodState(PaymentTypes.CASH);
+    setRequireCustomerSelectionAfterPaymentSwitch(false);
     setHandlingMethod("");
     setMobileMethod("");
     setSearchNumber("");
@@ -1944,6 +2008,22 @@ export default function useInvoiceForm({
     handleManualTotalChange,
     resetManualTotals,
   } as const;
+}
+
+async function deleteAllInvoiceBoxes(invoiceBoxes: InvoiceBox[]): Promise<void> {
+  for (const box of invoiceBoxes) {
+    const boxId = Number(box.id);
+
+    if (!Number.isFinite(boxId) || boxId <= 0) {
+      throw new Error("تعذر حذف بنود سداد الفاتورة عند التحويل إلى آجل");
+    }
+
+    const deleted = await deleteInvoiceBoxAction(boxId);
+
+    if (!deleted) {
+      throw new Error("تعذر حذف بنود سداد الفاتورة عند التحويل إلى آجل");
+    }
+  }
 }
 
 async function handleInvoiceBox(
