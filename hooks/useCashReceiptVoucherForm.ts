@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-import { voucherService } from "@/services/api";
 import {
   createVoucherAction,
+  getNextVoucherNumberAction,
   updateVoucherAction,
 } from "@/app/actions/voucher.action";
 import { searchAccountsAction } from "@/app/actions/accounts.action";
@@ -26,6 +26,7 @@ interface UseCashReceiptVoucherFormProps {
   startInEditMode?: boolean;
   vouchType: number; // 1 للقبض، 2 للصرف
   formMode?: "new" | "edit" | "preview";
+  initialVoucherNumber?: number;
 }
 
 export const useCashReceiptVoucherForm = ({
@@ -42,6 +43,7 @@ export const useCashReceiptVoucherForm = ({
   startInEditMode = false,
   vouchType,
   formMode = "new",
+  initialVoucherNumber,
 }: UseCashReceiptVoucherFormProps) => {
   const router = useRouter();
 
@@ -105,11 +107,14 @@ export const useCashReceiptVoucherForm = ({
 
   const generateNextVoucherNumber = async () => {
     try {
-      const nextId = await voucherService.getNextNumber(vouchType);
+      const nextId = await getNextVoucherNumberAction(vouchType);
+      const safeNextId = Number.isFinite(Number(nextId)) && Number(nextId) > 0
+        ? Number(nextId)
+        : 1;
 
       setVoucher((prev) => ({
         ...prev,
-        vouch_id: nextId,
+        vouch_id: safeNextId,
         vouch_date: new Date().toISOString(),
         cr_date: new Date().toISOString(),
       }));
@@ -128,8 +133,23 @@ export const useCashReceiptVoucherForm = ({
     updateCurrentTime();
 
     if (isNewVoucher && !hasGeneratedVoucherNumber.current) {
-      generateNextVoucherNumber();
-      hasGeneratedVoucherNumber.current = true;
+      const hasInitialVoucherNumber =
+        Number.isFinite(Number(initialVoucherNumber)) &&
+        Number(initialVoucherNumber) > 0;
+
+      if (hasInitialVoucherNumber) {
+        setVoucher((prev) => ({
+          ...prev,
+          vouch_id: Number(initialVoucherNumber),
+          vouch_date: new Date().toISOString(),
+          cr_date: new Date().toISOString(),
+        }));
+        hasGeneratedVoucherNumber.current = true;
+      } else {
+        generateNextVoucherNumber();
+        hasGeneratedVoucherNumber.current = true;
+      }
+
       if (voucherBoxes.length === 0) {
         setVoucherBoxes([
           {

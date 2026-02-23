@@ -64,6 +64,7 @@ interface CashReceiptVoucherClientPageProps {
   startInEditMode?: boolean;
   vouchType: number;
   formMode?: "new" | "edit" | "preview";
+  initialVoucherNumber?: number;
 }
 
 export default function CashReceiptVoucherClientPage({
@@ -82,6 +83,7 @@ export default function CashReceiptVoucherClientPage({
   startInEditMode = false,
   vouchType,
   formMode = "new",
+  initialVoucherNumber,
 }: CashReceiptVoucherClientPageProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -147,6 +149,7 @@ export default function CashReceiptVoucherClientPage({
     startInEditMode,
     vouchType,
     formMode,
+    initialVoucherNumber,
   });
 
   // دالة لبناء روابط التنقل (مثل الفواتير)

@@ -73,6 +73,18 @@ export default async function ItemDetailPage({
     ]);
 
   // تحويل Item إلى ItemForm
+  const normalizedCategoryId = (() => {
+    const candidate = item.cat ?? item.cat_id;
+
+    if (candidate === null || candidate === undefined) {
+      return null;
+    }
+
+    const numeric = Number(candidate);
+
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+  })();
+
   const itemForm = {
     id: item.id,
     item_name: item.item_name || "",
@@ -93,7 +105,7 @@ export default async function ItemDetailPage({
     cr_user: item.cr_user || "",
     upd_date: item.upd_date || "",
     upd_user: item.upd_user || "",
-    cat: item.cat,
+    cat: normalizedCategoryId,
     item_type: item.item_type,
     unit: item.unit,
     com: companyId,

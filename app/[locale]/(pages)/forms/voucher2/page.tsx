@@ -7,6 +7,7 @@ import voucherFormDataService from "@/services/bff/voucher-form-data.service";
 import { voucherService } from "@/services/api";
 import Breadcrumb from "@/components/Breadcrumb";
 import { redirectToLogin } from "@/app/actions/auth";
+import { getNextVoucherNumberAction } from "@/app/actions/voucher.action";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export const metadata: Metadata = {
@@ -49,9 +50,10 @@ const getPaymentVoucherForNavigation = cache(async () => {
 
 export default async function PaymentVoucherPage() {
   try {
-    const [formData, voucherForNav] = await Promise.all([
+    const [formData, voucherForNav, nextVoucherNumber] = await Promise.all([
       getVoucherFormData(),
       getPaymentVoucherForNavigation(),
+      getNextVoucherNumberAction(2),
     ]);
 
     // بناء navigationInfo من سند الصرف
@@ -106,6 +108,7 @@ export default async function PaymentVoucherPage() {
           navigationInfo={navigationInfo}
           startInEditMode={true}
           vouchType={2}
+          initialVoucherNumber={nextVoucherNumber}
           voucherStatuses={formData.voucherStatuses}
           voucherTypes={formData.voucherTypes}
         />

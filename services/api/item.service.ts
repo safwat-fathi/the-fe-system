@@ -111,6 +111,16 @@ class ItemService extends HttpService<Item> {
 
   async getItemById(id: number, companyId: number = 1): Promise<Item | null> {
     try {
+      const normalizeCategoryId = (value: unknown): number | null => {
+        if (value === null || value === undefined || value === "") {
+          return null;
+        }
+
+        const numeric = Number(value);
+
+        return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+      };
+
       // البحث عن الصنف في جميع الصفحات
       // نبدأ بصفحة واحدة ثم نبحث في النتائج
       let page = 1;
@@ -144,6 +154,18 @@ class ItemService extends HttpService<Item> {
         if (!response.data?.next) break;
 
         page++;
+      }
+
+      if (found) {
+        const normalizedCategoryId = normalizeCategoryId(
+          found.cat ?? found.cat_id,
+        );
+
+        found = {
+          ...found,
+          cat: normalizedCategoryId,
+          cat_id: normalizedCategoryId,
+        };
       }
 
       return found;
