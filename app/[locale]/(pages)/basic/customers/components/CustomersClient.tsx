@@ -147,6 +147,8 @@ export default function CustomersClient({
       return;
     }
 
+    const previousCustomers = customers;
+
     // Optimistic delete
     setCustomers((prevCustomers) =>
       prevCustomers.filter((c) => c.id !== customerToDelete.id),
@@ -157,14 +159,14 @@ export default function CustomersClient({
 
       if (result) {
         toast.success(t("messages.deleteSuccess"));
-        loadCustomers();
+        await loadCustomers();
       } else {
+        setCustomers(previousCustomers);
         toast.error(t("messages.deleteFailed"));
-        loadCustomers();
       }
     } catch {
+      setCustomers(previousCustomers);
       toast.error(t("messages.deleteError"));
-      loadCustomers();
     } finally {
       setDeleteModalOpen(false);
       setCustomerToDelete(null);

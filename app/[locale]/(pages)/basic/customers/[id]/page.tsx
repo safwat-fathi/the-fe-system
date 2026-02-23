@@ -51,18 +51,7 @@ export default async function CustomerDetailPage({
   let customer = null;
 
   try {
-    const customers = await customerService.getAllCustomers({
-      xcom_id: companyId,
-    });
-
-    customer = customers.find((c) => c.id === customerId) || null;
-
-    // إذا لم يتم العثور عليه، جرب البحث بدون فلتر
-    if (!customer) {
-      const allCustomers = await customerService.getAllCustomers();
-
-      customer = allCustomers.find((c) => c.id === customerId) || null;
-    }
+    customer = await customerService.getCustomerById(customerId, companyId);
   } catch (error) {
     console.error("Error fetching customer:", error);
   }
