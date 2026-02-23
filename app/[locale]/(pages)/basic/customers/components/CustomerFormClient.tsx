@@ -125,6 +125,26 @@ const CustomerFormClient = ({
     setIsSaving(true);
 
     try {
+      const parseNullableNumber = (
+        value: unknown,
+      ): number | null | undefined => {
+        if (value === undefined) return undefined;
+        if (value === null || value === "") return null;
+        const parsed = Number(value);
+
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+
+      const parseNullableString = (
+        value: unknown,
+      ): string | null | undefined => {
+        if (value === undefined) return undefined;
+        if (value === null) return null;
+        const normalized = String(value).trim();
+
+        return normalized === "" ? null : normalized;
+      };
+
       const updatedCustomer = { ...customer };
 
       if (!updatedCustomer.cust_code) {
@@ -135,15 +155,16 @@ const CustomerFormClient = ({
 
       const cleanedCustomer: Partial<CustomerModel> = {
         ...updatedCustomer,
-        mobile: String(updatedCustomer.mobile) || null,
-        acc: Number(updatedCustomer.acc) || null,
-        vat_no: Number(updatedCustomer.vat_no) || null,
-        cr_no: String(updatedCustomer.cr_no) || null,
-        perc: Number(updatedCustomer.perc) || null,
-        cust_type: Number(updatedCustomer.cust_type) || null,
+        mobile: parseNullableString(updatedCustomer.mobile),
+        acc: parseNullableNumber(updatedCustomer.acc),
+        vat_no: parseNullableNumber(updatedCustomer.vat_no),
+        cr_no: parseNullableString(updatedCustomer.cr_no),
+        perc: parseNullableNumber(updatedCustomer.perc),
+        cust_type: parseNullableNumber(updatedCustomer.cust_type),
+        cust_status: parseNullableNumber(updatedCustomer.cust_status),
         expt: !!updatedCustomer.expt,
         hide: !!updatedCustomer.hide,
-        post_code: updatedCustomer.post_code || "",
+        post_code: parseNullableString(updatedCustomer.post_code),
       };
 
       let result: CustomerModel | null = null;

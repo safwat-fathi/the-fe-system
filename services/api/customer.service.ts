@@ -25,6 +25,83 @@ class CustomerService extends HttpService<Customer> {
     super("");
   }
 
+  private extractCustomerList(payload: unknown): Customer[] {
+    if (Array.isArray(payload)) {
+      return payload as Customer[];
+    }
+
+    if (payload && typeof payload === "object") {
+      const results = (payload as { results?: unknown }).results;
+
+      if (Array.isArray(results)) {
+        return results as Customer[];
+      }
+    }
+
+    return [];
+  }
+
+  private parseNullableNumber(value: unknown): number | null | undefined {
+    if (value === undefined) return undefined;
+    if (value === null || value === "") return null;
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private parseNullableString(value: unknown): string | null | undefined {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+    const normalized = String(value).trim();
+
+    return normalized === "" ? null : normalized;
+  }
+
+  private sanitizeCustomerPayload(customer: Partial<Customer>): Partial<Customer> {
+    return {
+      ...customer,
+      cust_code:
+        customer.cust_code === undefined || customer.cust_code === null
+          ? undefined
+          : String(customer.cust_code).trim(),
+      cust_name: String(customer.cust_name ?? "").trim(),
+      cust_name_e: this.parseNullableString(customer.cust_name_e),
+      mobile: this.parseNullableString(customer.mobile),
+      email: this.parseNullableString(customer.email),
+      address: this.parseNullableString(customer.address),
+      vat_no: this.parseNullableNumber(customer.vat_no),
+      cr_no: this.parseNullableString(customer.cr_no),
+      phone: this.parseNullableString(customer.phone),
+      fax: this.parseNullableString(customer.fax),
+      gov: this.parseNullableString(customer.gov),
+      city: this.parseNullableString(customer.city),
+      area: this.parseNullableString(customer.area),
+      street: this.parseNullableString(customer.street),
+      build_no: this.parseNullableString(customer.build_no),
+      post_code: this.parseNullableString(customer.post_code),
+      cust_status: this.parseNullableNumber(customer.cust_status),
+      acc: this.parseNullableNumber(customer.acc),
+      acc_name: this.parseNullableString(customer.acc_name),
+      box_type:
+        customer.box_type === undefined || customer.box_type === null
+          ? null
+          : String(customer.box_type).trim(),
+      handling: this.parseNullableString(customer.handling),
+      handling_e: this.parseNullableString(customer.handling_e),
+      perc: this.parseNullableNumber(customer.perc),
+      cust_type: this.parseNullableNumber(customer.cust_type),
+      expt:
+        customer.expt === undefined || customer.expt === null
+          ? null
+          : Boolean(customer.expt),
+      hide:
+        customer.hide === undefined || customer.hide === null
+          ? null
+          : Boolean(customer.hide),
+      post_no: this.parseNullableString(customer.post_no),
+    };
+  }
+
   async getAllCustomers(params?: GetCustomerParams): Promise<Customer[]> {
     try {
       const xcust_type = params?.xcust_type || 0;
@@ -44,20 +121,15 @@ class CustomerService extends HttpService<Customer> {
         "customers_list",
         queryParams,
         {
-          cache: "force-cache",
+          cache: "no-store",
           next: {
             tags: [`customers-{xcom_id}-${xcust_type}-${xcust_code}`],
-            revalidate: 60 * 60 * 24, // 1 day
           },
         },
       );
 
       if (response.success) {
-        if (Array.isArray(response.data)) {
-          return response.data;
-        } else if (Array.isArray((response.data as any)?.results)) {
-          return (response.data as any).results;
-        }
+        return this.extractCustomerList(response.data);
       }
 
       return [];
@@ -84,9 +156,10 @@ class CustomerService extends HttpService<Customer> {
     customer: Omit<Customer, "id">,
   ): Promise<Customer | null> {
     try {
+      const payload = this.sanitizeCustomerPayload(customer);
       const response = await this.post<Customer>(
         "api_create_customer",
-        customer,
+        payload,
         undefined,
       );
 
@@ -107,9 +180,10 @@ class CustomerService extends HttpService<Customer> {
     customer: Partial<Customer>,
   ): Promise<Customer | null> {
     try {
+      const payload = this.sanitizeCustomerPayload(customer);
       const response = await this.put<Customer>(
         `api_update_customer/${id}`,
-        customer,
+        payload,
         undefined,
       );
 
@@ -140,9 +214,24 @@ class CustomerService extends HttpService<Customer> {
     }
   }
 
-  async getCustomerById(id: number): Promise<Customer | null> {
+  async getCustomerById(id: number, xcom_id?: number): Promise<Customer | null> {
     try {
-      const customers = await this.getAllCustomers();
+      const targetedCustomers = await this.getAllCustomers({
+        xcom_id,
+        xcust_code: id,
+      });
+
+      const targetedMatch =
+        targetedCustomers.find((customer) => Number(customer.id) === Number(id)) ||
+        targetedCustomers.find(
+          (customer) => Number(customer.cust_code) === Number(id),
+        );
+
+      if (targetedMatch) {
+        return targetedMatch;
+      }
+
+      const customers = await this.getAllCustomers({ xcom_id });
 
       return customers.find((customer) => customer.id === id) || null;
     } catch (error) {

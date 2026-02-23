@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
@@ -6,6 +6,7 @@ import CustomerTypeFormClient from "../components/CustomerTypeFormClient";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import customerTypeService from "@/services/api/customer-type.service";
+import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = (await getTranslations("basic.customerTypes" as any)) as any;
@@ -32,15 +33,23 @@ export default async function CustomerTypeDetailPage({
   // تحديد الوضع: preview (افتراضي) أو edit
   const formMode = mode === "edit" ? "edit" : "view";
 
-  const typeId = parseInt(id);
+  const typeId = Number.parseInt(id, 10);
 
   // التحقق من صحة المعرف
   if (isNaN(typeId) || typeId <= 0) {
     notFound();
   }
 
-  // جلب بيانات نوع العميل
-  const type = await customerTypeService.getCustomerTypeById(typeId);
+  let type = null;
+
+  try {
+    type = await customerTypeService.getCustomerTypeById(typeId);
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      redirect("/auth/login");
+    }
+    throw error;
+  }
 
   if (!type) {
     notFound();

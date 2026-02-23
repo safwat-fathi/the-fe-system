@@ -9,6 +9,28 @@ import invoiceService, {
 import { type Invoice, type InvoiceDetail } from "@/types/models/invoice";
 import { STORAGE_KEYS } from "@/constants";
 
+const parseInvoiceAmount = (value: unknown): number | null => {
+  if (value === undefined || value === null) return null;
+
+  const normalized = String(value).replace(/,/g, "").trim();
+
+  if (!normalized) return null;
+
+  const parsed = Number(normalized);
+
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const assertPositiveInvoiceValue = (payload: Partial<Invoice>) => {
+  const invNet = parseInvoiceAmount(payload.inv_net);
+  const invAmount = invNet === null ? parseInvoiceAmount(payload.inv_amt) : null;
+  const resolvedValue = invNet ?? invAmount;
+
+  if (resolvedValue === null || resolvedValue <= 0) {
+    throw new Error("لا يمكن حفظ فاتورة بقيمة صفر أو أقل");
+  }
+};
+
 export async function getAllInvoicesAction(params?: GetAllInvoicesParams) {
   return invoiceService.getAllInvoices(params);
 }
@@ -46,6 +68,8 @@ export async function getMaxInvoiceIdAction(transType: number) {
 }
 
 export async function createInvoiceAction(payload: Partial<Invoice>) {
+  assertPositiveInvoiceValue(payload);
+
   const result = await invoiceService.createInvoice(payload);
 
   if (result) {
@@ -60,6 +84,8 @@ export async function updateInvoiceAction(
   id: number | string,
   payload: Partial<Invoice>,
 ) {
+  assertPositiveInvoiceValue(payload);
+
   const parsedId = Number(id);
 
   if (!Number.isFinite(parsedId) || parsedId <= 0) {

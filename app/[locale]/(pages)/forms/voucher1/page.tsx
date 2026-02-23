@@ -9,6 +9,7 @@ import { voucherService } from "@/services/api";
 import Breadcrumb from "@/components/Breadcrumb";
 import { redirectToLogin } from "@/app/actions/auth";
 import { getBranchParams } from "@/app/actions/branch-params";
+import { getNextVoucherNumberAction } from "@/app/actions/voucher.action";
 import { AuthenticationError } from "@/utilities/errors/Authentication";
 
 export const metadata: Metadata = {
@@ -61,9 +62,10 @@ export default async function ReceiptVoucherPage() {
         ? String(parsedCompanyId)
         : "1";
 
-    const [formData, voucherForNav] = await Promise.all([
+    const [formData, voucherForNav, nextVoucherNumber] = await Promise.all([
       getVoucherFormData(),
       getReceiptVoucherForNavigation(companyId),
+      getNextVoucherNumberAction(1),
     ]);
 
     // بناء navigationInfo من آخر سند قبض
@@ -120,6 +122,7 @@ export default async function ReceiptVoucherPage() {
           navigationInfo={navigationInfo}
           startInEditMode={true}
           vouchType={1}
+          initialVoucherNumber={nextVoucherNumber}
           voucherStatuses={formData.voucherStatuses}
           voucherTypes={formData.voucherTypes}
         />

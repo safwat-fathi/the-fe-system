@@ -11,5 +11,6 @@
 export { createVoucherAction } from "./create";
 export { updateVoucherAction } from "./update";
 export { deleteVoucherAction } from "./delete";
+export { getNextVoucherNumberAction } from "./get-next-number";
 // getCurrentUsername is a helper function, not a server action
 // Import it directly from helpers/common if needed

@@ -10,9 +10,52 @@ interface CustomerType {
   type_status: boolean;
 }
 
+type CustomerTypePayload = Omit<CustomerType, "id" | "cr_date">;
+type CustomerTypeUpdatePayload = Partial<CustomerTypePayload>;
+
 class CustomerTypeService extends HttpService<CustomerType> {
   constructor() {
     super("");
+  }
+
+  private normalizeCustomerType(rawType: unknown): CustomerType {
+    const raw = (rawType ?? {}) as Record<string, unknown>;
+    const parsedId = Number(raw.id);
+    const rawStatus = raw.type_status;
+
+    return {
+      id: Number.isFinite(parsedId) ? parsedId : 0,
+      type_name: String(raw.type_name ?? ""),
+      type_name_e: String(raw.type_name_e ?? ""),
+      type_desc: String(raw.type_desc ?? ""),
+      cr_date: String(raw.cr_date ?? ""),
+      type_status:
+        typeof rawStatus === "boolean"
+          ? rawStatus
+          : typeof rawStatus === "number"
+            ? rawStatus === 1
+            : ["1", "true", "yes", "active"].includes(
+                String(rawStatus ?? "")
+                  .trim()
+                  .toLowerCase(),
+              ),
+    };
+  }
+
+  private extractCustomerTypes(payload: unknown): CustomerType[] {
+    if (Array.isArray(payload)) {
+      return payload.map((type) => this.normalizeCustomerType(type));
+    }
+
+    if (payload && typeof payload === "object") {
+      const results = (payload as { results?: unknown }).results;
+
+      if (Array.isArray(results)) {
+        return results.map((type) => this.normalizeCustomerType(type));
+      }
+    }
+
+    return [];
   }
 
   async getAllCustomerTypes(): Promise<CustomerType[]> {
@@ -26,13 +69,7 @@ class CustomerTypeService extends HttpService<CustomerType> {
         },
       );
 
-      if (response.success) {
-        if (Array.isArray(response.data)) {
-          return response.data;
-        } else if (Array.isArray((response.data as any)?.results)) {
-          return (response.data as any).results;
-        }
-      }
+      if (response.success) return this.extractCustomerTypes(response.data);
 
       return [];
     } catch (error) {
@@ -46,9 +83,16 @@ class CustomerTypeService extends HttpService<CustomerType> {
     customerType: Omit<CustomerType, "id">,
   ): Promise<CustomerType | null> {
     try {
+      const payload: CustomerTypePayload = {
+        type_name: String(customerType.type_name ?? "").trim(),
+        type_name_e: String(customerType.type_name_e ?? "").trim(),
+        type_desc: String(customerType.type_desc ?? "").trim(),
+        type_status: Boolean(customerType.type_status),
+      };
+
       const response = await this.post<CustomerType>(
         "api_create_cust_type",
-        customerType,
+        payload,
         undefined,
         {
           cache: "no-store",
@@ -56,7 +100,7 @@ class CustomerTypeService extends HttpService<CustomerType> {
       );
 
       if (response.success) {
-        return response.data as CustomerType;
+        return this.normalizeCustomerType(response.data);
       }
 
       return null;
@@ -72,9 +116,24 @@ class CustomerTypeService extends HttpService<CustomerType> {
     customerType: Partial<CustomerType>,
   ): Promise<CustomerType | null> {
     try {
+      const payload: CustomerTypeUpdatePayload = {};
+
+      if (customerType.type_name !== undefined) {
+        payload.type_name = String(customerType.type_name).trim();
+      }
+      if (customerType.type_name_e !== undefined) {
+        payload.type_name_e = String(customerType.type_name_e).trim();
+      }
+      if (customerType.type_desc !== undefined) {
+        payload.type_desc = String(customerType.type_desc).trim();
+      }
+      if (customerType.type_status !== undefined) {
+        payload.type_status = Boolean(customerType.type_status);
+      }
+
       const response = await this.put<CustomerType>(
         `api_update_cust_type/${id}`,
-        customerType,
+        payload,
         undefined,
         {
           cache: "no-store",
@@ -82,7 +141,7 @@ class CustomerTypeService extends HttpService<CustomerType> {
       );
 
       if (response.success) {
-        return response.data as CustomerType;
+        return this.normalizeCustomerType(response.data);
       }
 
       return null;
@@ -114,9 +173,16 @@ class CustomerTypeService extends HttpService<CustomerType> {
   async getCustomerTypeById(id: number): Promise<CustomerType | null> {
     try {
       const customerTypes = await this.getAllCustomerTypes();
+      const normalizedId = Number(id);
+
+      if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+        return null;
+      }
 
       return (
-        customerTypes.find((customerType) => customerType.id === id) || null
+        customerTypes.find(
+          (customerType) => Number(customerType.id) === normalizedId,
+        ) || null
       );
     } catch (error) {
       console.error("Error fetching customer type by ID:", error);

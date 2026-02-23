@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Table,
@@ -26,6 +26,7 @@ import { useTranslations } from "next-intl";
 
 import { ConfirmationModal } from "@/components/Modal";
 import customerTypeService from "@/services/api/customer-type.service";
+import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 
 interface CustomerType {
   id: number;
@@ -38,20 +39,46 @@ interface CustomerType {
 
 interface CustomerTypesClientProps {
   initialTypes: CustomerType[];
+  initialSearch: string;
+  loadError?: string | null;
 }
+
+type CustomerTypeQueryParams = {
+  search: string;
+};
 
 export default function CustomerTypesClient({
   initialTypes,
+  initialSearch,
+  loadError,
 }: CustomerTypesClientProps) {
   const router = useRouter();
   const t = useTranslations("basic.customerTypes" as any) as any;
+  const [isPending, startTransition] = useTransition();
   const [types, setTypes] = useState<CustomerType[]>(initialTypes);
-  const [search, setSearch] = useState("");
+  const [searchValue, setSearchValue] = useState(initialSearch);
   const [page, setPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [typeToDelete, setTypeToDelete] = useState<CustomerType | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rowsPerPage = 12;
+  const { params, setParams } = useQueryParams<CustomerTypeQueryParams>(
+    ["search"],
+    {
+      defaultValues: { search: "" },
+      schema: {
+        search: {
+          parse: (value) => value ?? "",
+          serialize: (value) => value ?? "",
+          default: "",
+        },
+      },
+      pushMode: "replace",
+      refreshOnChange: true,
+      debounce: 0,
+    },
+  );
 
   const columns = useMemo(
     () => [
@@ -65,15 +92,39 @@ export default function CustomerTypesClient({
     [t],
   );
 
-  const loadTypes = async () => {
-    try {
-      const data = await customerTypeService.getAllCustomerTypes();
+  useEffect(() => {
+    setTypes(initialTypes);
+    setPage(1);
+  }, [initialTypes]);
 
-      setTypes(data);
-    } catch (error) {
-      console.error(t("messages.loadError"), error);
-      setTypes([]);
+  useEffect(() => {
+    setSearchValue(initialSearch);
+  }, [initialSearch]);
+
+  useEffect(() => {
+    if (params.search !== searchValue) {
+      setSearchValue(params.search);
     }
+  }, [params.search, searchValue]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
+  const updateSearchParam = (value: string) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(() => {
+      startTransition(() => {
+        setParams({ search: value });
+      });
+    }, 400);
   };
 
   const handleDeleteClick = (type: CustomerType) => {
@@ -95,8 +146,9 @@ export default function CustomerTypesClient({
       return;
     }
 
-    // Optimistic delete
-    setTypes((prevTypes) => prevTypes.filter((t) => t.id !== typeToDelete.id));
+    const previousTypes = types;
+
+    setTypes((prevTypes) => prevTypes.filter((type) => type.id !== typeToDelete.id));
 
     try {
       const result = await customerTypeService.deleteCustomerType(
@@ -105,15 +157,14 @@ export default function CustomerTypesClient({
 
       if (result) {
         toast.success(t("messages.deleteSuccess"));
-        loadTypes();
+        router.refresh();
       } else {
+        setTypes(previousTypes);
         toast.error(t("messages.deleteFailed"));
-        loadTypes();
       }
-    } catch (error) {
-      console.error(t("messages.deleteError"), error);
+    } catch {
+      setTypes(previousTypes);
       toast.error(t("messages.deleteError"));
-      loadTypes();
     } finally {
       setDeleteModalOpen(false);
       setTypeToDelete(null);
@@ -155,19 +206,11 @@ export default function CustomerTypesClient({
     </div>
   );
 
-  const filtered = useMemo(
-    () =>
-      types.filter((t) =>
-        t.type_name?.toLowerCase().includes(search.toLowerCase()),
-      ),
-    [types, search],
-  );
-
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
 
-    return filtered.slice(start, start + rowsPerPage);
-  }, [filtered, page]);
+    return types.slice(start, start + rowsPerPage);
+  }, [types, page]);
 
   return (
     <div className="flex flex-col gap-6 font-cairo">
@@ -185,13 +228,29 @@ export default function CustomerTypesClient({
             placeholder={t("labels.searchPlaceholder")}
             size="sm"
             startContent={
-              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              isPending ? (
+                <div className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+              ) : (
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              )
             }
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchValue}
+            onChange={(e) => {
+              const value = e.target.value;
+
+              setSearchValue(value);
+              setPage(1);
+              updateSearchParam(value);
+            }}
           />
         </div>
       </div>
+
+      {loadError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
 
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
         <Table removeWrapper aria-label={t("labels.tableAriaLabel")}>
@@ -218,12 +277,12 @@ export default function CustomerTypesClient({
 
         <div className="flex flex-col items-start gap-2 border-t border-gray-100 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-gray-600">
-            {t("labels.totalCount", { count: filtered.length })}
+            {t("labels.totalCount", { count: types.length })}
           </span>
           <Pagination
             color="primary"
             page={page}
-            total={Math.ceil(filtered.length / rowsPerPage)}
+            total={Math.max(1, Math.ceil(types.length / rowsPerPage))}
             onChange={setPage}
           />
         </div>

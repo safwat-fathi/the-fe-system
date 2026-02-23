@@ -999,27 +999,26 @@ export default function useInvoiceForm({
   // totals (simple helpers returned to consumer can compute more if needed)
   const computeTotals = useCallback(
     (payType: InvoicePayType, rows: InvoiceItemRow[]) => {
-      const totalAmount = rows.reduce((sum, item) => {
-        const qty = parseNumber(item.qty) || 1;
-        const weight = parseNumber(item.weight);
-        const price = parseNumber(item.price);
-        const priceW = parseNumber(item.price_w);
-        const discount = parseNumber(item.item_disc_amt);
+      const rowTotals = rows.map((item) => {
+        const hasExplicitRowNet =
+          item.total !== undefined &&
+          item.total !== null &&
+          String(item.total).trim().length > 0;
+        const hasExplicitRowTax =
+          item.tax !== undefined &&
+          item.tax !== null &&
+          String(item.tax).trim().length > 0;
 
-        const totalA = qty * weight * price;
-        const totalW = qty * weight * priceW;
+        if (hasExplicitRowNet && hasExplicitRowTax) {
+          const rowNet = parseNumber(item.total);
+          const rowTax = parseNumber(item.tax);
 
-        // If weight is 0, fallback to qty * price (for non-weight items)
-        // This matches logic where if weight is present, it is treated as Unit Weight
-        const finalTotalA = weight > 0 ? totalA : qty * price;
-        const finalTotalW = weight > 0 ? totalW : qty * priceW;
+          return {
+            rowBase: rowNet - rowTax,
+            rowTax,
+          };
+        }
 
-        const rowTotal = getRowBaseAmount(payType, finalTotalA, finalTotalW);
-
-        return sum + rowTotal - discount;
-      }, 0);
-
-      const taxAmount = rows.reduce((sum, item) => {
         const qty = parseNumber(item.qty) || 1;
         const weight = parseNumber(item.weight);
         const price = parseNumber(item.price);
@@ -1030,14 +1029,19 @@ export default function useInvoiceForm({
         const totalA = qty * weight * price;
         const totalW = qty * weight * priceW;
 
+        // If weight is 0, fallback to qty * price (for non-weight items)
+        // This matches logic where if weight is present, it is treated as Unit Weight
         const finalTotalA = weight > 0 ? totalA : qty * price;
         const finalTotalW = weight > 0 ? totalW : qty * priceW;
+        const rowBase =
+          getRowBaseAmount(payType, finalTotalA, finalTotalW) - discount;
+        const rowTax = rowBase * taxRate;
 
-        const rowTotal = getRowBaseAmount(payType, finalTotalA, finalTotalW);
-        const base = rowTotal - discount;
+        return { rowBase, rowTax };
+      });
 
-        return sum + base * taxRate;
-      }, 0);
+      const totalAmount = rowTotals.reduce((sum, row) => sum + row.rowBase, 0);
+      const taxAmount = rowTotals.reduce((sum, row) => sum + row.rowTax, 0);
 
       const totalDiscount = rows.reduce((sum, item) => {
         const discount = parseNumber(item.item_disc_amt);

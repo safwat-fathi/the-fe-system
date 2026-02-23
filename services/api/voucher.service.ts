@@ -725,28 +725,72 @@ class VoucherService extends HttpService<Voucher> {
   /**
    * الحصول على رقم السند التالي لنوع معين
    */
-  async getNextNumber(voucherType: number = 2) {
+  async getNextNumber(voucherType: number = 2, params?: IParams) {
     try {
-      const baseParams = {
+      const companyId = await this.resolveCompanyId(params);
+      const baseParams: IParams = {
+        xcom_id: companyId,
+        xyear_id: "0",
         xvouch_type: String(voucherType),
+        xvouch_id: "0",
+        xfrom_date: "0",
+        xto_date: "0",
         page: "1",
       };
 
-      const firstPage = await this.getAll(baseParams);
+      const fetchVoucherPage = async (page: number) => {
+        const response = await this.get<IPaginatedResponse<Voucher> | Voucher[]>(
+          "vouchers_list",
+          {
+            ...baseParams,
+            page: String(page),
+          },
+          {
+            cache: "no-store",
+          },
+        );
 
-      if (
-        !firstPage.success ||
-        !firstPage.data ||
-        (Array.isArray(firstPage.data) && firstPage.data.length === 0)
-      ) {
+        if (!response.success || !response.data) {
+          return {
+            items: [] as Voucher[],
+            count: 0,
+          };
+        }
+
+        const rawData: any = response.data;
+
+        if (Array.isArray(rawData)) {
+          return {
+            items: rawData as Voucher[],
+            count: rawData.length,
+          };
+        }
+
+        if (Array.isArray(rawData?.results)) {
+          return {
+            items: rawData.results as Voucher[],
+            count: Number(rawData.count) || rawData.results.length,
+          };
+        }
+
+        return {
+          items: [] as Voucher[],
+          count: 0,
+        };
+      };
+
+      const firstPage = await fetchVoucherPage(1);
+
+      if (firstPage.items.length === 0) {
         return 1;
       }
 
-      const firstPageData: any[] = Array.isArray(firstPage.data)
-        ? firstPage.data
-        : [];
+      const firstPageData = firstPage.items;
       const pageSize = firstPageData.length || 1;
-      const totalCount = firstPage.count ?? firstPageData.length;
+      const totalCount =
+        Number.isFinite(firstPage.count) && firstPage.count > 0
+          ? firstPage.count
+          : firstPageData.length;
 
       let candidates = firstPageData.filter(
         (v: any) =>
@@ -759,13 +803,10 @@ class VoucherService extends HttpService<Voucher> {
         const lastPageNumber = Math.ceil(totalCount / pageSize);
 
         if (lastPageNumber > 1) {
-          const lastPage = await this.getAll({
-            ...baseParams,
-            page: String(lastPageNumber),
-          });
+          const lastPage = await fetchVoucherPage(lastPageNumber);
 
-          if (lastPage.success && Array.isArray(lastPage.data)) {
-            const lastPageData = lastPage.data.filter(
+          if (lastPage.items.length > 0) {
+            const lastPageData = lastPage.items.filter(
               (v: any) =>
                 Number(v?.vouch_type) === Number(voucherType) &&
                 Number.isFinite(Number(v?.vouch_id)) &&
