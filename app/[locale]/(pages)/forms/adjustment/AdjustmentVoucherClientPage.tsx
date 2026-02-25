@@ -9,7 +9,7 @@ import type {
   VoucherType,
 } from "@/types/voucher-form";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import dynamic from "next/dynamic";
@@ -113,6 +113,26 @@ export default function VoucherClientPage({
   const [isGLModalOpen, setIsGLModalOpen] = useState(false);
   const isEditing = formMode === "edit" || formMode === "new";
 
+  const accountOptions = useMemo(
+    () =>
+      initialAccounts.map((acc) => ({
+        value: acc.id,
+        label: `${acc.acc_code} - ${acc.acc_name}`,
+        account: acc,
+      })),
+    [initialAccounts],
+  );
+
+  const costCenterOptions = useMemo(
+    () =>
+      costCenters.map((cc) => ({
+        value: cc.id,
+        label: `${cc.id} - ${cc.cost_name || cc.cost_name_e || ""}`,
+        costCenter: cc,
+      })),
+    [costCenters],
+  );
+
   const {
     voucher,
     setVoucher,
@@ -166,11 +186,11 @@ export default function VoucherClientPage({
   const { register: registerField, handleEnter: handleFieldEnter } =
     useKeyboardNavigation();
 
-  const handleCreateClick = () => {
+  const handleCreateClick = useCallback(() => {
     router.push(`/forms/adjustment?mode=new`);
-  };
+  }, [router]);
 
-  const handleEditClick = () => {
+  const handleEditClick = useCallback(() => {
     setVoucher((prev) => ({
       ...prev,
       commit: false,
@@ -183,7 +203,7 @@ export default function VoucherClientPage({
         router.push(`/forms/adjustment/${vouchIdToUse}?mode=edit`);
       }
     }
-  };
+  }, [setVoucher, pathname, voucher.vouch_id, router]);
 
   const navigationMetadata = useAdjustmentNavigationMetadata({
     navigationInfo,
@@ -236,6 +256,7 @@ export default function VoucherClientPage({
         />
         <AdjustmentTable
           initialCostCenters={costCenters}
+          costCenterOptions={costCenterOptions}
           isEditing={isEditing}
           addDetailRow={addDetailRow}
           removeDetailRow={removeDetailRow}
@@ -243,6 +264,7 @@ export default function VoucherClientPage({
           isVoucherBalanced={isVoucherBalanced}
           details={details}
           initialAccounts={initialAccounts}
+          accountOptions={accountOptions}
           updateDetail={updateDetail}
           registerField={registerField}
           handleFieldEnter={handleFieldEnter}

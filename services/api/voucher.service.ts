@@ -57,7 +57,7 @@ export interface VoucherBox {
   notes?: string;
 }
 
-class VoucherService extends HttpService<Voucher> {
+export class VoucherService extends HttpService<Voucher> {
   constructor() {
     super("");
   }

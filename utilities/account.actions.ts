@@ -1,6 +1,12 @@
 import type { Account } from "@/types/models/account";
 import type { VoucherDetail } from "@/types/voucher";
 
+export interface AccountOption {
+  label: string;
+  value: number;
+  account: Account;
+}
+
 const toComparableNumber = (value: unknown): number | null => {
   if (value === null || value === undefined || value === "") {
     return null;
@@ -72,7 +78,7 @@ const resolveDetailAccount = (
   return null;
 };
 
-export const loadAccounts = (accounts: Account[]) => {
+export const loadAccounts = (accounts: Account[]): AccountOption[] => {
   return accounts.map((account) => ({
     label: `${account.acc_code} - ${account.acc_name}`,
     value: Number(account.id),
