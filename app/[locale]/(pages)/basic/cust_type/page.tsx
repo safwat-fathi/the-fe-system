@@ -58,10 +58,8 @@ export default async function CustomerTypesPage({
   }
 
   return (
-    <div className="font-cairo">
+    <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="text-xl font-bold mb-2">{t("labels.pageTitle")}</h1>
-
       <CustomerTypesClient
         initialSearch={String(searchValue ?? "")}
         initialTypes={typesData}

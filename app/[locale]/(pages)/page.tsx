@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import DashboardClient from "./components/DashboardClient";
+import DashboardOunceCards from "./components/DashboardClient/DashboardOunceCards";
 
 import { STORAGE_KEYS } from "@/constants";
 import { StatCard } from "@/components/Card";
@@ -92,6 +93,20 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Price cards - ounce USD, ounce SAR, gold per gram */}
+      <DashboardOunceCards
+        ounceUSD={dashboardData.goldPriceOunceUSD}
+        ounceSAR={dashboardData.goldPriceOunceSAR}
+        goldPrice={dashboardData.goldPrice}
+        changeOunceUSD={dashboardData.changeOunceUSD}
+        changeOunceSAR={dashboardData.changeOunceSAR}
+        changePercent={dashboardData.changePercent}
+        titleUSD={t("goldPriceOunceUSD")}
+        titleSAR={t("goldPriceOunceSAR")}
+        titleGoldPerGram={t("goldPrice")}
+        placeholder={t("summaryPlaceholder")}
+      />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
@@ -117,19 +132,6 @@ export default async function DashboardPage() {
           icon="🏷️"
           title={t("categories")}
           value={dashboardData.categoryCount}
-        />
-      </div>
-
-      {/* Gold Price Card */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <StatCard
-          icon="💰"
-          title={t("goldPrice")}
-          value={
-            dashboardData.goldPrice
-              ? `${dashboardData.goldPrice} ﷼`
-              : t("summaryPlaceholder")
-          }
         />
       </div>
 

@@ -12,6 +12,17 @@ export async function revalidateTableData(tableName: string) {
     // Revalidate the specific table cache
     revalidateTag(tableName);
 
+    // شجرة الحسابات تُخزَّن بـ tags مختلفة — إبطالها لظهور التعديل فوراً
+    if (tableName === "accounts_list") {
+      revalidateTag("accounts");
+      revalidateTag("accounts-tree");
+      revalidatePath("/basic/accounts", "page");
+    }
+
+    if (tableName === "cost_centers_list") {
+      revalidatePath("/basic/cost-centers", "page");
+    }
+
     // Also revalidate branch-specific cache
     const cookieStore = await cookies();
     const selectedBranch = cookieStore.get("selectedBranch")?.value || "1";

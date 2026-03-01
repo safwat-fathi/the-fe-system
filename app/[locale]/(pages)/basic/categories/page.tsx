@@ -72,15 +72,9 @@ export default async function CategoriesPage() {
       }))
     : [];
 
-  const t = (await getTranslations("basic.categories" as any)) as any;
-
   return (
     <div className="font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-2">
-        {t("labels.pageTitle")}
-      </h1>
-
       <CategoriesClient
         catStatuses={normalizedCatStatuses}
         catTypes={normalizedCatTypes}

@@ -22,11 +22,12 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 import { ConfirmationModal } from "@/components/Modal";
 import customerTypeService from "@/services/api/customer-type.service";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
+import { getLocaleDir } from "@/i18n/config";
 
 interface CustomerType {
   id: number;
@@ -53,6 +54,9 @@ export default function CustomerTypesClient({
   loadError,
 }: CustomerTypesClientProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const t = useTranslations("basic.customerTypes" as any) as any;
   const [isPending, startTransition] = useTransition();
   const [types, setTypes] = useState<CustomerType[]>(initialTypes);
@@ -62,7 +66,7 @@ export default function CustomerTypesClient({
   const [typeToDelete, setTypeToDelete] = useState<CustomerType | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const rowsPerPage = 12;
+  const rowsPerPage = 10;
   const { params, setParams } = useQueryParams<CustomerTypeQueryParams>(
     ["search"],
     {
@@ -214,7 +218,7 @@ export default function CustomerTypesClient({
 
   return (
     <div className="flex flex-col gap-6 font-cairo">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 mb-2">
         <Button
           className="bg-gray-100"
           variant="bordered"
@@ -223,6 +227,7 @@ export default function CustomerTypesClient({
           <PlusIcon className="h-3 w-3" />
           {t("actions.add")}
         </Button>
+        <div className="h-8 w-px bg-gray-300" />
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}
@@ -252,40 +257,47 @@ export default function CustomerTypesClient({
         </div>
       )}
 
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-        <Table removeWrapper aria-label={t("labels.tableAriaLabel")}>
-          <TableHeader>
-            {columns.map((col) => (
-              <TableColumn key={col.uid}>{col.name}</TableColumn>
-            ))}
-          </TableHeader>
-          <TableBody emptyContent={t("labels.emptyContent")}>
-            {paginated.map((type) => (
-              <TableRow key={type.id}>
-                <TableCell>{type.id}</TableCell>
-                <TableCell>{type.type_name}</TableCell>
-                <TableCell>{type.type_name_e}</TableCell>
-                <TableCell>{type.type_desc}</TableCell>
-                <TableCell>
-                  <Checkbox isReadOnly isSelected={type.type_status} />
-                </TableCell>
-                <TableCell>{renderActions(type)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <Table
+        removeWrapper
+        aria-label={t("labels.tableAriaLabel")}
+        classNames={{
+          wrapper: "shadow-none",
+          th: "bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-200",
+          td: "border-b border-gray-100 text-sm",
+          tr: "hover:bg-gray-50 transition-colors",
+        }}
+      >
+        <TableHeader>
+          {columns.map((col) => (
+            <TableColumn key={col.uid}>{col.name}</TableColumn>
+          ))}
+        </TableHeader>
+        <TableBody emptyContent={t("labels.emptyContent")}>
+          {paginated.map((type) => (
+            <TableRow key={type.id}>
+              <TableCell>{type.id}</TableCell>
+              <TableCell>{type.type_name}</TableCell>
+              <TableCell>{type.type_name_e}</TableCell>
+              <TableCell>{type.type_desc}</TableCell>
+              <TableCell>
+                <Checkbox isReadOnly isSelected={type.type_status} />
+              </TableCell>
+              <TableCell>{renderActions(type)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
-        <div className="flex flex-col items-start gap-2 border-t border-gray-100 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm text-gray-600">
-            {t("labels.totalCount", { count: types.length })}
-          </span>
-          <Pagination
-            color="primary"
-            page={page}
-            total={Math.max(1, Math.ceil(types.length / rowsPerPage))}
-            onChange={setPage}
-          />
-        </div>
+      <div className="py-4 flex justify-between items-center">
+        <span className={`text-sm text-gray-500 ${textAlign}`}>
+          {t("labels.totalCount", { count: types.length })}
+        </span>
+        <Pagination
+          color="primary"
+          page={page}
+          total={Math.max(1, Math.ceil(types.length / rowsPerPage))}
+          onChange={setPage}
+        />
       </div>
 
       <ConfirmationModal

@@ -14,5 +14,7 @@ export type Account = {
   acc_cat: number;
   acc_notes?: string;
   cur?: number | null;
+  /** مطلوب من API عند التحديث - مركز التكلفة أو معرف افتراضي */
+  cost?: number | null;
   children?: Account[];
 };

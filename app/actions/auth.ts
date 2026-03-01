@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { setCookieAction } from "./cookie-store";
 
@@ -177,6 +177,25 @@ function formatLoginError(error: unknown): LoginResult {
   };
 }
 
+
+const LOGIN_INVALID_CREDENTIALS_PHRASES = [
+  "no active account found with the given credentials",
+  "unable to log in with provided credentials",
+  "invalid credentials",
+  "invalid username or password",
+  "اسم المستخدم أو كلمة المرور غير صحيحة",
+  "Invalid username or password",
+];
+
+function isInvalidCredentialsApiMessage(message: string | undefined): boolean {
+  if (!message || typeof message !== "string") return false;
+  const normalized = message.trim().toLowerCase();
+
+  return LOGIN_INVALID_CREDENTIALS_PHRASES.some((phrase) =>
+    normalized.includes(phrase.toLowerCase()),
+  );
+}
+
 export async function loginAction(
   state: unknown,
   formData: FormData,
@@ -214,11 +233,14 @@ export async function loginAction(
     );
 
     if (!response.success || !response.data) {
+      const t = await getTranslations("auth.login");
+      const invalidCredentialsMsg = t("invalidCredentials");
+      const message = response.message?.trim() || invalidCredentialsMsg;
+      const useLocalizedMessage = isInvalidCredentialsApiMessage(message);
+
       return {
         success: false,
-        message:
-          response.message ||
-          "فشل في تسجيل الدخول. يرجى التحقق من البيانات المدخلة.",
+        message: useLocalizedMessage ? invalidCredentialsMsg : message,
       };
     }
 

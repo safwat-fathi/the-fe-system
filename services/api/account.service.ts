@@ -88,8 +88,10 @@ class AccountService extends HttpService<Account> {
 
   async createAccount(account: Omit<Account, "id">): Promise<Account | null> {
     try {
+      const companyId = await this.resolveCompanyId();
       const accountData = {
         ...account,
+        com: companyId,
         acc_name_e: account.acc_name_e || "Unnamed Account",
         acc_vat: "0%",
       };
@@ -120,8 +122,11 @@ class AccountService extends HttpService<Account> {
     account: Partial<Account>,
   ): Promise<Account | null> {
     try {
+      const accountPayload = account as Partial<Account> & { cost?: number };
       const accountData = {
         ...account,
+        acc_code: account.acc_code ?? account.acc_id ?? "",
+        cost: accountPayload.cost ?? account.cur ?? 1,
         acc_name_e: account.acc_name_e || "Unnamed Account",
         acc_vat: "0%",
       };

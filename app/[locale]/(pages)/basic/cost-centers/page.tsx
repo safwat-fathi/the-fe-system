@@ -75,7 +75,6 @@ export default async function CostCentersPage() {
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-2">{t("title")}</h1>
 
       {/* عرض حالة الطلب */}
       {error && (
@@ -91,6 +90,7 @@ export default async function CostCentersPage() {
         error={error}
         initialAccounts={accountsData}
         initialData={costCentersData}
+        currentCom={branchParams.com || "1"}
       />
     </div>
   );

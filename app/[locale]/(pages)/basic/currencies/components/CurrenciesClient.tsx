@@ -222,10 +222,6 @@ export default function CurrenciesClient({
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className={`text-base font-semibold ${textAlign}`}>
-          {t("labels.manage")}
-        </h2>
-        <div className="h-8 w-px bg-gray-300" />
         <Button
           className="bg-gray-100"
           variant="bordered"
