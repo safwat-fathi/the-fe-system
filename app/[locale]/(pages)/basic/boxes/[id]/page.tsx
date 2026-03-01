@@ -64,7 +64,7 @@ export default async function BoxDetailPage({
     <div className="responsive-container font-cairo">
       <Breadcrumb
         items={[
-          { name: t("breadcrumbs.list"), href: "/basic/boxes" },
+          { name: t("breadcrumbs.list"), href: "/basic/boxes", prefetch: false },
           {
             name:
               formMode === "edit"

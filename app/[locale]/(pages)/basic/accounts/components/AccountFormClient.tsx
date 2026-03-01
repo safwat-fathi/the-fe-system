@@ -9,7 +9,7 @@ import {
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import {
   findAccountById,
@@ -19,7 +19,10 @@ import {
 
 import { getLocaleDir } from "@/i18n/config";
 import accountService from "@/services/api/account.service";
-import { revalidateTableData } from "@/app/actions/revalidate.action";
+import {
+  revalidateTableData,
+  revalidatePagePath,
+} from "@/app/actions/revalidate.action";
 import { Account } from "@/types/models/account";
 import { Currency } from "@/types/models/currency";
 
@@ -32,6 +35,10 @@ type AccountFormClientProps = {
   initialAccount: Partial<Account>;
   parentId?: number | null;
   suggestedAccId?: string;
+  /** معرّفات العقد المفتوحة في الشجرة عند الرجوع للقائمة */
+  returnExpandedIds?: number[];
+  /** معرّف الحساب المختار عند الرجوع للقائمة */
+  returnSelectedId?: number | null;
 };
 
 type AccountFormState = {
@@ -51,14 +58,14 @@ type AccountFormState = {
   acc_level: number;
 };
 
-const REPORT_TYPES = {
-  1: "الأرباح والخسائر",
-  2: "الميزانية العمومية",
+const ACCOUNT_TYPES = {
+  1: "main",
+  2: "sub",
 } as const;
 
-const ACCOUNT_TYPES = {
-  1: "رئيسي",
-  2: "فرعي",
+const REPORT_TYPES_KEYS = {
+  1: "profitLoss",
+  2: "balanceSheet",
 } as const;
 
 const AccountFormClient = ({
@@ -68,9 +75,12 @@ const AccountFormClient = ({
   initialAccount,
   parentId,
   suggestedAccId,
+  returnExpandedIds,
+  returnSelectedId,
 }: AccountFormClientProps) => {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations("basic.accounts");
   const dir = getLocaleDir(locale as "ar" | "en");
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
@@ -107,8 +117,8 @@ const AccountFormClient = ({
   const initialState: AccountFormState = {
     id: initialAccount.id,
     acc_id: initialAccount.acc_id || suggestedAccId || "",
-    acc_name: initialAccount.acc_name || "",
-    acc_name_e: initialAccount.acc_name_e || "",
+    acc_name: isAddMode ? "" : (initialAccount.acc_name || ""),
+    acc_name_e: isAddMode ? "" : (initialAccount.acc_name_e || ""),
     acc_type: initialAccount.acc_type || (resolvedParentAccount ? 2 : 1),
     parent: resolvedParentAccount ? resolvedParentAccount.id : null,
     acc_kind: initialAccount.acc_kind ?? 1,
@@ -160,24 +170,31 @@ const AccountFormClient = ({
   const parentOptions = useMemo(() => {
     const options = flattenedAccounts
       .filter((account) => !excludedParentIds.has(account.id))
-      .map((account) => ({
-        id: account.id,
-        label: `${"— ".repeat(Math.max(account.acc_level - 1, 0))}${account.acc_name}`,
-      }));
+      .map((account) => {
+        const name =
+          locale === "en"
+            ? (account.acc_name_e || account.acc_name)
+            : account.acc_name;
+
+        return {
+          id: account.id,
+          label: `${"— ".repeat(Math.max(account.acc_level - 1, 0))}${name}`,
+        };
+      });
 
     return options;
-  }, [excludedParentIds, flattenedAccounts]);
+  }, [excludedParentIds, flattenedAccounts, locale]);
 
   // Merge a static "no parent" option with computed options to use with Select's items API
   const parentSelectItems = useMemo(
     () => [
-      { id: "null", label: "حساب رئيسي (بدون أب)" },
+      { id: "null", label: t("form.parentOptionRoot") },
       ...parentOptions.map((option) => ({
         id: String(option.id),
         label: option.label,
       })),
     ],
-    [parentOptions],
+    [parentOptions, t],
   );
 
   const handleParentChange = (newParentId: number | null) => {
@@ -185,7 +202,7 @@ const AccountFormClient = ({
       newParentId !== null ? findAccountById(accounts, newParentId) : null;
 
     if (parentAccount && parentAccount.acc_level >= 5) {
-      toast.error("لا يمكن إضافة حسابات تتجاوز المستوى الخامس.");
+      toast.error(t("messages.maxLevelForm"));
 
       return;
     }
@@ -205,7 +222,7 @@ const AccountFormClient = ({
       const parentAccount = findAccountById(accounts, parentAccountId);
 
       if (parentAccount && parentAccount.acc_level >= 5) {
-        toast.error("لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.");
+        toast.error(t("messages.maxLevelForm"));
 
         return;
       }
@@ -219,7 +236,7 @@ const AccountFormClient = ({
         parentAccount.acc_level < 5 &&
         siblings.length >= 9
       ) {
-        toast.error("لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.");
+        toast.error(t("messages.maxSiblingsForm"));
 
         return;
       }
@@ -228,7 +245,7 @@ const AccountFormClient = ({
     const generatedId = generateAccountId(accounts, parentAccountId);
 
     if (!generatedId) {
-      toast.error("تعذر توليد رقم حساب مناسب. الرجاء التحقق من المعطيات.");
+      toast.error(t("messages.generateIdForm"));
 
       return;
     }
@@ -237,18 +254,18 @@ const AccountFormClient = ({
       ...prev,
       acc_id: generatedId,
     }));
-    toast.success("تم توليد رقم حساب مقترح.");
+    toast.success(t("messages.generateIdSuccess"));
   };
 
   const validateForm = () => {
     if (!formData.acc_id.trim()) {
-      toast.error("رقم الحساب مطلوب.");
+      toast.error(t("messages.accountNumberRequired"));
 
       return false;
     }
 
     if (!formData.acc_name.trim()) {
-      toast.error("اسم الحساب مطلوب.");
+      toast.error(t("messages.accountNameRequired"));
 
       return false;
     }
@@ -266,6 +283,7 @@ const AccountFormClient = ({
     try {
       const payload = {
         acc_id: formData.acc_id,
+        acc_code: initialAccount.acc_code ?? formData.acc_id,
         acc_name: formData.acc_name,
         acc_name_e: formData.acc_name_e || "Unnamed Account",
         acc_type: formData.acc_type,
@@ -277,10 +295,11 @@ const AccountFormClient = ({
         acc_cat: formData.acc_cat,
         acc_notes: formData.acc_notes,
         cur: formData.cur,
+        cost: initialAccount.cost ?? formData.cur ?? 1,
         acc_level: formData.parent
           ? (findAccountById(accounts, formData.parent)?.acc_level ?? 0) + 1
           : 1,
-      } as Omit<Account, "id"> & { id?: number };
+      } as Omit<Account, "id"> & { id?: number; cost?: number };
 
       let result: Account | null = null;
 
@@ -294,21 +313,22 @@ const AccountFormClient = ({
       }
 
       if (!result) {
-        toast.error("حدث خطأ أثناء حفظ الحساب.");
+        toast.error(t("messages.saveError"));
 
         return;
       }
 
       await revalidateTableData("accounts_list");
+      await revalidatePagePath("/basic/accounts");
 
       toast.success(
-        isAddMode ? "تمت إضافة الحساب بنجاح" : "تم تحديث الحساب بنجاح",
+        isAddMode ? t("messages.saveSuccessAdd") : t("messages.saveSuccessUpdate"),
       );
-      router.push("/basic/accounts");
+      handleBackToList();
       router.refresh();
     } catch (error) {
       console.error("Error saving account", error);
-      toast.error("حدث خطأ أثناء الاتصال بالخادم.");
+      toast.error(t("messages.connectionError"));
     } finally {
       setIsSaving(false);
     }
@@ -322,50 +342,64 @@ const AccountFormClient = ({
     router.push(`/basic/accounts/${formData.id}?mode=edit`);
   };
 
+  const handleBackToList = () => {
+    const params = new URLSearchParams();
+
+    if (returnExpandedIds?.length) {
+      params.set("expanded", returnExpandedIds.join(","));
+    }
+
+    if (returnSelectedId != null && returnSelectedId > 0) {
+      params.set("selected", String(returnSelectedId));
+    }
+
+    const query = params.toString();
+
+    router.push(query ? `/basic/accounts?${query}` : "/basic/accounts");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className={textAlign}>
           <h2 className={`text-xl font-bold text-gray-900 ${textAlign}`}>
             {isViewMode
-              ? `عرض ${initialAccount.acc_name || initialAccount.acc_id || "الحساب"}`
+              ? `${t("form.titleView")} ${initialAccount.acc_name || initialAccount.acc_id || t("form.accountFallback")}`
               : isAddMode
-                ? "إضافة حساب جديد"
-                : `تعديل ${initialAccount.acc_name || initialAccount.acc_id || "الحساب"}`}
+                ? t("form.titleAdd")
+                : `${t("form.titleEdit")} ${initialAccount.acc_name || initialAccount.acc_id || t("form.accountFallback")}`}
           </h2>
           <p className={`text-sm text-gray-600 mt-1 ${textAlign}`}>
             {isViewMode
-              ? "استعراض تفاصيل الحساب المحدد"
+              ? t("form.subtitleView")
               : isAddMode
-                ? "قم بتعبئة البيانات لإضافة حساب جديد إلى دليل الحسابات"
-                : "قم بتعديل بيانات الحساب وتحديثها"}
+                ? t("form.subtitleAdd")
+                : t("form.subtitleEdit")}
           </p>
         </div>
         <div className={`flex flex-wrap items-center gap-2 ${dir === "rtl" ? "flex-row-reverse" : ""}`}>
           <Button
             variant="light"
-            onPress={() => {
-              router.push("/basic/accounts");
-            }}
+            onPress={handleBackToList}
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            عودة للقائمة
+            {t("form.backToList")}
           </Button>
           {isViewMode ? (
             <Button color="primary" onPress={handleEdit}>
               <PencilSquareIcon className="h-4 w-4" />
-              تعديل
+              {t("form.edit")}
             </Button>
           ) : (
             <>
               <Button
                 variant="light"
-                onPress={() => router.push("/basic/accounts")}
+                onPress={handleBackToList}
               >
-                إلغاء
+                {t("form.cancel")}
               </Button>
               <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? "حفظ" : "تحديث"}
+                {isAddMode ? t("form.save") : t("form.update")}
               </Button>
             </>
           )}
@@ -378,7 +412,7 @@ const AccountFormClient = ({
             fullWidth
             isRequired
             isDisabled={isViewMode}
-            label="رقم الحساب"
+            label={t("form.accountNumber")}
             value={formData.acc_id}
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, acc_id: e.target.value }))
@@ -388,7 +422,7 @@ const AccountFormClient = ({
             <Button
               isIconOnly
               className="mt-6"
-              title="توليد رقم حساب"
+              title={t("form.generateAccountIdTitle")}
               variant="bordered"
               onPress={handleGenerateAccountId}
             >
@@ -401,7 +435,7 @@ const AccountFormClient = ({
           fullWidth
           isRequired
           isDisabled={isViewMode}
-          label="اسم الحساب"
+          label={t("form.accountName")}
           value={formData.acc_name}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, acc_name: e.target.value }))
@@ -411,7 +445,7 @@ const AccountFormClient = ({
         <Input
           fullWidth
           isDisabled={isViewMode}
-          label="اسم الحساب (بالإنجليزي)"
+          label={t("form.accountNameEn")}
           value={formData.acc_name_e}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, acc_name_e: e.target.value }))
@@ -421,8 +455,8 @@ const AccountFormClient = ({
         <Select
           isDisabled={isViewMode}
           items={parentSelectItems}
-          label="الحساب الأب"
-          placeholder="اختر الحساب الأب"
+          label={t("form.parentAccount")}
+          placeholder={t("form.parentPlaceholder")}
           selectedKeys={
             formData.parent !== null ? [String(formData.parent)] : ["null"]
           }
@@ -447,7 +481,7 @@ const AccountFormClient = ({
 
         <Select
           isDisabled={isViewMode}
-          label="نوع الحساب"
+          label={t("fields.accountType")}
           selectedKeys={[String(formData.acc_type)]}
           onSelectionChange={(keys) => {
             const key = Number(Array.from(keys)[0]);
@@ -458,14 +492,14 @@ const AccountFormClient = ({
             }));
           }}
         >
-          {Object.entries(ACCOUNT_TYPES).map(([key, label]) => (
-            <SelectItem key={key}>{label}</SelectItem>
+          {Object.entries(ACCOUNT_TYPES).map(([key, typeKey]) => (
+            <SelectItem key={key}>{t(`types.${typeKey}`)}</SelectItem>
           ))}
         </Select>
 
         <Select
           isDisabled={isViewMode}
-          label="نوع التقرير"
+          label={t("form.reportType")}
           selectedKeys={[String(formData.acc_rep)]}
           onSelectionChange={(keys) => {
             const value = Number(Array.from(keys)[0]);
@@ -476,14 +510,14 @@ const AccountFormClient = ({
             }));
           }}
         >
-          {Object.entries(REPORT_TYPES).map(([key, label]) => (
-            <SelectItem key={key}>{label}</SelectItem>
+          {Object.entries(REPORT_TYPES_KEYS).map(([key, reportKey]) => (
+            <SelectItem key={key}>{t(`reportTypes.${reportKey}`)}</SelectItem>
           ))}
         </Select>
 
         <Select
           isDisabled={isViewMode}
-          label="العملة"
+          label={t("form.currency")}
           selectedKeys={[String(formData.cur)]}
           onSelectionChange={(keys) => {
             const value = Number(Array.from(keys)[0]);
@@ -494,16 +528,23 @@ const AccountFormClient = ({
             }));
           }}
         >
-          {currencies.map((currency) => (
-            <SelectItem key={currency.id} textValue={currency.cur_name}>
-              {currency.cur_name}
-            </SelectItem>
-          ))}
+          {currencies.map((currency) => {
+            const displayName =
+              locale === "en"
+                ? (currency.cur_name_e || currency.cur_name)
+                : currency.cur_name;
+
+            return (
+              <SelectItem key={currency.id} textValue={displayName}>
+                {displayName}
+              </SelectItem>
+            );
+          })}
         </Select>
 
         <Input
           isDisabled={isViewMode}
-          label="عدد الخانات العشرية"
+          label={t("form.decimalPlaces")}
           type="number"
           value={String(formData.acc_digit)}
           onChange={(e) =>
@@ -516,16 +557,16 @@ const AccountFormClient = ({
 
         <Input
           isDisabled
-          label="مستوى الحساب"
+          label={t("form.accountLevel")}
           value={String(formData.acc_level)}
         />
       </div>
 
       <Textarea
         isDisabled={isViewMode}
-        label="الملاحظات"
+        label={t("form.notes")}
         minRows={3}
-        placeholder="أدخل أي ملاحظات إضافية"
+        placeholder={t("form.notesPlaceholder")}
         value={formData.acc_notes}
         onChange={(e) =>
           setFormData((prev) => ({ ...prev, acc_notes: e.target.value }))

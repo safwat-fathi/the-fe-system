@@ -175,13 +175,6 @@ export default function CategoriesClient({
       { name: t("columns.id"), uid: "id" },
       { name: t("columns.catName"), uid: "cat_name" },
       { name: t("columns.catNameEn"), uid: "cat_name_e" },
-      { name: t("columns.k"), uid: "k" },
-      { name: t("columns.purity"), uid: "purity" },
-      { name: t("columns.box"), uid: "box" },
-      { name: t("columns.taxType"), uid: "tax_type" },
-      { name: t("columns.tax"), uid: "tax" },
-      { name: t("columns.catType"), uid: "cat_type" },
-      { name: t("columns.catStatus"), uid: "cat_status" },
       { name: "", uid: "actions" },
     ],
     [t],
@@ -739,12 +732,13 @@ export default function CategoriesClient({
             column === "wage"
               ? "bg-amber-100 border-amber-300"
               : "bg-white border-gray-200",
-          listbox: "text-right",
+          listbox: "text-right min-w-[20rem]",
         }}
         inputValue={getAccountDisplayValue(text)}
         items={filteredOptions}
         menuTrigger="input"
         placeholder={t("labels.accountPlaceholder")}
+        popoverProps={{ classNames: { content: "min-w-[20rem]" } }}
         selectedKey={null}
         variant="bordered"
         onInputChange={(value) => {
@@ -779,15 +773,14 @@ export default function CategoriesClient({
         }}
       >
         {(option) => (
-          <AutocompleteItem key={option.key} textValue={option.label}>
-            <div className="flex flex-col items-start">
-              <span className="text-sm font-medium text-gray-800">
-                {option.name}
-              </span>
-              {option.code && (
-                <span className="text-xs text-gray-500">{option.code}</span>
-              )}
-            </div>
+          <AutocompleteItem
+            key={option.key}
+            showDivider={false}
+            textValue={option.label}
+          >
+            <span className="text-sm font-medium text-gray-800">
+              {option.name}
+            </span>
           </AutocompleteItem>
         )}
       </Autocomplete>
@@ -920,13 +913,6 @@ export default function CategoriesClient({
                     <TableCell>{cat.id}</TableCell>
                     <TableCell>{cat.cat_name}</TableCell>
                     <TableCell>{cat.cat_name_e}</TableCell>
-                    <TableCell>{cat.k}</TableCell>
-                    <TableCell>{cat.purity}</TableCell>
-                    <TableCell>{cat.box_name}</TableCell>
-                    <TableCell>{cat.tax_type}</TableCell>
-                    <TableCell>{cat.tax}</TableCell>
-                    <TableCell>{cat.cat_type_name}</TableCell>
-                    <TableCell>{cat.cat_status_name}</TableCell>
                     <TableCell>{renderActions(cat)}</TableCell>
                   </TableRow>
                 ))}

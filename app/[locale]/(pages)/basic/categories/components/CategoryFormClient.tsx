@@ -601,12 +601,13 @@ const CategoryFormClient = ({
                         column === "wage"
                           ? "bg-amber-100 border-amber-300"
                           : "bg-white border-gray-200",
-                      listbox: "text-right",
+                      listbox: "text-right min-w-[20rem]",
                     }}
                     inputValue={getAccountDisplayValue(text)}
                     items={filteredOptions}
                     menuTrigger="input"
                     placeholder={t("labels.accountPlaceholder")}
+                    popoverProps={{ classNames: { content: "min-w-[20rem]" } }}
                     selectedKey={null}
                     variant="bordered"
                     onInputChange={(value) => {
@@ -645,18 +646,12 @@ const CategoryFormClient = ({
                     {(option) => (
                       <AutocompleteItem
                         key={option.key}
+                        showDivider={false}
                         textValue={option.label}
                       >
-                        <div className="flex flex-col items-start">
-                          <span className="text-sm font-medium text-gray-800">
-                            {option.name}
-                          </span>
-                          {option.code && (
-                            <span className="text-xs text-gray-500">
-                              {option.code}
-                            </span>
-                          )}
-                        </div>
+                        <span className="text-sm font-medium text-gray-800">
+                          {option.name}
+                        </span>
                       </AutocompleteItem>
                     )}
                   </Autocomplete>

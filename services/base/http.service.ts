@@ -149,12 +149,29 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
         await this._logErrorResponse(method, fullURL, response);
       }
 
-      // Handle unauthorized
+      // Handle unauthorized (401)
       if (response.status === 401) {
-        // Throw AuthenticationError to be caught by withAuthRedirect at page level.
-        // Cannot call redirect() here because:
-        // 1. This class runs outside the Server Component/Server Action context
-        // 2. The NEXT_REDIRECT error would be caught by our try-catch below
+        const isLoginRequest = route === "login";
+
+        if (isLoginRequest) {
+          // فشل تسجيل الدخول (بيانات خاطئة) — نُرجع رسالة واضحة بدل  Session expired
+          const data = await this._parseResponseData(response);
+          const apiMessage =
+            typeof data === "object" && data !== null
+              ? data.detail ?? data.message ?? data.error
+              : typeof data === "string"
+                ? data
+                : null;
+
+          return {
+            success: false,
+            message:
+              apiMessage && String(apiMessage).trim()
+                ? String(apiMessage).trim()
+                : "اسم المستخدم أو كلمة المرور غير صحيحة",
+          };
+        }
+        // طلب مصادقة انتهت جلسته
         throw new AuthenticationError("Session expired");
       }
 

@@ -19,8 +19,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CustomersPage() {
-
-
   // جلب البيانات بالتوازي للأداء الأفضل
   const [
     customersData,
@@ -36,15 +34,9 @@ export default async function CustomersPage() {
     helperService.getBoxTypes().catch(() => []),
   ]);
 
-  const t = (await getTranslations("basic.customers" as any)) as any;
-
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] font-cairo p-2">
-      <div className="flex-shrink-0 mb-1">
-        <Breadcrumb />
-        <h1 className="text-lg font-bold">{t("labels.pageTitle")}</h1>
-      </div>
-
+    <div className="responsive-container font-cairo">
+      <Breadcrumb />
       <CustomersClient
         initialAccounts={accountsData as any}
         initialBoxTypes={boxTypesData as any}

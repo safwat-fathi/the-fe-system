@@ -93,6 +93,10 @@ const normalizeNode = (
   const accCat = toNumber(node.acc_cat, 1) || 1;
   const curValue =
     node.cur === null || node.cur === undefined ? null : toNumber(node.cur);
+  const costValue =
+    node.cost === null || node.cost === undefined
+      ? null
+      : toNumber(node.cost);
   const rawChildren = extractChildren(node);
 
   const normalizedChildren = rawChildren
@@ -126,6 +130,7 @@ const normalizeNode = (
     acc_cat: accCat,
     acc_notes: node.acc_notes ?? node.notes ?? "",
     cur: curValue,
+    cost: costValue ?? curValue ?? 1,
     children: normalizedChildren,
   };
 
@@ -171,17 +176,89 @@ export const normalizeAccountsTree = (tree: any): Account[] => {
     flattenPlaceholders(account),
   );
 
+  if (flattened.length === 0) {
+    return [];
+  }
+
+  const accountsWithParents: Account[] = flattened.map((account) => ({
+    ...account,
+  }));
+
+  const existingIds = new Set(accountsWithParents.map((acc) => acc.id));
+
+  accountsWithParents.forEach((account) => {
+    const parentId = account.parent ?? null;
+
+    if (
+      !parentId ||
+      parentId === 0 ||
+      parentId === account.id ||
+      !existingIds.has(parentId)
+    ) {
+      account.parent = null;
+    }
+  });
+
+  const inferParentsFromCodes = (input: Account[]): Account[] => {
+    const cloned = input.map((acc) => ({ ...acc }));
+    const sortedByCodeLength = [...cloned].sort(
+      (a, b) =>
+        (a.acc_id ?? "").toString().length -
+        (b.acc_id ?? "").toString().length,
+    );
+
+    const idSet = new Set(sortedByCodeLength.map((acc) => acc.id));
+
+    for (const acc of sortedByCodeLength) {
+      // إذا كان لديه أب صالح بالفعل فلا نغيّره
+      if (acc.parent && acc.parent !== 0 && idSet.has(acc.parent)) {
+        continue;
+      }
+
+      const code = (acc.acc_id ?? "").toString().trim();
+
+      if (!code) continue;
+
+      let bestParent: Account | null = null;
+      let bestLength = 0;
+
+      for (const candidate of sortedByCodeLength) {
+        if (candidate.id === acc.id) continue;
+
+        const candidateCode = (candidate.acc_id ?? "").toString().trim();
+
+        if (!candidateCode) continue;
+        if (candidateCode.length >= code.length) continue;
+        if (!code.startsWith(candidateCode)) continue;
+
+        // نختار أطول بادئة ممكنة حتى يكون الهيكل صحيحاً قدر الإمكان
+        if (candidateCode.length > bestLength) {
+          bestParent = candidate;
+          bestLength = candidateCode.length;
+        }
+      }
+
+      if (bestParent) {
+        acc.parent = bestParent.id;
+      }
+    }
+
+    return cloned;
+  };
+
+  const finalAccounts = inferParentsFromCodes(accountsWithParents);
+
   const accountMap = new Map<number, Account>();
   const roots: Account[] = [];
 
-  flattened.forEach((account) => {
+  finalAccounts.forEach((account) => {
     accountMap.set(account.id, {
       ...account,
       children: [],
     });
   });
 
-  flattened.forEach((account) => {
+  finalAccounts.forEach((account) => {
     const current = accountMap.get(account.id);
 
     if (!current) {

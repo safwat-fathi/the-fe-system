@@ -28,6 +28,20 @@ export default async function AccountDetailsPage({
   const search = await searchParams;
   const modeParam = Array.isArray(search.mode) ? search.mode[0] : search.mode;
   const mode = modeParam === "edit" ? "edit" : "view";
+  const expandedParam = Array.isArray(search.expanded)
+    ? search.expanded[0]
+    : search.expanded;
+  const selectedParam = Array.isArray(search.selected)
+    ? search.selected[0]
+    : search.selected;
+
+  const returnExpandedIds = expandedParam
+    ? expandedParam
+        .split(",")
+        .map((s) => Number(s.trim()))
+        .filter(Number.isFinite)
+    : undefined;
+  const returnSelectedId = selectedParam ? Number(selectedParam) : null;
 
   const accountId = Number(id);
 
@@ -78,6 +92,8 @@ export default async function AccountDetailsPage({
         initialAccount={account}
         mode={mode}
         parentId={account.parent ?? null}
+        returnExpandedIds={returnExpandedIds}
+        returnSelectedId={returnSelectedId}
       />
     </div>
   );

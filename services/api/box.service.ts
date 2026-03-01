@@ -153,7 +153,7 @@ class BoxService extends HttpService<Box> {
 
   async deleteBox(id: number): Promise<boolean> {
     try {
-      // استخدام api_delete_customer لأن الصناديق هي نوع من العملاء
+      // الصناديق مخزنة كعملاء (cust_type=99) — الخادم يدعم الحذف عبر api_delete_customer فقط
       const response = await this.delete(
         `api_delete_customer/${id}`,
         undefined,
@@ -164,7 +164,8 @@ class BoxService extends HttpService<Box> {
 
       return response.success;
     } catch (error) {
-      console.error("Error deleting box:", error);
+      rethrowAuthenticationError(error);
+      if (error instanceof Error) throw error;
       throw new Error("حدث خطأ أثناء حذف الصندوق");
     }
   }

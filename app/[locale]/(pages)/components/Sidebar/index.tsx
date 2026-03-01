@@ -3,11 +3,13 @@
 import type { SidebarLinkConfig } from "./sidebarTypes";
 import type { MenuObject } from "@/types/models/menu";
 
+import { BanknotesIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { Tooltip } from "@heroui/react";
 import clsx from "clsx";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 
 import SidebarHeader from "./SidebarHeader";
 import SidebarLinkList from "./SidebarLinkList";
@@ -288,6 +290,40 @@ const Sidebar = ({
     [pathname, searchParams],
   );
 
+  // فتح القسم الذي يحتوي الرابط النشط تلقائياً لتحسين التجربة
+  useEffect(() => {
+    const accountingBasicActive = visibleAccountingBasicLinks.some((l) =>
+      isLinkActive(l.href),
+    );
+    const accountingFormsActive = visibleAccountingFormLinks.some((l) =>
+      isLinkActive(l.href),
+    );
+    const goldBasicActive = visibleGoldBasicLinks.some((l) =>
+      isLinkActive(l.href),
+    );
+    const goldFormsActive = visibleGoldFormLinks.some((l) =>
+      isLinkActive(l.href),
+    );
+
+    if (accountingBasicActive || accountingFormsActive) {
+      setShowAccountingSystem(true);
+      if (accountingBasicActive) setShowAccountingBasic(true);
+      if (accountingFormsActive) setShowAccountingForms(true);
+    }
+    if (goldBasicActive || goldFormsActive) {
+      setShowGoldSystem(true);
+      if (goldBasicActive) setShowGoldBasic(true);
+      if (goldFormsActive) setShowGoldForms(true);
+    }
+  }, [
+    pathname,
+    isLinkActive,
+    visibleAccountingBasicLinks,
+    visibleAccountingFormLinks,
+    visibleGoldBasicLinks,
+    visibleGoldFormLinks,
+  ]);
+
   const animationVariants = {
     hidden: { clipPath: "inset(0% 0% 100% 0%)", opacity: 0 },
     visible: { clipPath: "inset(0% 0% 0% 0%)", opacity: 1 },
@@ -342,7 +378,9 @@ const Sidebar = ({
           <SidebarSection
             animationVariants={animationVariants}
             hideLabel={!isSidebarOpen}
+            icon={<BanknotesIcon className="h-5 w-5" />}
             isOpen={showAccountingSystem}
+            isSystemSection
             label={tSidebar("sections.accountingSystem")}
             onToggle={() => setShowAccountingSystem(!showAccountingSystem)}
             showToggleIcon={isSidebarOpen}
@@ -396,28 +434,45 @@ const Sidebar = ({
 
         {canShowSection("reports") && (
           <div className="mt-4">
-            <Link
-              className={clsx(
-                "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
-                {
-                  "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30":
-                    reportsIsActive,
-                  "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40":
-                    !reportsIsActive,
-                },
-              )}
-              href="/reports"
-            >
-              <div
-                className={clsx("text-lg transition-all", {
-                  "text-white drop-shadow-lg": reportsIsActive,
-                  "text-slate-300 group-hover:text-white": !reportsIsActive,
-                })}
+            {isSidebarOpen ? (
+              <Link
+                className={clsx(
+                  "flex items-center gap-4 p-3 rounded-xl transition-all text-white no-underline group backdrop-blur-sm",
+                  {
+                    "bg-gradient-to-r from-amber-600/80 to-amber-700/80 shadow-lg shadow-amber-900/30":
+                      reportsIsActive,
+                    "hover:bg-white/5 hover:shadow-lg hover:shadow-black/40":
+                      !reportsIsActive,
+                  },
+                )}
+                href="/reports"
               >
-                <ReportsIcon className="h-5 w-5" />
-              </div>
-              <SectionToggleLabel label={tSidebar("sections.reports")} />
-            </Link>
+                <div
+                  className={clsx("text-lg transition-all", {
+                    "text-white drop-shadow-lg": reportsIsActive,
+                    "text-slate-300 group-hover:text-white": !reportsIsActive,
+                  })}
+                >
+                  <ReportsIcon className="h-5 w-5" />
+                </div>
+                <SectionToggleLabel label={tSidebar("sections.reports")} />
+              </Link>
+            ) : (
+              <Tooltip content={tSidebar("sections.reports")} placement="left">
+                <Link
+                  aria-label={tSidebar("sections.reports")}
+                  className={clsx(
+                    "flex items-center justify-center p-3 rounded-xl transition-all text-white no-underline",
+                    reportsIsActive
+                      ? "bg-gradient-to-r from-amber-600/80 to-amber-700/80"
+                      : "hover:bg-white/5",
+                  )}
+                  href="/reports"
+                >
+                  <ReportsIcon className="h-5 w-5" />
+                </Link>
+              </Tooltip>
+            )}
           </div>
         )}
 
@@ -425,7 +480,9 @@ const Sidebar = ({
           <SidebarSection
             animationVariants={animationVariants}
             hideLabel={!isSidebarOpen}
+            icon={<SparklesIcon className="h-5 w-5" />}
             isOpen={showGoldSystem}
+            isSystemSection
             label={tSidebar("sections.goldSystem")}
             onToggle={() => setShowGoldSystem(!showGoldSystem)}
             showToggleIcon={isSidebarOpen}

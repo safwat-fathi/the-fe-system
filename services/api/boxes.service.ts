@@ -8,11 +8,18 @@ class BoxesService extends HttpService<Box> {
     super("");
   }
 
-  async getBoxes(_params: GetBoxesParams = {}): Promise<Box[]> {
+  async getBoxes(params: GetBoxesParams = {}): Promise<Box[]> {
     try {
-      const response = await this.get<Box[]>("boxes_list", undefined, {
+      const response = await this.get<Box[]>("boxes_list", params, {
         cache: "force-cache",
-        next: { tags: ["boxes", `boxes-company-{xcom_id}`] },
+        next: {
+          tags: [
+            "boxes",
+            ...(params.xcom_id != null
+              ? [`boxes-company-${params.xcom_id}`]
+              : []),
+          ],
+        },
         signal: AbortSignal.timeout(30000),
       });
 
@@ -39,12 +46,18 @@ class BoxesService extends HttpService<Box> {
     }
   }
 
-  async getGoldBoxes(_params: GetBoxesParams = {}): Promise<Box[]> {
+  async getGoldBoxes(params: GetBoxesParams = {}): Promise<Box[]> {
     try {
-      const response = await this.get<Box[]>("getGoldBoxes", undefined, {
+      const response = await this.get<Box[]>("getGoldBoxes", params, {
         cache: "force-cache",
         next: {
-          tags: ["boxes", "boxes-gold"],
+          tags: [
+            "boxes",
+            "boxes-gold",
+            ...(params.xcom_id != null
+              ? [`boxes-gold-company-${params.xcom_id}`]
+              : []),
+          ],
         },
         signal: AbortSignal.timeout(30000),
       });

@@ -19,7 +19,7 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)"],
+        sans: ["Cairo", "sans-serif"],
         mono: ["var(--font-mono)"],
         cairo: ["Cairo", "sans-serif"],
       },

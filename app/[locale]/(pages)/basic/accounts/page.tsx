@@ -1,7 +1,8 @@
 import { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
 
 import AccountsClient from "./components/AccountsClient";
+
+
 
 import Breadcrumb from "@/components/Breadcrumb";
 import accountService from "@/services/api/account.service";
@@ -15,8 +16,25 @@ export const metadata: Metadata = {
   description: "إدارة دليل الحسابات",
 };
 
-export default async function AccountsPage() {
-  const t = await getTranslations("basic.accounts");
+export default async function AccountsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const expandedParam = Array.isArray(params.expanded)
+    ? params.expanded[0]
+    : params.expanded;
+  const selectedParam = Array.isArray(params.selected)
+    ? params.selected[0]
+    : params.selected;
+  const initialExpandedIds = expandedParam
+    ? expandedParam
+        .split(",")
+        .map((s) => Number(s.trim()))
+        .filter(Number.isFinite)
+    : undefined;
+  const initialSelectedId = selectedParam ? Number(selectedParam) : undefined;
 
   try {
     const rootRequestPayload = {
@@ -40,12 +58,13 @@ export default async function AccountsPage() {
     return (
       <div className="responsive-container font-cairo">
         <Breadcrumb />
-        <h1 className="responsive-text-xl font-bold mb-6">{t("title")}</h1>
 
         {/* Client Component للتفاعل */}
         <AccountsClient
           initialAccounts={accountsData}
           initialCurrencies={currenciesData}
+          initialExpandedIds={initialExpandedIds}
+          initialSelectedId={initialSelectedId}
         />
       </div>
     );

@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  Button,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/react";
+import { LanguageIcon } from "@heroicons/react/24/outline";
 import { usePathname } from "next/navigation";
 import { useLocale } from "next-intl";
 import clsx from "clsx";
@@ -7,8 +15,8 @@ import clsx from "clsx";
 import { Locale, localeLabels, locales } from "@/i18n/config";
 
 export default function ChangeLocale() {
-  const pathname = usePathname(); // current path with locale prefix
-  const currentLocale = useLocale() as Locale; // current locale
+  const pathname = usePathname();
+  const currentLocale = useLocale() as Locale;
 
   function switchLocale(nextLocale: string) {
     if (nextLocale === currentLocale) return;
@@ -19,10 +27,8 @@ export default function ChangeLocale() {
     if (segments.length === 0) {
       restPath = "";
     } else if (locales.includes(segments[0] as Locale)) {
-      // replace existing locale segment
       restPath = segments.slice(1).join("/");
     } else {
-      // no locale prefix yet, keep full path as rest
       restPath = segments.join("/");
     }
 
@@ -36,19 +42,37 @@ export default function ChangeLocale() {
   }
 
   return (
-    <div className="flex gap-2">
-      {locales.map((locale) => (
-        <button
-          key={locale}
-          onClick={() => switchLocale(locale)}
-          className={clsx({
-            "font-bold underline pointer-events-none cursor-default":
-              currentLocale === locale,
-          })}
+    <Dropdown placement="top" className="min-w-0">
+      <DropdownTrigger>
+        <Button
+          isIconOnly
+          aria-label="تغيير اللغة / Change language"
+          className={clsx(
+            "rounded-full bg-gray-100 border border-gray-200",
+            "hover:bg-gray-200 hover:border-gray-300 hover:shadow-sm",
+            "text-slate-600 hover:text-slate-800 transition-all duration-200",
+          )}
+          variant="flat"
         >
-          {localeLabels[locale]}
-        </button>
-      ))}
-    </div>
+          <LanguageIcon className="h-5 w-5" />
+        </Button>
+      </DropdownTrigger>
+      <DropdownMenu
+        aria-label="اختر اللغة"
+        selectedKeys={[currentLocale]}
+        selectionMode="single"
+        className="min-w-[140px]"
+      >
+        {locales.map((locale) => (
+          <DropdownItem
+            key={locale}
+            className="text-sm"
+            onPress={() => switchLocale(locale)}
+          >
+            {localeLabels[locale]}
+          </DropdownItem>
+        ))}
+      </DropdownMenu>
+    </Dropdown>
   );
 }

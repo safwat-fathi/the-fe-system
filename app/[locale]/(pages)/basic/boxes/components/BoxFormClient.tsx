@@ -145,6 +145,8 @@ const BoxFormClient = ({
       return;
     }
 
+    if (isSaving) return;
+
     setIsSaving(true);
 
     try {
@@ -164,7 +166,6 @@ const BoxFormClient = ({
         );
         await revalidateBoxes();
         router.push("/basic/boxes");
-        router.refresh();
       } else {
         toast.error(t("messages.operationFailed"));
       }

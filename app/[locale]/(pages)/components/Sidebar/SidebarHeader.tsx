@@ -13,7 +13,7 @@ const SidebarHeader = ({ isSidebarOpen, onToggle }: SidebarHeaderProps) => {
   const t = useTranslations("common");
 
   return (
-    <div className="relative border-b border-amber-900/30 bg-gradient-to-r from-amber-950/20 via-transparent to-transparent rounded-b-xl">
+    <div>
       <div
         className={`flex items-center h-16 mb-3 ${isSidebarOpen ? "justify-between" : "justify-center"}`}
       >

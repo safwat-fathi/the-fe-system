@@ -54,12 +54,15 @@ interface CostCentersClientProps {
   initialData: CostCenter[];
   initialAccounts: Account[];
   error: string | null;
+  /** الشركة الحالية — لعرض مراكز التكلفة الخاصة بها فقط وتجنب ظهور بيانات شركة أخرى */
+  currentCom?: string;
 }
 
 export default function CostCentersClient({
   initialData,
   initialAccounts,
   error,
+  currentCom,
 }: CostCentersClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -96,7 +99,27 @@ export default function CostCentersClient({
 
     return types[type] || t("types.unknown", { type });
   };
-  const [costCenters, setCostCenters] = useState<CostCenter[]>(initialData);
+
+  // تصفية مراكز التكلفة حسب الشركة الحالية (لتجنب ظهور مراكز شركة أخرى)
+  const filterByCurrentCom = useCallback(
+    (list: CostCenter[]) => {
+      if (!currentCom) return list;
+
+      return list.filter((cc) => {
+        const com = (cc as { com?: number | string }).com;
+
+        return com === undefined || com === null || String(com) === String(currentCom);
+      });
+    },
+    [currentCom],
+  );
+
+  const initialDataFiltered = useMemo(
+    () => filterByCurrentCom(initialData),
+    [initialData, filterByCurrentCom],
+  );
+
+  const [costCenters, setCostCenters] = useState<CostCenter[]>(initialDataFiltered);
   const [accounts] = useState<Account[]>(initialAccounts);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -106,17 +129,24 @@ export default function CostCentersClient({
 
   const rowsPerPage = 10;
 
+  // مزامنة القائمة مع البيانات القادمة من السيرفر (مثلاً بعد router.refresh())
+  const initialDataKey = `${initialDataFiltered.length}-${initialDataFiltered[0]?.id ?? ""}-${initialDataFiltered[initialDataFiltered.length - 1]?.id ?? ""}`;
+
+  useEffect(() => {
+    setCostCenters(initialDataFiltered);
+  }, [initialDataKey]); // eslint-disable-line react-hooks/exhaustive-deps -- sync from server when list content changes
+
   // إعادة تحميل البيانات
   const loadCostCenters = useCallback(async () => {
     try {
       const data = await costCenterService.getAllCostCenters();
 
-      setCostCenters(data);
+      setCostCenters(filterByCurrentCom(data));
     } catch {
       toast.error(t("messages.loadError"));
       setCostCenters([]);
     }
-  }, [t]);
+  }, [t, filterByCurrentCom]);
 
   // إعادة تحميل البيانات عند العودة للصفحة من صفحة أخرى
   useEffect(() => {
@@ -158,15 +188,23 @@ export default function CostCentersClient({
         costCenterToDelete.id,
       );
 
-      if (result) {
+      if (result.success) {
         toast.success(t("messages.deleteSuccess"));
 
-        // Revalidate cache
         await revalidateTableData("cost_centers_list");
 
-        loadCostCenters();
+        router.refresh();
       } else {
-        toast.error(t("messages.deleteFailed"));
+        const isLinkedError =
+          /ارتباط|حركات|حرك|transaction|vouch|voucher|قيود/i.test(
+            result.message ?? "",
+          );
+
+        toast.error(
+          isLinkedError
+            ? t("messages.cannotDeleteLinkedToTransactions")
+            : result.message || t("messages.deleteFailed"),
+        );
         loadCostCenters();
       }
     } catch {
