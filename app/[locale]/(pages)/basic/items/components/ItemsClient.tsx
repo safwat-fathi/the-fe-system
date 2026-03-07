@@ -21,6 +21,7 @@ import useFractions, { Fractions } from "@/utilities/useFractions";
 import itemService from "@/services/api/item.service";
 import { createItemColumns } from "@/components/items/itemColumns";
 import { ConfirmationModal } from "@/components/Modal";
+import { usePermissionStore } from "@/stores/permissionStore";
 
 type ItemsClientProps = {
   initialItems: ItemModel[];
@@ -163,6 +164,12 @@ export default function ItemsClient({
   const itemsPerTablePage = 20;
   const currentPageNum = Number(params.page ?? "1") || 1;
 
+  const ability = usePermissionStore((state) => state.ability);
+  const hasActionPermission =
+    ability.can("view", "basic.items") ||
+    ability.can("update", "basic.items") ||
+    ability.can("delete", "basic.items");
+
   const columns = useMemo(
     () =>
       createItemColumns({
@@ -173,8 +180,16 @@ export default function ItemsClient({
           value != null ? (itemTypeLookup.get(Number(value)) ?? "-") : "-",
         onDelete: handleDeleteClick,
         t,
+        hasActionPermission,
       }),
-    [fractions, categoryLookup, itemTypeLookup, handleDeleteClick, t],
+    [
+      fractions,
+      categoryLookup,
+      itemTypeLookup,
+      handleDeleteClick,
+      t,
+      hasActionPermission,
+    ],
   );
 
   return (

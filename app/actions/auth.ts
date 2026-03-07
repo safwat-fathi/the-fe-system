@@ -11,11 +11,14 @@ import { loginSchema } from "@/app/[locale]/auth/login/components/LoginForm/logi
 import { STORAGE_KEYS } from "@/constants";
 import { locales } from "@/i18n/config";
 import { authService } from "@/services/api";
+import userService from "@/app/[locale]/(pages)/settings/permissions/services/user.service";
 import { generateCSRFToken } from "@/utilities/csrf";
 
-interface LoginResult {
+export interface LoginResult {
   success: boolean;
   message?: string;
+  permissions?: any;
+  redirectUrl?: string;
   data?: {
     access: string;
     refresh: string;
@@ -63,11 +66,11 @@ async function persistCredentials(responseData: LoginResponseData) {
     return false;
   }
 
-  const accessTokenExpires = new Date(Date.now() + 1000 * 60 * 60);
-  const refreshTokenExpires = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
+  const ACCESS_TOKEN_TTL = 60 * 60;              // 1 hour in seconds
+  const REFRESH_TOKEN_TTL = 60 * 60 * 24 * 30;  // 30 days in seconds
 
   await setCookieAction(STORAGE_KEYS.ACCESS_TOKEN, accessToken, {
-    maxAge: accessTokenExpires.getTime() / 1000,
+    maxAge: ACCESS_TOKEN_TTL,
     path: "/",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -75,7 +78,7 @@ async function persistCredentials(responseData: LoginResponseData) {
   });
 
   await setCookieAction(STORAGE_KEYS.REFRESH_TOKEN, refreshToken, {
-    maxAge: refreshTokenExpires.getTime() / 1000,
+    maxAge: REFRESH_TOKEN_TTL,
     path: "/",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -84,7 +87,7 @@ async function persistCredentials(responseData: LoginResponseData) {
 
   if (typeof userId !== "undefined") {
     await setCookieAction(STORAGE_KEYS.USER_ID, String(userId), {
-      maxAge: refreshTokenExpires.getTime() / 1000,
+      maxAge: REFRESH_TOKEN_TTL,
       path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -94,7 +97,7 @@ async function persistCredentials(responseData: LoginResponseData) {
 
   if (typeof isAdmin !== "undefined") {
     await setCookieAction(STORAGE_KEYS.IS_ADMIN, String(isAdmin), {
-      maxAge: refreshTokenExpires.getTime() / 1000,
+      maxAge: REFRESH_TOKEN_TTL,
       path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -104,7 +107,7 @@ async function persistCredentials(responseData: LoginResponseData) {
 
   if (typeof companyId !== "undefined") {
     await setCookieAction(STORAGE_KEYS.COMPANY_ID, String(companyId), {
-      maxAge: refreshTokenExpires.getTime() / 1000,
+      maxAge: REFRESH_TOKEN_TTL,
       path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -114,7 +117,7 @@ async function persistCredentials(responseData: LoginResponseData) {
 
   if (typeof costId !== "undefined") {
     await setCookieAction(STORAGE_KEYS.COST_ID, String(costId), {
-      maxAge: refreshTokenExpires.getTime() / 1000,
+      maxAge: REFRESH_TOKEN_TTL,
       path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -124,7 +127,7 @@ async function persistCredentials(responseData: LoginResponseData) {
 
   if (typeof finYear !== "undefined") {
     await setCookieAction(STORAGE_KEYS.FIN_YEAR, String(finYear), {
-      maxAge: refreshTokenExpires.getTime() / 1000,
+      maxAge: REFRESH_TOKEN_TTL,
       path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -136,7 +139,7 @@ async function persistCredentials(responseData: LoginResponseData) {
 
   if (typeof username !== "undefined") {
     await setCookieAction(STORAGE_KEYS.USERNAME, String(username), {
-      maxAge: refreshTokenExpires.getTime() / 1000,
+      maxAge: REFRESH_TOKEN_TTL,
       path: "/",
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
@@ -237,6 +240,16 @@ export async function loginAction(
   const finalRedirect = buildRedirectPath(redirectPath, locale);
 
   redirect(finalRedirect);
+}
+
+export async function getUserPermissions() {
+  const response = await userService.getAuthPermissions();
+
+  if (!response.success || !response?.data?.permissions) {
+    return null;
+  }
+
+  return response.data.permissions;
 }
 
 export async function deleteCredentials() {

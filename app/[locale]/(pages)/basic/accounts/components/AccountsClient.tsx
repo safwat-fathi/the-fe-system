@@ -29,6 +29,8 @@ import { revalidateTableData } from "@/app/actions/revalidate.action";
 import Breadcrumb, { BreadcrumbItem } from "@/components/Breadcrumb";
 import { Account } from "@/types/models/account";
 import { Currency } from "@/types/models/currency";
+import { Can } from "@/components/providers/AbilityProvider";
+import { usePermissionStore } from "@/stores/permissionStore";
 
 // Simple icon components
 const FolderEmoji = ({ className }: { className?: string }) => (
@@ -54,10 +56,16 @@ export default function AccountsClient({
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.accounts");
 
+  const ability = usePermissionStore((state) => state.ability);
+  const hasActionPermission =
+    ability.can("view", "basic.accounts") ||
+    ability.can("update", "basic.accounts") ||
+    ability.can("delete", "basic.accounts");
+
   // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = "text-center";
-  
+
   // Helper function to get margin class based on level and direction
   const getMarginClass = (level: number) => {
     if (level === 0) return "";
@@ -384,7 +392,9 @@ export default function AccountsClient({
           </div>
 
           {hasChildren && isExpanded && (
-            <div className={`${dir === "rtl" ? "mr-4 border-r" : "ml-4 border-l"} border-gray-200`}>
+            <div
+              className={`${dir === "rtl" ? "mr-4 border-r" : "ml-4 border-l"} border-gray-200`}
+            >
               {renderAccountTree(account.children!, level + 1)}
             </div>
           )}
@@ -511,14 +521,16 @@ export default function AccountsClient({
     <div className="accounts-container bg-gray-50">
       <div className="max-w-7xl mx-auto pb-6">
         <div className="flex flex-wrap items-center gap-3 mb-2">
-          <Button
-            className="bg-gray-100 hover:bg-gray-200 border-gray-300"
-            startContent={<PlusIcon className="h-4 w-4" />}
-            variant="bordered"
-            onPress={handleAddAccount}
-          >
-            {t("labels.addAccount")}
-          </Button>
+          <Can I="create" a="basic.accounts">
+            <Button
+              className="bg-gray-100 hover:bg-gray-200 border-gray-300"
+              startContent={<PlusIcon className="h-4 w-4" />}
+              variant="bordered"
+              onPress={handleAddAccount}
+            >
+              {t("labels.addAccount")}
+            </Button>
+          </Can>
 
           <div className="h-8 w-px bg-gray-300" />
 
@@ -750,11 +762,13 @@ export default function AccountsClient({
                               >
                                 {t("fields.currency")}
                               </th>
-                              <th
-                                className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}
-                              >
-                                {t("fields.actions")}
-                              </th>
+                              {hasActionPermission && (
+                                <th
+                                  className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}
+                                >
+                                  {t("fields.actions")}
+                                </th>
+                              )}
                             </tr>
                           </thead>
                           <tbody>
@@ -802,44 +816,52 @@ export default function AccountsClient({
                                       (c) => c.id === account.cur,
                                     )?.cur_name || t("states.currencyNotSet")}
                                   </td>
-                                  <td className="border border-gray-300 px-2 py-1 text-xs">
-                                    <div className="flex items-center justify-center gap-2">
-                                      <Button
-                                        isIconOnly
-                                        size="sm"
-                                        title={t("labels.view")}
-                                        variant="light"
-                                        onPress={() => {
-                                          handleViewAccount(account);
-                                        }}
-                                      >
-                                        <EyeIcon className="h-4 w-4 text-blue-500" />
-                                      </Button>
-                                      <Button
-                                        isIconOnly
-                                        size="sm"
-                                        title={t("labels.edit")}
-                                        variant="light"
-                                        onPress={() => {
-                                          handleEditAccount(account);
-                                        }}
-                                      >
-                                        <PencilIcon className="h-4 w-4 text-yellow-500" />
-                                      </Button>
-                                      <Button
-                                        isIconOnly
-                                        color="danger"
-                                        size="sm"
-                                        title={t("labels.delete")}
-                                        variant="light"
-                                        onPress={() => {
-                                          handleDeleteAccount(account.id);
-                                        }}
-                                      >
-                                        <TrashIcon className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </td>
+                                  {hasActionPermission && (
+                                    <td className="border border-gray-300 px-2 py-1 text-xs">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <Can I="view" a="basic.accounts">
+                                          <Button
+                                            isIconOnly
+                                            size="sm"
+                                            title={t("labels.view")}
+                                            variant="light"
+                                            onPress={() => {
+                                              handleViewAccount(account);
+                                            }}
+                                          >
+                                            <EyeIcon className="h-4 w-4 text-blue-500" />
+                                          </Button>
+                                        </Can>
+                                        <Can I="update" a="basic.accounts">
+                                          <Button
+                                            isIconOnly
+                                            size="sm"
+                                            title={t("labels.edit")}
+                                            variant="light"
+                                            onPress={() => {
+                                              handleEditAccount(account);
+                                            }}
+                                          >
+                                            <PencilIcon className="h-4 w-4 text-yellow-500" />
+                                          </Button>
+                                        </Can>
+                                        <Can I="delete" a="basic.accounts">
+                                          <Button
+                                            isIconOnly
+                                            color="danger"
+                                            size="sm"
+                                            title={t("labels.delete")}
+                                            variant="light"
+                                            onPress={() => {
+                                              handleDeleteAccount(account.id);
+                                            }}
+                                          >
+                                            <TrashIcon className="h-4 w-4" />
+                                          </Button>
+                                        </Can>
+                                      </div>
+                                    </td>
+                                  )}
                                 </tr>
                               ))}
                             <tr>
@@ -874,44 +896,54 @@ export default function AccountsClient({
                                   (c) => c.id === selectedAccount.cur,
                                 )?.cur_name || t("states.currencyNotSet")}
                               </td>
-                              <td className="border border-gray-300 px-2 py-1 text-xs">
-                                <div className="flex items-center justify-center gap-2">
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    title={t("labels.view")}
-                                    variant="light"
-                                    onPress={() => {
-                                      handleViewAccount(selectedAccount);
-                                    }}
-                                  >
-                                    <EyeIcon className="h-4 w-4 text-blue-500" />
-                                  </Button>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    title={t("labels.edit")}
-                                    variant="light"
-                                    onPress={() => {
-                                      handleEditAccount(selectedAccount);
-                                    }}
-                                  >
-                                    <PencilIcon className="h-4 w-4 text-yellow-500" />
-                                  </Button>
-                                  <Button
-                                    isIconOnly
-                                    color="danger"
-                                    size="sm"
-                                    title={t("labels.delete")}
-                                    variant="light"
-                                    onPress={() => {
-                                      handleDeleteAccount(selectedAccount.id);
-                                    }}
-                                  >
-                                    <TrashIcon className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </td>
+                              {hasActionPermission && (
+                                <td className="border border-gray-300 px-2 py-1 text-xs">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <Can I="view" a="basic.accounts">
+                                      <Button
+                                        isIconOnly
+                                        size="sm"
+                                        title={t("labels.view")}
+                                        variant="light"
+                                        onPress={() => {
+                                          handleViewAccount(selectedAccount);
+                                        }}
+                                      >
+                                        <EyeIcon className="h-4 w-4 text-blue-500" />
+                                      </Button>
+                                    </Can>
+                                    <Can I="update" a="basic.accounts">
+                                      <Button
+                                        isIconOnly
+                                        size="sm"
+                                        title={t("labels.edit")}
+                                        variant="light"
+                                        onPress={() => {
+                                          handleEditAccount(selectedAccount);
+                                        }}
+                                      >
+                                        <PencilIcon className="h-4 w-4 text-yellow-500" />
+                                      </Button>
+                                    </Can>
+                                    <Can I="delete" a="basic.accounts">
+                                      <Button
+                                        isIconOnly
+                                        color="danger"
+                                        size="sm"
+                                        title={t("labels.delete")}
+                                        variant="light"
+                                        onPress={() => {
+                                          handleDeleteAccount(
+                                            selectedAccount.id,
+                                          );
+                                        }}
+                                      >
+                                        <TrashIcon className="h-4 w-4" />
+                                      </Button>
+                                    </Can>
+                                  </div>
+                                </td>
+                              )}
                             </tr>
                           </tbody>
                         </table>

@@ -1,28 +1,49 @@
 import { create } from "zustand";
 
-import { UserPermissions, MergedPermissions } from "@/types/models/menu";
+import {
+  buildAbility,
+  type AppAbility,
+  type AppAbilities,
+} from "@/lib/casl/ability";
+
+export interface BackendPermission {
+  com: number;
+  obj: number;
+  obj_name: string;
+  priv_status: boolean;
+  obj_source: string;
+  parent_obj_name: string;
+  group: number;
+  rule_name: string | null;
+}
 
 interface PermissionState {
-  permissions: UserPermissions | null;
-  mergedPermissions: MergedPermissions;
+  permissions: BackendPermission[] | null;
+  ability: AppAbility;
   isLoading: boolean;
   error: string | null;
 
   // Actions
-  setPermissions: (permissions: UserPermissions) => void;
+  setPermissions: (permissions: BackendPermission[]) => void;
   clearPermissions: () => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
 
   // Helpers
-  hasPermission: (objectId: number, permission: string) => boolean;
-  hasAnyPermission: (objectId: number, permissions: string[]) => boolean;
-  hasAllPermissions: (objectId: number, permissions: string[]) => boolean;
+  hasPermission: (objectId: number, permission: AppAbilities[0]) => boolean;
+  hasAnyPermission: (
+    objectId: number,
+    permissions: AppAbilities[0][],
+  ) => boolean;
+  hasAllPermissions: (
+    objectId: number,
+    permissions: AppAbilities[0][],
+  ) => boolean;
 }
 
 const initialState = {
   permissions: null,
-  mergedPermissions: {},
+  ability: buildAbility([]),
   isLoading: false,
   error: null,
 };
@@ -30,10 +51,10 @@ const initialState = {
 export const usePermissionStore = create<PermissionState>((set, get) => ({
   ...initialState,
 
-  setPermissions: (permissions: UserPermissions) => {
+  setPermissions: (permissions: BackendPermission[]) => {
     set({
       permissions,
-      mergedPermissions: permissions.merged_permissions,
+      ability: buildAbility(permissions || []),
       error: null,
     });
   },
@@ -50,24 +71,19 @@ export const usePermissionStore = create<PermissionState>((set, get) => ({
     set({ error, isLoading: false });
   },
 
-  hasPermission: (objectId: number, permission: string) => {
-    const { mergedPermissions } = get();
-    const objectPermissions = mergedPermissions[objectId.toString()] || [];
-
-    return objectPermissions.includes(permission);
+  hasPermission: (objectId: number, permission: AppAbilities[0]) => {
+    return get().ability.can(permission, String(objectId));
   },
 
-  hasAnyPermission: (objectId: number, permissions: string[]) => {
-    const { mergedPermissions } = get();
-    const objectPermissions = mergedPermissions[objectId.toString()] || [];
-
-    return permissions.some((perm) => objectPermissions.includes(perm));
+  hasAnyPermission: (objectId: number, permissions: AppAbilities[0][]) => {
+    return permissions.some((permission) =>
+      get().ability.can(permission, String(objectId)),
+    );
   },
 
-  hasAllPermissions: (objectId: number, permissions: string[]) => {
-    const { mergedPermissions } = get();
-    const objectPermissions = mergedPermissions[objectId.toString()] || [];
-
-    return permissions.every((perm) => objectPermissions.includes(perm));
+  hasAllPermissions: (objectId: number, permissions: AppAbilities[0][]) => {
+    return permissions.every((permission) =>
+      get().ability.can(permission, String(objectId)),
+    );
   },
 }));

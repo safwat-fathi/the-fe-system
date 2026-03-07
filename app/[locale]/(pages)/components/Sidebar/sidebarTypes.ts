@@ -35,6 +35,10 @@ export type SidebarLinkBase = {
   icon: ReactNode;
   prefetch?: boolean;
   requiredObjectIds?: number[];
+  /** CASL subject string (e.g. "basic.items", "forms.purchase").
+   *  When set, sidebar visibility is determined by ability.can(anyAction, caslSubject)
+   *  instead of requiredObjectIds / menuObjects lookup. */
+  caslSubject?: string;
 };
 
 export type HomeLinkConfig = SidebarLinkBase & {

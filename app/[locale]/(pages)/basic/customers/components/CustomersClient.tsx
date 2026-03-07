@@ -9,18 +9,14 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
-import {
-  Input,
-  Button,
-  Pagination,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Input, Button, Pagination, Select, SelectItem } from "@heroui/react";
 
 import customerService from "@/services/api/customer.service";
 import { ConfirmationModal } from "@/components/Modal";
 import AppDataTable from "@/components/AppDataTable";
 import { createCustomerColumns } from "@/components/customers/customerColumns";
+import { Can } from "@/components/providers/AbilityProvider";
+import { usePermissionStore } from "@/stores/permissionStore";
 
 interface Customer {
   id: number;
@@ -107,14 +103,21 @@ export default function CustomersClient({
     [customerStatus],
   );
 
+  const ability = usePermissionStore((state) => state.ability);
+  const hasActionPermission =
+    ability.can("view", "basic.customers") ||
+    ability.can("update", "basic.customers") ||
+    ability.can("delete", "basic.customers");
+
   const columns = useMemo(
     () =>
       createCustomerColumns({
         getStatusLabel,
         onDelete: handleDeleteClick,
         t,
+        hasActionPermission,
       }),
-    [getStatusLabel, handleDeleteClick, t],
+    [getStatusLabel, handleDeleteClick, t, hasActionPermission],
   );
 
   const customerTypeOptions = useMemo(
@@ -229,18 +232,20 @@ export default function CustomersClient({
     <div className="flex flex-col flex-1 min-h-0">
       <div className="flex-shrink-0 flex flex-wrap items-center gap-1.5 mb-1">
         {/* زر إضافة عميل */}
-        <Button
-          className="bg-gray-100 hover:bg-gray-200 border-gray-300"
-          size="sm"
-          startContent={<PlusIcon className="h-3 w-3" />}
-          variant="bordered"
-          onPress={() => router.push("/basic/customers/new")}
-        >
-          {t("actions.add")}
-        </Button>
+        <Can I="create" a="basic.customers">
+          <Button
+            className="bg-gray-100 hover:bg-gray-200 border-gray-300"
+            size="sm"
+            startContent={<PlusIcon className="h-3 w-3" />}
+            variant="bordered"
+            onPress={() => router.push("/basic/customers/new")}
+          >
+            {t("actions.add")}
+          </Button>
 
-        {/* فاصل خطي */}
-        <div className="h-5 w-px bg-gray-300" />
+          {/* فاصل خطي */}
+          <div className="h-5 w-px bg-gray-300" />
+        </Can>
 
         {/* حقول الفرز */}
         <div className="flex flex-wrap items-center gap-1 flex-1">

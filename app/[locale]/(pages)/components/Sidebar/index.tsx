@@ -27,6 +27,21 @@ import {
   type SidebarPermissionKey,
 } from "./sidebarPermissions";
 
+import { usePermissionStore } from "@/stores/permissionStore";
+import { type AppAbilities } from "@/lib/casl/ability";
+
+// All actions we recognise — used to ask "can the user do ANYTHING on this subject?"
+const APP_ACTIONS: AppAbilities[0][] = [
+  "view",
+  "read",
+  "create",
+  "update",
+  "delete",
+  "export",
+  "print",
+  "manage",
+];
+
 type MenuPathMaps = {
   withQuery: Map<string, MenuObject>;
   withoutQuery: Map<string, MenuObject>;
@@ -120,6 +135,7 @@ const Sidebar = ({
   allowedObjectIds = [],
   menuObjects = [],
 }: SidebarProps): JSX.Element => {
+  const ability = usePermissionStore((state) => state.ability);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const locale = useLocale();
 
@@ -187,6 +203,15 @@ const Sidebar = ({
         return true;
       }
 
+      // --- CASL ability check (takes priority when caslSubject is declared) ---
+      if (link.caslSubject) {
+        // Show the link if the user has ANY permission on this subject
+        return APP_ACTIONS.some((action) =>
+          ability.can(action, link.caslSubject!),
+        );
+      }
+
+      // --- Fallback: legacy object-ID check ---
       if (allowedIdsSet.size === 0) {
         return false;
       }
@@ -210,7 +235,7 @@ const Sidebar = ({
 
       return objectIds.some((id) => allowedIdsSet.has(id));
     },
-    [allowedIdsSet, getObjectIdsFromMenu, isAdmin],
+    [ability, allowedIdsSet, getObjectIdsFromMenu, isAdmin],
   );
 
   const filterLinks = useCallback(
@@ -266,9 +291,17 @@ const Sidebar = ({
         return true;
       }
 
-      return ids.some((id) => allowedIdsSet.has(id));
+      // If objectId check passes, show the section
+      if (ids.some((id) => allowedIdsSet.has(id))) {
+        return true;
+      }
+
+      // If the ability has been loaded with any rules, allow the section container
+      // through — individual link filtering (visibleLinks.length > 0) acts as the
+      // real gate, so an empty section will still collapse naturally.
+      return ability.rules.length > 0;
     },
-    [allowedIdsSet, isAdmin],
+    [ability, allowedIdsSet, isAdmin],
   );
 
   const translateLinkLabel: TranslateLinkLabel = (link: SidebarLinkConfig) => {

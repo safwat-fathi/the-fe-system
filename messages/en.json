@@ -988,6 +988,13 @@
     "body": "Sorry, we couldn't find the page you're looking for. It might have been removed or moved to a different location.",
     "backToHome": "Back to home"
   },
+  "unauthorized": {
+    "title": "Unauthorized - 401",
+    "description": "Sorry, you don't have permission to access this page.",
+    "heading": "Unauthorized",
+    "body": "Sorry, you don't have permission to access this page.",
+    "backToHome": "Back to home"
+  },
   "reports": {
     "invoices": {
       "title": "Invoice Reports",

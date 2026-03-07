@@ -5,6 +5,7 @@
 
 import { User } from "../types/users";
 
+import { getCookieAction } from "@/app/actions/cookie-store";
 import HttpService from "@/services/base/http.service";
 
 class UserPermissionService extends HttpService {
@@ -143,7 +144,7 @@ class UserPermissionService extends HttpService {
   }
 
   /**
-   * Get user permissions
+   * Get user permissions by ID (for admin/manager)
    */
   async getPermissions(id: number): Promise<any[]> {
     try {
@@ -165,6 +166,37 @@ class UserPermissionService extends HttpService {
       console.error("Error fetching user permissions:", error);
 
       return [];
+    }
+  }
+
+  /**
+   * Get authenticated user permissions (current session)
+   */
+  async getAuthPermissions(): Promise<any> {
+    const username = await getCookieAction("username");
+    const companyId = await getCookieAction("com");
+
+    try {
+      const response = await this.get<any>(
+        `user_object_permissions`,
+        {
+          username: username || "",
+          com: companyId,
+        },
+        {
+          cache: "force-cache",
+          next: { tags: [`user-permissions-${username}`], revalidate: 300 },
+        },
+      );
+
+      return response;
+    } catch (error) {
+      console.error("Error fetching auth user permissions:", error);
+
+      return {
+        success: false,
+        data: { permissions: [], user_cost_centers: [] },
+      };
     }
   }
 

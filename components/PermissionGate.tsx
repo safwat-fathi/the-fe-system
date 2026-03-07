@@ -3,10 +3,11 @@
 import { ReactNode } from "react";
 
 import { usePermissionStore } from "@/stores/permissionStore";
+import { AppAbilities } from "@/lib/casl/ability";
 
 export interface PermissionGateProps {
   objectId: number;
-  permission: string | string[];
+  permission: AppAbilities[0] | AppAbilities[0][];
   children: ReactNode;
   fallback?: ReactNode;
   requireAll?: boolean;
@@ -33,10 +34,10 @@ export default function PermissionGate({
 
   const hasAccess =
     typeof permission === "string"
-      ? hasPermission(objectId, permission)
+      ? hasPermission(objectId, permission as AppAbilities[0])
       : requireAll
-        ? hasAllPermissions(objectId, permission)
-        : hasAnyPermission(objectId, permission);
+        ? hasAllPermissions(objectId, permission as AppAbilities[0][])
+        : hasAnyPermission(objectId, permission as AppAbilities[0][]);
 
   if (!hasAccess) {
     return <>{fallback}</>;

@@ -1,19 +1,38 @@
 "use client";
 
 import { Form, Input, Spacer, Button } from "@heroui/react";
-import { useSearchParams } from "next/navigation";
-import { useActionState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useActionState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 
 import ChangeLocale from "../ChangeLocale";
 
-import { loginAction } from "@/app/actions/auth";
+import { usePermissionStore } from "@/stores/permissionStore";
+import { loginAction, type LoginResult } from "@/app/actions/auth";
 
 const LoginForm = () => {
+  const router = useRouter();
+  const setPermissions = usePermissionStore((state) => state.setPermissions);
   const t = useTranslations("auth.login");
-  const [state, action, pending] = useActionState(loginAction, undefined);
+
+  const [state, action, pending] = useActionState<
+    LoginResult | void | undefined,
+    FormData
+  >(loginAction, undefined);
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/"; // default redirect
+
+  // Watch for successful login action resolution
+  useEffect(() => {
+    if (state?.success && state?.redirectUrl) {
+      if (state.permissions) {
+        setPermissions(state.permissions);
+      }
+
+      router.push(state.redirectUrl);
+      router.refresh();
+    }
+  }, [state, router, setPermissions]);
 
   return (
     <div className="flex flex-col gap-4">

@@ -1,77 +1,175 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import { STORAGE_KEYS } from "@/constants";
+import { defaultLocale, locales } from "@/i18n/config";
 import { MiddlewareFactory } from "@/middleware";
 
-// Define route permissions mapping
-const ROUTE_PERMISSIONS: Record<string, string[]> = {
-  // Dashboard permissions
-  "": ["view_dashboard"],
+interface BackendPermission {
+  com: number;
+  obj: number;
+  obj_name: string;
+  priv_status: boolean;
+  obj_source: string;
+  parent_obj_name: string;
+  group: number;
+  rule_name: string | null;
+}
 
-  // User management permissions
-  "/users": ["manage_users"],
-  "/users/*": ["manage_users"],
+type PermissionMap = Map<string, Set<string>>;
 
-  // Admin panel permissions
-  "/admin": ["admin_access"],
-  "/admin/*": ["admin_access"],
+const PUBLIC_PATHS = new Set(["/", "/unauthorized"]);
 
-  // Invoice management permissions
-  "/invoices": ["view_invoices"],
-  "/invoices/*": ["view_invoices"],
-  "/create-invoice": ["create_invoice"],
-  "/edit-invoice/*": ["edit_invoice"],
+const parsePermissions = (permissions: BackendPermission[]): PermissionMap => {
+  const map: PermissionMap = new Map();
 
-  // Customer management permissions
-  "/customers": ["view_customers"],
-  "/customers/*": ["view_customers"],
+  for (const perm of permissions) {
+    if (!perm.priv_status || !perm.obj_source) continue;
 
-  // Item management permissions
-  "/items": ["view_items"],
-  "/items/*": ["view_items"],
+    const sources = perm.obj_source.split(",").map((s) => s.trim());
 
-  // Settings permissions
-  "/settings": ["manage_settings"],
-  "/settings/*": ["manage_settings"],
+    for (const source of sources) {
+      const lastDot = source.lastIndexOf(".");
+
+      if (lastDot === -1) continue;
+
+      const resourceKey = source.substring(0, lastDot);
+      const action = source.substring(lastDot + 1);
+
+      if (!map.has(resourceKey)) {
+        map.set(resourceKey, new Set());
+      }
+
+      map.get(resourceKey)!.add(action);
+    }
+  }
+
+  return map;
 };
 
-// Function to get user permissions from the API
-const getUserPermissions = async (): Promise<string[]> => {
+const getUserPermissions = async (
+  username: string,
+  companyId: string,
+  token: string,
+): Promise<PermissionMap> => {
   try {
-    // In a real implementation, you would call the API to get permissions
-    // const response = await UserService.getUserPermissions(username);
-    // return response?.permissions || [];
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-    // For demonstration purposes, return a default set of permissions
-    // In a real implementation, you'd fetch from your backend
-    return ["view_dashboard", "view_invoices", "view_customers"]; // default permissions
+    if (!baseUrl) {
+      throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
+    }
+
+    const fetchUrl = `${baseUrl}/user_object_permissions?username=${username}&com=${companyId}`;
+
+    const response = await fetch(fetchUrl, {
+      headers: {
+        Authorization: `Bearer ${token.replace(/['"]+/g, "")}`,
+        Accept: "application/json",
+      },
+      next: { revalidate: 300, tags: [`user-permissions-${username}`] },
+    });
+
+    if (!response.ok) {
+      return new Map();
+    }
+
+    const json = await response.json();
+
+    if (!json.permissions || !Array.isArray(json.permissions)) {
+      return new Map();
+    }
+
+    return parsePermissions(json.permissions);
   } catch (error) {
     console.error("Error fetching user permissions:", error);
 
-    return []; // Return empty permissions if there's an error
+    return new Map();
   }
 };
 
-// Function to check if user has required permissions
+const derivePermission = (
+  pathnameWithoutLocale: string,
+): { resourceKey: string; action: string } | null => {
+  const segments = pathnameWithoutLocale.split("/").filter(Boolean);
+
+  if (segments.length < 2) return null;
+
+  const parent = segments[0];
+  const resource = segments[1];
+  const resourceKey = `${parent}.${resource}`;
+
+  if (segments.length === 2) {
+    return { resourceKey, action: "view" };
+  }
+
+  const third = segments[2];
+
+  if (third === "new") {
+    return { resourceKey, action: "create" };
+  }
+
+  return { resourceKey, action: "update" };
+};
+
 const hasPermission = (
-  userPermissions: string[],
-  requiredPermissions: string[],
+  permissionMap: PermissionMap,
+  resourceKey: string,
+  requiredAction: string,
 ): boolean => {
-  if (!requiredPermissions || requiredPermissions.length === 0) {
-    return true; // If no specific permissions required, allow access
-  }
+  const actions = permissionMap.get(resourceKey);
 
-  return requiredPermissions.some((permission) =>
-    userPermissions.includes(permission),
-  );
+  if (!actions) return false;
+
+  if (actions.has(requiredAction)) return true;
+
+  if (requiredAction === "view") return actions.size > 0;
+
+  return false;
 };
 
-const rbacMiddleware: MiddlewareFactory = () => {
-  return async (request: NextRequest) => {
+const getLocaleAndPathname = (pathname: string) => {
+  const segments = pathname.split("/").filter(Boolean);
+
+  if (segments.length === 0) {
+    return {
+      locale: defaultLocale,
+      pathnameWithoutLocale: "/",
+    };
+  }
+
+  const potentialLocale = segments[0];
+  const hasLocale = locales.includes(
+    potentialLocale as (typeof locales)[number],
+  );
+
+  const locale = hasLocale ? potentialLocale : defaultLocale;
+  const remainingSegments = hasLocale ? segments.slice(1) : segments;
+
+  const pathnameWithoutLocale =
+    remainingSegments.length > 0 ? `/${remainingSegments.join("/")}` : "/";
+
+  return {
+    locale,
+    pathnameWithoutLocale,
+  };
+};
+
+const rbacMiddleware: MiddlewareFactory = (next) => {
+  return async (request, event) => {
     const { pathname } = request.nextUrl;
+    const { locale, pathnameWithoutLocale } = getLocaleAndPathname(pathname);
+
+    if (PUBLIC_PATHS.has(pathnameWithoutLocale)) {
+      return next(request, event);
+    }
+
+    const isAdmin =
+      request.cookies.get(STORAGE_KEYS.IS_ADMIN)?.value === "true";
+
+    if (isAdmin) {
+      return next(request, event);
+    }
 
     try {
-      // Get user data from cookies or session
       const userData = request.cookies.get(STORAGE_KEYS.USER_DATA)?.value;
       let username = null;
 
@@ -85,51 +183,47 @@ const rbacMiddleware: MiddlewareFactory = () => {
         }
       }
 
-      // If we can't determine the user, skip RBAC check
-      if (!username) {
-        return NextResponse.next();
+      const usernameCookie = request.cookies.get(STORAGE_KEYS.USERNAME)?.value;
+      const companyIdCookie = request.cookies.get(
+        STORAGE_KEYS.COMPANY_ID,
+      )?.value;
+      const tokenCookie = request.cookies.get(STORAGE_KEYS.ACCESS_TOKEN)?.value;
+
+      const computedUsername = usernameCookie || username;
+
+      if (!computedUsername || !tokenCookie) {
+        return next(request, event);
       }
 
-      // Get user permissions
-      const userPermissions = await getUserPermissions();
+      const derived = derivePermission(pathnameWithoutLocale);
 
-      // Find permissions required for the current path
-      let requiredPermissions: string[] = [];
-
-      // Check for exact route match first
-      if (ROUTE_PERMISSIONS[pathname]) {
-        requiredPermissions = ROUTE_PERMISSIONS[pathname];
-      } else {
-        // Check for wildcard matches (e.g., /users/* for /users/123)
-        const wildcardMatches = Object.entries(ROUTE_PERMISSIONS)
-          .filter(
-            ([path, _]) =>
-              path.endsWith("/*") &&
-              pathname.startsWith(path.replace("/*", "/")),
-          )
-          .map(([_, perms]) => perms);
-
-        if (wildcardMatches.length > 0) {
-          // Use permissions from the first matching wildcard route
-          requiredPermissions = wildcardMatches[0];
-        }
+      if (!derived) {
+        return next(request, event);
       }
 
-      // Check if user has required permissions
-      const hasAccess = hasPermission(userPermissions, requiredPermissions);
+      const permissionMap = await getUserPermissions(
+        computedUsername,
+        companyIdCookie || "1",
+        tokenCookie,
+      );
+
+      const hasAccess = hasPermission(
+        permissionMap,
+        derived.resourceKey,
+        derived.action,
+      );
 
       if (!hasAccess) {
-        // If user doesn't have permission, redirect to unauthorized page
-        return NextResponse.redirect(new URL("/unauthorized", request.url));
+        const unauthorizedUrl = new URL(`/${locale}/unauthorized`, request.url);
+
+        return NextResponse.redirect(unauthorizedUrl);
       }
 
-      // User has permission, continue to next middleware
-      return NextResponse.next();
+      return next(request, event);
     } catch (error) {
       console.error("Error in RBAC middleware:", error);
 
-      // On error, allow the request to continue to avoid blocking users
-      return NextResponse.next();
+      return next(request, event);
     }
   };
 };

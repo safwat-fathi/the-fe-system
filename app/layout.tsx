@@ -6,6 +6,8 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { Providers } from "./providers";
 
+import { getUserPermissions } from "@/app/actions/auth";
+import { PermissionsInitializer } from "@/components/providers/PermissionsInitializer";
 import { Locale, defaultLocale, getLocaleDir, locales } from "@/i18n/config";
 import { getMessages } from "@/i18n/messages";
 
@@ -44,6 +46,7 @@ export default async function RootLayout({
     : defaultLocale;
   const dir = getLocaleDir(locale);
   const messages = await getMessages(locale);
+  const permissions = await getUserPermissions();
 
   return (
     <html suppressHydrationWarning dir={dir} lang={locale}>
@@ -53,6 +56,7 @@ export default async function RootLayout({
         className={clsx("min-h-screen bg-background font-sans antialiased")}
       >
         <NextIntlClientProvider locale={locale} messages={messages as any}>
+          <PermissionsInitializer permissions={permissions} />
           <Providers
             themeProps={{
               attribute: "class",

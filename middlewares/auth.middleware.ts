@@ -46,9 +46,10 @@ const authMiddleware: MiddlewareFactory = (next) => {
     const { locale, pathnameWithoutLocale } = getLocaleAndPathname(pathname);
     const isLoginRoute = pathnameWithoutLocale === "/auth/login";
 
-    // Skip authentication for public routes
-    if (isPublicRoute(pathnameWithoutLocale)) {
-      return next(request, event);
+    if (isPublicRoute(pathnameWithoutLocale) && !isLoginRoute) {
+      const res = await next(request, event);
+
+      return res || NextResponse.next();
     }
 
     try {
@@ -65,7 +66,9 @@ const authMiddleware: MiddlewareFactory = (next) => {
         }
 
         // If token is not valid, allow access to login page
-        return next(request, event);
+        const res = await next(request, event);
+
+        return res || NextResponse.next();
       }
 
       if (!hasValidToken) {
@@ -88,12 +91,15 @@ const authMiddleware: MiddlewareFactory = (next) => {
       // TODO: Add token verification implementation
 
       // Token exists, allow the request to proceed
-      return next(request, event);
+      const res = await next(request, event);
+
+      return res || NextResponse.next();
     } catch {
       // If there's an error checking auth, redirect to localized login
-      // Don't redirect if we're already on the login page
       if (isLoginRoute) {
-        return next(request, event);
+        const res = await next(request, event);
+
+        return res || NextResponse.next();
       }
 
       const loginUrl = new URL(`/${locale}/auth/login`, request.url);

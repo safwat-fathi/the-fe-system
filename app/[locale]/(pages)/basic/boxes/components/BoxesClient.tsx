@@ -27,6 +27,7 @@ import { getLocaleDir } from "@/i18n/config";
 import { ConfirmationModal } from "@/components/Modal";
 import boxService from "@/services/api/box.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
+import { Can } from "@/components/providers/AbilityProvider";
 
 // Interface for customer boxes (customers with cust_type = 99)
 interface CustomerBox {
@@ -189,34 +190,40 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
   const renderActions = (box: CustomerBox) => (
     <div className="flex gap-2">
-      <Button
-        isIconOnly
-        size="sm"
-        title={t("actions.view")}
-        variant="light"
-        onPress={() => router.push(`/basic/boxes/${box.id}`)}
-      >
-        <EyeIcon className="h-4 w-4 text-blue-500" />
-      </Button>
-      <Button
-        isIconOnly
-        size="sm"
-        title={t("actions.edit")}
-        variant="light"
-        onPress={() => router.push(`/basic/boxes/${box.id}?mode=edit`)}
-      >
-        <PencilIcon className="h-4 w-4 text-yellow-500" />
-      </Button>
-      <Button
-        isIconOnly
-        color="danger"
-        size="sm"
-        title={t("actions.delete")}
-        variant="light"
-        onPress={() => handleDeleteClick(box)}
-      >
-        <TrashIcon className="h-4 w-4" />
-      </Button>
+      <Can I="view" a="basic.boxes">
+        <Button
+          isIconOnly
+          size="sm"
+          title={t("actions.view")}
+          variant="light"
+          onPress={() => router.push(`/basic/boxes/${box.id}`)}
+        >
+          <EyeIcon className="h-4 w-4 text-blue-500" />
+        </Button>
+      </Can>
+      <Can I="update" a="basic.boxes">
+        <Button
+          isIconOnly
+          size="sm"
+          title={t("actions.edit")}
+          variant="light"
+          onPress={() => router.push(`/basic/boxes/${box.id}?mode=edit`)}
+        >
+          <PencilIcon className="h-4 w-4 text-yellow-500" />
+        </Button>
+      </Can>
+      <Can I="delete" a="basic.boxes">
+        <Button
+          isIconOnly
+          color="danger"
+          size="sm"
+          title={t("actions.delete")}
+          variant="light"
+          onPress={() => handleDeleteClick(box)}
+        >
+          <TrashIcon className="h-4 w-4" />
+        </Button>
+      </Can>
     </div>
   );
 
@@ -238,15 +245,17 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
           {t("labels.manage")}
         </h2>
         <div className="h-8 w-px bg-gray-300" />
-        <Button
-          className="bg-gray-100"
-          variant="bordered"
-          onPress={() => router.push("/basic/boxes/new")}
-        >
-          <PlusIcon className="h-3 w-3" />
-          {t("actions.add")}
-        </Button>
-        <div className="h-8 w-px bg-gray-300" />
+        <Can I="create" a="basic.boxes">
+          <Button
+            className="bg-gray-100"
+            variant="bordered"
+            onPress={() => router.push("/basic/boxes/new")}
+          >
+            <PlusIcon className="h-3 w-3" />
+            {t("actions.add")}
+          </Button>
+          <div className="h-8 w-px bg-gray-300" />
+        </Can>
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}

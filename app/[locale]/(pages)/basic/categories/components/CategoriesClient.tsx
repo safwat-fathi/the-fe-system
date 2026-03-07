@@ -46,6 +46,7 @@ import {
 } from "@/app/actions/category-accounts.action";
 import { ConfirmationModal } from "@/components/Modal";
 import categoryService from "@/services/api/category.service";
+import { Can } from "@/components/providers/AbilityProvider";
 
 const ACCOUNT_KEYS = [
   "buy_acc",
@@ -683,31 +684,37 @@ export default function CategoriesClient({
 
   const renderActions = (cat: CategoryRow) => (
     <div className="flex gap-2">
-      <Button
-        isIconOnly
-        size="sm"
-        variant="light"
-        onPress={() => router.push(`/basic/categories/${cat.id}`)}
-      >
-        <EyeIcon className="h-4 w-4 text-blue-500" />
-      </Button>
-      <Button
-        isIconOnly
-        size="sm"
-        variant="light"
-        onPress={() => router.push(`/basic/categories/${cat.id}?mode=edit`)}
-      >
-        <PencilIcon className="h-4 w-4 text-yellow-500" />
-      </Button>
-      <Button
-        isIconOnly
-        color="danger"
-        size="sm"
-        variant="light"
-        onPress={() => handleDeleteClick(cat)}
-      >
-        <TrashIcon className="h-4 w-4" />
-      </Button>
+      <Can I="view" a="basic.categories">
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          onPress={() => router.push(`/basic/categories/${cat.id}`)}
+        >
+          <EyeIcon className="h-4 w-4 text-blue-500" />
+        </Button>
+      </Can>
+      <Can I="update" a="basic.categories">
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          onPress={() => router.push(`/basic/categories/${cat.id}?mode=edit`)}
+        >
+          <PencilIcon className="h-4 w-4 text-yellow-500" />
+        </Button>
+      </Can>
+      <Can I="delete" a="basic.categories">
+        <Button
+          isIconOnly
+          color="danger"
+          size="sm"
+          variant="light"
+          onPress={() => handleDeleteClick(cat)}
+        >
+          <TrashIcon className="h-4 w-4" />
+        </Button>
+      </Can>
     </div>
   );
 
@@ -872,15 +879,17 @@ export default function CategoriesClient({
   return (
     <div className="flex flex-col gap-6 font-cairo">
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          className="bg-gray-100"
-          variant="bordered"
-          onPress={() => router.push("/basic/categories/new")}
-        >
-          <PlusIcon className="h-3 w-3" />
-          {t("actions.add")}
-        </Button>
-        <div className="h-8 w-px bg-gray-300" />
+        <Can I="create" a="basic.categories">
+          <Button
+            className="bg-gray-100"
+            variant="bordered"
+            onPress={() => router.push("/basic/categories/new")}
+          >
+            <PlusIcon className="h-3 w-3" />
+            {t("actions.add")}
+          </Button>
+          <div className="h-8 w-px bg-gray-300" />
+        </Can>
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}

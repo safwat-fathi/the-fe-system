@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Table,
@@ -28,6 +34,7 @@ import { getLocaleDir } from "@/i18n/config";
 import costCenterService from "@/services/api/cost-center.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
 import { ConfirmationModal } from "@/components/Modal";
+import { Can } from "@/components/providers/AbilityProvider";
 
 // Interface for cost centers
 interface CostCenter {
@@ -221,36 +228,42 @@ export default function CostCentersClient({
 
   const renderActions = (costCenter: CostCenter) => (
     <div className="flex gap-2">
-      <Button
-        isIconOnly
-        size="sm"
-        title={t("actions.view")}
-        variant="light"
-        onPress={() => router.push(`/basic/cost-centers/${costCenter.id}`)}
-      >
-        <EyeIcon className="h-4 w-4 text-blue-500" />
-      </Button>
-      <Button
-        isIconOnly
-        size="sm"
-        title={t("actions.edit")}
-        variant="light"
-        onPress={() =>
-          router.push(`/basic/cost-centers/${costCenter.id}?mode=edit`)
-        }
-      >
-        <PencilIcon className="h-4 w-4 text-yellow-500" />
-      </Button>
-      <Button
-        isIconOnly
-        color="danger"
-        size="sm"
-        title={t("actions.delete")}
-        variant="light"
-        onPress={() => handleDeleteClick(costCenter)}
-      >
-        <TrashIcon className="h-4 w-4" />
-      </Button>
+      <Can I="view" a="basic.cost-centers">
+        <Button
+          isIconOnly
+          size="sm"
+          title={t("actions.view")}
+          variant="light"
+          onPress={() => router.push(`/basic/cost-centers/${costCenter.id}`)}
+        >
+          <EyeIcon className="h-4 w-4 text-blue-500" />
+        </Button>
+      </Can>
+      <Can I="update" a="basic.cost-centers">
+        <Button
+          isIconOnly
+          size="sm"
+          title={t("actions.edit")}
+          variant="light"
+          onPress={() =>
+            router.push(`/basic/cost-centers/${costCenter.id}?mode=edit`)
+          }
+        >
+          <PencilIcon className="h-4 w-4 text-yellow-500" />
+        </Button>
+      </Can>
+      <Can I="delete" a="basic.cost-centers">
+        <Button
+          isIconOnly
+          color="danger"
+          size="sm"
+          title={t("actions.delete")}
+          variant="light"
+          onPress={() => handleDeleteClick(costCenter)}
+        >
+          <TrashIcon className="h-4 w-4" />
+        </Button>
+      </Can>
     </div>
   );
 
@@ -270,15 +283,17 @@ export default function CostCentersClient({
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <Button
-          className="bg-gray-100"
-          variant="bordered"
-          onPress={() => router.push("/basic/cost-centers/new")}
-        >
-          <PlusIcon className="h-3 w-3" />
-          {t("actions.add")}
-        </Button>
-        <div className="h-8 w-px bg-gray-300" />
+        <Can I="create" a="basic.cost-centers">
+          <Button
+            className="bg-gray-100"
+            variant="bordered"
+            onPress={() => router.push("/basic/cost-centers/new")}
+          >
+            <PlusIcon className="h-3 w-3" />
+            {t("actions.add")}
+          </Button>
+          <div className="h-8 w-px bg-gray-300" />
+        </Can>
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}
