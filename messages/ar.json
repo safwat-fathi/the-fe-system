@@ -1576,13 +1576,18 @@
         "subtitle": "Web"
       },
       "tagline": "حيث يلتقي بريق الذهب بالتقنية",
-      "changeLanguage": "تغيير اللغة"
+      "changeLanguage": "تغيير اللغة",
+      "showPassword": "إظهار كلمة المرور",
+      "hidePassword": "إخفاء كلمة المرور",
+      "invalidCredentials": "اسم المستخدم أو كلمة المرور غير صحيحة"
     }
   },
   "dashboard": {
     "title": "لوحة التحكم",
     "summary": "فرع: {branch} | السنة: {year}",
     "summaryPlaceholder": "-",
+    "goldPriceOunceUSD": "سعر الأونصة",
+    "goldPriceOunceSAR": "سعر الأونصة",
     "invoices": "الفواتير",
     "customers": "العملاء",
     "items": "الأصناف",
@@ -1646,7 +1651,17 @@
         "maxSiblingsError": "لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.",
         "generateIdError": "تعذر توليد رقم الحساب الجديد لهذا الحساب الأب.",
         "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذا الحساب؟",
-        "serverError": "خطأ في الاتصال بالخادم. تحقق من الرابط أو الإعدادات."
+        "serverError": "خطأ في الاتصال بالخادم. تحقق من الرابط أو الإعدادات.",
+        "accountNumberRequired": "رقم الحساب مطلوب.",
+        "accountNameRequired": "اسم الحساب مطلوب.",
+        "saveError": "حدث خطأ أثناء حفظ الحساب.",
+        "saveSuccessAdd": "تمت إضافة الحساب بنجاح",
+        "saveSuccessUpdate": "تم تحديث الحساب بنجاح",
+        "connectionError": "حدث خطأ أثناء الاتصال بالخادم.",
+        "maxLevelForm": "لا يمكن إضافة حسابات تتجاوز المستوى الخامس.",
+        "maxSiblingsForm": "لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.",
+        "generateIdForm": "تعذر توليد رقم حساب مناسب. الرجاء التحقق من المعطيات.",
+        "generateIdSuccess": "تم توليد رقم حساب مقترح."
       },
       "placeholders": {
         "search": "البحث في الحسابات...",
@@ -1697,6 +1712,33 @@
       },
       "tooltips": {
         "doubleClickToNavigate": "انقر مزدوج للانتقال إلى المستوى التالي"
+      },
+      "form": {
+        "titleAdd": "إضافة حساب جديد",
+        "titleEdit": "تعديل الحساب",
+        "titleView": "عرض الحساب",
+        "subtitleAdd": "قم بتعبئة البيانات لإضافة حساب جديد إلى دليل الحسابات",
+        "subtitleEdit": "قم بتعديل بيانات الحساب وتحديثها",
+        "subtitleView": "استعراض تفاصيل الحساب المحدد",
+        "backToList": "عودة للقائمة",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "update": "تحديث",
+        "edit": "تعديل",
+        "accountName": "اسم الحساب",
+        "accountNameEn": "اسم الحساب (بالإنجليزي)",
+        "parentAccount": "الحساب الأب",
+        "parentPlaceholder": "اختر الحساب الأب",
+        "parentOptionRoot": "حساب رئيسي (بدون أب)",
+        "accountNumber": "رقم الحساب",
+        "reportType": "نوع التقرير",
+        "currency": "العملة",
+        "decimalPlaces": "عدد الخانات العشرية",
+        "accountLevel": "مستوى الحساب",
+        "notes": "الملاحظات",
+        "notesPlaceholder": "أدخل أي ملاحظات إضافية",
+        "generateAccountIdTitle": "توليد رقم حساب",
+        "accountFallback": "الحساب"
       }
     },
     "costCenters": {
@@ -1750,6 +1792,7 @@
         "deleteErrorNoId": "لا يمكن حذف مركز تكلفة بدون معرف",
         "deleteSuccess": "تم حذف مركز التكلفة بنجاح",
         "deleteFailed": "فشل في حذف مركز التكلفة",
+        "cannotDeleteLinkedToTransactions": "لا يمكن الحذف لارتباط المركز بحركات",
         "deleteError": "حدث خطأ أثناء الحذف",
         "requiredFields": "يجب ملء جميع الحقول المطلوبة",
         "addSuccess": "تم إضافة مركز التكلفة بنجاح",

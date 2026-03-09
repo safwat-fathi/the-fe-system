@@ -228,13 +228,24 @@ class CostCenterService extends HttpService<CostCenter> {
     }
   }
 
-  async deleteCostCenter(id: number): Promise<boolean> {
+  async deleteCostCenter(id: number): Promise<{ success: boolean; message?: string }> {
     try {
-      const response = await this.delete(`api_delete_cost/${id}`, undefined, {
-        cache: "no-store",
-      });
+      const response = await this.delete<unknown>(
+        `api_delete_cost/${id}`,
+        undefined,
+        { cache: "no-store" },
+      );
 
-      return response.success;
+      if (response.success) {
+        return { success: true };
+      }
+
+      const message =
+        this.extractErrorMessage(response as any) ||
+        response.message ||
+        "فشل في حذف مركز التكلفة";
+
+      return { success: false, message };
     } catch (error) {
       console.error("Error deleting cost center:", error);
       rethrowAuthenticationError(error);

@@ -229,21 +229,15 @@ export default function CurrenciesClient({
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className={`text-base font-semibold ${textAlign}`}>
-          {t("labels.manage")}
-        </h2>
+        <Button
+          className="bg-gray-100"
+          variant="bordered"
+          onPress={() => router.push("/basic/currencies/new")}
+        >
+          <PlusIcon className="h-3 w-3" />
+          {t("actions.add")}
+        </Button>
         <div className="h-8 w-px bg-gray-300" />
-        <Can I="create" a="basic.currencies">
-          <Button
-            className="bg-gray-100"
-            variant="bordered"
-            onPress={() => router.push("/basic/currencies/new")}
-          >
-            <PlusIcon className="h-3 w-3" />
-            {t("actions.add")}
-          </Button>
-          <div className="h-8 w-px bg-gray-300" />
-        </Can>
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}

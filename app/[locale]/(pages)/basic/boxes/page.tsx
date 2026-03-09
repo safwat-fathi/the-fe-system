@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
 
 import BoxesClient from "./components/BoxesClient";
 
@@ -13,7 +12,6 @@ export const metadata: Metadata = {
 };
 
 export default async function BoxesPage() {
-  const t = await getTranslations("basic.boxes");
   const { com } = await getBranchParams();
   
   const response = await boxesService.getBoxes({ xcom_id: com });
@@ -21,7 +19,6 @@ export default async function BoxesPage() {
   return (
     <div className="responsive-container font-cairo">
       <Breadcrumb />
-      <h1 className="responsive-text-xl font-bold mb-2">{t("title")}</h1>
       {/* Client Component للتفاعل */}
       <BoxesClient error={null} initialData={response as any[]} />
     </div>

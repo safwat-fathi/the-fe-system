@@ -16,6 +16,11 @@ interface DashboardStats {
   itemCount: number;
   categoryCount: number;
   goldPrice: number | null;
+  goldPriceOunceUSD: number | null;
+  goldPriceOunceSAR: number | null;
+  changeOunceUSD: number | null;
+  changeOunceSAR: number | null;
+  changePercent: number | null;
   monthlySales: number[];
 }
 
@@ -35,7 +40,7 @@ class DashboardService extends HttpService<any> {
 
     // Fetch all required data in parallel with individual error handling.
     // AuthenticationError must be allowed to bubble up for proper redirects.
-    const [invoices, customers, categories, items, goldPrice] =
+    const [invoices, customers, categories, items, goldPrices] =
       await Promise.all([
         invoiceService.getAllInvoices({
           xcom_id: String(companyId),
@@ -82,13 +87,20 @@ class DashboardService extends HttpService<any> {
               previous: null,
             };
           }),
-        goldPriceService.getCurrentGoldPrice().catch((error) => {
+        goldPriceService.getGoldPrices().catch((error) => {
           if (error instanceof AuthenticationError) {
             throw error;
           }
 
-          return null;
-        }),
+            return {
+              pricePerGram: null,
+              pricePerOunceUSD: null,
+              pricePerOunceSAR: null,
+              changeOunceUSD: null,
+              changeOunceSAR: null,
+              changePercent: null,
+            };
+          }),
       ]);
 
     // Calculate monthly sales
@@ -109,7 +121,12 @@ class DashboardService extends HttpService<any> {
       customerCount: customers.length,
       itemCount: items?.count || 0,
       categoryCount: categories.length,
-      goldPrice,
+      goldPrice: goldPrices.pricePerGram,
+      goldPriceOunceUSD: goldPrices.pricePerOunceUSD,
+      goldPriceOunceSAR: goldPrices.pricePerOunceSAR,
+      changeOunceUSD: goldPrices.changeOunceUSD,
+      changeOunceSAR: goldPrices.changeOunceSAR,
+      changePercent: goldPrices.changePercent,
       monthlySales,
     };
   }

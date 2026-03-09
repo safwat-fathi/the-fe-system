@@ -8,7 +8,7 @@ import {
   DropdownMenu,
   DropdownTrigger,
 } from "@heroui/react";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { LanguageIcon } from "@heroicons/react/24/outline";
 import { useLocale } from "next-intl";
 
 import { Locale, localeLabels, locales } from "@/i18n/config";
@@ -55,7 +55,7 @@ const LocaleSwitcher = () => {
           variant="bordered"
         >
           <span className="text-sm font-medium">{currentLabel}</span>
-          <ChevronDownIcon className="h-4 w-4 text-slate-500" />
+          <LanguageIcon className="h-4 w-4 text-slate-500" />
         </Button>
       </DropdownTrigger>
       <DropdownMenu

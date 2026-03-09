@@ -8,15 +8,20 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import { useTranslations } from "next-intl";
-import { Input, Button, Pagination, Select, SelectItem } from "@heroui/react";
+import { useTranslations, useLocale } from "next-intl";
+import {
+  Input,
+  Button,
+  Pagination,
+  Select,
+  SelectItem,
+} from "@heroui/react";
 
 import customerService from "@/services/api/customer.service";
 import { ConfirmationModal } from "@/components/Modal";
 import AppDataTable from "@/components/AppDataTable";
 import { createCustomerColumns } from "@/components/customers/customerColumns";
-import { Can } from "@/components/providers/AbilityProvider";
-import { usePermissionStore } from "@/stores/permissionStore";
+import { getLocaleDir } from "@/i18n/config";
 
 interface Customer {
   id: number;
@@ -67,6 +72,9 @@ export default function CustomersClient({
   initialCustomerStatus,
 }: CustomersClientProps) {
   const router = useRouter();
+  const locale = useLocale();
+  const dir = getLocaleDir(locale as "ar" | "en");
+  const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const t = useTranslations("basic.customers" as any) as any;
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [customerTypes] = useState<CustomerType[]>(initialCustomerTypes);
@@ -78,7 +86,7 @@ export default function CustomersClient({
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
     null,
   );
-  const rowsPerPage = 12;
+  const rowsPerPage = 10;
 
   const handleDeleteClick = useCallback(
     (customer: Customer) => {
@@ -230,25 +238,19 @@ export default function CustomersClient({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex-shrink-0 flex flex-wrap items-center gap-1.5 mb-1">
-        {/* زر إضافة عميل */}
-        <Can I="create" a="basic.customers">
-          <Button
-            className="bg-gray-100 hover:bg-gray-200 border-gray-300"
-            size="sm"
-            startContent={<PlusIcon className="h-3 w-3" />}
-            variant="bordered"
-            onPress={() => router.push("/basic/customers/new")}
-          >
-            {t("actions.add")}
-          </Button>
+      <div className="flex flex-wrap items-center gap-3 mb-2">
+        <Button
+          className="bg-gray-100"
+          variant="bordered"
+          onPress={() => router.push("/basic/customers/new")}
+        >
+          <PlusIcon className="h-3 w-3" />
+          {t("actions.add")}
+        </Button>
 
-          {/* فاصل خطي */}
-          <div className="h-5 w-px bg-gray-300" />
-        </Can>
+        <div className="h-8 w-px bg-gray-300" />
 
-        {/* حقول الفرز */}
-        <div className="flex flex-wrap items-center gap-1 flex-1">
+        <div className="flex flex-wrap items-center gap-1 flex-1 min-w-[200px]">
           <Select
             aria-label={t("labels.customerType")}
             items={customerTypeOptions}
@@ -273,7 +275,6 @@ export default function CustomersClient({
 
           <Button
             isIconOnly
-            className="h-7"
             size="sm"
             title={t("labels.clearFilters")}
             variant="bordered"
@@ -283,17 +284,14 @@ export default function CustomersClient({
           </Button>
         </div>
 
-        {/* فاصل خطي */}
-        <div className="h-5 w-px bg-gray-300" />
+        <div className="h-8 w-px bg-gray-300" />
 
-        {/* حقل البحث */}
-        <div className="w-36">
+        <div className="flex-1 min-w-[200px]">
           <Input
-            className="w-full"
             placeholder={t("labels.searchPlaceholder")}
             size="sm"
             startContent={
-              <MagnifyingGlassIcon className="h-3 w-3 text-gray-400" />
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -313,18 +311,17 @@ export default function CustomersClient({
           />
         </div>
 
-        {filteredCustomers.length > 0 && (
-          <div className="flex-shrink-0 flex justify-center py-1">
-            <Pagination
-              showShadow
-              color="primary"
-              size="sm"
-              page={page}
-              total={Math.ceil(filteredCustomers.length / rowsPerPage)}
-              onChange={setPage}
-            />
-          </div>
-        )}
+        <div className="py-4 flex justify-between items-center">
+          <span className={`text-sm text-gray-500 ${textAlign}`}>
+            {t("labels.totalCount", { count: filteredCustomers.length })}
+          </span>
+          <Pagination
+            color="primary"
+            page={page}
+            total={Math.ceil(filteredCustomers.length / rowsPerPage)}
+            onChange={setPage}
+          />
+        </div>
       </div>
 
       <ConfirmationModal

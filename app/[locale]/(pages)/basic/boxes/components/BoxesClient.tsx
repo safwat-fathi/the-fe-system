@@ -26,8 +26,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { getLocaleDir } from "@/i18n/config";
 import { ConfirmationModal } from "@/components/Modal";
 import boxService from "@/services/api/box.service";
-import { revalidateTableData } from "@/app/actions/revalidate.action";
-import { Can } from "@/components/providers/AbilityProvider";
+import { revalidateBoxes } from "@/app/actions/revalidate.action";
 
 // Interface for customer boxes (customers with cust_type = 99)
 interface CustomerBox {
@@ -120,10 +119,11 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
     }
   };
 
-  // تحميل أنواع الصناديق عند تحميل المكون
+  // تحميل أنواع الصناديق مرة واحدة عند تحميل المكون
   React.useEffect(() => {
     loadBoxTypes();
-  }, [t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount only
+  }, []);
 
   const handleDeleteClick = (box: CustomerBox) => {
     if (!box.id) {
@@ -153,8 +153,8 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       if (result) {
         toast.success(t("messages.deleteSuccess"));
 
-        // Revalidate cache
-        await revalidateTableData("boxes_list");
+        // إبطال كاش الصناديق (tag: boxes) لظهور التعديل عند التحميل التالي
+        await revalidateBoxes();
       } else {
         toast.error(t("messages.deleteFailed"));
         router.refresh();
@@ -241,21 +241,15 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-3 mb-2">
-        <h2 className={`text-base font-semibold ${textAlign}`}>
-          {t("labels.manage")}
-        </h2>
+        <Button
+          className="bg-gray-100"
+          variant="bordered"
+          onPress={() => router.push("/basic/boxes/new")}
+        >
+          <PlusIcon className="h-3 w-3" />
+          {t("actions.add")}
+        </Button>
         <div className="h-8 w-px bg-gray-300" />
-        <Can I="create" a="basic.boxes">
-          <Button
-            className="bg-gray-100"
-            variant="bordered"
-            onPress={() => router.push("/basic/boxes/new")}
-          >
-            <PlusIcon className="h-3 w-3" />
-            {t("actions.add")}
-          </Button>
-          <div className="h-8 w-px bg-gray-300" />
-        </Can>
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}
@@ -269,7 +263,15 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         </div>
       </div>
 
-      <Table aria-label={t("labels.tableAriaLabel")}>
+      <Table
+        aria-label={t("labels.tableAriaLabel")}
+        classNames={{
+          wrapper: "shadow-none",
+          th: "bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-200",
+          td: "border-b border-gray-100 text-sm",
+          tr: "hover:bg-gray-50 transition-colors",
+        }}
+      >
         <TableHeader>
           {columns.map((col) => (
             <TableColumn key={col.uid}>{col.name}</TableColumn>

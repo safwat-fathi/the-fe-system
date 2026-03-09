@@ -1,8 +1,9 @@
 "use client";
 
 import { Form, Input, Spacer, Button } from "@heroui/react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { useSearchParams } from "next/navigation";
+import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import ChangeLocale from "../ChangeLocale";
@@ -20,7 +21,8 @@ const LoginForm = () => {
     FormData
   >(loginAction, undefined);
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect") || "/"; // default redirect
+  const redirectPath = searchParams.get("redirect") || "/";
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   // Watch for successful login action resolution
   useEffect(() => {
@@ -53,9 +55,22 @@ const LoginForm = () => {
           label={t("passwordLabel")}
           name="password"
           placeholder={t("passwordPlaceholder")}
-          type="password"
+          type={isPasswordVisible ? "text" : "password"}
           variant="bordered"
-          // className="text-right"
+          endContent={
+            <button
+              type="button"
+              onClick={() => setIsPasswordVisible((v) => !v)}
+              className="focus:outline-none p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+              aria-label={isPasswordVisible ? t("hidePassword") : t("showPassword")}
+            >
+              {isPasswordVisible ? (
+                <EyeSlashIcon className="h-5 w-5" />
+              ) : (
+                <EyeIcon className="h-5 w-5" />
+              )}
+            </button>
+          }
         />
 
         {!state?.success && (
@@ -78,8 +93,7 @@ const LoginForm = () => {
           {pending ? t("submitting") : t("submit")}
         </Button>
       </Form>
-      <div className="flex justify-between">
-        <p>{t("changeLanguage")}</p>
+      <div className="flex justify-center mt-4">
         <ChangeLocale />
       </div>
     </div>

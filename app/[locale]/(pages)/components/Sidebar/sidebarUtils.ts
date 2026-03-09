@@ -23,9 +23,12 @@ export const createIsLinkActive =
   (href: string): boolean => {
     const [linkPath, linkQuery] = href.split("?");
 
-    if (pathname !== linkPath) {
-      return false;
-    }
+    const pathMatches =
+      pathname === linkPath ||
+      pathname.endsWith(linkPath) ||
+      pathname.replace(/^\/[^/]+/, "") === linkPath;
+
+    if (!pathMatches) return false;
 
     return doQueriesMatch(searchParams, linkQuery);
   };

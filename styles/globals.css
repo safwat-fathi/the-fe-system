@@ -36,6 +36,13 @@ body {
   background-color: #f8fafc;
 }
 
+/* منع الخط المائل (italic/oblique) في كل التطبيق - لا يظهر أبداً */
+*,
+*::before,
+*::after {
+  font-style: normal !important;
+}
+
 /* Typography scale */
 .text-xs {
   font-size: 0.75rem;
@@ -194,6 +201,101 @@ body {
     15px 40px 0 0 rgba(217, 119, 6, 0.4),
     -50px -15px 0 0 rgba(180, 83, 9, 0.7),
     25px 30px 0 0 rgba(217, 119, 6, 0.5);
+}
+
+/* Login page – floating orbs background */
+@keyframes login-orb-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+  33% {
+    transform: translate(5%, -4%) scale(1.05);
+    opacity: 0.85;
+  }
+  66% {
+    transform: translate(-4%, 3%) scale(0.97);
+    opacity: 0.65;
+  }
+}
+
+.login-page-bg {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(56px);
+  opacity: 0.7;
+  animation: login-orb-float 14s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+
+/* ألوان أوضح على الخلفية الفاتحة */
+.login-orb-1 {
+  width: min(70vw, 420px);
+  height: min(70vw, 420px);
+  background: radial-gradient(
+    circle,
+    rgba(30, 41, 59, 0.55) 0%,
+    rgba(30, 41, 59, 0.25) 40%,
+    rgba(30, 41, 59, 0.08) 65%,
+    transparent 80%
+  );
+  top: -10%;
+  left: -15%;
+  animation-delay: 0s;
+}
+
+.login-orb-2 {
+  width: min(55vw, 320px);
+  height: min(55vw, 320px);
+  background: radial-gradient(
+    circle,
+    rgba(0, 162, 232, 0.5) 0%,
+    rgba(0, 162, 232, 0.22) 40%,
+    rgba(0, 162, 232, 0.06) 65%,
+    transparent 80%
+  );
+  top: 40%;
+  right: -10%;
+  animation-delay: -5s;
+}
+
+.login-orb-3 {
+  width: min(45vw, 280px);
+  height: min(45vw, 280px);
+  background: radial-gradient(
+    circle,
+    rgba(180, 83, 9, 0.45) 0%,
+    rgba(180, 83, 9, 0.2) 40%,
+    rgba(180, 83, 9, 0.06) 65%,
+    transparent 80%
+  );
+  bottom: -5%;
+  left: 20%;
+  animation-delay: -10s;
+}
+
+.login-orb-4 {
+  width: min(35vw, 200px);
+  height: min(35vw, 200px);
+  background: radial-gradient(
+    circle,
+    rgba(30, 41, 59, 0.5) 0%,
+    rgba(30, 41, 59, 0.2) 40%,
+    rgba(30, 41, 59, 0.06) 65%,
+    transparent 80%
+  );
+  top: 60%;
+  left: 50%;
+  animation-delay: -3s;
 }
 
 /* Improved spacing */
@@ -555,15 +657,30 @@ body {
   font-size: 0.875rem !important;
   padding-inline: 0.75rem !important;
   box-shadow: none !important;
-  direction: rtl;
   display: flex;
   align-items: center;
   transition: all 0.2s ease-in-out !important;
 }
 
-.heroui__control:hover {
-  border-color: #d1d5db !important;
-  background-color: #ffffff !important;
+.heroui__indicator {
+  color: #6b7280 !important;
+}
+
+/* HeroUI direction follows document locale (RTL for Arabic, LTR for English) */
+[dir="rtl"] .heroui__control {
+  direction: rtl;
+}
+
+[dir="ltr"] .heroui__control {
+  direction: ltr;
+}
+
+[dir="rtl"] .heroui__option {
+  text-align: right;
+}
+
+[dir="ltr"] .heroui__option {
+  text-align: left;
 }
 
 .heroui__control--is-focused {
@@ -599,7 +716,6 @@ body {
 .heroui__option {
   padding: 0.75rem 1rem !important;
   font-size: 0.875rem !important;
-  text-align: right;
   cursor: pointer;
   font-family: "Cairo", sans-serif !important;
   transition: background-color 0.15s ease-in-out !important;
@@ -972,11 +1088,17 @@ table::-webkit-scrollbar {
 
 /* ===== ACCOUNTS PAGE SPECIFIC STYLES ===== */
 
-/* تحسين عرض النصوص العربية في شاشة الحسابات */
-.accounts-container {
+/* اتجاه شاشة الحسابات حسب لغة الواجهة: عربي RTL، إنجليزي LTR */
+[dir="rtl"] .accounts-container {
   direction: rtl;
   text-align: right;
-  font-size: 0.875rem; /* تصغير حجم الخط العام */
+  font-size: 0.875rem;
+}
+
+[dir="ltr"] .accounts-container {
+  direction: ltr;
+  text-align: left;
+  font-size: 0.875rem;
 }
 
 /* تصغير أحجام الخطوط في شاشة الحسابات */
@@ -1014,81 +1136,48 @@ table::-webkit-scrollbar {
   font-size: 1.125rem !important; /* 18px */
 }
 
-.accounts-text-right {
+[dir="rtl"] .accounts-text-right,
+[dir="rtl"] .accounts-table th,
+[dir="rtl"] .accounts-table td,
+[dir="rtl"] .accounts-info-grid,
+[dir="rtl"] .accounts-info-grid > div,
+[dir="rtl"] .accounts-tree,
+[dir="rtl"] .accounts-tree-item,
+[dir="rtl"] .accounts-form,
+[dir="rtl"] .accounts-form input,
+[dir="rtl"] .accounts-form select,
+[dir="rtl"] .accounts-form textarea,
+[dir="rtl"] .accounts-header,
+[dir="rtl"] .accounts-btn,
+[dir="rtl"] .accounts-search,
+[dir="rtl"] .accounts-table-container,
+[dir="rtl"] .accounts-table-container table,
+[dir="rtl"] .accounts-table-container th,
+[dir="rtl"] .accounts-table-container td {
   text-align: right;
   direction: rtl;
 }
 
-.accounts-table th,
-.accounts-table td {
-  text-align: right;
-  direction: rtl;
-}
-
-.accounts-info-grid {
-  direction: rtl;
-  text-align: right;
-}
-
-.accounts-info-grid > div {
-  text-align: right;
-  direction: rtl;
-}
-
-/* تحسين عرض شجرة الحسابات */
-.accounts-tree {
-  direction: rtl;
-  text-align: right;
-}
-
-.accounts-tree-item {
-  text-align: right;
-  direction: rtl;
-}
-
-/* تحسين عرض النماذج */
-.accounts-form {
-  direction: rtl;
-  text-align: right;
-}
-
-.accounts-form input,
-.accounts-form select,
-.accounts-form textarea {
-  text-align: right;
-  direction: rtl;
-}
-
-/* تحسين عرض العناوين */
-.accounts-header {
-  text-align: right;
-  direction: rtl;
-}
-
-/* تحسين عرض الأزرار */
-.accounts-btn {
-  direction: rtl;
-}
-
-/* تحسين عرض البحث */
-.accounts-search {
-  direction: rtl;
-  text-align: right;
-}
-
-/* تحسين عرض الجداول */
-.accounts-table-container {
-  direction: rtl;
-}
-
-.accounts-table-container table {
-  direction: rtl;
-}
-
-.accounts-table-container th,
-.accounts-table-container td {
-  text-align: right;
-  direction: rtl;
+[dir="ltr"] .accounts-text-right,
+[dir="ltr"] .accounts-table th,
+[dir="ltr"] .accounts-table td,
+[dir="ltr"] .accounts-info-grid,
+[dir="ltr"] .accounts-info-grid > div,
+[dir="ltr"] .accounts-tree,
+[dir="ltr"] .accounts-tree-item,
+[dir="ltr"] .accounts-form,
+[dir="ltr"] .accounts-form input,
+[dir="ltr"] .accounts-form select,
+[dir="ltr"] .accounts-form textarea,
+[dir="ltr"] .accounts-header,
+[dir="ltr"] .accounts-btn,
+[dir="ltr"] .accounts-search,
+[dir="ltr"] .accounts-table-container,
+[dir="ltr"] .accounts-table-container table,
+[dir="ltr"] .accounts-table-container th,
+[dir="ltr"] .accounts-table-container td {
+  text-align: left;
+  direction: ltr;
 }
 
 /* ===== END ACCOUNTS PAGE SPECIFIC STYLES ===== */

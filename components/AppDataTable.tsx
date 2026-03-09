@@ -142,8 +142,8 @@ export default function AppDataTable<TData>({
             aria-label={title || "جدول البيانات"}
             classNames={{
               wrapper: "shadow-none h-full",
-              th: "bg-gray-50 text-gray-700 font-semibold text-xs border-b border-gray-200 px-1 py-0.5",
-              td: "border-b border-gray-100 text-xs px-1 py-0.5",
+              th: "bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-200 px-1 py-0.5",
+              td: "border-b border-gray-100 text-sm px-1 py-0.5",
               tr: "hover:bg-gray-50 transition-colors",
             }}
           >
@@ -179,7 +179,7 @@ export default function AppDataTable<TData>({
               {table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    className="text-center py-4 text-gray-500"
+                    className="text-center py-4 text-gray-500 text-sm"
                     colSpan={table.getAllLeafColumns().length || 1}
                   >
                     {emptyContent}
@@ -205,7 +205,7 @@ export default function AppDataTable<TData>({
       </div>
 
       {globalFilter && (
-        <div className="flex-shrink-0 flex items-center justify-between text-xs text-gray-500 pt-0.5">
+        <div className="flex-shrink-0 flex items-center justify-between text-sm text-gray-500 pt-0.5">
           <span>نتائج البحث عن: &quot;{globalFilter}&quot;</span>
         </div>
       )}

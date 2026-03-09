@@ -1575,13 +1575,18 @@
         "subtitle": "Web"
       },
       "tagline": "Where gold brilliance meets technology",
-      "changeLanguage": "Change language"
+      "changeLanguage": "Change language",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "invalidCredentials": "Invalid username or password"
     }
   },
   "dashboard": {
     "title": "Dashboard",
     "summary": "Branch: {branch} | Year: {year}",
     "summaryPlaceholder": "-",
+    "goldPriceOunceUSD": "Gold price per ounce",
+    "goldPriceOunceSAR": "Gold price per ounce",
     "invoices": "Invoices",
     "customers": "Customers",
     "items": "Items",
@@ -1645,7 +1650,17 @@
         "maxSiblingsError": "Cannot add more than 9 accounts at this level.",
         "generateIdError": "Failed to generate new account ID for this parent account.",
         "deleteConfirm": "Are you sure you want to delete this account?",
-        "serverError": "Server connection error. Check the URL or settings."
+        "serverError": "Server connection error. Check the URL or settings.",
+        "accountNumberRequired": "Account number is required.",
+        "accountNameRequired": "Account name is required.",
+        "saveError": "An error occurred while saving the account.",
+        "saveSuccessAdd": "Account added successfully",
+        "saveSuccessUpdate": "Account updated successfully",
+        "connectionError": "An error occurred while connecting to the server.",
+        "maxLevelForm": "Cannot add accounts beyond level 5.",
+        "maxSiblingsForm": "Cannot add more than 9 accounts at this level.",
+        "generateIdForm": "Unable to generate a suitable account number. Please check the data.",
+        "generateIdSuccess": "Suggested account number generated."
       },
       "placeholders": {
         "search": "Search accounts...",
@@ -1696,6 +1711,33 @@
       },
       "tooltips": {
         "doubleClickToNavigate": "Double click to navigate to next level"
+      },
+      "form": {
+        "titleAdd": "Add New Account",
+        "titleEdit": "Edit Account",
+        "titleView": "View Account",
+        "subtitleAdd": "Fill in the data to add a new account to the chart of accounts",
+        "subtitleEdit": "Update the account details",
+        "subtitleView": "View the selected account details",
+        "backToList": "Return to List",
+        "cancel": "Cancel",
+        "save": "Save",
+        "update": "Update",
+        "edit": "Edit",
+        "accountName": "Account Name",
+        "accountNameEn": "Account Name (English)",
+        "parentAccount": "Parent Account",
+        "parentPlaceholder": "Select parent account",
+        "parentOptionRoot": "Root account (no parent)",
+        "accountNumber": "Account Number",
+        "reportType": "Report Type",
+        "currency": "Currency",
+        "decimalPlaces": "Number of Decimal Places",
+        "accountLevel": "Account Level",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter any additional notes",
+        "generateAccountIdTitle": "Generate account number",
+        "accountFallback": "Account"
       }
     },
     "costCenters": {
@@ -1749,6 +1791,7 @@
         "deleteErrorNoId": "Cannot delete cost center without ID",
         "deleteSuccess": "Cost center deleted successfully",
         "deleteFailed": "Failed to delete cost center",
+        "cannotDeleteLinkedToTransactions": "Cannot delete: cost center is linked to transactions",
         "deleteError": "Error occurred while deleting",
         "requiredFields": "All required fields must be filled",
         "addSuccess": "Cost center added successfully",

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import CountUp from "react-countup";
+import { ReactNode } from "react";
 
 const StatCardContent = ({
   title,
@@ -9,8 +10,8 @@ const StatCardContent = ({
   value,
 }: {
   title: string;
-  icon?: any;
-  value: string | number;
+  icon?: ReactNode;
+  value: string | number | ReactNode;
 }) => (
   <div className="card card-hover p-6 flex items-center gap-4 group">
     <div className="text-2xl text-gray-400 group-hover:text-blue-500 transition-colors duration-200">
@@ -36,8 +37,8 @@ export default function StatCard({
   href,
 }: {
   title: string;
-  icon?: React.ReactNode;
-  value: string | number;
+  icon?: ReactNode;
+  value: string | number | ReactNode;
   href?: string;
 }) {
   return href ? (

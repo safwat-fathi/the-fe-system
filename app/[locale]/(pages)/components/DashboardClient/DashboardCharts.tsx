@@ -27,6 +27,38 @@ ChartJS.register(
   Legend,
 );
 
+const chartFont = { family: "'Cairo', sans-serif" };
+
+const commonChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "top" as const,
+      labels: {
+        font: chartFont,
+      },
+    },
+    tooltip: {
+      titleFont: chartFont,
+      bodyFont: chartFont,
+    },
+  },
+  scales: {
+    x: {
+      ticks: {
+        font: chartFont,
+      },
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        font: chartFont,
+      },
+    },
+  },
+};
+
 interface DashboardChartsProps {
   salesChartData: any;
   invoices: InvoiceModel[];
@@ -110,18 +142,7 @@ const DashboardCharts = ({
           <Line
             data={goldChartData}
             options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: "top" as const,
-                },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                },
-              },
+              ...commonChartOptions,
             }}
           />
         </div>
@@ -135,18 +156,7 @@ const DashboardCharts = ({
           <Line
             data={salesChartData}
             options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: "top" as const,
-                },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                },
-              },
+              ...commonChartOptions,
             }}
           />
         </div>

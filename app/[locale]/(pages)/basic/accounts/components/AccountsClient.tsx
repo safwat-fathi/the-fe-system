@@ -40,9 +40,131 @@ const DocumentEmoji = ({ className }: { className?: string }) => (
   <span className={className}>📄</span>
 );
 
+type TranslateFn = (...args: any[]) => string;
+
+const formatAccountType = (account: Account, t: TranslateFn): string =>
+  account.acc_type === 1 ? t("types.main") : t("types.sub");
+
+const formatReportType = (account: Account, t: TranslateFn): string =>
+  account.acc_rep === 1
+    ? t("reportTypes.profitLoss")
+    : t("reportTypes.balanceSheet");
+
+const formatCurrencyName = (
+  currencies: Currency[],
+  currencyId: number | null | undefined,
+  t: TranslateFn,
+): string =>
+  currencies.find((c) => c.id === currencyId)?.cur_name ||
+  t("states.currencyNotSet");
+
+interface AccountTableRowProps {
+  account: Account;
+  currencies: Currency[];
+  t: TranslateFn;
+  textAlign: string;
+  onView: (account: Account) => void;
+  onEdit: (account: Account) => void;
+  onDelete: (accountId: number) => void;
+  onDoubleClick?: (account: Account) => void;
+  rowTitle?: string;
+}
+
+const AccountTableRow = ({
+  account,
+  currencies,
+  t,
+  textAlign,
+  onView,
+  onEdit,
+  onDelete,
+  onDoubleClick,
+  rowTitle,
+}: AccountTableRowProps) => (
+  <tr
+    className={onDoubleClick ? "hover:bg-gray-50 cursor-pointer" : ""}
+    title={rowTitle}
+    onDoubleClick={
+      onDoubleClick
+        ? () => {
+            onDoubleClick(account);
+          }
+        : undefined
+    }
+  >
+    <td
+      className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
+    >
+      {account.acc_id}
+    </td>
+    <td
+      className={`border border-gray-300 px-2 py-1 text-xs font-medium ${textAlign}`}
+    >
+      {account.acc_name}
+    </td>
+    <td
+      className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
+    >
+      {formatAccountType(account, t)}
+    </td>
+    <td
+      className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
+    >
+      {formatReportType(account, t)}
+    </td>
+    <td
+      className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
+    >
+      {formatCurrencyName(currencies, account.cur ?? null, t)}
+    </td>
+    <td className="border border-gray-300 px-2 py-1 text-xs">
+      <div className="flex items-center justify-center gap-2">
+        <Button
+          isIconOnly
+          size="sm"
+          title={t("labels.view")}
+          variant="light"
+          onPress={() => {
+            onView(account);
+          }}
+        >
+          <EyeIcon className="h-4 w-4 text-blue-500" />
+        </Button>
+        <Button
+          isIconOnly
+          size="sm"
+          title={t("labels.edit")}
+          variant="light"
+          onPress={() => {
+            onEdit(account);
+          }}
+        >
+          <PencilIcon className="h-4 w-4 text-yellow-500" />
+        </Button>
+        <Button
+          isIconOnly
+          color="danger"
+          size="sm"
+          title={t("labels.delete")}
+          variant="light"
+          onPress={() => {
+            onDelete(account.id);
+          }}
+        >
+          <TrashIcon className="h-4 w-4" />
+        </Button>
+      </div>
+    </td>
+  </tr>
+);
+
 interface AccountsClientProps {
   initialAccounts: Account[];
   initialCurrencies: Currency[];
+  /** معرّفات العقد المفتوحة في الشجرة (من رابط الرجوع للقائمة) */
+  initialExpandedIds?: number[];
+  /** معرّف الحساب المختار (من رابط الرجوع للقائمة) */
+  initialSelectedId?: number;
 }
 
 const CONTENT_HEIGHT_CLASS = "min-h-[500px] h-[calc(100vh-280px)]";
@@ -50,6 +172,8 @@ const CONTENT_HEIGHT_CLASS = "min-h-[500px] h-[calc(100vh-280px)]";
 export default function AccountsClient({
   initialAccounts,
   initialCurrencies,
+  initialExpandedIds,
+  initialSelectedId,
 }: AccountsClientProps) {
   const router = useRouter();
   const locale = useLocale();
@@ -115,7 +239,9 @@ export default function AccountsClient({
     normalizeAccountsTree(initialAccounts),
   );
   const [currencies] = useState<Currency[]>(initialCurrencies);
-  const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
+  const [expandedNodes, setExpandedNodes] = useState<Set<number>>(() =>
+    initialExpandedIds?.length ? new Set(initialExpandedIds) : new Set(),
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterReport, setFilterReport] = useState<string>("all");
@@ -174,7 +300,7 @@ export default function AccountsClient({
     });
   }, [accounts, selectedAccount]);
 
-  // Build account tree on mount
+  // Build account tree on mount and restore selected account from URL
   useEffect(() => {
     if (initialAccounts.length > 0) {
       const normalized = normalizeAccountsTree(initialAccounts);
@@ -183,6 +309,20 @@ export default function AccountsClient({
       setDisplayAccounts(normalized);
     }
   }, [initialAccounts]);
+
+  useEffect(() => {
+    if (
+      initialSelectedId != null &&
+      initialSelectedId > 0 &&
+      accounts.length > 0
+    ) {
+      const account = findAccountById(accounts, initialSelectedId);
+
+      if (account) {
+        setSelectedAccount(account);
+      }
+    }
+  }, [initialSelectedId, accounts]);
 
   const fetchAccounts = async () => {
     try {
@@ -277,6 +417,14 @@ export default function AccountsClient({
       searchParams.set("suggestedAccId", suggestedAccountId);
     }
 
+    if (expandedNodes.size > 0) {
+      searchParams.set("expanded", Array.from(expandedNodes).join(","));
+    }
+
+    if (selectedAccount?.id) {
+      searchParams.set("selected", String(selectedAccount.id));
+    }
+
     router.push(
       searchParams.toString()
         ? `/basic/accounts/new?${searchParams.toString()}`
@@ -286,12 +434,28 @@ export default function AccountsClient({
 
   const handleEditAccount = (account: Account) => {
     setSelectedAccount(account);
-    router.push(`/basic/accounts/${account.id}?mode=edit`);
+    const params = new URLSearchParams();
+
+    if (expandedNodes.size > 0) {
+      params.set("expanded", Array.from(expandedNodes).join(","));
+    }
+
+    params.set("selected", String(account.id));
+    router.push(
+      `/basic/accounts/${account.id}?mode=edit&${params.toString()}`,
+    );
   };
 
   const handleViewAccount = (account: Account) => {
     setSelectedAccount(account);
-    router.push(`/basic/accounts/${account.id}`);
+    const params = new URLSearchParams();
+
+    if (expandedNodes.size > 0) {
+      params.set("expanded", Array.from(expandedNodes).join(","));
+    }
+
+    params.set("selected", String(account.id));
+    router.push(`/basic/accounts/${account.id}?${params.toString()}`);
   };
 
   const handleDeleteAccount = async (accountId: number) => {
@@ -708,9 +872,7 @@ export default function AccountsClient({
                             {t("fields.accountType")}:
                           </span>
                           <div className="font-medium">
-                            {selectedAccount.acc_type === 1
-                              ? t("types.main")
-                              : t("types.sub")}
+                            {formatAccountType(selectedAccount, t)}
                           </div>
                         </div>
                         <div className={textAlign}>
@@ -718,9 +880,11 @@ export default function AccountsClient({
                             {t("fields.currency")}:
                           </span>
                           <div className="font-medium">
-                            {currencies.find(
-                              (c) => c.id === selectedAccount.cur,
-                            )?.cur_name || t("states.currencyNotSet")}
+                            {formatCurrencyName(
+                              currencies,
+                              selectedAccount.cur ?? null,
+                              t,
+                            )}
                           </div>
                         </div>
                       </div>
@@ -777,174 +941,28 @@ export default function AccountsClient({
                                 (account) => account.id !== selectedAccount.id,
                               )
                               .map((account) => (
-                                <tr
+                                <AccountTableRow
                                   key={account.id}
-                                  className="hover:bg-gray-50 cursor-pointer"
-                                  title={t("tooltips.doubleClickToNavigate")}
-                                  onDoubleClick={() =>
-                                    setSelectedAccount(account)
-                                  }
-                                >
-                                  <td
-                                    className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
-                                  >
-                                    {account.acc_id}
-                                  </td>
-                                  <td
-                                    className={`border border-gray-300 px-2 py-1 text-xs font-medium ${textAlign}`}
-                                  >
-                                    {account.acc_name}
-                                  </td>
-                                  <td
-                                    className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
-                                  >
-                                    {account.acc_type === 1
-                                      ? t("types.main")
-                                      : t("types.sub")}
-                                  </td>
-                                  <td
-                                    className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
-                                  >
-                                    {account.acc_rep === 1
-                                      ? t("reportTypes.profitLoss")
-                                      : t("reportTypes.balanceSheet")}
-                                  </td>
-                                  <td
-                                    className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
-                                  >
-                                    {currencies.find(
-                                      (c) => c.id === account.cur,
-                                    )?.cur_name || t("states.currencyNotSet")}
-                                  </td>
-                                  {hasActionPermission && (
-                                    <td className="border border-gray-300 px-2 py-1 text-xs">
-                                      <div className="flex items-center justify-center gap-2">
-                                        <Can I="view" a="basic.accounts">
-                                          <Button
-                                            isIconOnly
-                                            size="sm"
-                                            title={t("labels.view")}
-                                            variant="light"
-                                            onPress={() => {
-                                              handleViewAccount(account);
-                                            }}
-                                          >
-                                            <EyeIcon className="h-4 w-4 text-blue-500" />
-                                          </Button>
-                                        </Can>
-                                        <Can I="update" a="basic.accounts">
-                                          <Button
-                                            isIconOnly
-                                            size="sm"
-                                            title={t("labels.edit")}
-                                            variant="light"
-                                            onPress={() => {
-                                              handleEditAccount(account);
-                                            }}
-                                          >
-                                            <PencilIcon className="h-4 w-4 text-yellow-500" />
-                                          </Button>
-                                        </Can>
-                                        <Can I="delete" a="basic.accounts">
-                                          <Button
-                                            isIconOnly
-                                            color="danger"
-                                            size="sm"
-                                            title={t("labels.delete")}
-                                            variant="light"
-                                            onPress={() => {
-                                              handleDeleteAccount(account.id);
-                                            }}
-                                          >
-                                            <TrashIcon className="h-4 w-4" />
-                                          </Button>
-                                        </Can>
-                                      </div>
-                                    </td>
-                                  )}
-                                </tr>
+                                  account={account}
+                                  currencies={currencies}
+                                  t={t}
+                                  textAlign={textAlign}
+                                  onView={handleViewAccount}
+                                  onEdit={handleEditAccount}
+                                  onDelete={handleDeleteAccount}
+                                  onDoubleClick={setSelectedAccount}
+                                  rowTitle={t("tooltips.doubleClickToNavigate")}
+                                />
                               ))}
-                            <tr>
-                              <td
-                                className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
-                              >
-                                {selectedAccount.acc_id}
-                              </td>
-                              <td
-                                className={`border border-gray-300 px-2 py-1 text-xs font-medium ${textAlign}`}
-                              >
-                                {selectedAccount.acc_name}
-                              </td>
-                              <td
-                                className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
-                              >
-                                {selectedAccount.acc_type === 1
-                                  ? t("types.main")
-                                  : t("types.sub")}
-                              </td>
-                              <td
-                                className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
-                              >
-                                {selectedAccount.acc_rep === 1
-                                  ? t("reportTypes.profitLoss")
-                                  : t("reportTypes.balanceSheet")}
-                              </td>
-                              <td
-                                className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
-                              >
-                                {currencies.find(
-                                  (c) => c.id === selectedAccount.cur,
-                                )?.cur_name || t("states.currencyNotSet")}
-                              </td>
-                              {hasActionPermission && (
-                                <td className="border border-gray-300 px-2 py-1 text-xs">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <Can I="view" a="basic.accounts">
-                                      <Button
-                                        isIconOnly
-                                        size="sm"
-                                        title={t("labels.view")}
-                                        variant="light"
-                                        onPress={() => {
-                                          handleViewAccount(selectedAccount);
-                                        }}
-                                      >
-                                        <EyeIcon className="h-4 w-4 text-blue-500" />
-                                      </Button>
-                                    </Can>
-                                    <Can I="update" a="basic.accounts">
-                                      <Button
-                                        isIconOnly
-                                        size="sm"
-                                        title={t("labels.edit")}
-                                        variant="light"
-                                        onPress={() => {
-                                          handleEditAccount(selectedAccount);
-                                        }}
-                                      >
-                                        <PencilIcon className="h-4 w-4 text-yellow-500" />
-                                      </Button>
-                                    </Can>
-                                    <Can I="delete" a="basic.accounts">
-                                      <Button
-                                        isIconOnly
-                                        color="danger"
-                                        size="sm"
-                                        title={t("labels.delete")}
-                                        variant="light"
-                                        onPress={() => {
-                                          handleDeleteAccount(
-                                            selectedAccount.id,
-                                          );
-                                        }}
-                                      >
-                                        <TrashIcon className="h-4 w-4" />
-                                      </Button>
-                                    </Can>
-                                  </div>
-                                </td>
-                              )}
-                            </tr>
+                            <AccountTableRow
+                              account={selectedAccount}
+                              currencies={currencies}
+                              t={t}
+                              textAlign={textAlign}
+                              onView={handleViewAccount}
+                              onEdit={handleEditAccount}
+                              onDelete={handleDeleteAccount}
+                            />
                           </tbody>
                         </table>
                       </div>

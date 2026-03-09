@@ -13,6 +13,8 @@ import { Locale, locales } from "@/i18n/config";
 export interface BreadcrumbItem {
   name: string;
   href?: string;
+  /** When false, disables Next.js prefetch for this link (e.g. to avoid repeated GETs) */
+  prefetch?: boolean;
   onClick?: (
     event: MouseEvent<HTMLAnchorElement | HTMLButtonElement | HTMLSpanElement>,
   ) => void;
@@ -214,6 +216,7 @@ const Breadcrumb = ({
               <Link
                 className="font-medium text-gray-700 hover:text-blue-600 transition-colors leading-none"
                 href={item.href}
+                prefetch={item.prefetch !== false}
                 onClick={item.onClick}
               >
                 {renderName}
