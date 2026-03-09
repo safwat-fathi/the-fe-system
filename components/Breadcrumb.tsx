@@ -53,8 +53,8 @@ const breadcrumbSegmentKeyMap = {
 
   // Forms - Vouchers
   voucher: "segments.voucher",
-  voucher1: "segments.voucher1",
-  voucher2: "segments.voucher2",
+  "cash-receipt": "segments.cash-receipt",
+  "payment-receipt": "segments.payment-receipt",
   gvoucher4: "segments.gvoucher4",
   gvoucher5: "segments.gvoucher5",
   receipt: "segments.receipt",

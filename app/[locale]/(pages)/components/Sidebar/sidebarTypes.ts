@@ -19,8 +19,8 @@ export type SegmentTranslationKey =
   | "sales-invoices"
   | "taxes"
   | "units"
-  | "voucher1"
-  | "voucher2"
+  | "cash-receipt"
+  | "payment-receipt"
   | "balance"
   | "adjustment";
 

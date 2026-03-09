@@ -8,7 +8,6 @@ import customerService from "@/services/api/customer.service";
 import helperService from "@/services/api/helper.service";
 import accountService from "@/services/api/account.service";
 
-
 export async function generateMetadata(): Promise<Metadata> {
   const t = (await getTranslations("basic.customers" as any)) as any;
 

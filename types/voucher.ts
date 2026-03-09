@@ -82,7 +82,7 @@ export interface VoucherDetail {
 
 export interface VoucherBox {
   id?: number;
-  vouch_id: number;
+  vouch_id: number | string;
   box_id: number;
   box?: {
     id: number;

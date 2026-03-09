@@ -43,8 +43,8 @@
         "credit-notes": "Credit notes",
         "debit-notes": "Debit notes",
         "voucher": "Vouchers",
-        "voucher1": "Receipt voucher",
-        "voucher2": "Payment voucher",
+        "cash-receipt": "Receipt voucher",
+        "payment-receipt": "Payment voucher",
         "adjustment": "Adjustment voucher",
         "gvoucher4": "Customer receipt",
         "gvoucher5": "Customer payment",
@@ -104,6 +104,50 @@
     }
   },
   "forms": {
+    "cashReceipt": {
+      "title": "Cash receipt",
+      "description": "Manage cash receipts",
+      "status": {
+        "numbering": "Numbering"
+      },
+      "actions": {
+        "save": "Save",
+        "edit": "Edit",
+        "new": "New",
+        "preview": "Preview",
+        "print": "Print",
+        "search": "Search",
+        "expandNotes": "Expand Notes"
+      },
+      "navigation": {
+        "position": "{current} of {total}"
+      },
+      "messages": {
+        "searchError": "Please enter voucher number to search",
+        "searchInvalid": "Please enter a valid voucher number",
+        "voucherNotFound": "{type} not found with number: {number}",
+        "voucherWrongType": "Found voucher ({id}) is not of type {type}",
+        "voucherAccessError": "Voucher found but cannot be accessed. Please try again.",
+        "searchErrorGeneric": "An error occurred while searching. Please try again",
+        "voucherTypeReceipt": "Cash Receipt Voucher",
+        "voucherTypePayment": "Cash Payment Voucher"
+      },
+      "fields": {
+        "refNo": "Ref No",
+        "dateTime": "Date & Time",
+        "costCenter": "Cost Center",
+        "costCenterPlaceholder": "Select cost center...",
+        "status": "Status",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter notes..."
+      },
+      "statusOptions": {
+        "cancelled": "Cancelled",
+        "active": "Active",
+        "suspended": "Suspended",
+        "incomplete": "Incomplete"
+      }
+    },
     "invoices": {
       "types": {
         "sale": {
@@ -837,6 +881,103 @@
             "wages": "Wages"
           }
         }
+      }
+    },
+    "paymentReceipt": {
+      "title": "Payment Voucher",
+      "description": "Manage payment vouchers",
+      "breadcrumbs": {
+        "list": "Payment Voucher",
+        "new": "New",
+        "edit": "Edit {id}",
+        "preview": "Preview"
+      },
+      "actions": {
+        "save": "Save",
+        "edit": "Edit",
+        "new": "New",
+        "print": "Print",
+        "viewGLTransactions": "View GL Transactions",
+        "addRow": "+ Row",
+        "delete": "Delete",
+        "expandNotes": "Expand Notes",
+        "saveNotes": "Save",
+        "search": "Search by voucher number..."
+      },
+      "fields": {
+        "refNo": "Reference Number",
+        "dateTime": "Date and Time",
+        "costCenter": "Cost Center",
+        "costCenterPlaceholder": "Select cost center...",
+        "status": "Status",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter entry notes (double-click for extended writing)",
+        "notesModalTitle": "Notes",
+        "notesModalPlaceholder": "Enter entry notes..."
+      },
+      "tables": {
+        "cash": {
+          "title": "Cash",
+          "columns": {
+            "amount": "Amount",
+            "box": "Box",
+            "boxPlaceholder": "Select box...",
+            "notes": "Notes",
+            "costCenter": "Cost Center",
+            "costCenterPlaceholder": "Cost center...",
+            "invoiceNumber": "Invoice Number",
+            "delete": "Delete"
+          }
+        },
+        "accounts": {
+          "title": "Accounts",
+          "columns": {
+            "account": "Account",
+            "accountPlaceholder": "Select account...",
+            "amount": "Amount",
+            "notes": "Notes",
+            "costCenter": "Cost Center",
+            "costCenterPlaceholder": "Cost center...",
+            "delete": "Delete"
+          },
+          "addAccountLabel": "Add new account: \"{value}\""
+        }
+      },
+      "status": {
+        "committed": "Committed",
+        "posted": "Posted",
+        "printed": "Printed",
+        "balanced": "Balanced",
+        "unbalanced": "Unbalanced",
+        "loading": "Loading...",
+        "numbering": "Numbering in progress..."
+      },
+      "statusOptions": {
+        "cancelled": "Cancelled",
+        "active": "Active",
+        "suspended": "Suspended",
+        "incomplete": "Incomplete"
+      },
+      "totals": {
+        "totalCash": "Total Cash",
+        "totalDetails": "Total Details",
+        "difference": "Difference",
+        "status": "Status",
+        "debit": "Debit",
+        "credit": "Credit"
+      },
+      "navigation": {
+        "position": "{current} of {total}"
+      },
+      "messages": {
+        "searchError": "Please enter voucher number to search",
+        "searchInvalid": "Please enter a valid voucher number",
+        "voucherNotFound": "{type} not found with number: {number}",
+        "voucherWrongType": "Found voucher ({id}) is not of type {type}",
+        "voucherAccessError": "Voucher found but cannot be accessed. Please try again.",
+        "searchErrorGeneric": "An error occurred while searching. Please try again",
+        "voucherTypeReceipt": "Cash Receipt Voucher",
+        "voucherTypePayment": "Cash Payment Voucher"
       }
     }
   },
