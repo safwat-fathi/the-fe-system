@@ -88,6 +88,7 @@ const getUserPermissions = async (
 
 const derivePermission = (
   pathnameWithoutLocale: string,
+  searchParams: URLSearchParams,
 ): { resourceKey: string; action: string } | null => {
   const segments = pathnameWithoutLocale.split("/").filter(Boolean);
 
@@ -95,6 +96,39 @@ const derivePermission = (
 
   const parent = segments[0];
   const resource = segments[1];
+
+  // custom logic for innvoices because types and mode
+  if (resource === "invoices" && (parent === "forms" || parent === "reports")) {
+    const type = searchParams.get("type");
+    let resourceKey = "forms.sale";
+
+    if (type === "purchase") {
+      resourceKey = "forms.purchase";
+    } else if (type === "sale-return") {
+      resourceKey = "forms.sale-return";
+    } else if (type === "purchase-return") {
+      resourceKey = "forms.purchase-return";
+    } else {
+      resourceKey = "forms.sales";
+    }
+
+    let action = "view";
+
+    if (parent === "forms") {
+      const mode = searchParams.get("mode");
+
+      if (mode === "new") {
+        action = "create";
+      } else if (mode === "edit") {
+        action = "update";
+      } else if (mode === "preview") {
+        action = "view";
+      }
+    }
+
+    return { resourceKey, action };
+  }
+
   const resourceKey = `${parent}.${resource}`;
 
   if (segments.length === 2) {
@@ -195,7 +229,10 @@ const rbacMiddleware: MiddlewareFactory = (next) => {
         return next(request, event);
       }
 
-      const derived = derivePermission(pathnameWithoutLocale);
+      const derived = derivePermission(
+        pathnameWithoutLocale,
+        request.nextUrl.searchParams,
+      );
 
       if (!derived) {
         return next(request, event);
