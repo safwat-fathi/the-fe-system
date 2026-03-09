@@ -28,6 +28,7 @@ import { ConfirmationModal } from "@/components/Modal";
 import customerTypeService from "@/services/api/customer-type.service";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import { getLocaleDir } from "@/i18n/config";
+import { Can } from "@/components/providers/AbilityProvider";
 
 interface CustomerType {
   id: number;

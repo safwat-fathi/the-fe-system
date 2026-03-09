@@ -80,6 +80,7 @@ export const accountingBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/boxes",
     icon: <DocumentTextIcon className="h-5 w-5" />,
     prefetch: false,
+    caslSubject: "basic.boxes",
   },
   {
     translationKey: "currencies",

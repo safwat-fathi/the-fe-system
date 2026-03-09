@@ -27,6 +27,7 @@ import { getLocaleDir } from "@/i18n/config";
 import { ConfirmationModal } from "@/components/Modal";
 import boxService from "@/services/api/box.service";
 import { revalidateBoxes } from "@/app/actions/revalidate.action";
+import { Can } from "@/components/providers/AbilityProvider";
 
 // Interface for customer boxes (customers with cust_type = 99)
 interface CustomerBox {

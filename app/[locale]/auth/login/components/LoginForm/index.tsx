@@ -2,8 +2,8 @@
 
 import { Form, Input, Spacer, Button } from "@heroui/react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { useSearchParams } from "next/navigation";
-import { useActionState, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import ChangeLocale from "../ChangeLocale";
@@ -62,7 +62,9 @@ const LoginForm = () => {
               type="button"
               onClick={() => setIsPasswordVisible((v) => !v)}
               className="focus:outline-none p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-              aria-label={isPasswordVisible ? t("hidePassword") : t("showPassword")}
+              aria-label={
+                isPasswordVisible ? t("hidePassword") : t("showPassword")
+              }
             >
               {isPasswordVisible ? (
                 <EyeSlashIcon className="h-5 w-5" />

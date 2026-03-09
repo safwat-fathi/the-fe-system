@@ -9,19 +9,14 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
-import {
-  Input,
-  Button,
-  Pagination,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Input, Button, Pagination, Select, SelectItem } from "@heroui/react";
 
 import customerService from "@/services/api/customer.service";
 import { ConfirmationModal } from "@/components/Modal";
 import AppDataTable from "@/components/AppDataTable";
 import { createCustomerColumns } from "@/components/customers/customerColumns";
 import { getLocaleDir } from "@/i18n/config";
+import { usePermissionStore } from "@/stores/permissionStore";
 
 interface Customer {
   id: number;
