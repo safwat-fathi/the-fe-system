@@ -2,7 +2,11 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import AccountFormClient from "../components/AccountFormClient";
-import { normalizeAccountsTree, findAccountById } from "../utils/account-tree";
+import {
+  normalizeAccountsTree,
+  findAccountById,
+  ROOT_ACCOUNT_REQUEST_PAYLOAD,
+} from "../utils/account-tree";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import accountService from "@/services/api/account.service";
@@ -49,29 +53,30 @@ export default async function AccountDetailsPage({
     notFound();
   }
 
-  const rootRequestPayload = {
-    id: 0,
-    acc_id: "0",
-    acc_code: "0",
-    acc_name: "0",
-    acc_name_e: null as string | null,
-    parent: null,
-    acc_level: 1,
-  };
-
-  const [accountsData, currenciesData] = await Promise.all([
+  const [accountsData, currenciesData, flatAccounts] = await Promise.all([
     accountService
-      .getAccountsTree(rootRequestPayload)
+      .getAccountsTree(ROOT_ACCOUNT_REQUEST_PAYLOAD)
       .catch(() => [] as Account[]),
     accountService.getCurrencies().catch(() => [] as Currency[]),
+    accountService.getAllAccounts().catch(() => [] as Account[]),
   ]);
 
   const normalizedAccounts = normalizeAccountsTree(accountsData);
-  const account = findAccountById(normalizedAccounts, accountId);
+  const accountFromTree = findAccountById(normalizedAccounts, accountId);
 
-  if (!account) {
+  if (!accountFromTree) {
     notFound();
   }
+
+  const flatById = new Map(
+    flatAccounts.map((a) => [String(a.id), a]),
+  );
+  const flatAccount = flatById.get(String(accountId));
+  const account: Account = {
+    ...accountFromTree,
+    acc_level: flatAccount?.acc_level ?? accountFromTree.acc_level,
+    cur: flatAccount?.cur ?? accountFromTree.cur ?? null,
+  };
 
   const breadcrumbLabel =
     mode === "edit"

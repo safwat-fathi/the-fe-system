@@ -1,5 +1,7 @@
 "use client";
 
+import type { Account } from "@/types/models/account";
+
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -11,7 +13,6 @@ import {
   TableCell,
   Input,
   Button,
-  Checkbox,
   Pagination,
 } from "@heroui/react";
 import {
@@ -25,22 +26,26 @@ import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
 
 import { ConfirmationModal } from "@/components/Modal";
-import customerTypeService from "@/services/api/customer-type.service";
+import customerTypeService, {
+  type CustomerType,
+  type CustTypeStatusOption,
+} from "@/services/api/customer-type.service";
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 import { getLocaleDir } from "@/i18n/config";
-
-interface CustomerType {
-  id: number;
-  type_name: string;
-  type_name_e: string;
-  type_desc: string;
-  cr_date: string;
-  type_status: boolean;
-}
+import {
+  ACTION_BUTTONS,
+  CONFIRM_MODAL,
+  DEFAULT_PAGE_SIZE,
+  PAGINATION_BAR,
+  TABLE_STYLE,
+  TOOLBAR,
+} from "@/constants/ui";
 
 interface CustomerTypesClientProps {
   initialTypes: CustomerType[];
+  initialStatusOptions: CustTypeStatusOption[];
   initialSearch: string;
+  accounts: Account[];
   loadError?: string | null;
 }
 
@@ -50,7 +55,9 @@ type CustomerTypeQueryParams = {
 
 export default function CustomerTypesClient({
   initialTypes,
+  initialStatusOptions,
   initialSearch,
+  accounts,
   loadError,
 }: CustomerTypesClientProps) {
   const router = useRouter();
@@ -58,15 +65,18 @@ export default function CustomerTypesClient({
   const dir = getLocaleDir(locale as "ar" | "en");
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const t = useTranslations("basic.customerTypes" as any) as any;
+  const safeT = (key: string, fallback: string) =>
+    typeof t.has === "function" && t.has(key) ? t(key) : fallback;
   const [isPending, startTransition] = useTransition();
   const [types, setTypes] = useState<CustomerType[]>(initialTypes);
+  const [statusOptions] = useState<CustTypeStatusOption[]>(initialStatusOptions);
   const [searchValue, setSearchValue] = useState(initialSearch);
   const [page, setPage] = useState(1);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [typeToDelete, setTypeToDelete] = useState<CustomerType | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const rowsPerPage = 10;
+  const rowsPerPage = DEFAULT_PAGE_SIZE;
   const { params, setParams } = useQueryParams<CustomerTypeQueryParams>(
     ["search"],
     {
@@ -84,17 +94,40 @@ export default function CustomerTypesClient({
     },
   );
 
+  const displayName = (type: CustomerType) =>
+    locale === "ar" ? type.type_name || type.type_name_e : type.type_name_e || type.type_name;
+
   const columns = useMemo(
     () => [
       { name: "ID", uid: "id" },
       { name: t("columns.typeName"), uid: "type_name" },
-      { name: t("columns.typeNameEn"), uid: "type_name_e" },
-      { name: t("columns.typeDesc"), uid: "type_desc" },
+      { name: t("columns.typeDesc"), uid: "prefix" },
+      { name: safeT("columns.mainAccount", locale === "ar" ? "الحساب الرئيسي" : "Main Account"), uid: "main_account" },
       { name: t("columns.typeStatus"), uid: "type_status" },
       { name: "", uid: "actions" },
     ],
-    [t],
+    [locale, t],
   );
+
+  const accountLabelById = useMemo(() => {
+    return new Map(
+      accounts.map((account) => [
+        account.id,
+        `${account.acc_id} - ${locale === "ar" ? account.acc_name : account.acc_name_e || account.acc_name}`,
+      ]),
+    );
+  }, [accounts, locale]);
+
+  const statusLabel = (type: CustomerType) => {
+    const codeId = type.type_status ? 1 : 0;
+    const opt = statusOptions.find((o) => o.code_id === codeId);
+
+    return opt
+      ? locale === "ar"
+        ? opt.code_desc
+        : opt.code_desc_l
+      : "—";
+  };
 
   useEffect(() => {
     setTypes(initialTypes);
@@ -181,31 +214,31 @@ export default function CustomerTypesClient({
   };
 
   const renderActions = (type: CustomerType) => (
-    <div className="flex gap-2">
+    <div className={ACTION_BUTTONS.wrapper}>
       <Button
         isIconOnly
-        size="sm"
-        variant="light"
+        size={ACTION_BUTTONS.size}
+        variant={ACTION_BUTTONS.variant}
         onPress={() => router.push(`/basic/cust_type/${type.id}`)}
       >
-        <EyeIcon className="h-4 w-4 text-blue-500" />
+        <EyeIcon className={ACTION_BUTTONS.iconView} />
       </Button>
       <Button
         isIconOnly
-        size="sm"
-        variant="light"
+        size={ACTION_BUTTONS.size}
+        variant={ACTION_BUTTONS.variant}
         onPress={() => router.push(`/basic/cust_type/${type.id}?mode=edit`)}
       >
-        <PencilIcon className="h-4 w-4 text-yellow-500" />
+        <PencilIcon className={ACTION_BUTTONS.iconEdit} />
       </Button>
       <Button
         isIconOnly
         color="danger"
-        size="sm"
-        variant="light"
+        size={ACTION_BUTTONS.size}
+        variant={ACTION_BUTTONS.variant}
         onPress={() => handleDeleteClick(type)}
       >
-        <TrashIcon className="h-4 w-4" />
+        <TrashIcon className={ACTION_BUTTONS.iconSize} />
       </Button>
     </div>
   );
@@ -217,26 +250,26 @@ export default function CustomerTypesClient({
   }, [types, page]);
 
   return (
-    <div className="flex flex-col gap-6 font-cairo">
-      <div className="flex flex-wrap items-center gap-3 mb-2">
+    <>
+      <div className={TOOLBAR.root}>
         <Button
-          className="bg-gray-100"
-          variant="bordered"
+          className={TOOLBAR.addButton}
+          variant={TOOLBAR.addButtonVariant}
           onPress={() => router.push("/basic/cust_type/new")}
         >
-          <PlusIcon className="h-3 w-3" />
+          <PlusIcon className={TOOLBAR.iconAdd} />
           {t("actions.add")}
         </Button>
-        <div className="h-8 w-px bg-gray-300" />
-        <div className="flex-1 min-w-[200px]">
+        <div className={TOOLBAR.divider} />
+        <div className={TOOLBAR.searchWrapper}>
           <Input
             placeholder={t("labels.searchPlaceholder")}
-            size="sm"
+            size={TOOLBAR.inputSize}
             startContent={
               isPending ? (
                 <div className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
               ) : (
-                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+                <MagnifyingGlassIcon className={TOOLBAR.iconSearch} />
               )
             }
             value={searchValue}
@@ -258,14 +291,8 @@ export default function CustomerTypesClient({
       )}
 
       <Table
-        removeWrapper
         aria-label={t("labels.tableAriaLabel")}
-        classNames={{
-          wrapper: "shadow-none",
-          th: "bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-200",
-          td: "border-b border-gray-100 text-sm",
-          tr: "hover:bg-gray-50 transition-colors",
-        }}
+        classNames={TABLE_STYLE}
       >
         <TableHeader>
           {columns.map((col) => (
@@ -276,24 +303,24 @@ export default function CustomerTypesClient({
           {paginated.map((type) => (
             <TableRow key={type.id}>
               <TableCell>{type.id}</TableCell>
-              <TableCell>{type.type_name}</TableCell>
-              <TableCell>{type.type_name_e}</TableCell>
-              <TableCell>{type.type_desc}</TableCell>
+              <TableCell>{displayName(type)}</TableCell>
+              <TableCell>{type.prefix ?? "—"}</TableCell>
               <TableCell>
-                <Checkbox isReadOnly isSelected={type.type_status} />
+                {type.acc == null ? "—" : accountLabelById.get(type.acc) ?? "—"}
               </TableCell>
+              <TableCell>{statusLabel(type)}</TableCell>
               <TableCell>{renderActions(type)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-      <div className="py-4 flex justify-between items-center">
-        <span className={`text-sm text-gray-500 ${textAlign}`}>
+      <div className={PAGINATION_BAR.root}>
+        <span className={`${PAGINATION_BAR.countText} ${textAlign}`}>
           {t("labels.totalCount", { count: types.length })}
         </span>
         <Pagination
-          color="primary"
+          color={PAGINATION_BAR.color}
           page={page}
           total={Math.max(1, Math.ceil(types.length / rowsPerPage))}
           onChange={setPage}
@@ -302,15 +329,17 @@ export default function CustomerTypesClient({
 
       <ConfirmationModal
         cancelText={t("modals.cancel")}
-        confirmColor="danger"
+        confirmColor={CONFIRM_MODAL.confirmColor}
         confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
-        message={t("modals.deleteMessage", { name: typeToDelete?.type_name })}
-        size="md"
+        message={t("modals.deleteMessage", {
+          name: typeToDelete ? displayName(typeToDelete) : "",
+        })}
+        size={CONFIRM_MODAL.size}
         title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />
-    </div>
+    </>
   );
 }

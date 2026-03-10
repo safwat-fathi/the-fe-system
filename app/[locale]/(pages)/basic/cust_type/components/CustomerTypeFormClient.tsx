@@ -1,43 +1,53 @@
 "use client";
 
+import type { Account } from "@/types/models/account";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Checkbox } from "@heroui/react";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { Button, Input, Select, SelectItem } from "@heroui/react";
+import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
-import customerTypeService from "@/services/api/customer-type.service";
+import { FORM_ACTIONS } from "@/constants/ui";
+import customerTypeService, {
+  type CustomerType,
+  type CustTypeStatusOption,
+} from "@/services/api/customer-type.service";
 
 type CustomerTypeFormMode = "view" | "edit" | "add";
-
-interface CustomerType {
-  id: number;
-  type_name: string;
-  type_name_e: string;
-  type_desc: string;
-  cr_date: string;
-  type_status: boolean;
-}
 
 interface CustomerTypeFormClientProps {
   mode: CustomerTypeFormMode;
   initialType: Partial<CustomerType>;
+  statusOptions: CustTypeStatusOption[];
+  accounts: Account[];
 }
 
 const CustomerTypeFormClient = ({
   mode,
   initialType,
+  statusOptions,
+  accounts,
 }: CustomerTypeFormClientProps) => {
   const router = useRouter();
+  const locale = useLocale();
   const t = useTranslations("basic.customerTypes" as any) as any;
+  const safeT = (key: string, fallback: string) =>
+    typeof t.has === "function" && t.has(key) ? t(key) : fallback;
   const isViewMode = mode === "view";
   const isAddMode = mode === "add";
+
   const [type, setType] = useState<Partial<CustomerType>>(initialType);
   const [isSaving, setIsSaving] = useState(false);
 
+  const displayName =
+    type.type_name || type.type_name_e || t("titles.defaultName");
+
   const handleSave = async () => {
-    if (!type.type_name || !type.type_name_e) {
+    const name = type.type_name?.trim() || type.type_name_e?.trim();
+
+    if (!name) {
       toast.error(t("messages.requiredFields"));
 
       return;
@@ -45,15 +55,21 @@ const CustomerTypeFormClient = ({
 
     setIsSaving(true);
 
+    const payload = {
+      ...type,
+      type_name: name,
+      type_name_e: name,
+    };
+
     try {
       let result: CustomerType | null = null;
 
       if (isAddMode) {
         result = await customerTypeService.createCustomerType(
-          type as Omit<CustomerType, "id">,
+          payload as Omit<CustomerType, "id">,
         );
       } else if (type.id) {
-        result = await customerTypeService.updateCustomerType(type.id, type);
+        result = await customerTypeService.updateCustomerType(type.id, payload);
       }
 
       if (result) {
@@ -78,15 +94,10 @@ const CustomerTypeFormClient = ({
   };
 
   const getTitle = () => {
-    if (isViewMode)
-      return t("titles.view", {
-        name: type.type_name || t("titles.defaultName"),
-      });
+    if (isViewMode) return t("titles.view", { name: displayName });
     if (isAddMode) return t("titles.add");
 
-    return t("titles.edit", {
-      name: type.type_name || t("titles.defaultName"),
-    });
+    return t("titles.edit", { name: displayName });
   };
 
   const getDescription = () => {
@@ -98,78 +109,137 @@ const CustomerTypeFormClient = ({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900">{getTitle()}</h2>
           <p className="text-sm text-gray-600 mt-1">{getDescription()}</p>
         </div>
-        <div className="flex gap-2">
+        <div className={FORM_ACTIONS.wrapper}>
           <Button
-            variant="light"
+            size={FORM_ACTIONS.size}
+            startContent={<ArrowLeftIcon className={FORM_ACTIONS.back.iconSize} />}
+            variant={FORM_ACTIONS.back.variant}
             onPress={() => router.push("/basic/cust_type")}
           >
-            <ArrowLeftIcon className="h-4 w-4" />
             {t("actions.back")}
           </Button>
           {isViewMode && (
-            <Button color="primary" onPress={handleEdit}>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.edit.color}
+              variant={FORM_ACTIONS.edit.variant}
+              onPress={handleEdit}
+            >
               {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
-            <>
-              <Button
-                variant="light"
-                onPress={() => router.push("/basic/cust_type")}
-              >
-                {t("actions.cancel")}
-              </Button>
-              <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? t("actions.save") : t("actions.update")}
-              </Button>
-            </>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.save.color}
+              className={FORM_ACTIONS.save.className}
+              startContent={<CheckCircleIcon className={FORM_ACTIONS.save.iconSize} />}
+              isLoading={isSaving}
+              onPress={handleSave}
+            >
+              {isAddMode ? t("actions.save") : t("actions.update")}
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           isRequired
           isDisabled={isViewMode}
           label={t("fields.typeName")}
-          value={type.type_name || ""}
-          onChange={(e) => setType({ ...type, type_name: e.target.value })}
+          value={type.type_name || type.type_name_e || ""}
+          onChange={(e) => {
+            const v = e.target.value;
+
+            setType({ ...type, type_name: v, type_name_e: v });
+          }}
         />
-        <Input
-          isRequired
-          isDisabled={isViewMode}
-          label={t("fields.typeNameEn")}
-          value={type.type_name_e || ""}
-          onChange={(e) => setType({ ...type, type_name_e: e.target.value })}
-        />
+
         <Input
           className="md:col-span-2"
-          isDisabled={isViewMode}
+          isDisabled
           label={t("fields.typeDesc")}
-          value={type.type_desc || ""}
-          onChange={(e) => setType({ ...type, type_desc: e.target.value })}
+          value={type.prefix ?? ""}
+          placeholder="—"
         />
         <Input
           className="md:col-span-2"
-          isDisabled={true}
+          isDisabled
           label={t("fields.crDate")}
           value={type.cr_date || ""}
         />
         <div className="md:col-span-2">
-          <Checkbox
+          <Select
             isDisabled={isViewMode}
-            isSelected={Boolean(type.type_status)}
-            onValueChange={(val) => setType({ ...type, type_status: val })}
+            label={safeT("fields.mainAccount", locale === "ar" ? "الحساب الرئيسي" : "Main Account")}
+            placeholder={safeT(
+              "fields.mainAccountPlaceholder",
+              locale === "ar" ? "اختر الحساب الرئيسي" : "Select main account",
+            )}
+            selectedKeys={
+              type.acc === null || type.acc === undefined
+                ? []
+                : [String(type.acc)]
+            }
+            onSelectionChange={(keys) => {
+              const key = Array.from(keys)[0];
+
+              if (key == null) {
+                setType({ ...type, acc: null });
+
+                return;
+              }
+
+              const selectedId = Number(key);
+
+              if (Number.isFinite(selectedId)) {
+                setType({ ...type, acc: selectedId });
+              }
+            }}
           >
-            {t("fields.typeStatus")}
-          </Checkbox>
+            {accounts.map((account) => (
+              <SelectItem
+                key={String(account.id)}
+                textValue={`${account.acc_id} - ${locale === "ar" ? account.acc_name : account.acc_name_e || account.acc_name}`}
+              >
+                {account.acc_id} -{" "}
+                {locale === "ar"
+                  ? account.acc_name
+                  : account.acc_name_e || account.acc_name}
+              </SelectItem>
+            ))}
+          </Select>
+        </div>
+
+        <div className="md:col-span-2">
+          <Select
+            isDisabled={isViewMode}
+            label={t("fields.typeStatus")}
+            selectedKeys={[String(type.type_status ? 1 : 0)]}
+            onSelectionChange={(keys) => {
+              const key = Array.from(keys)[0];
+
+              if (key != null)
+                setType({ ...type, type_status: Number(key) === 1 });
+            }}
+          >
+            {statusOptions.map((opt) => (
+              <SelectItem
+                key={String(opt.code_id)}
+                textValue={
+                  locale === "ar" ? opt.code_desc : opt.code_desc_l
+                }
+              >
+                {locale === "ar" ? opt.code_desc : opt.code_desc_l}
+              </SelectItem>
+            ))}
+          </Select>
         </div>
       </div>
     </div>

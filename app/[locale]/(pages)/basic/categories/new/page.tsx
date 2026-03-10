@@ -40,7 +40,7 @@ export default async function NewCategoryPage() {
     tax_type: false,
     tax: 0,
     cat_type: "",
-    cat_status: true,
+    cat_status: "1",
   };
 
   return (

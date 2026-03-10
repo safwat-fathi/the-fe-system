@@ -1,5 +1,15 @@
 import { Account } from "@/types/models/account";
 
+export const ROOT_ACCOUNT_REQUEST_PAYLOAD = {
+  id: 0,
+  acc_id: "0",
+  acc_code: "0",
+  acc_name: "0",
+  acc_name_e: null as string | null,
+  parent: null,
+  acc_level: 1,
+} as const;
+
 const toNumber = (value: unknown, fallback = 0): number => {
   if (value === null || value === undefined || value === "") {
     return fallback;
@@ -298,6 +308,14 @@ export const flattenAccountTree = (tree: Account[]): Account[] => {
   return result;
 };
 
+/** يرجع الحسابات ذات المستوى الرابع فقط (للاستخدام في خانة الحساب الرئيسي مثلاً) */
+export const getAccountsLevel4 = (rawTree: any): Account[] => {
+  const normalized = normalizeAccountsTree(rawTree);
+  const flat = flattenAccountTree(normalized);
+
+  return flat.filter((account) => Number(account.acc_level) === 4);
+};
+
 export const removeAccountFromTree = (
   tree: Account[],
   accountId: number,
@@ -346,7 +364,7 @@ export const generateAccountId = (
 
     newSuffix = (Math.max(...siblingNumbers, 0) + 1)
       .toString()
-      .padStart(4, "0");
+      .padStart(3, "0");
   } else {
     newSuffix = (siblingCount + 1).toString();
   }

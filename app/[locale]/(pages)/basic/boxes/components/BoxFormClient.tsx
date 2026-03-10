@@ -4,11 +4,12 @@ import type { Box as BoxModel } from "@/types/models/box";
 import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Checkbox, Input } from "@heroui/react";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import ReactSelect from "react-select";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
 
+import { FORM_ACTIONS } from "@/constants/ui";
 import { getLocaleDir } from "@/i18n/config";
 import boxService from "@/services/api/box.service";
 import { revalidateBoxes } from "@/app/actions/revalidate.action";
@@ -66,7 +67,6 @@ const BoxFormClient = ({
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.boxes");
 
-  // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   const isViewMode = mode === "view";
@@ -211,7 +211,6 @@ const BoxFormClient = ({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className={textAlign}>
           <h2 className={`text-xl font-bold text-gray-900 ${textAlign}`}>
@@ -221,33 +220,40 @@ const BoxFormClient = ({
             {getDescription()}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="light" onPress={() => router.push("/basic/boxes")}>
-            <ArrowLeftIcon className="h-4 w-4" />
+        <div className={FORM_ACTIONS.wrapper}>
+          <Button
+            size={FORM_ACTIONS.size}
+            startContent={<ArrowLeftIcon className={FORM_ACTIONS.back.iconSize} />}
+            variant={FORM_ACTIONS.back.variant}
+            onPress={() => router.push("/basic/boxes")}
+          >
             {t("actions.back")}
           </Button>
           {isViewMode && (
-            <Button color="primary" onPress={handleEdit}>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.edit.color}
+              variant={FORM_ACTIONS.edit.variant}
+              onPress={handleEdit}
+            >
               {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
-            <>
-              <Button
-                variant="light"
-                onPress={() => router.push("/basic/boxes")}
-              >
-                {t("actions.cancel")}
-              </Button>
-              <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? t("actions.save") : t("actions.update")}
-              </Button>
-            </>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.save.color}
+              className={FORM_ACTIONS.save.className}
+              startContent={<CheckCircleIcon className={FORM_ACTIONS.save.iconSize} />}
+              isLoading={isSaving}
+              onPress={handleSave}
+            >
+              {isAddMode ? t("actions.save") : t("actions.update")}
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           isDisabled={isViewMode}

@@ -9,6 +9,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { getBranchParams } from "@/app/actions/branch-params";
 import helperService from "@/services/api/helper.service";
 import accountService from "@/services/api/account.service";
+import customerTypeService from "@/services/api/customer-type.service";
 
 export const metadata: Metadata = {
   title: "إضافة عميل جديد - NafeesWeb",
@@ -23,16 +24,16 @@ export default async function NewCustomerPage() {
       ? parsedCompanyId
       : 1;
 
-  // جلب البيانات الأساسية
+  // جلب البيانات الأساسية (كود العميل سيكون إدخالاً يدوياً من المستخدم)
   const [customerTypesData, customerStatusData, accountsData, boxTypesData] =
     await Promise.all([
-      helperService.getCustomerTypes().catch(() => []),
+      customerTypeService.getAllCustomerTypes().catch(() => []),
       helperService.getCustomerStatuses().catch(() => []),
       accountService.getAllAccounts().catch(() => []),
       helperService.getBoxTypes().catch(() => []),
     ]);
 
-  // إنشاء عميل فارغ
+  // إنشاء عميل فارغ (كود العميل يُدخل يدوياً، بدون ترقيم تلقائي)
   const emptyCustomer: Partial<CustomerFormValues> = {
     id: 0,
     cust_code: "",

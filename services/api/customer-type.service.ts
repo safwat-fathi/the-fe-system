@@ -1,17 +1,41 @@
 import { HttpService } from "@/services/base";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
-interface CustomerType {
+export type CustomerType = {
   id: number;
   type_name: string;
   type_name_e: string;
   type_desc: string;
+  prefix: string;
   cr_date: string;
   type_status: boolean;
-}
+  acc?: number | null;
+  acc_name?: string;
+};
 
-type CustomerTypePayload = Omit<CustomerType, "id" | "cr_date">;
-type CustomerTypeUpdatePayload = Partial<CustomerTypePayload>;
+export type CustTypeStatusOption = {
+  id: number;
+  code_id: number;
+  code_desc: string;
+  code_desc_l: string;
+  type_id: number;
+};
+
+type CustomerTypePayload = {
+  type_name: string;
+  type_name_e: string;
+  type_desc: string;
+  prefix: string;
+  acc: number | null;
+  type_status: number;
+};
+type CustomerTypeUpdatePayload = {
+  type_name?: string;
+  type_name_e?: string;
+  type_desc?: string;
+  acc?: number | null;
+  type_status?: number;
+};
 
 class CustomerTypeService extends HttpService<CustomerType> {
   constructor() {
@@ -28,7 +52,13 @@ class CustomerTypeService extends HttpService<CustomerType> {
       type_name: String(raw.type_name ?? ""),
       type_name_e: String(raw.type_name_e ?? ""),
       type_desc: String(raw.type_desc ?? ""),
+      prefix: String(raw.prefix ?? raw.type_name_e ?? raw.type_name ?? ""),
       cr_date: String(raw.cr_date ?? ""),
+      acc:
+        raw.acc === null || raw.acc === undefined || raw.acc === ""
+          ? null
+          : Number(raw.acc),
+      acc_name: String(raw.acc_name ?? raw.acc_name_e ?? ""),
       type_status:
         typeof rawStatus === "boolean"
           ? rawStatus
@@ -83,11 +113,19 @@ class CustomerTypeService extends HttpService<CustomerType> {
     customerType: Omit<CustomerType, "id">,
   ): Promise<CustomerType | null> {
     try {
+      const name = String(
+        customerType.type_name ?? customerType.type_name_e ?? "",
+      ).trim();
       const payload: CustomerTypePayload = {
-        type_name: String(customerType.type_name ?? "").trim(),
-        type_name_e: String(customerType.type_name_e ?? "").trim(),
+        type_name: name,
+        type_name_e: name,
         type_desc: String(customerType.type_desc ?? "").trim(),
-        type_status: Boolean(customerType.type_status),
+        prefix: String(customerType.prefix ?? name).trim(),
+        acc:
+          customerType.acc === null || customerType.acc === undefined
+            ? null
+            : Number(customerType.acc),
+        type_status: customerType.type_status ? 1 : 0,
       };
 
       const response = await this.post<CustomerType>(
@@ -127,8 +165,12 @@ class CustomerTypeService extends HttpService<CustomerType> {
       if (customerType.type_desc !== undefined) {
         payload.type_desc = String(customerType.type_desc).trim();
       }
+      if (customerType.acc !== undefined) {
+        payload.acc =
+          customerType.acc === null ? null : Number(customerType.acc);
+      }
       if (customerType.type_status !== undefined) {
-        payload.type_status = Boolean(customerType.type_status);
+        payload.type_status = customerType.type_status ? 1 : 0;
       }
 
       const response = await this.put<CustomerType>(
@@ -188,6 +230,28 @@ class CustomerTypeService extends HttpService<CustomerType> {
       console.error("Error fetching customer type by ID:", error);
 
       return null;
+    }
+  }
+
+  async getCustTypeStatus(): Promise<CustTypeStatusOption[]> {
+    try {
+      const response = await this.get<{
+        results?: CustTypeStatusOption[];
+      }>("getCustTypeStatus", undefined, {
+        cache: "no-store",
+        next: { tags: ["customer-type-status"] },
+      });
+
+      if (!response.success || !response.data) return [];
+
+      const results = response.data.results;
+
+      return Array.isArray(results) ? results : [];
+    } catch (error) {
+      console.error("Error fetching customer type status options:", error);
+      rethrowAuthenticationError(error);
+
+      return [];
     }
   }
 }
