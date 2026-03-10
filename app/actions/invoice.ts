@@ -8,6 +8,42 @@ import invoiceService, {
 } from "@/services/api/invoice.service";
 import { type Invoice, type InvoiceDetail } from "@/types/models/invoice";
 import { STORAGE_KEYS } from "@/constants";
+import {
+  resolveInvoiceSubject,
+  type CanonicalAction,
+} from "@/utilities/auth/authorization-core";
+import {
+  assertAnyAuthorized,
+  assertAuthorized,
+} from "@/utilities/auth/authorization-server";
+
+const INVOICE_SUBJECTS = [
+  "forms.sales",
+  "forms.purchase",
+  "forms.sale-return",
+  "forms.purchase-return",
+] as const;
+
+const assertInvoicePermission = async (
+  action: CanonicalAction,
+  transType?: unknown,
+) => {
+  if (transType !== undefined && transType !== null) {
+    await assertAuthorized({
+      subject: resolveInvoiceSubject(transType as string | number),
+      action,
+    });
+
+    return;
+  }
+
+  await assertAnyAuthorized(
+    INVOICE_SUBJECTS.map((subject) => ({
+      subject,
+      action,
+    })),
+  );
+};
 
 const parseInvoiceAmount = (value: unknown): number | null => {
   if (value === undefined || value === null) return null;
@@ -68,6 +104,7 @@ export async function getMaxInvoiceIdAction(transType: number) {
 }
 
 export async function createInvoiceAction(payload: Partial<Invoice>) {
+  await assertInvoicePermission("create", payload.trans_type);
   assertPositiveInvoiceValue(payload);
 
   const result = await invoiceService.createInvoice(payload);
@@ -84,6 +121,7 @@ export async function updateInvoiceAction(
   id: number | string,
   payload: Partial<Invoice>,
 ) {
+  await assertInvoicePermission("update", payload.trans_type);
   assertPositiveInvoiceValue(payload);
 
   const parsedId = Number(id);
@@ -109,6 +147,22 @@ export async function createInvoiceDetailAction(
   payload: Partial<InvoiceDetail>,
   invoiceId?: number | string,
 ) {
+  if (payload.trans_type !== undefined && payload.trans_type !== null) {
+    const subject = resolveInvoiceSubject(payload.trans_type);
+
+    await assertAnyAuthorized([
+      { subject, action: "create" },
+      { subject, action: "update" },
+    ]);
+  } else {
+    await assertAnyAuthorized(
+      INVOICE_SUBJECTS.flatMap((subject) => [
+        { subject, action: "create" as const },
+        { subject, action: "update" as const },
+      ]),
+    );
+  }
+
   const result = await invoiceService.createInvoiceDetail(payload);
 
   if (result) {
@@ -133,6 +187,7 @@ export async function updateInvoiceDetailAction(
   payload: Partial<InvoiceDetail>,
   invoiceId?: number | string,
 ) {
+  await assertInvoicePermission("update", payload.trans_type);
   const result = await invoiceService.updateInvoiceDetail(id, payload);
 
   if (result) {
@@ -156,6 +211,7 @@ export async function deleteInvoiceDetailAction(
   id: number,
   invoiceId?: number | string,
 ) {
+  await assertInvoicePermission("delete");
   const result = await invoiceService.deleteInvoiceDetail(id);
 
   if (result) {
@@ -176,6 +232,13 @@ export async function createInvoiceBoxAction(
     "cr_user"
   >,
 ) {
+  const subject = resolveInvoiceSubject(payload.trans_type);
+
+  await assertAnyAuthorized([
+    { subject, action: "create" },
+    { subject, action: "update" },
+  ]);
+
   const cookieStore = await cookies();
   const userId = cookieStore.get(STORAGE_KEYS.USER_ID)?.value;
 
@@ -197,6 +260,13 @@ export async function createInvoiceGoldBoxAction(
     "cr_user"
   >,
 ) {
+  const subject = resolveInvoiceSubject(payload.trans_type);
+
+  await assertAnyAuthorized([
+    { subject, action: "create" },
+    { subject, action: "update" },
+  ]);
+
   const cookieStore = await cookies();
   const userId = cookieStore.get(STORAGE_KEYS.USER_ID)?.value;
 
@@ -219,6 +289,7 @@ export async function updateInvoiceGoldBoxAction(
     "cr_user"
   >,
 ) {
+  await assertInvoicePermission("update", payload.trans_type);
   const cookieStore = await cookies();
   const userId = cookieStore.get(STORAGE_KEYS.USER_ID)?.value;
 
@@ -241,6 +312,7 @@ export async function updateInvoiceBoxAction(
     "cr_user"
   >,
 ) {
+  await assertInvoicePermission("update", payload.trans_type);
   const cookieStore = await cookies();
   const userId = cookieStore.get(STORAGE_KEYS.USER_ID)?.value;
 
@@ -257,6 +329,7 @@ export async function updateInvoiceBoxAction(
 }
 
 export async function deleteInvoiceBoxAction(id: number) {
+  await assertInvoicePermission("delete");
   const result = await invoiceService.deleteInvoiceBox(id);
 
   return result;

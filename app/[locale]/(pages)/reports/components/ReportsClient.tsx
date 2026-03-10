@@ -1,5 +1,7 @@
 "use client";
 
+import type { AppAbilities } from "@/lib/casl/ability";
+
 import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
@@ -14,17 +16,31 @@ import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 
+import { usePermissionStore } from "@/stores/permissionStore";
+
 type Report = {
   id: string;
   name: string;
   href: string;
   icon: React.ReactNode;
   category: "financial" | "operational" | "sales" | "tax";
+  permissionSubjects: string[];
 };
+
+const APP_ACTIONS: AppAbilities[0][] = [
+  "view",
+  "create",
+  "update",
+  "delete",
+  "export",
+  "print",
+  "manage",
+];
 
 export default function ReportsClient() {
   const t = useTranslations("reports.main");
   const tVouchers = useTranslations("reports.vouchers");
+  const ability = usePermissionStore((state) => state.ability);
   const [searchTerm, setSearchTerm] = useState("");
 
   // فقط التقارير المتاحة
@@ -37,6 +53,7 @@ export default function ReportsClient() {
         href: "/reports/vouchers",
         icon: <DocumentTextIcon className="h-5 w-5" />,
         category: "financial",
+        permissionSubjects: ["reports.vouchers"],
       },
       {
         id: "account-statement",
@@ -44,6 +61,7 @@ export default function ReportsClient() {
         href: "/reports/account-statement",
         icon: <CalculatorIcon className="h-5 w-5" />,
         category: "financial",
+        permissionSubjects: ["reports.account-statement"],
       },
       {
         id: "income-statement",
@@ -51,6 +69,7 @@ export default function ReportsClient() {
         href: "/reports/income-statement",
         icon: <CalculatorIcon className="h-5 w-5" />,
         category: "financial",
+        permissionSubjects: ["reports.income-statement"],
       },
       {
         id: "trial-balance",
@@ -58,6 +77,7 @@ export default function ReportsClient() {
         href: "/reports/trial-balance",
         icon: <CalculatorIcon className="h-5 w-5" />,
         category: "financial",
+        permissionSubjects: ["reports.trial-balance"],
       },
       {
         id: "balance-sheet",
@@ -65,6 +85,7 @@ export default function ReportsClient() {
         href: "/reports/balance-sheet",
         icon: <ChartBarIcon className="h-5 w-5" />,
         category: "financial",
+        permissionSubjects: ["reports.balance-sheet"],
       },
       {
         id: "journal-ledger",
@@ -72,6 +93,7 @@ export default function ReportsClient() {
         href: "/reports/journal-ledger",
         icon: <DocumentTextIcon className="h-5 w-5" />,
         category: "financial",
+        permissionSubjects: ["reports.journal-ledger"],
       },
       {
         id: "general-ledger",
@@ -79,6 +101,7 @@ export default function ReportsClient() {
         href: "/reports/general-ledger",
         icon: <DocumentTextIcon className="h-5 w-5" />,
         category: "financial",
+        permissionSubjects: ["reports.general-ledger"],
       },
       // التقارير التشغيلية
       {
@@ -87,6 +110,12 @@ export default function ReportsClient() {
         href: "/reports/invoices",
         icon: <DocumentTextIcon className="h-5 w-5" />,
         category: "operational",
+        permissionSubjects: [
+          "forms.sales",
+          "forms.purchase",
+          "forms.sale-return",
+          "forms.purchase-return",
+        ],
       },
       // التقارير الضريبية
       {
@@ -95,6 +124,7 @@ export default function ReportsClient() {
         href: "/reports/vat",
         icon: <ReceiptPercentIcon className="h-5 w-5" />,
         category: "tax",
+        permissionSubjects: ["reports.vat"],
       },
       {
         id: "tax-daily-journal",
@@ -102,9 +132,20 @@ export default function ReportsClient() {
         href: "/reports/tax/daily-journal",
         icon: <DocumentTextIcon className="h-5 w-5" />,
         category: "tax",
+        permissionSubjects: ["reports.tax"],
       },
     ],
     [t, tVouchers],
+  );
+
+  const allowedReports = useMemo(
+    () =>
+      reports.filter((report) =>
+        report.permissionSubjects.some((subject) =>
+          APP_ACTIONS.some((action) => ability.can(action, subject)),
+        ),
+      ),
+    [ability, reports],
   );
 
   const categoryConfig = {
@@ -128,13 +169,15 @@ export default function ReportsClient() {
 
   const filteredReports = useMemo(() => {
     if (!searchTerm.trim()) {
-      return reports;
+      return allowedReports;
     }
 
     const term = searchTerm.toLowerCase().trim();
 
-    return reports.filter((report) => report.name.toLowerCase().includes(term));
-  }, [searchTerm, reports]);
+    return allowedReports.filter((report) =>
+      report.name.toLowerCase().includes(term),
+    );
+  }, [searchTerm, allowedReports]);
 
   const categorizedReports = useMemo(() => {
     const financial = filteredReports.filter((r) => r.category === "financial");

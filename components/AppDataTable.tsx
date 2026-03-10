@@ -30,6 +30,8 @@ import {
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 
+import { TABLE_STYLE, type TableClassNames } from "@/constants/ui";
+
 type AppDataTableProps<TData> = {
   columns: ColumnDef<TData, any>[];
   data: TData[];
@@ -40,6 +42,8 @@ type AppDataTableProps<TData> = {
   searchPlaceholder?: string;
   emptyContent?: string;
   onTableReady?: (table: TanTable<TData>) => void;
+  tableClassNames?: TableClassNames;
+  bare?: boolean;
 };
 
 const DEFAULT_EMPTY_CONTENT = "لا توجد بيانات متاحة";
@@ -57,7 +61,15 @@ export default function AppDataTable<TData>({
   searchPlaceholder = "البحث...",
   emptyContent = DEFAULT_EMPTY_CONTENT,
   onTableReady,
+  tableClassNames,
+  bare = false,
 }: AppDataTableProps<TData>) {
+  const tableStyles = {
+    wrapper: tableClassNames?.wrapper ?? `${TABLE_STYLE.wrapper ?? ""} h-full`.trim(),
+    th: tableClassNames?.th ?? TABLE_STYLE.th,
+    td: tableClassNames?.td ?? TABLE_STYLE.td,
+    tr: tableClassNames?.tr ?? TABLE_STYLE.tr,
+  };
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -136,15 +148,20 @@ export default function AppDataTable<TData>({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 card overflow-hidden p-0 flex flex-col">
+      <div
+        className={clsx(
+          "flex-1 min-h-0 overflow-hidden p-0 flex flex-col",
+          !bare && "card",
+        )}
+      >
         <div className="flex-1 min-h-0 overflow-auto">
           <Table
             aria-label={title || "جدول البيانات"}
             classNames={{
-              wrapper: "shadow-none h-full",
-              th: "bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-200 px-1 py-0.5",
-              td: "border-b border-gray-100 text-sm px-1 py-0.5",
-              tr: "hover:bg-gray-50 transition-colors",
+              wrapper: tableStyles.wrapper,
+              th: tableStyles.th,
+              td: tableStyles.td,
+              tr: tableStyles.tr,
             }}
           >
             <TableHeader>

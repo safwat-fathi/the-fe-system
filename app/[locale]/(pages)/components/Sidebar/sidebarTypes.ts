@@ -19,8 +19,8 @@ export type SegmentTranslationKey =
   | "sales-invoices"
   | "taxes"
   | "units"
-  | "voucher1"
-  | "voucher2"
+  | "cash-receipt"
+  | "payment-receipt"
   | "balance"
   | "adjustment";
 
@@ -35,6 +35,10 @@ export type SidebarLinkBase = {
   icon: ReactNode;
   prefetch?: boolean;
   requiredObjectIds?: number[];
+  /** CASL subject string (e.g. "basic.items", "forms.purchase").
+   *  When set, sidebar visibility is determined by ability.can(anyAction, caslSubject)
+   *  instead of requiredObjectIds / menuObjects lookup. */
+  caslSubject?: string;
 };
 
 export type HomeLinkConfig = SidebarLinkBase & {

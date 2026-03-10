@@ -65,39 +65,9 @@ export default function PermissionsClient() {
     try {
       setLoading(true);
       if (viewMode === "groups") {
-        // Mock data for groups until API is ready
-        const mockGroups: Group[] = [
-          {
-            id: 1,
-            name: "مديرين",
-            name_en: "Administrators",
-            description: "مجموعة المديرين - صلاحيات كاملة",
-            is_active: true,
-          },
-          {
-            id: 2,
-            name: "محاسبين",
-            name_en: "Accountants",
-            description: "مجموعة المحاسبين - صلاحيات الحسابات",
-            is_active: true,
-          },
-          {
-            id: 3,
-            name: "مستخدمين عاديين",
-            name_en: "Regular Users",
-            description: "مجموعة المستخدمين العاديين - صلاحيات محدودة",
-            is_active: true,
-          },
-          {
-            id: 4,
-            name: "مشرفين",
-            name_en: "Supervisors",
-            description: "مجموعة المشرفين - صلاحيات متوسطة",
-            is_active: true,
-          },
-        ];
+        const groupsData = await groupService.getAll();
 
-        setGroups(mockGroups);
+        setGroups(Array.isArray(groupsData) ? groupsData : []);
       } else {
         try {
           const usersData = await userService.getAll();
@@ -118,6 +88,7 @@ export default function PermissionsClient() {
       }
     } catch (error) {
       console.error("Error loading data:", error);
+      toast.error("تعذر تحميل البيانات");
       if (viewMode === "groups") {
         setGroups([]);
       } else {

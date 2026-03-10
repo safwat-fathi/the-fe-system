@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { whatsappService } from "@/services/external/whatsapp.service";
+import { assertAuthorized } from "@/utilities/auth/authorization-server";
+import {
+  AuthenticationError,
+  AuthorizationError,
+} from "@/utilities/errors/Authentication";
 
 export const runtime = "nodejs";
 
@@ -31,6 +36,23 @@ const payloadSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  try {
+    await assertAuthorized({
+      subject: "settings.integrations",
+      action: "create",
+    });
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return NextResponse.json({ message: "Authentication required" }, { status: 401 });
+    }
+
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const payload = await request.json();
     const { to, templateName, languageCode, components } =

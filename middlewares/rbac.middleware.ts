@@ -1,135 +1,156 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import { STORAGE_KEYS } from "@/constants";
+import { defaultLocale, locales } from "@/i18n/config";
 import { MiddlewareFactory } from "@/middleware";
+import {
+  fetchUserPermissionMap,
+  isWildcardAdminPermissionMap,
+  isRoutePolicyAuthorized,
+  resolveRoutePolicy,
+} from "@/utilities/auth/authorization-core";
+import { isTokenValid } from "@/utilities/token";
+import {
+  AuthenticationError,
+  AuthorizationError,
+} from "@/utilities/errors/Authentication";
 
-// Define route permissions mapping
-const ROUTE_PERMISSIONS: Record<string, string[]> = {
-  // Dashboard permissions
-  "": ["view_dashboard"],
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/auth/login",
+  "/unauthorized",
+  "/register",
+  "/forgot-password",
+]);
 
-  // User management permissions
-  "/users": ["manage_users"],
-  "/users/*": ["manage_users"],
+const isApiRoute = (pathname: string) => pathname.startsWith("/api/");
 
-  // Admin panel permissions
-  "/admin": ["admin_access"],
-  "/admin/*": ["admin_access"],
+const getLocaleAndPathname = (pathname: string) => {
+  const segments = pathname.split("/").filter(Boolean);
 
-  // Invoice management permissions
-  "/invoices": ["view_invoices"],
-  "/invoices/*": ["view_invoices"],
-  "/create-invoice": ["create_invoice"],
-  "/edit-invoice/*": ["edit_invoice"],
-
-  // Customer management permissions
-  "/customers": ["view_customers"],
-  "/customers/*": ["view_customers"],
-
-  // Item management permissions
-  "/items": ["view_items"],
-  "/items/*": ["view_items"],
-
-  // Settings permissions
-  "/settings": ["manage_settings"],
-  "/settings/*": ["manage_settings"],
-};
-
-// Function to get user permissions from the API
-const getUserPermissions = async (): Promise<string[]> => {
-  try {
-    // In a real implementation, you would call the API to get permissions
-    // const response = await UserService.getUserPermissions(username);
-    // return response?.permissions || [];
-
-    // For demonstration purposes, return a default set of permissions
-    // In a real implementation, you'd fetch from your backend
-    return ["view_dashboard", "view_invoices", "view_customers"]; // default permissions
-  } catch (error) {
-    console.error("Error fetching user permissions:", error);
-
-    return []; // Return empty permissions if there's an error
-  }
-};
-
-// Function to check if user has required permissions
-const hasPermission = (
-  userPermissions: string[],
-  requiredPermissions: string[],
-): boolean => {
-  if (!requiredPermissions || requiredPermissions.length === 0) {
-    return true; // If no specific permissions required, allow access
+  if (segments.length === 0) {
+    return {
+      locale: defaultLocale,
+      pathnameWithoutLocale: "/",
+    };
   }
 
-  return requiredPermissions.some((permission) =>
-    userPermissions.includes(permission),
+  const potentialLocale = segments[0];
+  const hasLocale = locales.includes(
+    potentialLocale as (typeof locales)[number],
   );
+
+  const locale = hasLocale ? potentialLocale : defaultLocale;
+  const remainingSegments = hasLocale ? segments.slice(1) : segments;
+  const pathnameWithoutLocale =
+    remainingSegments.length > 0 ? `/${remainingSegments.join("/")}` : "/";
+
+  return {
+    locale,
+    pathnameWithoutLocale,
+  };
 };
 
-const rbacMiddleware: MiddlewareFactory = () => {
-  return async (request: NextRequest) => {
-    const { pathname } = request.nextUrl;
+const unauthenticatedResponse = (
+  request: Request,
+  locale: string,
+  isApi: boolean,
+  redirectPath: string,
+) => {
+  if (isApi) {
+    return NextResponse.json({ message: "Authentication required" }, { status: 401 });
+  }
+
+  const loginUrl = new URL(`/${locale}/auth/login`, request.url);
+
+  loginUrl.searchParams.set("redirect", redirectPath);
+
+  return NextResponse.redirect(loginUrl);
+};
+
+const unauthorizedResponse = (request: Request, locale: string, isApi: boolean) => {
+  if (isApi) {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+
+  const unauthorizedUrl = new URL(`/${locale}/unauthorized`, request.url);
+
+  return NextResponse.redirect(unauthorizedUrl);
+};
+
+const rbacMiddleware: MiddlewareFactory = (next) => {
+  return async (request, event) => {
+    const { pathname, search, hash } = request.nextUrl;
+    const redirectPath = `${pathname}${search}${hash}`;
+    const isApi = isApiRoute(pathname);
+
+    const { locale, pathnameWithoutLocale } = isApi
+      ? { locale: defaultLocale, pathnameWithoutLocale: pathname }
+      : getLocaleAndPathname(pathname);
+
+    if (!isApi && PUBLIC_PATHS.has(pathnameWithoutLocale)) {
+      return next(request, event);
+    }
+
+    const token = request.cookies.get(STORAGE_KEYS.ACCESS_TOKEN)?.value;
+
+    if (!token || !isTokenValid(token)) {
+      return unauthenticatedResponse(request, locale, isApi, redirectPath);
+    }
+
+    const isAdmin =
+      request.cookies.get(STORAGE_KEYS.IS_ADMIN)?.value === "true";
+
+    if (isAdmin) {
+      return next(request, event);
+    }
+
+    const username = request.cookies.get(STORAGE_KEYS.USERNAME)?.value;
+    const companyId = request.cookies.get(STORAGE_KEYS.COMPANY_ID)?.value || "1";
+
+    if (!username) {
+      return unauthenticatedResponse(request, locale, isApi, redirectPath);
+    }
 
     try {
-      // Get user data from cookies or session
-      const userData = request.cookies.get(STORAGE_KEYS.USER_DATA)?.value;
-      let username = null;
+      const permissionMap = await fetchUserPermissionMap({
+        username,
+        companyId,
+        token,
+      });
 
-      if (userData) {
-        try {
-          const parsedUserData = JSON.parse(decodeURIComponent(userData));
-
-          username = parsedUserData.username || parsedUserData.email;
-        } catch (error) {
-          console.error("Error parsing user data:", error);
-        }
+      if (isWildcardAdminPermissionMap(permissionMap)) {
+        return next(request, event);
       }
 
-      // If we can't determine the user, skip RBAC check
-      if (!username) {
-        return NextResponse.next();
+      const routePolicy = resolveRoutePolicy(
+        pathnameWithoutLocale,
+        request.nextUrl.searchParams,
+        request.method,
+      );
+
+      // Fail-closed: protected route without explicit policy is denied.
+      if (!routePolicy) {
+        return unauthorizedResponse(request, locale, isApi);
       }
 
-      // Get user permissions
-      const userPermissions = await getUserPermissions();
+      const canAccess = isRoutePolicyAuthorized(permissionMap, routePolicy);
 
-      // Find permissions required for the current path
-      let requiredPermissions: string[] = [];
-
-      // Check for exact route match first
-      if (ROUTE_PERMISSIONS[pathname]) {
-        requiredPermissions = ROUTE_PERMISSIONS[pathname];
-      } else {
-        // Check for wildcard matches (e.g., /users/* for /users/123)
-        const wildcardMatches = Object.entries(ROUTE_PERMISSIONS)
-          .filter(
-            ([path, _]) =>
-              path.endsWith("/*") &&
-              pathname.startsWith(path.replace("/*", "/")),
-          )
-          .map(([_, perms]) => perms);
-
-        if (wildcardMatches.length > 0) {
-          // Use permissions from the first matching wildcard route
-          requiredPermissions = wildcardMatches[0];
-        }
+      if (!canAccess) {
+        return unauthorizedResponse(request, locale, isApi);
       }
 
-      // Check if user has required permissions
-      const hasAccess = hasPermission(userPermissions, requiredPermissions);
-
-      if (!hasAccess) {
-        // If user doesn't have permission, redirect to unauthorized page
-        return NextResponse.redirect(new URL("/unauthorized", request.url));
-      }
-
-      // User has permission, continue to next middleware
-      return NextResponse.next();
+      return next(request, event);
     } catch (error) {
-      console.error("Error in RBAC middleware:", error);
+      if (error instanceof AuthenticationError) {
+        return unauthenticatedResponse(request, locale, isApi, redirectPath);
+      }
 
-      // On error, allow the request to continue to avoid blocking users
-      return NextResponse.next();
+      if (error instanceof AuthorizationError) {
+        return unauthorizedResponse(request, locale, isApi);
+      }
+
+      return unauthorizedResponse(request, locale, isApi);
     }
   };
 };

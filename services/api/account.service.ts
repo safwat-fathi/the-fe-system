@@ -123,10 +123,15 @@ class AccountService extends HttpService<Account> {
   ): Promise<Account | null> {
     try {
       const accountPayload = account as Partial<Account> & { cost?: number };
+      // API rejects null for acc_type and cur — ensure non-null values
+      const accType = account.acc_type ?? 1;
+      const curId = account.cur ?? 1;
       const accountData = {
         ...account,
+        acc_type: accType,
+        cur: curId,
         acc_code: account.acc_code ?? account.acc_id ?? "",
-        cost: accountPayload.cost ?? account.cur ?? 1,
+        cost: accountPayload.cost ?? curId,
         acc_name_e: account.acc_name_e || "Unnamed Account",
         acc_vat: "0%",
       };

@@ -43,8 +43,8 @@
         "credit-notes": "Credit notes",
         "debit-notes": "Debit notes",
         "voucher": "Vouchers",
-        "voucher1": "Receipt voucher",
-        "voucher2": "Payment voucher",
+        "cash-receipt": "Receipt voucher",
+        "payment-receipt": "Payment voucher",
         "adjustment": "Adjustment voucher",
         "gvoucher4": "Customer receipt",
         "gvoucher5": "Customer payment",
@@ -104,6 +104,50 @@
     }
   },
   "forms": {
+    "cashReceipt": {
+      "title": "Cash receipt",
+      "description": "Manage cash receipts",
+      "status": {
+        "numbering": "Numbering"
+      },
+      "actions": {
+        "save": "Save",
+        "edit": "Edit",
+        "new": "New",
+        "preview": "Preview",
+        "print": "Print",
+        "search": "Search",
+        "expandNotes": "Expand Notes"
+      },
+      "navigation": {
+        "position": "{current} of {total}"
+      },
+      "messages": {
+        "searchError": "Please enter voucher number to search",
+        "searchInvalid": "Please enter a valid voucher number",
+        "voucherNotFound": "{type} not found with number: {number}",
+        "voucherWrongType": "Found voucher ({id}) is not of type {type}",
+        "voucherAccessError": "Voucher found but cannot be accessed. Please try again.",
+        "searchErrorGeneric": "An error occurred while searching. Please try again",
+        "voucherTypeReceipt": "Cash Receipt Voucher",
+        "voucherTypePayment": "Cash Payment Voucher"
+      },
+      "fields": {
+        "refNo": "Ref No",
+        "dateTime": "Date & Time",
+        "costCenter": "Cost Center",
+        "costCenterPlaceholder": "Select cost center...",
+        "status": "Status",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter notes..."
+      },
+      "statusOptions": {
+        "cancelled": "Cancelled",
+        "active": "Active",
+        "suspended": "Suspended",
+        "incomplete": "Incomplete"
+      }
+    },
     "invoices": {
       "types": {
         "sale": {
@@ -838,6 +882,103 @@
           }
         }
       }
+    },
+    "paymentReceipt": {
+      "title": "Payment Voucher",
+      "description": "Manage payment vouchers",
+      "breadcrumbs": {
+        "list": "Payment Voucher",
+        "new": "New",
+        "edit": "Edit {id}",
+        "preview": "Preview"
+      },
+      "actions": {
+        "save": "Save",
+        "edit": "Edit",
+        "new": "New",
+        "print": "Print",
+        "viewGLTransactions": "View GL Transactions",
+        "addRow": "+ Row",
+        "delete": "Delete",
+        "expandNotes": "Expand Notes",
+        "saveNotes": "Save",
+        "search": "Search by voucher number..."
+      },
+      "fields": {
+        "refNo": "Reference Number",
+        "dateTime": "Date and Time",
+        "costCenter": "Cost Center",
+        "costCenterPlaceholder": "Select cost center...",
+        "status": "Status",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter entry notes (double-click for extended writing)",
+        "notesModalTitle": "Notes",
+        "notesModalPlaceholder": "Enter entry notes..."
+      },
+      "tables": {
+        "cash": {
+          "title": "Cash",
+          "columns": {
+            "amount": "Amount",
+            "box": "Box",
+            "boxPlaceholder": "Select box...",
+            "notes": "Notes",
+            "costCenter": "Cost Center",
+            "costCenterPlaceholder": "Cost center...",
+            "invoiceNumber": "Invoice Number",
+            "delete": "Delete"
+          }
+        },
+        "accounts": {
+          "title": "Accounts",
+          "columns": {
+            "account": "Account",
+            "accountPlaceholder": "Select account...",
+            "amount": "Amount",
+            "notes": "Notes",
+            "costCenter": "Cost Center",
+            "costCenterPlaceholder": "Cost center...",
+            "delete": "Delete"
+          },
+          "addAccountLabel": "Add new account: \"{value}\""
+        }
+      },
+      "status": {
+        "committed": "Committed",
+        "posted": "Posted",
+        "printed": "Printed",
+        "balanced": "Balanced",
+        "unbalanced": "Unbalanced",
+        "loading": "Loading...",
+        "numbering": "Numbering in progress..."
+      },
+      "statusOptions": {
+        "cancelled": "Cancelled",
+        "active": "Active",
+        "suspended": "Suspended",
+        "incomplete": "Incomplete"
+      },
+      "totals": {
+        "totalCash": "Total Cash",
+        "totalDetails": "Total Details",
+        "difference": "Difference",
+        "status": "Status",
+        "debit": "Debit",
+        "credit": "Credit"
+      },
+      "navigation": {
+        "position": "{current} of {total}"
+      },
+      "messages": {
+        "searchError": "Please enter voucher number to search",
+        "searchInvalid": "Please enter a valid voucher number",
+        "voucherNotFound": "{type} not found with number: {number}",
+        "voucherWrongType": "Found voucher ({id}) is not of type {type}",
+        "voucherAccessError": "Voucher found but cannot be accessed. Please try again.",
+        "searchErrorGeneric": "An error occurred while searching. Please try again",
+        "voucherTypeReceipt": "Cash Receipt Voucher",
+        "voucherTypePayment": "Cash Payment Voucher"
+      }
     }
   },
   "notFound": {
@@ -845,6 +986,13 @@
     "description": "Sorry, we couldn't find the page you're looking for.",
     "heading": "Page not found",
     "body": "Sorry, we couldn't find the page you're looking for. It might have been removed or moved to a different location.",
+    "backToHome": "Back to home"
+  },
+  "unauthorized": {
+    "title": "Unauthorized - 401",
+    "description": "Sorry, you don't have permission to access this page.",
+    "heading": "Unauthorized",
+    "body": "Sorry, you don't have permission to access this page.",
     "backToHome": "Back to home"
   },
   "reports": {
@@ -1496,12 +1644,13 @@
         "loadError": "Failed to load accounts",
         "addError": "Failed to add account",
         "updateError": "Failed to update account",
-        "deleteError": "Failed to delete account",
+        "deleteError": "Failed to delete account. It may be linked to transactions or have sub-accounts.",
         "deleteSuccess": "Account deleted successfully",
         "maxLevelError": "Cannot add new accounts under level 5.",
         "maxSiblingsError": "Cannot add more than 9 accounts at this level.",
         "generateIdError": "Failed to generate new account ID for this parent account.",
         "deleteConfirm": "Are you sure you want to delete this account?",
+        "deleteErrorHasChildren": "Cannot delete an account that has sub-accounts. Delete sub-accounts first.",
         "serverError": "Server connection error. Check the URL or settings.",
         "accountNumberRequired": "Account number is required.",
         "accountNameRequired": "Account name is required.",
@@ -1542,6 +1691,7 @@
         "accountNumber": "Account Number",
         "accountName": "Account Name",
         "accountType": "Account Type",
+        "accountLevel": "Account Level",
         "reportType": "Report Type",
         "currency": "Currency",
         "actions": "Actions"
@@ -1871,6 +2021,7 @@
         "typeName": "Type",
         "typeNameEn": "Type (English)",
         "typeDesc": "Description",
+        "mainAccount": "Main Account",
         "typeStatus": "Status",
         "actions": ""
       },
@@ -1896,6 +2047,8 @@
         "typeName": "Customer Type",
         "typeNameEn": "Customer Type (English)",
         "typeDesc": "Description",
+        "mainAccount": "Main Account",
+        "mainAccountPlaceholder": "Select main account",
         "crDate": "Creation Date",
         "typeStatus": "Status Enabled"
       },
@@ -1954,7 +2107,8 @@
         "back": "Back",
         "cancel": "Cancel",
         "save": "Save",
-        "update": "Update"
+        "update": "Update",
+        "insertAccountAuto": "Insert Account Automatically"
       },
       "labels": {
         "pageTitle": "Customers",
@@ -1990,7 +2144,7 @@
         "street": "Street",
         "buildNo": "Building",
         "postCode": "Postal Code",
-        "account": "Accounting Account",
+        "account": "Account",
         "boxType": "Box Type",
         "customerType": "Customer Type",
         "handling": "Handling",
@@ -2001,10 +2155,10 @@
         "hide": "Hidden"
       },
       "placeholders": {
-        "selectAccount": "Account Number / Account Name",
-        "selectBoxType": "Box Type",
-        "selectCustomerType": "Customer Type",
-        "selectStatus": "Customer Status"
+        "selectAccount": "Select account...",
+        "selectBoxType": "Select box type...",
+        "selectCustomerType": "Select customer type...",
+        "selectStatus": "Select status..."
       },
       "messages": {
         "loadError": "Failed to load customers",
@@ -2017,7 +2171,12 @@
         "addSuccess": "Customer added successfully",
         "updateSuccess": "Customer data updated successfully",
         "operationFailed": "Failed to save customer data",
-        "saveError": "Error occurred while saving customer data"
+        "saveError": "Error occurred while saving customer data",
+        "custCodeRequired": "Please enter customer code",
+        "insertAccountAutoNoType": "Please select customer type first",
+        "insertAccountAutoNoMainAccount": "The selected customer type has no main account",
+        "insertAccountAutoSuccess": "Account was inserted automatically and linked to the customer",
+        "insertAccountAutoError": "Failed to insert account automatically"
       },
       "titles": {
         "view": "View {name}",

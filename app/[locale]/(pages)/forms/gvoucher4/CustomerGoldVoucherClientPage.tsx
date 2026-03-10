@@ -1278,7 +1278,6 @@ export default function CustomerGoldVoucherClientPage({
     loadItemOptionsRef.current = loadItemOptions;
   }, [loadItemOptions]);
 
-
   // Calculate totals
   const totals = useMemo(() => {
     const totalBoxes = voucherBoxes.reduce(
@@ -4267,7 +4266,7 @@ export default function CustomerGoldVoucherClientPage({
           </ModalBody>
           <ModalFooter>
             <Button
-              color="primary"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
               variant="solid"
               onPress={() => setIsNotesModalOpen(false)}
             >

@@ -46,6 +46,8 @@ import {
 } from "@/app/actions/category-accounts.action";
 import { ConfirmationModal } from "@/components/Modal";
 import categoryService from "@/services/api/category.service";
+import { Can } from "@/components/providers/AbilityProvider";
+import { PAGE_SIZE_OVERRIDES } from "@/constants/ui";
 
 const ACCOUNT_KEYS = [
   "buy_acc",
@@ -327,7 +329,7 @@ export default function CategoriesClient({
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(5);
+  const rowsPerPage = PAGE_SIZE_OVERRIDES.categories;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryRow | null>(
     null,
@@ -676,31 +678,37 @@ export default function CategoriesClient({
 
   const renderActions = (cat: CategoryRow) => (
     <div className="flex gap-2">
-      <Button
-        isIconOnly
-        size="sm"
-        variant="light"
-        onPress={() => router.push(`/basic/categories/${cat.id}`)}
-      >
-        <EyeIcon className="h-4 w-4 text-blue-500" />
-      </Button>
-      <Button
-        isIconOnly
-        size="sm"
-        variant="light"
-        onPress={() => router.push(`/basic/categories/${cat.id}?mode=edit`)}
-      >
-        <PencilIcon className="h-4 w-4 text-yellow-500" />
-      </Button>
-      <Button
-        isIconOnly
-        color="danger"
-        size="sm"
-        variant="light"
-        onPress={() => handleDeleteClick(cat)}
-      >
-        <TrashIcon className="h-4 w-4" />
-      </Button>
+      <Can I="view" a="basic.categories">
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          onPress={() => router.push(`/basic/categories/${cat.id}`)}
+        >
+          <EyeIcon className="h-4 w-4 text-blue-500" />
+        </Button>
+      </Can>
+      <Can I="update" a="basic.categories">
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          onPress={() => router.push(`/basic/categories/${cat.id}?mode=edit`)}
+        >
+          <PencilIcon className="h-4 w-4 text-yellow-500" />
+        </Button>
+      </Can>
+      <Can I="delete" a="basic.categories">
+        <Button
+          isIconOnly
+          color="danger"
+          size="sm"
+          variant="light"
+          onPress={() => handleDeleteClick(cat)}
+        >
+          <TrashIcon className="h-4 w-4" />
+        </Button>
+      </Can>
     </div>
   );
 
@@ -710,6 +718,7 @@ export default function CategoriesClient({
     column: "value" | "wage",
     text: string,
   ) => {
+    const isWageColumn = column === "wage";
     const normalizedText = getAccountDisplayValue(text).trim().toLowerCase();
     const filteredOptions = normalizedText
       ? accountOptions.filter((option) => {
@@ -729,16 +738,22 @@ export default function CategoriesClient({
         className="max-w-full text-right leading-tight"
         classNames={{
           selectorButton:
-            column === "wage"
+            isWageColumn
               ? "bg-amber-100 border-amber-300"
               : "bg-white border-gray-200",
-          listbox: "text-right min-w-[20rem]",
+          listbox: "text-right",
         }}
         inputValue={getAccountDisplayValue(text)}
         items={filteredOptions}
         menuTrigger="input"
         placeholder={t("labels.accountPlaceholder")}
-        popoverProps={{ classNames: { content: "min-w-[20rem]" } }}
+        popoverProps={{
+          placement: isWageColumn ? "bottom-start" : "bottom-end",
+          containerPadding: 12,
+          classNames: {
+            content: "max-w-[calc(100vw-2rem)] min-w-[12rem]",
+          },
+        }}
         selectedKey={null}
         variant="bordered"
         onInputChange={(value) => {
@@ -778,7 +793,7 @@ export default function CategoriesClient({
             showDivider={false}
             textValue={option.label}
           >
-            <span className="text-sm font-medium text-gray-800">
+            <span className="block max-w-full truncate text-sm font-medium text-gray-800">
               {option.name}
             </span>
           </AutocompleteItem>
@@ -865,15 +880,17 @@ export default function CategoriesClient({
   return (
     <div className="flex flex-col gap-6 font-cairo">
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          className="bg-gray-100"
-          variant="bordered"
-          onPress={() => router.push("/basic/categories/new")}
-        >
-          <PlusIcon className="h-3 w-3" />
-          {t("actions.add")}
-        </Button>
-        <div className="h-8 w-px bg-gray-300" />
+        <Can I="create" a="basic.categories">
+          <Button
+            className="bg-gray-100"
+            variant="bordered"
+            onPress={() => router.push("/basic/categories/new")}
+          >
+            <PlusIcon className="h-3 w-3" />
+            {t("actions.add")}
+          </Button>
+          <div className="h-8 w-px bg-gray-300" />
+        </Can>
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}

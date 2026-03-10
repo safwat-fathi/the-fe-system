@@ -14,7 +14,7 @@ export const getPermissionLabel = (
   const labels: Record<string, string> = {
     [PERMISSION_TYPES.VIEW]: "عرض",
     [PERMISSION_TYPES.CREATE]: "إضافة",
-    [PERMISSION_TYPES.EDIT]: "تعديل",
+    [PERMISSION_TYPES.UPDATE]: "تعديل",
     [PERMISSION_TYPES.DELETE]: "حذف",
     [PERMISSION_TYPES.PRINT]: "طباعة",
     [PERMISSION_TYPES.EXPORT]: "تصدير",
@@ -35,7 +35,7 @@ export const getPermissionColor = (
   > = {
     [PERMISSION_TYPES.VIEW]: "default",
     [PERMISSION_TYPES.CREATE]: "success",
-    [PERMISSION_TYPES.EDIT]: "primary",
+    [PERMISSION_TYPES.UPDATE]: "primary",
     [PERMISSION_TYPES.DELETE]: "danger",
     [PERMISSION_TYPES.PRINT]: "secondary",
     [PERMISSION_TYPES.EXPORT]: "secondary",
@@ -53,7 +53,7 @@ export const getPermissionIcon = (
   const icons: Record<string, string> = {
     [PERMISSION_TYPES.VIEW]: "👁️",
     [PERMISSION_TYPES.CREATE]: "+",
-    [PERMISSION_TYPES.EDIT]: "✏️",
+    [PERMISSION_TYPES.UPDATE]: "✏️",
     [PERMISSION_TYPES.DELETE]: "🗑️",
     [PERMISSION_TYPES.PRINT]: "🖨️",
     [PERMISSION_TYPES.EXPORT]: "📥",

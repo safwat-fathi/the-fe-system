@@ -2,20 +2,39 @@
 
 import { Form, Input, Spacer, Button } from "@heroui/react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { useSearchParams } from "next/navigation";
-import { useActionState, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import ChangeLocale from "../ChangeLocale";
 
-import { loginAction } from "@/app/actions/auth";
+import { usePermissionStore } from "@/stores/permissionStore";
+import { loginAction, type LoginResult } from "@/app/actions/auth";
 
 const LoginForm = () => {
+  const router = useRouter();
+  const setPermissions = usePermissionStore((state) => state.setPermissions);
   const t = useTranslations("auth.login");
-  const [state, action, pending] = useActionState(loginAction, undefined);
+
+  const [state, action, pending] = useActionState<
+    LoginResult | void | undefined,
+    FormData
+  >(loginAction, undefined);
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/";
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+  // Watch for successful login action resolution
+  useEffect(() => {
+    if (state?.success && state?.redirectUrl) {
+      if (state.permissions) {
+        setPermissions(state.permissions);
+      }
+
+      router.push(state.redirectUrl);
+      router.refresh();
+    }
+  }, [state, router, setPermissions]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -43,7 +62,9 @@ const LoginForm = () => {
               type="button"
               onClick={() => setIsPasswordVisible((v) => !v)}
               className="focus:outline-none p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-              aria-label={isPasswordVisible ? t("hidePassword") : t("showPassword")}
+              aria-label={
+                isPasswordVisible ? t("hidePassword") : t("showPassword")
+              }
             >
               {isPasswordVisible ? (
                 <EyeSlashIcon className="h-5 w-5" />

@@ -30,30 +30,35 @@ export const settingsLinks: SidebarLinkConfig[] = [
     translationSource: "sidebar",
     href: "/settings",
     icon: <Cog6ToothIcon className="h-5 w-5" />,
+    caslSubject: "settings.settings",
   },
   {
     translationKey: "links.userBranches",
     translationSource: "sidebar",
     href: "/settings/user-assignments",
     icon: <UserGroupIcon className="h-5 w-5" />,
+    caslSubject: "settings.user-assignments",
   },
   {
     translationKey: "permissions",
     translationSource: "segment",
     href: "/settings/permissions",
     icon: <ShieldCheckIcon className="h-5 w-5" />,
+    caslSubject: "settings.permissions",
   },
   {
     translationKey: "taxes",
     translationSource: "segment",
     href: "/settings/taxes",
     icon: <DocumentCheckIcon className="h-5 w-5" />,
+    caslSubject: "settings.taxes",
   },
   {
     translationKey: "integrations",
     translationSource: "segment",
     href: "/settings/integrations",
     icon: <LinkIcon className="h-5 w-5" />,
+    caslSubject: "settings.integrations",
   },
 ];
 
@@ -64,6 +69,7 @@ export const accountingBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/accounts",
     icon: <BanknotesIcon className="h-5 w-5" />,
     prefetch: true,
+    caslSubject: "basic.accounts",
   },
   {
     translationKey: "cost-centers",
@@ -71,6 +77,7 @@ export const accountingBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/cost-centers",
     icon: <CalculatorIcon className="h-5 w-5" />,
     prefetch: true,
+    caslSubject: "basic.cost-centers",
   },
   {
     translationKey: "boxes",
@@ -78,6 +85,7 @@ export const accountingBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/boxes",
     icon: <DocumentTextIcon className="h-5 w-5" />,
     prefetch: false,
+    caslSubject: "basic.boxes",
   },
   {
     translationKey: "currencies",
@@ -85,6 +93,7 @@ export const accountingBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/currencies",
     icon: <BanknotesIcon className="h-5 w-5" />,
     prefetch: true,
+    caslSubject: "basic.currencies",
   },
 ];
 
@@ -94,28 +103,28 @@ export const accountingFormLinks: SidebarLinkConfig[] = [
     translationSource: "segment",
     href: "/forms/balance",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [121],
+    caslSubject: "forms.balance",
   },
   {
-    translationKey: "voucher1",
+    translationKey: "cash-receipt",
     translationSource: "segment",
-    href: "/forms/voucher1",
+    href: "/forms/cash-receipt",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [123],
+    caslSubject: "forms.cash-receipt",
   },
   {
-    translationKey: "voucher2",
+    translationKey: "payment-receipt",
     translationSource: "segment",
-    href: "/forms/voucher2",
+    href: "/forms/payment-receipt",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [124],
+    caslSubject: "forms.payment-receipt",
   },
   {
     translationKey: "adjustment",
     translationSource: "segment",
     href: "/forms/adjustment?mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [122],
+    caslSubject: "forms.adjustment",
   },
 ];
 
@@ -126,6 +135,7 @@ export const goldBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/customers",
     icon: <UserGroupIcon className="h-5 w-5" />,
     prefetch: true,
+    caslSubject: "basic.customers",
   },
   {
     translationKey: "cust_type",
@@ -133,6 +143,7 @@ export const goldBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/cust_type",
     icon: <UserGroupIcon className="h-5 w-5" />,
     prefetch: true,
+    caslSubject: "basic.cust_type",
   },
   {
     translationKey: "items",
@@ -140,6 +151,7 @@ export const goldBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/items",
     icon: <CubeIcon className="h-5 w-5" />,
     prefetch: true,
+    caslSubject: "basic.items",
   },
   {
     translationKey: "categories",
@@ -147,6 +159,7 @@ export const goldBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/categories",
     icon: <TagIcon className="h-5 w-5" />,
     prefetch: true,
+    caslSubject: "basic.categories",
   },
   {
     translationKey: "units",
@@ -154,6 +167,7 @@ export const goldBasicLinks: SidebarLinkConfig[] = [
     href: "/basic/units",
     icon: <TagIcon className="h-5 w-5" />,
     prefetch: true,
+    caslSubject: "basic.units",
   },
 ];
 
@@ -163,56 +177,56 @@ export const goldFormLinks: SidebarLinkConfig[] = [
     translationSource: "segment",
     href: "/forms/invoices?type=purchase&mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [221],
+    caslSubject: "forms.purchase",
   },
   {
     translationKey: "links.purchaseReturnInvoices",
     translationSource: "sidebar",
     href: "/forms/invoices?type=purchase-return&mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [223],
+    caslSubject: "forms.purchase-return",
   },
   {
     translationKey: "sales-invoices",
     translationSource: "segment",
     href: "/forms/invoices?type=sale&mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [222],
+    caslSubject: "forms.sales",
   },
   {
     translationKey: "links.saleReturnInvoices",
     translationSource: "sidebar",
     href: "/forms/invoices?type=sale-return&mode=new",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [224],
+    caslSubject: "forms.sale-return",
   },
   {
     translationKey: "gvoucher4",
     translationSource: "segment",
     href: "/forms/gvoucher4",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [229],
+    caslSubject: "forms.gvoucher4",
   },
   {
     translationKey: "gvoucher5",
     translationSource: "segment",
     href: "/forms/gvoucher5",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [2210],
+    caslSubject: "forms.gvoucher5",
   },
   {
     translationKey: "receipt",
     translationSource: "segment",
     href: "/forms/receipt",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [2222],
+    caslSubject: "forms.receipt",
   },
   {
     translationKey: "delivery",
     translationSource: "segment",
     href: "/forms/delivery",
     icon: <DocumentTextIcon className="h-5 w-5" />,
-    requiredObjectIds: [2223],
+    caslSubject: "forms.delivery",
   },
 ];
 

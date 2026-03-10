@@ -3,6 +3,8 @@ import { Button } from "@heroui/react";
 import { EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 
+import { Can } from "@/components/providers/AbilityProvider";
+
 type Customer = {
   id: number;
   cust_code?: string;
@@ -37,6 +39,7 @@ type CreateCustomerColumnsOptions = {
   getStatusLabel: (status: number) => string;
   onDelete: (customer: Customer) => void;
   t: (key: string) => string;
+  hasActionPermission?: boolean;
 };
 
 const columnHelper = createColumnHelper<Customer>();
@@ -45,6 +48,7 @@ export const createCustomerColumns = ({
   getStatusLabel,
   onDelete,
   t,
+  hasActionPermission = true,
 }: CreateCustomerColumnsOptions) => {
   const ActionsCell = ({ customer }: { customer: Customer }) => {
     const router = useRouter();
@@ -59,21 +63,27 @@ export const createCustomerColumns = ({
 
     return (
       <div className="flex items-center gap-2">
-        <Button isIconOnly size="sm" variant="light" onPress={handleView}>
-          <EyeIcon className="h-4 w-4 text-blue-500" />
-        </Button>
-        <Button isIconOnly size="sm" variant="light" onPress={handleEdit}>
-          <PencilIcon className="h-4 w-4 text-yellow-500" />
-        </Button>
-        <Button
-          isIconOnly
-          color="danger"
-          size="sm"
-          variant="light"
-          onPress={() => onDelete(customer)}
-        >
-          <TrashIcon className="h-4 w-4" />
-        </Button>
+        <Can I="view" a="basic.customers">
+          <Button isIconOnly size="sm" variant="light" onPress={handleView}>
+            <EyeIcon className="h-4 w-4 text-blue-500" />
+          </Button>
+        </Can>
+        <Can I="update" a="basic.customers">
+          <Button isIconOnly size="sm" variant="light" onPress={handleEdit}>
+            <PencilIcon className="h-4 w-4 text-yellow-500" />
+          </Button>
+        </Can>
+        <Can I="delete" a="basic.customers">
+          <Button
+            isIconOnly
+            color="danger"
+            size="sm"
+            variant="light"
+            onPress={() => onDelete(customer)}
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        </Can>
       </div>
     );
   };
@@ -109,11 +119,14 @@ export const createCustomerColumns = ({
       cell: (info) => getStatusLabel(info.getValue() ?? 0),
       enableSorting: true,
     }),
-    columnHelper.display({
-      id: "actions",
-      header: () => "",
-      cell: ({ row }) => <ActionsCell customer={row.original} />,
-    }),
+    ...(hasActionPermission
+      ? [
+          columnHelper.display({
+            id: "actions",
+            header: () => "",
+            cell: ({ row }) => <ActionsCell customer={row.original} />,
+          }),
+        ]
+      : []),
   ];
 };
-

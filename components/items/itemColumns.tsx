@@ -3,6 +3,8 @@ import { Button, Chip } from "@heroui/react";
 import { EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 
+import { Can } from "../providers/AbilityProvider";
+
 import { Item } from "@/types/models/item";
 import { formatAmount } from "@/utilities/formatAmount";
 import { Fractions } from "@/utilities/useFractions";
@@ -15,6 +17,7 @@ type CreateItemColumnsOptions = {
   getItemTypeLabel: GetLabelFn;
   onDelete: (item: Item) => void;
   t: (key: string) => string;
+  hasActionPermission: boolean;
 };
 
 const columnHelper = createColumnHelper<Item>();
@@ -35,7 +38,11 @@ export const createItemColumns = ({
   getItemTypeLabel,
   onDelete,
   t,
+  hasActionPermission,
 }: CreateItemColumnsOptions) => {
+  if (!hasActionPermission) {
+    return [];
+  }
   // Create a component that uses router
   const ActionsCell = ({ item }: { item: Item }) => {
     const router = useRouter();
@@ -50,21 +57,27 @@ export const createItemColumns = ({
 
     return (
       <div className="flex items-center gap-2">
-        <Button isIconOnly size="sm" variant="light" onPress={handleView}>
-          <EyeIcon className="h-4 w-4 text-blue-500" />
-        </Button>
-        <Button isIconOnly size="sm" variant="light" onPress={handleEdit}>
-          <PencilIcon className="h-4 w-4 text-yellow-500" />
-        </Button>
-        <Button
-          isIconOnly
-          color="danger"
-          size="sm"
-          variant="light"
-          onPress={() => onDelete(item)}
-        >
-          <TrashIcon className="h-4 w-4" />
-        </Button>
+        <Can I="view" a="basic.items">
+          <Button isIconOnly size="sm" variant="light" onPress={handleView}>
+            <EyeIcon className="h-4 w-4 text-blue-500" />
+          </Button>
+        </Can>
+        <Can I="update" a="basic.items">
+          <Button isIconOnly size="sm" variant="light" onPress={handleEdit}>
+            <PencilIcon className="h-4 w-4 text-yellow-500" />
+          </Button>
+        </Can>
+        <Can I="delete" a="basic.items">
+          <Button
+            isIconOnly
+            color="danger"
+            size="sm"
+            variant="light"
+            onPress={() => onDelete(item)}
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        </Can>
       </div>
     );
   };

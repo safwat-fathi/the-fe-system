@@ -5,18 +5,15 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Select, SelectItem, Textarea } from "@heroui/react";
 import {
   ArrowLeftIcon,
-  ArrowPathIcon,
+  CheckCircleIcon,
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useLocale, useTranslations } from "next-intl";
 
-import {
-  findAccountById,
-  flattenAccountTree,
-  generateAccountId,
-} from "../utils/account-tree";
+import { findAccountById, flattenAccountTree } from "../utils/account-tree";
 
+import { FORM_ACTIONS } from "@/constants/ui";
 import { getLocaleDir } from "@/i18n/config";
 import accountService from "@/services/api/account.service";
 import {
@@ -86,7 +83,6 @@ const AccountFormClient = ({
   const isAddMode = mode === "add";
   const isEditMode = mode === "edit";
 
-  // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   const flattenedAccounts = useMemo(
@@ -185,7 +181,6 @@ const AccountFormClient = ({
     return options;
   }, [excludedParentIds, flattenedAccounts, locale]);
 
-  // Merge a static "no parent" option with computed options to use with Select's items API
   const parentSelectItems = useMemo(
     () => [
       { id: "null", label: t("form.parentOptionRoot") },
@@ -215,48 +210,6 @@ const AccountFormClient = ({
     }));
   };
 
-  const handleGenerateAccountId = () => {
-    const parentAccountId = formData.parent;
-
-    if (parentAccountId) {
-      const parentAccount = findAccountById(accounts, parentAccountId);
-
-      if (parentAccount && parentAccount.acc_level >= 5) {
-        toast.error(t("messages.maxLevelForm"));
-
-        return;
-      }
-
-      const siblings = flattenedAccounts.filter(
-        (account) => account.parent === parentAccountId,
-      );
-
-      if (
-        parentAccount &&
-        parentAccount.acc_level < 5 &&
-        siblings.length >= 9
-      ) {
-        toast.error(t("messages.maxSiblingsForm"));
-
-        return;
-      }
-    }
-
-    const generatedId = generateAccountId(accounts, parentAccountId);
-
-    if (!generatedId) {
-      toast.error(t("messages.generateIdForm"));
-
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      acc_id: generatedId,
-    }));
-    toast.success(t("messages.generateIdSuccess"));
-  };
-
   const validateForm = () => {
     if (!formData.acc_id.trim()) {
       toast.error(t("messages.accountNumberRequired"));
@@ -266,6 +219,16 @@ const AccountFormClient = ({
 
     if (!formData.acc_name.trim()) {
       toast.error(t("messages.accountNameRequired"));
+
+      return false;
+    }
+
+    const normalizedLevel = Number.isFinite(formData.acc_level)
+      ? formData.acc_level
+      : 1;
+
+    if (normalizedLevel < 1 || normalizedLevel > 5) {
+      toast.error(t("messages.maxLevelForm"));
 
       return false;
     }
@@ -281,6 +244,11 @@ const AccountFormClient = ({
     setIsSaving(true);
 
     try {
+      const normalizedLevel = Math.min(
+        5,
+        Math.max(1, Number.isFinite(formData.acc_level) ? formData.acc_level : 1),
+      );
+
       const payload = {
         acc_id: formData.acc_id,
         acc_code: initialAccount.acc_code ?? formData.acc_id,
@@ -296,9 +264,7 @@ const AccountFormClient = ({
         acc_notes: formData.acc_notes,
         cur: formData.cur,
         cost: initialAccount.cost ?? formData.cur ?? 1,
-        acc_level: formData.parent
-          ? (findAccountById(accounts, formData.parent)?.acc_level ?? 0) + 1
-          : 1,
+        acc_level: normalizedLevel,
       } as Omit<Account, "id"> & { id?: number; cost?: number };
 
       let result: Account | null = null;
@@ -377,59 +343,51 @@ const AccountFormClient = ({
                 : t("form.subtitleEdit")}
           </p>
         </div>
-        <div className={`flex flex-wrap items-center gap-2 ${dir === "rtl" ? "flex-row-reverse" : ""}`}>
+        <div className={`${FORM_ACTIONS.wrapper} ${dir === "rtl" ? "flex-row-reverse" : ""}`}>
           <Button
-            variant="light"
+            size={FORM_ACTIONS.size}
+            startContent={<ArrowLeftIcon className={FORM_ACTIONS.back.iconSize} />}
+            variant={FORM_ACTIONS.back.variant}
             onPress={handleBackToList}
           >
-            <ArrowLeftIcon className="h-4 w-4" />
             {t("form.backToList")}
           </Button>
           {isViewMode ? (
-            <Button color="primary" onPress={handleEdit}>
-              <PencilSquareIcon className="h-4 w-4" />
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.edit.color}
+              variant={FORM_ACTIONS.edit.variant}
+              startContent={<PencilSquareIcon className={FORM_ACTIONS.back.iconSize} />}
+              onPress={handleEdit}
+            >
               {t("form.edit")}
             </Button>
           ) : (
-            <>
-              <Button
-                variant="light"
-                onPress={handleBackToList}
-              >
-                {t("form.cancel")}
-              </Button>
-              <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? t("form.save") : t("form.update")}
-              </Button>
-            </>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.save.color}
+              className={FORM_ACTIONS.save.className}
+              startContent={<CheckCircleIcon className={FORM_ACTIONS.save.iconSize} />}
+              isLoading={isSaving}
+              onPress={handleSave}
+            >
+              {isAddMode ? t("form.save") : t("form.update")}
+            </Button>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex gap-2">
-          <Input
-            fullWidth
-            isRequired
-            isDisabled={isViewMode}
-            label={t("form.accountNumber")}
-            value={formData.acc_id}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, acc_id: e.target.value }))
-            }
-          />
-          {isViewMode ? null : (
-            <Button
-              isIconOnly
-              className="mt-6"
-              title={t("form.generateAccountIdTitle")}
-              variant="bordered"
-              onPress={handleGenerateAccountId}
-            >
-              <ArrowPathIcon className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        <Input
+          fullWidth
+          isRequired
+          isDisabled={isViewMode}
+          label={t("form.accountNumber")}
+          value={formData.acc_id}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, acc_id: e.target.value }))
+          }
+        />
 
         <Input
           fullWidth
@@ -556,9 +514,20 @@ const AccountFormClient = ({
         />
 
         <Input
-          isDisabled
+          isDisabled={isViewMode}
           label={t("form.accountLevel")}
+          type="number"
+          min={1}
+          max={5}
           value={String(formData.acc_level)}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+
+            setFormData((prev) => ({
+              ...prev,
+              acc_level: Number.isFinite(value) ? value : prev.acc_level,
+            }));
+          }}
         />
       </div>
 

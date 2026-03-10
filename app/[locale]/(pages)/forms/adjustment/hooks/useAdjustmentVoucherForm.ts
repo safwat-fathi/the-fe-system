@@ -93,10 +93,9 @@ const initialDetail: VoucherDetail = {
 
 const EMPTY_DETAILS: VoucherDetail[] = [];
 
-/**
- * Validates the voucher data before saving.
- * Checks dates, presence of details, and validity of rows.
- */
+const parseNum = (val: any) =>
+  val !== undefined && val !== null && val !== "" ? Number(val) : 0;
+
 const validateAdjustmentVoucher = (
   voucher: Voucher,
   details: VoucherDetail[],
@@ -198,7 +197,6 @@ export function useAdjustmentVoucherForm({
   const router = useRouter();
   const locale = useLocale();
 
-  // Initialize voucher state
   const [voucher, setVoucher] = useState<Voucher>(
     voucherData
       ? { ...initialVoucher, ...voucherData }
@@ -220,6 +218,18 @@ export function useAdjustmentVoucherForm({
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const voucherRef = useRef(voucher);
+
+  voucherRef.current = voucher;
+
+  const detailsRef = useRef(details);
+
+  detailsRef.current = details;
+
+  const originalDetailsRef = useRef(originalDetails);
+
+  originalDetailsRef.current = originalDetails;
 
   // Memoized calculations
   const totals = useMemo(() => calculateVoucherTotals(details), [details]);
@@ -255,9 +265,6 @@ export function useAdjustmentVoucherForm({
           if (i !== index) return detail;
 
           const updatedDetail = { ...detail, ...newValues };
-
-          const parseNum = (val: any) =>
-            val !== undefined && val !== null && val !== "" ? Number(val) : 0;
 
           if (newValues.debit !== undefined && parseNum(newValues.debit) > 0) {
             updatedDetail.credit = undefined;
@@ -546,13 +553,16 @@ export function useAdjustmentVoucherForm({
    * Saves the voucher to the database (create or update).
    */
   const saveVoucher = useCallback(async () => {
-    if (!validateAdjustmentVoucher(voucher, details)) return;
+    const currentVoucher = voucherRef.current;
+    const currentDetails = detailsRef.current;
+
+    if (!validateAdjustmentVoucher(currentVoucher, currentDetails)) return;
 
     setIsSaving(true);
     try {
       const { voucherData, detailsData } = mapVoucherToApiData(
-        voucher,
-        details,
+        currentVoucher,
+        currentDetails,
       );
 
       let result;
@@ -560,10 +570,11 @@ export function useAdjustmentVoucherForm({
       if (formMode === "new") {
         result = await createAdjustmentVoucherAction(voucherData, detailsData);
       } else {
-        // Calculate deleted IDs for update
-        const deletedDetailIds = originalDetails
+        const currentOriginalDetails = originalDetailsRef.current;
+        const deletedDetailIds = currentOriginalDetails
           .filter(
-            (od) => !details.some((d) => d.id === od.id && d.id !== undefined),
+            (od) =>
+              !currentDetails.some((d) => d.id === od.id && d.id !== undefined),
           )
           .map((d) => d.id)
           .filter((id): id is number => id !== undefined);
@@ -572,7 +583,7 @@ export function useAdjustmentVoucherForm({
           voucherData,
           detailsData,
           deletedDetailIds,
-          Number(voucher.id), // voucherRecordId
+          Number(currentVoucher.id),
         );
       }
 
@@ -594,7 +605,7 @@ export function useAdjustmentVoucherForm({
     } finally {
       setIsSaving(false);
     }
-  }, [voucher, details, formMode, originalDetails, router, locale]);
+  }, [formMode, router, locale]);
 
   /**
    * Handles the print action (visual feedback only for now).
@@ -631,27 +642,30 @@ export function useAdjustmentVoucherForm({
   /**
    * Update voucher type and regenerate number if needed.
    */
-  const updateVoucherType = async (newType: number) => {
-    setVoucher((prev) => ({ ...prev, vouch_type: newType }));
+  const updateVoucherType = useCallback(
+    async (newType: number) => {
+      setVoucher((prev) => ({ ...prev, vouch_type: newType }));
 
-    if (formMode === "new") {
-      try {
-        setIsLoading(true);
-        const nextNumber = await getNextAdjustmentVoucherNumberAction();
+      if (formMode === "new") {
+        try {
+          setIsLoading(true);
+          const nextNumber = await getNextAdjustmentVoucherNumberAction();
 
-        if (nextNumber) {
-          setVoucher((prev) => ({
-            ...prev,
-            vouch_id: nextNumber,
-          }));
+          if (nextNumber) {
+            setVoucher((prev) => ({
+              ...prev,
+              vouch_id: nextNumber,
+            }));
+          }
+        } catch (error) {
+          console.error("Error updating voucher type number:", error);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error("Error updating voucher type number:", error);
-      } finally {
-        setIsLoading(false);
       }
-    }
-  };
+    },
+    [formMode],
+  );
 
   return {
     voucher,

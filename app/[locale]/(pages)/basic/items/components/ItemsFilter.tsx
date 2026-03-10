@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 import { useQueryParams } from "@/utilities/hooks/useQueryParams";
+import { Can } from "@/components/providers/AbilityProvider";
 
 type FilterParams = {
   category: string;
@@ -174,20 +175,21 @@ export default function ItemsFilter({
   return (
     <div className="flex-shrink-0 flex flex-wrap items-center gap-1.5 mb-1">
       {/* زر إضافة صنف */}
-      <Link href="/basic/items/new" prefetch={false}>
-        <Button
-          className="bg-gray-100 hover:bg-gray-200 border-gray-300"
-          size="sm"
-          startContent={<PlusIcon className="h-3 w-3" />}
-          variant="bordered"
-        >
-          {t("actions.add")}
-        </Button>
-      </Link>
+      <Can I="create" a="basic.items">
+        <Link href="/basic/items/new" prefetch={false}>
+          <Button
+            className="bg-gray-100 hover:bg-gray-200 border-gray-300"
+            size="sm"
+            startContent={<PlusIcon className="h-3 w-3" />}
+            variant="bordered"
+          >
+            {t("actions.add")}
+          </Button>
+        </Link>
 
-      {/* فاصل خطي */}
-      <div className="h-5 w-px bg-gray-300" />
-
+        {/* فاصل خطي */}
+        <div className="h-5 w-px bg-gray-300" />
+      </Can>
       {/* حقول الفرز */}
       <div className="flex flex-wrap items-center gap-1 flex-1">
         <Select

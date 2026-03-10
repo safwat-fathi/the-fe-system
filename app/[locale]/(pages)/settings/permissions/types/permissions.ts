@@ -5,8 +5,8 @@
 
 export const PERMISSION_TYPES = {
   VIEW: "view",
-  CREATE: "add",
-  EDIT: "edit",
+  CREATE: "create",
+  UPDATE: "update",
   DELETE: "delete",
   PRINT: "print",
   EXPORT: "export",

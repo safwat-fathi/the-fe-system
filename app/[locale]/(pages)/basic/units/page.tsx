@@ -24,9 +24,7 @@ export default async function UnitsPage() {
   return (
     <div className="font-cairo">
       <Breadcrumb />
-      <h1 className="text-xl font-bold mb-2">
-        {t("labels.pageTitle")}
-      </h1>
+      <h1 className="text-xl font-bold mb-2">{t("labels.pageTitle")}</h1>
 
       <UnitsClient initialUnits={unitsData} />
     </div>

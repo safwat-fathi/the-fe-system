@@ -43,8 +43,8 @@
         "credit-notes": "إشعارات دائنة",
         "debit-notes": "إشعارات مدينة",
         "voucher": "القيود",
-        "voucher1": "سند قبض",
-        "voucher2": "سند صرف",
+        "cash-receipt": "سند قبض",
+        "payment-receipt": "سند صرف",
         "adjustment": "قيد تسوية",
         "gvoucher4": "سند قبض عميل",
         "gvoucher5": "سند صرف عميل",
@@ -104,6 +104,51 @@
     }
   },
   "forms": {
+    "cashReceipt": {
+      "title": "سند قبض",
+      "description": "إدارة سندات القبض",
+      "status": {
+        "numbering": "ترقيم"
+      },
+      "actions": {
+        "save": "حفظ",
+        "edit": "تعديل",
+        "new": "جديد",
+        "preview": "معاينة",
+        "print": "طباعة",
+        "viewGLTransactions": "القيود",
+        "search": "بحث",
+        "expandNotes": "توسيع البيان"
+      },
+      "navigation": {
+        "position": "{current} من {total}"
+      },
+      "messages": {
+        "searchError": "يرجى إدخال رقم سند صحيح",
+        "searchInvalid": "يرجى إدخال رقم سند صحيح",
+        "notFound": "لم يتم العثور على سند بهذا الرقم",
+        "voucherWrongType": "السند الذي تم العثور عليه ({id}) ليس من نوع {type}",
+        "voucherAccessError": "تم العثور على السند ولكن لا يمكن الوصول إليه. يرجى المحاولة مرة أخرى.",
+        "searchErrorGeneric": "حدث خطأ أثناء البحث. يرجى المحاولة مرة أخرى",
+        "voucherTypeReceipt": "سند قبض",
+        "voucherTypePayment": "سند صرف"
+      },
+      "fields": {
+        "refNo": "رقم المرجع",
+        "dateTime": "التاريخ والوقت",
+        "costCenter": "مركز التكلفة",
+        "costCenterPlaceholder": "اختر مركز التكلفة...",
+        "status": "الحالة",
+        "notes": "البيان",
+        "notesPlaceholder": "أدخل البيان..."
+      },
+      "statusOptions": {
+        "cancelled": "ملغي",
+        "active": "فعال",
+        "suspended": "معلق",
+        "incomplete": "غير مكتمل"
+      }
+    },
     "invoices": {
       "types": {
         "sale": {
@@ -545,6 +590,103 @@
         "voucherTypePayment": "سند صرف"
       }
     },
+    "paymentReceipt": {
+      "title": "سند صرف",
+      "description": "إدارة سندات الصرف",
+      "breadcrumbs": {
+        "list": "سند صرف",
+        "new": "جديدة",
+        "edit": "تعديل {id}",
+        "preview": "معاينة"
+      },
+      "actions": {
+        "save": "حفظ",
+        "edit": "تعديل",
+        "new": "جديد",
+        "print": "طباعة",
+        "viewGLTransactions": "القيود",
+        "addRow": "+ صف",
+        "delete": "حذف",
+        "expandNotes": "توسيع البيان",
+        "saveNotes": "حفظ",
+        "search": "بحث برقم السند..."
+      },
+      "fields": {
+        "refNo": "رقم المرجع",
+        "dateTime": "التاريخ والوقت",
+        "costCenter": "مركز التكلفة",
+        "costCenterPlaceholder": "اختر مركز التكلفة...",
+        "status": "الحالة",
+        "notes": "البيان",
+        "notesPlaceholder": "أدخل بيان القيد (انقر نقرتين للكتابة المطولة)",
+        "notesModalTitle": "البيان",
+        "notesModalPlaceholder": "أدخل بيان القيد..."
+      },
+      "tables": {
+        "cash": {
+          "title": "النقدية",
+          "columns": {
+            "amount": "المبلغ",
+            "box": "الصندوق",
+            "boxPlaceholder": "اختر الصندوق...",
+            "notes": "البيان",
+            "costCenter": "مركز التكلفة",
+            "costCenterPlaceholder": "مركز التكلفة...",
+            "invoiceNumber": "رقم الفاتورة",
+            "delete": "حذف"
+          }
+        },
+        "accounts": {
+          "title": "الحسابات",
+          "columns": {
+            "account": "الحساب",
+            "accountPlaceholder": "اختر الحساب...",
+            "amount": "المبلغ",
+            "notes": "البيان",
+            "costCenter": "مركز التكلفة",
+            "costCenterPlaceholder": "مركز التكلفة...",
+            "delete": "حذف"
+          },
+          "addAccountLabel": "إضافة حساب جديد: \"{value}\""
+        }
+      },
+      "status": {
+        "committed": "حُفظ",
+        "posted": "مرحل",
+        "printed": "طُبع",
+        "balanced": "متزن",
+        "unbalanced": "غير متزن",
+        "loading": "جاري التحميل...",
+        "numbering": "جاري الترقيم..."
+      },
+      "statusOptions": {
+        "cancelled": "ملغي",
+        "active": "فعال",
+        "suspended": "معلق",
+        "incomplete": "غير مكتمل"
+      },
+      "totals": {
+        "totalCash": "إجمالي النقدية",
+        "totalDetails": "إجمالي التفاصيل",
+        "difference": "الفارق",
+        "status": "الحالة",
+        "debit": "مدين",
+        "credit": "دائن"
+      },
+      "navigation": {
+        "position": "{current} من {total}"
+      },
+      "messages": {
+        "searchError": "يرجى إدخال رقم السند للبحث",
+        "searchInvalid": "يرجى إدخال رقم سند صحيح",
+        "voucherNotFound": "لم يتم العثور على {type} برقم: {number}",
+        "voucherWrongType": "السند الموجود ({id}) ليس من نوع {type}",
+        "voucherAccessError": "تم العثور على السند لكن لا يمكن الوصول إليه. يرجى المحاولة مرة أخرى.",
+        "searchErrorGeneric": "حدث خطأ أثناء البحث. يرجى المحاولة مرة أخرى",
+        "voucherTypeReceipt": "سند قبض",
+        "voucherTypePayment": "سند صرف"
+      }
+    },
     "adjustment": {
       "title": "قيد تسوية",
       "description": "إدارة قيود التسوية",
@@ -845,6 +987,13 @@
     "description": "عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها.",
     "heading": "الصفحة غير موجودة",
     "body": "عذراً، لم نتمكن من العثور على الصفحة التي تبحث عنها. قد تكون الصفحة قد تم حذفها أو نقلها.",
+    "backToHome": "العودة إلى الصفحة الرئيسية"
+  },
+  "unauthorized": {
+    "title": "غير مصرح - 401",
+    "description": "عذراً، ليس لديك صلاحية الوصول إلى هذه الصفحة.",
+    "heading": "غير مصرح",
+    "body": "عذراً، ليس لديك صلاحية الوصول إلى هذه الصفحة.",
     "backToHome": "العودة إلى الصفحة الرئيسية"
   },
   "reports": {
@@ -1496,12 +1645,13 @@
         "loadError": "فشل في تحميل الحسابات",
         "addError": "فشل في إضافة الحساب",
         "updateError": "فشل في تحديث الحساب",
-        "deleteError": "فشل في حذف الحساب",
+        "deleteError": "فشل في حذف الحساب. قد يكون مرتبطاً بمعاملات أو يحتوي على حسابات فرعية.",
         "deleteSuccess": "تم حذف الحساب بنجاح",
         "maxLevelError": "لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.",
         "maxSiblingsError": "لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.",
         "generateIdError": "تعذر توليد رقم الحساب الجديد لهذا الحساب الأب.",
         "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذا الحساب؟",
+        "deleteErrorHasChildren": "لا يمكن حذف حساب يحتوي على حسابات فرعية. احذف الحسابات الفرعية أولاً.",
         "serverError": "خطأ في الاتصال بالخادم. تحقق من الرابط أو الإعدادات.",
         "accountNumberRequired": "رقم الحساب مطلوب.",
         "accountNameRequired": "اسم الحساب مطلوب.",
@@ -1542,6 +1692,7 @@
         "accountNumber": "رقم الحساب",
         "accountName": "اسم الحساب",
         "accountType": "نوع الحساب",
+        "accountLevel": "مستوى الحساب",
         "reportType": "نوع التقرير",
         "currency": "العملة",
         "actions": "الإجراءات"
@@ -1872,6 +2023,7 @@
           "typeName": "النوع",
           "typeNameEn": "النوع بالإنجليزي",
           "typeDesc": "الوصف",
+          "mainAccount": "الحساب الرئيسي",
           "typeStatus": "الحالة",
           "actions": ""
         },
@@ -1895,6 +2047,8 @@
           "typeName": "نوع العميل",
           "typeNameEn": "نوع العميل بالإنجليزي",
           "typeDesc": "الوصف",
+          "mainAccount": "الحساب الرئيسي",
+          "mainAccountPlaceholder": "اختر الحساب الرئيسي",
           "crDate": "تاريخ الإنشاء",
           "typeStatus": "الحالة مفعلة"
         },
@@ -1953,7 +2107,8 @@
           "back": "رجوع",
           "cancel": "إلغاء",
           "save": "حفظ",
-          "update": "تحديث"
+          "update": "تحديث",
+          "insertAccountAuto": "إدراج الحساب تلقائياً"
         },
         "labels": {
           "manage": "إدارة العملاء",
@@ -1987,10 +2142,10 @@
           "street": "الشارع",
           "buildNo": "المبنى",
           "postCode": "الرمز البريدي",
-          "account": "الحساب المحاسبي",
+          "account": "الحساب",
           "boxType": "نوع الصندوق",
           "customerType": "نوع العميل",
-          "handling": "المحصل",
+          "handling": "مناولة",
           "handlingEn": "مناولة (بالإنجليزي)",
           "perc": "نسبة الخصم",
           "custStatus": "حالة العميل",
@@ -1998,10 +2153,10 @@
           "hide": "مخفي"
         },
         "placeholders": {
-          "selectAccount": "رقم الحساب / اسم الحساب",
-          "selectBoxType": "نوع الصندوق",
-          "selectCustomerType": "نوع العميل",
-          "selectStatus": "حالة العميل"
+          "selectAccount": "اختر الحساب...",
+          "selectBoxType": "اختر نوع الصندوق...",
+          "selectCustomerType": "اختر نوع العميل...",
+          "selectStatus": "اختر الحالة..."
         },
         "messages": {
           "loadError": "فشل في تحميل العملاء",
@@ -2014,7 +2169,11 @@
           "addSuccess": "تم إضافة العميل بنجاح",
           "updateSuccess": "تم تحديث بيانات العميل بنجاح",
           "operationFailed": "فشل في حفظ بيانات العميل",
-          "saveError": "حدث خطأ أثناء حفظ بيانات العميل"
+          "saveError": "حدث خطأ أثناء حفظ بيانات العميل",
+          "insertAccountAutoNoType": "اختر نوع العميل أولاً",
+          "insertAccountAutoNoMainAccount": "نوع العميل المختار لا يملك حساباً رئيسياً",
+          "insertAccountAutoSuccess": "تم إدراج الحساب تلقائياً وربطه بالعميل",
+          "insertAccountAutoError": "فشل إدراج الحساب تلقائياً"
         },
         "titles": {
           "view": "عرض {name}",
@@ -2340,6 +2499,7 @@
         "typeName": "النوع",
         "typeNameEn": "النوع بالإنجليزي",
         "typeDesc": "الوصف",
+        "mainAccount": "الحساب الرئيسي",
         "typeStatus": "الحالة",
         "actions": ""
       },
@@ -2365,6 +2525,8 @@
         "typeName": "نوع العميل",
         "typeNameEn": "نوع العميل بالإنجليزي",
         "typeDesc": "الوصف",
+        "mainAccount": "الحساب الرئيسي",
+        "mainAccountPlaceholder": "اختر الحساب الرئيسي",
         "crDate": "تاريخ الإنشاء",
         "typeStatus": "الحالة مفعلة"
       },
@@ -2716,7 +2878,8 @@
         "back": "رجوع",
         "cancel": "إلغاء",
         "save": "حفظ",
-        "update": "تحديث"
+        "update": "تحديث",
+        "insertAccountAuto": "إدراج الحساب تلقائياً"
       },
       "labels": {
         "pageTitle": "العملاء",
@@ -2752,10 +2915,10 @@
         "street": "الشارع",
         "buildNo": "المبنى",
         "postCode": "الرمز البريدي",
-        "account": "الحساب المحاسبي",
+        "account": "الحساب",
         "boxType": "نوع الصندوق",
         "customerType": "نوع العميل",
-        "handling": "المحصل",
+        "handling": "مناولة",
         "handlingEn": "مناولة (بالإنجليزي)",
         "perc": "نسبة الخصم",
         "custStatus": "حالة العميل",
@@ -2763,10 +2926,10 @@
         "hide": "مخفي"
       },
       "placeholders": {
-        "selectAccount": "رقم الحساب / اسم الحساب",
-        "selectBoxType": "نوع الصندوق",
-        "selectCustomerType": "نوع العميل",
-        "selectStatus": "حالة العميل"
+        "selectAccount": "اختر الحساب...",
+        "selectBoxType": "اختر نوع الصندوق...",
+        "selectCustomerType": "اختر نوع العميل...",
+        "selectStatus": "اختر الحالة..."
       },
       "messages": {
         "loadError": "فشل في تحميل العملاء",
@@ -2779,7 +2942,12 @@
         "addSuccess": "تم إضافة العميل بنجاح",
         "updateSuccess": "تم تحديث بيانات العميل بنجاح",
         "operationFailed": "فشل في حفظ بيانات العميل",
-        "saveError": "حدث خطأ أثناء حفظ بيانات العميل"
+        "saveError": "حدث خطأ أثناء حفظ بيانات العميل",
+        "custCodeRequired": "يرجى إدخال كود العميل",
+        "insertAccountAutoNoType": "اختر نوع العميل أولاً",
+        "insertAccountAutoNoMainAccount": "نوع العميل المختار لا يملك حساباً رئيسياً",
+        "insertAccountAutoSuccess": "تم إدراج الحساب تلقائياً وربطه بالعميل",
+        "insertAccountAutoError": "فشل إدراج الحساب تلقائياً"
       },
       "titles": {
         "view": "عرض {name}",

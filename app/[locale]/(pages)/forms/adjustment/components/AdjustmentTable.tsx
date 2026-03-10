@@ -1,6 +1,7 @@
-import type { VoucherDetail } from "@/types/voucher";
+import type { VoucherDetail, AccountOption } from "@/types/voucher";
 import type { Account } from "@/types/models/account";
 import type { CostCenter } from "@/types/voucher-form";
+import type { CostCenterOption } from "@/utilities/costCenter.actions";
 
 import {
   CheckCircleIcon,
@@ -20,6 +21,7 @@ interface AdjustmentTableProps {
   isVoucherBalanced?: boolean;
   details: VoucherDetail[];
   initialAccounts: Account[];
+  accountOptions: AccountOption[];
   updateDetail: (index: number, newValues: Partial<VoucherDetail>) => void;
   registerField: (index: number) => (el: { focus: () => void } | null) => void;
   handleFieldEnter: (
@@ -27,6 +29,7 @@ interface AdjustmentTableProps {
     index: number,
   ) => void;
   initialCostCenters: CostCenter[];
+  costCenterOptions: CostCenterOption[];
 }
 
 const AdjustmentTable = ({
@@ -37,10 +40,12 @@ const AdjustmentTable = ({
   isVoucherBalanced = false,
   details,
   initialAccounts,
+  accountOptions,
   updateDetail,
   registerField,
   handleFieldEnter,
   initialCostCenters,
+  costCenterOptions,
 }: AdjustmentTableProps) => {
   const t = useTranslations("forms.adjustment");
   const textAlignCenter = "text-center";
@@ -111,7 +116,9 @@ const AdjustmentTable = ({
                   details={details}
                   isEditing={isEditing}
                   initialAccounts={initialAccounts}
+                  accountOptions={accountOptions}
                   initialCostCenters={initialCostCenters}
+                  costCenterOptions={costCenterOptions}
                   updateDetail={updateDetail}
                   removeDetailRow={removeDetailRow}
                   index={index}

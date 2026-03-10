@@ -282,7 +282,10 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
       typeof body === "object" &&
       !(body instanceof FormData)
     ) {
-      finalBody = { com_id: String(comId), ...body };
+      finalBody = {
+        com: String(comId),
+        ...body,
+      };
     }
 
     const { processedBody, headers } = this._prepareBody(finalBody);
@@ -371,7 +374,12 @@ export default class HttpService<T = any> extends HttpServiceAbstract<T> {
     params?: IParams,
     options?: RequestInit,
   ): Promise<ServiceResponse<R>> {
-    return this._request<R>(route, "DELETE", options, params);
+    const comId = await this._getCompanyId();
+    const mergedParams = comId
+      ? { xcom_id: String(comId), ...params }
+      : { ...params };
+
+    return this._request<R>(route, "DELETE", options, mergedParams);
   }
 
   // Utility method for handling paginated responses

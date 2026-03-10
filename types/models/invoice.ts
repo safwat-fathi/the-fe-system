@@ -69,6 +69,7 @@ export interface Invoice {
   charge: number | null;
   inv_amt_g: number | null;
   emp_id?: string | null;
+  seller_name?: string | null;
   commit?: boolean;
   print?: boolean;
   cr_no?: string | null;

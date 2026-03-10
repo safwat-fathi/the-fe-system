@@ -11,6 +11,8 @@ const isPublicRoute = (pathname: string) => {
   );
 };
 
+const isApiRoute = (pathname: string) => pathname.startsWith("/api/");
+
 const getLocaleAndPathname = (pathname: string) => {
   const segments = pathname.split("/").filter(Boolean);
 
@@ -42,13 +44,15 @@ const authMiddleware: MiddlewareFactory = (next) => {
   return async (request, event) => {
     const { pathname, search, hash } = request.nextUrl;
     const originalPath = `${pathname}${search}${hash}`;
+    const isApi = isApiRoute(pathname);
 
     const { locale, pathnameWithoutLocale } = getLocaleAndPathname(pathname);
     const isLoginRoute = pathnameWithoutLocale === "/auth/login";
 
-    // Skip authentication for public routes
-    if (isPublicRoute(pathnameWithoutLocale)) {
-      return next(request, event);
+    if (!isApi && isPublicRoute(pathnameWithoutLocale) && !isLoginRoute) {
+      const res = await next(request, event);
+
+      return res || NextResponse.next();
     }
 
     try {
@@ -65,11 +69,25 @@ const authMiddleware: MiddlewareFactory = (next) => {
         }
 
         // If token is not valid, allow access to login page
-        return next(request, event);
+        const res = await next(request, event);
+
+        return res || NextResponse.next();
       }
 
       if (!hasValidToken) {
-        // If token is invalid or missing, redirect to localized login with original path
+        if (isApi) {
+          const response = NextResponse.json(
+            { message: "Authentication required" },
+            { status: 401 },
+          );
+
+          response.cookies.delete(STORAGE_KEYS.ACCESS_TOKEN);
+          response.cookies.delete(STORAGE_KEYS.REFRESH_TOKEN);
+          response.cookies.delete(STORAGE_KEYS.CSRF_TOKEN);
+
+          return response;
+        }
+
         const loginUrl = new URL(`/${locale}/auth/login`, request.url);
 
         loginUrl.searchParams.set("redirect", originalPath);
@@ -88,12 +106,19 @@ const authMiddleware: MiddlewareFactory = (next) => {
       // TODO: Add token verification implementation
 
       // Token exists, allow the request to proceed
-      return next(request, event);
+      const res = await next(request, event);
+
+      return res || NextResponse.next();
     } catch {
+      if (isApi) {
+        return NextResponse.json({ message: "Authentication required" }, { status: 401 });
+      }
+
       // If there's an error checking auth, redirect to localized login
-      // Don't redirect if we're already on the login page
       if (isLoginRoute) {
-        return next(request, event);
+        const res = await next(request, event);
+
+        return res || NextResponse.next();
       }
 
       const loginUrl = new URL(`/${locale}/auth/login`, request.url);

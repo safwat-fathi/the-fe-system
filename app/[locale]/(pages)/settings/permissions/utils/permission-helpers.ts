@@ -5,14 +5,18 @@
 
 import { MergedPermissions, PermissionType } from "../types/permissions";
 
+import {
+  normalizeAction,
+  normalizePermissionActions,
+} from "@/utilities/auth/authorization-core";
+
 export const PERMISSION_TYPES = {
   VIEW: "view",
-  CREATE: "add",
-  EDIT: "edit",
+  CREATE: "create",
+  UPDATE: "update",
   DELETE: "delete",
   PRINT: "print",
   EXPORT: "export",
-  APPROVE: "approve",
 } as const;
 
 /**
@@ -23,9 +27,16 @@ export const hasPermission = (
   objectId: number,
   permission: PermissionType | string,
 ): boolean => {
-  const objectPermissions = permissions[objectId.toString()] || [];
+  const objectPermissions = normalizePermissionActions(
+    permissions[objectId.toString()] || [],
+  );
+  const normalizedPermission = normalizeAction(String(permission));
 
-  return objectPermissions.includes(permission as string);
+  if (normalizedPermission) {
+    return objectPermissions.includes(normalizedPermission);
+  }
+
+  return (permissions[objectId.toString()] || []).includes(permission as string);
 };
 
 /**
@@ -36,9 +47,17 @@ export const hasAnyPermission = (
   objectId: number,
   requiredPermissions: (PermissionType | string)[],
 ): boolean => {
-  const objectPermissions = permissions[objectId.toString()] || [];
+  const objectPermissions = normalizePermissionActions(
+    permissions[objectId.toString()] || [],
+  );
 
-  return requiredPermissions.some((perm) => objectPermissions.includes(perm));
+  return requiredPermissions.some((perm) => {
+    const normalized = normalizeAction(String(perm));
+
+    return normalized
+      ? objectPermissions.includes(normalized)
+      : (permissions[objectId.toString()] || []).includes(perm);
+  });
 };
 
 /**
@@ -49,9 +68,17 @@ export const hasAllPermissions = (
   objectId: number,
   requiredPermissions: (PermissionType | string)[],
 ): boolean => {
-  const objectPermissions = permissions[objectId.toString()] || [];
+  const objectPermissions = normalizePermissionActions(
+    permissions[objectId.toString()] || [],
+  );
 
-  return requiredPermissions.every((perm) => objectPermissions.includes(perm));
+  return requiredPermissions.every((perm) => {
+    const normalized = normalizeAction(String(perm));
+
+    return normalized
+      ? objectPermissions.includes(normalized)
+      : (permissions[objectId.toString()] || []).includes(perm);
+  });
 };
 
 /**

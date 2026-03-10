@@ -16,8 +16,8 @@ export function revalidateVoucherPaths(
 ) {
   // Revalidate general paths
   revalidatePath("/forms/voucher");
-  revalidatePath("/forms/voucher1");
-  revalidatePath("/forms/voucher2");
+  revalidatePath("/forms/cash-receipt");
+  revalidatePath("/forms/payment-receipt");
   revalidatePath("/forms/gvoucher4");
   revalidatePath("/forms/gvoucher5");
   revalidatePath("/forms/receipt");

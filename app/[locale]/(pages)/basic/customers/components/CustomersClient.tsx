@@ -9,19 +9,23 @@ import {
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
-import {
-  Input,
-  Button,
-  Pagination,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+import { Input, Button, Pagination, Select, SelectItem } from "@heroui/react";
 
 import customerService from "@/services/api/customer.service";
 import { ConfirmationModal } from "@/components/Modal";
 import AppDataTable from "@/components/AppDataTable";
 import { createCustomerColumns } from "@/components/customers/customerColumns";
+import {
+  CONFIRM_MODAL,
+  FONT,
+  PAGE_SIZE_OVERRIDES,
+  PAGINATION_BAR,
+  TABLE_STYLE,
+  TOOLBAR,
+} from "@/constants/ui";
 import { getLocaleDir } from "@/i18n/config";
+import { usePermissionStore } from "@/stores/permissionStore";
+import { useQueryParams } from "@/utilities/hooks/useQueryParams";
 
 interface Customer {
   id: number;
@@ -62,31 +66,58 @@ interface CustomersClientProps {
   initialCustomers: Customer[];
   initialCustomerTypes: CustomerType[];
   initialCustomerStatus: any[];
-  initialAccounts: any[];
-  initialBoxTypes: any[];
+  totalCount: number;
+  initialPage: number;
+  initialCustType: number | null;
 }
 
 export default function CustomersClient({
   initialCustomers,
   initialCustomerTypes,
   initialCustomerStatus,
+  totalCount,
+  initialPage,
+  initialCustType,
 }: CustomersClientProps) {
   const router = useRouter();
   const locale = useLocale();
   const dir = getLocaleDir(locale as "ar" | "en");
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const t = useTranslations("basic.customers" as any) as any;
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+
+  const { params, setParam, setParams } = useQueryParams(
+    ["page", "cust_type"],
+    {
+      defaultValues: { page: initialPage, cust_type: initialCustType },
+      schema: {
+        page: {
+          parse: (v) => Math.max(1, Number(v) || 1),
+          serialize: (v) => String(v),
+          default: 1,
+        },
+        cust_type: {
+          parse: (v) =>
+            v === "all" || v === "" || v === null ? undefined : Number(v),
+          serialize: (v) => (v == null ? "" : String(v)),
+          default: undefined,
+        },
+      },
+      refreshOnChange: true,
+    },
+  );
+
   const [customerTypes] = useState<CustomerType[]>(initialCustomerTypes);
   const [customerStatus] = useState<any[]>(initialCustomerStatus);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [custTypeFilter, setCustTypeFilter] = useState<number | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(
     null,
   );
-  const rowsPerPage = 10;
+
+  const page = Number(params.page) || 1;
+  const custTypeFilter = params.cust_type ?? null;
+  const pageSize = PAGE_SIZE_OVERRIDES.customers;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
   const handleDeleteClick = useCallback(
     (customer: Customer) => {
@@ -111,14 +142,21 @@ export default function CustomersClient({
     [customerStatus],
   );
 
+  const ability = usePermissionStore((state) => state.ability);
+  const hasActionPermission =
+    ability.can("view", "basic.customers") ||
+    ability.can("update", "basic.customers") ||
+    ability.can("delete", "basic.customers");
+
   const columns = useMemo(
     () =>
       createCustomerColumns({
         getStatusLabel,
         onDelete: handleDeleteClick,
         t,
+        hasActionPermission,
       }),
-    [getStatusLabel, handleDeleteClick, t],
+    [getStatusLabel, handleDeleteClick, t, hasActionPermission],
   );
 
   const customerTypeOptions = useMemo(
@@ -132,17 +170,6 @@ export default function CustomersClient({
     [customerTypes, t],
   );
 
-  const loadCustomers = async () => {
-    try {
-      const data = await customerService.getAllCustomers();
-
-      setCustomers(data as any);
-    } catch (error) {
-      console.error(t("messages.loadError"), error);
-      toast.error(t("messages.loadError"));
-    }
-  };
-
   const handleDeleteConfirm = async () => {
     if (!customerToDelete?.id) {
       setDeleteModalOpen(false);
@@ -151,25 +178,16 @@ export default function CustomersClient({
       return;
     }
 
-    const previousCustomers = customers;
-
-    // Optimistic delete
-    setCustomers((prevCustomers) =>
-      prevCustomers.filter((c) => c.id !== customerToDelete.id),
-    );
-
     try {
       const result = await customerService.deleteCustomer(customerToDelete.id);
 
       if (result) {
         toast.success(t("messages.deleteSuccess"));
-        await loadCustomers();
+        router.refresh();
       } else {
-        setCustomers(previousCustomers);
         toast.error(t("messages.deleteFailed"));
       }
     } catch {
-      setCustomers(previousCustomers);
       toast.error(t("messages.deleteError"));
     } finally {
       setDeleteModalOpen(false);
@@ -182,10 +200,12 @@ export default function CustomersClient({
     setCustomerToDelete(null);
   };
 
-  const filteredCustomers = useMemo(() => {
+  const tableData = useMemo(() => {
+    if (!search.trim()) return initialCustomers;
+
     const searchLower = search.toLowerCase();
 
-    return customers.filter((c) => {
+    return initialCustomers.filter((c) => {
       const fieldsToSearch = [
         c.cust_code?.toString(),
         c.cust_name,
@@ -206,42 +226,30 @@ export default function CustomersClient({
         c.handling,
       ];
 
-      // فلترة حسب نوع العميل - تحويل القيم إلى أرقام للمقارنة
-      const customerTypeMatch =
-        !custTypeFilter || Number(c.cust_type) === Number(custTypeFilter);
-
-      return (
-        fieldsToSearch.some((field) =>
-          field?.toString().toLowerCase().includes(searchLower),
-        ) && customerTypeMatch
+      return fieldsToSearch.some((field) =>
+        field?.toString().toLowerCase().includes(searchLower),
       );
     });
-  }, [customers, search, custTypeFilter]);
-
-  const paginatedCustomers = useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-
-    return filteredCustomers.slice(start, start + rowsPerPage);
-  }, [filteredCustomers, page]);
+  }, [initialCustomers, search]);
 
   const clearFilters = () => {
-    setCustTypeFilter(null);
     setSearch("");
+    setParams({ cust_type: undefined, page: 1 });
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex flex-wrap items-center gap-3 mb-2">
+    <>
+      <div className={TOOLBAR.root}>
         <Button
-          className="bg-gray-100"
-          variant="bordered"
+          className={TOOLBAR.addButton}
+          variant={TOOLBAR.addButtonVariant}
           onPress={() => router.push("/basic/customers/new")}
         >
-          <PlusIcon className="h-3 w-3" />
+          <PlusIcon className={TOOLBAR.iconAdd} />
           {t("actions.add")}
         </Button>
 
-        <div className="h-8 w-px bg-gray-300" />
+        <div className={TOOLBAR.divider} />
 
         <div className="flex flex-wrap items-center gap-1 flex-1 min-w-[200px]">
           <Select
@@ -249,14 +257,17 @@ export default function CustomersClient({
             items={customerTypeOptions}
             className="input-field flex-1 min-w-[90px]"
             placeholder={t("labels.customerType")}
-            size="sm"
+            size={TOOLBAR.inputSize}
             selectedKeys={
               custTypeFilter !== null ? [String(custTypeFilter)] : ["all"]
             }
             onSelectionChange={(keys) => {
-              const key = Array.from(keys)[0];
+              const key = Array.from(keys)[0] as string;
 
-              setCustTypeFilter(key === "all" ? null : Number(key));
+              setParams({
+                cust_type: key === "all" ? undefined : Number(key),
+                page: 1,
+              });
             }}
           >
             {(option) => (
@@ -268,23 +279,23 @@ export default function CustomersClient({
 
           <Button
             isIconOnly
-            size="sm"
+            size={TOOLBAR.inputSize}
             title={t("labels.clearFilters")}
             variant="bordered"
             onPress={clearFilters}
           >
-            <FunnelIcon className="h-3 w-3" />
+            <FunnelIcon className={TOOLBAR.iconAdd} />
           </Button>
         </div>
 
-        <div className="h-8 w-px bg-gray-300" />
+        <div className={TOOLBAR.divider} />
 
-        <div className="flex-1 min-w-[200px]">
+        <div className={TOOLBAR.searchWrapper}>
           <Input
             placeholder={t("labels.searchPlaceholder")}
-            size="sm"
+            size={TOOLBAR.inputSize}
             startContent={
-              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              <MagnifyingGlassIcon className={TOOLBAR.iconSearch} />
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -292,44 +303,42 @@ export default function CustomersClient({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col">
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <AppDataTable
-            className="h-full"
-            columns={columns}
-            data={paginatedCustomers}
-            emptyContent={t("labels.emptyContent")}
-            filterable={false}
-            searchable={false}
-          />
-        </div>
+      <AppDataTable
+        bare
+        className={FONT.table}
+        columns={columns}
+        data={tableData}
+        emptyContent={t("labels.emptyContent")}
+        filterable={false}
+        searchable={false}
+        tableClassNames={TABLE_STYLE}
+      />
 
-        <div className="py-4 flex justify-between items-center">
-          <span className={`text-sm text-gray-500 ${textAlign}`}>
-            {t("labels.totalCount", { count: filteredCustomers.length })}
-          </span>
-          <Pagination
-            color="primary"
-            page={page}
-            total={Math.ceil(filteredCustomers.length / rowsPerPage)}
-            onChange={setPage}
-          />
-        </div>
+      <div className={PAGINATION_BAR.root}>
+        <span className={`${PAGINATION_BAR.countText} ${textAlign}`}>
+          {t("labels.totalCount", { count: totalCount })}
+        </span>
+        <Pagination
+          color={PAGINATION_BAR.color}
+          page={page}
+          total={totalPages}
+          onChange={(p) => setParam("page", p)}
+        />
       </div>
 
       <ConfirmationModal
         cancelText={t("modals.cancel")}
-        confirmColor="danger"
+        confirmColor={CONFIRM_MODAL.confirmColor}
         confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
         message={t("modals.deleteMessage", {
           name: customerToDelete?.cust_name,
         })}
-        size="md"
+        size={CONFIRM_MODAL.size}
         title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
       />
-    </div>
+    </>
   );
 }

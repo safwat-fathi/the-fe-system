@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 
 import CustomerTypesClient from "./components/CustomerTypesClient";
+import { getLevel4Accounts } from "./getLevel4Accounts";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import customerTypeService from "@/services/api/customer-type.service";
@@ -31,9 +32,20 @@ export default async function CustomerTypesPage({
   >;
   let loadError: string | null = null;
 
-  try {
-    const allTypes = await customerTypeService.getAllCustomerTypes();
+  let statusOptions = [] as Awaited<
+    ReturnType<typeof customerTypeService.getCustTypeStatus>
+  >;
+  let levelFourAccounts: Awaited<ReturnType<typeof getLevel4Accounts>> = [];
 
+  try {
+    const [allTypes, statusList, level4] = await Promise.all([
+      customerTypeService.getAllCustomerTypes(),
+      customerTypeService.getCustTypeStatus(),
+      getLevel4Accounts(),
+    ]);
+
+    statusOptions = statusList;
+    levelFourAccounts = level4;
     typesData = !normalizedSearch
       ? allTypes
       : allTypes.filter((type) => {
@@ -42,6 +54,7 @@ export default async function CustomerTypesPage({
             type.type_name ?? "",
             type.type_name_e ?? "",
             type.type_desc ?? "",
+            type.prefix ?? "",
           ];
 
           return fields.some((field) =>
@@ -61,7 +74,9 @@ export default async function CustomerTypesPage({
     <div className="responsive-container font-cairo">
       <Breadcrumb />
       <CustomerTypesClient
+        accounts={levelFourAccounts}
         initialSearch={String(searchValue ?? "")}
+        initialStatusOptions={statusOptions}
         initialTypes={typesData}
         loadError={loadError}
       />

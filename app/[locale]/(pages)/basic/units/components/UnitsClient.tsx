@@ -26,6 +26,7 @@ import { useTranslations } from "next-intl";
 
 import unitService from "@/services/api/unit.service";
 import { ConfirmationModal } from "@/components/Modal";
+import { Can } from "@/components/providers/AbilityProvider";
 
 interface Unit {
   id: number;
@@ -136,46 +137,54 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
 
   const renderActions = (unit: Unit) => (
     <div className="flex gap-2">
-      <Button
-        isIconOnly
-        size="sm"
-        variant="light"
-        onPress={() => router.push(`/basic/units/${unit.id}`)}
-      >
-        <EyeIcon className="h-4 w-4 text-blue-500" />
-      </Button>
-      <Button
-        isIconOnly
-        size="sm"
-        variant="light"
-        onPress={() => router.push(`/basic/units/${unit.id}?mode=edit`)}
-      >
-        <PencilIcon className="h-4 w-4 text-yellow-500" />
-      </Button>
-      <Button
-        isIconOnly
-        color="danger"
-        size="sm"
-        variant="light"
-        onPress={() => handleDeleteClick(unit)}
-      >
-        <TrashIcon className="h-4 w-4" />
-      </Button>
+      <Can I="view" a="basic.units">
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          onPress={() => router.push(`/basic/units/${unit.id}`)}
+        >
+          <EyeIcon className="h-4 w-4 text-blue-500" />
+        </Button>
+      </Can>
+      <Can I="update" a="basic.units">
+        <Button
+          isIconOnly
+          size="sm"
+          variant="light"
+          onPress={() => router.push(`/basic/units/${unit.id}?mode=edit`)}
+        >
+          <PencilIcon className="h-4 w-4 text-yellow-500" />
+        </Button>
+      </Can>
+      <Can I="delete" a="basic.units">
+        <Button
+          isIconOnly
+          color="danger"
+          size="sm"
+          variant="light"
+          onPress={() => handleDeleteClick(unit)}
+        >
+          <TrashIcon className="h-4 w-4" />
+        </Button>
+      </Can>
     </div>
   );
 
   return (
     <div className="flex flex-col gap-6 font-cairo">
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          className="bg-gray-100"
-          variant="bordered"
-          onPress={() => router.push("/basic/units/new")}
-        >
-          <PlusIcon className="h-3 w-3" />
-          {t("actions.add")}
-        </Button>
-        <div className="h-8 w-px bg-gray-300" />
+        <Can I="create" a="basic.units">
+          <Button
+            className="bg-gray-100"
+            variant="bordered"
+            onPress={() => router.push("/basic/units/new")}
+          >
+            <PlusIcon className="h-3 w-3" />
+            {t("actions.add")}
+          </Button>
+          <div className="h-8 w-px bg-gray-300" />
+        </Can>
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}
@@ -190,10 +199,7 @@ export default function UnitsClient({ initialUnits }: UnitsClientProps) {
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-        <Table
-          removeWrapper
-          aria-label={t("labels.tableAriaLabel")}
-        >
+        <Table removeWrapper aria-label={t("labels.tableAriaLabel")}>
           <TableHeader>
             {columns.map((col) => (
               <TableColumn key={col.uid}>{col.name}</TableColumn>

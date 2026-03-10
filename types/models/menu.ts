@@ -12,10 +12,11 @@ export const OBJECT_TYPES = {
 export const PERMISSION_TYPES = {
   VIEW: "view",
   CREATE: "create",
-  EDIT: "edit",
+  UPDATE: "update",
   DELETE: "delete",
   PRINT: "print",
   EXPORT: "export",
+  MANAGE: "manage",
 } as const;
 
 export type ObjectType = (typeof OBJECT_TYPES)[keyof typeof OBJECT_TYPES];

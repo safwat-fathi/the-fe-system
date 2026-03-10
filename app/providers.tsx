@@ -9,6 +9,8 @@ import {
 import { Toaster } from "react-hot-toast";
 import { useEffect, useState } from "react";
 
+import { AbilityProvider } from "@/components/providers/AbilityProvider";
+
 export interface ProvidersProps {
   children: React.ReactNode;
   themeProps?: ThemeProviderProps;
@@ -31,7 +33,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
       >
         <div className="relative min-h-screen" suppressHydrationWarning>
           {mounted && <Toaster position="top-center" />}
-          {children}
+          <AbilityProvider>{children}</AbilityProvider>
         </div>
       </NextThemesProvider>
     </HeroUIProvider>

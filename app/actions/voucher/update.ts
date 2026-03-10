@@ -27,6 +27,8 @@ import { requiresBoxes } from "@/utilities/voucher/routing";
 import { getCookieAction } from "@/app/actions/cookie-store";
 import { STORAGE_KEYS } from "@/constants";
 import { createParams } from "@/utilities/qs";
+import { assertAuthorized } from "@/utilities/auth/authorization-server";
+import { resolveVoucherSubject } from "@/utilities/auth/authorization-core";
 
 /**
  * Update an existing voucher
@@ -48,6 +50,11 @@ export async function updateVoucherAction(
   console.log("Voucher Record ID:", voucherRecordId); */
 
   try {
+    await assertAuthorized({
+      subject: resolveVoucherSubject(voucherData.vouch_type),
+      action: "update",
+    });
+
     const normalizeCostValue = (...values: unknown[]): number | null => {
       for (const value of values) {
         if (value === undefined || value === null) {
