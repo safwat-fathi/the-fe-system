@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import CustomerTypeFormClient from "../components/CustomerTypeFormClient";
+import { getLevel4Accounts } from "../getLevel4Accounts";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import customerTypeService from "@/services/api/customer-type.service";
@@ -41,9 +42,21 @@ export default async function CustomerTypeDetailPage({
   }
 
   let type = null;
+  let statusOptions: Awaited<
+    ReturnType<typeof customerTypeService.getCustTypeStatus>
+  > = [];
+  let levelFourAccounts: Awaited<ReturnType<typeof getLevel4Accounts>> = [];
 
   try {
-    type = await customerTypeService.getCustomerTypeById(typeId);
+    const [fetchedType, statusList, level4] = await Promise.all([
+      customerTypeService.getCustomerTypeById(typeId),
+      customerTypeService.getCustTypeStatus(),
+      getLevel4Accounts(),
+    ]);
+
+    type = fetchedType;
+    statusOptions = statusList;
+    levelFourAccounts = level4;
   } catch (error) {
     if (error instanceof AuthenticationError) {
       redirect("/auth/login");
@@ -56,6 +69,7 @@ export default async function CustomerTypeDetailPage({
   }
 
   const t = (await getTranslations("basic.customerTypes" as any)) as any;
+  const displayName = type.type_name || type.type_name_e || t("titles.defaultName");
 
   return (
     <div className="responsive-container font-cairo">
@@ -65,16 +79,17 @@ export default async function CustomerTypeDetailPage({
           {
             name:
               formMode === "edit"
-                ? t("titles.edit", {
-                    name: type.type_name || t("titles.defaultName"),
-                  })
-                : t("titles.view", {
-                    name: type.type_name || t("titles.defaultName"),
-                  }),
+                ? t("titles.edit", { name: displayName })
+                : t("titles.view", { name: displayName }),
           },
         ]}
       />
-      <CustomerTypeFormClient initialType={type} mode={formMode} />
+      <CustomerTypeFormClient
+        accounts={levelFourAccounts}
+        initialType={type}
+        mode={formMode}
+        statusOptions={statusOptions}
+      />
     </div>
   );
 }

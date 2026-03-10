@@ -1496,12 +1496,13 @@
         "loadError": "Failed to load accounts",
         "addError": "Failed to add account",
         "updateError": "Failed to update account",
-        "deleteError": "Failed to delete account",
+        "deleteError": "Failed to delete account. It may be linked to transactions or have sub-accounts.",
         "deleteSuccess": "Account deleted successfully",
         "maxLevelError": "Cannot add new accounts under level 5.",
         "maxSiblingsError": "Cannot add more than 9 accounts at this level.",
         "generateIdError": "Failed to generate new account ID for this parent account.",
         "deleteConfirm": "Are you sure you want to delete this account?",
+        "deleteErrorHasChildren": "Cannot delete an account that has sub-accounts. Delete sub-accounts first.",
         "serverError": "Server connection error. Check the URL or settings.",
         "accountNumberRequired": "Account number is required.",
         "accountNameRequired": "Account name is required.",
@@ -1542,6 +1543,7 @@
         "accountNumber": "Account Number",
         "accountName": "Account Name",
         "accountType": "Account Type",
+        "accountLevel": "Account Level",
         "reportType": "Report Type",
         "currency": "Currency",
         "actions": "Actions"
@@ -1871,6 +1873,7 @@
         "typeName": "Type",
         "typeNameEn": "Type (English)",
         "typeDesc": "Description",
+        "mainAccount": "Main Account",
         "typeStatus": "Status",
         "actions": ""
       },
@@ -1896,6 +1899,8 @@
         "typeName": "Customer Type",
         "typeNameEn": "Customer Type (English)",
         "typeDesc": "Description",
+        "mainAccount": "Main Account",
+        "mainAccountPlaceholder": "Select main account",
         "crDate": "Creation Date",
         "typeStatus": "Status Enabled"
       },
@@ -1954,7 +1959,8 @@
         "back": "Back",
         "cancel": "Cancel",
         "save": "Save",
-        "update": "Update"
+        "update": "Update",
+        "insertAccountAuto": "Insert Account Automatically"
       },
       "labels": {
         "pageTitle": "Customers",
@@ -1990,7 +1996,7 @@
         "street": "Street",
         "buildNo": "Building",
         "postCode": "Postal Code",
-        "account": "Accounting Account",
+        "account": "Account",
         "boxType": "Box Type",
         "customerType": "Customer Type",
         "handling": "Handling",
@@ -2001,10 +2007,10 @@
         "hide": "Hidden"
       },
       "placeholders": {
-        "selectAccount": "Account Number / Account Name",
-        "selectBoxType": "Box Type",
-        "selectCustomerType": "Customer Type",
-        "selectStatus": "Customer Status"
+        "selectAccount": "Select account...",
+        "selectBoxType": "Select box type...",
+        "selectCustomerType": "Select customer type...",
+        "selectStatus": "Select status..."
       },
       "messages": {
         "loadError": "Failed to load customers",
@@ -2017,7 +2023,12 @@
         "addSuccess": "Customer added successfully",
         "updateSuccess": "Customer data updated successfully",
         "operationFailed": "Failed to save customer data",
-        "saveError": "Error occurred while saving customer data"
+        "saveError": "Error occurred while saving customer data",
+        "custCodeRequired": "Please enter customer code",
+        "insertAccountAutoNoType": "Please select customer type first",
+        "insertAccountAutoNoMainAccount": "The selected customer type has no main account",
+        "insertAccountAutoSuccess": "Account was inserted automatically and linked to the customer",
+        "insertAccountAutoError": "Failed to insert account automatically"
       },
       "titles": {
         "view": "View {name}",

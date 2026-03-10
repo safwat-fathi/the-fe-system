@@ -30,8 +30,15 @@ export const API_ENDPOINTS = {
   // Currencies
   CURRENCIES: "/currencies/",
 
-  // Gold Price
+  // Gold Price (primary; e.g. goldprice.org dbXRates/SAR)
   GOLD_PRICE: process.env.NEXT_PUBLIC_API_GOLD_PRICE || "",
+  // Fallback when primary fails (e.g. goldprice.org dbXRates/USD)
+  GOLD_PRICE_FALLBACK:
+    process.env.NEXT_PUBLIC_API_GOLD_PRICE_FALLBACK ||
+    "https://data-asg.goldprice.org/dbXRates/USD",
+  // When true, fallback API returns price in USD (e.g. dbXRates/USD); when false, in SAR
+  GOLD_PRICE_FALLBACK_IN_USD:
+    process.env.NEXT_PUBLIC_GOLD_PRICE_FALLBACK_IN_USD !== "false",
 } as const;
 
 export const ROUTE_RULES = {

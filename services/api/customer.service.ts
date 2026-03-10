@@ -1,6 +1,8 @@
 import { HttpService } from "@/services/base";
 import { Customer } from "@/types/models/customer";
 import { Invoice, TransTypes } from "@/types/models/invoice";
+import { IPaginatedResponse } from "@/types/services/base";
+import { PAGE_SIZE_OVERRIDES } from "@/constants/ui";
 import { rethrowAuthenticationError } from "@/utilities/errors/Authentication";
 
 interface GetCustomerParams {
@@ -8,6 +10,8 @@ interface GetCustomerParams {
   xcust_type?: number;
   xcust_code?: number;
 }
+
+export type GetCustomersPageParams = GetCustomerParams & { page?: number };
 
 export type CustomerInvoiceTransType =
   | TransTypes.PURCHASE_RETURN
@@ -104,16 +108,15 @@ class CustomerService extends HttpService<Customer> {
 
   async getAllCustomers(params?: GetCustomerParams): Promise<Customer[]> {
     try {
-      const xcust_type = params?.xcust_type || 0;
-      const xcust_code = params?.xcust_code || 0;
+      const xcust_type = params?.xcust_type ?? 0;
+      const xcust_code = params?.xcust_code ?? 0;
 
-      // Prepare params, including xcom_id only if provided explicitly
-      const queryParams: any = {
+      const queryParams: Record<string, string | number> = {
         xcust_type,
         xcust_code,
       };
 
-      if (params?.xcom_id) {
+      if (params?.xcom_id != null) {
         queryParams.xcom_id = params.xcom_id;
       }
 
@@ -140,15 +143,93 @@ class CustomerService extends HttpService<Customer> {
     }
   }
 
+  async getCustomersPage(
+    params?: GetCustomersPageParams,
+  ): Promise<IPaginatedResponse<Customer> | null> {
+    try {
+      const xcust_type = params?.xcust_type ?? 0;
+      const xcust_code = params?.xcust_code ?? 0;
+      const page = params?.page ?? 1;
+
+      const queryParams: Record<string, string | number> = {
+        xcust_type,
+        xcust_code,
+        page,
+      };
+
+      if (params?.xcom_id != null) {
+        queryParams.xcom_id = params.xcom_id;
+      }
+
+      const pageSize = PAGE_SIZE_OVERRIDES.customers;
+
+      const response = await this.get<IPaginatedResponse<Customer>>(
+        "customers_list",
+        { ...queryParams, page_size: pageSize },
+        {
+          cache: "no-store",
+          next: {
+            tags: [
+              `customers-page-{xcom_id}-${xcust_type}-${xcust_code}-${page}-${pageSize}`,
+            ],
+          },
+        },
+      );
+
+      if (response.success && response.data) {
+        const data = response.data as IPaginatedResponse<Customer>;
+        const results = Array.isArray(data.results)
+          ? data.results
+          : this.extractCustomerList(response.data);
+
+        return {
+          count: Number(data.count) ?? 0,
+          next: data.next ?? null,
+          previous: data.previous ?? null,
+          results,
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching customers page:", error);
+      rethrowAuthenticationError(error);
+      throw new Error("حدث خطأ أثناء جلب بيانات العملاء");
+    }
+  }
+
   async getCustomerCount(): Promise<number> {
     try {
-      const customers = await this.getAllCustomers();
+      const data = await this.getCustomersPage({ page: 1 });
 
-      return customers.length;
+      return data?.count ?? 0;
     } catch (error) {
       console.error("Error counting customers:", error);
 
       return 0;
+    }
+  }
+
+  /**
+   * Returns the next suggested customer code (max existing cust_code + 1).
+   * Use for default value when adding a new customer to avoid duplicates.
+   * Scoped by xcom_id when provided.
+   */
+  async getNextCustomerCode(params?: GetCustomerParams): Promise<string> {
+    try {
+      const customers = await this.getAllCustomers(params);
+      const codes = customers
+        .map((c) => Number(c.cust_code))
+        .filter((n) => Number.isFinite(n));
+
+      const max = codes.length > 0 ? Math.max(...codes) : 0;
+
+      return String(max + 1);
+    } catch (error) {
+      console.error("Error getting next customer code:", error);
+      rethrowAuthenticationError(error);
+
+      return "1";
     }
   }
 
@@ -163,8 +244,12 @@ class CustomerService extends HttpService<Customer> {
         undefined,
       );
 
-      if (response.success) {
-        return response.data as Customer;
+      if (response.success && response.data != null) {
+        const created = response.data as Customer;
+
+        if (created.id != null && created.id !== 0) {
+          return created;
+        }
       }
 
       return null;

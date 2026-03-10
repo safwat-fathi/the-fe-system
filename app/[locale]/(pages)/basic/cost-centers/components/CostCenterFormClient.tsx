@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Select, SelectItem, Checkbox } from "@heroui/react";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
 
+import { FORM_ACTIONS } from "@/constants/ui";
 import { getLocaleDir } from "@/i18n/config";
 import costCenterService from "@/services/api/cost-center.service";
 import { revalidateCostCenters } from "@/app/actions/cost-center.action";
@@ -51,7 +52,6 @@ const CostCenterFormClient = ({
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.costCenters");
 
-  // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   const isViewMode = mode === "view";
@@ -84,21 +84,17 @@ const CostCenterFormClient = ({
       }
 
       if (result) {
-        // Revalidate cache and path
         await revalidateCostCenters();
-
         toast.success(
           isAddMode ? t("messages.addSuccess") : t("messages.updateSuccess"),
         );
 
-        // الانتقال مع إعادة تحميل فوري
         router.push("/basic/cost-centers");
         router.refresh();
       } else {
         toast.error(t("messages.operationFailed"));
       }
     } catch (error) {
-      // استخراج رسالة الخطأ من error
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -134,12 +130,10 @@ const CostCenterFormClient = ({
     return t("descriptions.edit");
   };
 
-  // Filter out current cost center from parent options
   const parentOptions = costCenters.filter((cc) => cc.id !== costCenter.id);
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className={textAlign}>
           <h2 className={`text-xl font-bold text-gray-900 ${textAlign}`}>
@@ -149,36 +143,40 @@ const CostCenterFormClient = ({
             {getDescription()}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className={FORM_ACTIONS.wrapper}>
           <Button
-            variant="light"
+            size={FORM_ACTIONS.size}
+            startContent={<ArrowLeftIcon className={FORM_ACTIONS.back.iconSize} />}
+            variant={FORM_ACTIONS.back.variant}
             onPress={() => router.push("/basic/cost-centers")}
           >
-            <ArrowLeftIcon className="h-4 w-4" />
             {t("actions.back")}
           </Button>
           {isViewMode && (
-            <Button color="primary" onPress={handleEdit}>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.edit.color}
+              variant={FORM_ACTIONS.edit.variant}
+              onPress={handleEdit}
+            >
               {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
-            <>
-              <Button
-                variant="light"
-                onPress={() => router.push("/basic/cost-centers")}
-              >
-                {t("actions.cancel")}
-              </Button>
-              <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? t("actions.save") : t("actions.update")}
-              </Button>
-            </>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.save.color}
+              className={FORM_ACTIONS.save.className}
+              startContent={<CheckCircleIcon className={FORM_ACTIONS.save.iconSize} />}
+              isLoading={isSaving}
+              onPress={handleSave}
+            >
+              {isAddMode ? t("actions.save") : t("actions.update")}
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           isRequired

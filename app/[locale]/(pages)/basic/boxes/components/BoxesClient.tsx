@@ -27,6 +27,14 @@ import { getLocaleDir } from "@/i18n/config";
 import { ConfirmationModal } from "@/components/Modal";
 import boxService from "@/services/api/box.service";
 import { revalidateBoxes } from "@/app/actions/revalidate.action";
+import {
+  ACTION_BUTTONS,
+  CONFIRM_MODAL,
+  DEFAULT_PAGE_SIZE,
+  PAGINATION_BAR,
+  TABLE_STYLE,
+  TOOLBAR,
+} from "@/constants/ui";
 
 // Interface for customer boxes (customers with cust_type = 99)
 interface CustomerBox {
@@ -70,7 +78,6 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.boxes");
 
-  // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = "text-center";
 
@@ -93,20 +100,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [boxToDelete, setBoxToDelete] = useState<CustomerBox | null>(null);
 
-  const rowsPerPage = 10;
-
-  // إعادة تحميل البيانات
-  // const loadBoxes = async () => {
-  //   try {
-  //     // const data = await boxService.getAllBoxes();
-  //     const data = await boxesService.getBoxes();
-
-  //     setBoxes(data as any[]);
-  //   } catch (error) {
-  //     toast.error("فشل في جلب الصناديق");
-  //     setBoxes([]);
-  //   }
-  // };
+  const rowsPerPage = DEFAULT_PAGE_SIZE;
 
   const loadBoxTypes = async () => {
     try {
@@ -119,7 +113,6 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
     }
   };
 
-  // تحميل أنواع الصناديق مرة واحدة عند تحميل المكون
   React.useEffect(() => {
     loadBoxTypes();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount only
@@ -144,7 +137,6 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
       return;
     }
 
-    // Optimistic delete
     setBoxes((prevBoxes) => prevBoxes.filter((b) => b.id !== boxToDelete.id));
 
     try {
@@ -152,8 +144,6 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
       if (result) {
         toast.success(t("messages.deleteSuccess"));
-
-        // إبطال كاش الصناديق (tag: boxes) لظهور التعديل عند التحميل التالي
         await revalidateBoxes();
       } else {
         toast.error(t("messages.deleteFailed"));
@@ -189,34 +179,34 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
   }, [filtered, page]);
 
   const renderActions = (box: CustomerBox) => (
-    <div className="flex gap-2">
+    <div className={ACTION_BUTTONS.wrapper}>
       <Button
         isIconOnly
-        size="sm"
+        size={ACTION_BUTTONS.size}
         title={t("actions.view")}
-        variant="light"
+        variant={ACTION_BUTTONS.variant}
         onPress={() => router.push(`/basic/boxes/${box.id}`)}
       >
-        <EyeIcon className="h-4 w-4 text-blue-500" />
+        <EyeIcon className={ACTION_BUTTONS.iconView} />
       </Button>
       <Button
         isIconOnly
-        size="sm"
+        size={ACTION_BUTTONS.size}
         title={t("actions.edit")}
-        variant="light"
+        variant={ACTION_BUTTONS.variant}
         onPress={() => router.push(`/basic/boxes/${box.id}?mode=edit`)}
       >
-        <PencilIcon className="h-4 w-4 text-yellow-500" />
+        <PencilIcon className={ACTION_BUTTONS.iconEdit} />
       </Button>
       <Button
         isIconOnly
         color="danger"
-        size="sm"
+        size={ACTION_BUTTONS.size}
         title={t("actions.delete")}
-        variant="light"
+        variant={ACTION_BUTTONS.variant}
         onPress={() => handleDeleteClick(box)}
       >
-        <TrashIcon className="h-4 w-4" />
+        <TrashIcon className={ACTION_BUTTONS.iconSize} />
       </Button>
     </div>
   );
@@ -234,22 +224,22 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3 mb-2">
+      <div className={TOOLBAR.root}>
         <Button
-          className="bg-gray-100"
-          variant="bordered"
+          className={TOOLBAR.addButton}
+          variant={TOOLBAR.addButtonVariant}
           onPress={() => router.push("/basic/boxes/new")}
         >
-          <PlusIcon className="h-3 w-3" />
+          <PlusIcon className={TOOLBAR.iconAdd} />
           {t("actions.add")}
         </Button>
-        <div className="h-8 w-px bg-gray-300" />
-        <div className="flex-1 min-w-[200px]">
+        <div className={TOOLBAR.divider} />
+        <div className={TOOLBAR.searchWrapper}>
           <Input
             placeholder={t("labels.searchPlaceholder")}
-            size="sm"
+            size={TOOLBAR.inputSize}
             startContent={
-              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              <MagnifyingGlassIcon className={TOOLBAR.iconSearch} />
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -259,12 +249,7 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
       <Table
         aria-label={t("labels.tableAriaLabel")}
-        classNames={{
-          wrapper: "shadow-none",
-          th: "bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-200",
-          td: "border-b border-gray-100 text-sm",
-          tr: "hover:bg-gray-50 transition-colors",
-        }}
+        classNames={TABLE_STYLE}
       >
         <TableHeader>
           {columns.map((col) => (
@@ -295,12 +280,12 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
         </TableBody>
       </Table>
 
-      <div className="py-4 flex justify-between items-center">
-        <span className={`text-sm text-gray-500 ${textAlign}`}>
+      <div className={PAGINATION_BAR.root}>
+        <span className={`${PAGINATION_BAR.countText} ${textAlign}`}>
           {t("labels.totalCount", { count: filtered.length })}
         </span>
         <Pagination
-          color="primary"
+          color={PAGINATION_BAR.color}
           page={page}
           total={Math.ceil(filtered.length / rowsPerPage)}
           onChange={setPage}
@@ -309,13 +294,13 @@ export default function BoxesClient({ initialData, error }: BoxesClientProps) {
 
       <ConfirmationModal
         cancelText={t("modals.cancel")}
-        confirmColor="danger"
+        confirmColor={CONFIRM_MODAL.confirmColor}
         confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
         message={t("modals.deleteMessage", {
           name: boxToDelete?.cust_name || "",
         })}
-        size="md"
+        size={CONFIRM_MODAL.size}
         title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}

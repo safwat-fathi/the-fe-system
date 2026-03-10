@@ -3,10 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Select, SelectItem, Checkbox } from "@heroui/react";
-import { ArrowLeftIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
 
+import { FORM_ACTIONS } from "@/constants/ui";
 import { getLocaleDir } from "@/i18n/config";
 import currencyService from "@/services/api/currency.service";
 import { getCurrencyOptions, findCurrencyByCode } from "@/utilities/currencies";
@@ -41,7 +46,6 @@ const CurrencyFormClient = ({
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.currencies");
 
-  // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   const isViewMode = mode === "view";
@@ -220,7 +224,6 @@ const CurrencyFormClient = ({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className={textAlign}>
           <h2 className={`text-xl font-bold text-gray-900 ${textAlign}`}>
@@ -230,38 +233,41 @@ const CurrencyFormClient = ({
             {getDescription()}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className={FORM_ACTIONS.wrapper}>
           <Button
-            variant="light"
+            size={FORM_ACTIONS.size}
+            startContent={<ArrowLeftIcon className={FORM_ACTIONS.back.iconSize} />}
+            variant={FORM_ACTIONS.back.variant}
             onPress={() => router.push("/basic/currencies")}
           >
-            <ArrowLeftIcon className="h-4 w-4" />
             {t("actions.back")}
           </Button>
           {isViewMode && (
-            <Button color="primary" onPress={handleEdit}>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.edit.color}
+              variant={FORM_ACTIONS.edit.variant}
+              onPress={handleEdit}
+            >
               {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
-            <>
-              <Button
-                variant="light"
-                onPress={() => router.push("/basic/currencies")}
-              >
-                {t("actions.cancel")}
-              </Button>
-              <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? t("actions.save") : t("actions.update")}
-              </Button>
-            </>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.save.color}
+              className={FORM_ACTIONS.save.className}
+              startContent={<CheckCircleIcon className={FORM_ACTIONS.save.iconSize} />}
+              isLoading={isSaving}
+              onPress={handleSave}
+            >
+              {isAddMode ? t("actions.save") : t("actions.update")}
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Form */}
       <div className="space-y-6">
-        {/* اختيار العملة من القائمة العالمية - فقط في وضع الإضافة */}
         {isAddMode && (
           <div>
             <Select
@@ -290,7 +296,6 @@ const CurrencyFormClient = ({
           </div>
         )}
 
-        {/* تفاصيل العملة */}
         <div>
           <h3
             className={`text-lg font-semibold mb-3 text-gray-700 ${textAlign}`}

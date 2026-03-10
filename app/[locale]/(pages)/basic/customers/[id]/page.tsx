@@ -11,6 +11,7 @@ import { getBranchParams } from "@/app/actions/branch-params";
 import customerService from "@/services/api/customer.service";
 import helperService from "@/services/api/helper.service";
 import accountService from "@/services/api/account.service";
+import customerTypeService from "@/services/api/customer-type.service";
 
 export const metadata: Metadata = {
   title: "عرض العميل - NafeesWeb",
@@ -63,7 +64,7 @@ export default async function CustomerDetailPage({
   // جلب البيانات الأساسية
   const [customerTypesData, customerStatusData, accountsData, boxTypesData] =
     await Promise.all([
-      helperService.getCustomerTypes().catch(() => []),
+      customerTypeService.getAllCustomerTypes().catch(() => []),
       helperService.getCustomerStatuses().catch(() => []),
       accountService.getAllAccounts().catch(() => []),
       helperService.getBoxTypes().catch(() => []),

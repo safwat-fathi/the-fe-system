@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import AccountFormClient from "../components/AccountFormClient";
-import { normalizeAccountsTree } from "../utils/account-tree";
+import { normalizeAccountsTree, ROOT_ACCOUNT_REQUEST_PAYLOAD } from "../utils/account-tree";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import accountService from "@/services/api/account.service";
@@ -49,19 +49,9 @@ export default async function NewAccountPage({
     : undefined;
   const returnSelectedId = selectedParam ? Number(selectedParam) : null;
 
-  const rootRequestPayload = {
-    id: 0,
-    acc_id: "0",
-    acc_code: "0",
-    acc_name: "0",
-    acc_name_e: null as string | null,
-    parent: null,
-    acc_level: 1,
-  };
-
   const [accountsData, currenciesData] = await Promise.all([
     accountService
-      .getAccountsTree(rootRequestPayload)
+      .getAccountsTree(ROOT_ACCOUNT_REQUEST_PAYLOAD)
       .catch(() => [] as Account[]),
     accountService.getCurrencies().catch(() => [] as Currency[]),
   ]);

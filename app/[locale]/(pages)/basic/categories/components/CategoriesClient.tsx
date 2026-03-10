@@ -46,6 +46,7 @@ import {
 } from "@/app/actions/category-accounts.action";
 import { ConfirmationModal } from "@/components/Modal";
 import categoryService from "@/services/api/category.service";
+import { PAGE_SIZE_OVERRIDES } from "@/constants/ui";
 
 const ACCOUNT_KEYS = [
   "buy_acc",
@@ -327,7 +328,7 @@ export default function CategoriesClient({
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(5);
+  const rowsPerPage = PAGE_SIZE_OVERRIDES.categories;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryRow | null>(
     null,
@@ -710,6 +711,7 @@ export default function CategoriesClient({
     column: "value" | "wage",
     text: string,
   ) => {
+    const isWageColumn = column === "wage";
     const normalizedText = getAccountDisplayValue(text).trim().toLowerCase();
     const filteredOptions = normalizedText
       ? accountOptions.filter((option) => {
@@ -729,16 +731,22 @@ export default function CategoriesClient({
         className="max-w-full text-right leading-tight"
         classNames={{
           selectorButton:
-            column === "wage"
+            isWageColumn
               ? "bg-amber-100 border-amber-300"
               : "bg-white border-gray-200",
-          listbox: "text-right min-w-[20rem]",
+          listbox: "text-right",
         }}
         inputValue={getAccountDisplayValue(text)}
         items={filteredOptions}
         menuTrigger="input"
         placeholder={t("labels.accountPlaceholder")}
-        popoverProps={{ classNames: { content: "min-w-[20rem]" } }}
+        popoverProps={{
+          placement: isWageColumn ? "bottom-start" : "bottom-end",
+          containerPadding: 12,
+          classNames: {
+            content: "max-w-[calc(100vw-2rem)] min-w-[12rem]",
+          },
+        }}
         selectedKey={null}
         variant="bordered"
         onInputChange={(value) => {
@@ -778,7 +786,7 @@ export default function CategoriesClient({
             showDivider={false}
             textValue={option.label}
           >
-            <span className="text-sm font-medium text-gray-800">
+            <span className="block max-w-full truncate text-sm font-medium text-gray-800">
               {option.name}
             </span>
           </AutocompleteItem>
