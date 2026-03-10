@@ -14,15 +14,16 @@ import {
 import toast from "react-hot-toast";
 import { useTranslations, useLocale } from "next-intl";
 
-import Card from "../../../../../../components/Card";
 import {
   findAccountById,
   flattenAccountTree,
   generateAccountId,
   normalizeAccountsTree,
   removeAccountFromTree,
+  ROOT_ACCOUNT_REQUEST_PAYLOAD,
 } from "../utils/account-tree";
 
+import Card from "@/components/Card";
 import { getLocaleDir } from "@/i18n/config";
 import accountService from "@/services/api/account.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
@@ -52,11 +53,35 @@ const formatReportType = (account: Account, t: TranslateFn): string =>
 
 const formatCurrencyName = (
   currencies: Currency[],
-  currencyId: number | null | undefined,
+  currencyId: number | string | null | undefined,
   t: TranslateFn,
-): string =>
-  currencies.find((c) => c.id === currencyId)?.cur_name ||
-  t("states.currencyNotSet");
+): string => {
+  if (currencyId === null || currencyId === undefined) {
+    return t("states.currencyNotSet");
+  }
+
+  const normalizedId = Number(currencyId);
+
+  if (!Number.isFinite(normalizedId)) {
+    return t("states.currencyNotSet");
+  }
+
+  const matchedCurrency = currencies.find((currency) => {
+    const currencyIdValue = Number(currency.id);
+
+    if (!Number.isFinite(currencyIdValue)) {
+      return false;
+    }
+
+    return currencyIdValue === normalizedId;
+  });
+
+  if (!matchedCurrency) {
+    return t("states.currencyNotSet");
+  }
+
+  return matchedCurrency.cur_name || t("states.currencyNotSet");
+};
 
 interface AccountTableRowProps {
   account: Account;
@@ -80,7 +105,11 @@ const AccountTableRow = ({
   onDelete,
   onDoubleClick,
   rowTitle,
-}: AccountTableRowProps) => (
+}: AccountTableRowProps) => {
+  const hasChildren =
+    account.children !== undefined && (account.children?.length ?? 0) > 0;
+
+  return (
   <tr
     className={onDoubleClick ? "hover:bg-gray-50 cursor-pointer" : ""}
     title={rowTitle}
@@ -106,6 +135,11 @@ const AccountTableRow = ({
       className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
     >
       {formatAccountType(account, t)}
+    </td>
+    <td
+      className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
+    >
+      {account.acc_level}
     </td>
     <td
       className={`border border-gray-300 px-2 py-1 text-xs ${textAlign}`}
@@ -147,8 +181,9 @@ const AccountTableRow = ({
           size="sm"
           title={t("labels.delete")}
           variant="light"
+          isDisabled={hasChildren}
           onPress={() => {
-            onDelete(account.id);
+            if (!hasChildren) onDelete(account.id);
           }}
         >
           <TrashIcon className="h-4 w-4" />
@@ -156,7 +191,8 @@ const AccountTableRow = ({
       </div>
     </td>
   </tr>
-);
+  );
+};
 
 interface AccountsClientProps {
   initialAccounts: Account[];
@@ -167,7 +203,7 @@ interface AccountsClientProps {
   initialSelectedId?: number;
 }
 
-const CONTENT_HEIGHT_CLASS = "min-h-[500px] h-[calc(100vh-280px)]";
+const CONTENT_HEIGHT_CLASS = "min-h-0 flex-1 flex flex-col";
 
 export default function AccountsClient({
   initialAccounts,
@@ -300,7 +336,6 @@ export default function AccountsClient({
     });
   }, [accounts, selectedAccount]);
 
-  // Build account tree on mount and restore selected account from URL
   useEffect(() => {
     if (initialAccounts.length > 0) {
       const normalized = normalizeAccountsTree(initialAccounts);
@@ -326,18 +361,8 @@ export default function AccountsClient({
 
   const fetchAccounts = async () => {
     try {
-      const rootRequestPayload = {
-        id: 0,
-        acc_id: "0",
-        acc_code: "0",
-        acc_name: "0",
-        acc_name_e: null as string | null,
-        parent: null,
-        acc_level: 1,
-      };
-
       const allAccountsData = await accountService.getAccountsTree(
-        rootRequestPayload,
+        ROOT_ACCOUNT_REQUEST_PAYLOAD,
         undefined,
         true,
       );
@@ -352,9 +377,6 @@ export default function AccountsClient({
 
       setAccounts(accountsWithChildren);
       setDisplayAccounts(accountsWithChildren);
-
-      // الحسابات الرئيسية مقفلة افتراضياً
-      setExpandedNodes(new Set());
     } catch {
       toast.error(t("messages.loadError"));
     }
@@ -433,38 +455,49 @@ export default function AccountsClient({
   };
 
   const handleEditAccount = (account: Account) => {
-    setSelectedAccount(account);
     const params = new URLSearchParams();
 
     if (expandedNodes.size > 0) {
       params.set("expanded", Array.from(expandedNodes).join(","));
     }
 
-    params.set("selected", String(account.id));
+    if (selectedAccount?.id) {
+      params.set("selected", String(selectedAccount.id));
+    }
+
     router.push(
       `/basic/accounts/${account.id}?mode=edit&${params.toString()}`,
     );
   };
 
   const handleViewAccount = (account: Account) => {
-    setSelectedAccount(account);
     const params = new URLSearchParams();
 
     if (expandedNodes.size > 0) {
       params.set("expanded", Array.from(expandedNodes).join(","));
     }
 
-    params.set("selected", String(account.id));
+    if (selectedAccount?.id) {
+      params.set("selected", String(selectedAccount.id));
+    }
+
     router.push(`/basic/accounts/${account.id}?${params.toString()}`);
   };
 
   const handleDeleteAccount = async (accountId: number) => {
+    const account = findAccountById(accounts, accountId);
+    const hasChildren =
+      account?.children && account.children.length > 0;
+
+    if (hasChildren) {
+      toast.error(t("messages.deleteError"));
+
+      return;
+    }
+
     if (!confirm(t("messages.deleteConfirm"))) return;
 
-    // Optimistic delete: remove from UI immediately
     const previousAccounts = [...accounts];
-
-    // Remove account from tree optimistically
     const updatedAccounts = removeAccountFromTree(accounts, accountId);
 
     setAccounts(updatedAccounts);
@@ -473,7 +506,6 @@ export default function AccountsClient({
       const result = await accountService.deleteAccount(accountId);
 
       if (!result) {
-        // Rollback on failure
         setAccounts(previousAccounts);
         toast.error(t("messages.deleteError"));
 
@@ -481,14 +513,9 @@ export default function AccountsClient({
       }
 
       toast.success(t("messages.deleteSuccess"));
-
-      // Revalidate cache
       await revalidateTableData("accounts_list");
-
-      // Fetch fresh data from server
       fetchAccounts();
     } catch {
-      // Rollback on error
       setAccounts(previousAccounts);
       toast.error(t("messages.serverError"));
     }
@@ -507,7 +534,6 @@ export default function AccountsClient({
       const isExpanded = expandedNodes.has(account.id);
       const isSelected = selectedAccount?.id === account.id;
 
-      // التحقق من تطابق البحث
       const matchesSearch =
         searchTerm &&
         (account.acc_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -567,13 +593,17 @@ export default function AccountsClient({
     });
   };
 
-  // دالة لجلب الحسابات الفرعية المباشرة فقط (المستوى التالي)
-  const getDirectSubAccounts = (account: Account): Account[] => {
-    if (account.children && account.children.length > 0) {
-      return account.children;
+  const getDirectSubAccounts = (account: Account | null): Account[] => {
+    if (!account) return [];
+
+    const nodeInTree = findAccountById(accounts, account.id);
+    const target = nodeInTree ?? account;
+
+    if (target.children && target.children.length > 0) {
+      return target.children;
     }
 
-    return [account];
+    return [target];
   };
 
   useEffect(() => {
@@ -766,14 +796,12 @@ export default function AccountsClient({
           </div>
         </div>
 
-        <div className="responsive-grid grid-cols-1 lg:grid-cols-3 gap-2">
-          {/* Tree Panel */}
-          <div className="lg:col-span-1">
+        <div className="responsive-grid grid-cols-1 lg:grid-cols-3 gap-2 flex-1 min-h-0 content-start">
+          <div className="lg:col-span-1 min-h-0 flex flex-col">
             <Card className={CONTENT_HEIGHT_CLASS}>
-              <CardBody className="p-2">
-                {/* Tree View */}
+              <CardBody className="p-2 flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div
-                  className={`overflow-y-auto max-h-[calc(100vh-320px)] ${textAlign}`}
+                  className={`overflow-y-auto flex-1 min-h-0 ${textAlign}`}
                 >
                   {searchTerm.trim().length > 0 && (
                     <div
@@ -814,11 +842,10 @@ export default function AccountsClient({
             </Card>
           </div>
 
-          {/* Details Panel */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 min-h-0 flex flex-col">
             <Card className={CONTENT_HEIGHT_CLASS}>
-              <CardBody className="p-2">
-                <div className="responsive-filters mb-2">
+              <CardBody className="p-2 flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="responsive-filters mb-2 shrink-0">
                   <div className="flex items-center gap-3">
                     <h2
                       className={`text-base font-semibold text-gray-900 ${textAlign}`}
@@ -842,15 +869,14 @@ export default function AccountsClient({
                 </div>
 
                 {selectedAccount ? (
-                  <div className="space-y-2">
-                    {/* معلومات الحساب المختار */}
-                    <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
+                  <div className="space-y-1.5 flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <div className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
                       <h3
-                        className={`font-semibold text-blue-900 mb-1 text-sm ${textAlign}`}
+                        className={`font-semibold text-blue-900 mb-1 text-xs ${textAlign}`}
                       >
                         {t("sections.selectedAccountInfo")}
                       </h3>
-                      <div className="responsive-grid accounts-info-grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                      <div className="responsive-grid accounts-info-grid grid-cols-2 md:grid-cols-4 gap-1.5 text-xs">
                         <div className={textAlign}>
                           <span className="text-gray-600">
                             {t("fields.accountNumber")}:
@@ -877,27 +903,22 @@ export default function AccountsClient({
                         </div>
                         <div className={textAlign}>
                           <span className="text-gray-600">
-                            {t("fields.currency")}:
+                            {t("form.accountLevel")}:
                           </span>
                           <div className="font-medium">
-                            {formatCurrencyName(
-                              currencies,
-                              selectedAccount.cur ?? null,
-                              t,
-                            )}
+                            {selectedAccount.acc_level}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* جدول الحسابات الفرعية */}
-                    <div>
+                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                       <h3
                         className={`font-semibold text-gray-900 mb-2 text-sm ${textAlign}`}
                       >
                         {t("sections.directSubAccounts")}
                       </h3>
-                      <div className="responsive-table accounts-table-container overflow-x-auto">
+                      <div className="responsive-table accounts-table-container overflow-auto flex-1 min-h-0">
                         <table className="w-full border-collapse border border-gray-300 accounts-table">
                           <thead className="bg-gray-100">
                             <tr>
@@ -915,6 +936,11 @@ export default function AccountsClient({
                                 className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}
                               >
                                 {t("fields.accountType")}
+                              </th>
+                              <th
+                                className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}
+                              >
+                                {t("form.accountLevel")}
                               </th>
                               <th
                                 className={`border border-gray-300 px-2 py-1 ${textAlign} text-xs font-medium text-gray-700`}
@@ -938,7 +964,9 @@ export default function AccountsClient({
                           <tbody>
                             {getDirectSubAccounts(selectedAccount)
                               .filter(
-                                (account) => account.id !== selectedAccount.id,
+                                (account) =>
+                                  selectedAccount &&
+                                  account.id !== selectedAccount.id,
                               )
                               .map((account) => (
                                 <AccountTableRow
@@ -954,15 +982,6 @@ export default function AccountsClient({
                                   rowTitle={t("tooltips.doubleClickToNavigate")}
                                 />
                               ))}
-                            <AccountTableRow
-                              account={selectedAccount}
-                              currencies={currencies}
-                              t={t}
-                              textAlign={textAlign}
-                              onView={handleViewAccount}
-                              onEdit={handleEditAccount}
-                              onDelete={handleDeleteAccount}
-                            />
                           </tbody>
                         </table>
                       </div>

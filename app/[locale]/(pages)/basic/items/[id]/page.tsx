@@ -100,7 +100,7 @@ export default async function ItemDetailPage({
     model: item.model || "",
     k: String(item.k || "0.00"),
     purity: String(item.purity || "0.00"),
-    item_status: item.item_status || 1,
+    item_status: item.item_status != null ? item.item_status : 1,
     cr_date: item.cr_date || "",
     cr_user: item.cr_user || "",
     upd_date: item.upd_date || "",

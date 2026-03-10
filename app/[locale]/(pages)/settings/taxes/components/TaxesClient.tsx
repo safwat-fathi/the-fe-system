@@ -25,6 +25,13 @@ import { PlusIcon, EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 
+import {
+  ACTION_BUTTONS,
+  DEFAULT_PAGE_SIZE,
+  PAGINATION_BAR,
+  TABLE_STYLE,
+} from "@/constants/ui";
+
 type ModalMode = "add" | "edit" | "view";
 
 interface TaxesClientProps {
@@ -45,7 +52,7 @@ export default function TaxesClient({
   const [taxes] = useState<Tax[]>(initialTaxes);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const rowsPerPage = DEFAULT_PAGE_SIZE;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>("view");
   const [accounts] = useState(initialAccounts);
@@ -119,22 +126,22 @@ export default function TaxesClient({
   );
 
   const renderActions = (tax: Tax) => (
-    <div className="flex gap-2">
+    <div className={ACTION_BUTTONS.wrapper}>
       <Button
         isIconOnly
-        size="sm"
-        variant="light"
+        size={ACTION_BUTTONS.size}
+        variant={ACTION_BUTTONS.variant}
         onPress={() => openViewModal(tax)}
       >
-        <EyeIcon className="h-4 w-4 text-blue-500" />
+        <EyeIcon className={ACTION_BUTTONS.iconView} />
       </Button>
       <Button
         isIconOnly
-        size="sm"
-        variant="light"
+        size={ACTION_BUTTONS.size}
+        variant={ACTION_BUTTONS.variant}
         onPress={() => openEditModal(tax)}
       >
-        <PencilIcon className="h-4 w-4 text-yellow-500" />
+        <PencilIcon className={ACTION_BUTTONS.iconEdit} />
       </Button>
     </div>
   );
@@ -165,7 +172,10 @@ export default function TaxesClient({
       </div>
 
       <div className="responsive-table">
-        <Table aria-label={t("labels.tableAriaLabel")}>
+        <Table
+          aria-label={t("labels.tableAriaLabel")}
+          classNames={TABLE_STYLE}
+        >
           <TableHeader>
             {columns.map((col) => (
               <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -190,10 +200,12 @@ export default function TaxesClient({
         </Table>
       </div>
 
-      <div className="responsive-pagination">
-        <span>{t("labels.totalCount", { count: filteredTaxes.length })}</span>
+      <div className={PAGINATION_BAR.root}>
+        <span className={PAGINATION_BAR.countText}>
+          {t("labels.totalCount", { count: filteredTaxes.length })}
+        </span>
         <Pagination
-          color="primary"
+          color={PAGINATION_BAR.color}
           page={page}
           total={pages}
           onChange={setPage}

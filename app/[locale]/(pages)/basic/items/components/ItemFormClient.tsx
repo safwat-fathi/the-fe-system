@@ -17,13 +17,15 @@ import {
   type Selection,
 } from "@heroui/react";
 import {
+  ArrowLeftIcon,
+  CheckCircleIcon,
   CloudArrowUpIcon,
   XMarkIcon,
-  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 
+import { FORM_ACTIONS } from "@/constants/ui";
 import itemService from "@/services/api/item.service";
 import { revalidateItemsDataAction } from "@/app/actions/item";
 
@@ -71,7 +73,12 @@ const ItemFormClient = ({
     (key: "cat" | "item_type" | "unit" | "item_status") =>
     (selection: Selection) => {
       const selectedKey = Array.from(selection)[0] as string | undefined;
-      const value = selectedKey ? Number(selectedKey) : null;
+      const numValue = selectedKey ? Number(selectedKey) : null;
+      // item_status must stay number (0 or 1); default 1 when cleared
+      const value =
+        key === "item_status" && (numValue === null || Number.isNaN(numValue))
+          ? 1
+          : numValue;
 
       setItem({
         ...item,
@@ -201,220 +208,314 @@ const ItemFormClient = ({
 
   const imageSrc = getImageSrc();
 
+  const cardClass =
+    "rounded-lg border border-default-200 bg-default-50/50 p-3 flex flex-col min-h-0";
+  const sectionTitleClass =
+    "text-sm font-bold border-b border-default-200 pb-1.5 mb-2";
+  const selectLabelClass = "block text-xs font-medium mb-1";
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            {isViewMode
-              ? t("titles.view")
-              : isAddMode
-                ? t("titles.add")
-                : t("titles.edit")}
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {isViewMode
-              ? t("descriptions.view")
-              : isAddMode
-                ? t("descriptions.add")
-                : t("descriptions.edit")}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-3 min-h-0 max-h-[calc(100vh-10rem)]">
+      {/* Header - مثل شاشة العملاء */}
+      <div className="flex flex-shrink-0 items-center justify-between gap-2">
+        <h2 className="text-lg font-bold">
+          {isViewMode
+            ? t("titles.view")
+            : isAddMode
+              ? t("titles.add")
+              : t("titles.edit")}
+        </h2>
+        <div className={FORM_ACTIONS.wrapper}>
           <Button
-            startContent={<ArrowLeftIcon className="h-4 w-4" />}
-            variant="bordered"
+            size={FORM_ACTIONS.size}
+            startContent={<ArrowLeftIcon className={FORM_ACTIONS.back.iconSize} />}
+            variant={FORM_ACTIONS.back.variant}
             onPress={handleCancel}
           >
-            {t("actions.backToList")}
+            {t("actions.back")}
           </Button>
           {isViewMode && (
-            <Button color="primary" onPress={handleEdit}>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.edit.color}
+              variant={FORM_ACTIONS.edit.variant}
+              onPress={handleEdit}
+            >
               {t("actions.edit")}
+            </Button>
+          )}
+          {!isViewMode && (
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.save.color}
+              className={FORM_ACTIONS.save.className}
+              startContent={<CheckCircleIcon className={FORM_ACTIONS.save.iconSize} />}
+              isLoading={isSaving}
+              onPress={handleSave}
+            >
+              {isAddMode ? t("actions.save") : t("actions.update")}
             </Button>
           )}
         </div>
       </div>
 
-      {/* Form Content */}
-      <div className="space-y-6">
-        <fieldset className="rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
-          <legend className="px-2 text-base font-semibold text-gray-800">
+      {/* Form: 2x2 grid of section cards - أربعة مربعات مثل شاشة العملاء */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 min-h-0 flex-1 overflow-auto">
+        {/* 1. البيانات الأساسية */}
+        <div className={cardClass}>
+          <div className={sectionTitleClass}>
             {t("sections.basicInfo")}
-          </legend>
-          <p className="mb-4 text-sm text-gray-500">
-            {t("sections.basicInfoDesc")}
-          </p>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.itemName")}
-              value={item.item_name}
-              onChange={handleInputChange("item_name")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.itemNameEn")}
-              value={item.item_name_e}
-              onChange={handleInputChange("item_name_e")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.itemPrice")}
-              startContent={<span className="text-gray-400">﷼</span>}
-              value={item.item_price ?? ""}
-              onChange={handleInputChange("item_price")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.firstCost")}
-              startContent={<span className="text-gray-400">﷼</span>}
-              value={item.first_cost ?? ""}
-              onChange={handleInputChange("first_cost")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.itemCode")}
-              value={item.item_code}
-              onChange={handleInputChange("item_code")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.itemBarcode")}
-              value={item.item_barcode ?? ""}
-              onChange={handleInputChange("item_barcode")}
-            />
           </div>
-        </fieldset>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 min-h-0">
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-name">
+                {t("fields.itemName")}
+              </label>
+              <Input
+                id="item-name"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.item_name}
+                onChange={handleInputChange("item_name")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-name-en">
+                {t("fields.itemNameEn")}
+              </label>
+              <Input
+                id="item-name-en"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.item_name_e}
+                onChange={handleInputChange("item_name_e")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-code">
+                {t("fields.itemCode")}
+              </label>
+              <Input
+                id="item-code"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.item_code}
+                onChange={handleInputChange("item_code")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-barcode">
+                {t("fields.itemBarcode")}
+              </label>
+              <Input
+                id="item-barcode"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.item_barcode ?? ""}
+                onChange={handleInputChange("item_barcode")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-price">
+                {t("fields.itemPrice")}
+              </label>
+              <Input
+                id="item-price"
+                size="sm"
+                isDisabled={isViewMode}
+                startContent={<span className="text-default-400">﷼</span>}
+                value={item.item_price ?? ""}
+                onChange={handleInputChange("item_price")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-first-cost">
+                {t("fields.firstCost")}
+              </label>
+              <Input
+                id="item-first-cost"
+                size="sm"
+                isDisabled={isViewMode}
+                startContent={<span className="text-default-400">﷼</span>}
+                value={item.first_cost ?? ""}
+                onChange={handleInputChange("first_cost")}
+              />
+            </div>
+          </div>
+        </div>
 
-        <fieldset className="rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
-          <legend className="px-2 text-base font-semibold text-gray-800">
+        {/* 2. البيانات الفنية */}
+        <div className={cardClass}>
+          <div className={sectionTitleClass}>
             {t("sections.technicalInfo")}
-          </legend>
-          <p className="mb-4 text-sm text-gray-500">
-            {t("sections.technicalInfoDesc")}
-          </p>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.itemWeight")}
-              value={item.item_weight ?? ""}
-              onChange={handleInputChange("item_weight")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.itemGWeight")}
-              value={item.item_g_weight ?? ""}
-              onChange={handleInputChange("item_g_weight")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.stones")}
-              value={item.stones ?? ""}
-              onChange={handleInputChange("stones")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.model")}
-              value={item.model ?? ""}
-              onChange={handleInputChange("model")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.k")}
-              value={item.k ?? ""}
-              onChange={handleInputChange("k")}
-            />
-            <Input
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.purity")}
-              value={item.purity ?? ""}
-              onChange={handleInputChange("purity")}
-            />
           </div>
-        </fieldset>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 min-h-0">
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-weight">
+                {t("fields.itemWeight")}
+              </label>
+              <Input
+                id="item-weight"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.item_weight ?? ""}
+                onChange={handleInputChange("item_weight")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-g-weight">
+                {t("fields.itemGWeight")}
+              </label>
+              <Input
+                id="item-g-weight"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.item_g_weight ?? ""}
+                onChange={handleInputChange("item_g_weight")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-stones">
+                {t("fields.stones")}
+              </label>
+              <Input
+                id="item-stones"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.stones ?? ""}
+                onChange={handleInputChange("stones")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-model">
+                {t("fields.model")}
+              </label>
+              <Input
+                id="item-model"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.model ?? ""}
+                onChange={handleInputChange("model")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-k">
+                {t("fields.k")}
+              </label>
+              <Input
+                id="item-k"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.k ?? ""}
+                onChange={handleInputChange("k")}
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-purity">
+                {t("fields.purity")}
+              </label>
+              <Input
+                id="item-purity"
+                size="sm"
+                isDisabled={isViewMode}
+                value={item.purity ?? ""}
+                onChange={handleInputChange("purity")}
+              />
+            </div>
+          </div>
+        </div>
 
-        <fieldset className="rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
-          <legend className="px-2 text-base font-semibold text-gray-800">
+        {/* 3. التصنيفات */}
+        <div className={cardClass}>
+          <div className={sectionTitleClass}>
             {t("sections.classifications")}
-          </legend>
-          <p className="mb-4 text-sm text-gray-500">
-            {t("sections.classificationsDesc")}
-          </p>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Select
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.category")}
-              selectedKeys={item.cat ? [item.cat.toString()] : []}
-              onSelectionChange={handleSelectChange("cat")}
-            >
-              {(categories || []).map((category) => (
-                <SelectItem key={category.id}>{category.cat_name}</SelectItem>
-              ))}
-            </Select>
-            <Select
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.itemType")}
-              selectedKeys={item.item_type ? [item.item_type.toString()] : []}
-              onSelectionChange={handleSelectChange("item_type")}
-            >
-              {(itemTypes || []).map((type) => (
-                <SelectItem key={type.id}>{type.type_name}</SelectItem>
-              ))}
-            </Select>
-            <Select
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.unit")}
-              selectedKeys={item.unit ? [item.unit.toString()] : []}
-              onSelectionChange={handleSelectChange("unit")}
-            >
-              {(units || []).map((unit) => (
-                <SelectItem key={unit.id}>{unit.unit_name}</SelectItem>
-              ))}
-            </Select>
-            <Select
-              className="input-field"
-              isDisabled={isViewMode}
-              label={t("fields.itemStatus")}
-              selectedKeys={
-                item.item_status ? [item.item_status.toString()] : []
-              }
-              onSelectionChange={handleSelectChange("item_status")}
-            >
-              {(itemStatus || []).map((status) => (
-                <SelectItem key={status.id}>{status.code_desc}</SelectItem>
-              ))}
-            </Select>
           </div>
-        </fieldset>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-h-0">
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-category">
+                {t("fields.category")}
+              </label>
+              <Select
+                id="item-category"
+                size="sm"
+                isDisabled={isViewMode}
+                selectedKeys={item.cat ? [item.cat.toString()] : []}
+                onSelectionChange={handleSelectChange("cat")}
+              >
+                {(categories || []).map((category) => (
+                  <SelectItem key={category.id}>{category.cat_name}</SelectItem>
+                ))}
+              </Select>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-type">
+                {t("fields.itemType")}
+              </label>
+              <Select
+                id="item-type"
+                size="sm"
+                isDisabled={isViewMode}
+                selectedKeys={item.item_type ? [item.item_type.toString()] : []}
+                onSelectionChange={handleSelectChange("item_type")}
+              >
+                {(itemTypes || []).map((type) => (
+                  <SelectItem key={type.id}>{type.type_name}</SelectItem>
+                ))}
+              </Select>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-unit">
+                {t("fields.unit")}
+              </label>
+              <Select
+                id="item-unit"
+                size="sm"
+                isDisabled={isViewMode}
+                selectedKeys={item.unit ? [item.unit.toString()] : []}
+                onSelectionChange={handleSelectChange("unit")}
+              >
+                {(units || []).map((unit) => (
+                  <SelectItem key={unit.id}>{unit.unit_name}</SelectItem>
+                ))}
+              </Select>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className={selectLabelClass} htmlFor="item-status">
+                {t("fields.itemStatus")}
+              </label>
+              <Select
+                id="item-status"
+                size="sm"
+                isDisabled={isViewMode}
+                selectedKeys={
+                  item.item_status != null
+                    ? [String(item.item_status)]
+                    : []
+                }
+                onSelectionChange={handleSelectChange("item_status")}
+              >
+                {(itemStatus || []).map((status) => (
+                  <SelectItem key={String(status.code_id)} textValue={status.code_desc}>
+                    {status.code_desc}
+                  </SelectItem>
+                ))}
+              </Select>
+            </div>
+          </div>
+        </div>
 
-        <fieldset className="rounded-2xl border border-gray-200 bg-white/70 p-6 shadow-sm backdrop-blur-sm">
-          <legend className="px-2 text-base font-semibold text-gray-800">
+        {/* 4. صورة الصنف */}
+        <div className={cardClass}>
+          <div className={sectionTitleClass}>
             {t("sections.itemImage")}
-          </legend>
+          </div>
 
           {imageSrc ? (
             <div className="relative">
               <div className="relative inline-block">
                 <img
                   alt="معاينة الصورة"
-                  className="h-48 w-48 rounded-xl border-2 border-gray-200 object-cover shadow-md mx-auto"
+                  className="h-40 w-40 rounded-xl border-2 border-default-200 object-cover shadow-sm"
                   src={imageSrc}
                 />
                 {!isViewMode && (
@@ -429,9 +530,8 @@ const ItemFormClient = ({
                 )}
               </div>
               {!isViewMode && (
-                <div className="mt-4 text-center">
+                <div className="mt-3">
                   <Button
-                    className="border-gray-300"
                     size="sm"
                     variant="bordered"
                     onPress={handleBrowseClick}
@@ -443,11 +543,11 @@ const ItemFormClient = ({
             </div>
           ) : (
             <div
-              className={`relative border-2 border-dashed rounded-xl p-8 transition-all ${
+              className={`relative border-2 border-dashed rounded-xl p-6 transition-all ${
                 isDragging
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300 bg-gray-50/50"
-              } ${isViewMode ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-gray-400"}`}
+                  ? "border-primary bg-primary-50/30"
+                  : "border-default-300 bg-default-50/50"
+              } ${isViewMode ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-default-400"}`}
               onDragLeave={handleDragLeave}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
@@ -461,24 +561,24 @@ const ItemFormClient = ({
                 onChange={handleFileChange}
               />
 
-              <div className="flex flex-col items-center justify-center space-y-4">
+              <div className="flex flex-col items-center justify-center space-y-3">
                 <div
-                  className={`rounded-full p-4 transition-colors ${
-                    isDragging ? "bg-blue-100" : "bg-gray-100"
+                  className={`rounded-full p-3 transition-colors ${
+                    isDragging ? "bg-primary-100" : "bg-default-100"
                   }`}
                 >
                   <CloudArrowUpIcon
-                    className={`h-12 w-12 ${
-                      isDragging ? "text-blue-500" : "text-gray-400"
+                    className={`h-10 w-10 ${
+                      isDragging ? "text-primary" : "text-default-400"
                     }`}
                   />
                 </div>
 
                 <div className="text-center">
-                  <p className="text-base font-medium text-gray-700 mb-1">
+                  <p className="text-sm font-medium text-default-700 mb-0.5">
                     {t("imageUpload.selectOrDrag")}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs text-default-500">
                     {t("imageUpload.supportedFormats")}
                     <br />
                     {t("imageUpload.maxSize")}
@@ -487,7 +587,6 @@ const ItemFormClient = ({
 
                 {!isViewMode && (
                   <Button
-                    className="border-gray-300 bg-white hover:bg-gray-50"
                     size="sm"
                     variant="bordered"
                     onPress={handleBrowseClick}
@@ -498,30 +597,8 @@ const ItemFormClient = ({
               </div>
             </div>
           )}
-        </fieldset>
-      </div>
-
-      {/* Footer Actions */}
-      {!isViewMode && (
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-          <Button
-            className="btn-secondary"
-            color="danger"
-            variant="bordered"
-            onPress={handleCancel}
-          >
-            {t("actions.cancel")}
-          </Button>
-          <Button
-            className="btn-primary"
-            color="success"
-            isLoading={isSaving}
-            onPress={handleSave}
-          >
-            {isAddMode ? t("actions.save") : t("actions.update")}
-          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -1645,12 +1645,13 @@
         "loadError": "فشل في تحميل الحسابات",
         "addError": "فشل في إضافة الحساب",
         "updateError": "فشل في تحديث الحساب",
-        "deleteError": "فشل في حذف الحساب",
+        "deleteError": "فشل في حذف الحساب. قد يكون مرتبطاً بمعاملات أو يحتوي على حسابات فرعية.",
         "deleteSuccess": "تم حذف الحساب بنجاح",
         "maxLevelError": "لا يمكن إضافة حسابات جديدة تحت المستوى الخامس.",
         "maxSiblingsError": "لا يمكن إضافة أكثر من 9 حسابات في هذا المستوى.",
         "generateIdError": "تعذر توليد رقم الحساب الجديد لهذا الحساب الأب.",
         "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذا الحساب؟",
+        "deleteErrorHasChildren": "لا يمكن حذف حساب يحتوي على حسابات فرعية. احذف الحسابات الفرعية أولاً.",
         "serverError": "خطأ في الاتصال بالخادم. تحقق من الرابط أو الإعدادات.",
         "accountNumberRequired": "رقم الحساب مطلوب.",
         "accountNameRequired": "اسم الحساب مطلوب.",
@@ -1691,6 +1692,7 @@
         "accountNumber": "رقم الحساب",
         "accountName": "اسم الحساب",
         "accountType": "نوع الحساب",
+        "accountLevel": "مستوى الحساب",
         "reportType": "نوع التقرير",
         "currency": "العملة",
         "actions": "الإجراءات"
@@ -2021,6 +2023,7 @@
           "typeName": "النوع",
           "typeNameEn": "النوع بالإنجليزي",
           "typeDesc": "الوصف",
+          "mainAccount": "الحساب الرئيسي",
           "typeStatus": "الحالة",
           "actions": ""
         },
@@ -2044,6 +2047,8 @@
           "typeName": "نوع العميل",
           "typeNameEn": "نوع العميل بالإنجليزي",
           "typeDesc": "الوصف",
+          "mainAccount": "الحساب الرئيسي",
+          "mainAccountPlaceholder": "اختر الحساب الرئيسي",
           "crDate": "تاريخ الإنشاء",
           "typeStatus": "الحالة مفعلة"
         },
@@ -2102,7 +2107,8 @@
           "back": "رجوع",
           "cancel": "إلغاء",
           "save": "حفظ",
-          "update": "تحديث"
+          "update": "تحديث",
+          "insertAccountAuto": "إدراج الحساب تلقائياً"
         },
         "labels": {
           "manage": "إدارة العملاء",
@@ -2136,10 +2142,10 @@
           "street": "الشارع",
           "buildNo": "المبنى",
           "postCode": "الرمز البريدي",
-          "account": "الحساب المحاسبي",
+          "account": "الحساب",
           "boxType": "نوع الصندوق",
           "customerType": "نوع العميل",
-          "handling": "المحصل",
+          "handling": "مناولة",
           "handlingEn": "مناولة (بالإنجليزي)",
           "perc": "نسبة الخصم",
           "custStatus": "حالة العميل",
@@ -2147,10 +2153,10 @@
           "hide": "مخفي"
         },
         "placeholders": {
-          "selectAccount": "رقم الحساب / اسم الحساب",
-          "selectBoxType": "نوع الصندوق",
-          "selectCustomerType": "نوع العميل",
-          "selectStatus": "حالة العميل"
+          "selectAccount": "اختر الحساب...",
+          "selectBoxType": "اختر نوع الصندوق...",
+          "selectCustomerType": "اختر نوع العميل...",
+          "selectStatus": "اختر الحالة..."
         },
         "messages": {
           "loadError": "فشل في تحميل العملاء",
@@ -2163,7 +2169,11 @@
           "addSuccess": "تم إضافة العميل بنجاح",
           "updateSuccess": "تم تحديث بيانات العميل بنجاح",
           "operationFailed": "فشل في حفظ بيانات العميل",
-          "saveError": "حدث خطأ أثناء حفظ بيانات العميل"
+          "saveError": "حدث خطأ أثناء حفظ بيانات العميل",
+          "insertAccountAutoNoType": "اختر نوع العميل أولاً",
+          "insertAccountAutoNoMainAccount": "نوع العميل المختار لا يملك حساباً رئيسياً",
+          "insertAccountAutoSuccess": "تم إدراج الحساب تلقائياً وربطه بالعميل",
+          "insertAccountAutoError": "فشل إدراج الحساب تلقائياً"
         },
         "titles": {
           "view": "عرض {name}",
@@ -2489,6 +2499,7 @@
         "typeName": "النوع",
         "typeNameEn": "النوع بالإنجليزي",
         "typeDesc": "الوصف",
+        "mainAccount": "الحساب الرئيسي",
         "typeStatus": "الحالة",
         "actions": ""
       },
@@ -2514,6 +2525,8 @@
         "typeName": "نوع العميل",
         "typeNameEn": "نوع العميل بالإنجليزي",
         "typeDesc": "الوصف",
+        "mainAccount": "الحساب الرئيسي",
+        "mainAccountPlaceholder": "اختر الحساب الرئيسي",
         "crDate": "تاريخ الإنشاء",
         "typeStatus": "الحالة مفعلة"
       },
@@ -2865,7 +2878,8 @@
         "back": "رجوع",
         "cancel": "إلغاء",
         "save": "حفظ",
-        "update": "تحديث"
+        "update": "تحديث",
+        "insertAccountAuto": "إدراج الحساب تلقائياً"
       },
       "labels": {
         "pageTitle": "العملاء",
@@ -2901,10 +2915,10 @@
         "street": "الشارع",
         "buildNo": "المبنى",
         "postCode": "الرمز البريدي",
-        "account": "الحساب المحاسبي",
+        "account": "الحساب",
         "boxType": "نوع الصندوق",
         "customerType": "نوع العميل",
-        "handling": "المحصل",
+        "handling": "مناولة",
         "handlingEn": "مناولة (بالإنجليزي)",
         "perc": "نسبة الخصم",
         "custStatus": "حالة العميل",
@@ -2912,10 +2926,10 @@
         "hide": "مخفي"
       },
       "placeholders": {
-        "selectAccount": "رقم الحساب / اسم الحساب",
-        "selectBoxType": "نوع الصندوق",
-        "selectCustomerType": "نوع العميل",
-        "selectStatus": "حالة العميل"
+        "selectAccount": "اختر الحساب...",
+        "selectBoxType": "اختر نوع الصندوق...",
+        "selectCustomerType": "اختر نوع العميل...",
+        "selectStatus": "اختر الحالة..."
       },
       "messages": {
         "loadError": "فشل في تحميل العملاء",
@@ -2928,7 +2942,12 @@
         "addSuccess": "تم إضافة العميل بنجاح",
         "updateSuccess": "تم تحديث بيانات العميل بنجاح",
         "operationFailed": "فشل في حفظ بيانات العميل",
-        "saveError": "حدث خطأ أثناء حفظ بيانات العميل"
+        "saveError": "حدث خطأ أثناء حفظ بيانات العميل",
+        "custCodeRequired": "يرجى إدخال كود العميل",
+        "insertAccountAutoNoType": "اختر نوع العميل أولاً",
+        "insertAccountAutoNoMainAccount": "نوع العميل المختار لا يملك حساباً رئيسياً",
+        "insertAccountAutoSuccess": "تم إدراج الحساب تلقائياً وربطه بالعميل",
+        "insertAccountAutoError": "فشل إدراج الحساب تلقائياً"
       },
       "titles": {
         "view": "عرض {name}",

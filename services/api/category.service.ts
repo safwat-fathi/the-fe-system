@@ -11,12 +11,36 @@ export interface Category {
   tax_type: boolean;
   tax: number;
   cat_type: string;
-  cat_status: boolean;
+  cat_status: string | number | boolean | null;
 }
 
 class CategoryService extends HttpService<Category> {
   constructor() {
     super("");
+  }
+
+  private normalizeStatusForPayload(
+    status: Category["cat_status"] | undefined,
+  ): number | null | undefined {
+    if (status === undefined) {
+      return undefined;
+    }
+
+    if (status === null || status === "") {
+      return null;
+    }
+
+    if (typeof status === "boolean") {
+      return status ? 1 : 0;
+    }
+
+    if (typeof status === "number") {
+      return Number.isFinite(status) ? status : null;
+    }
+
+    const parsed = Number(String(status).trim());
+
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   async getAllCategories(): Promise<Category[]> {
@@ -25,7 +49,7 @@ class CategoryService extends HttpService<Category> {
         "categories_list",
         undefined,
         {
-          cache: "force-cache",
+          cache: "no-store",
           next: { tags: ["categories"] },
         },
       );
@@ -62,9 +86,13 @@ class CategoryService extends HttpService<Category> {
     category: Omit<Category, "id">,
   ): Promise<Category | null> {
     try {
+      const payload = {
+        ...category,
+        cat_status: this.normalizeStatusForPayload(category.cat_status) ?? 0,
+      };
       const response = await this.post<Category>(
         "api_create_category",
-        category,
+        payload,
         undefined,
         {
           cache: "no-store",
@@ -88,9 +116,13 @@ class CategoryService extends HttpService<Category> {
     category: Partial<Category>,
   ): Promise<Category | null> {
     try {
+      const payload = {
+        ...category,
+        cat_status: this.normalizeStatusForPayload(category.cat_status),
+      };
       const response = await this.put<Category>(
         `api_update_category/${id}`,
-        category,
+        payload,
         undefined,
         {
           cache: "no-store",

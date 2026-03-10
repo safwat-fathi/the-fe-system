@@ -1,8 +1,7 @@
 import { Metadata } from "next";
 
 import AccountsClient from "./components/AccountsClient";
-
-
+import { ROOT_ACCOUNT_REQUEST_PAYLOAD } from "./utils/account-tree";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import accountService from "@/services/api/account.service";
@@ -37,35 +36,60 @@ export default async function AccountsPage({
   const initialSelectedId = selectedParam ? Number(selectedParam) : undefined;
 
   try {
-    const rootRequestPayload = {
-      id: 0,
-      acc_id: "0",
-      acc_code: "0",
-      acc_name: "0",
-      acc_name_e: null as string | null,
-      parent: null,
-      acc_level: 1,
-    };
-
-    // Fetch data on server-side in parallel for better performance
-    const [accountsData, currenciesData] = await Promise.all([
+    const [accountsData, currenciesData, flatAccounts] = await Promise.all([
       accountService
-        .getAccountsTree(rootRequestPayload)
+        .getAccountsTree(ROOT_ACCOUNT_REQUEST_PAYLOAD)
         .catch(() => [] as Account[]),
       accountService.getCurrencies().catch(() => [] as Currency[]),
+      accountService.getAllAccounts().catch(() => [] as Account[]),
     ]);
 
+    const flatAccountsById = new Map<string, Account>();
+
+    flatAccounts.forEach((account) => {
+      flatAccountsById.set(String(account.id), account);
+    });
+
+    const mergeCurrencyLevelAndTypeIntoTree = (nodes: Account[]): Account[] =>
+      nodes.map((node) => {
+        const fallbackAccount = flatAccountsById.get(String(node.id));
+        const resolvedCurrency =
+          fallbackAccount?.cur ?? node.cur ?? null;
+        const resolvedAccLevel =
+          fallbackAccount?.acc_level ?? node.acc_level;
+        const resolvedAccType =
+          fallbackAccount?.acc_type ?? node.acc_type;
+
+        const children = node.children?.length
+          ? mergeCurrencyLevelAndTypeIntoTree(node.children)
+          : node.children;
+
+        return {
+          ...node,
+          cur: resolvedCurrency,
+          acc_level: resolvedAccLevel,
+          acc_type: resolvedAccType,
+          children,
+        };
+      });
+
+    const accountsWithCurrency =
+      flatAccountsById.size > 0
+        ? mergeCurrencyLevelAndTypeIntoTree(accountsData)
+        : accountsData;
+
     return (
-      <div className="responsive-container font-cairo">
+      <div className="responsive-container font-cairo flex flex-col min-h-[calc(100vh-4rem)]">
         <Breadcrumb />
 
-        {/* Client Component للتفاعل */}
-        <AccountsClient
-          initialAccounts={accountsData}
+        <div className="flex-1 flex flex-col min-h-0">
+          <AccountsClient
+          initialAccounts={accountsWithCurrency}
           initialCurrencies={currenciesData}
           initialExpandedIds={initialExpandedIds}
           initialSelectedId={initialSelectedId}
         />
+        </div>
       </div>
     );
   } catch (error) {

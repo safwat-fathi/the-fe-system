@@ -35,6 +35,14 @@ import costCenterService from "@/services/api/cost-center.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
 import { ConfirmationModal } from "@/components/Modal";
 import { Can } from "@/components/providers/AbilityProvider";
+import {
+  ACTION_BUTTONS,
+  CONFIRM_MODAL,
+  DEFAULT_PAGE_SIZE,
+  PAGINATION_BAR,
+  TABLE_STYLE,
+  TOOLBAR,
+} from "@/constants/ui";
 
 // Interface for cost centers
 interface CostCenter {
@@ -78,7 +86,6 @@ export default function CostCentersClient({
   const t = useTranslations("basic.costCenters");
   const prevPathnameRef = useRef(pathname);
 
-  // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
   const textAlignCenter = "text-center";
 
@@ -96,7 +103,6 @@ export default function CostCentersClient({
     [t],
   );
 
-  // Helper function to get cost center type label
   const getCostCenterTypeLabel = (type: number): string => {
     const types: Record<number, string> = {
       1: t("types.main"),
@@ -107,7 +113,6 @@ export default function CostCentersClient({
     return types[type] || t("types.unknown", { type });
   };
 
-  // تصفية مراكز التكلفة حسب الشركة الحالية (لتجنب ظهور مراكز شركة أخرى)
   const filterByCurrentCom = useCallback(
     (list: CostCenter[]) => {
       if (!currentCom) return list;
@@ -134,16 +139,14 @@ export default function CostCentersClient({
   const [costCenterToDelete, setCostCenterToDelete] =
     useState<CostCenter | null>(null);
 
-  const rowsPerPage = 10;
+  const rowsPerPage = DEFAULT_PAGE_SIZE;
 
-  // مزامنة القائمة مع البيانات القادمة من السيرفر (مثلاً بعد router.refresh())
   const initialDataKey = `${initialDataFiltered.length}-${initialDataFiltered[0]?.id ?? ""}-${initialDataFiltered[initialDataFiltered.length - 1]?.id ?? ""}`;
 
   useEffect(() => {
     setCostCenters(initialDataFiltered);
   }, [initialDataKey]); // eslint-disable-line react-hooks/exhaustive-deps -- sync from server when list content changes
 
-  // إعادة تحميل البيانات
   const loadCostCenters = useCallback(async () => {
     try {
       const data = await costCenterService.getAllCostCenters();
@@ -155,7 +158,6 @@ export default function CostCentersClient({
     }
   }, [t, filterByCurrentCom]);
 
-  // إعادة تحميل البيانات عند العودة للصفحة من صفحة أخرى
   useEffect(() => {
     if (
       pathname === "/basic/cost-centers" &&
@@ -185,7 +187,6 @@ export default function CostCentersClient({
       return;
     }
 
-    // Optimistic delete
     setCostCenters((prevCenters) =>
       prevCenters.filter((cc) => cc.id !== costCenterToDelete.id),
     );
@@ -242,12 +243,10 @@ export default function CostCentersClient({
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page]);
 
-  // دالة مساعدة للحصول على اسم الحساب - في useMemo بدلاً من useCallback
   const accountsMap = useMemo(() => {
     return new Map(accounts.map((acc) => [acc.id, acc.acc_name]));
   }, [accounts]);
 
-  // دالة مساعدة للحصول على اسم المركز الأب - في useMemo بدلاً من useCallback
   const costCentersMap = useMemo(() => {
     return new Map(costCenters.map((cc) => [cc.id, cc.cost_name]));
   }, [costCenters]);
@@ -268,39 +267,39 @@ export default function CostCentersClient({
     <div className="flex gap-2">
       <Can I="view" a="basic.cost-centers">
         <Button
-          isIconOnly
-          size="sm"
-          title={t("actions.view")}
-          variant="light"
-          onPress={() => router.push(`/basic/cost-centers/${costCenter.id}`)}
-        >
-          <EyeIcon className="h-4 w-4 text-blue-500" />
-        </Button>
+        isIconOnly
+        size={ACTION_BUTTONS.size}
+        title={t("actions.view")}
+        variant={ACTION_BUTTONS.variant}
+        onPress={() => router.push(`/basic/cost-centers/${costCenter.id}`)}
+      >
+        <EyeIcon className={ACTION_BUTTONS.iconView} />
+      </Button>
       </Can>
       <Can I="update" a="basic.cost-centers">
         <Button
-          isIconOnly
-          size="sm"
-          title={t("actions.edit")}
-          variant="light"
-          onPress={() =>
-            router.push(`/basic/cost-centers/${costCenter.id}?mode=edit`)
-          }
-        >
-          <PencilIcon className="h-4 w-4 text-yellow-500" />
-        </Button>
+        isIconOnly
+        size={ACTION_BUTTONS.size}
+        title={t("actions.edit")}
+        variant={ACTION_BUTTONS.variant}
+        onPress={() =>
+          router.push(`/basic/cost-centers/${costCenter.id}?mode=edit`)
+        }
+      >
+        <PencilIcon className={ACTION_BUTTONS.iconEdit} />
+      </Button>
       </Can>
       <Can I="delete" a="basic.cost-centers">
         <Button
-          isIconOnly
-          color="danger"
-          size="sm"
-          title={t("actions.delete")}
-          variant="light"
-          onPress={() => handleDeleteClick(costCenter)}
-        >
-          <TrashIcon className="h-4 w-4" />
-        </Button>
+        isIconOnly
+        color="danger"
+        size={ACTION_BUTTONS.size}
+        title={t("actions.delete")}
+        variant={ACTION_BUTTONS.variant}
+        onPress={() => handleDeleteClick(costCenter)}
+      >
+        <TrashIcon className={ACTION_BUTTONS.iconSize} />
+      </Button>
       </Can>
     </div>
   );
@@ -335,9 +334,9 @@ export default function CostCentersClient({
         <div className="flex-1 min-w-[200px]">
           <Input
             placeholder={t("labels.searchPlaceholder")}
-            size="sm"
+            size={TOOLBAR.inputSize}
             startContent={
-              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              <MagnifyingGlassIcon className={TOOLBAR.iconSearch} />
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -345,7 +344,10 @@ export default function CostCentersClient({
         </div>
       </div>
 
-      <Table aria-label={t("labels.tableAriaLabel")}>
+      <Table
+        aria-label={t("labels.tableAriaLabel")}
+        classNames={TABLE_STYLE}
+      >
         <TableHeader>
           {columns.map((col) => (
             <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -371,12 +373,12 @@ export default function CostCentersClient({
         </TableBody>
       </Table>
 
-      <div className="py-4 flex justify-between items-center">
-        <span className={`text-sm text-gray-500 ${textAlign}`}>
+      <div className={PAGINATION_BAR.root}>
+        <span className={`${PAGINATION_BAR.countText} ${textAlign}`}>
           {t("labels.totalCount", { count: filtered.length })}
         </span>
         <Pagination
-          color="primary"
+          color={PAGINATION_BAR.color}
           page={page}
           total={Math.ceil(filtered.length / rowsPerPage)}
           onChange={setPage}
@@ -385,13 +387,13 @@ export default function CostCentersClient({
 
       <ConfirmationModal
         cancelText={t("modals.cancel")}
-        confirmColor="danger"
+        confirmColor={CONFIRM_MODAL.confirmColor}
         confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
         message={t("modals.deleteMessage", {
           name: costCenterToDelete?.cost_name || "",
         })}
-        size="md"
+        size={CONFIRM_MODAL.size}
         title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}

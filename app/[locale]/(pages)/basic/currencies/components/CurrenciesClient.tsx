@@ -29,6 +29,14 @@ import currencyService from "@/services/api/currency.service";
 import { revalidateTableData } from "@/app/actions/revalidate.action";
 import { ConfirmationModal } from "@/components/Modal";
 import { Can } from "@/components/providers/AbilityProvider";
+import {
+  ACTION_BUTTONS,
+  CONFIRM_MODAL,
+  PAGINATION_BAR,
+  PAGE_SIZE_OVERRIDES,
+  TABLE_STYLE,
+  TOOLBAR,
+} from "@/constants/ui";
 
 interface Currency {
   id: number;
@@ -57,7 +65,6 @@ export default function CurrenciesClient({
   const dir = getLocaleDir(locale as "ar" | "en");
   const t = useTranslations("basic.currencies");
 
-  // Dynamic text alignment classes based on locale
   const textAlign = dir === "rtl" ? "text-right" : "text-left";
 
   const columns = useMemo(
@@ -82,9 +89,8 @@ export default function CurrenciesClient({
     null,
   );
 
-  const rowsPerPage = 12;
+  const rowsPerPage = PAGE_SIZE_OVERRIDES.currencies;
 
-  // تحديث البيانات عند تغيير initialData
   useEffect(() => {
     setCurrencies(initialData);
   }, [initialData]);
@@ -100,7 +106,6 @@ export default function CurrenciesClient({
     }
   }, [t]);
 
-  // إعادة تحميل البيانات عند العودة للصفحة
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -140,7 +145,6 @@ export default function CurrenciesClient({
       return;
     }
 
-    // Optimistic delete
     setCurrencies((prevCurrencies) =>
       prevCurrencies.filter((c) => c.id !== currencyToDelete.id),
     );
@@ -150,8 +154,6 @@ export default function CurrenciesClient({
 
       if (result) {
         toast.success(t("messages.deleteSuccess"));
-
-        // Revalidate cache
         await revalidateTableData("currencies_list");
 
         loadCurrencies();
@@ -174,39 +176,39 @@ export default function CurrenciesClient({
   };
 
   const renderActions = (cur: Currency) => (
-    <div className="flex gap-2">
+    <div className={ACTION_BUTTONS.wrapper}>
       <Can I="view" a="basic.currencies">
         <Button
           isIconOnly
-          size="sm"
+          size={ACTION_BUTTONS.size}
           title={t("actions.view")}
-          variant="light"
+          variant={ACTION_BUTTONS.variant}
           onPress={() => router.push(`/basic/currencies/${cur.id}`)}
         >
-          <EyeIcon className="h-4 w-4 text-blue-500" />
+          <EyeIcon className={ACTION_BUTTONS.iconView} />
         </Button>
       </Can>
       <Can I="update" a="basic.currencies">
         <Button
           isIconOnly
-          size="sm"
+          size={ACTION_BUTTONS.size}
           title={t("actions.edit")}
-          variant="light"
+          variant={ACTION_BUTTONS.variant}
           onPress={() => router.push(`/basic/currencies/${cur.id}?mode=edit`)}
         >
-          <PencilIcon className="h-4 w-4 text-yellow-500" />
+          <PencilIcon className={ACTION_BUTTONS.iconEdit} />
         </Button>
       </Can>
       <Can I="delete" a="basic.currencies">
         <Button
           isIconOnly
           color="danger"
-          size="sm"
+          size={ACTION_BUTTONS.size}
           title={t("actions.delete")}
-          variant="light"
+          variant={ACTION_BUTTONS.variant}
           onPress={() => handleDeleteClick(cur)}
         >
-          <TrashIcon className="h-4 w-4" />
+          <TrashIcon className={ACTION_BUTTONS.iconSize} />
         </Button>
       </Can>
     </div>
@@ -228,22 +230,22 @@ export default function CurrenciesClient({
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3 mb-2">
+      <div className={TOOLBAR.root}>
         <Button
-          className="bg-gray-100"
-          variant="bordered"
+          className={TOOLBAR.addButton}
+          variant={TOOLBAR.addButtonVariant}
           onPress={() => router.push("/basic/currencies/new")}
         >
-          <PlusIcon className="h-3 w-3" />
+          <PlusIcon className={TOOLBAR.iconAdd} />
           {t("actions.add")}
         </Button>
-        <div className="h-8 w-px bg-gray-300" />
-        <div className="flex-1 min-w-[200px]">
+        <div className={TOOLBAR.divider} />
+        <div className={TOOLBAR.searchWrapper}>
           <Input
             placeholder={t("labels.searchPlaceholder")}
-            size="sm"
+            size={TOOLBAR.inputSize}
             startContent={
-              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              <MagnifyingGlassIcon className={TOOLBAR.iconSearch} />
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -251,7 +253,10 @@ export default function CurrenciesClient({
         </div>
       </div>
 
-      <Table aria-label={t("labels.tableAriaLabel")}>
+      <Table
+        aria-label={t("labels.tableAriaLabel")}
+        classNames={TABLE_STYLE}
+      >
         <TableHeader>
           {columns.map((col) => (
             <TableColumn key={col.uid}>{col.name}</TableColumn>
@@ -276,12 +281,12 @@ export default function CurrenciesClient({
         </TableBody>
       </Table>
 
-      <div className="flex justify-between items-center py-4">
-        <span className={textAlign}>
+      <div className={PAGINATION_BAR.root}>
+        <span className={`${PAGINATION_BAR.countText} ${textAlign}`}>
           {t("labels.totalCount", { count: filtered.length })}
         </span>
         <Pagination
-          color="primary"
+          color={PAGINATION_BAR.color}
           page={page}
           total={Math.ceil(filtered.length / rowsPerPage)}
           onChange={setPage}
@@ -290,13 +295,13 @@ export default function CurrenciesClient({
 
       <ConfirmationModal
         cancelText={t("modals.cancel")}
-        confirmColor="danger"
+        confirmColor={CONFIRM_MODAL.confirmColor}
         confirmText={t("modals.confirm")}
         isOpen={deleteModalOpen}
         message={t("modals.deleteMessage", {
           name: currencyToDelete?.cur_name || "",
         })}
-        size="md"
+        size={CONFIRM_MODAL.size}
         title={t("modals.deleteTitle")}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}

@@ -17,7 +17,7 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 
@@ -25,6 +25,7 @@ import {
   ensureCategoryAccountAction,
   saveCategoryAccountAction,
 } from "@/app/actions/category-accounts.action";
+import { FORM_ACTIONS } from "@/constants/ui";
 import categoryService from "@/services/api/category.service";
 
 type CategoryFormMode = "view" | "edit" | "add";
@@ -39,7 +40,7 @@ interface Category {
   tax_type: boolean;
   tax: number;
   cat_type: string;
-  cat_status: boolean;
+  cat_status: string | number | boolean | null;
 }
 
 interface CatType {
@@ -143,6 +144,19 @@ const CategoryFormClient = ({
   const [accountRecordId, setAccountRecordId] = useState<number | null>(
     initialCategoryAccount?.id ?? null,
   );
+  const normalizedCatStatusValue = useMemo(() => {
+    const raw = category.cat_status;
+
+    if (raw === null || raw === undefined || raw === "") {
+      return null;
+    }
+
+    if (typeof raw === "boolean") {
+      return raw ? "1" : "0";
+    }
+
+    return String(raw);
+  }, [category.cat_status]);
 
   const ACCOUNT_ROWS: AccountRow[] = useMemo(
     () => [
@@ -384,31 +398,36 @@ const CategoryFormClient = ({
           <h2 className="text-xl font-bold text-gray-900">{getTitle()}</h2>
           <p className="text-sm text-gray-600 mt-1">{getDescription()}</p>
         </div>
-        <div className="flex gap-2">
+        <div className={FORM_ACTIONS.wrapper}>
           <Button
-            variant="light"
+            size={FORM_ACTIONS.size}
+            startContent={<ArrowLeftIcon className={FORM_ACTIONS.back.iconSize} />}
+            variant={FORM_ACTIONS.back.variant}
             onPress={() => router.push("/basic/categories")}
           >
-            <ArrowLeftIcon className="h-4 w-4" />
             {t("actions.back")}
           </Button>
           {isViewMode && (
-            <Button color="primary" onPress={handleEdit}>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.edit.color}
+              variant={FORM_ACTIONS.edit.variant}
+              onPress={handleEdit}
+            >
               {t("actions.edit")}
             </Button>
           )}
           {!isViewMode && (
-            <>
-              <Button
-                variant="light"
-                onPress={() => router.push("/basic/categories")}
-              >
-                {t("actions.cancel")}
-              </Button>
-              <Button color="success" isLoading={isSaving} onPress={handleSave}>
-                {isAddMode ? t("actions.save") : t("actions.update")}
-              </Button>
-            </>
+            <Button
+              size={FORM_ACTIONS.size}
+              color={FORM_ACTIONS.save.color}
+              className={FORM_ACTIONS.save.className}
+              startContent={<CheckCircleIcon className={FORM_ACTIONS.save.iconSize} />}
+              isLoading={isSaving}
+              onPress={handleSave}
+            >
+              {isAddMode ? t("actions.save") : t("actions.update")}
+            </Button>
           )}
         </div>
       </div>
@@ -492,20 +511,18 @@ const CategoryFormClient = ({
         <Select
           isDisabled={isViewMode}
           label={t("fields.catStatus")}
-          selectedKeys={
-            category.cat_status ? [String(category.cat_status)] : []
-          }
+          selectedKeys={normalizedCatStatusValue ? [normalizedCatStatusValue] : []}
           onSelectionChange={(keys) => {
             const value = Array.from(keys)[0];
 
             setCategory({
               ...category,
-              cat_status: value ? Boolean(Number(value)) : false,
+              cat_status: value ? String(value) : null,
             });
           }}
         >
           {catStatuses.map((cs) => (
-            <SelectItem key={cs.code_id} textValue={cs.code_desc}>
+            <SelectItem key={String(cs.code_id)} textValue={cs.code_desc}>
               {cs.code_desc}
             </SelectItem>
           ))}
@@ -578,6 +595,7 @@ const CategoryFormClient = ({
                 column: "value" | "wage",
                 text: string,
               ) => {
+                const isWageColumn = column === "wage";
                 const normalizedText = text.trim().toLowerCase();
                 const filteredOptions = normalizedText
                   ? accountOptions.filter((option) => {
@@ -598,16 +616,22 @@ const CategoryFormClient = ({
                     className="max-w-full text-right leading-tight"
                     classNames={{
                       selectorButton:
-                        column === "wage"
+                        isWageColumn
                           ? "bg-amber-100 border-amber-300"
                           : "bg-white border-gray-200",
-                      listbox: "text-right min-w-[20rem]",
+                      listbox: "text-right",
                     }}
                     inputValue={getAccountDisplayValue(text)}
                     items={filteredOptions}
                     menuTrigger="input"
                     placeholder={t("labels.accountPlaceholder")}
-                    popoverProps={{ classNames: { content: "min-w-[20rem]" } }}
+                    popoverProps={{
+                      placement: isWageColumn ? "bottom-start" : "bottom-end",
+                      containerPadding: 12,
+                      classNames: {
+                        content: "max-w-[calc(100vw-2rem)] min-w-[12rem]",
+                      },
+                    }}
                     selectedKey={null}
                     variant="bordered"
                     onInputChange={(value) => {
@@ -649,7 +673,7 @@ const CategoryFormClient = ({
                         showDivider={false}
                         textValue={option.label}
                       >
-                        <span className="text-sm font-medium text-gray-800">
+                        <span className="block max-w-full truncate text-sm font-medium text-gray-800">
                           {option.name}
                         </span>
                       </AutocompleteItem>
