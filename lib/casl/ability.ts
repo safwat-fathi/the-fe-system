@@ -4,14 +4,15 @@ import {
   MongoAbility,
 } from "@casl/ability";
 
+import { normalizeAction } from "@/utilities/auth/authorization-core";
+
 export type AppAbilities = [
   (
-    | "read"
+    | "view"
     | "create"
     | "update"
     | "delete"
     | "manage"
-    | "view"
     | "print"
     | "export"
   ),
@@ -55,9 +56,13 @@ export function buildAbility(rawPermissions: BackendPermission[]) {
       if (lastDot === -1) return;
 
       const subject = source.substring(0, lastDot);
-      const action = source.substring(lastDot + 1);
+      const action = normalizeAction(source.substring(lastDot + 1));
 
-      can(action as AppAbilities[0], subject);
+      if (!action) {
+        return;
+      }
+
+      can(action, subject);
     });
   });
 

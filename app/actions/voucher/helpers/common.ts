@@ -44,19 +44,13 @@ export async function resolveVoucherBranchContextStrict(): Promise<VoucherBranch
 export async function getCurrentUsername(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
-    const userData = cookieStore.get(STORAGE_KEYS.USER_DATA)?.value;
+    const usernameCookie = cookieStore.get(STORAGE_KEYS.USERNAME)?.value;
 
-    if (!userData) {
-      return null;
+    if (usernameCookie && usernameCookie.trim()) {
+      return usernameCookie.trim();
     }
 
-    try {
-      const parsedUserData = JSON.parse(decodeURIComponent(userData));
-
-      return parsedUserData.username || parsedUserData.email || null;
-    } catch {
-      return null;
-    }
+    return null;
   } catch {
     return null;
   }

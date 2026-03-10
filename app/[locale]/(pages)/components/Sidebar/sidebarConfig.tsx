@@ -30,30 +30,35 @@ export const settingsLinks: SidebarLinkConfig[] = [
     translationSource: "sidebar",
     href: "/settings",
     icon: <Cog6ToothIcon className="h-5 w-5" />,
+    caslSubject: "settings.settings",
   },
   {
     translationKey: "links.userBranches",
     translationSource: "sidebar",
     href: "/settings/user-assignments",
     icon: <UserGroupIcon className="h-5 w-5" />,
+    caslSubject: "settings.user-assignments",
   },
   {
     translationKey: "permissions",
     translationSource: "segment",
     href: "/settings/permissions",
     icon: <ShieldCheckIcon className="h-5 w-5" />,
+    caslSubject: "settings.permissions",
   },
   {
     translationKey: "taxes",
     translationSource: "segment",
     href: "/settings/taxes",
     icon: <DocumentCheckIcon className="h-5 w-5" />,
+    caslSubject: "settings.taxes",
   },
   {
     translationKey: "integrations",
     translationSource: "segment",
     href: "/settings/integrations",
     icon: <LinkIcon className="h-5 w-5" />,
+    caslSubject: "settings.integrations",
   },
 ];
 

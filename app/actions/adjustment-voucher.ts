@@ -19,6 +19,8 @@ import {
 
 import { voucherService } from "@/services/api";
 import { STORAGE_KEYS } from "@/constants";
+import { assertAuthorized } from "@/utilities/auth/authorization-server";
+import { resolveVoucherSubject } from "@/utilities/auth/authorization-core";
 
 const ADJUSTMENT_VOUCHER_TYPE = 3;
 
@@ -58,6 +60,11 @@ export async function createAdjustmentVoucherAction(
   voucherData: Omit<SaveVoucherData, "vouch_type">,
   details: VoucherDetailData[] = [],
 ) {
+  await assertAuthorized({
+    subject: resolveVoucherSubject(ADJUSTMENT_VOUCHER_TYPE),
+    action: "create",
+  });
+
   // adjustment vouchers typically don't have boxes or gold details
   const voucherBoxes: VoucherBoxData[] = [];
   const goldDetails: GVoucherDetailData[] = [];
@@ -82,6 +89,11 @@ export async function updateAdjustmentVoucherAction(
   deletedDetailIds: number[] = [],
   voucherRecordId?: number,
 ) {
+  await assertAuthorized({
+    subject: resolveVoucherSubject(ADJUSTMENT_VOUCHER_TYPE),
+    action: "update",
+  });
+
   // adjustment vouchers typically don't have boxes or gold details
   const voucherBoxes: VoucherBoxData[] = [];
   const deletedBoxIds: number[] = [];
@@ -107,6 +119,11 @@ export async function updateAdjustmentVoucherAction(
 }
 
 export async function deleteAdjustmentVoucherAction(id: number) {
+  await assertAuthorized({
+    subject: resolveVoucherSubject(ADJUSTMENT_VOUCHER_TYPE),
+    action: "delete",
+  });
+
   const result = await deleteVoucherAction(id);
 
   if (result.success) {

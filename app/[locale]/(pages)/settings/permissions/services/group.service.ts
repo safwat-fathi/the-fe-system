@@ -6,6 +6,10 @@
 import { Group } from "../types/groups";
 
 import HttpService from "@/services/base/http.service";
+import {
+  normalizePermissionActions,
+  serializePermissionActionsForBackend,
+} from "@/utilities/auth/authorization-core";
 
 class GroupService extends HttpService {
   constructor() {
@@ -14,25 +18,23 @@ class GroupService extends HttpService {
 
   /**
    * Get all groups
-   * Note: API endpoint is not ready yet - returns mock data
    */
   async getAll(): Promise<Group[]> {
-    // TODO: Uncomment when API is ready
-    // try {
-    //   const { default: genericService } = await import("@/services/api/generic.service");
-    //   const response = await genericService.getTableData("groups_list");
-    //
-    //   if (response.success && Array.isArray(response.data)) {
-    //     return response.data;
-    //   }
-    //   return [];
-    // } catch (error) {
-    //   console.warn("Groups API not available:", error);
-    //   return [];
-    // }
+    try {
+      const { default: genericService } = await import(
+        "@/services/api/generic.service"
+      );
+      const response = await genericService.getTableData("groups_list");
 
-    // Return empty array for now - mock data is handled in component
-    return [];
+      if (response.success && Array.isArray(response.data)) {
+        return response.data as Group[];
+      }
+
+      throw new Error(response.message || "Groups API is not available");
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      throw new Error("تعذر تحميل المجموعات. يرجى التأكد من جاهزية الخدمة.");
+    }
   }
 
   /**
@@ -122,7 +124,10 @@ class GroupService extends HttpService {
       );
 
       if (response.success && Array.isArray(response.data)) {
-        return response.data;
+        return response.data.map((permission) => ({
+          ...permission,
+          permissions: normalizePermissionActions(permission.permissions),
+        }));
       }
 
       return [];
@@ -138,8 +143,15 @@ class GroupService extends HttpService {
    */
   async updatePermissions(id: number, permissions: any[]): Promise<boolean> {
     try {
+      const normalizedPermissions = permissions.map((permission) => ({
+        ...permission,
+        permissions: serializePermissionActionsForBackend(
+          permission.permissions,
+        ),
+      }));
+
       const response = await this.put(`groups/${id}/permissions`, {
-        permissions,
+        permissions: normalizedPermissions,
       });
 
       return response.success;

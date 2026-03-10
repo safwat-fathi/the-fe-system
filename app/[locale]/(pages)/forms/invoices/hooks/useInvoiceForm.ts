@@ -54,7 +54,6 @@ import {
   type PrintTranslations,
 } from "@/utilities/table/print";
 import { Nullable } from "@/types";
-import { STORAGE_KEYS } from "@/constants";
 
 type NumericValue = number | string;
 
@@ -630,22 +629,7 @@ export default function useInvoiceForm({
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [selectedYearId, setSelectedYearId] = useState<number | null>(null);
 
-  const getCurrentUserFromCookies = useCallback((): string => {
-    if (typeof window === "undefined") return "";
-    const cookies = document.cookie.split(";");
-    const usernameCookie = cookies
-      .map((c) => c.trim())
-      .find((c) => c.startsWith(`${STORAGE_KEYS.USERNAME}=`));
-
-    if (!usernameCookie) return "";
-    const value = usernameCookie.split("=")[1];
-
-    return value && value !== "undefined" && value !== "null" ? value : "";
-  }, []);
-
   const buildInitialFormState = useCallback((): FormState => {
-    const currentUser = getCurrentUserFromCookies();
-
     return {
       cust_code: resolvedInvoiceCustomerCode,
       cust_name: invoiceData?.cust_name ?? "",
@@ -667,9 +651,9 @@ export default function useInvoiceForm({
       print: invoiceData?.print ?? false,
       is_ok: invoiceData?.is_ok ?? false,
       is_done: invoiceData?.is_done ?? false,
-      seller_name: currentUser,
+      seller_name: invoiceData?.seller_name ?? "",
     };
-  }, [invoiceData, resolvedInvoiceCustomerCode, getCurrentUserFromCookies]);
+  }, [invoiceData, resolvedInvoiceCustomerCode]);
 
   const customers = useMemo(
     () =>

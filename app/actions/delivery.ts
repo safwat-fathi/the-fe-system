@@ -19,6 +19,8 @@ import {
 
 import { voucherService } from "@/services/api";
 import { STORAGE_KEYS } from "@/constants";
+import { assertAuthorized } from "@/utilities/auth/authorization-server";
+import { resolveVoucherSubject } from "@/utilities/auth/authorization-core";
 
 
 const DELIVERY_VOUCHER_TYPE = 222;
@@ -73,6 +75,11 @@ export async function createDeliveryVoucherAction(
   voucherBoxes: VoucherBoxData[] = [],
   goldDetails: GVoucherDetailData[] = [],
 ) {
+  await assertAuthorized({
+    subject: resolveVoucherSubject(DELIVERY_VOUCHER_TYPE),
+    action: "create",
+  });
+
   const result = await createVoucherAction(
     { ...voucherData, vouch_type: DELIVERY_VOUCHER_TYPE },
     details,
@@ -97,6 +104,11 @@ export async function updateDeliveryVoucherAction(
   goldDetails: GVoucherDetailData[] = [],
   deletedGoldDetailIds: number[] = [],
 ) {
+  await assertAuthorized({
+    subject: resolveVoucherSubject(DELIVERY_VOUCHER_TYPE),
+    action: "update",
+  });
+
   const result = await updateVoucherAction(
     { ...voucherData, vouch_type: DELIVERY_VOUCHER_TYPE },
     details,
@@ -116,6 +128,11 @@ export async function updateDeliveryVoucherAction(
 }
 
 export async function deleteDeliveryVoucherAction(id: number) {
+  await assertAuthorized({
+    subject: resolveVoucherSubject(DELIVERY_VOUCHER_TYPE),
+    action: "delete",
+  });
+
   const result = await deleteVoucherAction(id);
 
   if (result.success) {

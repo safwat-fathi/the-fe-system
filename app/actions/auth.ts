@@ -13,6 +13,7 @@ import { locales } from "@/i18n/config";
 import { authService } from "@/services/api";
 import userService from "@/app/[locale]/(pages)/settings/permissions/services/user.service";
 import { generateCSRFToken } from "@/utilities/csrf";
+import { resolvePermissionsFromPayload } from "@/utilities/auth/authorization-core";
 
 export interface LoginResult {
   success: boolean;
@@ -141,7 +142,7 @@ async function persistCredentials(responseData: LoginResponseData) {
     await setCookieAction(STORAGE_KEYS.USERNAME, String(username), {
       maxAge: REFRESH_TOKEN_TTL,
       path: "/",
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     });
@@ -267,11 +268,17 @@ export async function loginAction(
 export async function getUserPermissions() {
   const response = await userService.getAuthPermissions();
 
-  if (!response.success || !response?.data?.permissions) {
+  if (!response.success) {
     return null;
   }
 
-  return response.data.permissions;
+  const parsed = resolvePermissionsFromPayload(response.data ?? response);
+
+  if (!parsed.hasPermissionsArray) {
+    return null;
+  }
+
+  return parsed.permissions;
 }
 
 export async function deleteCredentials() {

@@ -12,6 +12,10 @@ const intlMiddleware = createIntlMiddleware({
 
 const i18nMiddleware: MiddlewareFactory = (next) => {
   return async (request, event) => {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return next(request, event);
+    }
+
     const response = intlMiddleware(request);
 
     const requestHeaders = new Headers(request.headers);

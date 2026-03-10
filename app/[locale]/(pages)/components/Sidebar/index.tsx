@@ -35,7 +35,6 @@ import { type AppAbilities } from "@/lib/casl/ability";
 // All actions we recognise — used to ask "can the user do ANYTHING on this subject?"
 const APP_ACTIONS: AppAbilities[0][] = [
   "view",
-  "read",
   "create",
   "update",
   "delete",
@@ -381,6 +380,28 @@ const Sidebar = ({
   const showSettingsSection =
     canShowSection("settings") && visibleSettingsLinks.length > 0;
 
+  const canShowReportsSection = useMemo(() => {
+    if (isAdmin) {
+      return true;
+    }
+
+    const reportObjectIds = SIDEBAR_OBJECT_IDS.reports;
+
+    if (reportObjectIds.some((id) => allowedIdsSet.has(id))) {
+      return true;
+    }
+
+    return ability.rules.some((rule) => {
+      if (typeof rule.subject !== "string") {
+        return false;
+      }
+
+      return (
+        rule.subject.startsWith("reports.") || rule.subject.startsWith("forms.")
+      );
+    });
+  }, [ability.rules, allowedIdsSet, isAdmin]);
+
   const SectionToggleLabel = ({ label }: { label: string }) => (
     <span className={clsx({ block: isSidebarOpen, hidden: !isSidebarOpen })}>
       {label}
@@ -465,7 +486,7 @@ const Sidebar = ({
           </SidebarSection>
         )}
 
-        {canShowSection("reports") && (
+        {canShowReportsSection && (
           <div className="mt-4">
             {isSidebarOpen ? (
               <Link

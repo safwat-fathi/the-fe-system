@@ -24,6 +24,8 @@ import { postVoucherToGL } from "./helpers/post-to-gl";
 
 import { voucherService } from "@/services/api";
 import { requiresBoxes } from "@/utilities/voucher/routing";
+import { assertAuthorized } from "@/utilities/auth/authorization-server";
+import { resolveVoucherSubject } from "@/utilities/auth/authorization-core";
 
 /**
  * Create a new voucher
@@ -35,6 +37,11 @@ export async function createVoucherAction(
   goldDetails: GVoucherDetailData[] = [],
 ) {
   try {
+    await assertAuthorized({
+      subject: resolveVoucherSubject(voucherData.vouch_type),
+      action: "create",
+    });
+
     const normalizeCostValue = (...values: unknown[]): number | null => {
       for (const value of values) {
         if (value === undefined || value === null) {
